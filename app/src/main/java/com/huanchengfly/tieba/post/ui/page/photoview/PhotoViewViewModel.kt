@@ -62,7 +62,8 @@ class PhotoViewViewModel :
                     picId = picId,
                     picIndex = overallIndex.toString(),
                     objType = data.objType,
-                    prev = true
+                    prev = true,
+                    postId = data.postId,
                 )
                 .map<PicPageBean, PhotoViewPartialChange.LoadPrev> { picPageBean ->
                     val items = picPageBean.picList.toPhotoViewItems()
@@ -88,7 +89,8 @@ class PhotoViewViewModel :
                     picId = picId,
                     picIndex = overallIndex.toString(),
                     objType = data.objType,
-                    prev = false
+                    prev = false,
+                    postId = data.postId,
                 )
                 .map<PicPageBean, PhotoViewPartialChange.LoadMore> { picPageBean ->
                     val items = picPageBean.picList.toPhotoViewItems()
@@ -133,7 +135,8 @@ class PhotoViewViewModel :
                         picId = data.data.picId,
                         picIndex = data.data.picIndex.toString(),
                         objType = data.data.objType,
-                        prev = false
+                        prev = false,
+                        postId = data.data.postId,
                     )
                     .map<PicPageBean, PhotoViewPartialChange.Init> { picPageBean ->
                         val picAmount = picPageBean.picAmount.toInt()

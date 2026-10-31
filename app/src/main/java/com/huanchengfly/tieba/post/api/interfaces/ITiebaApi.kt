@@ -81,7 +81,8 @@ interface ITiebaApi {
         picId: String,
         picIndex: String,
         objType: String,
-        prev: Boolean
+        prev: Boolean,
+        postId: Long? = null,
     ): Flow<PicPageBean>
 
     /**

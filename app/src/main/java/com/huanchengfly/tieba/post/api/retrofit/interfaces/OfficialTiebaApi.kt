@@ -35,6 +35,7 @@ interface OfficialTiebaApi {
         @Field("prev") prev: Int,
         @Field("next") next: Int,
         @Field("not_see_lz") notSeeLz: Int,
+        @Field("post_id") postId: String? = null,
         @Field("page_name") pageName: String = "PB",
         @Field("user_id") userId: String? = AccountUtil.getUid(),
         @Field("scr_h") scrH: String = getScreenHeight().toString(),

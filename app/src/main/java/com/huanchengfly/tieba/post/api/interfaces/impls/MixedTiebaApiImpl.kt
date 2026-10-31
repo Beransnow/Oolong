@@ -154,7 +154,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         picId: String,
         picIndex: String,
         objType: String,
-        prev: Boolean
+        prev: Boolean,
+        postId: Long?,
     ): Flow<PicPageBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.picPageFlow(
         forumId,
         forumName,
@@ -164,7 +165,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         objType.ifEmpty { "other" },
         prev = if (prev) 10 else 0,
         next = if (prev) 0 else 10,
-        notSeeLz = if (seeLz) 0 else 1
+        notSeeLz = if (seeLz) 0 else 1,
+        postId = postId?.takeIf { it != 0L }?.toString(),
     )
 
     override fun unlikeForumFlow(
