@@ -170,7 +170,8 @@ dependencies {
     implementation(platform(libs.compose.bom))
     androidTestImplementation(platform(libs.compose.bom))
 
-    runtimeOnly(libs.compose.runtime.tracing)
+    // Release builds strip the trace calls (see proguard-rules.pro), so only its initializers would remain
+    debugRuntimeOnly(libs.compose.runtime.tracing)
     implementation(libs.compose.animation)
     implementation(libs.compose.animation.graphics)
     implementation(libs.compose.material)
