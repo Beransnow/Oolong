@@ -8,6 +8,7 @@ import com.huanchengfly.tieba.post.api.models.protos.SubPost
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.model.BawuType
@@ -236,6 +237,47 @@ class ThreadRepositoryTest {
         assertEquals(3L to true, page.posts.items.single().agree.let { it.count to it.agreed })
         assertNull(page.viewer.user)
         assertNull(page.tbs)
+    }
+
+    @Test
+    fun `maps a page of the replies inside a post`() = runTest {
+        val replies = listOf(
+            SubPostList(id = 201, author = lz, content = listOf(PbContent(type = 0, text = "楼主回复")), agree = ProtoAgree(diffAgreeNum = 2, hasAgree = 1)),
+            SubPostList(id = 202, author = replier, content = listOf(PbContent(type = 0, text = "又一条"))),
+        )
+        coEvery { remote.floor(9_000, 77, 52, 2, 201) } returns PbFloorResponseData(
+            post = post(77, 5),
+            subpost_list = replies,
+            page = ProtoPage(current_page = 2, total_page = 3, total_count = 25),
+            thread = ThreadInfo(id = 9_000, author = lz),
+            forum = SimpleForum(id = 52, name = "吧名"),
+            anti = Anti(tbs = "page-tbs"),
+        )
+
+        val floor = repository.floor(9_000, 77, 52, FloorCursor(2, subPostId = 201))
+
+        assertEquals(77, floor.post.id)
+        assertEquals(10, floor.threadAuthorId)
+        assertEquals(listOf(201L, 202L), floor.subPosts.items.map { it.id })
+        assertEquals(2L to true, floor.subPosts.items[0].agree.let { it.count to it.agreed })
+        assertEquals(FloorCursor(3), floor.subPosts.next)
+        assertEquals(FloorCursor(1), floor.subPosts.prev)
+        assertEquals(25, floor.totalCount)
+        assertEquals("page-tbs", floor.tbs)
+    }
+
+    @Test
+    fun `the last page of replies has no next page`() = runTest {
+        coEvery { remote.floor(any(), any(), any(), any(), any()) } returns PbFloorResponseData(
+            post = post(77, 5),
+            subpost_list = listOf(SubPostList(id = 201, author = lz)),
+            page = ProtoPage(current_page = 1, total_page = 1),
+            forum = SimpleForum(id = 52),
+        )
+
+        val floor = repository.floor(9_000, 77, 52, FloorCursor(1))
+        assertNull(floor.subPosts.next)
+        assertNull(floor.subPosts.prev)
     }
 
     @Test

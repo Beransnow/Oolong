@@ -70,6 +70,7 @@ data class SubPost(
     val author: User,
     val content: ImmutableList<PostContent>,
     val time: Long,
+    val agree: Agree = Agree(0, agreed = false),
 )
 
 /** The logged-in user as the thread page sees them, or a guest. */

@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.arch.IoDispatcher
@@ -102,6 +103,27 @@ data class ThreadPage(
     val tbs: String?,
 )
 
+/** Where a page of the replies inside a post starts. */
+@Immutable
+data class FloorCursor(
+    val page: Int,
+    /** A reply to load the page around, which the server then picks; 0 for none. */
+    val subPostId: Long = 0,
+)
+
+/** A post with a page of the replies inside it. */
+@Immutable
+data class FloorPage(
+    val post: Post,
+    val threadAuthorId: Long,
+    val forum: ForumSummary,
+    val subPosts: Page<FloorCursor, SubPost>,
+    /** How many replies the post has in all. */
+    val totalCount: Int,
+    /** The tbs to send with actions on these replies, or null to send the account's. */
+    val tbs: String?,
+)
+
 @Singleton
 class ThreadRepository @Inject constructor(
     private val remote: ThreadRemoteDataSource,
@@ -135,6 +157,28 @@ class ThreadRepository @Inject constructor(
     }
 
     fun preview(info: ThreadInfo): ThreadPreview = info.toThreadPreview(emoticons)
+
+    /** A page of the replies inside post [postId] of thread [threadId]. */
+    suspend fun floor(threadId: Long, postId: Long, forumId: Long, cursor: FloorCursor): FloorPage =
+        withContext(io) {
+            remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId).toFloorPage(emoticons)
+        }
+
+    suspend fun agreeSubPost(threadId: Long, forumId: Long, subPostId: Long, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.SubPost(threadId, subPostId), forumId, undo = !agree)
+        Unit
+    }
+
+    /** Deletes a reply inside a post, sent the way the sub-post page has always sent it. */
+    suspend fun deleteSubPost(
+        forum: ForumSummary,
+        threadId: Long,
+        subPostId: Long,
+        ownPost: Boolean,
+        tbs: String?,
+    ) = withContext(io) {
+        remote.deletePost(forum.id, forum.name, threadId, subPostId, ownPost, isSubPost = false, tbs = tbs)
+    }
 
     /** Agrees with the thread, or takes it back when [agree] is false. */
     suspend fun agreeThread(thread: ThreadDetail, agree: Boolean) = withContext(io) {
@@ -176,36 +220,15 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
     val forum = forum ?: throw TiebaUnknownException
     val page = page ?: throw TiebaUnknownException
     val anti = anti ?: throw TiebaUnknownException
-    val usersById = user_list.associateBy { it.id }
-
-    fun ProtoUser?.orFromList(id: Long): User =
-        (this ?: usersById[id])?.toUser() ?: User(id = id, name = "", nameShow = "", portrait = "")
-
-    fun ProtoSubPost.toSubPost() = SubPost(
-        id = id,
-        author = author.orFromList(author_id.takeIf { it != 0L } ?: author?.id ?: 0L),
-        content = content.toPostContent(emoticons),
-        time = time.toLong(),
-    )
-
-    fun ProtoPost.toPost(content: List<PbContent> = this.content) = Post(
-        id = id,
-        floor = floor,
-        title = if (floor <= 1 && is_ntitle != 1) title else "",
-        time = time.toLong(),
-        author = author.orFromList(author_id.takeIf { it != 0L } ?: author?.id ?: 0L),
-        content = content.toPostContent(emoticons),
-        agree = agree.toAgree(),
-        subPosts = sub_post_list?.sub_post_list.orEmpty().map { it.toSubPost() }.toImmutableList(),
-        subPostCount = sub_post_number,
-    )
-
-    val firstPost = post_list.firstOrNull { it.floor == 1 }?.toPost()
+    val mapper = PostMapper(user_list, emoticons)
+    val firstPost = post_list.firstOrNull { it.floor == 1 }?.let(mapper::post)
         ?: first_floor_post?.let { post ->
-            post.copy(author = post.author ?: threadAuthor, author_id = threadAuthor.id)
-                .toPost(content = post.content.withPlayableVideo(thread.videoInfo))
+            mapper.post(
+                post.copy(author = post.author ?: threadAuthor, author_id = threadAuthor.id),
+                content = post.content.withPlayableVideo(thread.videoInfo),
+            )
         }
-    val posts = post_list.filterNot { it.floor == 1 }.map { it.toPost() }
+    val posts = post_list.filterNot { it.floor == 1 }.map(mapper::post)
     val hasMore = page.has_more != 0 && posts.isNotEmpty()
     val hasPrevious = page.has_prev != 0 && posts.isNotEmpty()
 
@@ -248,6 +271,27 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
     )
 }
 
+internal fun PbFloorResponseData.toFloorPage(emoticons: EmoticonRegistry): FloorPage {
+    val post = post ?: throw TiebaUnknownException
+    val page = page ?: throw TiebaUnknownException
+    val forum = forum ?: throw TiebaUnknownException
+    val mapper = PostMapper(emptyList(), emoticons)
+    val subPosts = subpost_list.map(mapper::subPost)
+    return FloorPage(
+        post = mapper.post(post),
+        threadAuthorId = thread?.author?.id ?: 0L,
+        forum = ForumSummary(id = forum.id, name = forum.name, avatar = forum.avatar),
+        subPosts = Page(
+            items = subPosts,
+            next = FloorCursor(page.current_page + 1)
+                .takeIf { page.current_page < page.total_page && subPosts.isNotEmpty() },
+            prev = FloorCursor(page.current_page - 1).takeIf { page.current_page > 1 && subPosts.isNotEmpty() },
+        ),
+        totalCount = page.total_count,
+        tbs = anti?.tbs?.ifEmpty { null },
+    )
+}
+
 fun ThreadInfo.toThreadPreview(emoticons: EmoticonRegistry) = ThreadPreview(
     title = title,
     author = author?.toUser(),
@@ -255,7 +299,39 @@ fun ThreadInfo.toThreadPreview(emoticons: EmoticonRegistry) = ThreadPreview(
     time = createTime.toLong(),
 )
 
-private fun ProtoUser.toUser() = User(
+/** Maps posts and their replies, taking authors missing from them from [users]. */
+internal class PostMapper(users: List<ProtoUser>, private val emoticons: EmoticonRegistry) {
+    private val usersById = users.associateBy { it.id }
+
+    private fun author(author: ProtoUser?, authorId: Long): User {
+        val id = authorId.takeIf { it != 0L } ?: author?.id ?: 0L
+        return (author ?: usersById[id])?.toUser() ?: User(id = id, name = "", nameShow = "", portrait = "")
+    }
+
+    fun subPost(subPost: ProtoSubPost) = SubPost(
+        id = subPost.id,
+        author = author(subPost.author, subPost.author_id),
+        content = subPost.content.toPostContent(emoticons),
+        time = subPost.time.toLong(),
+        agree = subPost.agree.toAgree(),
+    )
+
+    fun post(post: ProtoPost) = post(post, post.content)
+
+    fun post(post: ProtoPost, content: List<PbContent>) = Post(
+        id = post.id,
+        floor = post.floor,
+        title = if (post.floor <= 1 && post.is_ntitle != 1) post.title else "",
+        time = post.time.toLong(),
+        author = author(post.author, post.author_id),
+        content = content.toPostContent(emoticons),
+        agree = post.agree.toAgree(),
+        subPosts = post.sub_post_list?.sub_post_list.orEmpty().map(::subPost).toImmutableList(),
+        subPostCount = post.sub_post_number,
+    )
+}
+
+internal fun ProtoUser.toUser() = User(
     id = id,
     name = name,
     nameShow = nameShow,
