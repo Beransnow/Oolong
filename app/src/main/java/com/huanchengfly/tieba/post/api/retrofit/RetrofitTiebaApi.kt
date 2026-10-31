@@ -35,7 +35,6 @@ import com.huanchengfly.tieba.post.api.retrofit.interfaces.NewTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialProtobufTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.SofireApi
-import com.huanchengfly.tieba.post.api.retrofit.interfaces.WebTiebaApi
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -95,22 +94,6 @@ object RetrofitTiebaApi {
                 Param.CLIENT_VERSION to { "8.2.2" }
             ),
             stParamInterceptor,
-        )
-    }
-
-    val WEB_TIEBA_API: WebTiebaApi by lazy {
-        createJsonApi<WebTiebaApi>("https://tieba.baidu.com/",
-            CommonHeaderInterceptor(
-                Header.USER_AGENT to { getUserAgent("tieba/11.10.8.6 skin/default") },
-                Header.CUID to { CuidUtils.getNewCuid() },
-                Header.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Header.CUID_GID to { "" },
-                Header.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Header.CLIENT_USER_TOKEN to { AccountUtil.getUid() },
-                Header.CHARSET to { "UTF-8" },
-                Header.HOST to { "tieba.baidu.com" },
-            ),
-            AddWebCookieInterceptor
         )
     }
 

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.api.interfaces.impls
 
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
-import android.os.Build
 import android.text.TextUtils
 import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
 import com.huanchengfly.tieba.core.network.sign.MSignResponse
@@ -9,9 +8,6 @@ import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
-import com.huanchengfly.tieba.post.api.ForumSortType
-import com.huanchengfly.tieba.post.api.SearchThreadFilter
-import com.huanchengfly.tieba.post.api.SearchThreadOrder
 import com.huanchengfly.tieba.post.api.booleanToString
 import com.huanchengfly.tieba.post.api.buildAdParam
 import com.huanchengfly.tieba.post.api.buildAppPosInfo
@@ -27,63 +23,33 @@ import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
-import com.huanchengfly.tieba.post.api.models.CollectDataBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.FollowBean
-import com.huanchengfly.tieba.post.api.models.ForumPageBean
 import com.huanchengfly.tieba.post.api.models.ForumGuideBean
-import com.huanchengfly.tieba.post.api.models.ForumRecommend
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
 import com.huanchengfly.tieba.post.api.models.InitNickNameBean
 import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.MessageListBean
-import com.huanchengfly.tieba.post.api.models.MsgBean
 import com.huanchengfly.tieba.post.api.models.NewCollectDataBean
 import com.huanchengfly.tieba.post.api.models.PersonalizedBean
 import com.huanchengfly.tieba.post.api.models.PicPageBean
-import com.huanchengfly.tieba.post.api.models.Profile
-import com.huanchengfly.tieba.post.api.models.ProfileBean
 import com.huanchengfly.tieba.post.api.models.SearchForumBean
-import com.huanchengfly.tieba.post.api.models.SearchPostBean
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.api.models.SearchUserBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
-import com.huanchengfly.tieba.post.api.models.SubFloorListBean
 import com.huanchengfly.tieba.post.api.models.Sync
-import com.huanchengfly.tieba.post.api.models.ThreadContentBean
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
 import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
-import com.huanchengfly.tieba.post.api.models.UserPostBean
-import com.huanchengfly.tieba.post.api.models.WebReplyResultBean
-import com.huanchengfly.tieba.post.api.models.WebUploadPicBean
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendRequest
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendRequestData
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendResponse
-import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
-import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequestData
-import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.getBawuInfo.GetBawuInfoRequest
-import com.huanchengfly.tieba.post.api.models.protos.getBawuInfo.GetBawuInfoRequestData
-import com.huanchengfly.tieba.post.api.models.protos.getBawuInfo.GetBawuInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequest
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
-import com.huanchengfly.tieba.post.api.models.protos.getHistoryForum.GetHistoryForumRequest
-import com.huanchengfly.tieba.post.api.models.protos.getHistoryForum.GetHistoryForumRequestData
-import com.huanchengfly.tieba.post.api.models.protos.getHistoryForum.GetHistoryForumResponse
-import com.huanchengfly.tieba.post.api.models.protos.getLevelInfo.GetLevelInfoRequest
-import com.huanchengfly.tieba.post.api.models.protos.getLevelInfo.GetLevelInfoRequestData
-import com.huanchengfly.tieba.post.api.models.protos.getLevelInfo.GetLevelInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.getMemberInfo.GetMemberInfoRequest
-import com.huanchengfly.tieba.post.api.models.protos.getMemberInfo.GetMemberInfoRequestData
-import com.huanchengfly.tieba.post.api.models.protos.getMemberInfo.GetMemberInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequest
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
@@ -118,19 +84,13 @@ import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequest
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
-import com.huanchengfly.tieba.post.api.models.web.ForumBean
-import com.huanchengfly.tieba.post.api.models.web.ForumHome
-import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.models.DislikeBean
-import com.huanchengfly.tieba.post.models.MyInfoBean
-import com.huanchengfly.tieba.post.models.PhotoInfoBean
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.CuidUtils
-import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
@@ -138,23 +98,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import okio.ByteString.Companion.toByteString
-import retrofit2.Call
 import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.net.URLEncoder
 
 object MixedTiebaApiImpl : ITiebaApi {
     private const val FORUM_GUIDE_PAGE_SIZE = 50
-
-    override fun personalized(loadType: Int, page: Int): Call<PersonalizedBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.personalized(loadType, page)
-
-    override fun personalizedAsync(
-        loadType: Int,
-        page: Int
-    ): Deferred<ApiResult<PersonalizedBean>> =
-        RetrofitTiebaApi.MINI_TIEBA_API.personalizedAsync(loadType, page)
 
     override fun personalizedFlow(loadType: Int, page: Int): Flow<PersonalizedBean> {
         return RetrofitTiebaApi.OFFICIAL_TIEBA_API.personalizedFlow(loadType, page)
@@ -190,22 +137,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun myProfileAsync(): Deferred<ApiResult<com.huanchengfly.tieba.post.api.models.web.Profile>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.myProfileAsync("json", "", "")
-
-    override fun opAgree(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Call<AgreeBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.agree(postId, threadId, op_type = opType)
-
-    override fun disagree(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Call<AgreeBean> = RetrofitTiebaApi.MINI_TIEBA_API.disagree(postId, threadId, op_type = opType)
-
     override fun opAgreeFlow(
         target: AgreeTarget,
         forumId: Long?,
@@ -214,93 +145,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         legacyAgreeRemoteDataSource.opAgree(target, forumId, undo)
         emit(AgreeBean())
     }
-
-    override fun disagreeFlow(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Flow<AgreeBean> = RetrofitTiebaApi.MINI_TIEBA_API.disagreeFlow(postId, threadId, op_type = opType)
-
-    override fun forumRecommend(): Call<ForumRecommend> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumRecommend()
-
-    override fun forumRecommendAsync(): Deferred<ApiResult<ForumRecommend>> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumRecommendAsync()
-
-    override fun forumRecommendFlow(): Flow<ForumRecommend> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumRecommendFlow()
-
-    override fun forumPage(
-        forumName: String, page: Int, sortType: ForumSortType, goodClassifyId: String?
-    ): Call<ForumPageBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumPage(forumName, page, sortType.value, goodClassifyId)
-
-    override fun forumPageAsync(
-        forumName: String,
-        page: Int,
-        sortType: ForumSortType,
-        goodClassifyId: String?
-    ): Deferred<ApiResult<ForumPageBean>> =
-        RetrofitTiebaApi.MINI_TIEBA_API.forumPageAsync(
-            forumName,
-            page,
-            sortType.value,
-            goodClassifyId
-        )
-
-    override fun floor(
-        threadId: String, page: Int, postId: String?, subPostId: String?
-    ): Call<SubFloorListBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.floor(threadId, page, postId, subPostId)
-
-    override fun forumHomeAsync(sortType: Int, page: Int): Deferred<ApiResult<ForumHome>> {
-        return RetrofitTiebaApi.WEB_TIEBA_API.getForumHomeAsync(
-            sortType,
-            page,
-            20,
-            "",
-            ""
-        )
-    }
-
-    override fun userLikeForum(
-        uid: String, page: Int
-    ): Call<UserLikeForumBean> {
-        val myUid = AccountUtil.getUid()
-        return RetrofitTiebaApi.MINI_TIEBA_API.userLikeForum(
-            page = page,
-            uid = myUid,
-            friendUid = if (!TextUtils.equals(uid, myUid)) uid else null,
-            is_guest = if (!TextUtils.equals(uid, myUid)) "1" else null
-
-        )
-    }
-
-    override fun userPost(
-        uid: String, page: Int, isThread: Boolean
-    ): Call<UserPostBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.userPost(uid, page, if (isThread) 1 else 0)
-
-    override fun picPage(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        seeLz: Boolean,
-        picId: String,
-        picIndex: String,
-        objType: String,
-        prev: Boolean
-    ): Call<PicPageBean> = RetrofitTiebaApi.MINI_TIEBA_API.picPage(
-        forumId,
-        forumName,
-        threadId,
-        picId,
-        picIndex,
-        objType,
-        prev = if (prev) 10 else 0,
-        next = if (prev) 0 else 10,
-        not_see_lz = if (seeLz) 0 else 1
-    )
 
     override fun picPageFlow(
         forumId: String,
@@ -323,18 +167,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         not_see_lz = if (seeLz) 0 else 1
     )
 
-    override fun profile(uid: String): Call<ProfileBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.profile(uid)
-
-    override fun profileFlow(uid: String): Flow<Profile> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.profileFlow(uid)
-
-    override fun unlikeForum(
-        forumId: String,
-        forumName: String,
-        tbs: String
-    ): Call<CommonResponse> = RetrofitTiebaApi.MINI_TIEBA_API.unlikeForum(forumId, forumName, tbs)
-
     override fun unlikeForumFlow(
         forumId: String,
         forumName: String,
@@ -343,11 +175,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         legacyLikeRemoteDataSource.unfavolike(forumId.toLong(), forumName, tbs)
         emit(CommonResponse())
     }
-
-    override fun likeForum(
-        forumId: String, forumName: String, tbs: String
-    ): Call<LikeForumResultBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.likeForum(forumId, forumName, tbs)
 
     override fun likeForumFlow(
         forumId: String,
@@ -359,22 +186,11 @@ object MixedTiebaApiImpl : ITiebaApi {
         emit(response.toLikeForumResultBean())
     }
 
-    override fun signAsync(forumName: String, tbs: String): Deferred<ApiResult<SignResultBean>> =
-        RetrofitTiebaApi.MINI_TIEBA_API.signAsync(forumName, tbs)
-
     override fun signFlow(forumId: String, forumName: String, tbs: String): Flow<SignResultBean> =
         flow {
             val response = legacySignRemoteDataSource.sign(forumId.toLong(), forumName, tbs)
             emit(response.toSignResultBean())
         }
-
-    override fun delThread(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String
-    ): Call<CommonResponse> =
-        RetrofitTiebaApi.MINI_TIEBA_API.delThread(forumId, forumName, threadId, tbs)
 
     override fun delThreadFlow(
         forumId: Long,
@@ -393,27 +209,6 @@ object MixedTiebaApiImpl : ITiebaApi {
                 deleteMyThread = if (delMyThread) 1 else 0,
                 isFrsMask = if (isHide) 1 else 0
             )
-
-    override fun delPost(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        postId: String,
-        tbs: String,
-        isFloor: Boolean,
-        delMyPost: Boolean
-    ): Call<CommonResponse> =
-        RetrofitTiebaApi.MINI_TIEBA_API.delPost(
-            forumId,
-            forumName,
-            threadId,
-            postId,
-            tbs,
-            is_floor = if (isFloor) 1 else 0,
-            src = if (isFloor) 3 else 1,
-            is_vip_del = if (delMyPost) 0 else 1,
-            delete_my_post = if (delMyPost) 1 else 0
-        )
 
     override fun delPostFlow(
         forumId: Long,
@@ -437,63 +232,14 @@ object MixedTiebaApiImpl : ITiebaApi {
                 tbs = tbs
             )
 
-    override fun searchPost(
-        keyword: String,
-        forumName: String,
-        onlyThread: Boolean,
-        sortMode: Int,
-        page: Int,
-        pageSize: Int
-    ): Call<SearchPostBean> = RetrofitTiebaApi.MINI_TIEBA_API.searchPost(
-        keyword,
-        forumName,
-        page,
-        pageSize,
-        only_thread = if (onlyThread) 1 else 0,
-        sortMode = sortMode
-    )
-
-    override fun searchPostAsync(
-        keyword: String,
-        forumName: String,
-        onlyThread: Boolean,
-        sortMode: Int,
-        page: Int,
-        pageSize: Int
-    ): Deferred<ApiResult<SearchPostBean>> = RetrofitTiebaApi.MINI_TIEBA_API.searchPostAsync(
-        keyword,
-        forumName,
-        page,
-        pageSize,
-        only_thread = if (onlyThread) 1 else 0,
-        sortMode = sortMode
-    )
-
-    override fun searchUser(keyword: String): Call<SearchUserBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.searchUser(keyword)
-
     override fun searchUserFlow(keyword: String): Flow<SearchUserBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchUserFlow(keyword)
-
-    override fun msg(): Call<MsgBean> = RetrofitTiebaApi.NEW_TIEBA_API.msg()
-
-    override fun msgFlow(): Flow<MsgBean> = RetrofitTiebaApi.NEW_TIEBA_API.msgFlow()
-
-    override fun threadStore(page: Int, pageSize: Int): Call<ThreadStoreBean> =
-        RetrofitTiebaApi.NEW_TIEBA_API.threadStore(
-            pageSize,
-            pageSize * page,
-            AccountUtil.getUid()
-        )
 
     override fun threadStoreFlow(page: Int, pageSize: Int): Flow<ThreadStoreBean> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadStoreFlow(
             pageSize,
             pageSize * page
         )
-
-    override fun removeStore(threadId: String, tbs: String): Call<CommonResponse> =
-        RetrofitTiebaApi.NEW_TIEBA_API.removeStore(threadId, tbs)
 
     override fun removeStoreFlow(
         threadId: Long,
@@ -509,30 +255,6 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun removeStoreFlow(threadId: String): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.removeStoreFlow(threadId)
 
-    override fun addStore(threadId: String, postId: String, tbs: String): Call<CommonResponse> =
-        RetrofitTiebaApi.NEW_TIEBA_API.addStore(
-            listOf(
-                CollectDataBean(
-                    threadId,
-                    postId,
-                    "0",
-                    "0"
-                )
-            ).toJson(),
-            tbs
-        )
-
-    override fun addStoreAsync(threadId: Long, postId: Long): Deferred<ApiResult<CommonResponse>> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.addStoreAsync(
-            listOf(
-                NewCollectDataBean(
-                    threadId.toString(),
-                    postId.toString(),
-                    status = 1
-                )
-            ).toJson()
-        )
-
     override fun addStoreFlow(threadId: Long, postId: Long): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.addStoreFlow(
             listOf(
@@ -545,104 +267,13 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
 
 
-    override fun replyMe(page: Int): Call<MessageListBean> =
-        RetrofitTiebaApi.NEW_TIEBA_API.replyMe(page)
-
-    override fun replyMeAsync(page: Int): Deferred<ApiResult<MessageListBean>> =
-        RetrofitTiebaApi.NEW_TIEBA_API.replyMeAsync(page)
-
     override fun replyMeFlow(page: Int): Flow<MessageListBean> =
         RetrofitTiebaApi.NEW_TIEBA_API.replyMeFlow(page)
 
-    override fun atMe(page: Int): Call<MessageListBean> = RetrofitTiebaApi.NEW_TIEBA_API.atMe(page)
-
-    override fun atMeAsync(page: Int): Deferred<ApiResult<MessageListBean>> =
-        RetrofitTiebaApi.NEW_TIEBA_API.atMeAsync(page)
-
     override fun atMeFlow(page: Int): Flow<MessageListBean> = RetrofitTiebaApi.NEW_TIEBA_API.atMeFlow(page)
-
-    override fun agreeMe(page: Int): Call<MessageListBean> =
-        RetrofitTiebaApi.NEW_TIEBA_API.agreeMe(page)
-
-    override fun threadContent(
-        threadId: String, page: Int, seeLz: Boolean, reverse: Boolean
-    ): Call<ThreadContentBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadContent(
-        threadId,
-        page,
-        last = if (reverse) "1" else null,
-        r = if (reverse) "1" else null,
-        lz = if (seeLz) 1 else 0
-    )
-
-    override fun threadContent(
-        threadId: String, postId: String?, seeLz: Boolean, reverse: Boolean
-    ): Call<ThreadContentBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadContent(
-        threadId,
-        postId,
-        last = if (reverse) "1" else null,
-        r = if (reverse) "1" else null,
-        lz = if (seeLz) 1 else 0
-    )
-
-    override fun threadContentAsync(
-        threadId: String,
-        page: Int,
-        seeLz: Boolean,
-        reverse: Boolean
-    ): Deferred<ApiResult<ThreadContentBean>> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadContentAsync(
-            threadId,
-            page,
-            last = if (reverse) "1" else null,
-            r = if (reverse) "1" else null,
-            lz = if (seeLz) 1 else 0
-        )
-
-    override fun threadContentAsync(
-        threadId: String,
-        postId: String?,
-        seeLz: Boolean,
-        reverse: Boolean
-    ): Deferred<ApiResult<ThreadContentBean>> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadContentAsync(
-            threadId,
-            postId,
-            last = if (reverse) "1" else null,
-            r = if (reverse) "1" else null,
-            lz = if (seeLz) 1 else 0
-        )
-
-    override fun submitDislike(
-        dislikeBean: DislikeBean,
-        stoken: String
-    ): Call<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislike(listOf(dislikeBean).toJson(), stoken = stoken)
 
     override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())
-
-    override fun follow(
-        portrait: String, tbs: String
-    ): Call<CommonResponse> = RetrofitTiebaApi.WEB_TIEBA_API.follow(
-        "https://tieba.baidu.com/i/?portrait=${
-            URLEncoder.encode(
-                portrait,
-                "UTF-8"
-            )
-        }&cuid=&auth=&uid=&ssid=&from=&uid=&pu=&bd_page_type=2&auth=&originid=&mo_device=1&tbs=${tbs}&action=follow&op=follow"
-    )
-
-    override fun unfollow(
-        portrait: String,
-        tbs: String
-    ): Call<CommonResponse> = RetrofitTiebaApi.WEB_TIEBA_API.follow(
-        "https://tieba.baidu.com/i/?portrait=${
-            URLEncoder.encode(
-                portrait,
-                "UTF-8"
-            )
-        }&cuid=&auth=&uid=&ssid=&from=&uid=&pu=&bd_page_type=2&auth=&originid=&mo_device=1&tbs=${tbs}&action=follow&op=unfollow"
-    )
 
     override fun followFlow(
         portrait: String,
@@ -654,33 +285,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         tbs: String
     ): Flow<CommonResponse> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.unfollowFlow(portrait, tbs)
 
-    override fun hotMessageList(): Call<HotMessageListBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.hotMessageList()
-
-    override fun myInfo(cookie: String): Call<MyInfoBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.myInfo(cookie)
-
-    override fun myInfoAsync(cookie: String): Deferred<ApiResult<MyInfoBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.myInfoAsync(cookie)
-
-    override fun myInfoFlow(cookie: String): Flow<MyInfoBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.myInfoFlow(cookie)
-
-    override fun searchForum(keyword: String): Call<SearchForumBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.searchForum(keyword)
-
     override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
-
-    override fun searchThread(
-        keyword: String, page: Int, order: SearchThreadOrder, filter: SearchThreadFilter,
-    ): Call<SearchThreadBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.searchThread(
-            keyword,
-            page,
-            order.toString(),
-            filter.toString()
-        )
 
     override fun searchThreadFlow(
         keyword: String, page: Int, sort: Int,
@@ -713,221 +319,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             referer = "https://tieba.baidu.com/mo/q/hybrid-usergrow-search/searchGlobal?entryPage=frs&loadingSignal=1&forumName=${forumName.urlEncode()}&forumId=$forumId&customfullscreen=1&nonavigationbar=1&cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=${ClientVersion.TIEBA_V12.version}&_client_type=2"
         )
 
-    override fun webUploadPic(photoInfoBean: PhotoInfoBean): Call<WebUploadPicBean> {
-        var base64: String? = null
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            base64 = ImageUtil.imageToBase64(photoInfoBean.file)
-        } else {
-            try {
-                App.INSTANCE.contentResolver.openAssetFileDescriptor(
-                    photoInfoBean.fileUri,
-                    "r"
-                )?.use { afd ->
-                    base64 =
-                        ImageUtil.imageToBase64(FileInputStream(afd.parcelFileDescriptor.fileDescriptor))
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                base64 = null
-            }
-        }
-        return RetrofitTiebaApi.WEB_TIEBA_API.webUploadPic(base64)
-    }
-
-    override fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReply(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-    override fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReply(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            postId = postId,
-            floor = floor,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-    override fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        replyPostId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReply(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            postId = postId,
-            replyPostId = replyPostId,
-            floor = floor,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-    override fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReplyAsync(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-    override fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReplyAsync(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            postId = postId,
-            floor = floor,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-    override fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        replyPostId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.webReplyAsync(
-            content = content,
-            imgInfo = imgInfo ?: "",
-            forumId = forumId,
-            forumName = forumName,
-            tbs = tbs,
-            threadId = threadId,
-            nickName = nickName,
-            postId = postId,
-            replyPostId = replyPostId,
-            floor = floor,
-            bsk = bsk,
-            referer = "https://tieba.baidu.com/p/$threadId?lp=5028&mo_device=1&is_jingpost=0&pn=$pn&"
-        )
-
-
-    override fun webForumPage(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String?,
-        sortType: ForumSortType,
-        pageSize: Int
-    ): Call<ForumBean> =
-        RetrofitTiebaApi.WEB_TIEBA_API.frs(
-            forumName,
-            (page - 1) * pageSize,
-            sortType.value,
-            goodClassifyId
-        )
-
-    override fun webForumPageAsync(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String?,
-        sortType: ForumSortType,
-        pageSize: Int
-    ): Deferred<ApiResult<ForumBean>> =
-        RetrofitTiebaApi.WEB_TIEBA_API.frsAsync(
-            forumName,
-            (page - 1) * pageSize,
-            sortType.value,
-            goodClassifyId
-        )
-
-    override fun checkReportPost(postId: String): Call<CheckReportBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.checkReport(
-            category = "1",
-            reportParam = mapOf(
-                "pid" to postId
-            )
-        )
 
     override fun checkReportPostAsync(postId: String): Deferred<ApiResult<CheckReportBean>> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.checkReportAsync(
@@ -1049,25 +440,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             pageNo++
         } while (page.likeForumHasMore && pageForums.isNotEmpty())
         emit(forums)
-    }
-
-    override fun forumRecommendNewFlow(
-        sortType: Int
-    ): Flow<ForumRecommendResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.forumRecommendFlow(
-            buildProtobufRequestBody(
-                ForumRecommendRequest(
-                    ForumRecommendRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        like_forum = 1,
-                        recommend = 1,
-                        sort_type = sortType,
-                        topic = 0
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-            )
-        )
     }
 
     override fun frsPage(
@@ -1372,66 +744,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun getBawuInfoFlow(forumId: Long): Flow<GetBawuInfoResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getBawuInfoFlow(
-            buildProtobufRequestBody(
-                GetBawuInfoRequest(
-                    GetBawuInfoRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        forum_id = forumId,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
-
-    override fun getLevelInfoFlow(forumId: Long): Flow<GetLevelInfoResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getLevelInfoFlow(
-            buildProtobufRequestBody(
-                GetLevelInfoRequest(
-                    GetLevelInfoRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        forum_id = forumId,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
-
-    override fun getMemberInfoFlow(forumId: Long): Flow<GetMemberInfoResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getMemberInfoFlow(
-            buildProtobufRequestBody(
-                GetMemberInfoRequest(
-                    GetMemberInfoRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        forum_id = forumId,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
-
-    override fun forumRuleDetailFlow(forumId: Long): Flow<ForumRuleDetailResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.forumRuleDetailFlow(
-            buildProtobufRequestBody(
-                ForumRuleDetailRequest(
-                    ForumRuleDetailRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        forum_id = forumId,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
-
     override fun userPostFlow(uid: Long, page: Int, isThread: Boolean): Flow<UserPostResponse> {
         return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.userPostFlow(
             buildProtobufRequestBody(
@@ -1495,20 +807,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun getHistoryForumFlow(history: String): Flow<GetHistoryForumResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getHistoryForumFlow(
-            buildProtobufRequestBody(
-                GetHistoryForumRequest(
-                    GetHistoryForumRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        history = history,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
 }
 
 private fun SignResponse.toSignResultBean() = SignResultBean(

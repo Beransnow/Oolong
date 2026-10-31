@@ -1,19 +1,10 @@
 package com.huanchengfly.tieba.post.api.interfaces
 
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
-import com.huanchengfly.tieba.post.api.ForumSortType
-import com.huanchengfly.tieba.post.api.SearchThreadFilter
-import com.huanchengfly.tieba.post.api.SearchThreadOrder
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendResponse
-import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.getBawuInfo.GetBawuInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
-import com.huanchengfly.tieba.post.api.models.protos.getHistoryForum.GetHistoryForumResponse
-import com.huanchengfly.tieba.post.api.models.protos.getLevelInfo.GetLevelInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.getMemberInfo.GetMemberInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
@@ -25,40 +16,13 @@ import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRespon
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
-import com.huanchengfly.tieba.post.api.models.web.ForumBean
-import com.huanchengfly.tieba.post.api.models.web.ForumHome
-import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.models.DislikeBean
-import com.huanchengfly.tieba.post.models.MyInfoBean
-import com.huanchengfly.tieba.post.models.PhotoInfoBean
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
-import retrofit2.Call
 import java.io.File
 
 interface ITiebaApi {
-    /**
-     * 个性推荐（每页 15 贴）
-     *
-     * @param loadType 加载类型（1 - 下拉刷新 2 - 加载更多）
-     * @param page 分页页码
-     */
-    fun personalized(
-        loadType: Int,
-        page: Int = 1
-    ): Call<PersonalizedBean>
-
-    /**
-     * 个性推荐（每页 15 贴）
-     *
-     * @param loadType 加载类型（1 - 下拉刷新 2 - 加载更多）
-     * @param page 分页页码
-     */
-    fun personalizedAsync(
-        loadType: Int,
-        page: Int = 1
-    ): Deferred<ApiResult<PersonalizedBean>>
 
     /**
      * 个性推荐（每页 15 贴）
@@ -83,21 +47,6 @@ interface ITiebaApi {
     ): Flow<PersonalizedResponse>
 
     /**
-     * 给贴子/回复点赞
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param opType 操作 0 = 点赞 1 = 取消点赞
-     */
-    fun opAgree(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Call<AgreeBean>
-
-    /**
      * 给贴子/回复点赞/取消点赞
      *
      * **需登录**
@@ -111,160 +60,6 @@ interface ITiebaApi {
         forumId: Long?,
         undo: Boolean,
     ): Flow<AgreeBean>
-
-    /**
-     * 给贴子/回复点踩
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param opType 操作 0 = 点踩 1 = 取消点踩
-     */
-    fun disagree(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Call<AgreeBean>
-
-    /**
-     * 给贴子/回复点踩
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param opType 操作 0 = 点踩 1 = 取消点踩
-     */
-    fun disagreeFlow(
-        threadId: String,
-        postId: String,
-        opType: Int
-    ): Flow<AgreeBean>
-
-    /**
-     * 关注吧列表
-     *
-     * **需登录**
-     */
-    fun forumRecommend(): Call<ForumRecommend>
-
-    /**
-     * 关注吧列表
-     *
-     * **需登录**
-     */
-    fun forumRecommendAsync(): Deferred<ApiResult<ForumRecommend>>
-
-    /**
-     * 关注吧列表
-     *
-     * **需登录**
-     */
-    fun forumRecommendFlow(): Flow<ForumRecommend>
-
-    /**
-     * 吧页面
-     *
-     * @param forumName 吧名
-     * @param page 分页页码（从 1 开始）
-     * @param sortType 排序类型 [com.huanchengfly.tieba.post.api.ForumSortType]
-     * @param goodClassifyId 精品贴分类 ID
-     */
-    fun forumPage(
-        forumName: String,
-        page: Int = 1,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        goodClassifyId: String? = null
-    ): Call<ForumPageBean>
-
-    /**
-     * 吧页面（异步）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码（从 1 开始）
-     * @param sortType 排序类型 [com.huanchengfly.tieba.api.ForumSortType]
-     * @param goodClassifyId 精品贴分类 ID
-     */
-    fun forumPageAsync(
-        forumName: String,
-        page: Int = 1,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        goodClassifyId: String? = null
-    ): Deferred<ApiResult<ForumPageBean>>
-
-    /**
-     * 楼中楼页面
-     *
-     * @param threadId 贴 ID
-     * @param page 分页页码
-     * @param postId 回复 ID
-     * @param subPostId 楼中楼回复 ID
-     */
-    fun floor(
-        threadId: String,
-        page: Int = 1,
-        postId: String?,
-        subPostId: String?
-    ): Call<SubFloorListBean>
-
-    /**
-     * 获取首页关注吧列表（网页版接口）
-     *
-     * @param sortType 排序方式（0 = 等级排序，1 = 关注顺序）
-     * @param page 分页页码（从 0 开始）
-     */
-    fun forumHomeAsync(
-        sortType: Int,
-        page: Int = 0
-    ): Deferred<ApiResult<ForumHome>>
-
-    /**
-     * 查看用户关注的吧列表
-     *
-     * @param uid 用户 ID
-     * @param page 分页页码（从 1 开始）
-     */
-    fun userLikeForum(
-        uid: String,
-        page: Int = 1
-    ): Call<UserLikeForumBean>
-
-    /**
-     * 查看用户的所有主题贴/回复
-     *
-     * @param uid 用户 ID
-     * @param page 分页页码（从 1 开始）
-     * @param isThread 是否查看主题贴
-     */
-    fun userPost(
-        uid: String,
-        page: Int = 1,
-        isThread: Boolean = true
-    ): Call<UserPostBean>
-
-    /**
-     * 查看图片
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴 ID
-     * @param seeLz 是否只看楼主
-     * @param picId 图片 ID
-     * @param picIndex 图片索引
-     * @param objType 原页面类型（pb - 贴页面 frs - 吧页面 index - 首页推荐）
-     * @param prev 是否向前加载
-     */
-    fun picPage(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        seeLz: Boolean,
-        picId: String,
-        picIndex: String,
-        objType: String,
-        prev: Boolean
-    ): Call<PicPageBean>
 
     /**
      * 查看图片
@@ -290,44 +85,6 @@ interface ITiebaApi {
     ): Flow<PicPageBean>
 
     /**
-     * 用户信息
-     *
-     * @param uid 用户 ID
-     */
-    fun profile(
-        uid: String
-    ): Call<ProfileBean>
-
-    /**
-     * 用户信息（Flow）
-     *
-     * @param uid 用户 ID
-     */
-    fun profileFlow(
-        uid: String
-    ): Flow<Profile>
-
-    /**
-     * 用户信息（异步）
-     */
-    fun myProfileAsync(): Deferred<ApiResult<com.huanchengfly.tieba.post.api.models.web.Profile>>
-
-    /**
-     * 取关一个吧
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param tbs tbs（长）
-     */
-    fun unlikeForum(
-        forumId: String,
-        forumName: String,
-        tbs: String
-    ): Call<CommonResponse>
-
-    /**
      * 取关一个吧
      *
      * **需登录**
@@ -341,21 +98,6 @@ interface ITiebaApi {
         forumName: String,
         tbs: String
     ): Flow<CommonResponse>
-
-    /**
-     * 关注一个吧
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param tbs tbs（长）
-     */
-    fun likeForum(
-        forumId: String,
-        forumName: String,
-        tbs: String
-    ): Call<LikeForumResultBean>
 
     /**
      * 关注一个吧
@@ -379,19 +121,6 @@ interface ITiebaApi {
      *
      * **需登录**
      *
-     * @param forumName 吧名
-     * @param tbs tbs
-     */
-    fun signAsync(
-        forumName: String,
-        tbs: String
-    ): Deferred<ApiResult<SignResultBean>>
-
-    /**
-     * 吧签到
-     *
-     * **需登录**
-     *
      * @param forumId 吧 ID
      * @param forumName 吧名
      * @param tbs tbs
@@ -401,22 +130,6 @@ interface ITiebaApi {
         forumName: String,
         tbs: String
     ): Flow<SignResultBean>
-
-    /**
-     * 删除自己的贴子
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     */
-    fun delThread(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String
-    ): Call<CommonResponse>
 
     /**
      * 删除/隐藏贴子
@@ -451,28 +164,6 @@ interface ITiebaApi {
      * @param isFloor 是否为楼中楼回复
      * @param delMyPost 是否为当前登录用户回复
      */
-    fun delPost(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        postId: String,
-        tbs: String,
-        isFloor: Boolean,
-        delMyPost: Boolean
-    ): Call<CommonResponse>
-
-    /**
-     * 删除贴子中的回复
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param isFloor 是否为楼中楼回复
-     * @param delMyPost 是否为当前登录用户回复
-     */
     fun delPostFlow(
         forumId: Long,
         forumName: String,
@@ -484,53 +175,6 @@ interface ITiebaApi {
     ): Flow<CommonResponse>
 
     /**
-     * 吧内搜索
-     *
-     * @param keyword 搜索关键词
-     * @param forumName 搜索吧名
-     * @param onlyThread 是否仅搜索主题贴
-     * @param sortMode 排序模式（1 = 时间倒序，2 = 相关性排序）
-     * @param page 分页页码（从 1 开始）
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun searchPost(
-        keyword: String,
-        forumName: String,
-        onlyThread: Boolean = false,
-        sortMode: Int = 1,
-        page: Int = 1,
-        pageSize: Int = 30
-    ): Call<SearchPostBean>
-
-    /**
-     * 吧内搜索（异步）
-     *
-     * @param keyword 搜索关键词
-     * @param forumName 搜索吧名
-     * @param onlyThread 是否仅搜索主题贴
-     * @param sortMode 排序模式（1 = 时间倒序，2 = 相关性排序）
-     * @param page 分页页码（从 1 开始）
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun searchPostAsync(
-        keyword: String,
-        forumName: String,
-        onlyThread: Boolean = false,
-        sortMode: Int = 1,
-        page: Int = 1,
-        pageSize: Int = 30
-    ): Deferred<ApiResult<SearchPostBean>>
-
-    /**
-     * 搜索用户
-     *
-     * @param keyword 搜索关键词
-     */
-    fun searchUser(
-        keyword: String,
-    ): Call<SearchUserBean>
-
-    /**
      * 搜索用户
      *
      * @param keyword 搜索关键词
@@ -538,33 +182,6 @@ interface ITiebaApi {
     fun searchUserFlow(
         keyword: String,
     ): Flow<SearchUserBean>
-
-    /**
-     * 消息提醒数
-     *
-     * **需登录**
-     */
-    fun msg(): Call<MsgBean>
-
-    /**
-     * 消息提醒数
-     *
-     * **需登录**
-     */
-    fun msgFlow(): Flow<MsgBean>
-
-    /**
-     * 查看收藏贴列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 0 开始）
-     * @param pageSize 每页贴数（默认 20）
-     */
-    fun threadStore(
-        page: Int = 0,
-        pageSize: Int = 20
-    ): Call<ThreadStoreBean>
 
     /**
      * 查看收藏贴列表
@@ -578,19 +195,6 @@ interface ITiebaApi {
         page: Int = 0,
         pageSize: Int = 20
     ): Flow<ThreadStoreBean>
-
-    /**
-     * 移除收藏
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     */
-    fun removeStore(
-        threadId: String,
-        tbs: String
-    ): Call<CommonResponse>
 
     /**
      * 移除收藏
@@ -624,61 +228,11 @@ interface ITiebaApi {
      *
      * @param threadId 贴子 ID
      * @param postId 收藏到的回复 ID
-     * @param tbs tbs
-     */
-    fun addStore(
-        threadId: String,
-        postId: String,
-        tbs: String
-    ): Call<CommonResponse>
-
-    /**
-     * 添加/更新收藏
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param postId 收藏到的回复 ID
-     */
-    fun addStoreAsync(
-        threadId: Long,
-        postId: Long
-    ): Deferred<ApiResult<CommonResponse>>
-
-    /**
-     * 添加/更新收藏
-     *
-     * **需登录**
-     *
-     * @param threadId 贴子 ID
-     * @param postId 收藏到的回复 ID
      */
     fun addStoreFlow(
         threadId: Long,
         postId: Long
     ): Flow<CommonResponse>
-
-    /**
-     * 回复我的消息列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     */
-    fun replyMe(
-        page: Int = 1
-    ): Call<MessageListBean>
-
-    /**
-     * 回复我的消息列表（异步）
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     */
-    fun replyMeAsync(
-        page: Int = 1
-    ): Deferred<ApiResult<MessageListBean>>
 
     /**
      * 回复我的消息列表
@@ -698,117 +252,11 @@ interface ITiebaApi {
      * **需登录**
      *
      * @param page 分页页码（从 1 开始）
-     */
-    fun atMe(
-        page: Int = 1
-    ): Call<MessageListBean>
-
-    /**
-     * 提到我的消息列表（异步）
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     */
-    fun atMeAsync(
-        page: Int = 1
-    ): Deferred<ApiResult<MessageListBean>>
-
-    /**
-     * 提到我的消息列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
      * @return Flow
      */
     fun atMeFlow(
         page: Int = 1
     ): Flow<MessageListBean>
-
-    /**
-     * 赞我的消息列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     */
-    fun agreeMe(
-        page: Int = 1
-    ): Call<MessageListBean>
-
-    /**
-     * 贴页面
-     *
-     * @param threadId 贴 ID
-     * @param page 分页页码（从 1 开始）
-     * @param seeLz 是否只看楼主
-     * @param reverse 是否逆序
-     */
-    fun threadContent(
-        threadId: String,
-        page: Int = 1,
-        seeLz: Boolean = false,
-        reverse: Boolean = false
-    ): Call<ThreadContentBean>
-
-    /**
-     * 贴页面
-     *
-     * @param threadId 贴 ID
-     * @param postId 回复 ID
-     * @param seeLz 是否只看楼主
-     * @param reverse 是否逆序
-     */
-    fun threadContent(
-        threadId: String,
-        postId: String?,
-        seeLz: Boolean = false,
-        reverse: Boolean = false
-    ): Call<ThreadContentBean>
-
-    /**
-     * 贴页面
-     *
-     * @param threadId 贴 ID
-     * @param page 分页页码（从 1 开始）
-     * @param seeLz 是否只看楼主
-     * @param reverse 是否逆序
-     */
-    fun threadContentAsync(
-        threadId: String,
-        page: Int = 1,
-        seeLz: Boolean = false,
-        reverse: Boolean = false
-    ): Deferred<ApiResult<ThreadContentBean>>
-
-    /**
-     * 贴页面
-     *
-     * @param threadId 贴 ID
-     * @param postId 回复 ID
-     * @param seeLz 是否只看楼主
-     * @param reverse 是否逆序
-     */
-    fun threadContentAsync(
-        threadId: String,
-        postId: String?,
-        seeLz: Boolean = false,
-        reverse: Boolean = false
-    ): Deferred<ApiResult<ThreadContentBean>>
-
-    /**
-     * 推荐“不感兴趣”
-     *
-     * **需登录**
-     *
-     * @param dislikeBean “不感兴趣”信息 [com.huanchengfly.tieba.post.models.DislikeBean]
-     * @param stoken stoken
-     */
-    fun submitDislike(
-        dislikeBean: DislikeBean,
-        stoken: String
-    ): Call<CommonResponse>
 
     /**
      * 推荐“不感兴趣”
@@ -821,32 +269,6 @@ interface ITiebaApi {
     fun submitDislikeFlow(
         dislikeBean: DislikeBean
     ): Flow<CommonResponse>
-
-    /**
-     * 关注用户（web 接口）
-     *
-     * **需登录**
-     *
-     * @param portrait 头像
-     * @param tbs tbs
-     */
-    fun follow(
-        portrait: String,
-        tbs: String
-    ): Call<CommonResponse>
-
-    /**
-     * 取关用户（web 接口）
-     *
-     * **需登录**
-     *
-     * @param portrait 头像
-     * @param tbs tbs
-     */
-    fun unfollow(
-        portrait: String,
-        tbs: String
-    ): Call<CommonResponse>
 
     /**
      * 关注用户（客户端接口）
@@ -874,44 +296,6 @@ interface ITiebaApi {
         tbs: String
     ): Flow<CommonResponse>
 
-    fun hotMessageList(): Call<HotMessageListBean>
-
-    /**
-     * 登录用户信息
-     *
-     * @param cookie 登录 Cookie 信息
-     */
-    fun myInfo(
-        cookie: String
-    ): Call<MyInfoBean>
-
-    /**
-     * 登录用户信息
-     *
-     * @param cookie 登录 Cookie 信息
-     */
-    fun myInfoAsync(
-        cookie: String
-    ): Deferred<ApiResult<MyInfoBean>>
-
-    /**
-     * 登录用户信息
-     *
-     * @param cookie 登录 Cookie 信息
-     */
-    fun myInfoFlow(
-        cookie: String
-    ): Flow<MyInfoBean>
-
-    /**
-     * 搜索吧
-     *
-     * @param keyword 关键词
-     */
-    fun searchForum(
-        keyword: String,
-    ): Call<SearchForumBean>
-
     /**
      * 搜索吧
      *
@@ -920,21 +304,6 @@ interface ITiebaApi {
     fun searchForumFlow(
         keyword: String,
     ): Flow<SearchForumBean>
-
-    /**
-     * 搜索贴
-     *
-     * @param keyword 关键词
-     * @param page 分页页码
-     * @param order 排序设置 [com.huanchengfly.tieba.post.api.SearchThreadOrder]
-     * @param filter 过滤设置 [com.huanchengfly.tieba.post.api.SearchThreadFilter]
-     */
-    fun searchThread(
-        keyword: String,
-        page: Int,
-        order: SearchThreadOrder,
-        filter: SearchThreadFilter,
-    ): Call<SearchThreadBean>
 
     /**
      * 搜索主题贴
@@ -970,240 +339,6 @@ interface ITiebaApi {
         pageSize: Int = 20,
     ): Flow<SearchThreadBean>
 
-    /**
-     * 上传图片（web 接口）
-     *
-     * **需登录**
-     */
-    fun webUploadPic(
-        photoInfoBean: PhotoInfoBean,
-    ): Call<WebUploadPicBean>
-
-
-    /**
-     * 回贴 - 回复主题贴（web 接口）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean>
-
-    /**
-     * 回贴 - 回复别人的回复（web 接口）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param postId 回复 ID
-     * @param floor 回复楼层
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean>
-
-    /**
-     * 回贴 - 回复楼中楼（web 接口）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param postId 回复 ID
-     * @param replyPostId 楼中楼 ID
-     * @param floor 回复楼层
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReply(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        replyPostId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Call<WebReplyResultBean>
-
-    /**
-     * 回贴 - 回复主题贴（web 接口）（异步）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>>
-
-    /**
-     * 回贴 - 回复别人的回复（web 接口）（异步）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param postId 回复 ID
-     * @param floor 回复楼层
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>>
-
-    /**
-     * 回贴 - 回复楼中楼（web 接口）（异步）
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param content 回复内容
-     * @param imgInfo 图片
-     * @param nickName 昵称
-     * @param postId 回复 ID
-     * @param replyPostId 楼中楼 ID
-     * @param floor 回复楼层
-     * @param pn 页码
-     * @param bsk BSK
-     */
-    fun webReplyAsync(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String,
-        content: String,
-        imgInfo: String?,
-        nickName: String,
-        postId: String,
-        replyPostId: String,
-        floor: String,
-        pn: String,
-        bsk: String
-    ): Deferred<ApiResult<WebReplyResultBean>>
-
-    /**
-     * 吧页面（web 接口）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码
-     * @param goodClassifyId 精品贴分类 ID
-     * @param sortType 贴排序类型
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun webForumPage(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String? = null,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        pageSize: Int = 30
-    ): Call<ForumBean>
-
-    /**
-     * 吧页面（web 接口）
-     *
-     * @param forumName 吧名
-     * @param page 分页页码
-     * @param goodClassifyId 精品贴分类 ID
-     * @param sortType 贴排序类型
-     * @param pageSize 每页贴数（默认 30）
-     */
-    fun webForumPageAsync(
-        forumName: String,
-        page: Int,
-        goodClassifyId: String? = null,
-        sortType: ForumSortType = ForumSortType.REPLY_TIME,
-        pageSize: Int = 30
-    ): Deferred<ApiResult<ForumBean>>
-
-    /**
-     * 获取举报贴子/回贴页面 URL
-     *
-     * @param postId PID
-     */
-    fun checkReportPost(
-        postId: String,
-    ): Call<CheckReportBean>
 
     /**
      * 获取举报贴子/回贴页面 URL
@@ -1306,17 +441,6 @@ interface ITiebaApi {
      * 话题榜
      */
     fun topicListFlow(): Flow<TopicListResponse>
-
-    /**
-     * 关注吧列表
-     *
-     * **需登录**
-     *
-     * @param sortType 排序（0=更新排序 1=等级排序）
-     */
-    fun forumRecommendNewFlow(
-        sortType: Int = 1
-    ): Flow<ForumRecommendResponse>
 
     /**
      * 全部关注的吧
@@ -1462,42 +586,6 @@ interface ITiebaApi {
     ): Flow<GetForumDetailResponse>
 
     /**
-     * 获取吧务信息
-     *
-     * @param forumId 吧 ID
-     */
-    fun getBawuInfoFlow(
-        forumId: Long,
-    ): Flow<GetBawuInfoResponse>
-
-    /**
-     * 获取吧等级信息
-     *
-     * @param forumId 吧 ID
-     */
-    fun getLevelInfoFlow(
-        forumId: Long,
-    ): Flow<GetLevelInfoResponse>
-
-    /**
-     * 获取吧成员信息
-     *
-     * @param forumId 吧 ID
-     */
-    fun getMemberInfoFlow(
-        forumId: Long,
-    ): Flow<GetMemberInfoResponse>
-
-    /**
-     * 获取吧规
-     *
-     * @param forumId 吧 ID
-     */
-    fun forumRuleDetailFlow(
-        forumId: Long,
-    ): Flow<ForumRuleDetailResponse>
-
-    /**
      * 查看用户的所有主题贴/回复
      *
      * @param uid 用户 ID
@@ -1529,10 +617,4 @@ interface ITiebaApi {
         sToken: String?,
     ): Flow<GetUserInfoResponse>
 
-    /**
-     * 获取吧浏览历史信息
-     */
-    fun getHistoryForumFlow(
-        history: String,
-    ): Flow<GetHistoryForumResponse>
 }

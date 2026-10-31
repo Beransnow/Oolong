@@ -18,100 +18,10 @@ import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
-import retrofit2.Call
 import retrofit2.http.*
 
 
 interface OfficialTiebaApi {
-    @POST("/c/f/pb/page")
-    @FormUrlEncoded
-    fun threadContent(
-        @Field("kz") threadId: String,
-        @Field("pn") page: Int,
-        @Field("last") last: String?,
-        @Field("r") r: String?,
-        @Field("lz") lz: Int,
-        @Field("st_type") st_type: String = "tb_frslist",
-        @Field("back") back: String = "0",
-        @Field("floor_rn") floor_rn: String = "3",
-        @Field("mark") mark: String = "0",
-        @Field("rn") rn: String = "30",
-        @Field("with_floor") with_floor: String = "1",
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
-        @Field("scr_w") scr_w: String = getScreenWidth().toString(),
-        @retrofit2.http.Header("thread_id") threadIdHeader: String = threadId,
-    ): Call<ThreadContentBean>
-
-    @POST("/c/f/pb/page")
-    @FormUrlEncoded
-    fun threadContent(
-        @Field("kz") threadId: String,
-        @Field("pid") postId: String?,
-        @Field("last") last: String?,
-        @Field("r") r: String?,
-        @Field("lz") lz: Int,
-        @Field("st_type") st_type: String = "tb_frslist",
-        @Field("back") back: String = "0",
-        @Field("floor_rn") floor_rn: String = "3",
-        @Field("mark") mark: String = "0",
-        @Field("rn") rn: String = "30",
-        @Field("with_floor") with_floor: String = "1",
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
-        @Field("scr_w") scr_w: String = getScreenWidth().toString(),
-        @retrofit2.http.Header("thread_id") threadIdHeader: String = threadId,
-    ): Call<ThreadContentBean>
-
-    @POST("/c/f/pb/page")
-    @FormUrlEncoded
-    fun threadContentAsync(
-        @Field("kz") threadId: String,
-        @Field("pn") page: Int,
-        @Field("last") last: String?,
-        @Field("r") r: String?,
-        @Field("lz") lz: Int,
-        @Field("st_type") st_type: String = "tb_frslist",
-        @Field("back") back: String = "0",
-        @Field("floor_rn") floor_rn: String = "3",
-        @Field("mark") mark: String = "0",
-        @Field("rn") rn: String = "30",
-        @Field("with_floor") with_floor: String = "1",
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
-        @Field("scr_w") scr_w: String = getScreenWidth().toString(),
-        @retrofit2.http.Header("thread_id") threadIdHeader: String = threadId,
-    ): Deferred<ApiResult<ThreadContentBean>>
-
-    @POST("/c/f/pb/page")
-    @FormUrlEncoded
-    fun threadContentAsync(
-        @Field("kz") threadId: String,
-        @Field("pid") postId: String?,
-        @Field("last") last: String?,
-        @Field("r") r: String?,
-        @Field("lz") lz: Int,
-        @Field("st_type") st_type: String = "tb_frslist",
-        @Field("back") back: String = "0",
-        @Field("floor_rn") floor_rn: String = "3",
-        @Field("mark") mark: String = "0",
-        @Field("rn") rn: String = "30",
-        @Field("with_floor") with_floor: String = "1",
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
-        @Field("scr_w") scr_w: String = getScreenWidth().toString(),
-        @retrofit2.http.Header("thread_id") threadIdHeader: String = threadId,
-    ): Deferred<ApiResult<ThreadContentBean>>
-
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/excellent/submitDislike")
-    @FormUrlEncoded
-    fun submitDislike(
-        @Field("dislike") dislike: String,
-        @Field("dislike_from") dislike_from: String = "homepage",
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!
-    ): Call<CommonResponse>
-
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/c/excellent/submitDislike")
     @FormUrlEncoded
@@ -173,17 +83,6 @@ interface OfficialTiebaApi {
         @Field("tbs") tbs: String? = AccountUtil.getAccountInfo { this.tbs },
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
     ): Flow<ForumGuideBean>
-
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/forum/msign")
-    @FormUrlEncoded
-    fun mSignFlow(
-        @Field("forum_ids") forumIds: String,
-        @Field("tbs") tbs: String,
-        @Field("authsid") authsid: String = "null",
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-        @Field("user_id") userId: String = AccountUtil.getUid()!!
-    ): Flow<MSignBean>
 
     @Headers(
         "${Header.NO_COMMON_PARAMS}: BDUSS"
@@ -384,48 +283,10 @@ interface OfficialTiebaApi {
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
     )
-    fun addStoreAsync(
-        @Field("data") data: String,
-        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
-    ): Deferred<ApiResult<CommonResponse>>
-
-    @POST("/c/c/post/addstore")
-    @FormUrlEncoded
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
     fun addStoreFlow(
         @Field("data") data: String,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
     ): Flow<CommonResponse>
-
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    @POST("/c/c/agree/opAgree")
-    @FormUrlEncoded
-    fun agreeFlow(
-        @Field("thread_id") threadId: String,
-        @Field("post_id") postId: String? = null,
-        @Field("op_type") opType: Int = 0,
-        @Field("obj_type") objType: Int = 1,
-        @Field("agree_type") agreeType: Int = 2,
-        @Field("cuid_gid") cuid_gid: String = "",
-        @Field("forum_id") forumId: String = "",
-        @Field("personalized_rec_switch") personalizedRecSwitch: Int = 1,
-        @Field("tbs") tbs: String = AccountUtil.getLoginInfo()!!.tbs,
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!
-    ): Flow<AgreeBean>
-
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/f/ueg/checkjubao")
-    @FormUrlEncoded
-    fun checkReport(
-        @Field("category") category: String,
-        @FieldMap reportParam: Map<String, String>,
-        @Field("stoken") stoken: String? = AccountUtil.getLoginInfo()
-            ?.sToken,
-    ): Call<CheckReportBean>
 
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/f/ueg/checkjubao")
@@ -476,16 +337,6 @@ interface OfficialTiebaApi {
         @Field("friend_uid") friendUid: String?,
         @Field("is_guest") is_guest: String?,
     ): Flow<UserLikeForumBean>
-
-    @POST("/c/f/pb/floor")
-    @FormUrlEncoded
-    fun floor(
-        @Field("kz") threadId: String,
-        @Field("pn") page: Int = 1,
-        @Field("pid") postId: String?,
-        @Field("spid") subPostId: String?,
-        @Field("rn") rn: Int = 20
-    ): Call<SubFloorListBean>
 }
 
 internal fun base64NoWrap(text: String): String =

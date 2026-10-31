@@ -46,11 +46,6 @@ interface OfficialProtobufTiebaApi {
         @Body body: MyMultipartBody,
     ): Flow<TopicListResponse>
 
-    @POST("/c/f/forum/forumrecommend?cmd=303011")
-    fun forumRecommendFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<ForumRecommendResponse>
-
     @POST("/c/f/frs/page?cmd=301001")
     fun frsPageFlow(
         @Body body: MyMultipartBody,
@@ -87,26 +82,6 @@ interface OfficialProtobufTiebaApi {
         @Body body: MyMultipartBody,
     ): Flow<GetForumDetailResponse>
 
-    @POST("/c/f/forum/getBawuInfo?cmd=301007&format=protobuf")
-    fun getBawuInfoFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<GetBawuInfoResponse>
-
-    @POST("/c/f/forum/getLevelInfo?cmd=301005&format=protobuf")
-    fun getLevelInfoFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<GetLevelInfoResponse>
-
-    @POST("/c/f/forum/getMemberInfo?cmd=301004&format=protobuf")
-    fun getMemberInfoFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<GetMemberInfoResponse>
-
-    @POST("/c/f/forum/forumRuleDetail?cmd=309690&format=protobuf")
-    fun forumRuleDetailFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<ForumRuleDetailResponse>
-
     @POST("/c/u/feed/userpost?cmd=303002&format=protobuf")
     fun userPostFlow(
         @Body body: MyMultipartBody,
@@ -116,9 +91,4 @@ interface OfficialProtobufTiebaApi {
     fun getUserInfoFlow(
         @Body body: MyMultipartBody,
     ): Flow<GetUserInfoResponse>
-
-    @POST("/c/f/forum/gethistoryforum?cmd=309601&format=protobuf")
-    fun getHistoryForumFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<GetHistoryForumResponse>
 }

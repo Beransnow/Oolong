@@ -51,16 +51,4 @@ interface AppHybridTiebaApi {
         @Query("word") keyword: String,
         @Header("Referer") referer: String = "https://tieba.baidu.com/mo/q/hybrid/search?keyword=$keyword&_webview_time=${System.currentTimeMillis()}".urlEncode(),
     ): Flow<SearchUserBean>
-
-    @GET("/mo/q/newtopic/topicDetail")
-    fun topicDetailFlow(
-        @Query("topic_id") topicId: String,
-        @Query("topic_name") topicName: String,
-        @Query("is_new") isNew: Int = 0,
-        @Query("is_share") isShare: Int = 1,
-        @Query("pn") page: Int,
-        @Query("rn") pageSize: Int = 10,
-        @Query("offset") offset: Int = 0,
-        @Query("derivative_to_pic_id") derivativeToPicId: String = "",
-    ): Flow<TopicDetailBean>
 }
