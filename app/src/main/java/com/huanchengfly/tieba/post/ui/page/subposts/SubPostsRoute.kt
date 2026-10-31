@@ -51,12 +51,8 @@ fun SubPostsRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 SubPostsEffect.NavigateUp -> navigator.navigateUp()
-                is SubPostsEffect.ScrollToSubPost -> {
-                    val index = viewModel.state.value.subPosts.items.indexOfFirst { it.subPost.id == effect.subPostId }
-                    // After the post and the reply count header, and the load-previous row if shown
-                    val offset = if (viewModel.state.value.subPosts.hasPrevious) 3 else 2
-                    if (index != -1) listState.scrollToItem(offset + index)
-                }
+                is SubPostsEffect.ScrollToSubPost -> viewModel.state.value.indexOfSubPost(effect.subPostId)
+                    ?.let { listState.scrollToItem(it) }
             }
         }
     }

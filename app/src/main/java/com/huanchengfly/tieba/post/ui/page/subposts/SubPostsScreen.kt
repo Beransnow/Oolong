@@ -273,6 +273,14 @@ private fun SubPostsContent(
     }
 }
 
+/** Where reply [subPostId] is in the list, or null when it isn't loaded. */
+internal fun SubPostsState.indexOfSubPost(subPostId: Long): Int? {
+    val index = subPosts.items.indexOfFirst { it.subPost.id == subPostId }
+    if (index == -1) return null
+    // The post and the reply count header come first, then the load-previous row when shown
+    return 2 + (if (subPosts.hasPrevious) 1 else 0) + index
+}
+
 private val ReplyCapsuleShape = RoundedCornerShape(percent = 50)
 
 /** A floating reply box with the user's avatar. */
