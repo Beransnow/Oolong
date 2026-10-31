@@ -68,6 +68,7 @@ private fun currentNetworkType(context: Context): Int {
 private object AppInstallIdentity : InstallIdentity {
     override val clientId: String? get() = ClientUtils.clientId
     override val sampleId: String? get() = ClientUtils.sampleId
+    override val baiduId: String? get() = ClientUtils.baiduId
     override val activeTimestamp: Long get() = ClientUtils.activeTimestamp
     override val firstInstallTime: Long get() = App.Config.appFirstInstallTime
     override val lastUpdateTime: Long get() = App.Config.appLastUpdateTime
@@ -109,8 +110,12 @@ object NetworkIdentityModule {
 
     @Provides
     @Singleton
-    fun provideTiebaNetwork(commonParams: CommonParams): TiebaNetwork = TiebaNetwork(
+    fun provideTiebaNetwork(
+        commonParams: CommonParams,
+        sessionProvider: SessionProvider,
+    ): TiebaNetwork = TiebaNetwork(
         commonParams,
+        sessionProvider,
         networkInterceptors = if (BuildConfig.DEBUG) listOf(RequestRecorder) else emptyList(),
     )
 

@@ -38,7 +38,7 @@ class ForumRemoteDataSourceTest {
     @Before
     fun setUp() {
         server.start()
-        val network = TiebaNetwork(commonParams, baseUrlOverride = server.url("/"))
+        val network = TiebaNetwork(commonParams, { fakeSession }, baseUrlOverride = server.url("/"))
         dataSource = ForumRemoteDataSource(network, commonParams)
     }
 

@@ -15,4 +15,7 @@ data class Session(
 fun interface SessionProvider {
     /** The current session, or `null` when logged out. */
     fun currentSession(): Session?
+
+    /** Stores the `tbs` a write response handed out, which replaces the account's current one. */
+    fun updateTbs(tbs: String) {}
 }

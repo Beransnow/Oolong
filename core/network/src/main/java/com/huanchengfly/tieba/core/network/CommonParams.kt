@@ -28,7 +28,12 @@ class CommonParams(
     fun userAgent(profile: TiebaProfile): String =
         "${device.webViewUserAgent} tieba/${profile.version}"
 
-    fun headers(profile: TiebaProfile): List<Pair<String, String>> = buildList {
+    fun headers(profile: TiebaProfile): List<Pair<String, String>> = when (profile.protocol) {
+        TiebaProtocol.PROTOBUF -> protobufHeaders(profile)
+        TiebaProtocol.FORM -> formHeaders(profile)
+    }
+
+    private fun protobufHeaders(profile: TiebaProfile): List<Pair<String, String>> = buildList {
         add("Charset" to "UTF-8")
         add("client_type" to "2")
         sessionProvider.currentSession()?.let { add("client_user_token" to it.uid) }
@@ -38,8 +43,65 @@ class CommonParams(
         add("cuid_gid" to "")
         add("c3_aid" to device.c3Aid)
         add("User-Agent" to userAgent(profile))
-        if (profile.protocol == TiebaProtocol.PROTOBUF) add("x_bd_data_type" to "protobuf")
+        add("x_bd_data_type" to "protobuf")
         add("client_logid" to processStartTime.toString())
+    }
+
+    /** Headers of the classic form stack, which sends neither `client_type` nor `Charset`. */
+    private fun formHeaders(profile: TiebaProfile): List<Pair<String, String>> = buildList {
+        add("User-Agent" to userAgent(profile))
+        add("cookie" to "ka=open;" + install.baiduId?.let { "BAIDUID=$it" }.orEmpty())
+        sessionProvider.currentSession()?.let { add("client_user_token" to it.uid) }
+        add("client_logid" to processStartTime.toString())
+        add("cuid" to device.cuid)
+        add("cuid_galaxy2" to device.cuid)
+        add("c3_aid" to device.c3Aid)
+        add("cuid_gid" to "")
+    }
+
+    /**
+     * Common parameters of a form request. Unlike the protobuf common request, the session goes
+     * here rather than in a cookie, and there is no OS version, screen size or user agent.
+     *
+     * @param includeTbs whether to send the account's `tbs`, which write operations need
+     */
+    fun form(profile: TiebaProfile, includeTbs: Boolean = false): List<Pair<String, String>> {
+        val session = sessionProvider.currentSession()
+        return buildList {
+            add("_client_type" to "2")
+            add("_client_version" to profile.version)
+            add("_client_id" to (install.clientId ?: fallbackClientId))
+            add("from" to CHANNEL)
+            add("net_type" to device.networkType.toString())
+            add("cuid" to device.cuid)
+            add("cuid_galaxy2" to device.cuid)
+            add("c3_aid" to device.c3Aid)
+            add("cuid_gid" to "")
+            add("active_timestamp" to install.activeTimestamp.toString())
+            add("first_install_time" to install.firstInstallTime.toString())
+            add("last_update_time" to install.lastUpdateTime.toString())
+            add("event_day" to eventDay)
+            add("cmode" to "1")
+            add("is_teenager" to "0")
+            add("start_type" to "1")
+            add("start_scheme" to "")
+            add("_phone_imei" to device.imei)
+            add("oaid" to device.oaid)
+            add("model" to device.model)
+            add("brand" to device.brand)
+            add("android_id" to device.androidId)
+            add("mac" to MAC)
+            add("need_decrypt" to "0")
+            add("timestamp" to clock().toString())
+            install.baiduId?.let { add("baiduid" to it) }
+            install.sampleId?.let { add("sample_id" to it) }
+            if (session != null) {
+                add("BDUSS" to session.bduss)
+                session.stoken?.let { add("stoken" to it) }
+                session.zid?.let { add("z_id" to it) }
+                if (includeTbs) session.tbs?.let { add("tbs" to it) }
+            }
+        }
     }
 
     /**

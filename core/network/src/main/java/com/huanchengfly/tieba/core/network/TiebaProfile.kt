@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.core.network
 
-enum class TiebaProtocol { PROTOBUF }
+enum class TiebaProtocol { PROTOBUF, FORM }
 
 /**
  * The client identities requests are sent as. Version numbers and per-version constants live only
@@ -20,6 +20,15 @@ enum class TiebaProfile(
         sdkVersion = "2.34.0",
         swanGameVersion = "1038000",
         protocol = TiebaProtocol.PROTOBUF,
+    ),
+
+    /** Form requests: sign-in, likes, follows and other writes of the classic network stack. */
+    FORM_12_52(
+        version = "12.52.1.0",
+        frameworkVersion = "3340042",
+        sdkVersion = "2.34.0",
+        swanGameVersion = "1038000",
+        protocol = TiebaProtocol.FORM,
     ),
 
     /**

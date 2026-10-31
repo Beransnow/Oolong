@@ -1,6 +1,9 @@
 package com.huanchengfly.tieba.core.network
 
+import com.huanchengfly.tieba.core.network.identity.SessionProvider
+import com.huanchengfly.tieba.core.network.json.JsonConverterFactory
 import com.huanchengfly.tieba.core.network.protobuf.ProtobufConverterFactory
+import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
@@ -19,6 +22,7 @@ import java.util.concurrent.TimeUnit
  */
 class TiebaNetwork(
     private val commonParams: CommonParams,
+    private val sessionProvider: SessionProvider,
     private val networkInterceptors: List<Interceptor> = emptyList(),
     private val baseUrlOverride: HttpUrl? = null,
 ) {
@@ -27,6 +31,12 @@ class TiebaNetwork(
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+        isLenient = true
+    }
 
     private val retrofits = mutableMapOf<TiebaProfile, Retrofit>()
 
@@ -40,7 +50,12 @@ class TiebaNetwork(
         Retrofit.Builder()
             .baseUrl(baseUrlOverride ?: profile.baseUrl.toHttpUrl())
             .client(client)
-            .addConverterFactory(ProtobufConverterFactory)
+            .addConverterFactory(
+                when (profile.protocol) {
+                    TiebaProtocol.PROTOBUF -> ProtobufConverterFactory
+                    TiebaProtocol.FORM -> JsonConverterFactory(json, sessionProvider)
+                }
+            )
             .build()
     }
 

@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.wire)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 wire {
@@ -33,6 +34,7 @@ dependencies {
     api(libs.wire.runtime)
     api(libs.okhttp)
     api(libs.retrofit)
+    api(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)

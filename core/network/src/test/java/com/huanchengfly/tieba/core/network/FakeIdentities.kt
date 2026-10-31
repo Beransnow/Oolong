@@ -24,6 +24,7 @@ object FakeDevice : DeviceIdentity {
 
 class FakeInstall(override val clientId: String? = "wappc_1700000000000_123") : InstallIdentity {
     override val sampleId = "100_1-200_2"
+    override val baiduId = "0123456789ABCDEF0123456789ABCDEF:FG=1"
     override val activeTimestamp = 1_700_000_100_000L
     override val firstInstallTime = 1_600_000_000_000L
     override val lastUpdateTime = 1_650_000_000_000L

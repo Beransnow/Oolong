@@ -7,6 +7,9 @@ interface InstallIdentity {
     val clientId: String?
     val sampleId: String?
 
+    /** Value of the `BAIDUID` cookie the server set, `null` until it has. Never generated locally. */
+    val baiduId: String?
+
     /** Last time the app became active, in milliseconds. */
     val activeTimestamp: Long
 

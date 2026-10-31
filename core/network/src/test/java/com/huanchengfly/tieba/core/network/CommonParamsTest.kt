@@ -5,6 +5,7 @@ import java.util.Calendar
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class CommonParamsTest {
@@ -132,6 +133,66 @@ class CommonParamsTest {
         val headers = commonParams(loggedIn = false).headers(TiebaProfile.PROTO_12_52)
 
         assertNull(headers.find { it.first == "client_user_token" })
+    }
+
+    @Test
+    fun `builds the common parameters of a form profile`() {
+        val expected = listOf(
+            "_client_type" to "2",
+            "_client_version" to "12.52.1.0",
+            "_client_id" to "wappc_1700000000000_123",
+            "from" to "1020031h",
+            "net_type" to "5",
+            "cuid" to FakeDevice.cuid,
+            "cuid_galaxy2" to FakeDevice.cuid,
+            "c3_aid" to FakeDevice.c3Aid,
+            "cuid_gid" to "",
+            "active_timestamp" to "1700000100000",
+            "first_install_time" to "1600000000000",
+            "last_update_time" to "1650000000000",
+            "event_day" to "2026111",
+            "cmode" to "1",
+            "is_teenager" to "0",
+            "start_type" to "1",
+            "start_scheme" to "",
+            "_phone_imei" to "000000000000000",
+            "oaid" to "oaid-value",
+            "model" to "Pixel 9",
+            "brand" to "google",
+            "android_id" to "0123456789abcdef",
+            "mac" to "02:00:00:00:00:00",
+            "need_decrypt" to "0",
+            "timestamp" to "$now",
+            "baiduid" to "0123456789ABCDEF0123456789ABCDEF:FG=1",
+            "sample_id" to "100_1-200_2",
+            "BDUSS" to "bduss-value",
+            "stoken" to "stoken-value",
+            "z_id" to "zid-value",
+            "tbs" to "tbs-value",
+        )
+        assertEquals(expected, commonParams().form(TiebaProfile.FORM_12_52, includeTbs = true))
+    }
+
+    @Test
+    fun `leaves the session out of form parameters when logged out`() {
+        val names = commonParams(loggedIn = false).form(TiebaProfile.FORM_12_52, includeTbs = true).map { it.first }
+
+        listOf("BDUSS", "stoken", "z_id", "tbs").forEach { assertFalse(it in names, it) }
+    }
+
+    @Test
+    fun `builds the headers of the form stack`() {
+        val expected = listOf(
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv) tieba/12.52.1.0",
+            "cookie" to "ka=open;BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1",
+            "client_user_token" to "12345",
+            "client_logid" to "$startTime",
+            "cuid" to FakeDevice.cuid,
+            "cuid_galaxy2" to FakeDevice.cuid,
+            "c3_aid" to FakeDevice.c3Aid,
+            "cuid_gid" to "",
+        )
+        assertEquals(expected, commonParams().headers(TiebaProfile.FORM_12_52))
     }
 
     @Test
