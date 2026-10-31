@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
+import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.NetworkType
@@ -174,6 +175,13 @@ object NetworkIdentityModule {
         commonParams: CommonParams,
         sessionProvider: SessionProvider,
     ): PostRemoteDataSource = PostRemoteDataSource(network, commonParams, sessionProvider)
+
+    @Provides
+    @Singleton
+    fun provideUploadRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): UploadRemoteDataSource = UploadRemoteDataSource(network, commonParams)
 }
 
 @EntryPoint
@@ -185,6 +193,7 @@ interface LegacyNetworkEntryPoint {
     fun likeRemoteDataSource(): LikeRemoteDataSource
     fun messageRemoteDataSource(): MessageRemoteDataSource
     fun postRemoteDataSource(): PostRemoteDataSource
+    fun uploadRemoteDataSource(): UploadRemoteDataSource
 }
 
 private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
@@ -208,3 +217,6 @@ internal val legacyMessageRemoteDataSource: MessageRemoteDataSource
 
 internal val legacyPostRemoteDataSource: PostRemoteDataSource
     get() = legacyEntryPoint.postRemoteDataSource()
+
+internal val legacyUploadRemoteDataSource: UploadRemoteDataSource
+    get() = legacyEntryPoint.uploadRemoteDataSource()

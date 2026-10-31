@@ -2,32 +2,30 @@ package com.huanchengfly.tieba.post.components
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.huanchengfly.tieba.core.network.upload.PictureChunk
+import com.huanchengfly.tieba.core.network.upload.PictureWatermark
+import com.huanchengfly.tieba.core.network.upload.UploadPictureResponse
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.BOUNDARY
-import com.huanchengfly.tieba.post.api.booleanToString
+import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
+import com.huanchengfly.tieba.post.api.models.PicInfo
+import com.huanchengfly.tieba.post.api.models.PicInfoItem
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
-import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
-import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
-import com.huanchengfly.tieba.post.api.retrofit.body.buildMultipartBody
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.MD5Util
 import com.huanchengfly.tieba.post.utils.appPreferences
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.withContext
-import okhttp3.RequestBody.Companion.toRequestBody
+import okio.ByteString.Companion.toByteString
 import java.io.File
 import java.io.RandomAccessFile
 
@@ -99,7 +97,6 @@ class ImageUploader(
         return tempFile
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun uploadSinglePicture(
         filePath: String,
         isOriginImage: Boolean = false,
@@ -120,58 +117,58 @@ class ImageUploader(
         val totalChunkNum = fileLength / chunkSize + if (isMultipleChunkSize) 0 else 1
         val picWatermarkType =
             App.INSTANCE.appPreferences.picWatermarkType ?: PIC_WATER_TYPE_FORUM_NAME
-        val requestBodies = (0 until totalChunkNum).map { chunk ->
-            val isFinish = chunk == totalChunkNum - 1
-            val curChunkSize = if (isFinish) {
-                if (isMultipleChunkSize) {
-                    chunkSize
-                } else {
+        val watermark = when (picWatermarkType) {
+            PIC_WATER_TYPE_USER_NAME -> PictureWatermark.USER_NAME
+            PIC_WATER_TYPE_FORUM_NAME -> PictureWatermark.FORUM_NAME
+            else -> PictureWatermark.NONE
+        }
+        try {
+            var last: UploadPictureResponse? = null
+            for (chunk in 0 until totalChunkNum) {
+                val isFinish = chunk == totalChunkNum - 1
+                val curChunkSize = if (isFinish && !isMultipleChunkSize) {
                     fileLength % chunkSize
+                } else {
+                    chunkSize
+                }.toInt()
+                val chunkBytes = ByteArray(curChunkSize)
+                withContext(Dispatchers.IO) {
+                    RandomAccessFile(file, "r").use {
+                        it.seek(chunk * chunkSize.toLong())
+                        it.read(chunkBytes)
+                    }
                 }
-            } else {
-                chunkSize
-            }.toInt()
-            val chunkBytes = ByteArray(curChunkSize)
-            withContext(Dispatchers.IO) {
-                RandomAccessFile(file, "r").use {
-                    it.seek(chunk * chunkSize.toLong())
-                    it.read(chunkBytes)
-                }
+                last = legacyUploadRemoteDataSource.uploadPictureChunk(
+                    PictureChunk(
+                        resourceId = "$fileMd5$chunkSize",
+                        chunkNo = chunk.toInt() + 1,
+                        isFinish = isFinish,
+                        size = fileLength,
+                        width = width,
+                        height = height,
+                        saveOrigin = isOriginImage,
+                        watermark = watermark,
+                        forumName = forumName,
+                        bytes = chunkBytes.toByteString(),
+                    )
+                )
             }
-            buildMultipartBody(BOUNDARY) {
-                setType(MyMultipartBody.FORM)
-                addFormDataPart("alt", "json")
-                addFormDataPart("chunkNo", "${chunk + 1}")
-                if (forumName.isNotEmpty()) addFormDataPart("forum_name", forumName)
-                addFormDataPart("groupId", "1")
-                addFormDataPart("height", "$height")
-                addFormDataPart("isFinish", isFinish.booleanToString())
-                addFormDataPart("is_bjh", "0")
-                addFormDataPart("pic_water_type", picWatermarkType)
-                addFormDataPart("resourceId", "$fileMd5$chunkSize")
-                addFormDataPart("saveOrigin", isOriginImage.booleanToString())
-                addFormDataPart("size", "$fileLength")
-                if (forumName.isNotEmpty()) addFormDataPart("small_flow_fname", forumName)
-                addFormDataPart("width", "$width")
-                addFormDataPart("chunk", "file", chunkBytes.toRequestBody())
+            val result = checkNotNull(last).toUploadPictureResultBean()
+            if (result.picId.isNullOrEmpty() || result.picInfo == null) {
+                throw UploadPictureFailedException()
+            }
+            return result
+        } catch (e: UploadPictureFailedException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw UploadPictureFailedException(e.getErrorCode(), e.getErrorMessage())
+        } finally {
+            withContext(NonCancellable + Dispatchers.IO) {
+                file.delete()
             }
         }
-        return requestBodies.asFlow()
-            .flatMapConcat { RetrofitTiebaApi.OFFICIAL_UPLOAD_TIEBA_API.uploadPicture(it) }
-            .catch {
-                throw UploadPictureFailedException(it.getErrorCode(), it.getErrorMessage())
-            }
-            .onCompletion {
-                withContext(Dispatchers.IO) {
-                    file.delete()
-                }
-            }
-            .last()
-            .also { result ->
-                if (result.picId.isNullOrEmpty() || result.picInfo == null) {
-                    throw UploadPictureFailedException()
-                }
-            }
     }
 }
 
@@ -179,3 +176,22 @@ class UploadPictureFailedException(
     override val code: Int = -1,
     override val message: String = "上传图片失败",
 ) : TiebaException(message)
+
+private fun UploadPictureResponse.toUploadPictureResultBean(): UploadPictureResultBean {
+    fun UploadPictureResponse.Pic?.toItem() = PicInfoItem(
+        width = this?.width.orEmpty(),
+        height = this?.height.orEmpty(),
+        type = this?.type.orEmpty(),
+        picUrl = this?.picUrl.orEmpty(),
+    )
+    return UploadPictureResultBean(
+        errorCode = "0",
+        errorMsg = "",
+        resourceId = resourceId,
+        chunkNo = chunkNo.orEmpty(),
+        picId = picId,
+        picInfo = picInfo?.let {
+            PicInfo(originPic = it.originPic.toItem(), bigPic = it.bigPic.toItem(), smallPic = it.smallPic.toItem())
+        },
+    )
+}

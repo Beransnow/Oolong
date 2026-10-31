@@ -10,7 +10,6 @@ import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.ForumSortType
-import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.SearchThreadFilter
 import com.huanchengfly.tieba.post.api.SearchThreadOrder
 import com.huanchengfly.tieba.post.api.booleanToString
@@ -25,6 +24,7 @@ import com.huanchengfly.tieba.post.api.legacyAgreeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyPostRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
+import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CollectDataBean
@@ -58,7 +58,6 @@ import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
 import com.huanchengfly.tieba.post.api.models.UserPostBean
 import com.huanchengfly.tieba.post.api.models.WebReplyResultBean
 import com.huanchengfly.tieba.post.api.models.WebUploadPicBean
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequest
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendRequest
@@ -124,7 +123,6 @@ import com.huanchengfly.tieba.post.api.models.web.ForumHome
 import com.huanchengfly.tieba.post.api.models.web.HotMessageListBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
-import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.models.DislikeBean
 import com.huanchengfly.tieba.post.models.MyInfoBean
@@ -139,7 +137,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
-import okhttp3.RequestBody.Companion.asRequestBody
+import okio.ByteString.Companion.toByteString
 import retrofit2.Call
 import java.io.File
 import java.io.FileInputStream
@@ -967,14 +965,9 @@ object MixedTiebaApiImpl : ITiebaApi {
             nickName
         )
 
-    override fun imgPortrait(file: File): Flow<CommonResponse> {
-        return RetrofitTiebaApi.OFFICIAL_UPLOAD_TIEBA_API.imgPortrait(
-            MyMultipartBody.Builder("--------7da3d81520810*").apply {
-                setType(MyMultipartBody.FORM)
-                addFormDataPart(Param.CLIENT_VERSION, ClientVersion.TIEBA_V12.version)
-                addFormDataPart("pic", "file", file.asRequestBody())
-            }.build()
-        )
+    override fun imgPortrait(file: File): Flow<CommonResponse> = flow {
+        legacyUploadRemoteDataSource.uploadPortrait(file.readBytes().toByteString())
+        emit(CommonResponse())
     }
 
     override fun getForumListFlow(): Flow<GetForumListBean> =
