@@ -123,7 +123,7 @@ class ThreadViewModel @Inject constructor(
     private val readUpTo = MutableStateFlow<Long?>(null)
 
     /** Where the list was last loaded from as a whole, so that retrying loads the same place. */
-    private var refreshKey: ThreadCursor = ThreadCursor.first(query.value.sort, args.postId)
+    private var refreshKey: ThreadCursor = ThreadCursor.first(args.postId)
     private var scrollAfterRefresh = args.scrollToReply && args.postId == 0L
 
     /** A post to scroll to as soon as a page containing it loads. */
@@ -198,7 +198,7 @@ class ThreadViewModel @Inject constructor(
     }
 
     /** Loads the thread again from its start, or from its newest post when newest first. */
-    fun refresh() = refreshFrom(ThreadCursor.first(query.value.sort))
+    fun refresh() = refreshFrom(ThreadCursor.first())
 
     /** Loads the thread again from where it was last loaded, after an error. */
     fun retry() = posts.refresh(refreshKey)

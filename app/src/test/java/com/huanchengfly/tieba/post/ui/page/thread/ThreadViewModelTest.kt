@@ -201,7 +201,7 @@ class ThreadViewModelTest {
         )
         val viewModel = createViewModel(sortType = ThreadSort.NewestFirst.value)
         runCurrent()
-        coVerify { remote.page(9_000, 1, 0, 1, false, false, true, 0, 0, "", 0) }
+        coVerify { remote.page(9_000, 0, 0, 1, false, false, false, 0, 0, "", 0) }
 
         viewModel.loadPrevious()
         runCurrent()

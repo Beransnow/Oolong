@@ -53,10 +53,10 @@ data class ThreadQuery(
 @Immutable
 sealed interface ThreadCursor {
     /**
-     * A page by number. Page 0 leaves it to the server, which returns the first page; with
-     * [last], the server returns the last page, which is the first one when newest first.
+     * A page by number. Page 0 leaves it to the server, which returns the first page in the
+     * thread's order: the oldest posts, or the newest when newest first.
      */
-    data class Number(val page: Int, val last: Boolean = false) : ThreadCursor
+    data class Number(val page: Int) : ThreadCursor
 
     /**
      * The posts from [postId] on: the page containing it when oldest first, the posts older than
@@ -75,11 +75,7 @@ sealed interface ThreadCursor {
 
     companion object {
         /** Where a thread opened at [postId], or from its start when 0, begins. */
-        fun first(sort: ThreadSort, postId: Long = 0): ThreadCursor = when {
-            postId != 0L -> Anchor(postId)
-            sort == ThreadSort.NewestFirst -> Number(1, last = true)
-            else -> Number(0)
-        }
+        fun first(postId: Long = 0): ThreadCursor = if (postId != 0L) Anchor(postId) else Number(0)
     }
 }
 
@@ -130,7 +126,6 @@ class ThreadRepository @Inject constructor(
             sortType = query.sort.value,
             seeLz = query.seeLz,
             back = cursor is ThreadCursor.Before,
-            last = cursor is ThreadCursor.Number && cursor.last,
             lastPostId = (cursor as? ThreadCursor.After)?.postId ?: 0,
             forumId = query.forumId ?: 0,
             stType = if (query.fromStore) "store_thread" else "",

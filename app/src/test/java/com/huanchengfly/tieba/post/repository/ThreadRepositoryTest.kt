@@ -101,7 +101,7 @@ class ThreadRepositoryTest {
         respond(data(listOf(post(70, 70), post(69, 69)), ProtoPage(current_page = 4, total_page = 5, has_more = 1)))
 
         val query = ThreadQuery(9_000, sort = ThreadSort.NewestFirst)
-        val posts = repository.page(query, ThreadCursor.first(ThreadSort.NewestFirst)).posts
+        val posts = repository.page(query, ThreadCursor.first()).posts
 
         assertEquals(ThreadCursor.Anchor(69), posts.next)
         assertEquals(ThreadCursor.Before(70, page = 5), posts.prev)
@@ -112,7 +112,7 @@ class ThreadRepositoryTest {
         respond(data(listOf(post(70, 70)), ProtoPage(current_page = 5, total_page = 5)))
 
         val query = ThreadQuery(9_000, sort = ThreadSort.NewestFirst)
-        val posts = repository.page(query, ThreadCursor.first(ThreadSort.NewestFirst)).posts
+        val posts = repository.page(query, ThreadCursor.first()).posts
 
         assertNull(posts.next)
         assertEquals(ThreadCursor.Before(70, page = 0), posts.prev)
@@ -135,14 +135,14 @@ class ThreadRepositoryTest {
         val query = ThreadQuery(9_000, seeLz = true, forumId = 52, fromStore = true)
 
         repository.page(query, ThreadCursor.Number(0))
-        repository.page(query.copy(sort = ThreadSort.NewestFirst), ThreadCursor.Number(1, last = true))
+        repository.page(query.copy(sort = ThreadSort.NewestFirst), ThreadCursor.Number(0))
         repository.page(query, ThreadCursor.Anchor(31))
         repository.page(query, ThreadCursor.Before(31, page = 2))
         repository.page(query, ThreadCursor.After(70))
 
         coVerify {
             remote.page(9_000, 0, 0, 0, true, false, false, 0, 52, "store_thread", 1)
-            remote.page(9_000, 1, 0, 1, true, false, true, 0, 52, "store_thread", 1)
+            remote.page(9_000, 0, 0, 1, true, false, false, 0, 52, "store_thread", 1)
             remote.page(9_000, 0, 31, 0, true, false, false, 0, 52, "store_thread", 1)
             remote.page(9_000, 2, 31, 0, true, true, false, 0, 52, "store_thread", 1)
             remote.page(9_000, 0, 70, 0, true, false, false, 70, 52, "store_thread", 1)
@@ -151,9 +151,8 @@ class ThreadRepositoryTest {
 
     @Test
     fun `first cursor of a thread`() {
-        assertEquals(ThreadCursor.Number(0), ThreadCursor.first(ThreadSort.OldestFirst))
-        assertEquals(ThreadCursor.Number(1, last = true), ThreadCursor.first(ThreadSort.NewestFirst))
-        assertEquals(ThreadCursor.Anchor(31), ThreadCursor.first(ThreadSort.NewestFirst, postId = 31))
+        assertEquals(ThreadCursor.Number(0), ThreadCursor.first())
+        assertEquals(ThreadCursor.Anchor(31), ThreadCursor.first(postId = 31))
     }
 
     @Test
