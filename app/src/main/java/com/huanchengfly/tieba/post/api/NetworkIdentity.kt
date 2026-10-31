@@ -48,7 +48,7 @@ private class AppDeviceIdentity(private val context: Context) : DeviceIdentity {
     override val osVersion: String get() = Build.VERSION.RELEASE
     override val screenWidth: Int get() = getScreenWidth()
     override val screenHeight: Int get() = getScreenHeight()
-    override val screenDensity: Float get() = App.ScreenInfo.DENSITY
+    override val screenDensity: Float get() = getScreenDensity()
     override val networkType: Int get() = currentNetworkType(context)
     override val deviceScore: Float by lazy { DeviceUtils.getNormalizedDeviceScore() }
     override val webViewUserAgent: String get() = getUserAgent()

@@ -18,8 +18,14 @@ fun getCookie(vararg cookies: Pair<String, () -> String?>): String {
         .joinToString("; ") { "${it.first}:${it.second}" }
 }
 
-fun getScreenHeight(): Int = ScreenInfo.EXACT_SCREEN_HEIGHT
+// ScreenInfo is only filled in once an activity starts; requests sent at startup need it earlier
+fun getScreenHeight(): Int =
+    ScreenInfo.EXACT_SCREEN_HEIGHT.takeIf { it > 0 } ?: App.INSTANCE.resources.displayMetrics.heightPixels
 
-fun getScreenWidth(): Int = ScreenInfo.EXACT_SCREEN_WIDTH
+fun getScreenWidth(): Int =
+    ScreenInfo.EXACT_SCREEN_WIDTH.takeIf { it > 0 } ?: App.INSTANCE.resources.displayMetrics.widthPixels
+
+fun getScreenDensity(): Float =
+    ScreenInfo.DENSITY.takeIf { it > 0 } ?: App.INSTANCE.resources.displayMetrics.density
 
 fun Boolean.booleanToString(): String = if (this) "1" else "0"
