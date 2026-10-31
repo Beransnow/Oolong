@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -83,14 +84,15 @@ fun ThreadRoute(
 
     // Opened from the thread store while the thread has posts past the stored mark
     var offeredStoreUpdate by rememberSaveable { mutableStateOf(false) }
+    val resources = LocalResources.current
     LaunchedEffect(Unit) {
         if (offeredStoreUpdate || from != ThreadPageFrom.FROM_STORE || extra !is ThreadPageFromStoreExtra) {
             return@LaunchedEffect
         }
         offeredStoreUpdate = true
         val result = scaffoldState.snackbarHostState.showSnackbar(
-            context.getString(R.string.message_store_thread_update, extra.maxFloor),
-            context.getString(R.string.button_load_new),
+            resources.getString(R.string.message_store_thread_update, extra.maxFloor),
+            resources.getString(R.string.button_load_new),
             SnackbarDuration.Long
         )
         if (result == SnackbarResult.ActionPerformed) viewModel.jumpToPost(extra.maxPid)
