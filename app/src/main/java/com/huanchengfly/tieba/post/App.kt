@@ -17,6 +17,8 @@ import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.edit
+import androidx.core.content.pm.PackageInfoCompat
 import com.github.gzuliyujiang.oaid.DeviceID
 import com.github.panpf.sketch.Sketch
 import com.github.panpf.sketch.SketchFactory
@@ -162,10 +164,36 @@ class App : Application(), SketchFactory {
                     statusCode = -200
                     isTrackLimited = false
                 }
-                userAgent = WebSettings.getDefaultUserAgent(context)
+                userAgent = loadWebViewUserAgent(context)
                 appFirstInstallTime = context.packageInfo.firstInstallTime
                 appLastUpdateTime = context.packageInfo.lastUpdateTime
                 inited = true
+            }
+        }
+
+        /**
+         * WebView's default user agent. Asking WebView for it loads and starts Chromium, the
+         * slowest part of startup, so it's cached until WebView or the system is updated, which
+         * is all the user agent is made of.
+         */
+        private fun loadWebViewUserAgent(context: Context): String {
+            val webViewPackage =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WebView.getCurrentWebViewPackage()
+                else null
+            if (webViewPackage == null) return WebSettings.getDefaultUserAgent(context)
+            val cacheKey = listOf(
+                webViewPackage.packageName,
+                PackageInfoCompat.getLongVersionCode(webViewPackage),
+                Build.FINGERPRINT
+            ).joinToString("|")
+            val prefs = context.getSharedPreferences("webview_user_agent", Context.MODE_PRIVATE)
+            val cached = prefs.getString("user_agent", null)
+            if (cached != null && prefs.getString("cache_key", null) == cacheKey) return cached
+            return WebSettings.getDefaultUserAgent(context).also {
+                prefs.edit {
+                    putString("cache_key", cacheKey)
+                    putString("user_agent", it)
+                }
             }
         }
     }
