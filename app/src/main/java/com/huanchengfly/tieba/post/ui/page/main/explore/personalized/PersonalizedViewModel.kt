@@ -174,22 +174,22 @@ sealed interface PersonalizedPartialChange : PartialChange<PersonalizedUiState> 
                 val (threadInfo) = it.thread
                 val newThreadInfo = if (threadInfo.threadId == threadId) {
                     if (threadInfo.agree != null) {
-                        if (hasAgree != threadInfo.agree.hasAgree) {
+                        if (hasAgree != threadInfo.agree!!.hasAgree) {
                             if (hasAgree == 1) {
                                 threadInfo.copy(
                                     agreeNum = threadInfo.agreeNum + 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum + 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum + 1,
+                                    agree = threadInfo.agree!!.copy(
+                                        agreeNum = threadInfo.agree!!.agreeNum + 1,
+                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum + 1,
                                         hasAgree = 1
                                     )
                                 )
                             } else {
                                 threadInfo.copy(
                                     agreeNum = threadInfo.agreeNum - 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum - 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum - 1,
+                                    agree = threadInfo.agree!!.copy(
+                                        agreeNum = threadInfo.agree!!.agreeNum - 1,
+                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum - 1,
                                         hasAgree = 0
                                     )
                                 )

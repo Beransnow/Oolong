@@ -50,29 +50,29 @@ object PbPageRepository {
                 if (response.data_ == null) {
                     throw TiebaUnknownException
                 }
-                if (response.data_.post_list.isEmpty()) {
+                if (response.data_!!.post_list.isEmpty()) {
                     throw EmptyDataException
                 }
                 if (
-                    response.data_.page == null
-                    || response.data_.thread?.author == null
-                    || response.data_.forum == null
-                    || response.data_.anti == null
+                    response.data_!!.page == null
+                    || response.data_!!.thread?.author == null
+                    || response.data_!!.forum == null
+                    || response.data_!!.anti == null
                 ) {
                     throw TiebaUnknownException
                 }
-                val userList = response.data_.user_list
-                val postList = response.data_.post_list.map {
+                val userList = response.data_!!.user_list
+                val postList = response.data_!!.post_list.map {
                     val author = it.author
                         ?: userList.first { user -> user.id == it.author_id }
                     it.copy(
                         author_id = author.id,
                         author = it.author
                             ?: userList.first { user -> user.id == it.author_id },
-                        from_forum = response.data_.forum,
-                        tid = response.data_.thread.id,
+                        from_forum = response.data_!!.forum,
+                        tid = response.data_!!.thread!!.id,
                         sub_post_list = it.sub_post_list?.copy(
-                            sub_post_list = it.sub_post_list.sub_post_list.map { subPost ->
+                            sub_post_list = it.sub_post_list!!.sub_post_list.map { subPost ->
                                 subPost.copy(
                                     author = subPost.author
                                         ?: userList.first { user -> user.id == subPost.author_id }
@@ -80,30 +80,30 @@ object PbPageRepository {
                             }
                         ),
                         origin_thread_info = OriginThreadInfo(
-                            author = response.data_.thread.author
+                            author = response.data_!!.thread!!.author
                         )
                     )
                 }
                 val firstPost = postList.firstOrNull { it.floor == 1 }
-                    ?: response.data_.first_floor_post?.copy(
-                        author_id = response.data_.thread.author.id,
-                        author = response.data_.thread.author,
-                        from_forum = response.data_.forum,
-                        tid = response.data_.thread.id,
-                        sub_post_list = response.data_.first_floor_post.sub_post_list?.copy(
-                            sub_post_list = response.data_.first_floor_post.sub_post_list.sub_post_list.map { subPost ->
+                    ?: response.data_!!.first_floor_post?.copy(
+                        author_id = response.data_!!.thread!!.author!!.id,
+                        author = response.data_!!.thread!!.author,
+                        from_forum = response.data_!!.forum,
+                        tid = response.data_!!.thread!!.id,
+                        sub_post_list = response.data_!!.first_floor_post!!.sub_post_list?.copy(
+                            sub_post_list = response.data_!!.first_floor_post!!.sub_post_list!!.sub_post_list.map { subPost ->
                                 subPost.copy(
                                     author = subPost.author
                                         ?: userList.first { user -> user.id == subPost.author_id }
                                 )
                             }
                         ),
-                        content = response.data_.first_floor_post.content
-                            .withPlayableVideo(response.data_.thread.videoInfo)
+                        content = response.data_!!.first_floor_post!!.content
+                            .withPlayableVideo(response.data_!!.thread!!.videoInfo)
                     )
 
                 response.copy(
-                    data_ = response.data_.copy(
+                    data_ = response.data_!!.copy(
                         post_list = postList,
                         first_floor_post = firstPost,
                     )

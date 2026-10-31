@@ -88,22 +88,22 @@ val ThreadInfo.hasAbstract: Boolean
 fun ThreadInfo.updateAgreeStatus(
     hasAgree: Int
 ) = if (agree != null) {
-    if (hasAgree != agree.hasAgree) {
+    if (hasAgree != agree!!.hasAgree) {
         if (hasAgree == 1) {
             copy(
                 agreeNum = agreeNum + 1,
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum + 1,
-                    diffAgreeNum = agree.diffAgreeNum + 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
                     hasAgree = 1
                 )
             )
         } else {
             copy(
                 agreeNum = agreeNum - 1,
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum - 1,
-                    diffAgreeNum = agree.diffAgreeNum - 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
                     hasAgree = 0
                 )
             )
@@ -132,20 +132,20 @@ fun ThreadInfo.updateCollectStatus(
 fun Post.updateAgreeStatus(
     hasAgree: Int
 ) = if (agree != null) {
-    if (hasAgree != agree.hasAgree) {
+    if (hasAgree != agree!!.hasAgree) {
         if (hasAgree == 1) {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum + 1,
-                    diffAgreeNum = agree.diffAgreeNum + 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
                     hasAgree = 1
                 )
             )
         } else {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum - 1,
-                    diffAgreeNum = agree.diffAgreeNum - 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
                     hasAgree = 0
                 )
             )
@@ -160,20 +160,20 @@ fun Post.updateAgreeStatus(
 fun SubPostList.updateAgreeStatus(
     hasAgree: Int
 ) = if (agree != null) {
-    if (hasAgree != agree.hasAgree) {
+    if (hasAgree != agree!!.hasAgree) {
         if (hasAgree == 1) {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum + 1,
-                    diffAgreeNum = agree.diffAgreeNum + 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
                     hasAgree = 1
                 )
             )
         } else {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum - 1,
-                    diffAgreeNum = agree.diffAgreeNum - 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
                     hasAgree = 0
                 )
             )
@@ -188,21 +188,21 @@ fun SubPostList.updateAgreeStatus(
 fun PostInfoList.updateAgreeStatus(
     hasAgree: Int,
 ) = if (agree != null) {
-    if (hasAgree != agree.hasAgree) {
+    if (hasAgree != agree!!.hasAgree) {
         if (hasAgree == 1) {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum + 1,
-                    diffAgreeNum = agree.diffAgreeNum + 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
                     hasAgree = 1
                 ),
                 agree_num = agree_num + 1
             )
         } else {
             copy(
-                agree = agree.copy(
-                    agreeNum = agree.agreeNum - 1,
-                    diffAgreeNum = agree.diffAgreeNum - 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
                     hasAgree = 0
                 ),
                 agree_num = agree_num - 1

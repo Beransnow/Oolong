@@ -86,8 +86,8 @@ class ForumViewModel @Inject constructor() :
             FrsPageRepository.frsPage(forumName, 1, 1, sortType, null, true)
                 .map {
                     if (it.data_?.forum != null) ForumPartialChange.Load.Success(
-                        it.data_.forum,
-                        it.data_.anti?.tbs
+                        it.data_!!.forum!!,
+                        it.data_!!.anti?.tbs
                     )
                     else ForumPartialChange.Load.Failure(NullPointerException("未知错误"))
                 }

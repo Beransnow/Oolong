@@ -22,8 +22,8 @@ fun getPhotoViewData(
     if (post.from_forum == null) return null
     return PhotoViewData(
         data = LoadPicPageData(
-            forumId = post.from_forum.id,
-            forumName = post.from_forum.name,
+            forumId = post.from_forum!!.id,
+            forumName = post.from_forum!!.name,
             threadId = post.tid,
             postId = post.id,
             objType = "pb",

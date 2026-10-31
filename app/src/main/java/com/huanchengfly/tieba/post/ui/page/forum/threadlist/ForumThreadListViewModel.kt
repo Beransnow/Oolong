@@ -103,16 +103,16 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             .map<FrsPageResponse, ForumThreadListPartialChange.FirstLoad> { response ->
                 if (response.data_?.page == null) throw TiebaUnknownException
                 val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                    response.data_!!.thread_list.map { ThreadItemData(it.wrapImmutable()) }
                 ForumThreadListPartialChange.FirstLoad.Success(
-                    response.data_.forum_rule?.title.takeIf {
-                        type == ForumThreadListType.Latest && response.data_.forum_rule?.has_forum_rule == 1
+                    response.data_!!.forum_rule?.title.takeIf {
+                        type == ForumThreadListType.Latest && response.data_!!.forum_rule?.has_forum_rule == 1
                     },
                     threadList,
-                    response.data_.thread_id_list,
-                    (response.data_.forum?.good_classify ?: emptyList()).wrapImmutable(),
+                    response.data_!!.thread_id_list,
+                    (response.data_!!.forum?.good_classify ?: emptyList()).wrapImmutable(),
                     goodClassifyId.takeIf { type == ForumThreadListType.Good },
-                    response.data_.page.has_more == 1
+                    response.data_!!.page!!.has_more == 1
                 )
             }
             .onStart { emit(ForumThreadListPartialChange.FirstLoad.Start) }
@@ -130,13 +130,13 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             .map<FrsPageResponse, ForumThreadListPartialChange.Refresh> { response ->
                 if (response.data_?.page == null) throw TiebaUnknownException
                 val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                    response.data_!!.thread_list.map { ThreadItemData(it.wrapImmutable()) }
                 ForumThreadListPartialChange.Refresh.Success(
                     threadList,
-                    response.data_.thread_id_list,
-                    (response.data_.forum?.good_classify ?: emptyList()).wrapImmutable(),
+                    response.data_!!.thread_id_list,
+                    (response.data_!!.forum?.good_classify ?: emptyList()).wrapImmutable(),
                     goodClassifyId.takeIf { type == ForumThreadListType.Good },
-                    response.data_.page.has_more == 1
+                    response.data_!!.page!!.has_more == 1
                 )
             }
             .onStart { emit(ForumThreadListPartialChange.Refresh.Start) }
@@ -154,12 +154,12 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             ).map { response ->
                 if (response.data_ == null) throw TiebaUnknownException
                 val threadList =
-                    response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                    response.data_!!.thread_list.map { ThreadItemData(it.wrapImmutable()) }
                 ForumThreadListPartialChange.LoadMore.Success(
                     threadList = threadList,
                     threadListIds = threadListIds.drop(size),
                     currentPage = currentPage,
-                    hasMore = response.data_.thread_list.isNotEmpty()
+                    hasMore = response.data_!!.thread_list.isNotEmpty()
                 )
             }
         } else {
@@ -173,12 +173,12 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                 .map<FrsPageResponse, ForumThreadListPartialChange.LoadMore> { response ->
                     if (response.data_?.page == null) throw TiebaUnknownException
                     val threadList =
-                        response.data_.thread_list.map { ThreadItemData(it.wrapImmutable()) }
+                        response.data_!!.thread_list.map { ThreadItemData(it.wrapImmutable()) }
                     ForumThreadListPartialChange.LoadMore.Success(
                         threadList = threadList,
-                        threadListIds = response.data_.thread_id_list,
+                        threadListIds = response.data_!!.thread_id_list,
                         currentPage = currentPage + 1,
-                        response.data_.page.has_more == 1
+                        response.data_!!.page!!.has_more == 1
                     )
                 }
         }

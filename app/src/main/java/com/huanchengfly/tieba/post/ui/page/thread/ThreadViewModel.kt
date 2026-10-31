@@ -163,30 +163,30 @@ class ThreadViewModel @Inject constructor() :
                 )
                 .map<PbPageResponse, ThreadPartialChange.Load> { response ->
                     if (response.data_?.page == null
-                        || response.data_.thread?.author == null
-                        || response.data_.forum == null
-                        || response.data_.anti == null
+                        || response.data_!!.thread?.author == null
+                        || response.data_!!.forum == null
+                        || response.data_!!.anti == null
                     ) throw TiebaUnknownException
-                    val postList = response.data_.post_list
-                    val firstPost = response.data_.first_floor_post
+                    val postList = response.data_!!.post_list
+                    val firstPost = response.data_!!.first_floor_post
                     val notFirstPosts = postList.filterNot { it.floor == 1 }
                     ThreadPartialChange.Load.Success(
-                        response.data_.thread.title,
-                        response.data_.thread.author,
-                        response.data_.user ?: User(),
+                        response.data_!!.thread!!.title,
+                        response.data_!!.thread!!.author!!,
+                        response.data_!!.user ?: User(),
                         firstPost,
                         notFirstPosts.map { PostItemData(it.wrapImmutable()) },
-                        response.data_.thread,
-                        response.data_.forum,
-                        response.data_.anti,
-                        response.data_.page.current_page,
-                        response.data_.page.new_total_page,
-                        response.data_.page.has_more != 0,
-                        response.data_.thread.getNextPagePostId(
+                        response.data_!!.thread!!,
+                        response.data_!!.forum!!,
+                        response.data_!!.anti!!,
+                        response.data_!!.page!!.current_page,
+                        response.data_!!.page!!.new_total_page,
+                        response.data_!!.page!!.has_more != 0,
+                        response.data_!!.thread!!.getNextPagePostId(
                             postList.map { it.id },
                             sortType
                         ),
-                        response.data_.page.has_prev != 0,
+                        response.data_!!.page!!.has_prev != 0,
                         firstPost?.contentRenders,
                         postId,
                         seeLz,
@@ -201,26 +201,26 @@ class ThreadViewModel @Inject constructor() :
                 .pbPage(threadId, 0, 0, forumId, seeLz, sortType)
                 .map<PbPageResponse, ThreadPartialChange.LoadFirstPage> { response ->
                     if (response.data_?.page == null
-                        || response.data_.thread?.author == null
-                        || response.data_.forum == null
-                        || response.data_.anti == null
+                        || response.data_!!.thread?.author == null
+                        || response.data_!!.forum == null
+                        || response.data_!!.anti == null
                     ) throw TiebaUnknownException
-                    val postList = response.data_.post_list
-                    val firstPost = response.data_.first_floor_post
+                    val postList = response.data_!!.post_list
+                    val firstPost = response.data_!!.first_floor_post
                     val notFirstPosts = postList.filterNot { it.floor == 1 }
                     ThreadPartialChange.LoadFirstPage.Success(
-                        response.data_.thread.title,
-                        response.data_.thread.author,
+                        response.data_!!.thread!!.title,
+                        response.data_!!.thread!!.author!!,
                         notFirstPosts.map { PostItemData(it.wrapImmutable()) },
-                        response.data_.thread,
-                        response.data_.page.current_page,
-                        response.data_.page.new_total_page,
-                        response.data_.page.has_more != 0,
-                        response.data_.thread.getNextPagePostId(
+                        response.data_!!.thread!!,
+                        response.data_!!.page!!.current_page,
+                        response.data_!!.page!!.new_total_page,
+                        response.data_!!.page!!.has_more != 0,
+                        response.data_!!.thread!!.getNextPagePostId(
                             postList.map { it.id },
                             sortType
                         ),
-                        response.data_.page.has_prev != 0,
+                        response.data_!!.page!!.has_prev != 0,
                         firstPost?.contentRenders ?: emptyList(),
                         postId = 0,
                         seeLz,
@@ -235,20 +235,20 @@ class ThreadViewModel @Inject constructor() :
                 .pbPage(threadId, page, postId, forumId, seeLz, sortType)
                 .map<PbPageResponse, ThreadPartialChange.LoadMore> { response ->
                     if (response.data_?.page == null
-                        || response.data_.thread?.author == null
-                        || response.data_.forum == null
-                        || response.data_.anti == null
+                        || response.data_!!.thread?.author == null
+                        || response.data_!!.forum == null
+                        || response.data_!!.anti == null
                     ) throw TiebaUnknownException
-                    val postList = response.data_.post_list
+                    val postList = response.data_!!.post_list
                     val posts = postList.filterNot { it.floor == 1 || postIds.contains(it.id) }
                     ThreadPartialChange.LoadMore.Success(
-                        response.data_.thread.author,
+                        response.data_!!.thread!!.author!!,
                         posts.map { PostItemData(it.wrapImmutable()) },
-                        response.data_.thread,
-                        response.data_.page.current_page,
-                        response.data_.page.new_total_page,
-                        response.data_.page.has_more != 0,
-                        response.data_.thread.getNextPagePostId(
+                        response.data_!!.thread!!,
+                        response.data_!!.page!!.current_page,
+                        response.data_!!.page!!.new_total_page,
+                        response.data_!!.page!!.has_more != 0,
+                        response.data_!!.thread!!.getNextPagePostId(
                             postIds + posts.map { it.id },
                             sortType
                         ),
@@ -269,19 +269,19 @@ class ThreadViewModel @Inject constructor() :
                 .pbPage(threadId, page, postId, forumId, seeLz, sortType, back = true)
                 .map<PbPageResponse, ThreadPartialChange.LoadPrevious> { response ->
                     if (response.data_?.page == null
-                        || response.data_.thread?.author == null
-                        || response.data_.forum == null
-                        || response.data_.anti == null
+                        || response.data_!!.thread?.author == null
+                        || response.data_!!.forum == null
+                        || response.data_!!.anti == null
                     ) throw TiebaUnknownException
-                    val postList = response.data_.post_list
+                    val postList = response.data_!!.post_list
                     val posts = postList.filterNot { it.floor == 1 || postIds.contains(it.id) }
                     ThreadPartialChange.LoadPrevious.Success(
-                        response.data_.thread.author,
+                        response.data_!!.thread!!.author!!,
                         posts.map { PostItemData(it.wrapImmutable()) },
-                        response.data_.thread,
-                        response.data_.page.current_page,
-                        response.data_.page.new_total_page,
-                        response.data_.page.has_prev != 0,
+                        response.data_!!.thread!!,
+                        response.data_!!.page!!.current_page,
+                        response.data_!!.page!!.new_total_page,
+                        response.data_!!.page!!.has_prev != 0,
                     )
                 }
                 .onStart { emit(ThreadPartialChange.LoadPrevious.Start) }
@@ -307,21 +307,21 @@ class ThreadViewModel @Inject constructor() :
                 )
                 .map { response ->
                     checkNotNull(response.data_)
-                    checkNotNull(response.data_.thread)
-                    checkNotNull(response.data_.thread.author)
-                    checkNotNull(response.data_.page)
-                    val postList = response.data_.post_list.filterNot { it.floor == 1 }
+                    checkNotNull(response.data_!!.thread)
+                    checkNotNull(response.data_!!.thread!!.author)
+                    checkNotNull(response.data_!!.page)
+                    val postList = response.data_!!.post_list.filterNot { it.floor == 1 }
                     if (postList.isEmpty()) {
                         ThreadPartialChange.LoadLatestPosts.SuccessWithNoNewPost
                     } else {
                         ThreadPartialChange.LoadLatestPosts.Success(
-                            author = response.data_.thread.author,
+                            author = response.data_!!.thread!!.author!!,
                             data = postList.map { PostItemData(it.wrapImmutable()) },
-                            threadInfo = response.data_.thread,
-                            currentPage = response.data_.page.current_page,
-                            totalPage = response.data_.page.new_total_page,
-                            hasMore = response.data_.page.has_more != 0,
-                            nextPagePostId = response.data_.thread.getNextPagePostId(
+                            threadInfo = response.data_!!.thread!!,
+                            currentPage = response.data_!!.page!!.current_page,
+                            totalPage = response.data_!!.page!!.new_total_page,
+                            hasMore = response.data_!!.page!!.has_more != 0,
+                            nextPagePostId = response.data_!!.thread!!.getNextPagePostId(
                                 postList.map { it.id },
                                 sortType
                             ),
@@ -342,18 +342,18 @@ class ThreadViewModel @Inject constructor() :
                 .pbPage(threadId, page = 0, postId = postId, forumId = forumId)
                 .map<PbPageResponse, ThreadPartialChange.LoadMyLatestReply> { response ->
                     if (response.data_?.page == null
-                        || response.data_.thread?.author == null
-                        || response.data_.forum == null
-                        || response.data_.anti == null
+                        || response.data_!!.thread?.author == null
+                        || response.data_!!.forum == null
+                        || response.data_!!.anti == null
                     ) throw TiebaUnknownException
-                    val firstLatestPost = response.data_.post_list.first()
+                    val firstLatestPost = response.data_!!.post_list.first()
                     ThreadPartialChange.LoadMyLatestReply.Success(
-                        anti = response.data_.anti,
-                        posts = response.data_.post_list.map { PostItemData(it.wrapImmutable()) },
-                        page = response.data_.page.current_page,
+                        anti = response.data_!!.anti!!,
+                        posts = response.data_!!.post_list.map { PostItemData(it.wrapImmutable()) },
+                        page = response.data_!!.page!!.current_page,
                         isContinuous = firstLatestPost.floor == curLatestPostFloor + 1,
                         isDesc = isDesc,
-                        hasNewPost = response.data_.post_list.any { !curPostIds.contains(it.id) },
+                        hasNewPost = response.data_!!.post_list.any { !curPostIds.contains(it.id) },
                     )
                 }
                 .onStart { emit(ThreadPartialChange.LoadMyLatestReply.Start) }

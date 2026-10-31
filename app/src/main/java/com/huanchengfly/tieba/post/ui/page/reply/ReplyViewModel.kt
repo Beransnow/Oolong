@@ -112,9 +112,9 @@ class ReplyViewModel @Inject constructor() :
                 .map<AddPostResponse, ReplyPartialChange.Send> {
                     if (it.data_ == null) throw TiebaUnknownException
                     ReplyPartialChange.Send.Success(
-                        threadId = it.data_.tid,
-                        postId = it.data_.pid,
-                        expInc = it.data_.exp?.inc.orEmpty()
+                        threadId = it.data_!!.tid,
+                        postId = it.data_!!.pid,
+                        expInc = it.data_!!.exp?.inc.orEmpty()
                     )
                 }
                 .onStart { emit(ReplyPartialChange.Send.Start) }

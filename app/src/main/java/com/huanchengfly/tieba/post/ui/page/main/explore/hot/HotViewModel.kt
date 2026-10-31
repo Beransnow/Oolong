@@ -165,22 +165,22 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
                 val threadInfo = it.get()
                 if (threadInfo.threadId == threadId) {
                     if (threadInfo.agree != null) {
-                        if (hasAgree != threadInfo.agree.hasAgree) {
+                        if (hasAgree != threadInfo.agree!!.hasAgree) {
                             if (hasAgree == 1) {
                                 threadInfo.copy(
                                     agreeNum = threadInfo.agreeNum + 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum + 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum + 1,
+                                    agree = threadInfo.agree!!.copy(
+                                        agreeNum = threadInfo.agree!!.agreeNum + 1,
+                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum + 1,
                                         hasAgree = 1
                                     )
                                 )
                             } else {
                                 threadInfo.copy(
                                     agreeNum = threadInfo.agreeNum - 1,
-                                    agree = threadInfo.agree.copy(
-                                        agreeNum = threadInfo.agree.agreeNum - 1,
-                                        diffAgreeNum = threadInfo.agree.diffAgreeNum - 1,
+                                    agree = threadInfo.agree!!.copy(
+                                        agreeNum = threadInfo.agree!!.agreeNum - 1,
+                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum - 1,
                                         hasAgree = 0
                                     )
                                 )

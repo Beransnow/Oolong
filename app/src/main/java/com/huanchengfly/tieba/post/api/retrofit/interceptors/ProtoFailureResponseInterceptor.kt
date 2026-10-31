@@ -26,8 +26,8 @@ object ProtoFailureResponseInterceptor : Interceptor {
             inputStream.close()
         }
 
-        if (protoCommonResponse.error != null && protoCommonResponse.error.error_code != 0) {
-            throw TiebaApiException(CommonResponse(protoCommonResponse.error.error_code, protoCommonResponse.error.error_msg))
+        if (protoCommonResponse.error != null && protoCommonResponse.error!!.error_code != 0) {
+            throw TiebaApiException(CommonResponse(protoCommonResponse.error!!.error_code, protoCommonResponse.error!!.error_msg))
         }
         return response
     }

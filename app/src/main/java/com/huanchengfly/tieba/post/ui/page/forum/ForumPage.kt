@@ -296,7 +296,7 @@ private fun ForumHeader(
                         forum.is_like != 1 -> stringResource(id = R.string.button_follow)
                         forum.sign_in_info?.user_info?.is_sign_in == 1 -> stringResource(
                             id = R.string.button_signed_in,
-                            forum.sign_in_info.user_info.cont_sign_num
+                            forum.sign_in_info!!.user_info!!.cont_sign_num
                         )
 
                         else -> stringResource(id = R.string.button_sign_in)

@@ -74,8 +74,8 @@ class UserProfileViewModel @Inject constructor() :
                 .userProfileFlow(uid)
                 .map<ProfileResponse, UserProfilePartialChange.Refresh> {
                     checkNotNull(it.data_)
-                    checkNotNull(it.data_.user)
-                    UserProfilePartialChange.Refresh.Success(it.data_.user)
+                    checkNotNull(it.data_!!.user)
+                    UserProfilePartialChange.Refresh.Success(it.data_!!.user!!)
                 }
                 .onStart { emit(UserProfilePartialChange.Refresh.Start) }
                 .catch { emit(UserProfilePartialChange.Refresh.Failure(it)) }

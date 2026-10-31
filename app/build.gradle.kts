@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.wire)
 }
 
 fun loadProperties(name: String): Properties = Properties().apply {
@@ -32,16 +31,6 @@ if (isPreRelease) {
 }
 if (!isSelfBuild && !sha.isNullOrEmpty()) {
     applicationVersionName += "+${sha.substring(0, 7)}"
-}
-
-wire {
-    sourcePath {
-        srcDir("src/main/protos")
-    }
-
-    kotlin {
-        android = true
-    }
 }
 
 android {
@@ -156,7 +145,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
 
-    api(libs.wire.runtime)
+    implementation(project(":core:network"))
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
