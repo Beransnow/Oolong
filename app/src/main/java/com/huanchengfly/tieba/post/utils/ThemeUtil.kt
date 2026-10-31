@@ -57,8 +57,6 @@ object ThemeUtil {
     const val KEY_USE_DYNAMIC_THEME = "useDynamicColorTheme"
     const val KEY_SWITCH_REASON = "switch_reason"
     const val KEY_TRANSLUCENT_PRIMARY_COLOR = "translucent_primary_color"
-    const val KEY_CUSTOM_STATUS_BAR_FONT_DARK = "custom_status_bar_font_dark"
-    const val KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR = "custom_toolbar_primary_color"
     const val KEY_TRANSLUCENT_THEME_BACKGROUND_PATH = "translucent_theme_background_path"
     const val KEY_USE_DYNAMIC_COLOR_THEME = "useDynamicColorTheme"
 
@@ -225,15 +223,10 @@ object ThemeUtil {
 
     fun isStatusBarFontDark(): Boolean {
         val theme = getRawTheme()
-        val isToolbarPrimaryColor: Boolean = INSTANCE.appPreferences.toolbarPrimaryColor
-        return if (theme == THEME_CUSTOM) {
-            INSTANCE.appPreferences.customStatusBarFontDark
-        } else if (isTranslucentTheme(theme)) {
+        return if (isTranslucentTheme(theme)) {
             theme.contains("dark", ignoreCase = true)
-        } else if (!isToolbarPrimaryColor) {
-            !isNightMode(theme)
         } else {
-            false
+            !isNightMode(theme)
         }
     }
 

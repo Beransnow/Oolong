@@ -60,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.compose.calcStatusBarColor
 
 @Composable
 fun accountNavIconIfCompact(): (@Composable () -> Unit)? =
@@ -348,7 +347,7 @@ fun TopAppBarContainer(
         Spacer(
             modifier = statusBarModifier
                 .fillMaxWidth()
-                .background(color = ExtendedTheme.colors.topBar.calcStatusBarColor())
+                .background(color = ExtendedTheme.colors.topBar)
         )
         Column(
             modifier = Modifier

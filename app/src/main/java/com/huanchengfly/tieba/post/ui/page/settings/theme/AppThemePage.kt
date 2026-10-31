@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Checkbox
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -51,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
@@ -70,9 +67,7 @@ import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
-import com.huanchengfly.tieba.post.components.dialogs.CustomThemeDialog
 import com.huanchengfly.tieba.post.goToActivity
-import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
@@ -115,18 +110,6 @@ fun AppThemePage(
             )
         )
     }
-    var customToolbarPrimaryColor by rememberPreferenceAsMutableState(
-        key = booleanPreferencesKey(
-            ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR
-        ),
-        defaultValue = false
-    )
-    var customStatusBarFontDark by rememberPreferenceAsMutableState(
-        key = booleanPreferencesKey(
-            ThemeUtil.KEY_CUSTOM_STATUS_BAR_FONT_DARK
-        ),
-        defaultValue = false
-    )
 
     Dialog(
         dialogState = customPrimaryColorDialogState,
@@ -135,11 +118,7 @@ fun AppThemePage(
             DialogPositiveButton(
                 text = stringResource(id = R.string.button_finish),
                 onClick = {
-                    customStatusBarFontDark = customStatusBarFontDark || !customToolbarPrimaryColor
-                    context.appPreferences.customPrimaryColor =
-                        CustomThemeDialog.toString(customPrimaryColor.toArgb())
-                    context.appPreferences.toolbarPrimaryColor = customToolbarPrimaryColor
-                    context.appPreferences.customStatusBarFontDark = customStatusBarFontDark
+                    context.appPreferences.customPrimaryColor = customPrimaryColor.toHexString()
                     ThemeUtil.setUseDynamicTheme(false)
                     ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
                 }
@@ -245,54 +224,6 @@ fun AppThemePage(
                             )
                         }
                     }
-                }
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {
-                            customToolbarPrimaryColor =
-                                !customToolbarPrimaryColor
-                        }
-                    )
-            ) {
-                Checkbox(
-                    checked = customToolbarPrimaryColor,
-                    onCheckedChange = {
-                        customToolbarPrimaryColor = it
-                    },
-                )
-                Text(text = stringResource(id = R.string.tip_toolbar_primary_color))
-            }
-
-            if (customToolbarPrimaryColor) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                customStatusBarFontDark =
-                                    !customStatusBarFontDark
-                            }
-                        )
-                ) {
-                    Checkbox(
-                        checked = customStatusBarFontDark,
-                        onCheckedChange = {
-                            customStatusBarFontDark = it
-                        },
-                    )
-                    Text(text = stringResource(id = R.string.tip_status_bar_font))
                 }
             }
         }

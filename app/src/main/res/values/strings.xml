@@ -157,11 +157,8 @@
     <string name="tip_show_shortcut_in_thread">开启后，将在贴子内显示快速进吧的入口</string>
     <string name="tip_show_shortcut_in_thread_on">将在贴子内显示快速进吧的入口</string>
     <string name="button_finish">完成</string>
-    <string name="tip_primary_color">主题色</string>
     <string name="title_custom_theme">设置自定义主题</string>
     <string name="title_color_picker_primary">选择主题色</string>
-    <string name="tip_status_bar_font">顶栏暗色字体</string>
-    <string name="tip_toolbar_primary_color">顶栏颜色跟随主题色</string>
     <string name="cpv_select">选择</string>
     <string name="cpv_custom">自定义</string>
     <string name="cpv_presets">预设</string>
@@ -468,7 +465,6 @@
     <string name="title_dynamic_theme">动态取色</string>
     <string name="desc_night_theme">夜间主题</string>
     <string name="settings_image_darken_when_night_mode">夜间模式压暗缩略图</string>
-    <string name="tip_toolbar_primary_color_summary">修改重启后生效</string>
     <string name="title_hide_reply">隐藏回贴入口</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
     <string name="tip_settings_use_themed_icon_summary_not_supported">当前正在使用的应用图标暂不支持动态取色</string>
@@ -512,8 +508,6 @@
     <string name="summary_do_not_use_photo_picker">将使用 App 内置的照片选择器</string>
     <string name="summary_use_photo_picker">将使用原生的照片选择器</string>
     <string name="desc_show">显示</string>
-    <string name="title_settings_status_bar_darker">状态栏遮罩</string>
-    <string name="summary_settings_status_bar_darker">开启后非白色主题状态栏将略微变暗</string>
     <string name="desc_input_color">手动输入颜色</string>
     <string name="release_to_load_latest_posts">松开加载最新回复</string>
     <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>

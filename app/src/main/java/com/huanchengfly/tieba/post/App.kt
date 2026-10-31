@@ -370,12 +370,7 @@ class App : Application(), SketchFactory {
                             )
                         )
                     } else {
-                        val isPrimaryColor = context.appPreferences.toolbarPrimaryColor
-                        if (isPrimaryColor) {
-                            getColorByAttr(context, R.attr.colorPrimary, theme)
-                        } else {
-                            context.getColorCompat(R.color.white)
-                        }
+                        context.getColorCompat(R.color.white)
                     }
                 }
                 R.attr.colorText -> {

@@ -13,7 +13,6 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
-import androidx.annotation.ColorInt
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -26,9 +25,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
-import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.dpToPxFloat
-import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
@@ -246,18 +243,6 @@ fun showErrorSnackBar(view: View, throwable: Throwable) {
                 .show()
         }
         .show()
-}
-
-fun calcStatusBarColorInt(context: Context, @ColorInt originColor: Int): Int {
-    var darkerStatusBar = true
-    val isToolbarPrimaryColor =
-        context.dataStore.getBoolean(ThemeUtil.KEY_CUSTOM_TOOLBAR_PRIMARY_COLOR, false)
-    if (!ThemeUtil.isTranslucentTheme() && !ThemeUtil.isNightMode() && !isToolbarPrimaryColor) {
-        darkerStatusBar = false
-    } else if (!context.dataStore.getBoolean("status_bar_darker", true)) {
-        darkerStatusBar = false
-    }
-    return if (darkerStatusBar) ColorUtils.getDarkerColor(originColor) else originColor
 }
 
 val Context.powerManager: PowerManager

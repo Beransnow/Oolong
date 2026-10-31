@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FontDownload
-import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.Upcoming
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.runtime.Composable
@@ -25,11 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -237,39 +234,6 @@ fun CustomSettingsPage(
                         )
                     }
                 }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = "status_bar_darker",
-                    title = stringResource(id = R.string.title_settings_status_bar_darker),
-                    summary = stringResource(id = R.string.summary_settings_status_bar_darker),
-                    defaultChecked = true,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_beaker),
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = "custom_toolbar_primary_color",
-                    title = stringResource(id = R.string.tip_toolbar_primary_color),
-                    defaultChecked = false,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.FormatColorFill,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    summary = stringResource(id = R.string.tip_toolbar_primary_color_summary),
-                )
             }
             prefsItem {
                 SwitchPref(

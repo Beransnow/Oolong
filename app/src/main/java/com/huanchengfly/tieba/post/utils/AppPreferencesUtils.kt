@@ -80,16 +80,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var customPrimaryColor by DataStoreDelegates.string(key = "custom_primary_color")
 
-    var customStatusBarFontDark by DataStoreDelegates.boolean(
-        defaultValue = false,
-        key = "custom_status_bar_font_dark"
-    )
-
-    var toolbarPrimaryColor by DataStoreDelegates.boolean(
-        defaultValue = false,
-        key = "custom_toolbar_primary_color"
-    )
-
     var defaultSortType by DataStoreDelegates.string(
         key = "default_sort_type",
         defaultValue = "0"
@@ -180,11 +170,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
     var showTopForumInNormalList by DataStoreDelegates.boolean(
         defaultValue = true,
         key = "show_top_forum_in_normal_list"
-    )
-
-    var statusBarDarker by DataStoreDelegates.boolean(
-        defaultValue = true,
-        key = "status_bar_darker"
     )
 
     var theme by DataStoreDelegates.string(defaultValue = ThemeUtil.THEME_DEFAULT)

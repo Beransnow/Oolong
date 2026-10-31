@@ -21,7 +21,6 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.darken
 
 @Stable
@@ -119,30 +118,14 @@ private fun getDynamicTopBarColor(
     tonalPalette: TonalPalette,
     isNightMode: Boolean = false,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val primaryColor = tonalPalette.primary40
-    val backgroundColor = tonalPalette.neutralVariant99
-    return if (topBarUsePrimaryColor) {
-        primaryColor
-    } else {
-        backgroundColor
-    }
+    return tonalPalette.neutralVariant99
 }
 
 @Composable
 private fun getDynamicOnTopBarColor(
     tonalPalette: TonalPalette,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val onPrimaryColor = tonalPalette.primary100
-    val onBackgroundColor = tonalPalette.neutralVariant10
-    return if (topBarUsePrimaryColor) {
-        onPrimaryColor
-    } else {
-        onBackgroundColor
-    }
+    return tonalPalette.neutralVariant10
 }
 
 @Composable
@@ -150,60 +133,28 @@ private fun getDynamicOnTopBarSecondaryColor(
     tonalPalette: TonalPalette,
     isNightMode: Boolean = false,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val primaryColor = tonalPalette.primary80
-    val backgroundColor = tonalPalette.neutralVariant40
-    return if (topBarUsePrimaryColor) {
-        primaryColor
-    } else {
-        backgroundColor
-    }
+    return tonalPalette.neutralVariant40
 }
 
 @Composable
 private fun getDynamicOnTopBarActiveColor(
     tonalPalette: TonalPalette,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val primaryColor = tonalPalette.primary100
-    val backgroundColor = tonalPalette.neutralVariant0
-    return if (topBarUsePrimaryColor) {
-        primaryColor
-    } else {
-        backgroundColor
-    }
+    return tonalPalette.neutralVariant0
 }
 
 @Composable
 private fun getDynamicTopBarSurfaceColor(
     tonalPalette: TonalPalette,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val primaryColor = tonalPalette.primary90
-    val backgroundColor = tonalPalette.neutralVariant95
-    return if (topBarUsePrimaryColor) {
-        primaryColor
-    } else {
-        backgroundColor
-    }
+    return tonalPalette.neutralVariant95
 }
 
 @Composable
 private fun getDynamicOnTopBarSurfaceColor(
     tonalPalette: TonalPalette,
 ): Color {
-    val topBarUsePrimaryColor =
-        LocalContext.current.appPreferences.toolbarPrimaryColor
-    val primaryColor = tonalPalette.primary10
-    val backgroundColor = tonalPalette.neutralVariant30
-    return if (topBarUsePrimaryColor) {
-        primaryColor
-    } else {
-        backgroundColor
-    }
+    return tonalPalette.neutralVariant30
 }
 
 @Composable
