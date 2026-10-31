@@ -35,7 +35,7 @@ object DeviceUtils {
 
     /**
      * [getDeviceScore] with the CPU frequency converted from kHz to GHz and the result clamped to
-     * `0..1`, as the official client computes it.
+     * `0..1`.
      */
     fun getNormalizedDeviceScore(): Float {
         val cpuCores = getDeviceCpuCore().toFloat().takeIf { it > 0 } ?: 6.9822063f

@@ -12,7 +12,7 @@ import okhttp3.Response
  *
  * Requests control this with headers, which are removed before sending:
  * - [OMIT_COMMON_PARAMS]: comma-separated common parameters to leave out
- * - [WITH_SIG]: also send `sig`, for endpoints the official client marks as needing it
+ * - [WITH_SIG]: also send `sig`, for endpoints that need it
  */
 class FormParamsInterceptor(
     private val profile: TiebaProfile,

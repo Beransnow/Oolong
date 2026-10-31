@@ -984,7 +984,7 @@ object MixedTiebaApiImpl : ITiebaApi {
         forumIds: String,
         tbs: String
     ): Flow<MSignBean> = flow {
-        // The official client sends at most 50 forums per request
+        // At most 50 forums per request
         val results = forumIds.split(",").map { it.toLong() }
             .chunked(SignRemoteDataSource.MAX_MSIGN_FORUMS)
             .map { legacySignRemoteDataSource.mSign(it, tbs) }

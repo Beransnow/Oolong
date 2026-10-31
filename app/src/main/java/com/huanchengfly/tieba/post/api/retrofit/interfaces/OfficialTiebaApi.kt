@@ -309,7 +309,7 @@ interface OfficialTiebaApi {
     ): Flow<ThreadStoreBean>
 
     /**
-     * The official client sends the IMEI, Android ID and MAC of sync under Base64-encoded aliases
+     * Sync sends the IMEI, Android ID and MAC under Base64-encoded aliases
      * (`iemi`, `di_diordna`, `cam`) instead of the plain common parameters.
      */
     @Headers(

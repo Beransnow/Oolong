@@ -8,8 +8,8 @@ import com.huanchengfly.tieba.core.network.form.signedFormBody
 /**
  * Following and unfollowing forums, as sent from the forum page.
  *
- * The official client always sends `authsid` and `st_type`, as the literal `null` when it has no
- * value, and sends `dev_id` only when it has one.
+ * `authsid` and `st_type` are always sent, as the literal `null` when they have no
+ * value; `dev_id` is only sent when there is one.
  */
 class LikeRemoteDataSource(
     network: TiebaNetwork,

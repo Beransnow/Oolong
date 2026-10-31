@@ -8,8 +8,7 @@ import androidx.core.content.edit
 import com.huanchengfly.tieba.post.App
 
 /**
- * Install-level state that `c/s/login` and `c/s/sync` report, kept the way the official client
- * keeps it.
+ * Install-level state that `c/s/login` and `c/s/sync` report.
  */
 object InstallState {
     private const val KEY_LOGGED_IN_BEFORE = "logged_in_before"

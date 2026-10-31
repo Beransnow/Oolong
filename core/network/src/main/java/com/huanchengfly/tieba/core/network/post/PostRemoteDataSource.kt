@@ -24,7 +24,7 @@ class PostRemoteDataSource(
 
     /**
      * Posts a reply. [data] carries the business fields; the common request, with `tbs`, is
-     * filled in here, and the top-level `tbs` and `sig` stay empty as in the official client.
+     * filled in here, and the top-level `tbs` and `sig` stay empty.
      *
      * The multipart body also carries the message task form parameters, signed with `sign` only.
      * A refreshed `anti_stat.tbs` is stored whether or not the post went through.

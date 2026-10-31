@@ -4,7 +4,7 @@ package com.huanchengfly.tieba.core.network
 enum class TiebaProtocol { PROTOBUF, FORM }
 
 /**
- * The two network stacks of the official client, which send different headers, cookies and
+ * The two network stacks requests go through, which send different headers, cookies and
  * common parameters.
  */
 enum class TiebaStack {

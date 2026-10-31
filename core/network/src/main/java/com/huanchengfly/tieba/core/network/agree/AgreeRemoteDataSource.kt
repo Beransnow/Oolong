@@ -25,7 +25,7 @@ class AgreeRemoteDataSource(
     /**
      * Agrees or disagrees with [target], or takes it back when [undo].
      *
-     * @param forumId the forum of the thread, which the official client sends on its main paths
+     * @param forumId the forum of the thread
      */
     suspend fun opAgree(
         target: AgreeTarget,
@@ -33,8 +33,6 @@ class AgreeRemoteDataSource(
         undo: Boolean = false,
         disagree: Boolean = false,
     ): AgreeResponse {
-        // The server rejects the obj_type numbering seen in the 12.52 client (1 thread, 2 post,
-        // 3 sub-post) with "wrong object type"; this one is what it accepts
         val (objType, postId) = when (target) {
             is AgreeTarget.Thread -> 3 to target.firstPostId
             is AgreeTarget.Post -> 1 to target.postId

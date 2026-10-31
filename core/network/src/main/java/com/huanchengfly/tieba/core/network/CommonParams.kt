@@ -21,7 +21,7 @@ class CommonParams(
 ) {
     private val processStartTime = clock()
 
-    /** Like the official client, the day the process started rather than the day of the request. */
+    /** The day the process started, not the day of each request. */
     private val eventDay = eventDay(processStartTime)
 
     /** Used until `c/s/sync` has issued a client id. */

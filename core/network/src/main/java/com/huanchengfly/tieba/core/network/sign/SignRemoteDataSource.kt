@@ -28,7 +28,7 @@ class SignRemoteDataSource(
     /**
      * Signs in to up to [MAX_MSIGN_FORUMS] forums at once.
      *
-     * The official client always sends `authsid`, as the literal `null` until an account access
+     * `authsid` is always sent, as the literal `null` until an account access
      * check has issued one.
      */
     suspend fun mSign(forumIds: List<Long>, tbs: String? = null): MSignResponse {

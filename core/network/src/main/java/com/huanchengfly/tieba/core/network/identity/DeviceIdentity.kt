@@ -38,6 +38,6 @@ interface DeviceIdentity {
     /** Performance score in `0..1`. */
     val deviceScore: Float
 
-    /** The system WebView user agent, which the official client prefixes to its own. */
+    /** The system WebView user agent, which prefixes the client's own. */
     val webViewUserAgent: String
 }

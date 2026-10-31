@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.core.network.identity
 import android.telephony.TelephonyManager
 
 /**
- * The `net_type` codes the official client sends.
+ * The `net_type` codes.
  */
 object NetworkType {
     const val NONE = 0
