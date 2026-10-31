@@ -9,6 +9,8 @@ import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
+import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
+import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
@@ -157,6 +159,21 @@ object NetworkIdentityModule {
         network: TiebaNetwork,
         commonParams: CommonParams,
     ): LikeRemoteDataSource = LikeRemoteDataSource(network, commonParams)
+
+    @Provides
+    @Singleton
+    fun provideMessageRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): MessageRemoteDataSource = MessageRemoteDataSource(network, commonParams)
+
+    @Provides
+    @Singleton
+    fun providePostRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+        sessionProvider: SessionProvider,
+    ): PostRemoteDataSource = PostRemoteDataSource(network, commonParams, sessionProvider)
 }
 
 @EntryPoint
@@ -166,6 +183,8 @@ interface LegacyNetworkEntryPoint {
     fun signRemoteDataSource(): SignRemoteDataSource
     fun agreeRemoteDataSource(): AgreeRemoteDataSource
     fun likeRemoteDataSource(): LikeRemoteDataSource
+    fun messageRemoteDataSource(): MessageRemoteDataSource
+    fun postRemoteDataSource(): PostRemoteDataSource
 }
 
 private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
@@ -183,3 +202,9 @@ internal val legacyAgreeRemoteDataSource: AgreeRemoteDataSource
 
 internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
     get() = legacyEntryPoint.likeRemoteDataSource()
+
+internal val legacyMessageRemoteDataSource: MessageRemoteDataSource
+    get() = legacyEntryPoint.messageRemoteDataSource()
+
+internal val legacyPostRemoteDataSource: PostRemoteDataSource
+    get() = legacyEntryPoint.postRemoteDataSource()
