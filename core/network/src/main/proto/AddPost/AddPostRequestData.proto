@@ -74,4 +74,7 @@ message AddPostRequestData {
   string from_category_id = 65;
   string to_category_id = 66;
   optional int32 is_show_bless = 67;
+  optional string bot_conf = 68;
+  optional string sprite_meme_id = 69;
+  optional string sprite_meme_query = 70;
 }

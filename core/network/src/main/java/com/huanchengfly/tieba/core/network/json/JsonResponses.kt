@@ -1,8 +1,7 @@
 package com.huanchengfly.tieba.core.network.json
 
-import com.huanchengfly.tieba.core.network.TiebaServerException
-import com.huanchengfly.tieba.core.network.VerificationChallenge
-import com.huanchengfly.tieba.core.network.VerificationRequiredException
+import com.huanchengfly.tieba.core.network.CaptchaFields
+import com.huanchengfly.tieba.core.network.writeResponseError
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -19,38 +18,27 @@ internal fun checkJsonResponse(response: JsonObject, sessionProvider: SessionPro
     antiStat?.string("tbs")?.takeIf { it.isNotEmpty() }?.let(sessionProvider::updateTbs)
 
     val code = response.string("error_code")?.toIntOrNull() ?: 0
-    val message = response.string("error_msg").orEmpty()
     val info = response["info"] as? JsonObject
-    val needsCaptcha = code in CAPTCHA_CODES || info?.string("need_vcode") == "1"
-    when {
-        needsCaptcha -> {
-            val source = listOfNotNull(info, antiStat, response["anti"] as? JsonObject)
+    val error = writeResponseError(
+        code = code,
+        message = response.string("error_msg").orEmpty(),
+        needsCaptcha = info?.string("need_vcode") == "1",
+        captcha = {
+            listOfNotNull(info, antiStat, response["anti"] as? JsonObject)
                 .firstOrNull { !it.string("vcode_md5").isNullOrEmpty() }
-            throw VerificationRequiredException(
-                code, message,
-                VerificationChallenge.Captcha(
-                    vcodeMd5 = source?.string("vcode_md5").orEmpty(),
-                    vcodeType = source?.string("vcode_type").orEmpty(),
-                    picUrl = source?.string("vcode_pic_url").orEmpty(),
-                    extra = source?.get("vcode_extra"),
-                ),
-            )
-        }
-
-        code == ACCOUNT_ACCESS_CODE -> throw VerificationRequiredException(
-            code, message, VerificationChallenge.AccountAccess(info?.get("access_state"))
-        )
-
-        code in SECURITY_CODES -> throw VerificationRequiredException(
-            code, message, VerificationChallenge.Security(code)
-        )
-
-        code != 0 -> throw TiebaServerException(code, message, response)
-    }
+                ?.let {
+                    CaptchaFields(
+                        vcodeMd5 = it.string("vcode_md5").orEmpty(),
+                        vcodeType = it.string("vcode_type").orEmpty(),
+                        picUrl = it.string("vcode_pic_url").orEmpty(),
+                        extra = it["vcode_extra"],
+                    )
+                }
+        },
+        accessState = { info?.get("access_state") },
+        response = response,
+    )
+    if (error != null) throw error
 }
 
 private fun JsonObject.string(key: String): String? = (get(key) as? JsonPrimitive)?.content
-
-private val CAPTCHA_CODES = setOf(5, 6)
-private const val ACCOUNT_ACCESS_CODE = 227001
-private val SECURITY_CODES = setOf(220009, 3250017, 3250020, 3250021, 3250022, 3250023, 3250024)
