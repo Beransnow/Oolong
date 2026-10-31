@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -16,6 +17,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
@@ -38,7 +41,7 @@ enum class GlassTier {
     /** Backdrop blur without refraction. Needs RenderEffect. */
     Blur,
 
-    /** Translucent colour, no backdrop sampling. */
+    /** Opaque colour, no backdrop sampling. */
     Solid;
 
     companion object {
@@ -50,7 +53,18 @@ enum class GlassTier {
     }
 }
 
-val LocalGlassTier = staticCompositionLocalOf { GlassTier.forDevice() }
+/** Forces a tier, for previews and screenshot tests. */
+val LocalGlassTier = staticCompositionLocalOf<GlassTier?> { null }
+
+/** Preference that renders all chrome as [GlassTier.Solid]. */
+val ReduceTransparencyKey = booleanPreferencesKey("reduceTransparency")
+
+@Composable
+private fun currentGlassTier(): GlassTier {
+    LocalGlassTier.current?.let { return it }
+    val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
+    return if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+}
 
 /**
  * The content that floating chrome samples. Provided by [GlassScaffold]; null outside one, in
@@ -62,8 +76,6 @@ val LocalGlassTier = staticCompositionLocalOf { GlassTier.forDevice() }
  */
 val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 
-private const val SolidAlpha = 0.94f
-
 /**
  * Background for a bar pinned to the top edge. Blur and tint are strongest at the top and fade to
  * nothing at the bottom, so the bar has no hard edge over the content.
@@ -73,7 +85,7 @@ private const val SolidAlpha = 0.94f
 @Composable
 fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
     val source = LocalGlassSource.current
-    val tier = LocalGlassTier.current
+    val tier = currentGlassTier()
     val color = ExtendedTheme.colors.background
     val tint = remember(color, solidFraction) {
         Brush.verticalGradient(
@@ -85,8 +97,8 @@ fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
     if (source == null || tier == GlassTier.Solid) {
         val solid = remember(color, solidFraction) {
             Brush.verticalGradient(
-                0f to color.copy(alpha = SolidAlpha),
-                solidFraction to color.copy(alpha = SolidAlpha),
+                0f to color,
+                solidFraction to color,
                 1f to color.copy(alpha = 0f),
             )
         }
@@ -113,7 +125,7 @@ fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
 @Composable
 fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
     val source = LocalGlassSource.current
-    val tier = if (source == null) GlassTier.Solid else LocalGlassTier.current
+    val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
     val shadowed = shadow(
         elevation = 12.dp,
@@ -152,7 +164,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
 
         GlassTier.Solid -> shadowed
             .clip(shape)
-            .background(colors.background.copy(alpha = SolidAlpha))
+            .background(colors.background)
             .border(0.5.dp, edge, shape)
     }
 }
