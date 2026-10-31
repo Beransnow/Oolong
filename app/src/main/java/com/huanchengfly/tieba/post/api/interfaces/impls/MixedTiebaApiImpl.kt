@@ -132,10 +132,12 @@ import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Call
 import java.io.File
@@ -946,7 +948,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.loginFlow()
 
     override fun loginFlow(bduss: String, sToken: String): Flow<LoginBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.loginFlow("$bduss|", sToken, null)
+        RetrofitTiebaApi.OFFICIAL_TIEBA_API.loginFlow("$bduss|", sToken)
+            .onEach { InstallState.onLoginSucceeded() }
 
     override fun profileModifyFlow(
         birthdayShowStatus: Boolean,
@@ -964,7 +967,7 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
 
     override fun imgPortrait(file: File): Flow<CommonResponse> {
-        return RetrofitTiebaApi.OFFICIAL_TIEBA_API.imgPortrait(
+        return RetrofitTiebaApi.OFFICIAL_UPLOAD_TIEBA_API.imgPortrait(
             MyMultipartBody.Builder("--------7da3d81520810*").apply {
                 setType(MyMultipartBody.FORM)
                 addFormDataPart(Param.CLIENT_VERSION, ClientVersion.TIEBA_V12.version)
@@ -1155,8 +1158,18 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun syncFlow(clientId: String?): Flow<Sync> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.sync(clientId)
+    override fun syncFlow(clientId: String?): Flow<Sync> {
+        val pushSwitch = InstallState.pushSwitch()
+        return RetrofitTiebaApi.OFFICIAL_TIEBA_API.sync(
+            clientId = clientId,
+            pushSystemSwitch = pushSwitch.current,
+            lastPushSystemSwitch = pushSwitch.last,
+            lastPushSystemSwitchTime = pushSwitch.lastChangeTime,
+            runningAbi = InstallState.runningAbi,
+            supportAbi = InstallState.supportAbi,
+            installAppTime = App.Config.appFirstInstallTime,
+        )
+    }
 
     override fun addPostFlow(
         content: String,

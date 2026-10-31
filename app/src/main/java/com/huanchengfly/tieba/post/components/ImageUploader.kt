@@ -157,7 +157,7 @@ class ImageUploader(
             }
         }
         return requestBodies.asFlow()
-            .flatMapConcat { RetrofitTiebaApi.OFFICIAL_TIEBA_API.uploadPicture(it) }
+            .flatMapConcat { RetrofitTiebaApi.OFFICIAL_UPLOAD_TIEBA_API.uploadPicture(it) }
             .catch {
                 throw UploadPictureFailedException(it.getErrorCode(), it.getErrorMessage())
             }

@@ -1,19 +1,22 @@
 package com.huanchengfly.tieba.post.api.retrofit.interfaces
 
 import android.os.Build
+import android.util.Base64
+import com.huanchengfly.tieba.core.network.form.FormParamsInterceptor
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.ScreenInfo
 import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
+import com.huanchengfly.tieba.post.api.getScreenDensity
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.CacheUtil.base64Encode
 import com.huanchengfly.tieba.post.utils.ClientUtils
+import com.huanchengfly.tieba.post.utils.InstallState
 import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.coroutines.Deferred
@@ -128,8 +131,6 @@ interface OfficialTiebaApi {
     fun unfollowFlow(
         @Field("portrait") portrait: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("from_type") fromType: Int = 2,
@@ -137,14 +138,15 @@ interface OfficialTiebaApi {
         @Field("timestamp") timestamp: Long = System.currentTimeMillis()
     ): Flow<CommonResponse>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
+    @Headers(
+        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
+        "${FormParamsInterceptor.WITH_SIG}: 1",
+    )
     @POST("/c/c/user/follow")
     @FormUrlEncoded
     fun followFlow(
         @Field("portrait") portrait: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("from_type") fromType: Int = 2,
@@ -161,8 +163,6 @@ interface OfficialTiebaApi {
         @Field("BDUSS") bduss: String = AccountUtil.getBduss()!!,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("user_id") userId: String = AccountUtil.getUid()!!,
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<GetForumListBean>
 
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
@@ -184,16 +184,12 @@ interface OfficialTiebaApi {
     fun mSignFlow(
         @Field("forum_ids") forumIds: String,
         @Field("tbs") tbs: String,
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("authsid") authsid: String = "null",
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("user_id") userId: String = AccountUtil.getUid()!!
     ): Flow<MSignBean>
 
     @Headers(
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
         "${Header.NO_COMMON_PARAMS}: BDUSS"
     )
     @POST("/c/s/initNickname")
@@ -201,32 +197,22 @@ interface OfficialTiebaApi {
     fun initNickNameFlow(
         @Field("BDUSS") bduss: String = AccountUtil.getBduss()!!,
         @Field("stoken") sToken: String = AccountUtil.getSToken()!!,
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version"
     ): Flow<InitNickNameBean>
 
     @Headers(
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.DROP_PARAMS}: BDUSS"
+        "${Header.NO_COMMON_PARAMS}: BDUSS"
     )
     @POST("/c/s/login")
     @FormUrlEncoded
     fun loginFlow(
-        @Field("bdusstoken") bdusstoken: String = "${AccountUtil.getBduss()!!}|null",
+        @Field("bdusstoken") bdusstoken: String = "${AccountUtil.getBduss()!!}|",
         @Field("stoken") sToken: String = AccountUtil.getSToken()!!,
-        @Field("user_id") userId: String? = AccountUtil.getUid(),
+        @Field("first_login") firstLogin: String = InstallState.firstLogin,
         @Field("channel_id") channelId: String = "",
         @Field("channel_uid") channelUid: String = "",
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
-        @Field("authsid") authsid: String = "null",
+        @Field("send_tb") sendTb: String = "0",
     ): Flow<LoginBean>
 
-    @Headers(
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-    )
     @POST("/c/u/user/profile")
     @FormUrlEncoded
     fun profileFlow(
@@ -237,14 +223,8 @@ interface OfficialTiebaApi {
         @Field("need_post_count") needPostCount: String = "1",
         @Field("page") page: String = "1",
         @Field("pn") pn: String = "1",
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<Profile>
 
-    @Headers(
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-    )
     @POST("/c/c/profile/modify")
     @FormUrlEncoded
     fun profileModify(
@@ -276,9 +256,6 @@ interface OfficialTiebaApi {
     fun personalizedFlow(
         @Field("load_type") load_type: Int,
         @Field("pn") page: Int = 1,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("cuid_gid") cuid_gid: String = "",
         @Field("need_tags") need_tags: Int = 0,
         @Field("page_thread_count") page_thread_count: Int = 15,
@@ -298,9 +275,6 @@ interface OfficialTiebaApi {
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     @POST("/c/c/forum/sign")
     @FormUrlEncoded
@@ -308,26 +282,17 @@ interface OfficialTiebaApi {
         @Field("fid") forumId: String,
         @Field("kw") forumName: String,
         @Field("tbs") tbs: String,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
     ): Flow<SignResultBean>
 
     @POST("/c/c/forum/unfavolike")
     @FormUrlEncoded
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     fun unfavolike(
         @Field("fid") forumId: String,
         @Field("kw") forumName: String,
         @Field("tbs") tbs: String,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
     ): Flow<CommonResponse>
 
@@ -335,56 +300,54 @@ interface OfficialTiebaApi {
     @FormUrlEncoded
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     fun threadStoreFlow(
         @Field("rn") pageSize: Int,
         @Field("offset") offset: Int,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
         @Field("user_id") user_id: String? = AccountUtil.getUid(),
     ): Flow<ThreadStoreBean>
 
+    /**
+     * The official client sends the IMEI, Android ID and MAC of sync under Base64-encoded aliases
+     * (`iemi`, `di_diordna`, `cam`) instead of the plain common parameters.
+     */
     @Headers(
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID},${Param.MAC},${Param.PHONE_IMEI},${Param.ANDROID_ID},${Param.SWAN_GAME_VER},${Param.SDK_VER}",
+        "${Header.NO_COMMON_PARAMS}: ${Param.MAC},${Param.PHONE_IMEI},${Param.ANDROID_ID}",
     )
     @POST("/c/s/sync")
     @FormUrlEncoded
     fun sync(
-        @Field(Param.CLIENT_ID) clientId: String? = null,
-        @Field("_msg_status") msgStatus: String = "1",
-        @Field("_phone_screen") phoneScreen: String = "${getScreenWidth()},${getScreenHeight()}",
-        @Field("_pic_quality") picQuality: String = "0",
-        @Field("board") board: String = Build.BOARD,
+        @Field(Param.CLIENT_ID) clientId: String?,
+        @Field("push_system_switch") pushSystemSwitch: String,
+        @Field("last_push_system_switch") lastPushSystemSwitch: String,
+        @Field("last_push_system_switch_time") lastPushSystemSwitchTime: Long,
+        @Field("running_abi") runningAbi: String,
+        @Field("support_abi") supportAbi: String,
+        @Field("install_app_time") installAppTime: Long,
+        @Field("_os_version") osVersion: String = Build.VERSION.RELEASE,
         @Field("brand") brand: String = Build.BRAND,
-        @Field("cam") cam: String = base64Encode("02:00:00:00:00:00"),
-        @Field("di_diordna") androidIdR: String = base64Encode(UIDUtil.getAndroidId("000")),
-        @Field("iemi") imeiR: String = base64Encode(MobileInfoUtil.getIMEI(App.INSTANCE)),
+        @Field("model") model: String = Build.MODEL,
+        @Field("board") board: String = Build.BOARD,
         @Field("incremental") incremental: String = Build.VERSION.INCREMENTAL,
-        @Field("md5") md5: String = "F86F4C238491AB3BEBFA33AC42C1582B",
-        @Field("signmd5") signmd5: String = "225172691",
-        @Field("package") packageName: String = "com.baidu.tieba",
-        @Field("versioncode") versionCode: String = "202965248",
-        @Field("running_abi") runningAbi: Int = 64,
-        @Field("support_abi") supportAbi: Int = 64,
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
+        @Field("_phone_screen") phoneScreen: String = "${getScreenWidth()},${getScreenHeight()}",
         @Field("scr_w") scr_w: String = getScreenWidth().toString(),
-        @Field("stoken") sToken: String? = AccountUtil.getSToken(),
-        @retrofit2.http.Header(Header.COOKIE) cookie: String = "ka=open;BAIDUID=${ClientUtils.baiduId}".takeIf { ClientUtils.baiduId != null }
-            ?: "ka=open"
+        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
+        @Field("scr_dip") scr_dip: String = getScreenDensity().toString(),
+        @Field("_msg_status") msgStatus: String = "1",
+        @Field("_active") active: String = "0",
+        @Field("_pic_quality") picQuality: String = "0",
+        @Field("package") packageName: String = "com.baidu.tieba",
+        @Field("versioncode") versionCode: String = "204734720",
+        @Field("signmd5") signmd5: String = "225172691",
+        @Field("md5") md5: String = "F86F4C238491AB3BEBFA33AC42C1582B",
+        @Field("iemi") imeiAlias: String = base64NoWrap(MobileInfoUtil.getIMEI(App.INSTANCE)),
+        @Field("di_diordna") androidIdAlias: String = base64NoWrap(UIDUtil.getAndroidId("")),
+        @Field("cam") macAlias: String = base64NoWrap("02:00:00:00:00:00"),
     ): Flow<Sync>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     @POST("/c/c/post/add")
     @FormUrlEncoded
@@ -416,19 +379,13 @@ interface OfficialTiebaApi {
         @Field("v_fid") v_fid: String = "",
         @Field("v_fname") v_fname: String = "",
         @Field("vcode_tag") vcode_tag: String = "12",
-        @Field("_client_version") client_version: String = "11.10.8.6",
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android $client_version",
         @Field("stoken") sToken: String? = AccountUtil.getSToken(),
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
     ): Flow<AddPostBean>
 
     @POST("/c/c/post/rmstore")
     @FormUrlEncoded
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     fun removeStoreFlow(
         @Field("tid") threadId: String,
@@ -436,42 +393,30 @@ interface OfficialTiebaApi {
         @Field("tbs") tbs: String = AccountUtil.getLoginInfo()!!.tbs,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
         @Field("user_id") user_id: String? = AccountUtil.getUid(),
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = user_id,
     ): Flow<CommonResponse>
 
     @POST("/c/c/post/addstore")
     @FormUrlEncoded
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     fun addStoreAsync(
         @Field("data") data: String,
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
-        @retrofit2.http.Header("client_user_token") clientUserToken: String? = AccountUtil.getUid(),
     ): Deferred<ApiResult<CommonResponse>>
 
     @POST("/c/c/post/addstore")
     @FormUrlEncoded
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     fun addStoreFlow(
         @Field("data") data: String,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
     ): Flow<CommonResponse>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}",
     )
     @POST("/c/c/agree/opAgree")
     @FormUrlEncoded
@@ -481,7 +426,6 @@ interface OfficialTiebaApi {
         @Field("op_type") opType: Int = 0,
         @Field("obj_type") objType: Int = 1,
         @Field("agree_type") agreeType: Int = 2,
-        @retrofit2.http.Header("client_user_token") client_user_token: String? = AccountUtil.getUid(),
         @Field("cuid_gid") cuid_gid: String = "",
         @Field("forum_id") forumId: String = "",
         @Field("personalized_rec_switch") personalizedRecSwitch: Int = 1,
@@ -571,3 +515,6 @@ interface OfficialTiebaApi {
         @Field("rn") rn: Int = 20
     ): Call<SubFloorListBean>
 }
+
+internal fun base64NoWrap(text: String): String =
+    Base64.encodeToString(text.toByteArray(), Base64.NO_WRAP)

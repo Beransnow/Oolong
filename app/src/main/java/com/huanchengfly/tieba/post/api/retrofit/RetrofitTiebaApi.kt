@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.api.retrofit
 import android.os.Build
 import com.huanchengfly.tieba.core.network.ProfileInterceptor
 import com.huanchengfly.tieba.core.network.TiebaProfile
+import com.huanchengfly.tieba.core.network.form.FormParamsInterceptor
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.ClientVersion
@@ -178,7 +179,16 @@ object RetrofitTiebaApi {
         )
     }
 
+    /** Official form endpoints, sent as the 12.52 client's classic form stack. */
     val OFFICIAL_TIEBA_API: OfficialTiebaApi by lazy {
+        createFormApi<OfficialTiebaApi>(TiebaProfile.FORM_12_52)
+    }
+
+    /**
+     * The multipart uploads of [OfficialTiebaApi] (pictures and portraits), which still carry the
+     * legacy common parameters until posting moves to the new stack.
+     */
+    val OFFICIAL_UPLOAD_TIEBA_API: OfficialTiebaApi by lazy {
         createJsonApi<OfficialTiebaApi>(
             "http://c.tieba.baidu.com/",
             CommonHeaderInterceptor(
@@ -370,6 +380,30 @@ object RetrofitTiebaApi {
             addInterceptor(FailureResponseInterceptor)
             addInterceptor(ForceLoginInterceptor)
             addInterceptor(sortAndSignInterceptor)
+            addInterceptor(ConnectivityInterceptor)
+            if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
+            connectionPool(connectionPool)
+        }.build())
+        .build()
+        .create(T::class.java)
+
+    private inline fun <reified T : Any> createFormApi(profile: TiebaProfile) = Retrofit.Builder()
+        .baseUrl(profile.baseUrl)
+        .addCallAdapterFactory(DeferredCallAdapterFactory())
+        .addCallAdapterFactory(FlowCallAdapterFactory.create())
+        .addConverterFactory(NullOnEmptyConverterFactory())
+        .addConverterFactory(json.asConverterFactory())
+        .addConverterFactory(gsonConverterFactory)
+        .client(OkHttpClient.Builder().apply {
+            readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+            addInterceptor(ProfileInterceptor(profile, legacyCommonParams))
+            addInterceptor(DropInterceptor)
+            addInterceptor(FormParamsInterceptor(profile, legacyCommonParams))
+            addInterceptor(FailureResponseInterceptor)
+            addInterceptor(ForceLoginInterceptor)
+            addInterceptor(CookieInterceptor)
             addInterceptor(ConnectivityInterceptor)
             if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
             connectionPool(connectionPool)
