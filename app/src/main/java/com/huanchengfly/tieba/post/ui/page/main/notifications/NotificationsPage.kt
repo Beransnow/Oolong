@@ -1,9 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.main.notifications
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -23,12 +23,12 @@ import com.huanchengfly.tieba.post.ui.page.main.notifications.list.Notifications
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
@@ -46,12 +46,12 @@ fun NotificationsPage(
     navigator: DestinationsNavigator,
     initialTab: Int = 0,
 ) {
-    val pages = listOf<Pair<String, (@Composable () -> Unit)>>(
+    val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
         stringResource(id = R.string.title_reply_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.ReplyMe)
+            NotificationsListPage(type = NotificationsType.ReplyMe, contentPadding = it)
         },
         stringResource(id = R.string.title_at_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.AtMe)
+            NotificationsListPage(type = NotificationsType.AtMe, contentPadding = it)
         }
     )
     val pagerState = rememberPagerState(
@@ -59,11 +59,11 @@ fun NotificationsPage(
     ) { pages.size }
     val coroutineScope = rememberCoroutineScope()
     ProvideNavigator(navigator = navigator) {
-        MyScaffold(
+        GlassScaffold(
             backgroundColor = Color.Transparent,
             topBar = {
-                TitleCentredToolbar(
-                    title = { Text(text = stringResource(id = R.string.title_notifications)) },
+                GlassTopBar(
+                    title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
                     navigationIcon = {
                         BackNavigationIcon {
                             navigator.navigateUp()
@@ -100,13 +100,12 @@ fun NotificationsPage(
         ) { paddingValues ->
             LazyLoadHorizontalPager(
                 state = pagerState,
-                contentPadding = paddingValues,
                 key = { pages[it].first },
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.Top,
                 userScrollEnabled = true,
             ) {
-                pages[it].second()
+                pages[it].second(paddingValues)
             }
         }
     }
@@ -118,23 +117,23 @@ fun NotificationsPage(
     initialTab: Int = 0,
 ) {
     val navigator = LocalNavigator.current
-    val pages = listOf<Pair<String, (@Composable () -> Unit)>>(
+    val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
         stringResource(id = R.string.title_reply_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.ReplyMe)
+            NotificationsListPage(type = NotificationsType.ReplyMe, contentPadding = it)
         },
         stringResource(id = R.string.title_at_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.AtMe)
+            NotificationsListPage(type = NotificationsType.AtMe, contentPadding = it)
         }
     )
     val pagerState = rememberPagerState(
         initialPage = initialTab,
     ) { pages.size }
     val coroutineScope = rememberCoroutineScope()
-    Scaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            Toolbar(
-                title = stringResource(id = R.string.title_notifications),
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
                 navigationIcon = accountNavIconIfCompact(),
                 actions = {
                     ActionItem(
@@ -175,13 +174,12 @@ fun NotificationsPage(
     ) { paddingValues ->
         LazyLoadHorizontalPager(
             state = pagerState,
-            contentPadding = paddingValues,
             key = { pages[it].first },
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
-            pages[it].second()
+            pages[it].second(paddingValues)
         }
     }
 }

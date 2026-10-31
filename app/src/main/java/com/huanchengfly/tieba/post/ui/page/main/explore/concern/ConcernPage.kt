@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -39,6 +40,7 @@ import kotlinx.collections.immutable.persistentListOf
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ConcernPage(
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: ConcernViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -85,6 +87,7 @@ fun ConcernPage(
         ) {
             MyLazyColumn(
                 state = lazyListState,
+                contentPadding = contentPadding,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -147,7 +150,9 @@ fun ConcernPage(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentPadding.calculateTopPadding()),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )

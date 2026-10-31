@@ -18,6 +18,7 @@ androidx-media3 = "1.11.1"
 androidx-test = "1.7.0"
 kotlinx-coroutines = "1.11.0"
 roborazzi = "1.77.0"
+haze = "2.0.1"
 
 [libraries]
 # Kotlin
@@ -44,6 +45,10 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-runtime-tracing = { module = "androidx.compose.runtime:runtime-tracing" }
 compose-destinations-core = { module = "io.github.raamcosta.compose-destinations:animations-core", version.ref = "compose-destinations" }
 compose-destinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "compose-destinations" }
+
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
+haze-glass = { module = "dev.chrisbanes.haze:haze-glass", version.ref = "haze" }
 
 accompanist-drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version = "0.37.3" }
 

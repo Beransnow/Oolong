@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,6 +82,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersonalizedPage(
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: PersonalizedViewModel = pageViewModel()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -191,6 +193,7 @@ fun PersonalizedPage(
             ) {
                 FeedList(
                     state = lazyListState,
+                    contentPadding = contentPadding,
                     dataProvider = { data },
                     refreshPositionProvider = { refreshPosition },
                     hiddenThreadIdsProvider = { hiddenThreadIds },
@@ -241,7 +244,9 @@ fun PersonalizedPage(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = contentPadding.calculateTopPadding()),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )
@@ -250,7 +255,9 @@ fun PersonalizedPage(
                 visible = showRefreshTip,
                 enter = fadeIn() + slideInVertically(),
                 exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = contentPadding.calculateTopPadding())
             ) {
                 RefreshTip(refreshCount = refreshCount)
             }
@@ -281,6 +288,7 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
 @Composable
 private fun FeedList(
     state: LazyListState,
+    contentPadding: PaddingValues,
     dataProvider: () -> ImmutableList<ThreadItemData>,
     refreshPositionProvider: () -> Int,
     hiddenThreadIdsProvider: () -> ImmutableList<Long>,
@@ -298,6 +306,7 @@ private fun FeedList(
 
     MyLazyColumn(
         state = state,
+        contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth(),
     ) {

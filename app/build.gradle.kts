@@ -169,6 +169,10 @@ dependencies {
 
     implementation(libs.accompanist.drawablepainter)
 
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
+    implementation(libs.haze.glass)
+
     implementation(libs.sketch.core)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.extensions.compose)

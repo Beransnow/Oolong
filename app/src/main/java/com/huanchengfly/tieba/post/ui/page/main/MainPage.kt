@@ -7,11 +7,20 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -21,8 +30,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
@@ -42,8 +53,11 @@ import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
+import com.huanchengfly.tieba.post.ui.widgets.compose.animateHiddenFraction
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberHideOnScrollState
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -72,9 +86,18 @@ private fun NavigationWrapper(
                 navigationContentPosition = navigationContentPosition
             )
         }
-        Column(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .then(
+                    if (navigationType == MainNavigationType.BOTTOM_NAVIGATION) Modifier
+                    else Modifier.consumeWindowInsets(
+                        WindowInsets.systemBars.union(WindowInsets.displayCutout)
+                            .only(WindowInsetsSides.Start)
+                    )
+                )
+        ) {
             content()
         }
     }
@@ -233,32 +256,45 @@ fun MainPage(
             navigationType = navigationType,
             navigationContentPosition = navigationContentPosition
         ) {
-            MyScaffold(
+            val navBarState = rememberHideOnScrollState()
+            val navBarCollapsedFraction by navBarState.animateHiddenFraction()
+            LaunchedEffect(pagerState.currentPage) { navBarState.show() }
+            val showBottomNavigation = navigationType == MainNavigationType.BOTTOM_NAVIGATION
+            GlassScaffold(
                 backgroundColor = Color.Transparent,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(navBarState.nestedScrollConnection),
                 bottomBar = {
-                    AnimatedVisibility(visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION) {
-                        BottomNavigation(
+                    if (showBottomNavigation) {
+                        FloatingNavBar(
                             currentPosition = pagerState.currentPage,
                             onChangePosition = {
                                 coroutineScope.launch { pagerState.scrollToPage(it) }
                             },
                             onReselected = onReselected,
                             navigationItems = navigationItems,
+                            collapsedFraction = { navBarCollapsedFraction },
                             themeColors = themeColors,
                         )
                     }
                 }
             ) { paddingValues ->
-                LazyLoadHorizontalPager(
-                    contentPadding = paddingValues,
-                    state = pagerState,
-                    key = { navigationItems[it].id },
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.Top,
-                    userScrollEnabled = false
-                ) {
-                    navigationItems[it].content()
+                val chromePadding = if (showBottomNavigation) {
+                    PaddingValues(bottom = paddingValues.calculateBottomPadding())
+                } else {
+                    PaddingValues(0.dp)
+                }
+                CompositionLocalProvider(LocalChromePadding provides chromePadding) {
+                    LazyLoadHorizontalPager(
+                        state = pagerState,
+                        key = { navigationItems[it].id },
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.Top,
+                        userScrollEnabled = false
+                    ) {
+                        navigationItems[it].content()
+                    }
                 }
             }
         }

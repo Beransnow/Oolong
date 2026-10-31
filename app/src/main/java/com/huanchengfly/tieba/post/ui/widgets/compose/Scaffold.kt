@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.Dp
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
+internal fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
     val dismissState = rememberDismissState(
         confirmStateChange = { value ->
             if (value != DismissValue.Default) {

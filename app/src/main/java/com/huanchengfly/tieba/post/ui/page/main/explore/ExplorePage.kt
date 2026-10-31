@@ -2,12 +2,12 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -36,10 +36,12 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import kotlinx.collections.immutable.ImmutableList
@@ -51,7 +53,7 @@ import kotlinx.coroutines.launch
 data class ExplorePageItem(
     val id: String,
     val name: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable () -> Unit,
+    val content: @Composable (contentPadding: PaddingValues) -> Unit,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -121,17 +123,17 @@ fun ExplorePage() {
             if (loggedIn) ExplorePageItem(
                 "concern",
                 { TabText(text = stringResource(id = R.string.title_concern), selected = it) },
-                { ConcernPage() }
+                { ConcernPage(contentPadding = it) }
             ) else null,
             ExplorePageItem(
                 "personalized",
                 { TabText(text = stringResource(id = R.string.title_personalized), selected = it) },
-                { PersonalizedPage() }
+                { PersonalizedPage(contentPadding = it) }
             ),
             ExplorePageItem(
                 "hot",
                 { TabText(text = stringResource(id = R.string.title_hot), selected = it) },
-                { HotPage() }
+                { HotPage(contentPadding = it) }
             ),
         ).toImmutableList()
     }
@@ -144,11 +146,11 @@ fun ExplorePage() {
         coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(pages[pagerState.currentPage].id))
     }
 
-    Scaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            Toolbar(
-                title = stringResource(id = R.string.title_explore),
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_explore)) },
                 navigationIcon = accountNavIconIfCompact(),
                 actions = {
                     ActionItem(
@@ -165,14 +167,13 @@ fun ExplorePage() {
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
         LazyLoadHorizontalPager(
-            contentPadding = paddingValues,
             state = pagerState,
             key = { pages[it].id },
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {
-            pages[it].content()
+            pages[it].content(paddingValues)
         }
     }
 }

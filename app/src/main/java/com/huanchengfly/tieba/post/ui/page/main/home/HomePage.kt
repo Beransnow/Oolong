@@ -88,15 +88,17 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -452,11 +454,11 @@ fun HomePage(
         if (viewModel.initialized) viewModel.send(HomeUiIntent.RefreshHistory)
     }
 
-    MyScaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            Toolbar(
-                title = stringResource(id = R.string.title_main),
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_main)) },
                 navigationIcon = accountNavIconIfCompact(),
                 actions = {
                     ActionItem(
@@ -481,15 +483,16 @@ fun HomePage(
             refreshing = isLoading,
             onRefresh = { viewModel.send(HomeUiIntent.Refresh) }
         )
+        val searchBox: @Composable () -> Unit = {
+            SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
+                navigator.navigate(SearchPageDestination)
+            }
+        }
+        val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
         Box(
-            modifier = Modifier
-                .pullRefresh(pullRefreshState)
-                .padding(contentPaddings)
+            modifier = Modifier.pullRefresh(pullRefreshState)
         ) {
             Column {
-                SearchBox(modifier = Modifier.padding(bottom = 4.dp)) {
-                    navigator.navigate(SearchPageDestination)
-                }
                 StateScreen(
                     isEmpty = isEmpty,
                     isError = isError,
@@ -501,24 +504,38 @@ fun HomePage(
                         viewModel.send(HomeUiIntent.Refresh)
                     },
                     emptyScreen = {
-                        EmptyScreen(
-                            loggedIn = isLoggedIn,
-                            canOpenExplore = canOpenExplore,
-                            onOpenExplore = onOpenExplore
-                        )
+                        Column(modifier = Modifier.padding(contentPaddings)) {
+                            searchBox()
+                            EmptyScreen(
+                                loggedIn = isLoggedIn,
+                                canOpenExplore = canOpenExplore,
+                                onOpenExplore = onOpenExplore
+                            )
+                        }
                     },
                     loadingScreen = {
-                        HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
+                        HomePageSkeletonScreen(
+                            listSingle = listSingle,
+                            gridCells = gridCells,
+                            contentPadding = listPadding,
+                            header = searchBox,
+                        )
                     },
                     errorScreen = {
-                        error?.let { ErrorScreen(error = it) }
+                        Column(modifier = Modifier.padding(contentPaddings)) {
+                            searchBox()
+                            error?.let { ErrorScreen(error = it) }
+                        }
                     }
                 ) {
                     MyLazyVerticalGrid(
                         columns = gridCells,
-                        contentPadding = PaddingValues(bottom = 12.dp),
+                        contentPadding = listPadding,
                         modifier = Modifier.fillMaxSize(),
                     ) {
+                        item(key = "SearchBox", span = { GridItemSpan(maxLineSpan) }) {
+                            searchBox()
+                        }
                         if (showHistoryForum) {
                             item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
                                 val rotate by animateFloatAsState(
@@ -680,7 +697,9 @@ fun HomePage(
             PullRefreshIndicator(
                 refreshing = isLoading,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = contentPaddings.calculateTopPadding()),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )
@@ -691,14 +710,19 @@ fun HomePage(
 @Composable
 private fun HomePageSkeletonScreen(
     listSingle: Boolean,
-    gridCells: GridCells
+    gridCells: GridCells,
+    contentPadding: PaddingValues,
+    header: @Composable () -> Unit,
 ) {
     MyLazyVerticalGrid(
         columns = gridCells,
-        contentPadding = PaddingValues(bottom = 12.dp),
+        contentPadding = contentPadding,
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        item(key = "Header", span = { GridItemSpan(maxLineSpan) }) {
+            header()
+        }
         item(key = "TopForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
             Column(
                 modifier = Modifier.padding(vertical = 8.dp)

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -60,6 +58,8 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassStatusBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -263,11 +263,10 @@ fun UserPage(
         Text(text = stringResource(id = R.string.message_dialog_follow_system_night))
     }
 
-    Scaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
-        modifier = Modifier
-            .statusBarsPadding()
-            .fillMaxSize()
+        topBar = { GlassStatusBar() },
+        modifier = Modifier.fillMaxSize()
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(
             refreshing = isLoading,
@@ -275,13 +274,13 @@ fun UserPage(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPaddings)
                 .pullRefresh(pullRefreshState),
         ) {
             Column(
                 modifier = Modifier
                     .verticalScroll(state = rememberScrollState())
                     .fillMaxSize()
+                    .padding(contentPaddings)
             ) {
                 if (account != null) {
                     InfoCard(
@@ -395,7 +394,9 @@ fun UserPage(
             PullRefreshIndicator(
                 refreshing = isLoading,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = contentPaddings.calculateTopPadding()),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )

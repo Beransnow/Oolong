@@ -44,6 +44,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
@@ -52,6 +53,7 @@ import kotlinx.collections.immutable.persistentListOf
 @Composable
 fun NotificationsListPage(
     type: NotificationsType,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: NotificationsListViewModel = when (type) {
         NotificationsType.ReplyMe -> pageViewModel<NotificationsListUiIntent, ReplyMeListViewModel>()
         NotificationsType.AtMe -> pageViewModel<NotificationsListUiIntent, AtMeListViewModel>()
@@ -98,7 +100,7 @@ fun NotificationsListPage(
             lazyListState = lazyListState,
         ) {
             MyLazyColumn(
-                contentPadding = PaddingValues(vertical = 4.dp),
+                contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
                 state = lazyListState,
             ) {
                 items(
@@ -226,7 +228,9 @@ fun NotificationsListPage(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentPadding.calculateTopPadding()),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )
