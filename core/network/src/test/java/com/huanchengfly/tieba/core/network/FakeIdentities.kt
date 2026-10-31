@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.core.network
 
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
+import com.huanchengfly.tieba.core.network.identity.NetworkType
 import com.huanchengfly.tieba.core.network.identity.Session
 
 object FakeDevice : DeviceIdentity {
@@ -16,6 +17,7 @@ object FakeDevice : DeviceIdentity {
     override val screenWidth = 1080
     override val screenHeight = 2400
     override val screenDensity = 2.625f
+    override val networkType = NetworkType.MOBILE_5G
     override val deviceScore = 0.3f
     override val webViewUserAgent = "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv)"
 }

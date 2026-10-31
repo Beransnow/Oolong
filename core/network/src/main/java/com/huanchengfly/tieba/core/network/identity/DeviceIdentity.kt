@@ -32,6 +32,9 @@ interface DeviceIdentity {
     val screenHeight: Int
     val screenDensity: Float
 
+    /** Current connection as a [NetworkType] code. */
+    val networkType: Int
+
     /** Performance score in `0..1`. */
     val deviceScore: Float
 

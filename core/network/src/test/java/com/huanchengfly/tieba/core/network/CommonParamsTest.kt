@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class CommonParamsTest {
-    private val startTime = 1_700_000_000_000L
+    private val startTime = localTime(2026, 11, 1)
     private var now = startTime
 
     private fun commonParams(
@@ -24,8 +24,6 @@ class CommonParamsTest {
 
     @Test
     fun `builds the protobuf common request of a profile`() {
-        now = localTime(2026, 11, 1)
-
         val expected = CommonRequest(
             _client_type = 2,
             _client_version = "12.52.1.0",
@@ -36,7 +34,7 @@ class CommonParamsTest {
             _timestamp = now,
             model = "Pixel 9",
             BDUSS = "bduss-value",
-            net_type = 1,
+            net_type = 5,
             pversion = "1.0.3",
             _os_version = "16",
             brand = "google",
@@ -134,6 +132,23 @@ class CommonParamsTest {
         val headers = commonParams(loggedIn = false).headers(TiebaProfile.PROTO_12_52)
 
         assertNull(headers.find { it.first == "client_user_token" })
+    }
+
+    @Test
+    fun `keeps the event day of the process start`() {
+        val params = commonParams()
+
+        now = localTime(2026, 11, 10)
+        assertEquals("2026111", params.protobuf(TiebaProfile.PROTO_12_52).event_day)
+    }
+
+    @Test
+    fun `does not pad months or days`() {
+        now = localTime(2026, 1, 1)
+        assertEquals("202611", commonParams().protobuf(TiebaProfile.PROTO_12_52).event_day)
+
+        now = localTime(2026, 11, 10)
+        assertEquals("20261110", commonParams().protobuf(TiebaProfile.PROTO_12_52).event_day)
     }
 
     private fun localTime(year: Int, month: Int, day: Int): Long =

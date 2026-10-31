@@ -19,6 +19,9 @@ class CommonParams(
 ) {
     private val processStartTime = clock()
 
+    /** Like the official client, the day the process started rather than the day of the request. */
+    private val eventDay = eventDay(processStartTime)
+
     /** Used until `c/s/sync` has issued a client id. */
     private val fallbackClientId = "wappc_${processStartTime}_${random.nextInt(1000)}"
 
@@ -58,7 +61,7 @@ class CommonParams(
             model = device.model,
             BDUSS = session?.bduss,
             tbs = session?.tbs?.takeIf { includeTbs },
-            net_type = 1,
+            net_type = device.networkType,
             pversion = "1.0.3",
             _os_version = device.osVersion,
             brand = device.brand,
@@ -82,7 +85,7 @@ class CommonParams(
             active_timestamp = install.activeTimestamp,
             first_install_time = install.firstInstallTime,
             last_update_time = install.lastUpdateTime,
-            event_day = eventDay(now),
+            event_day = eventDay,
             android_id = device.androidId,
             cmode = 1,
             start_scheme = "",
@@ -99,7 +102,7 @@ class CommonParams(
     fun stokenField(): List<Pair<String, String>> =
         sessionProvider.currentSession()?.stoken?.let { listOf("stoken" to it) }.orEmpty()
 
-    /** Year, month and day without zero padding, such as `2026111` for 2026-11-01. */
+    /** Year, month and day in local time, concatenated without zero padding (`2026111` for 2026-11-01). */
     private fun eventDay(time: Long): String {
         val calendar = Calendar.getInstance().apply { timeInMillis = time }
         val year = calendar.get(Calendar.YEAR)
