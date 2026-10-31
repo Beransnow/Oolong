@@ -138,6 +138,30 @@ class CommonParamsTest {
     }
 
     @Test
+    fun `builds the web view headers`() {
+        val cuidBase64 = java.util.Base64.getEncoder().encodeToString(FakeDevice.cuid.toByteArray())
+        val expected = listOf(
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv) tieba/12.52.1.0",
+            "cookie" to "BDUSS=bduss-value;STOKEN=stoken-value;BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;" +
+                    "CUID=${FakeDevice.cuid};BAIDUZID=zid-value;BAIDUCUID=$cuidBase64;TBBRAND=Pixel 9;DNARBBT=;" +
+                    "ka=open;need_cookie_decrypt=0",
+        )
+        assertEquals(expected, commonParams().headers(TiebaProfile.WEB_12_52))
+    }
+
+    @Test
+    fun `leaves the session out of the web view cookie when logged out`() {
+        val cookie = commonParams(loggedIn = false).headers(TiebaProfile.WEB_12_52).single { it.first == "cookie" }.second
+
+        assertEquals(
+            "BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;CUID=${FakeDevice.cuid};BAIDUCUID=" +
+                    java.util.Base64.getEncoder().encodeToString(FakeDevice.cuid.toByteArray()) +
+                    ";TBBRAND=Pixel 9;DNARBBT=;ka=open;need_cookie_decrypt=0",
+            cookie,
+        )
+    }
+
+    @Test
     fun `adds the message task fields to form parameters`() {
         val classic = commonParams().form(TiebaProfile.FORM_12_52)
         val messageTask = commonParams().form(TiebaProfile.MESSAGE_FORM_12_52)

@@ -35,6 +35,31 @@ class CommonParams(
     fun headers(profile: TiebaProfile): List<Pair<String, String>> = when (profile.stack) {
         TiebaStack.MESSAGE_TASK -> messageTaskHeaders(profile)
         TiebaStack.CLASSIC -> formHeaders(profile)
+        TiebaStack.WEB_VIEW -> webViewHeaders(profile)
+    }
+
+    /**
+     * Headers the in-app web view adds to page requests: the user agent and a cookie with the
+     * session and device identifiers, without any of the app API headers.
+     */
+    private fun webViewHeaders(profile: TiebaProfile): List<Pair<String, String>> {
+        val session = sessionProvider.currentSession()
+        val cookie = listOfNotNull(
+            session?.let { "BDUSS=${it.bduss}" },
+            session?.stoken?.let { "STOKEN=$it" },
+            install.baiduId?.let { "BAIDUID=$it" },
+            "CUID=${device.cuid}",
+            session?.zid?.let { "BAIDUZID=$it" },
+            "BAIDUCUID=${device.cuid.encodeUtf8().base64()}",
+            "TBBRAND=${device.model}",
+            "DNARBBT=",
+            "ka=open",
+            "need_cookie_decrypt=0",
+        )
+        return listOf(
+            "User-Agent" to userAgent(profile),
+            "cookie" to cookie.joinToString(";"),
+        )
     }
 
     /**

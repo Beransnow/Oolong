@@ -13,6 +13,9 @@ enum class TiebaStack {
 
     /** `TbHttpMessageTask`: protobuf requests, posting and some form requests. */
     MESSAGE_TASK,
+
+    /** Requests the in-app web pages make, such as the search page. */
+    WEB_VIEW,
 }
 
 /**
@@ -55,6 +58,17 @@ enum class TiebaProfile(
         swanGameVersion = "1038000",
         protocol = TiebaProtocol.FORM,
         stack = TiebaStack.MESSAGE_TASK,
+    ),
+
+    /** Data requests of the in-app web pages, answered in JSON. */
+    WEB_12_52(
+        version = "12.52.1.0",
+        frameworkVersion = "3340042",
+        sdkVersion = "2.34.0",
+        swanGameVersion = "1038000",
+        protocol = TiebaProtocol.FORM,
+        stack = TiebaStack.WEB_VIEW,
+        baseUrl = "https://tieba.baidu.com/",
     ),
 
     /**
