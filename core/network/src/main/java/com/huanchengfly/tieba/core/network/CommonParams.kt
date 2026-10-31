@@ -4,6 +4,7 @@ import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
+import com.huanchengfly.tieba.post.api.models.protos.AppPosInfo
 import com.huanchengfly.tieba.post.api.models.protos.CommonRequest
 import okio.ByteString.Companion.encodeUtf8
 import java.util.Calendar
@@ -213,6 +214,15 @@ class CommonParams(
             mac = MAC,
         )
     }
+
+    /** The `app_pos` field of page requests: no location, connected to an access point. */
+    fun appPos(): AppPosInfo = AppPosInfo(
+        addr_timestamp = 0L,
+        ap_connected = true,
+        ap_mac = MAC,
+        asp_shown_info = "",
+        coordinate_type = "BD09LL",
+    )
 
     /** The `stoken` form field protobuf requests carry next to the message, when logged in. */
     fun stokenField(): List<Pair<String, String>> =

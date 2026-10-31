@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.core.network.TiebaServerException
 import com.huanchengfly.tieba.core.network.fakeSession
+import com.huanchengfly.tieba.core.network.testing.multipartParts
 import com.huanchengfly.tieba.post.api.models.protos.Error
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
@@ -14,9 +15,7 @@ import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDe
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
-import okhttp3.MultipartReader
 import okio.Buffer
-import okio.ByteString
 import org.junit.After
 import org.junit.Before
 import kotlin.random.Random
@@ -93,20 +92,5 @@ class ForumRemoteDataSourceTest {
         assertEquals(340001, error.code)
         assertEquals("吧内封禁", error.message)
         assertEquals(response, error.response)
-    }
-
-    private fun multipartParts(contentType: String, body: ByteString): List<Pair<String, ByteString>> {
-        val boundary = contentType.substringAfter("boundary=")
-        val parts = mutableListOf<Pair<String, ByteString>>()
-        MultipartReader(Buffer().write(body), boundary).use { reader ->
-            while (true) {
-                val part = reader.nextPart() ?: break
-                assertEquals(null, part.headers["Content-Length"])
-                val name = Regex("name=\"([^\"]*)\"")
-                    .find(part.headers["Content-Disposition"]!!)!!.groupValues[1]
-                parts += name to part.body.readByteString()
-            }
-        }
-        return parts
     }
 }
