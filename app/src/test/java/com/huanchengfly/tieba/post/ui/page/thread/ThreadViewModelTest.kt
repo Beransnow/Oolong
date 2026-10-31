@@ -84,6 +84,7 @@ class ThreadViewModelTest {
     private fun TestScope.createViewModel(
         postId: Long = 0,
         sortType: Int = 0,
+        threadInfo: ThreadInfo? = null,
         appScope: CoroutineScope = backgroundScope,
     ): ThreadViewModel {
         val dispatcher = mainDispatcherRule.dispatcher
@@ -96,7 +97,7 @@ class ThreadViewModelTest {
                     "sortType" to sortType,
                     "from" to "",
                     "scrollToReply" to false,
-                )
+                ) + listOfNotNull(threadInfo?.let { "threadInfo" to it })
             ),
             repository = ThreadRepository(remote, agreeRemote, { _, _ -> }, dispatcher),
             blockRuleSource = object : BlockRuleSource {
@@ -217,7 +218,86 @@ class ThreadViewModelTest {
         backgroundScope.launchCollect(viewModel, effects)
 
         runCurrent()
-        assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToFirstReply), effects)
+        assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToPost(31)), effects)
+    }
+
+    @Test
+    fun `a reply at the end of the thread is appended and scrolled to`() = runTest {
+        respond(
+            data(listOf(post(2), post(3)), ProtoPage(current_page = 1, total_page = 1, has_more = 0)),
+            data(listOf(post(3), post(4))),
+        )
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ThreadEffect>()
+        backgroundScope.launchCollect(viewModel, effects)
+        runCurrent()
+
+        viewModel.onReplySent(newPostId = 4)
+        runCurrent()
+
+        assertEquals(listOf(2L, 3L, 4L), viewModel.state.value.posts.items.map { it.post.id })
+        assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToPost(4)), effects)
+        coVerify { remote.page(9_000, 0, 4, 0, false, false, false, 0, 0, "", 0) }
+    }
+
+    @Test
+    fun `a reply far from the loaded pages jumps to it`() = runTest {
+        respond(data(listOf(post(2), post(3))), data(listOf(post(400))))
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ThreadEffect>()
+        backgroundScope.launchCollect(viewModel, effects)
+        runCurrent()
+
+        viewModel.onReplySent(newPostId = 400)
+        runCurrent()
+
+        assertEquals(listOf(400L), viewModel.state.value.posts.items.map { it.post.id })
+        assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToPost(400)), effects)
+    }
+
+    @Test
+    fun `a reply inside a post updates that post where it is`() = runTest {
+        val replied = post(3).copy(sub_post_number = 1)
+        respond(data(listOf(post(2), post(3))), data(listOf(replied)))
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.onReplySent(newPostId = 301, inPost = 3)
+        runCurrent()
+
+        assertEquals(listOf(2L, 3L), viewModel.state.value.posts.items.map { it.post.id })
+        assertEquals(1, viewModel.state.value.posts.items[1].post.subPostCount)
+    }
+
+    @Test
+    fun `jumping to a page is only possible oldest first`() = runTest {
+        respond(data(listOf(post(70))), data(listOf(post(31))))
+        val viewModel = createViewModel(sortType = ThreadSort.NewestFirst.value)
+        runCurrent()
+
+        viewModel.jumpToPage(3)
+        runCurrent()
+        coVerify(exactly = 1) { remote.page(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `the thread passed along is shown until the thread loads`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        coEvery { remote.page(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
+            gate.await()
+            data(listOf(post(2)))
+        }
+        val passed = ThreadInfo(title = "列表里的标题", author = lz, firstPostContent = listOf(PbContent(type = 0, text = "摘要")))
+        val viewModel = createViewModel(threadInfo = passed)
+        runCurrent()
+
+        assertEquals("列表里的标题", viewModel.state.value.preview?.title)
+        assertEquals(10L, viewModel.state.value.preview?.author?.id)
+
+        gate.complete(Unit)
+        runCurrent()
+        assertNull(viewModel.state.value.preview)
+        assertEquals("标题", viewModel.state.value.thread?.title)
     }
 
     @Test

@@ -25,6 +25,7 @@ import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
@@ -78,8 +79,8 @@ sealed interface ThreadEffect {
     /** Scroll to the first reply, after jumping somewhere in the thread. */
     data object ScrollToFirstReply : ThreadEffect
 
-    /** Scroll to the newest reply, after the user's own reply appeared. */
-    data object ScrollToLatestReply : ThreadEffect
+    /** Scroll to a post that has just been loaded, such as the user's own reply. */
+    data class ScrollToPost(val postId: Long) : ThreadEffect
 }
 
 @OptIn(FlowPreview::class)
@@ -123,7 +124,10 @@ class ThreadViewModel @Inject constructor(
 
     /** Where the list was last loaded from as a whole, so that retrying loads the same place. */
     private var refreshKey: ThreadCursor = ThreadCursor.first(query.value.sort, args.postId)
-    private var scrollAfterRefresh = args.postId != 0L || args.scrollToReply
+    private var scrollAfterRefresh = args.scrollToReply && args.postId == 0L
+
+    /** A post to scroll to as soon as a page containing it loads. */
+    private var scrollToPost: Long? = args.postId.takeIf { it != 0L }
 
     /** Where newer posts are when newest first, as the page at the top of the list said. */
     private var newerCursor: ThreadCursor? = null
@@ -143,13 +147,33 @@ class ThreadViewModel @Inject constructor(
             scrollAfterRefresh = false
             effects.send(ThreadEffect.ScrollToFirstReply)
         }
+        scrollToPost?.let { postId ->
+            if (page.posts.items.any { it.id == postId } || page.firstPost?.id == postId) {
+                scrollToPost = null
+                effects.send(ThreadEffect.ScrollToPost(postId))
+            }
+        }
         page.posts
     }
+
+    /** Block flags for the last list and rules seen, which most state changes leave as they are. */
+    private var blocked: Triple<List<Post>, BlockRules, ImmutableList<PostItem>>? = null
 
     private val items: Flow<PagerState<PostItem>> = combine(
         posts.state,
         blockRuleSource.rules,
-    ) { state, rules -> state.withBlocked(rules) }
+    ) { state, rules ->
+        val cached = blocked?.takeIf { it.first === state.items && it.second === rules }
+        val items = cached?.third ?: state.items.withBlocked(rules).also { blocked = Triple(state.items, rules, it) }
+        PagerState(
+            items = items,
+            refresh = state.refresh,
+            append = state.append,
+            prepend = state.prepend,
+            hasMore = state.hasMore,
+            hasPrevious = state.hasPrevious,
+        )
+    }
 
     val state: StateFlow<ThreadState> = combine(query, meta, items) { query, meta, items ->
         val page = meta.page
@@ -197,13 +221,15 @@ class ThreadViewModel @Inject constructor(
         }
     }
 
+    /** Only oldest first is paged by number; newest first has no page numbers to jump to. */
     fun jumpToPage(page: Int) {
+        if (query.value.sort == ThreadSort.NewestFirst) return
         scrollAfterRefresh = true
         refreshFrom(ThreadCursor.Number(page))
     }
 
     fun jumpToPost(postId: Long) {
-        scrollAfterRefresh = true
+        scrollToPost = postId
         refreshFrom(ThreadCursor.Anchor(postId))
     }
 
@@ -307,14 +333,26 @@ class ThreadViewModel @Inject constructor(
             .onFailure { messages.showError(R.string.toast_delete_failure, it) }
     }
 
-    /** The user's reply was sent: load it and show it. */
-    fun onReplySent() {
-        if (query.value.sort == ThreadSort.NewestFirst) {
-            loadPrevious()
-        } else if (!posts.state.value.hasMore) {
-            loadLatest()
-            viewModelScope.launch { effects.send(ThreadEffect.ScrollToLatestReply) }
+    /**
+     * The user's reply was sent: load it and show it. A reply inside post [inPost] updates that
+     * post where it is.
+     */
+    fun onReplySent(newPostId: Long, inPost: Long? = null) {
+        if (inPost != null) return reloadPost(inPost)
+        scrollToPost = newPostId
+        when {
+            query.value.sort == ThreadSort.NewestFirst -> loadPrevious()
+            posts.state.value.hasMore -> refreshFrom(ThreadCursor.Anchor(newPostId))
+            else -> posts.loadMore(from = ThreadCursor.Anchor(newPostId))
         }
+    }
+
+    private fun reloadPost(postId: Long) = actions.launch("reload-$postId") {
+        runCatching { repository.page(query.value, ThreadCursor.Anchor(postId)) }
+            .onSuccess { page ->
+                val reloaded = page.posts.items.firstOrNull { it.id == postId } ?: return@onSuccess
+                updatePost(postId) { reloaded }
+            }
     }
 
     /** The last post on screen, which history and the store mark remember. */
@@ -348,20 +386,13 @@ class ThreadViewModel @Inject constructor(
     }
 }
 
-private fun PagerState<Post>.withBlocked(rules: BlockRules): PagerState<PostItem> = PagerState(
-    items = items.map { post ->
-        PostItem(
-            post = post,
-            blocked = rules.blocks(post.author, post.content.plainText),
-            blockedSubPosts = post.subPosts
-                .filter { rules.blocks(it.author, it.content.plainText) }
-                .map { it.id }
-                .toImmutableSet(),
-        )
-    }.toImmutableList(),
-    refresh = refresh,
-    append = append,
-    prepend = prepend,
-    hasMore = hasMore,
-    hasPrevious = hasPrevious,
-)
+private fun List<Post>.withBlocked(rules: BlockRules): ImmutableList<PostItem> = map { post ->
+    PostItem(
+        post = post,
+        blocked = rules.blocks(post.author, post.content.plainText),
+        blockedSubPosts = post.subPosts
+            .filter { rules.blocks(it.author, it.content.plainText) }
+            .map { it.id }
+            .toImmutableSet(),
+    )
+}.toImmutableList()

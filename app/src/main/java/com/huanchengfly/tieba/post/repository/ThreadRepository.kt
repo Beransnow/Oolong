@@ -74,13 +74,6 @@ sealed interface ThreadCursor {
     data class After(val postId: Long) : ThreadCursor
 
     companion object {
-        /**
-         * Posts newer than [postId], the newest loaded when newest first, with the page after
-         * [currentPage] while there is one.
-         */
-        fun newerThan(postId: Long, currentPage: Int, totalPage: Int): ThreadCursor =
-            Before(postId, page = if (currentPage < totalPage) currentPage + 1 else 0)
-
         /** Where a thread opened at [postId], or from its start when 0, begins. */
         fun first(sort: ThreadSort, postId: Long = 0): ThreadCursor = when {
             postId != 0L -> Anchor(postId)
@@ -244,8 +237,11 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
             prev = when {
                 posts.isEmpty() -> null
                 // New replies can arrive at any time, so there is always something to look for
-                sort == ThreadSort.NewestFirst ->
-                    ThreadCursor.newerThan(posts.first().id, page.current_page, page.total_page)
+                // Posts newer than the newest loaded, with the page after this one while there is one
+                sort == ThreadSort.NewestFirst -> ThreadCursor.Before(
+                    posts.first().id,
+                    page = if (page.current_page < page.total_page) page.current_page + 1 else 0,
+                )
                 !hasPrevious -> null
                 else -> ThreadCursor.Before(posts.first().id, page.current_page - 1)
             },
