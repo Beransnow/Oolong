@@ -106,6 +106,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -115,6 +118,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.fade
@@ -523,7 +527,7 @@ fun ForumPage(
                 LoadingPlaceholder(forumName)
             }
         ) {
-            MyScaffold(
+            GlassScaffold(
                 scaffoldState = scaffoldState,
                 backgroundColor = Color.Transparent,
                 modifier = Modifier.fillMaxSize(),
@@ -589,48 +593,50 @@ fun ForumPage(
                 },
                 floatingActionButton = {
                     if (context.appPreferences.forumFabFunction != "hide") {
-                        FloatingActionButton(
-                            onClick = {
-                                when (context.appPreferences.forumFabFunction) {
-                                    "refresh" -> {
-                                        coroutineScope.launch {
-                                            emitGlobalEventSuspend(
-                                                ForumThreadListUiEvent.BackToTop(
-                                                    currentPage == 1
-                                                )
-                                            )
-                                            emitGlobalEventSuspend(
-                                                ForumThreadListUiEvent.Refresh(
-                                                    currentPage == 1,
-                                                    getSortType(
-                                                        context,
-                                                        forumName
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .floatingGlass(CircleShape)
+                                .clickable {
+                                    when (context.appPreferences.forumFabFunction) {
+                                        "refresh" -> {
+                                            coroutineScope.launch {
+                                                emitGlobalEventSuspend(
+                                                    ForumThreadListUiEvent.BackToTop(
+                                                        currentPage == 1
                                                     )
                                                 )
-                                            )
-                                        }
-                                    }
-
-                                    "back_to_top" -> {
-                                        coroutineScope.launch {
-                                            emitGlobalEvent(
-                                                ForumThreadListUiEvent.BackToTop(
-                                                    currentPage == 1
+                                                emitGlobalEventSuspend(
+                                                    ForumThreadListUiEvent.Refresh(
+                                                        currentPage == 1,
+                                                        getSortType(
+                                                            context,
+                                                            forumName
+                                                        )
+                                                    )
                                                 )
-                                            )
+                                            }
+                                        }
+
+                                        "back_to_top" -> {
+                                            coroutineScope.launch {
+                                                emitGlobalEvent(
+                                                    ForumThreadListUiEvent.BackToTop(
+                                                        currentPage == 1
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                        else -> {
+                                            context.toastShort(R.string.toast_feature_unavailable)
                                         }
                                     }
-
-                                    else -> {
-                                        context.toastShort(R.string.toast_feature_unavailable)
-                                    }
-                                }
-                            },
-                            backgroundColor = ExtendedTheme.colors.windowBackground,
-                            contentColor = ExtendedTheme.colors.primary,
-                            modifier = Modifier.navigationBarsPadding()
+                                },
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
+                                tint = ExtendedTheme.colors.primary,
                                 imageVector = when (context.appPreferences.forumFabFunction) {
                                     "refresh" -> Icons.Rounded.Refresh
                                     "back_to_top" -> Icons.Rounded.VerticalAlignTop
@@ -703,9 +709,11 @@ fun ForumPage(
                         }
                     }
 
+                    // The header collapses under the bar instead of scrolling behind it; the
+                    // thread lists pad themselves for the navigation bar.
                     Box(
                         modifier = Modifier
-                            .padding(contentPadding)
+                            .padding(top = contentPadding.calculateTopPadding())
                             .nestedScroll(headerNestedScrollConnection)
                     ) {
                         Column {
@@ -895,7 +903,7 @@ fun LoadingPlaceholder(
 ) {
     val context = LocalContext.current
 
-    MyScaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
@@ -977,9 +985,9 @@ private fun ForumToolbar(
     forumId: Long? = null,
 ) {
     val navigator = LocalNavigator.current
-    Toolbar(
+    GlassTopBar(
         title = {
-            if (showTitle) Text(
+            if (showTitle) GlassTopBarTitle(
                 text = stringResource(
                     id = R.string.title_forum,
                     forumName

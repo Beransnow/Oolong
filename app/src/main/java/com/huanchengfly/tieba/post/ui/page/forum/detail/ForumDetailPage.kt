@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -46,11 +47,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.ramcosta.composedestinations.annotation.Destination
@@ -100,11 +102,11 @@ fun ForumDetailPage(
         },
         modifier = Modifier.fillMaxSize(),
     ) {
-        MyScaffold(
+        GlassScaffold(
             topBar = {
-                TitleCentredToolbar(
+                GlassTopBar(
                     title = {
-                        Text(text = stringResource(id = R.string.title_forum_info))
+                        GlassTopBarTitle(text = stringResource(id = R.string.title_forum_info))
                     },
                     navigationIcon = {
                         BackNavigationIcon {
@@ -114,10 +116,11 @@ fun ForumDetailPage(
                 )
             }
         ) { paddingValues ->
-            Container(modifier = Modifier.padding(paddingValues)) {
+            Container {
                 forumInfo?.let {
                     ForumDetailContent(
                         forumInfo = it,
+                        contentPadding = paddingValues,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -130,14 +133,16 @@ fun ForumDetailPage(
 private fun ForumDetailContent(
     forumInfo: ImmutableHolder<RecommendForumInfo>,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val intro = remember(forumInfo) {
         forumInfo.get { content.plainText }
     }
     Column(
         modifier = modifier
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.NoAccounts
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -91,15 +93,16 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
@@ -243,7 +246,7 @@ private fun UserProfileToolbar(
 ) {
     val context = LocalContext.current
 
-    Toolbar(
+    GlassTopBar(
         title = {
             AnimatedVisibility(
                 visible = showTitle,
@@ -341,7 +344,7 @@ private fun UserProfileContentNormal(
         }
     }
 
-    MyScaffold(
+    GlassScaffold(
         topBar = {
             UserProfileToolbar(
                 user = user,
@@ -405,9 +408,10 @@ private fun UserProfileContentNormal(
             }
 
             ProvideContentColor(color = ExtendedTheme.colors.text) {
+                // The header collapses under the bar; the tab lists scroll to the screen bottom.
                 Column(
                     modifier = Modifier
-                        .padding(paddingValues)
+                        .padding(top = paddingValues.calculateTopPadding())
                         .nestedScroll(headerNestedScrollConnection)
                 ) {
                     val pages = remember {
@@ -522,12 +526,17 @@ private fun UserProfileContentNormal(
 //                                    modifier = Modifier.padding(horizontal = 16.dp)
                     )
 
-                    LazyLoadHorizontalPager(
-                        state = pagerState,
-                        key = { pages[it].id },
-                        modifier = Modifier.fillMaxSize()
+                    CompositionLocalProvider(
+                        LocalChromePadding provides
+                                PaddingValues(bottom = paddingValues.calculateBottomPadding())
                     ) {
-                        pages[it].content(user, false)
+                        LazyLoadHorizontalPager(
+                            state = pagerState,
+                            key = { pages[it].id },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            pages[it].content(user, false)
+                        }
                     }
                 }
             }
@@ -549,7 +558,7 @@ private fun UserProfileContentExpanded(
 ) {
     val context = LocalContext.current
 
-    MyScaffold(
+    GlassScaffold(
         topBar = {
             UserProfileToolbar(
                 user = user,
@@ -565,7 +574,7 @@ private fun UserProfileContentExpanded(
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(paddingValues)
+                        .padding(top = paddingValues.calculateTopPadding())
                         .fillMaxHeight()
                         .fillMaxWidth(0.75f)
                         .align(Alignment.TopCenter),
@@ -663,12 +672,17 @@ private fun UserProfileContentExpanded(
                             pagerState = pagerState,
                         )
 
-                        LazyLoadHorizontalPager(
-                            state = pagerState,
-                            key = { pages[it].id },
-                            modifier = Modifier.weight(1f)
+                        CompositionLocalProvider(
+                            LocalChromePadding provides
+                                    PaddingValues(bottom = paddingValues.calculateBottomPadding())
                         ) {
-                            pages[it].content(user, true)
+                            LazyLoadHorizontalPager(
+                                state = pagerState,
+                                key = { pages[it].id },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                pages[it].content(user, true)
+                            }
                         }
                     }
                 }

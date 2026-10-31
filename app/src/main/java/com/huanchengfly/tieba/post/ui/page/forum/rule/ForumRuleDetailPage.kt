@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.forum.rule
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -30,9 +31,10 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.LoadStateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -65,33 +67,34 @@ fun ForumRuleDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    MyScaffold(
+    GlassScaffold(
         modifier = modifier,
         topBar = {
-            TitleCentredToolbar(
-                title = { Text(text = stringResource(id = R.string.title_forum_rule)) },
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_forum_rule)) },
                 navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }
             )
         }
-    ) {
+    ) { contentPadding ->
         LoadStateScreen(
             state = state,
             onRetry = onRetry,
             modifier = Modifier.fillMaxSize(),
             isEmpty = { it.rules.isEmpty() },
         ) { detail ->
-            ForumRuleDetailContent(detail)
+            ForumRuleDetailContent(detail, contentPadding)
         }
     }
 }
 
 @Composable
-private fun ForumRuleDetailContent(detail: ForumRuleDetail) {
+private fun ForumRuleDetailContent(detail: ForumRuleDetail, contentPadding: PaddingValues) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(text = detail.title, style = MaterialTheme.typography.h5)

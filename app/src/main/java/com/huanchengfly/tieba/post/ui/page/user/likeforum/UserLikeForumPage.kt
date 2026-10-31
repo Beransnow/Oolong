@@ -38,6 +38,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -155,7 +156,7 @@ private fun UserLikeForumList(
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    MyLazyColumn(state = lazyListState) {
+    MyLazyColumn(state = lazyListState, contentPadding = LocalChromePadding.current) {
         items(
             items = data,
             key = { it.id }
