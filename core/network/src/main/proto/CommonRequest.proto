@@ -46,6 +46,7 @@ message CommonRequest {
   int32 cmode = 55;
   optional string start_scheme = 56;
   int32 start_type = 57;
+  string mac = 59;
   optional string extra = 61;
   string user_agent = 62;
   int32 personalized_rec_switch = 63;

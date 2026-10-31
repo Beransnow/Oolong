@@ -31,4 +31,8 @@ kotlin {
 
 dependencies {
     api(libs.wire.runtime)
+    api(libs.okhttp)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test.junit)
 }
