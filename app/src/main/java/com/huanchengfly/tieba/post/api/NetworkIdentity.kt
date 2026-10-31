@@ -5,12 +5,16 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import com.huanchengfly.tieba.core.network.CommonParams
+import com.huanchengfly.tieba.core.network.TiebaNetwork
+import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.NetworkType
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.CuidUtils
@@ -102,6 +106,20 @@ object NetworkIdentityModule {
         install: InstallIdentity,
         sessionProvider: SessionProvider,
     ): CommonParams = CommonParams(device, install, sessionProvider)
+
+    @Provides
+    @Singleton
+    fun provideTiebaNetwork(commonParams: CommonParams): TiebaNetwork = TiebaNetwork(
+        commonParams,
+        networkInterceptors = if (BuildConfig.DEBUG) listOf(RequestRecorder) else emptyList(),
+    )
+
+    @Provides
+    @Singleton
+    fun provideForumRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): ForumRemoteDataSource = ForumRemoteDataSource(network, commonParams)
 }
 
 @EntryPoint

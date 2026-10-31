@@ -2,17 +2,15 @@ package com.huanchengfly.tieba.post.ui.page.forum.rule
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
+import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.post.arch.LoadState
 import com.huanchengfly.tieba.post.repository.FORUM_ID
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.forumRuleDetail
-import com.huanchengfly.tieba.post.repository.forumRuleResponse
+import com.huanchengfly.tieba.post.repository.forumRuleData
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import java.io.IOException
@@ -24,16 +22,16 @@ class ForumRuleDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val api = mockk<ITiebaApi>()
+    private val remote = mockk<ForumRemoteDataSource>()
 
     private fun createViewModel() = ForumRuleDetailViewModel(
         savedStateHandle = SavedStateHandle(mapOf("forumId" to FORUM_ID)),
-        forumRepository = ForumRepository(api),
+        forumRepository = ForumRepository(remote),
     )
 
     @Test
     fun `loads the rules of the forum from the navigation arguments`() = runTest {
-        every { api.forumRuleDetailFlow(FORUM_ID) } returns flowOf(forumRuleResponse())
+        coEvery { remote.forumRuleDetail(FORUM_ID) } returns forumRuleData()
 
         createViewModel().ruleDetail.state.test {
             assertEquals(LoadState.Loading, awaitItem())
@@ -43,8 +41,7 @@ class ForumRuleDetailViewModelTest {
 
     @Test
     fun `retry reloads after an error`() = runTest {
-        every { api.forumRuleDetailFlow(FORUM_ID) } returns
-                flow { throw IOException("network") } andThen flowOf(forumRuleResponse())
+        coEvery { remote.forumRuleDetail(FORUM_ID) } throws IOException("network") andThen forumRuleData()
         val viewModel = createViewModel()
 
         viewModel.ruleDetail.state.test {
