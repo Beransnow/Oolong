@@ -47,9 +47,9 @@ object RequestRecorder : Interceptor {
     private val errorCode = Regex("\"error_code\"\\s*:\\s*\"?(-?\\d+)")
 
     /**
-     * The JSON body of form responses, which are small and are what migrations get checked
-     * against, and of any other JSON response with a non-zero `error_code`, so that verification
-     * responses can be studied once one occurs.
+     * The body of JSON responses, which migrations get checked against, and of any other text
+     * response with a non-zero `error_code`, so that verification responses can be studied once
+     * one occurs.
      */
     private fun describeResponse(request: Request, response: Response): String? {
         if (response.body.contentType()?.subtype?.contains("protobuf") == true) return null
@@ -58,7 +58,8 @@ object RequestRecorder : Interceptor {
             GzipSource(peeked).buffer()
         } else peeked
         val body = source.use { it.readUtf8() }
-        if (request.body !is FormBody) {
+        val isJson = body.trimStart().startsWith("{")
+        if (request.body !is FormBody && !isJson) {
             val code = errorCode.find(body)?.groupValues?.get(1) ?: return null
             if (code == "0") return null
         }
