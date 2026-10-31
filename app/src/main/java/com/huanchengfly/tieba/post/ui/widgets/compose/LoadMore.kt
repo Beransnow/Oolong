@@ -24,6 +24,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -109,19 +110,24 @@ fun LoadMoreLayout(
     val curPreloadCount by rememberUpdatedState(newValue = preloadCount)
 
     // 处理列表滚动到底部时自动加载更多
+    // Only once per list length: a load that failed or brought nothing new leaves the list as it
+    // was, and loading again right away would repeat the same request twice a second.
+    var autoLoadedAtCount by remember { mutableIntStateOf(-1) }
     val curLazyListState by rememberUpdatedState(newValue = lazyListState)
     LaunchedEffect(curLazyListState) {
         curLazyListState?.let { state ->
             snapshotFlow {
                 val shouldPreload =
                     !curIsEmpty && curCanLoadMore && !curIsLoading && curPreloadCount > 0
+                val totalItemsCount = state.layoutInfo.totalItemsCount
                 val isInPreloadRange =
-                    state.firstVisibleItemIndex + state.layoutInfo.visibleItemsInfo.size - 1 >= state.layoutInfo.totalItemsCount - curPreloadCount
-                shouldPreload && isInPreloadRange
+                    state.firstVisibleItemIndex + state.layoutInfo.visibleItemsInfo.size - 1 >= totalItemsCount - curPreloadCount
+                shouldPreload && isInPreloadRange && totalItemsCount != autoLoadedAtCount
             }
                 .distinctUntilChanged()
                 .collect {
                     if (it) {
+                        autoLoadedAtCount = state.layoutInfo.totalItemsCount
                         val curTime = System.currentTimeMillis()
                         coroutineScope.launch {
                             loadMoreFlow.emit(curTime)
