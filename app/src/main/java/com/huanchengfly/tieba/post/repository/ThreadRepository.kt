@@ -186,8 +186,11 @@ class ThreadRepository @Inject constructor(
         Unit
     }
 
-    suspend fun agreePost(thread: ThreadDetail, postId: Long, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Post(thread.id, postId), thread.forum.id, undo = !agree)
+    suspend fun agreePost(thread: ThreadDetail, postId: Long, agree: Boolean) =
+        agreePost(thread.id, thread.forum.id, postId, agree)
+
+    suspend fun agreePost(threadId: Long, forumId: Long, postId: Long, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Post(threadId, postId), forumId, undo = !agree)
         Unit
     }
 
