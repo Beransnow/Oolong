@@ -128,10 +128,13 @@ object RequestRecorder : Interceptor {
                         val disposition = part.headers["Content-Disposition"].orEmpty()
                         val name = Regex("name=\"([^\"]*)\"").find(disposition)?.groupValues?.get(1)
                         val content = part.body.readByteString()
-                        if (disposition.contains("filename=")) {
+                        if (name == "data" && disposition.contains("filename=")) {
                             append("  ").append(name).append(" (protobuf, ")
                                 .append(content.size).append(" bytes):\n")
                             appendProto(content, indent = 4)
+                        } else if (disposition.contains("filename=")) {
+                            append("  ").append(name).append(" (file, ")
+                                .append(content.size).append(" bytes)\n")
                         } else {
                             append("  ").append(name).append(" = ").append(content.utf8()).append('\n')
                         }
