@@ -9,12 +9,23 @@ import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.api.models.protos.resolvedAuthorId
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import org.litepal.LitePal
 import org.litepal.extension.delete
 import org.litepal.extension.findAllAsync
 
 object BlockManager {
     private val blockList: MutableList<Block> = mutableListOf()
+
+    private val _version = MutableStateFlow(0)
+
+    /** Changes whenever a rule is added or removed, so that what was filtered can be filtered again. */
+    val version: StateFlow<Int> = _version.asStateFlow()
+
+    private fun changed() = _version.update { it + 1 }
 
     val blackList: List<Block>
         get() = blockList.filter { it.category == Block.CATEGORY_BLACK_LIST }
@@ -25,6 +36,7 @@ object BlockManager {
     fun addBlock(block: Block) {
         block.save()
         blockList.add(block)
+        changed()
     }
 
     fun addBlockAsync(
@@ -35,17 +47,20 @@ object BlockManager {
             .listen {
                 callback?.invoke(it)
                 blockList.add(block)
+                changed()
             }
     }
 
     fun removeBlock(id: Long) {
         LitePal.delete<Block>(id)
         blockList.removeAll { it.id == id }
+        changed()
     }
 
     fun init() {
         LitePal.findAllAsync<Block>().listen { blocks ->
             blockList.addAll(blocks)
+            changed()
         }
     }
 
