@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.user.post
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
@@ -100,7 +101,7 @@ class UserPostViewModel @Inject constructor() :
         private fun UserPostUiIntent.Agree.toPartialChangeFlow(): Flow<UserPostPartialChange.Agree> =
             TiebaApi.getInstance()
                 .opAgreeFlow(
-                    threadId.toString(), postId.toString(), hasAgree, objType = 3
+                    AgreeTarget.Thread(threadId, postId), forumId, undo = hasAgree == 1
                 )
                 .map<AgreeBean, UserPostPartialChange.Agree> {
                     UserPostPartialChange.Agree.Success(threadId, postId, hasAgree xor 1)
@@ -131,6 +132,7 @@ sealed interface UserPostUiIntent : UiIntent {
     ) : UserPostUiIntent
 
     data class Agree(
+        val forumId: Long,
         val threadId: Long,
         val postId: Long,
         val hasAgree: Int,

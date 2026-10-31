@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.text.AnnotatedString
@@ -408,12 +409,7 @@ class ThreadViewModel @Inject constructor() :
 
         fun ThreadUiIntent.AgreeThread.producePartialChange(): Flow<ThreadPartialChange.AgreeThread> =
             TiebaApi.getInstance()
-                .opAgreeFlow(
-                    threadId.toString(),
-                    postId.toString(),
-                    opType = if (agree) 0 else 1,
-                    objType = 3
-                )
+                .opAgreeFlow(AgreeTarget.Thread(threadId, postId), forumId, undo = !agree)
                 .map<AgreeBean, ThreadPartialChange.AgreeThread> {
                     ThreadPartialChange.AgreeThread.Success(
                         agree
@@ -432,12 +428,7 @@ class ThreadViewModel @Inject constructor() :
 
         fun ThreadUiIntent.AgreePost.producePartialChange(): Flow<ThreadPartialChange.AgreePost> =
             TiebaApi.getInstance()
-                .opAgreeFlow(
-                    threadId.toString(),
-                    postId.toString(),
-                    if (agree) 0 else 1,
-                    objType = 1
-                )
+                .opAgreeFlow(AgreeTarget.Post(threadId, postId), forumId, undo = !agree)
                 .map<AgreeBean, ThreadPartialChange.AgreePost> {
                     ThreadPartialChange.AgreePost.Success(
                         postId,
@@ -575,12 +566,14 @@ sealed interface ThreadUiIntent : UiIntent {
     ) : ThreadUiIntent
 
     data class AgreeThread(
+        val forumId: Long?,
         val threadId: Long,
         val postId: Long,
         val agree: Boolean
     ) : ThreadUiIntent
 
     data class AgreePost(
+        val forumId: Long?,
         val threadId: Long,
         val postId: Long,
         val agree: Boolean

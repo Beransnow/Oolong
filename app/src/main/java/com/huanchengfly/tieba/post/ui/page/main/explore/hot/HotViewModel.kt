@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
@@ -76,7 +77,7 @@ class HotViewModel @Inject constructor() :
         private fun HotUiIntent.Agree.producePartialChange(): Flow<HotPartialChange.Agree> =
             TiebaApi.getInstance()
                 .opAgreeFlow(
-                    threadId.toString(), postId.toString(), hasAgree, objType = 3
+                    AgreeTarget.Thread(threadId, postId), forumId, undo = hasAgree == 1
                 )
                 .map<AgreeBean, HotPartialChange.Agree> {
                     HotPartialChange.Agree.Success(
@@ -95,6 +96,7 @@ sealed interface HotUiIntent : UiIntent {
     data class RefreshThreadList(val tabCode: String) : HotUiIntent
 
     data class Agree(
+        val forumId: Long,
         val threadId: Long,
         val postId: Long,
         val hasAgree: Int

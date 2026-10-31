@@ -119,6 +119,7 @@ fun ConcernPage(
                                     onAgree = {
                                         viewModel.send(
                                             ConcernUiIntent.Agree(
+                                                it.forumId,
                                                 it.threadId,
                                                 it.firstPostId,
                                                 it.hasAgree

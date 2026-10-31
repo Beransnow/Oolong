@@ -253,6 +253,7 @@ fun UserPostPage(
                     onAgreeItem = {
                         viewModel.send(
                             UserPostUiIntent.Agree(
+                                it.forum_id,
                                 it.thread_id,
                                 it.post_id,
                                 it.agree?.hasAgree ?: 0

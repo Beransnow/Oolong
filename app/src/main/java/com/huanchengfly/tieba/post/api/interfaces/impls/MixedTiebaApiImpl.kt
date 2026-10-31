@@ -1,7 +1,10 @@
 package com.huanchengfly.tieba.post.api.interfaces.impls
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import android.os.Build
 import android.text.TextUtils
+import com.huanchengfly.tieba.core.network.sign.MSignResponse
+import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
@@ -17,6 +20,7 @@ import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
+import com.huanchengfly.tieba.post.api.legacyAgreeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
@@ -200,19 +204,13 @@ object MixedTiebaApiImpl : ITiebaApi {
     ): Call<AgreeBean> = RetrofitTiebaApi.MINI_TIEBA_API.disagree(postId, threadId, op_type = opType)
 
     override fun opAgreeFlow(
-        threadId: String,
-        postId: String,
-        opType: Int,
-        objType: Int,
-        agreeType: Int,
-    ): Flow<AgreeBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.opAgreeFlow(
-            threadId,
-            postId,
-            opType = opType,
-            objType = objType,
-            agreeType = agreeType
-        )
+        target: AgreeTarget,
+        forumId: Long?,
+        undo: Boolean,
+    ): Flow<AgreeBean> = flow {
+        legacyAgreeRemoteDataSource.opAgree(target, forumId, undo)
+        emit(AgreeBean())
+    }
 
     override fun disagreeFlow(
         threadId: String,
@@ -974,8 +972,13 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun mSign(
         forumIds: String,
         tbs: String
-    ): Flow<MSignBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.mSignFlow(forumIds, tbs)
+    ): Flow<MSignBean> = flow {
+        // The official client sends at most 50 forums per request
+        val results = forumIds.split(",").map { it.toLong() }
+            .chunked(SignRemoteDataSource.MAX_MSIGN_FORUMS)
+            .map { legacySignRemoteDataSource.mSign(it, tbs) }
+        emit(results.toMSignBean())
+    }
 
     override fun userLikeFlow(
         pageTag: String,
@@ -1518,3 +1521,35 @@ private fun SignResponse.toSignResultBean() = SignResultBean(
     errorCode = "0",
     time = time,
 )
+
+private fun List<MSignResponse>.toMSignBean(): MSignBean {
+    val last = lastOrNull()
+    return MSignBean(
+        ctime = 0,
+        error = MSignBean.Error(errmsg = "", errno = "0", usermsg = ""),
+        errorCode = "0",
+        info = flatMap { it.info }.map { info ->
+            MSignBean.Info(
+                curScore = info.curScore.orEmpty(),
+                error = MSignBean.Info.Error(
+                    errNo = info.error?.errNo.orEmpty(),
+                    errmsg = info.error?.errmsg.orEmpty(),
+                    usermsg = info.error?.usermsg.orEmpty(),
+                ),
+                forumId = info.forumId.orEmpty(),
+                forumName = info.forumName.orEmpty(),
+                isFilter = info.isFilter.orEmpty(),
+                isOn = info.isOn.orEmpty(),
+                signDayCount = info.signDayCount.orEmpty(),
+                signed = info.signed.orEmpty(),
+            )
+        },
+        isTimeout = last?.isTimeout.orEmpty(),
+        logid = 0,
+        serverTime = "",
+        showDialog = last?.showDialog.orEmpty(),
+        signNotice = last?.signNotice.orEmpty(),
+        time = 0,
+        timeoutNotice = last?.timeoutNotice.orEmpty(),
+    )
+}

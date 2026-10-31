@@ -296,6 +296,7 @@ fun ForumThreadListPage(
         if (snackbarResult == SnackbarResult.ActionPerformed) {
             viewModel.send(
                 ForumThreadListUiIntent.Agree(
+                    forumId,
                     it.threadId,
                     it.postId,
                     it.hasAgree
@@ -409,6 +410,7 @@ fun ForumThreadListPage(
                     onAgree = {
                         viewModel.send(
                             ForumThreadListUiIntent.Agree(
+                                forumId,
                                 it.threadId,
                                 it.firstPostId,
                                 it.agree?.hasAgree ?: 0

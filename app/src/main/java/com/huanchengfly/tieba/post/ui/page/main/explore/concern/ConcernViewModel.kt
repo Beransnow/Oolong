@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -82,7 +83,7 @@ class ConcernViewModel @Inject constructor() :
 
         private fun ConcernUiIntent.Agree.producePartialChange(): Flow<ConcernPartialChange.Agree> =
             TiebaApi.getInstance().opAgreeFlow(
-                threadId.toString(), postId.toString(), hasAgree, objType = 3
+                AgreeTarget.Thread(threadId, postId), forumId, undo = hasAgree == 1
             ).map<AgreeBean, ConcernPartialChange.Agree> { ConcernPartialChange.Agree.Success(threadId, hasAgree xor 1) }
                 .catch { emit(ConcernPartialChange.Agree.Failure(threadId, hasAgree, it)) }
                 .onStart { emit(ConcernPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
@@ -99,6 +100,7 @@ sealed interface ConcernUiIntent : UiIntent {
     data class LoadMore(val pageTag: String) : ConcernUiIntent
 
     data class Agree(
+        val forumId: Long,
         val threadId: Long,
         val postId: Long,
         val hasAgree: Int,

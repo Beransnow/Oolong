@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.api.interfaces
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.post.api.ForumSortType
 import com.huanchengfly.tieba.post.api.SearchThreadFilter
 import com.huanchengfly.tieba.post.api.SearchThreadOrder
@@ -101,16 +102,14 @@ interface ITiebaApi {
      *
      * **需登录**
      *
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param opType 操作 0 = 点赞 1 = 取消点赞
+     * @param target 主题贴、楼层或楼中楼
+     * @param forumId 所在吧 ID
+     * @param undo 是否取消点赞
      */
     fun opAgreeFlow(
-        threadId: String,
-        postId: String,
-        opType: Int,
-        objType: Int,
-        agreeType: Int = 2,
+        target: AgreeTarget,
+        forumId: Long?,
+        undo: Boolean,
     ): Flow<AgreeBean>
 
     /**

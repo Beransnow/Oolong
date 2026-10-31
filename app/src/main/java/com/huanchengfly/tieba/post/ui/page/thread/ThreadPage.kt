@@ -933,6 +933,7 @@ fun ThreadPage(
                     item.get { agree?.hasAgree == 1 }
                 viewModel.send(
                     ThreadUiIntent.AgreePost(
+                        forumId = curForumId,
                         threadId = threadId,
                         postId = item.get { id },
                         agree = !postHasAgreed
@@ -1138,6 +1139,7 @@ fun ThreadPage(
                                     ?: 0L
                             if (firstPostId != 0L) viewModel.send(
                                 ThreadUiIntent.AgreeThread(
+                                    curForumId,
                                     threadId,
                                     firstPostId,
                                     !hasThreadAgreed

@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum.threadlist
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.AgreeBean
@@ -189,10 +190,9 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
 
     private fun ForumThreadListUiIntent.Agree.producePartialChange(): Flow<ForumThreadListPartialChange.Agree> =
         TiebaApi.getInstance().opAgreeFlow(
-            threadId.toString(),
-            postId.toString(),
-            hasAgree,
-            objType = 3
+            AgreeTarget.Thread(threadId, postId),
+            forumId,
+            undo = hasAgree == 1,
         ).map<AgreeBean, ForumThreadListPartialChange.Agree> {
             ForumThreadListPartialChange.Agree.Success(
                 threadId,
@@ -235,6 +235,7 @@ sealed interface ForumThreadListUiIntent : UiIntent {
     ) : ForumThreadListUiIntent
 
     data class Agree(
+        val forumId: Long,
         val threadId: Long,
         val postId: Long,
         val hasAgree: Int

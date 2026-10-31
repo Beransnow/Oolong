@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.huanchengfly.tieba.post.api.TiebaApi
@@ -126,10 +127,10 @@ class SubPostsViewModel @Inject constructor() :
         private fun SubPostsUiIntent.Agree.producePartialChange(): Flow<SubPostsPartialChange.Agree> =
             TiebaApi.getInstance()
                 .opAgreeFlow(
-                    threadId.toString(),
-                    (subPostId ?: postId).toString(),
-                    if (agree) 0 else 1,
-                    objType = if (subPostId == null) 1 else 2
+                    if (subPostId == null) AgreeTarget.Post(threadId, postId)
+                    else AgreeTarget.SubPost(threadId, subPostId),
+                    forumId,
+                    undo = !agree,
                 )
                 .map<AgreeBean, SubPostsPartialChange.Agree> {
                     SubPostsPartialChange.Agree.Success(subPostId, agree)

@@ -6,6 +6,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
+import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
@@ -140,6 +141,13 @@ object NetworkIdentityModule {
         network: TiebaNetwork,
         commonParams: CommonParams,
     ): SignRemoteDataSource = SignRemoteDataSource(network, commonParams)
+
+    @Provides
+    @Singleton
+    fun provideAgreeRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): AgreeRemoteDataSource = AgreeRemoteDataSource(network, commonParams)
 }
 
 @EntryPoint
@@ -147,6 +155,7 @@ object NetworkIdentityModule {
 interface LegacyNetworkEntryPoint {
     fun commonParams(): CommonParams
     fun signRemoteDataSource(): SignRemoteDataSource
+    fun agreeRemoteDataSource(): AgreeRemoteDataSource
 }
 
 private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
@@ -158,3 +167,6 @@ internal val legacyCommonParams: CommonParams get() = legacyEntryPoint.commonPar
 
 internal val legacySignRemoteDataSource: SignRemoteDataSource
     get() = legacyEntryPoint.signRemoteDataSource()
+
+internal val legacyAgreeRemoteDataSource: AgreeRemoteDataSource
+    get() = legacyEntryPoint.agreeRemoteDataSource()

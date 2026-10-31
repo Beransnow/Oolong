@@ -311,6 +311,7 @@ fun HotPage(
                                 onAgree = {
                                     viewModel.send(
                                         HotUiIntent.Agree(
+                                            forumId = it.forumId,
                                             threadId = it.threadId,
                                             postId = it.firstPostId,
                                             hasAgree = it.hasAgree

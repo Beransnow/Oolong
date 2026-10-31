@@ -215,6 +215,7 @@ fun PersonalizedPage(
                     onAgree = {
                         viewModel.send(
                             PersonalizedUiIntent.Agree(
+                                it.forumId,
                                 it.threadId,
                                 it.firstPostId,
                                 it.agree?.hasAgree ?: 0
