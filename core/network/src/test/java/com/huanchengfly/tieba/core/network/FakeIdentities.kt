@@ -32,6 +32,7 @@ class FakeInstall(override val clientId: String? = "wappc_1700000000000_123") : 
 
 val fakeSession = Session(
     uid = "12345",
+    name = "user-name",
     bduss = "bduss-value",
     stoken = "stoken-value",
     tbs = "tbs-value",

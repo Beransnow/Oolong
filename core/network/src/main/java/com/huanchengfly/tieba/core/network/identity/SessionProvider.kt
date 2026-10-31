@@ -5,6 +5,8 @@ package com.huanchengfly.tieba.core.network.identity
  */
 data class Session(
     val uid: String,
+    /** The account's user name, not its display name. */
+    val name: String,
     val bduss: String,
     val stoken: String?,
     val tbs: String?,
