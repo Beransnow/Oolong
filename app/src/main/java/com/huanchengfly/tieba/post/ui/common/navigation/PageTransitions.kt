@@ -63,8 +63,13 @@ object PageTransitions {
     /** How far the page underneath moves, as a fraction of the container width. */
     private const val UnderPageOffset = 0.3f
 
-    /** Black overlay alpha on the page underneath once it is fully covered. */
+    /**
+     * Black overlay alpha on the page underneath once it is fully covered.
+     * Dark themes need more: their background is already near black, so only
+     * text and images darken.
+     */
     private const val UnderPageDim = 0.12f
+    private const val UnderPageDimNight = 0.35f
 
     private val ShadowWidth = 12.dp
     private const val ShadowAlpha = 0.12f
@@ -142,16 +147,17 @@ object PageTransitions {
         val returning = remember { shownBefore }
         SideEffect { shownBefore = true }
 
+        val underPageDim = if (ExtendedTheme.colors.isNightMode) UnderPageDimNight else UnderPageDim
         val transition = scope.transition
         val dim = transition.animateFloat(
             transitionSpec = { spec() },
             label = "PageDim",
         ) { state ->
             when (state) {
-                EnterExitState.PreEnter -> if (returning) UnderPageDim else 0f
+                EnterExitState.PreEnter -> if (returning) underPageDim else 0f
                 EnterExitState.Visible -> 0f
                 EnterExitState.PostExit ->
-                    if (navController.previousBackStackEntry?.id == entry.id) UnderPageDim else 0f
+                    if (navController.previousBackStackEntry?.id == entry.id) underPageDim else 0f
             }
         }
 
