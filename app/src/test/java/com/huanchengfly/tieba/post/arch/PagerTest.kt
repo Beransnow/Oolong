@@ -92,6 +92,32 @@ class PagerTest {
     }
 
     @Test
+    fun `a page with nothing new ends the list instead of being requested again`() = runTest {
+        val requested = mutableListOf<Int>()
+        val pager = backgroundScope.pager { page ->
+            requested += page
+            // A wrong cursor: page 2 repeats page 1 and points at itself
+            Page(listOf(Item(1), Item(2), Item(3)), next = 2, prev = 2)
+        }
+        runCurrent()
+
+        pager.loadMore()
+        runCurrent()
+        assertFalse(pager.state.value.hasMore)
+        pager.loadMore()
+        runCurrent()
+
+        pager.loadPrevious()
+        runCurrent()
+        assertFalse(pager.state.value.hasPrevious)
+        pager.loadPrevious()
+        runCurrent()
+
+        assertEquals(listOf(1, 2, 2), requested)
+        assertEquals(listOf(1, 2, 3), pager.ids)
+    }
+
+    @Test
     fun `a failed loadMore keeps the items and is retried with the same key`() = runTest {
         val requested = mutableListOf<Int>()
         var failNext = true

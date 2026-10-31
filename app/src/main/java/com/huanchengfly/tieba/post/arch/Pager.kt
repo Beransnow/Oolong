@@ -62,6 +62,9 @@ enum class RefreshMode {
  * already in the list (use [update] for that); a [RefreshMode.Prepend] refresh does replace them
  * with the new copies.
  *
+ * A page that adds nothing new ends the list in that direction, even if it names another page:
+ * a wrong cursor then stops the list early instead of requesting the same page over and over.
+ *
  * Only one load runs per direction, and a refresh cancels the loads in progress, whose keys belong
  * to the list being replaced. Loading starts when the pager is created.
  */
@@ -125,12 +128,13 @@ class Pager<K : Any, T>(
         appendJob = scope.launch {
             val page = loadOrNull(key) { error -> copy(append = LoadStatus.Error(error)) }
                 ?: return@launch
-            nextKey = page.next
+            val newItems = _state.value.newItems(page.items)
+            nextKey = page.next.takeIf { newItems.isNotEmpty() }
             _state.update { state ->
                 state.copy(
-                    items = (state.items + state.newItems(page.items)).toImmutableList(),
+                    items = (state.items + newItems).toImmutableList(),
                     append = LoadStatus.Idle,
-                    hasMore = page.next != null,
+                    hasMore = nextKey != null,
                 )
             }
         }
@@ -144,12 +148,13 @@ class Pager<K : Any, T>(
         prependJob = scope.launch {
             val page = loadOrNull(key) { error -> copy(prepend = LoadStatus.Error(error)) }
                 ?: return@launch
-            prevKey = page.prev
+            val newItems = _state.value.newItems(page.items)
+            prevKey = page.prev.takeIf { newItems.isNotEmpty() }
             _state.update { state ->
                 state.copy(
-                    items = (state.newItems(page.items) + state.items).toImmutableList(),
+                    items = (newItems + state.items).toImmutableList(),
                     prepend = LoadStatus.Idle,
-                    hasPrevious = page.prev != null,
+                    hasPrevious = prevKey != null,
                 )
             }
         }
