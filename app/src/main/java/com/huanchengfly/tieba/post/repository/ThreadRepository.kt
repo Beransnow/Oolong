@@ -58,7 +58,10 @@ sealed interface ThreadCursor {
      */
     data class Anchor(val postId: Long) : ThreadCursor
 
-    /** The page before the one starting at [postId], which is page [page]. */
+    /**
+     * The posts before [postId], the first one loaded: the previous page when oldest first, the
+     * newer posts when newest first. [page] is the page number to send along, 0 for none.
+     */
     data class Before(val postId: Long, val page: Int) : ThreadCursor
 
     /** Posts newer than [postId], the last one loaded, once the end has been reached. */
@@ -201,7 +204,13 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
                 else -> ThreadCursor.Number(page.current_page + 1)
             },
             prev = when {
-                !hasPrevious || sort == ThreadSort.NewestFirst -> null
+                posts.isEmpty() -> null
+                // New replies can arrive at any time, so there is always something to look for
+                sort == ThreadSort.NewestFirst -> ThreadCursor.Before(
+                    posts.first().id,
+                    page = if (page.current_page < page.total_page) page.current_page + 1 else 0,
+                )
+                !hasPrevious -> null
                 else -> ThreadCursor.Before(posts.first().id, page.current_page - 1)
             },
         ),

@@ -96,14 +96,25 @@ class ThreadRepositoryTest {
     }
 
     @Test
-    fun `newest first pages back from the oldest post loaded`() = runTest {
-        respond(data(listOf(post(70, 70), post(69, 69)), ProtoPage(current_page = 1, has_more = 1, has_prev = 1)))
+    fun `newest first pages back from the oldest post and forward from the newest`() = runTest {
+        respond(data(listOf(post(70, 70), post(69, 69)), ProtoPage(current_page = 4, total_page = 5, has_more = 1)))
 
         val query = ThreadQuery(9_000, sort = ThreadSort.NewestFirst)
         val posts = repository.page(query, ThreadCursor.first(ThreadSort.NewestFirst)).posts
 
         assertEquals(ThreadCursor.Anchor(69), posts.next)
-        assertNull(posts.prev)
+        assertEquals(ThreadCursor.Before(70, page = 5), posts.prev)
+    }
+
+    @Test
+    fun `newest first sends no page number for newer posts once on the last page`() = runTest {
+        respond(data(listOf(post(70, 70)), ProtoPage(current_page = 5, total_page = 5)))
+
+        val query = ThreadQuery(9_000, sort = ThreadSort.NewestFirst)
+        val posts = repository.page(query, ThreadCursor.first(ThreadSort.NewestFirst)).posts
+
+        assertNull(posts.next)
+        assertEquals(ThreadCursor.Before(70, page = 0), posts.prev)
     }
 
     @Test
