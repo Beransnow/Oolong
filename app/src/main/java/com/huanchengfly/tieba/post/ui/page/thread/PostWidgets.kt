@@ -26,7 +26,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.bawuType
+import com.huanchengfly.tieba.post.model.BawuType
+import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
@@ -114,4 +115,11 @@ fun UserNameText(
         ),
         modifier = modifier
     )
+}
+
+/** How a moderator is labelled next to their name, or null for anyone else. */
+fun User.bawuName(): String? = when (bawuType) {
+    BawuType.Manager -> "吧主"
+    BawuType.Assist -> "小吧主"
+    null -> null
 }

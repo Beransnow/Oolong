@@ -24,11 +24,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.model.BawuType
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
-import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -62,6 +60,7 @@ data class PostCardOptions(
  *
  * @param isStoreMark whether the thread store marks the thread as read up to this post
  * @param canDelete whether the user may delete the post
+ * @param canStore whether the menu offers to mark the thread store at this post
  */
 @Composable
 fun ThreadPostCard(
@@ -71,6 +70,7 @@ fun ThreadPostCard(
     modifier: Modifier = Modifier,
     isStoreMark: Boolean = false,
     canDelete: Boolean = false,
+    canStore: Boolean = true,
     showSubPosts: Boolean = true,
     photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
 ) {
@@ -121,17 +121,19 @@ fun ThreadPostCard(
                 ) {
                     Text(text = stringResource(id = R.string.title_report))
                 }
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(if (isStoreMark) ThreadEvent.RemoveStore else ThreadEvent.StoreAt(post))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(
-                        text = stringResource(
-                            id = if (isStoreMark) R.string.title_collect_on else R.string.title_collect_floor
+                if (canStore) {
+                    DropdownMenuItem(
+                        onClick = {
+                            onEvent(if (isStoreMark) ThreadEvent.RemoveStore else ThreadEvent.StoreAt(post))
+                            menuState.expanded = false
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(
+                                id = if (isStoreMark) R.string.title_collect_on else R.string.title_collect_floor
+                            )
                         )
-                    )
+                    }
                 }
                 if (canDelete) {
                     DropdownMenuItem(
@@ -229,12 +231,6 @@ private fun postDescription(post: Post): String {
         stringResource(R.string.tip_post_floor, post.floor).takeIf { post.floor > 1 },
         stringResource(R.string.text_ip_location, post.author.ipLocation).takeIf { post.author.ipLocation.isNotEmpty() },
     ).joinToString(" · ")
-}
-
-private fun User.bawuName(): String? = when (bawuType) {
-    BawuType.Manager -> "吧主"
-    BawuType.Assist -> "小吧主"
-    null -> null
 }
 
 @Composable
