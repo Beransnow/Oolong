@@ -2,30 +2,23 @@ package com.huanchengfly.tieba.post.api.models.protos
 
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.ui.common.PbContentRender
 import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
 import com.huanchengfly.tieba.post.ui.common.VideoContentRender
 import com.huanchengfly.tieba.post.ui.common.VoiceContentRender
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.ui.page.thread.SubPostItemData
-import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 val List<Abstract>.abstractText: String
@@ -125,62 +118,6 @@ fun ThreadInfo.updateCollectStatus(
         collectStatus = newStatus,
         collectMarkPid = markPostId.toString()
     )
-} else {
-    this
-}
-
-fun Post.updateAgreeStatus(
-    hasAgree: Int
-) = if (agree != null) {
-    if (hasAgree != agree!!.hasAgree) {
-        if (hasAgree == 1) {
-            copy(
-                agree = agree!!.copy(
-                    agreeNum = agree!!.agreeNum + 1,
-                    diffAgreeNum = agree!!.diffAgreeNum + 1,
-                    hasAgree = 1
-                )
-            )
-        } else {
-            copy(
-                agree = agree!!.copy(
-                    agreeNum = agree!!.agreeNum - 1,
-                    diffAgreeNum = agree!!.diffAgreeNum - 1,
-                    hasAgree = 0
-                )
-            )
-        }
-    } else {
-        this
-    }
-} else {
-    this
-}
-
-fun SubPostList.updateAgreeStatus(
-    hasAgree: Int
-) = if (agree != null) {
-    if (hasAgree != agree!!.hasAgree) {
-        if (hasAgree == 1) {
-            copy(
-                agree = agree!!.copy(
-                    agreeNum = agree!!.agreeNum + 1,
-                    diffAgreeNum = agree!!.diffAgreeNum + 1,
-                    hasAgree = 1
-                )
-            )
-        } else {
-            copy(
-                agree = agree!!.copy(
-                    agreeNum = agree!!.agreeNum - 1,
-                    diffAgreeNum = agree!!.diffAgreeNum - 1,
-                    hasAgree = 0
-                )
-            )
-        }
-    } else {
-        this
-    }
 } else {
     this
 }
@@ -371,71 +308,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
         return renders.toImmutableList()
     }
 
-val Post.contentRenders: ImmutableList<PbContentRender>
-    get() {
-        val renders = content.renders
-
-        return renders.map {
-            if (it is PicContentRender) {
-                it.copy(
-                    photoViewData = getPhotoViewData(
-                        this,
-                        it.picId,
-                        it.picUrl,
-                        it.originUrl,
-                        it.showOriginBtn,
-                        it.originSize
-                    )
-                )
-            } else it
-        }.toImmutableList()
-    }
-
 val User.bawuType: String?
     get() = if (is_bawu == 1) {
         if (bawu_type == "manager") "吧主" else "小吧主"
     } else null
-
-val Post.subPostContents: ImmutableList<AnnotatedString>
-    get() = sub_post_list?.sub_post_list?.map { it.getContentText(origin_thread_info?.author?.id) }
-        ?.toImmutableList()
-        ?: persistentListOf()
-
-val Post.subPosts: ImmutableList<SubPostItemData>
-    get() = sub_post_list?.sub_post_list?.map {
-        SubPostItemData(
-            it.wrapImmutable(),
-            it.getContentText(origin_thread_info?.author?.id)
-        )
-    }?.toImmutableList() ?: persistentListOf()
-
-@OptIn(ExperimentalTextApi::class)
-fun SubPostList.getContentText(threadAuthorId: Long? = null): AnnotatedString {
-    val context = App.INSTANCE
-    val accentColor = Color(ThemeUtils.getColorByAttr(context, R.attr.colorNewPrimary))
-
-    val userNameString = buildAnnotatedString {
-        withAnnotation("user", "${author?.id}") {
-            withStyle(
-                SpanStyle(
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold
-                )
-            ) {
-                append(
-                    StringUtil.getUsernameAnnotatedString(
-                        context,
-                        author?.name ?: "",
-                        author?.nameShow
-                    )
-                )
-            }
-            if (author?.id == threadAuthorId) {
-                appendInlineContent("Lz")
-            }
-            append(": ")
-        }
-    }
-
-    return content.renders.fold(userNameString) { acc, render -> acc + render.toAnnotationString() }
-}

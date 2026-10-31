@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.utils
 
 import com.huanchengfly.tieba.post.api.models.protos.Media
-import com.huanchengfly.tieba.post.api.models.protos.Post
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -9,42 +8,6 @@ import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-
-fun getPhotoViewData(
-    post: Post,
-    picId: String,
-    picUrl: String,
-    originUrl: String,
-    showOriginBtn: Boolean,
-    originSize: Int,
-    seeLz: Boolean = false
-): PhotoViewData? {
-    if (post.from_forum == null) return null
-    return PhotoViewData(
-        data = LoadPicPageData(
-            forumId = post.from_forum!!.id,
-            forumName = post.from_forum!!.name,
-            threadId = post.tid,
-            postId = post.id,
-            objType = "pb",
-            picId = picId,
-            picIndex = 1,
-            seeLz = seeLz,
-            originUrl = originUrl,
-        ),
-        picItems = persistentListOf(
-            PicItem(
-                picId = picId,
-                picIndex = 1,
-                url = picUrl,
-                originUrl = originUrl,
-                showOriginBtn = showOriginBtn,
-                originSize = originSize,
-                postId = post.id
-            )
-        )
-    )
-}
 
 fun getPhotoViewData(
     threadInfo: ThreadInfo,
