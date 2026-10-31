@@ -1,10 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.habit
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
@@ -26,7 +23,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
@@ -36,9 +32,10 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -50,16 +47,11 @@ fun HabitSettingsPage(
     navigator: DestinationsNavigator
 ) {
     val context = LocalContext.current
-    MyScaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_settings_read_habit),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_settings_read_habit)) },
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
                 }
@@ -69,9 +61,8 @@ fun HabitSettingsPage(
         PrefsScreen(
             dataStore = LocalContext.current.dataStore,
             dividerThickness = 0.dp,
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = paddingValues,
         ) {
             prefsItem {
                 ListPref(
@@ -195,7 +186,7 @@ fun HabitSettingsPage(
 //            prefsItem {
 //                SwitchPref(
 //                    key = "showShortcutInThread",
-//                    title = stringResource(id = R.string.settings_show_shortcut),
+//                    title = { GlassTopBarTitle(text = stringResource(id = R.string.settings_show_shortcut)) },
 //                    defaultChecked = true,
 //                    leadingIcon = {
 //                        LeadingIcon {

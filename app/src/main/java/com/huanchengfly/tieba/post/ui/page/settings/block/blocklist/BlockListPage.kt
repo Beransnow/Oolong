@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -33,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -48,16 +51,17 @@ import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.main.BottomNavigationDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
+import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -112,16 +116,11 @@ fun BlockListPage(
         prop1 = BlockListUiState::isLoading,
         initial = false
     )
-    MyScaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_block_list),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_block_list)) },
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
                 },
@@ -156,17 +155,23 @@ fun BlockListPage(
             )
         },
         bottomBar = {
-            Column {
-                BottomNavigationDivider()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp)
+                        .floatingGlass(RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 8.dp)
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .weight(1f)
+                            .clip(RoundedCornerShape(percent = 50))
                             .clickable {
                                 addBlockCategory = Block.CATEGORY_BLACK_LIST
                                 dialogState.show()
@@ -189,7 +194,7 @@ fun BlockListPage(
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .weight(1f)
+                            .clip(RoundedCornerShape(percent = 50))
                             .clickable {
                                 addBlockCategory = Block.CATEGORY_WHITE_LIST
                                 dialogState.show()
@@ -226,7 +231,6 @@ fun BlockListPage(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             key = { it },
-            contentPadding = paddingValues,
             verticalAlignment = Alignment.Top
         ) { position ->
             val items by remember {
@@ -239,7 +243,7 @@ fun BlockListPage(
                 isError = false,
                 isLoading = isLoading,
                 loadingScreen = {
-                    MyLazyColumn(modifier = Modifier.fillMaxSize()) {
+                    MyLazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = paddingValues) {
                         items(4) {
                             BlockItemPlaceholder()
                         }
@@ -247,7 +251,7 @@ fun BlockListPage(
                 },
                 modifier = Modifier.fillMaxSize()
             ) {
-                MyLazyColumn(Modifier.fillMaxSize()) {
+                MyLazyColumn(Modifier.fillMaxSize(), contentPadding = paddingValues) {
                     items(items, key = { it.id }) {
                         LongClickMenu(menuContent = {
                             DropdownMenuItem(onClick = {

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.HistoryUtil
@@ -49,6 +51,7 @@ import com.huanchengfly.tieba.post.utils.HistoryUtil
 @Composable
 fun HistoryListPage(
     type: Int,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: HistoryListViewModel = if (type == HistoryUtil.TYPE_THREAD) pageViewModel<ThreadHistoryListViewModel>() else pageViewModel<ForumHistoryListViewModel>()
 ) {
     LazyLoad(loaded = viewModel.initialized) {
@@ -108,10 +111,11 @@ fun HistoryListPage(
             MyLazyColumn(
                 modifier = Modifier
                     .fillMaxSize(),
-                state = lazyListState
+                state = lazyListState,
+                contentPadding = contentPadding,
             ) {
                 if (todayHistoryData.isNotEmpty()) {
-                    stickyHeader(key = "TodayHistoryHeader") {
+                    paddedStickyHeader(lazyListState, key = "TodayHistoryHeader") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -157,7 +161,7 @@ fun HistoryListPage(
                     }
                 }
                 if (beforeHistoryData.isNotEmpty()) {
-                    stickyHeader(key = "BeforeHistoryHeader") {
+                    paddedStickyHeader(lazyListState, key = "BeforeHistoryHeader") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()

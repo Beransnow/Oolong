@@ -6,11 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -43,6 +45,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalShouldLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.persistentListOf
 
@@ -50,6 +53,7 @@ import kotlinx.collections.immutable.persistentListOf
 @Composable
 fun SearchForumPage(
     keyword: String,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: SearchForumViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavigator.current
@@ -126,9 +130,14 @@ fun SearchForumPage(
                 .fillMaxSize()
                 .pullRefresh(pullRefreshState)
         ) {
-            MyLazyColumn(modifier = Modifier.fillMaxSize()) {
+            val listState = rememberLazyListState()
+            MyLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                contentPadding = contentPadding,
+            ) {
                 if (showExactMatchResult) {
-                    stickyHeader(key = "ExactMatchHeader") {
+                    paddedStickyHeader(listState, key = "ExactMatchHeader") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -151,7 +160,7 @@ fun SearchForumPage(
                     }
                 }
                 if (showFuzzyMatchResult) {
-                    stickyHeader(key = "FuzzyMatchHeader") {
+                    paddedStickyHeader(listState, key = "FuzzyMatchHeader") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -178,7 +187,9 @@ fun SearchForumPage(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = contentPadding.calculateTopPadding()),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.primary,
             )

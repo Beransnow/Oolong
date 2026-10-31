@@ -27,6 +27,7 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -72,12 +73,13 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
+import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
@@ -301,20 +303,19 @@ fun ForumSearchPostPage(
         )
     }
 
-    MyScaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBarContainer(
-                topBar = {
-                    Box(
-                        modifier = Modifier
-                            .height(64.dp)
-                            .background(ExtendedTheme.colors.topBar)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
+            GlassTopBar(
+                title = {
+                    // The bar styles its title slot as a title; the field keeps body text.
+                    ProvideTextStyle(MaterialTheme.typography.body1) {
                         SearchBox(
                             keyword = inputKeyword,
                             onKeywordChange = { inputKeyword = it },
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .padding(end = 12.dp),
                             onKeywordSubmit = {
                                 focusRequester.freeFocus()
                                 keyboardController?.hide()
@@ -359,14 +360,12 @@ fun ForumSearchPostPage(
                             shape = RoundedCornerShape(6.dp)
                         )
                     }
-                }
+                },
             )
         }
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize()
         ) {
             ProvideNavigator(navigator = navigator) {
                 if (!isKeywordEmpty) {
@@ -463,8 +462,9 @@ fun ForumSearchPostPage(
                                     },
                                     hideForum = true,
                                     searchKeyword = currentKeyword,
+                                    contentPadding = paddingValues,
                                 ) {
-                                    stickyHeader(key = "Sort&Filter") {
+                                    paddedStickyHeader(lazyListState, key = "Sort&Filter") {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier
@@ -583,7 +583,9 @@ fun ForumSearchPostPage(
                             PullRefreshIndicator(
                                 refreshing = isRefreshing,
                                 state = pullRefreshState,
-                                modifier = Modifier.align(Alignment.TopCenter),
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = paddingValues.calculateTopPadding()),
                                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                                 contentColor = ExtendedTheme.colors.primary,
                             )

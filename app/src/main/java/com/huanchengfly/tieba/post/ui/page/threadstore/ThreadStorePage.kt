@@ -14,7 +14,6 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -56,13 +55,14 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -128,17 +128,12 @@ fun ThreadStorePage(
     viewModel.onEvent<ThreadStoreUiEvent.Delete.Success> {
         scaffoldState.snackbarHostState.showSnackbar(context.getString(R.string.delete_store_success))
     }
-    MyScaffold(
+    GlassScaffold(
         backgroundColor = Color.Transparent,
         scaffoldState = scaffoldState,
         topBar = {
-            TitleCentredToolbar(
-                title = {
-                    Text(
-                        text = stringResource(id = R.string.title_my_collect),
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6
-                    )
-                },
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_my_collect)) },
                 navigationIcon = {
                     BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
                 }
@@ -149,9 +144,7 @@ fun ThreadStorePage(
             isEmpty = data.isEmpty(),
             isError = isError,
             isLoading = isRefreshing,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPaddings),
+            modifier = Modifier.fillMaxSize(),
             onReload = {
                 viewModel.send(ThreadStoreUiIntent.Refresh)
             },
@@ -176,7 +169,7 @@ fun ThreadStorePage(
                     loadEnd = !hasMore,
                     lazyListState = lazyListState
                 ) {
-                    MyLazyColumn(state = lazyListState) {
+                    MyLazyColumn(state = lazyListState, contentPadding = contentPaddings) {
                         items(
                             items = data,
                             key = { it.threadId }
@@ -218,7 +211,9 @@ fun ThreadStorePage(
                 PullRefreshIndicator(
                     refreshing = isRefreshing,
                     state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = contentPaddings.calculateTopPadding()),
                     backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                     contentColor = ExtendedTheme.colors.primary,
                 )

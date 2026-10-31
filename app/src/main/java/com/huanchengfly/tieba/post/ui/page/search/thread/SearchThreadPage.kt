@@ -1,7 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.search.thread
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -14,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -37,6 +40,7 @@ import kotlinx.collections.immutable.persistentListOf
 fun SearchThreadPage(
     keyword: String,
     initialSortType: Int = SearchThreadSortType.SORT_TYPE_NEWEST,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: SearchThreadViewModel = pageViewModel(),
 ) {
     val navigator = LocalNavigator.current
@@ -156,12 +160,15 @@ fun SearchThreadPage(
                         )
                     },
                     searchKeyword = keyword,
+                    contentPadding = contentPadding,
                 )
 
                 PullRefreshIndicator(
                     refreshing = isRefreshing,
                     state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = contentPadding.calculateTopPadding()),
                     backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                     contentColor = ExtendedTheme.colors.primary,
                 )

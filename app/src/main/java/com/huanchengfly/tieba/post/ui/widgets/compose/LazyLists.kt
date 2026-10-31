@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -16,9 +17,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import java.util.WeakHashMap
 
 @Composable
 fun MyLazyColumn(
@@ -81,3 +84,39 @@ fun MyLazyVerticalGrid(
         content = content
     )
 }
+/**
+ * A sticky header that pins below the list's top content padding instead of at the top edge of
+ * the list, so it is not hidden behind a [GlassScaffold] top bar.
+ *
+ * Lazy lists pin sticky headers at the top of the viewport and ignore content padding. Each header
+ * is translated to where it would pin if the padding were the top: no higher than the end of the
+ * padding, and pushed up by the next header of the same list as that one arrives.
+ */
+fun LazyListScope.paddedStickyHeader(
+    state: LazyListState,
+    key: Any,
+    content: @Composable () -> Unit,
+) {
+    stickyHeaderKeys.getOrPut(state) { mutableSetOf() }.add(key)
+    stickyHeader(key = key) {
+        Box(
+            modifier = Modifier.graphicsLayer {
+                val layoutInfo = state.layoutInfo
+                val items = layoutInfo.visibleItemsInfo
+                val header = items.firstOrNull { it.key == key } ?: return@graphicsLayer
+                val padding = -layoutInfo.viewportStartOffset
+                val top = header.offset + padding
+                var pinnedTop = maxOf(top, padding)
+                val keys = stickyHeaderKeys[state]
+                val next = items.firstOrNull { it.index > header.index && keys?.contains(it.key) == true }
+                if (next != null) pinnedTop = minOf(pinnedTop, next.offset + padding - header.size)
+                translationY = (pinnedTop - top).toFloat()
+            }
+        ) {
+            content()
+        }
+    }
+}
+
+/** Keys of the [paddedStickyHeader]s in each list, to find the header that pushes another. */
+private val stickyHeaderKeys = WeakHashMap<LazyListState, MutableSet<Any>>()

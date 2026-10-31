@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,14 +82,14 @@ import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadUiEvent
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
-import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.TopAppBarContainer
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
@@ -106,7 +107,7 @@ import kotlinx.coroutines.launch
 data class SearchPageItem(
     val id: String,
     val text: @Composable (selected: Boolean) -> Unit,
-    val content: @Composable () -> Unit,
+    val content: @Composable (contentPadding: PaddingValues) -> Unit,
     val supportSort: Boolean = false,
     val sortTypes: ImmutableMap<String, Int> = persistentMapOf(),
     val selectedSortType: () -> Int = { -1 },
@@ -195,7 +196,7 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchForumPage(keyword = keyword) }
+                    content = { SearchForumPage(keyword = keyword, contentPadding = it) }
                 ),
                 SearchPageItem(
                     id = "thread",
@@ -208,7 +209,8 @@ fun SearchPage(
                     content = {
                         SearchThreadPage(
                             keyword = keyword,
-                            initialSortType = initialSortType
+                            initialSortType = initialSortType,
+                            contentPadding = it,
                         )
                     },
                     supportSort = true,
@@ -228,36 +230,39 @@ fun SearchPage(
                             fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
                         )
                     },
-                    content = { SearchUserPage(keyword = keyword) }
+                    content = { SearchUserPage(keyword = keyword, contentPadding = it) }
                 ),
             )
         }
     }
     val pagerState = rememberPagerState { pages.size }
-    MyScaffold(
+    GlassScaffold(
         topBar = {
-            TopAppBarContainer(
-                topBar = {
+            GlassTopBar(
+                title = {
                     Box(
                         modifier = Modifier
-                            .height(64.dp)
-                            .background(ExtendedTheme.colors.topBar)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .padding(end = 12.dp)
                     ) {
-                        SearchTopBar(
-                            keyword = inputKeyword,
-                            onKeywordChange = { inputKeyword = it },
-                            onKeywordSubmit = {
-                                viewModel.send(SearchUiIntent.SubmitKeyword(it))
-                            },
-                            onBack = {
-                                if (isKeywordEmpty) {
-                                    navigator.navigateUp()
-                                } else {
-                                    viewModel.send(SearchUiIntent.SubmitKeyword(""))
+                        // The bar styles its title slot as a title; the field keeps body text.
+                        ProvideTextStyle(MaterialTheme.typography.body1) {
+                            SearchTopBar(
+                                keyword = inputKeyword,
+                                onKeywordChange = { inputKeyword = it },
+                                onKeywordSubmit = {
+                                    viewModel.send(SearchUiIntent.SubmitKeyword(it))
+                                },
+                                onBack = {
+                                    if (isKeywordEmpty) {
+                                        navigator.navigateUp()
+                                    } else {
+                                        viewModel.send(SearchUiIntent.SubmitKeyword(""))
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 },
             ) {
@@ -267,9 +272,7 @@ fun SearchPage(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             if (!isKeywordEmpty) {
                 ProvideNavigator(navigator = navigator) {
                     LazyLoadHorizontalPager(
@@ -277,13 +280,14 @@ fun SearchPage(
                         key = { pages[it].id },
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        pages[it].content()
+                        pages[it].content(paddingValues)
                     }
                 }
             } else {
                 if (showSuggestions) {
                     SearchSuggestionList(
                         suggestions = suggestions,
+                        contentPadding = paddingValues,
                         onItemClick = {
                             inputKeyword = it
                             viewModel.send(SearchUiIntent.SubmitKeyword(it))
@@ -294,6 +298,7 @@ fun SearchPage(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
+                            .padding(paddingValues)
                     ) {
                         Container {
                             SearchHistoryList(
@@ -320,9 +325,11 @@ fun SearchPage(
 private fun SearchSuggestionList(
     suggestions: ImmutableList<String>,
     onItemClick: (String) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = contentPadding,
     ) {
         items(
             items = suggestions,

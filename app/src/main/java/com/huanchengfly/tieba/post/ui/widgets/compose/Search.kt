@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -161,11 +162,13 @@ fun SearchThreadList(
     onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
     hideForum: Boolean = false,
     searchKeyword: String? = null,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     header: LazyListScope.() -> Unit = {},
 ) {
     MyLazyColumn(
         state = lazyListState,
-        modifier = modifier
+        modifier = modifier,
+        contentPadding = contentPadding,
     ) {
         header()
         itemsIndexed(data) { index, item ->
