@@ -15,6 +15,7 @@ import com.huanchengfly.tieba.post.model.PostContent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,7 +29,7 @@ import com.huanchengfly.tieba.post.api.models.protos.User as ProtoUser
 
 class ThreadRepositoryTest {
     private val remote = mockk<ThreadRemoteDataSource>()
-    private val repository = ThreadRepository(remote) { _, _ -> }
+    private val repository = ThreadRepository(remote, mockk(), { _, _ -> }, Dispatchers.Unconfined)
 
     private val lz = ProtoUser(id = 10, name = "lz", nameShow = "楼主", portrait = "p10", level_id = 12)
     private val replier = ProtoUser(id = 20, name = "replier", nameShow = "", portrait = "p20", level_id = 3)

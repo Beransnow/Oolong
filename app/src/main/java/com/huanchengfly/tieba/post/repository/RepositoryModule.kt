@@ -13,6 +13,9 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindBlockRuleSource(source: BlockManagerRuleSource): BlockRuleSource
 
+    @Binds
+    abstract fun bindThreadHistory(history: HistoryUtilThreadHistory): ThreadHistory
+
     companion object {
         @Provides
         fun provideEmoticonRegistry(): EmoticonRegistry = EmoticonRegistry(EmoticonManager::registerEmoticon)

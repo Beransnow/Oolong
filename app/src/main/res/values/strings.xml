@@ -411,6 +411,7 @@
     <string name="desc_video">视频</string>
     <string name="tag_video">[视频]</string>
     <string name="message_add_favorite_success">已收藏至第 %d 楼</string>
+    <string name="message_add_favorite_failure">收藏失败 %s</string>
     <string name="message_remove_favorite_success">取消收藏成功</string>
     <string name="message_update_collect_mark">本次阅读到第 %d 楼，是否更新收藏楼层？</string>
     <string name="message_update_collect_mark_failed">更新收藏楼层失败 %s</string>

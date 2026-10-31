@@ -1,23 +1,29 @@
 package com.huanchengfly.tieba.post.repository
 
 import androidx.compose.runtime.Immutable
+import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
+import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
+import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.BawuType
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -68,6 +74,13 @@ sealed interface ThreadCursor {
     data class After(val postId: Long) : ThreadCursor
 
     companion object {
+        /**
+         * Posts newer than [postId], the newest loaded when newest first, with the page after
+         * [currentPage] while there is one.
+         */
+        fun newerThan(postId: Long, currentPage: Int, totalPage: Int): ThreadCursor =
+            Before(postId, page = if (currentPage < totalPage) currentPage + 1 else 0)
+
         /** Where a thread opened at [postId], or from its start when 0, begins. */
         fun first(sort: ThreadSort, postId: Long = 0): ThreadCursor = when {
             postId != 0L -> Anchor(postId)
@@ -76,6 +89,16 @@ sealed interface ThreadCursor {
         }
     }
 }
+
+/** What is known of a thread before it loads, from the list it was opened from. */
+@Immutable
+data class ThreadPreview(
+    val title: String,
+    val author: User?,
+    val content: ImmutableList<PostContent>,
+    /** Seconds since the epoch. */
+    val time: Long,
+)
 
 @Immutable
 data class ThreadPage(
@@ -93,9 +116,11 @@ data class ThreadPage(
 @Singleton
 class ThreadRepository @Inject constructor(
     private val remote: ThreadRemoteDataSource,
+    private val agreeRemote: AgreeRemoteDataSource,
     private val emoticons: EmoticonRegistry,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(Dispatchers.IO) {
+    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
         val data = remote.page(
             threadId = query.threadId,
             page = when (cursor) {
@@ -121,11 +146,24 @@ class ThreadRepository @Inject constructor(
         data.toThreadPage(query.sort, emoticons)
     }
 
-    suspend fun addStore(threadId: Long, markPostId: Long) = withContext(Dispatchers.IO) {
+    fun preview(info: ThreadInfo): ThreadPreview = info.toThreadPreview(emoticons)
+
+    /** Agrees with the thread, or takes it back when [agree] is false. */
+    suspend fun agreeThread(thread: ThreadDetail, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
+        Unit
+    }
+
+    suspend fun agreePost(thread: ThreadDetail, postId: Long, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Post(thread.id, postId), thread.forum.id, undo = !agree)
+        Unit
+    }
+
+    suspend fun addStore(threadId: Long, markPostId: Long) = withContext(io) {
         remote.addStore(threadId, markPostId)
     }
 
-    suspend fun removeStore(threadId: Long, forumId: Long, tbs: String?) = withContext(Dispatchers.IO) {
+    suspend fun removeStore(threadId: Long, forumId: Long, tbs: String?) = withContext(io) {
         remote.removeStore(threadId, forumId, tbs)
     }
 
@@ -134,12 +172,12 @@ class ThreadRepository @Inject constructor(
         postId: Long,
         ownPost: Boolean,
         tbs: String?,
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(io) {
         remote.deletePost(thread.forum.id, thread.forum.name, thread.id, postId, ownPost, tbs = tbs)
     }
 
     suspend fun deleteThread(thread: ThreadDetail, ownThread: Boolean, tbs: String?) =
-        withContext(Dispatchers.IO) {
+        withContext(io) {
             remote.deleteThread(thread.forum.id, thread.forum.name, thread.id, ownThread, tbs = tbs)
         }
 }
@@ -206,10 +244,8 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
             prev = when {
                 posts.isEmpty() -> null
                 // New replies can arrive at any time, so there is always something to look for
-                sort == ThreadSort.NewestFirst -> ThreadCursor.Before(
-                    posts.first().id,
-                    page = if (page.current_page < page.total_page) page.current_page + 1 else 0,
-                )
+                sort == ThreadSort.NewestFirst ->
+                    ThreadCursor.newerThan(posts.first().id, page.current_page, page.total_page)
                 !hasPrevious -> null
                 else -> ThreadCursor.Before(posts.first().id, page.current_page - 1)
             },
@@ -220,6 +256,13 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
         tbs = anti.tbs.ifEmpty { null },
     )
 }
+
+fun ThreadInfo.toThreadPreview(emoticons: EmoticonRegistry) = ThreadPreview(
+    title = title,
+    author = author?.toUser(),
+    content = firstPostContent.toPostContent(emoticons),
+    time = createTime.toLong(),
+)
 
 private fun ProtoUser.toUser() = User(
     id = id,
