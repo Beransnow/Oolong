@@ -7,6 +7,8 @@ import kotlinx.coroutines.launch
 /**
  * Runs user actions such as liking a post, at most one per key at a time: tapping again while
  * the first request is out does nothing. Actions with different keys run concurrently.
+ *
+ * Not thread-safe: call [launch] from the main thread, as view models do.
  */
 class Actions(private val scope: CoroutineScope) {
     private val running = mutableMapOf<Any, Job>()
