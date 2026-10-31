@@ -49,8 +49,7 @@ android {
     defaultConfig {
         applicationId = "com.huanchengfly.tieba.post"
         minSdk = 24
-        //noinspection OldTargetApi
-        targetSdk = 34
+        targetSdk = 36
         versionCode = applicationVersionCode
         versionName = applicationVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

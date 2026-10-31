@@ -83,7 +83,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.ColorUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -134,14 +133,6 @@ class EditProfileActivity : BaseActivity() {
                                 .withOptions(UCrop.Options().apply {
                                     setShowCropFrame(true)
                                     setShowCropGrid(true)
-                                    setStatusBarColor(
-                                        ColorUtils.getDarkerColor(
-                                            ThemeUtils.getColorByAttr(
-                                                this@EditProfileActivity,
-                                                R.attr.colorPrimary
-                                            )
-                                        )
-                                    )
                                     setToolbarColor(
                                         ThemeUtils.getColorByAttr(
                                             this@EditProfileActivity,
