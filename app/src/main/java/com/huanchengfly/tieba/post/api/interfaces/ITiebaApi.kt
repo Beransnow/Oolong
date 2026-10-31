@@ -365,11 +365,13 @@ interface ITiebaApi {
      * @param forumId 吧 ID
      * @param forumName 吧名
      * @param tbs tbs（长）
+     * @param hasHead 吧页是否有明星或活动头图
      */
     fun likeForumFlow(
         forumId: String,
         forumName: String,
-        tbs: String
+        tbs: String,
+        hasHead: Boolean,
     ): Flow<LikeForumResultBean>
 
     /**

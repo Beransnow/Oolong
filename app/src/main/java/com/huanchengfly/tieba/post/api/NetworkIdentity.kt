@@ -8,6 +8,7 @@ import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
+import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
@@ -80,6 +81,7 @@ private object AccountSessionProvider : SessionProvider {
     override fun currentSession(): Session? = AccountUtil.getLoginInfo()?.let {
         Session(
             uid = it.uid,
+            name = it.name,
             bduss = it.bduss,
             stoken = it.sToken.takeIf { token -> token.isNotEmpty() },
             tbs = it.tbs.takeIf { tbs -> tbs.isNotEmpty() },
@@ -148,6 +150,13 @@ object NetworkIdentityModule {
         network: TiebaNetwork,
         commonParams: CommonParams,
     ): AgreeRemoteDataSource = AgreeRemoteDataSource(network, commonParams)
+
+    @Provides
+    @Singleton
+    fun provideLikeRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): LikeRemoteDataSource = LikeRemoteDataSource(network, commonParams)
 }
 
 @EntryPoint
@@ -156,6 +165,7 @@ interface LegacyNetworkEntryPoint {
     fun commonParams(): CommonParams
     fun signRemoteDataSource(): SignRemoteDataSource
     fun agreeRemoteDataSource(): AgreeRemoteDataSource
+    fun likeRemoteDataSource(): LikeRemoteDataSource
 }
 
 private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
@@ -170,3 +180,6 @@ internal val legacySignRemoteDataSource: SignRemoteDataSource
 
 internal val legacyAgreeRemoteDataSource: AgreeRemoteDataSource
     get() = legacyEntryPoint.agreeRemoteDataSource()
+
+internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
+    get() = legacyEntryPoint.likeRemoteDataSource()

@@ -437,6 +437,7 @@ fun ForumPage(
         initial = null
     )
     val tbs by viewModel.uiState.collectPartialAsState(prop1 = ForumUiState::tbs, initial = null)
+    val hasHead by viewModel.uiState.collectPartialAsState(prop1 = ForumUiState::hasHead, initial = false)
 
     val account = LocalAccount.current
     val pagerState = rememberPagerState { 2 }
@@ -746,7 +747,8 @@ fun ForumPage(
                                                         ForumUiIntent.Like(
                                                             forum.id,
                                                             forum.name,
-                                                            tbs ?: account!!.tbs
+                                                            tbs ?: account!!.tbs,
+                                                            hasHead,
                                                         )
                                                     )
 

@@ -87,7 +87,9 @@ class ForumViewModel @Inject constructor() :
                 .map {
                     if (it.data_?.forum != null) ForumPartialChange.Load.Success(
                         it.data_!!.forum!!,
-                        it.data_!!.anti?.tbs
+                        it.data_!!.anti?.tbs,
+                        hasHead = it.data_!!.forum!!.has_frs_star == 1 ||
+                                it.data_!!.activity_head?.head_imgs?.isNotEmpty() == true,
                     )
                     else ForumPartialChange.Load.Failure(NullPointerException("未知错误"))
                 }
@@ -120,7 +122,7 @@ class ForumViewModel @Inject constructor() :
                 .catch { emit(ForumPartialChange.SignIn.Failure(it)) }
 
         private fun ForumUiIntent.Like.produceLoadPartialChange() =
-            TiebaApi.getInstance().likeForumFlow("$forumId", forumName, tbs)
+            TiebaApi.getInstance().likeForumFlow("$forumId", forumName, tbs, hasHead)
                 .map<LikeForumResultBean, ForumPartialChange.Like> {
                     ForumPartialChange.Like.Success(it)
                 }
@@ -153,7 +155,8 @@ sealed interface ForumUiIntent : UiIntent {
     data class Like(
         val forumId: Long,
         val forumName: String,
-        val tbs: String
+        val tbs: String,
+        val hasHead: Boolean,
     ) : ForumUiIntent
 
     data class Unlike(
@@ -175,7 +178,8 @@ sealed interface ForumPartialChange : PartialChange<ForumUiState> {
                 isLoading = true,
                 isError = false,
                 forum = forum.wrapImmutable(),
-                tbs = tbs
+                tbs = tbs,
+                hasHead = hasHead,
             )
 
             is Failure -> oldState.copy(isLoading = false, isError = true)
@@ -185,7 +189,8 @@ sealed interface ForumPartialChange : PartialChange<ForumUiState> {
 
         data class Success(
             val forum: ForumInfo,
-            val tbs: String?
+            val tbs: String?,
+            val hasHead: Boolean,
         ) : Load()
 
         data class Failure(
@@ -276,6 +281,8 @@ data class ForumUiState(
     val isError: Boolean = false,
     val forum: ImmutableHolder<ForumInfo>? = null,
     val tbs: String? = null,
+    /** Whether the forum shows a star or activity header image, sent when following it. */
+    val hasHead: Boolean = false,
     val showForumHeader: Boolean = true
 ) : UiState
 

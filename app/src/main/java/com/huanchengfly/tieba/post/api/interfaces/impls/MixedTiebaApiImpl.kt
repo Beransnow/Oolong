@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.api.interfaces.impls
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import android.os.Build
 import android.text.TextUtils
+import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
 import com.huanchengfly.tieba.core.network.sign.MSignResponse
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
@@ -21,6 +22,7 @@ import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
 import com.huanchengfly.tieba.post.api.legacyAgreeRemoteDataSource
+import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
@@ -336,8 +338,10 @@ object MixedTiebaApiImpl : ITiebaApi {
         forumId: String,
         forumName: String,
         tbs: String
-    ): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.unfavolike(forumId, forumName, tbs)
+    ): Flow<CommonResponse> = flow {
+        legacyLikeRemoteDataSource.unfavolike(forumId.toLong(), forumName, tbs)
+        emit(CommonResponse())
+    }
 
     override fun likeForum(
         forumId: String, forumName: String, tbs: String
@@ -347,9 +351,12 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun likeForumFlow(
         forumId: String,
         forumName: String,
-        tbs: String
-    ): Flow<LikeForumResultBean> =
-        RetrofitTiebaApi.MINI_TIEBA_API.likeForumFlow(forumId, forumName, tbs)
+        tbs: String,
+        hasHead: Boolean,
+    ): Flow<LikeForumResultBean> = flow {
+        val response = legacyLikeRemoteDataSource.like(forumId.toLong(), forumName, hasHead, tbs)
+        emit(response.toLikeForumResultBean())
+    }
 
     override fun signAsync(forumName: String, tbs: String): Deferred<ApiResult<SignResultBean>> =
         RetrofitTiebaApi.MINI_TIEBA_API.signAsync(forumName, tbs)
@@ -1553,3 +1560,19 @@ private fun List<MSignResponse>.toMSignBean(): MSignBean {
         timeoutNotice = last?.timeoutNotice.orEmpty(),
     )
 }
+
+private fun LikeForumResponse.toLikeForumResultBean() = LikeForumResultBean(
+    errorCode = "0",
+    error = LikeForumResultBean.ErrorInfo(errno = "0", errmsg = "", usermsg = ""),
+    info = LikeForumResultBean.Info(
+        curScore = info?.curScore ?: "0",
+        levelUpScore = info?.levelUpScore ?: "0",
+        levelId = info?.levelId ?: "0",
+        levelName = info?.levelName.orEmpty(),
+        memberSum = info?.memberSum ?: "0",
+    ),
+    userPerm = LikeForumResultBean.UserPermInfo(
+        levelId = userPerm?.levelId ?: "0",
+        levelName = userPerm?.levelName.orEmpty(),
+    ),
+)
