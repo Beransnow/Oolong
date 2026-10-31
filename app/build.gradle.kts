@@ -50,6 +50,11 @@ android {
         compose = true
         buildConfig = true
     }
+    androidResources {
+        // The app itself is Chinese-only; drop the translations dependencies bring in.
+        // Libraries ship Chinese only under region qualifiers, so a bare "zh" keeps none of it.
+        localeFilters += listOf("en", "zh-rCN", "zh-rTW", "zh-rHK")
+    }
     signingConfigs {
         if (keystoreFile.isNotBlank()) {
             create("config") {
