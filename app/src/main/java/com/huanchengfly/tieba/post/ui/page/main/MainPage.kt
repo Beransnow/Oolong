@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.huanchengfly.tieba.post.LocalDevicePosture
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
@@ -41,7 +40,6 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
-import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
@@ -65,15 +63,6 @@ private fun NavigationWrapper(
     content: @Composable () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = navigationType == MainNavigationType.PERMANENT_NAVIGATION_DRAWER) {
-            NavigationDrawerContent(
-                currentPosition = currentPosition,
-                onChangePosition = onChangePosition,
-                onReselected = onReselected,
-                navigationItems = navigationItems,
-                navigationContentPosition = navigationContentPosition
-            )
-        }
         AnimatedVisibility(visible = navigationType == MainNavigationType.NAVIGATION_RAIL) {
             NavigationRail(
                 currentPosition = currentPosition,
@@ -102,7 +91,6 @@ fun MainPage(
     val windowSizeClass = LocalWindowSizeClass.current
     val windowHeightSizeClass by rememberUpdatedState(newValue = windowSizeClass.heightSizeClass)
     val windowWidthSizeClass by rememberUpdatedState(newValue = windowSizeClass.widthSizeClass)
-    val foldingDevicePosture by LocalDevicePosture.current
 
     val messageCount by viewModel.uiState.collectPartialAsState(
         prop1 = MainUiState::messageCount,
@@ -197,16 +185,9 @@ fun MainPage(
                     MainNavigationType.BOTTOM_NAVIGATION
                 }
 
-                WindowWidthSizeClass.Medium -> {
-                    MainNavigationType.NAVIGATION_RAIL
-                }
-
+                WindowWidthSizeClass.Medium,
                 WindowWidthSizeClass.Expanded -> {
-                    if (foldingDevicePosture is DevicePosture.BookPosture) {
-                        MainNavigationType.NAVIGATION_RAIL
-                    } else {
-                        MainNavigationType.PERMANENT_NAVIGATION_DRAWER
-                    }
+                    MainNavigationType.NAVIGATION_RAIL
                 }
 
                 else -> {
