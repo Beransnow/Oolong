@@ -9,6 +9,9 @@ import retrofit2.http.POST
 interface SignService {
     @POST("c/c/forum/sign")
     suspend fun sign(@Body body: RequestBody): SignResponse
+
+    @POST("c/c/forum/msign")
+    suspend fun mSign(@Body body: RequestBody): MSignResponse
 }
 
 @Serializable

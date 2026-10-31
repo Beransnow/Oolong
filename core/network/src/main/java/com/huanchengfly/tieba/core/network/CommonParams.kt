@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.core.network
 
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
+import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.api.models.protos.CommonRequest
 import java.util.Calendar
@@ -24,6 +25,8 @@ class CommonParams(
 
     /** Used until `c/s/sync` has issued a client id. */
     private val fallbackClientId = "wappc_${processStartTime}_${random.nextInt(1000)}"
+
+    fun session(): Session? = sessionProvider.currentSession()
 
     fun userAgent(profile: TiebaProfile): String =
         "${device.webViewUserAgent} tieba/${profile.version}"
