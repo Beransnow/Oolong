@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.api
 
 import android.content.Context
 import android.os.Build
+import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.models.OAID
 import com.huanchengfly.tieba.post.api.models.protos.AppPosInfo
@@ -101,53 +102,14 @@ fun buildCommonRequest(
     }
 
     ClientVersion.TIEBA_V12, ClientVersion.TIEBA_V22 -> {
-        val isV22 = clientVersion == ClientVersion.TIEBA_V22
-        CommonRequest(
-            BDUSS = AccountUtil.getBduss(),
-            _client_id = ClientUtils.clientId ?: RetrofitTiebaApi.randomClientId,
-            _client_type = 2,
-            _client_version = clientVersion.version,
-            _os_version = "${Build.VERSION.SDK_INT}",
-            _phone_imei = MobileInfoUtil.getIMEI(context),
-            _timestamp = System.currentTimeMillis(),
-            active_timestamp = ClientUtils.activeTimestamp,
-            android_id = base64Encode(UIDUtil.getAndroidId("000")),
-            brand = Build.BRAND,
-            c3_aid = UIDUtil.getAid(),
-            cmode = 1,
-            cuid = CuidUtils.getNewCuid(),
-            cuid_galaxy2 = CuidUtils.getNewCuid(),
-            cuid_gid = "",
-            event_day = SimpleDateFormat("yyyyMdd", Locale.getDefault()).format(
-                Date(
-                    System.currentTimeMillis()
-                )
-            ),
-            extra = "",
-            first_install_time = App.Config.appFirstInstallTime,
-            framework_ver = if (isV22) "4220001" else "3340042",
-            from = "1020031h",
-            is_teenager = 0,
-            last_update_time = App.Config.appLastUpdateTime,
-            lego_lib_version = "3.0.0",
-            model = Build.MODEL,
-            net_type = 1,
-            oaid = "",
-            personalized_rec_switch = 1,
-            pversion = "1.0.3",
-            q_type = 0,
-            sample_id = ClientUtils.sampleId,
-            scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-            scr_h = getScreenHeight(),
-            scr_w = getScreenWidth(),
-            sdk_ver = if (isV22) "3.36.0" else "2.34.0",
-            start_scheme = "",
-            start_type = 1,
-            stoken = AccountUtil.getSToken(),
-            swan_game_ver = if (isV22) "2035000" else "1038000",
-            tbs = if (isV22) null else tbs,
-            user_agent = getUserAgent("tieba/${clientVersion.version}"),
-            z_id = AccountUtil.getAccountInfo { zid }
+        val profile =
+            if (clientVersion == ClientVersion.TIEBA_V22) TiebaProfile.PROTO_22_FLOOR
+            else TiebaProfile.PROTO_12_52
+        val common = legacyCommonParams.protobuf(profile)
+        common.copy(
+            BDUSS = bduss ?: common.BDUSS,
+            stoken = stoken ?: common.stoken,
+            tbs = tbs.takeIf { profile == TiebaProfile.PROTO_12_52 },
         )
     }
 

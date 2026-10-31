@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.api.retrofit
 
 import android.os.Build
+import com.huanchengfly.tieba.core.network.ProfileInterceptor
+import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.ClientVersion
@@ -8,6 +10,7 @@ import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.getCookie
 import com.huanchengfly.tieba.post.api.getUserAgent
+import com.huanchengfly.tieba.post.api.legacyCommonParams
 import com.huanchengfly.tieba.post.api.models.OAID
 import com.huanchengfly.tieba.post.api.retrofit.adapter.DeferredCallAdapterFactory
 import com.huanchengfly.tieba.post.api.retrofit.adapter.FlowCallAdapterFactory
@@ -254,11 +257,11 @@ object RetrofitTiebaApi {
     }
 
     val OFFICIAL_PROTOBUF_TIEBA_V12_API: OfficialProtobufTiebaApi by lazy {
-        createOfficialProtobufApi(ClientVersion.TIEBA_V12)
+        createOfficialProtobufApi(TiebaProfile.PROTO_12_52)
     }
 
     val OFFICIAL_PROTOBUF_TIEBA_V22_API: OfficialProtobufTiebaApi by lazy {
-        createOfficialProtobufApi(ClientVersion.TIEBA_V22)
+        createOfficialProtobufApi(TiebaProfile.PROTO_22_FLOOR)
     }
 
     val OFFICIAL_PROTOBUF_TIEBA_POST_API: OfficialProtobufTiebaApi by lazy {
@@ -374,28 +377,10 @@ object RetrofitTiebaApi {
         .build()
         .create(T::class.java)
 
-    private fun createOfficialProtobufApi(clientVersion: ClientVersion): OfficialProtobufTiebaApi =
+    private fun createOfficialProtobufApi(profile: TiebaProfile): OfficialProtobufTiebaApi =
         createProtobufApi<OfficialProtobufTiebaApi>(
             "https://tiebac.baidu.com/",
-            CommonHeaderInterceptor(
-                Header.CHARSET to { "UTF-8" },
-                Header.CLIENT_TYPE to { "2" },
-                Header.CLIENT_USER_TOKEN to { AccountUtil.getUid() },
-                Header.COOKIE to {
-                    getCookie(
-                        "ka" to { "open" },
-                        "CUID" to { CuidUtils.getNewCuid() },
-                        "TBBRAND" to { Build.MODEL }
-                    )
-                },
-                Header.CUID to { CuidUtils.getNewCuid() },
-                Header.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Header.CUID_GID to { "" },
-                Header.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Header.USER_AGENT to { getUserAgent("tieba/${clientVersion.version}") },
-                Header.X_BD_DATA_TYPE to { "protobuf" },
-                Header.CLIENT_LOG_ID to { "$initTime" },
-            ),
+            ProfileInterceptor(profile, legacyCommonParams),
             stParamInterceptor,
         )
 

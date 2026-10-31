@@ -33,6 +33,23 @@ object DeviceUtils {
                 0.0231852f
     }
 
+    /**
+     * [getDeviceScore] with the CPU frequency converted from kHz to GHz and the result clamped to
+     * `0..1`, as the official client computes it.
+     */
+    fun getNormalizedDeviceScore(): Float {
+        val cpuCores = getDeviceCpuCore().toFloat().takeIf { it > 0 } ?: 6.9822063f
+        val cpuAverageFrequency = getDeviceCpuAverageFrequency().takeIf { it > 0 }
+            ?.let { it / 1_000_000f } ?: 1.7859616f
+        val totalMemory = getTotalMemory().takeIf { it > 0 } ?: 3.5425532f
+        val totalSDCardSize = getTotalSDCardSize().takeIf { it >= 0 } ?: 51.957294f
+        val score = round(totalMemory) * 0.0572301f +
+                roundUpRom(totalSDCardSize) * 4.1613E-4f +
+                (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
+                0.0231852f
+        return score.coerceIn(0f, 1f)
+    }
+
     fun getTotalSDCardSize(): Float {
         return runCatching {
             if (Environment.getExternalStorageState().equals("mounted")) {
