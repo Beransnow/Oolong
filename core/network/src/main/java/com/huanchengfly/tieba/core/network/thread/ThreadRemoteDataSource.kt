@@ -6,6 +6,9 @@ import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.core.network.form.signedFormBody
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.protobuf.ProtobufBody
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequest
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequestData
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.AdParam
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
@@ -20,6 +23,10 @@ class ThreadRemoteDataSource(
     private val pageProfile = TiebaProfile.PROTO_12_52
     private val formProfile = TiebaProfile.FORM_12_52
     private val pageService = network.service<ThreadService>(pageProfile)
+
+    /** Replies inside posts are only sent with their images to a newer client. */
+    private val floorProfile = TiebaProfile.PROTO_22_FLOOR
+    private val floorService = network.service<ThreadService>(floorProfile)
     private val formService = network.service<ThreadService>(formProfile)
 
     /**
@@ -96,6 +103,36 @@ class ThreadRemoteDataSource(
         )
         val response = pageService.page(ProtobufBody(request, commonParams.stokenField()))
         return checkNotNull(response.data_)
+    }
+
+    /**
+     * One page of the replies inside post [postId].
+     *
+     * @param subPostId a reply to load the page around, 0 for none
+     */
+    suspend fun floor(
+        threadId: Long,
+        postId: Long,
+        forumId: Long,
+        page: Int,
+        subPostId: Long = 0,
+    ): PbFloorResponseData {
+        val request = PbFloorRequest(
+            PbFloorRequestData(
+                common = commonParams.protobuf(floorProfile),
+                forum_id = forumId,
+                kz = threadId,
+                pid = postId,
+                pn = page,
+                spid = subPostId,
+                scr_dip = device.screenDensity.toDouble(),
+                scr_h = device.screenHeight,
+                scr_w = device.screenWidth,
+                is_comm_reverse = 0,
+                ori_ugc_type = 0,
+            )
+        )
+        return checkNotNull(floorService.floor(ProtobufBody(request)).data_)
     }
 
     /** Adds the thread to the thread store, marked as read up to [postId]. */

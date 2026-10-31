@@ -10,6 +10,10 @@ import com.huanchengfly.tieba.core.network.testing.multipartParts
 import com.huanchengfly.tieba.core.network.testing.value
 import com.huanchengfly.tieba.post.api.models.protos.Error
 import com.huanchengfly.tieba.post.api.models.protos.Page
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequest
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequestData
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
+import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.AdParam
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
@@ -138,6 +142,37 @@ class ThreadRemoteDataSourceTest {
         enqueue(PbPageResponse(error = Error(error_code = 4, error_msg = "贴子已被删除")))
         val error = assertFailsWith<TiebaServerException> { dataSource.page(threadId = 9_000) }
         assertEquals(4, error.code)
+    }
+
+    @Test
+    fun `requests the replies inside a post as the 22_10 client without stoken`() = runTest {
+        val data = PbFloorResponseData(page = Page(current_page = 1, total_page = 2))
+        server.server.enqueue(MockResponse.Builder().body(Buffer().write(PbFloorResponse(data_ = data).encode())).build())
+
+        val returned = dataSource.floor(threadId = 9_000, postId = 77, forumId = 52, page = 2, subPostId = 88)
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/pb/floor?cmd=302002&format=protobuf", request.target)
+        commonParams.headers(TiebaProfile.PROTO_22_FLOOR).forEach { (name, value) ->
+            assertEquals(value, request.headers[name], name)
+        }
+        val parts = multipartParts(request.headers["Content-Type"]!!, request.body!!)
+        assertEquals(listOf("data"), parts.map { it.first })
+        val expected = PbFloorRequestData(
+            common = commonParams.protobuf(TiebaProfile.PROTO_22_FLOOR),
+            forum_id = 52,
+            kz = 9_000,
+            pid = 77,
+            pn = 2,
+            spid = 88,
+            scr_dip = 2.625,
+            scr_h = 2400,
+            scr_w = 1080,
+            is_comm_reverse = 0,
+            ori_ugc_type = 0,
+        )
+        assertEquals(expected, PbFloorRequest.ADAPTER.decode(parts[0].second).data_)
+        assertEquals(data, returned)
     }
 
     @Test
