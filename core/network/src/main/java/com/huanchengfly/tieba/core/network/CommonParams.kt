@@ -95,6 +95,10 @@ class CommonParams(
         )
     }
 
+    /** The `stoken` form field protobuf requests carry next to the message, when logged in. */
+    fun stokenField(): List<Pair<String, String>> =
+        sessionProvider.currentSession()?.stoken?.let { listOf("stoken" to it) }.orEmpty()
+
     /** Year, month and day without zero padding, such as `2026111` for 2026-11-01. */
     private fun eventDay(time: Long): String {
         val calendar = Calendar.getInstance().apply { timeInMillis = time }

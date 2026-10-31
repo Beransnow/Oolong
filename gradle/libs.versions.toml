@@ -112,6 +112,7 @@ ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.11" }
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version = "5.5.1" }
 turbine = { module = "app.cash.turbine:turbine", version = "1.2.1" }
 mockk = { module = "io.mockk:mockk", version = "1.14.11" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }

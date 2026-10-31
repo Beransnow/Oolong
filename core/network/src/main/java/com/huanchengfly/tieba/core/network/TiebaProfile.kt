@@ -12,6 +12,7 @@ enum class TiebaProfile(
     val sdkVersion: String,
     val swanGameVersion: String,
     val protocol: TiebaProtocol,
+    val baseUrl: String = "https://tiebac.baidu.com/",
 ) {
     PROTO_12_52(
         version = "12.52.1.0",

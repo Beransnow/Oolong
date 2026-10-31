@@ -32,7 +32,10 @@ kotlin {
 dependencies {
     api(libs.wire.runtime)
     api(libs.okhttp)
+    api(libs.retrofit)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockwebserver)
 }
