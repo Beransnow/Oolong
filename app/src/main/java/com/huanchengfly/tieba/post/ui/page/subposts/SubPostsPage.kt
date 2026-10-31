@@ -102,7 +102,7 @@ fun SubPostsPage(
     postId: Long = 0L,
     subPostId: Long = 0L,
     loadFromSubPost: Boolean = false,
-    viewModel: SubPostsViewModel = pageViewModel()
+    viewModel: LegacySubPostsViewModel = pageViewModel()
 ) {
     ProvideNavigator(navigator) {
         SubPostsContent(
@@ -128,7 +128,7 @@ fun SubPostsSheetPage(
     postId: Long = 0L,
     subPostId: Long = 0L,
     loadFromSubPost: Boolean = false,
-    viewModel: SubPostsViewModel = pageViewModel()
+    viewModel: LegacySubPostsViewModel = pageViewModel()
 ) {
     ProvideNavigator(navigator) {
         SubPostsContent(
@@ -147,7 +147,7 @@ fun SubPostsSheetPage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun SubPostsContent(
-    viewModel: SubPostsViewModel,
+    viewModel: LegacySubPostsViewModel,
     forumId: Long,
     threadId: Long,
     postId: Long,

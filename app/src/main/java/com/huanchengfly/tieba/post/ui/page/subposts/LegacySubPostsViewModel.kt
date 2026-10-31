@@ -44,7 +44,7 @@ import javax.inject.Inject
 
 @Stable
 @HiltViewModel
-class SubPostsViewModel @Inject constructor() :
+class LegacySubPostsViewModel @Inject constructor() :
     BaseViewModel<SubPostsUiIntent, SubPostsPartialChange, SubPostsUiState, SubPostsUiEvent>() {
     override fun createInitialState() = SubPostsUiState()
 
