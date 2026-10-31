@@ -2,10 +2,7 @@ package com.huanchengfly.tieba.core.network.form
 
 import okhttp3.FormBody
 
-/**
- * A form body of [params] with `sign`, and `sig` when [withSig], all sorted by name: the official
- * client keeps form parameters sorted as it adds them, signatures included.
- */
+/** A form body of [params] with `sign`, and `sig` when [withSig], all sorted by name. */
 fun signedFormBody(params: List<Pair<String, String>>, withSig: Boolean): FormBody =
     FormBody.Builder().apply {
         signedParams(params, withSig).forEach { (name, value) -> add(name, value) }
