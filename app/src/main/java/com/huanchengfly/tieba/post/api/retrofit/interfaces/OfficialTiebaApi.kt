@@ -5,7 +5,6 @@ import android.util.Base64
 import com.huanchengfly.tieba.core.network.form.FormParamsInterceptor
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.ScreenInfo
-import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.getScreenDensity
@@ -13,15 +12,12 @@ import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
-import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.InstallState
 import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
-import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -239,18 +235,6 @@ interface OfficialTiebaApi {
         @Field("need_keep_nickname_flag") needKeepNicknameFlag: String = "0",
     ): Flow<CommonResponse>
 
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.COOKIE}: ka=open",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.OAID}"
-    )
-    @POST("/c/c/img/portrait")
-    fun imgPortrait(
-        @Body body: MyMultipartBody,
-        @retrofit2.http.Header(Header.USER_AGENT) user_agent: String = "bdtb for Android ${ClientVersion.TIEBA_V12.version}",
-    ): Flow<CommonResponse>
-
     @POST("/c/f/excellent/personalized")
     @FormUrlEncoded
     fun personalizedFlow(
@@ -432,18 +416,6 @@ interface OfficialTiebaApi {
         @Field("tbs") tbs: String = AccountUtil.getLoginInfo()!!.tbs,
         @Field("stoken") stoken: String = AccountUtil.getSToken()!!
     ): Flow<AgreeBean>
-
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${Header.DROP_HEADERS}: ${Header.CHARSET},${Header.CLIENT_TYPE}",
-        "${Header.NO_COMMON_PARAMS}: ${Param.SWAN_GAME_VER},${Param.SDK_VER}",
-    )
-    @POST("/c/s/uploadPicture")
-    fun uploadPicture(
-        @Body body: RequestBody,
-        @retrofit2.http.Header(Header.COOKIE) cookie: String = "ka=open;BAIDUID=${ClientUtils.baiduId}".takeIf { ClientUtils.baiduId != null }
-            ?: "ka=open",
-    ): Flow<UploadPictureResultBean>
 
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/f/ueg/checkjubao")

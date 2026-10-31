@@ -38,10 +38,8 @@ import com.huanchengfly.tieba.post.api.retrofit.interfaces.SofireApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.WebTiebaApi
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.CacheUtil.base64Encode
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.CuidUtils
-import com.huanchengfly.tieba.post.utils.DeviceUtils
 import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.serialization.json.Json
@@ -50,9 +48,6 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.wire.WireConverterFactory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -179,63 +174,9 @@ object RetrofitTiebaApi {
         )
     }
 
-    /** Official form endpoints, sent as the 12.52 client's classic form stack. */
+    /** Official form endpoints, sent through the classic form stack. */
     val OFFICIAL_TIEBA_API: OfficialTiebaApi by lazy {
         createFormApi<OfficialTiebaApi>(TiebaProfile.FORM_12_52)
-    }
-
-    /**
-     * The multipart uploads of [OfficialTiebaApi] (pictures and portraits), which still carry the
-     * legacy common parameters until posting moves to the new stack.
-     */
-    val OFFICIAL_UPLOAD_TIEBA_API: OfficialTiebaApi by lazy {
-        createJsonApi<OfficialTiebaApi>(
-            "http://c.tieba.baidu.com/",
-            CommonHeaderInterceptor(
-                Header.USER_AGENT to { "bdtb for Android ${ClientVersion.TIEBA_V12.version}" },
-                Header.COOKIE to { "CUID=${CuidUtils.getNewCuid()};ka=open;TBBRAND=${Build.MODEL};BAIDUID=${ClientUtils.baiduId};" },
-                Header.CUID to { CuidUtils.getNewCuid() },
-                Header.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Header.CUID_GID to { "" },
-                Header.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Header.CLIENT_TYPE to { "2" },
-                Header.CHARSET to { "UTF-8" },
-                Header.CLIENT_LOG_ID to { "$initTime" }
-            ),
-            defaultCommonParamInterceptor + CommonParamInterceptor(
-                Param.ACTIVE_TIMESTAMP to { ClientUtils.activeTimestamp.toString() },
-                Param.ANDROID_ID to { base64Encode(UIDUtil.getAndroidId("000")) },
-                Param.BAIDU_ID to { ClientUtils.baiduId },
-                Param.BRAND to { Build.BRAND },
-                Param.CMODE to { "1" },
-                Param.CUID to { CuidUtils.getNewCuid() },
-                Param.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Param.CUID_GID to { "" },
-                Param.EVENT_DAY to {
-                    SimpleDateFormat("yyyyMdd", Locale.getDefault()).format(
-                        Date(
-                            System.currentTimeMillis()
-                        )
-                    )
-                },
-                Param.EXTRA to { "" },
-                Param.FIRST_INSTALL_TIME to { App.Config.appFirstInstallTime.toString() },
-                Param.FRAMEWORK_VER to { "3340042" },
-                Param.FROM to { "tieba" },
-                Param.IS_TEENAGER to { "0" },
-                Param.LAST_UPDATE_TIME to { App.Config.appLastUpdateTime.toString() },
-                Param.MAC to { "02:00:00:00:00:00" },
-                Param.SAMPLE_ID to { ClientUtils.sampleId },
-                Param.SDK_VER to { "2.34.0" },
-                Param.START_SCHEME to { "" },
-                Param.START_TYPE to { "1" },
-                Param.SWAN_GAME_VER to { "1038000" },
-                Param.CLIENT_VERSION to { ClientVersion.TIEBA_V12.version },
-                Param.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Param.OAID to { OAID().toJson() },
-            ),
-            stParamInterceptor,
-        )
     }
 
     val OFFICIAL_PROTOBUF_TIEBA_API: OfficialProtobufTiebaApi by lazy {
@@ -272,68 +213,6 @@ object RetrofitTiebaApi {
 
     val OFFICIAL_PROTOBUF_TIEBA_V22_API: OfficialProtobufTiebaApi by lazy {
         createOfficialProtobufApi(TiebaProfile.PROTO_22_FLOOR)
-    }
-
-    val OFFICIAL_PROTOBUF_TIEBA_POST_API: OfficialProtobufTiebaApi by lazy {
-        createProtobufApi<OfficialProtobufTiebaApi>(
-            "https://tiebac.baidu.com/",
-            CommonHeaderInterceptor(
-                Header.CHARSET to { "UTF-8" },
-//                Header.CLIENT_TYPE to { "2" },
-                Header.CLIENT_USER_TOKEN to { AccountUtil.getUid() },
-                Header.COOKIE to {
-                    getCookie(
-                        "BAIDUZID" to { AccountUtil.getAccountInfo { zid } },
-                        "ka" to { "open" },
-                        "CUID" to { CuidUtils.getNewCuid() },
-                        "TBBRAND" to { Build.MODEL }
-                    )
-                },
-                Header.CUID to { CuidUtils.getNewCuid() },
-                Header.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Header.CUID_GID to { "" },
-                Header.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Header.USER_AGENT to { getUserAgent("tieba/${ClientVersion.TIEBA_V12_POST.version}") },
-                Header.X_BD_DATA_TYPE to { "protobuf" },
-            ),
-            defaultCommonParamInterceptor - Param.OS_VERSION + CommonParamInterceptor(
-                Param.CLIENT_VERSION to { ClientVersion.TIEBA_V12_POST.version },
-                Param.ACTIVE_TIMESTAMP to { ClientUtils.activeTimestamp.toString() },
-                Param.ANDROID_ID to { base64Encode(UIDUtil.getAndroidId("000")) },
-                Param.BAIDU_ID to { ClientUtils.baiduId },
-                Param.BRAND to { Build.BRAND },
-                Param.CUID_GALAXY3 to { UIDUtil.getAid() },
-                Param.CMODE to { "1" },
-                Param.CUID to { CuidUtils.getNewCuid() },
-                Param.CUID_GALAXY2 to { CuidUtils.getNewCuid() },
-                Param.CUID_GID to { "" },
-                Param.DEVICE_SCORE to { "${DeviceUtils.getDeviceScore()}" },
-                Param.EVENT_DAY to {
-                    SimpleDateFormat("yyyyMdd", Locale.getDefault()).format(
-                        Date(
-                            System.currentTimeMillis()
-                        )
-                    )
-                },
-                Param.EXTRA to { "" },
-                Param.FIRST_INSTALL_TIME to { App.Config.appFirstInstallTime.toString() },
-                Param.FRAMEWORK_VER to { "3340042" },
-                Param.FROM to { "tieba" },
-                Param.IS_TEENAGER to { "0" },
-                Param.LAST_UPDATE_TIME to { App.Config.appLastUpdateTime.toString() },
-                Param.MAC to { "02:00:00:00:00:00" },
-                "naws_game_ver" to { "1038000" },
-                Param.OAID to { OAID().toJson() },
-                "personalized_rec_switch" to { "1" },
-                Param.SAMPLE_ID to { ClientUtils.sampleId },
-                Param.SDK_VER to { "2.34.0" },
-                Param.START_SCHEME to { "" },
-                Param.START_TYPE to { "1" },
-                Param.STOKEN to { AccountUtil.getSToken() },
-                Param.Z_ID to { AccountUtil.getAccountInfo { zid }.orEmpty() },
-            ),
-            stParamInterceptor,
-        )
     }
 
     private val json = Json {
