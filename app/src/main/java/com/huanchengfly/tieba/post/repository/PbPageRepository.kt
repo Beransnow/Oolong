@@ -2,8 +2,6 @@ package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.PbContent
-import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
@@ -109,19 +107,4 @@ object PbPageRepository {
                     )
                 )
             }
-}
-
-/**
- * When the page is requested from a specific post, first_floor_post links the raw upload of the
- * thread video, which can't be played; only thread.video_info carries the transcoded, signed URL.
- */
-private fun List<PbContent>.withPlayableVideo(videoInfo: VideoInfo?): List<PbContent> {
-    if (videoInfo == null || videoInfo.videoUrl.isBlank() || videoInfo.videoMD5.isBlank()) return this
-    return map {
-        if (it.type == 5 && it.link != videoInfo.videoUrl && it.link.contains(videoInfo.videoMD5)) {
-            it.copy(link = videoInfo.videoUrl, src = videoInfo.thumbnailUrl.ifBlank { it.src })
-        } else {
-            it
-        }
-    }
 }
