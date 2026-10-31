@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.api.retrofit
 
 import android.os.Build
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
@@ -21,6 +22,7 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.DropInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.FailureResponseInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ForceLoginInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ProtoFailureResponseInterceptor
+import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.SortAndSignInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.StParamInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.AppHybridTiebaApi
@@ -337,6 +339,7 @@ object RetrofitTiebaApi {
             .addConverterFactory(gsonConverterFactory)
             .client(OkHttpClient.Builder().apply {
 //                addInterceptor()
+                if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
                 connectionPool(connectionPool)
             }.build())
             .build()
@@ -365,6 +368,7 @@ object RetrofitTiebaApi {
             addInterceptor(ForceLoginInterceptor)
             addInterceptor(sortAndSignInterceptor)
             addInterceptor(ConnectivityInterceptor)
+            if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
             connectionPool(connectionPool)
         }.build())
         .build()
@@ -417,6 +421,7 @@ object RetrofitTiebaApi {
             addInterceptor(CookieInterceptor)
             addInterceptor(sortAndSignInterceptor)
             addInterceptor(ConnectivityInterceptor)
+            if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
             connectionPool(connectionPool)
         }.build())
         .build()
