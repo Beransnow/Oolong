@@ -22,13 +22,18 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.glass.GlassOptics
 import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.OpticalSizeValue
+import dev.chrisbanes.haze.glass.RefractionProfile
 import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.hazeSource
 
 /**
  * How floating chrome (bars, pills) is rendered. Every tier lays out identically; only the
@@ -168,6 +173,62 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
             .border(0.5.dp, edge, shape)
     }
 }
+
+/**
+ * Lets a [glassLens] drawn above this chrome magnify it along with the content behind it. Apply
+ * before the chrome's own material so the material is part of what the lens sees.
+ */
+@Composable
+fun Modifier.lensTarget(): Modifier {
+    val source = LocalGlassSource.current
+    if (source == null || currentGlassTier() != GlassTier.Glass) return this
+    return hazeSource(source, zIndex = LensTargetZIndex)
+}
+
+/**
+ * A clear glass lens over chrome marked with [lensTarget], such as the bubble that lifts off the
+ * navigation pill while it is pressed. Draws nothing below [GlassTier.Glass].
+ */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
+    val source = LocalGlassSource.current
+    if (source == null || currentGlassTier() != GlassTier.Glass) return this
+    val background = ExtendedTheme.colors.background
+    val style = remember(shape, background) {
+        GlassStyle.clear.then {
+            shape(shape)
+            backgroundColor(background)
+            // A lens magnifies what is under it; it does not frost it.
+            optics(UnblurredClearOptics)
+        }
+    }
+    // Not inside any source of this state, so it sees the content and the lens targets. A lens is
+    // looked through, so it renders at full quality; it is small and only shown while pressed.
+    return hazeGlass(
+        input = HazeInput.Sources(source),
+        style = style,
+        performanceMode = HazePerformanceMode.Quality,
+    )
+}
+
+/**
+ * Clear's optics as Haze 2.0.1 defines them, minus its shallow blur. Haze 2.0.1 keeps them
+ * internal; later versions expose them as `GlassOptics.clear` for `copy(blurRadius = …)`.
+ */
+@OptIn(ExperimentalHazeApi::class)
+private val UnblurredClearOptics = GlassOptics(
+    refractionStrength = 0.85f,
+    refractionHeightFraction = 0.35f,
+    refractionDisplacement = 56.dp,
+    refractionProfile = RefractionProfile.Edge(28.dp),
+    depth = OpticalSizeValue.Fixed(1f),
+    blurRadius = OpticalSizeValue.Fixed(0.dp),
+    refractionDetailIntensity = 0.76f,
+)
+
+/** Above the scaffold content, which is captured at the default zIndex of 0. */
+private const val LensTargetZIndex = 1f
 
 /**
  * Glass follows the light/dark appearance of [LocalConfiguration], but the app picks its own
