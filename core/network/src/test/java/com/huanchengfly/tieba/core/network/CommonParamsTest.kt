@@ -111,21 +111,49 @@ class CommonParamsTest {
     }
 
     @Test
-    fun `builds the headers of a protobuf profile`() {
+    fun `builds the headers of the message task stack`() {
+        val cuidBase64 = java.util.Base64.getEncoder().encodeToString(FakeDevice.cuid.toByteArray())
         val expected = listOf(
             "Charset" to "UTF-8",
-            "client_type" to "2",
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv) tieba/12.52.1.0",
             "client_user_token" to "12345",
-            "cookie" to "ka=open; CUID=${FakeDevice.cuid}; TBBRAND=Pixel 9",
+            "net" to "5",
+            "client_logid" to "$startTime",
             "cuid" to FakeDevice.cuid,
             "cuid_galaxy2" to FakeDevice.cuid,
-            "cuid_gid" to "",
             "c3_aid" to FakeDevice.c3Aid,
-            "User-Agent" to "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv) tieba/12.52.1.0",
+            "cuid_gid" to "",
+            "cookie" to "ka=open;need_cookie_decrypt=0;TBBRAND=Pixel 9;DNARBBT=;CUID=${FakeDevice.cuid};" +
+                    "BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;BAIDUZID=zid-value;BAIDUCUID=$cuidBase64",
             "x_bd_data_type" to "protobuf",
-            "client_logid" to "$startTime",
         )
         assertEquals(expected, commonParams().headers(TiebaProfile.PROTO_12_52))
+    }
+
+    @Test
+    fun `leaves the session out of the message task cookie when logged out`() {
+        val cookie = commonParams(loggedIn = false).headers(TiebaProfile.PROTO_12_52).single { it.first == "cookie" }.second
+
+        assertFalse("BAIDUZID" in cookie)
+    }
+
+    @Test
+    fun `adds the message task fields to form parameters`() {
+        val classic = commonParams().form(TiebaProfile.FORM_12_52)
+        val messageTask = commonParams().form(TiebaProfile.MESSAGE_FORM_12_52)
+
+        assertEquals(
+            listOf(
+                "sdk_ver" to "2.34.0",
+                "framework_ver" to "3340042",
+                "naws_game_ver" to "1038000",
+                "extra" to "",
+                "device_score" to "0.3",
+                "personalized_rec_switch" to "1",
+            ),
+            messageTask - classic.toSet(),
+        )
+        assertEquals(emptyList(), classic - messageTask.toSet() - setOf("timestamp" to "$now"))
     }
 
     @Test

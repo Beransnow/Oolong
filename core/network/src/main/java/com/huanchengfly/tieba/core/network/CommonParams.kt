@@ -5,6 +5,7 @@ import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.api.models.protos.CommonRequest
+import okio.ByteString.Companion.encodeUtf8
 import java.util.Calendar
 import kotlin.random.Random
 
@@ -31,23 +32,38 @@ class CommonParams(
     fun userAgent(profile: TiebaProfile): String =
         "${device.webViewUserAgent} tieba/${profile.version}"
 
-    fun headers(profile: TiebaProfile): List<Pair<String, String>> = when (profile.protocol) {
-        TiebaProtocol.PROTOBUF -> protobufHeaders(profile)
-        TiebaProtocol.FORM -> formHeaders(profile)
+    fun headers(profile: TiebaProfile): List<Pair<String, String>> = when (profile.stack) {
+        TiebaStack.MESSAGE_TASK -> messageTaskHeaders(profile)
+        TiebaStack.CLASSIC -> formHeaders(profile)
     }
 
-    private fun protobufHeaders(profile: TiebaProfile): List<Pair<String, String>> = buildList {
+    /**
+     * Headers of the message task stack. `client_type` is a form parameter there, not a header,
+     * and the cookie carries the full set of device identifiers, joined with ";" and no spaces.
+     */
+    private fun messageTaskHeaders(profile: TiebaProfile): List<Pair<String, String>> = buildList {
+        val session = sessionProvider.currentSession()
         add("Charset" to "UTF-8")
-        add("client_type" to "2")
-        sessionProvider.currentSession()?.let { add("client_user_token" to it.uid) }
-        add("cookie" to "ka=open; CUID=${device.cuid}; TBBRAND=${device.model}")
+        add("User-Agent" to userAgent(profile))
+        session?.let { add("client_user_token" to it.uid) }
+        add("net" to device.networkType.toString())
+        add("client_logid" to processStartTime.toString())
         add("cuid" to device.cuid)
         add("cuid_galaxy2" to device.cuid)
-        add("cuid_gid" to "")
         add("c3_aid" to device.c3Aid)
-        add("User-Agent" to userAgent(profile))
-        add("x_bd_data_type" to "protobuf")
-        add("client_logid" to processStartTime.toString())
+        add("cuid_gid" to "")
+        val cookie = listOfNotNull(
+            "ka=open",
+            "need_cookie_decrypt=0",
+            "TBBRAND=${device.model}",
+            "DNARBBT=",
+            "CUID=${device.cuid}",
+            install.baiduId?.let { "BAIDUID=$it" },
+            session?.zid?.let { "BAIDUZID=$it" },
+            "BAIDUCUID=${device.cuid.encodeUtf8().base64()}",
+        )
+        add("cookie" to cookie.joinToString(";"))
+        if (profile.protocol == TiebaProtocol.PROTOBUF) add("x_bd_data_type" to "protobuf")
     }
 
     /** Headers of the classic form stack, which sends neither `client_type` nor `Charset`. */
@@ -66,11 +82,21 @@ class CommonParams(
      * Common parameters of a form request. Unlike the protobuf common request, the session goes
      * here rather than in a cookie, and there is no OS version, screen size or user agent.
      *
+     * The message task stack adds a few version and device fields to the classic set.
+     *
      * @param includeTbs whether to send the account's `tbs`, which write operations need
      */
     fun form(profile: TiebaProfile, includeTbs: Boolean = false): List<Pair<String, String>> {
         val session = sessionProvider.currentSession()
         return buildList {
+            if (profile.stack == TiebaStack.MESSAGE_TASK) {
+                add("sdk_ver" to profile.sdkVersion)
+                add("framework_ver" to profile.frameworkVersion)
+                add("naws_game_ver" to profile.swanGameVersion)
+                add("extra" to "")
+                add("device_score" to device.deviceScore.toString())
+                add("personalized_rec_switch" to "1")
+            }
             add("_client_type" to "2")
             add("_client_version" to profile.version)
             add("_client_id" to (install.clientId ?: fallbackClientId))
