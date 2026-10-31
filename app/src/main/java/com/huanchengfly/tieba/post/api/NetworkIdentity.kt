@@ -7,6 +7,7 @@ import android.os.Build
 import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
+import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.NetworkType
@@ -84,6 +85,13 @@ private object AccountSessionProvider : SessionProvider {
             zid = it.zid?.takeIf { zid -> zid.isNotEmpty() },
         )
     }
+
+    override fun updateTbs(tbs: String) {
+        val account = AccountUtil.getLoginInfo() ?: return
+        if (account.tbs == tbs) return
+        account.tbs = tbs
+        account.saveOrUpdateAsync("uid = ?", account.uid)
+    }
 }
 
 @Module
@@ -125,16 +133,28 @@ object NetworkIdentityModule {
         network: TiebaNetwork,
         commonParams: CommonParams,
     ): ForumRemoteDataSource = ForumRemoteDataSource(network, commonParams)
+
+    @Provides
+    @Singleton
+    fun provideSignRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+    ): SignRemoteDataSource = SignRemoteDataSource(network, commonParams)
 }
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface LegacyNetworkEntryPoint {
     fun commonParams(): CommonParams
+    fun signRemoteDataSource(): SignRemoteDataSource
+}
+
+private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
+    EntryPointAccessors.fromApplication(App.INSTANCE, LegacyNetworkEntryPoint::class.java)
 }
 
 /** For the legacy API singletons, which can't be injected. */
-internal val legacyCommonParams: CommonParams by lazy {
-    EntryPointAccessors.fromApplication(App.INSTANCE, LegacyNetworkEntryPoint::class.java)
-        .commonParams()
-}
+internal val legacyCommonParams: CommonParams get() = legacyEntryPoint.commonParams()
+
+internal val legacySignRemoteDataSource: SignRemoteDataSource
+    get() = legacyEntryPoint.signRemoteDataSource()

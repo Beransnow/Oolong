@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.api.interfaces.impls
 
 import android.os.Build
 import android.text.TextUtils
+import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.ForumSortType
@@ -16,6 +17,7 @@ import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
+import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CollectDataBean
@@ -355,7 +357,10 @@ object MixedTiebaApiImpl : ITiebaApi {
         RetrofitTiebaApi.MINI_TIEBA_API.signAsync(forumName, tbs)
 
     override fun signFlow(forumId: String, forumName: String, tbs: String): Flow<SignResultBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.signFlow(forumId, forumName, tbs)
+        flow {
+            val response = legacySignRemoteDataSource.sign(forumId.toLong(), forumName, tbs)
+            emit(response.toSignResultBean())
+        }
 
     override fun delThread(
         forumId: String,
@@ -1493,3 +1498,23 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 }
+
+private fun SignResponse.toSignResultBean() = SignResultBean(
+    userInfo = userInfo?.let { info ->
+        SignResultBean.UserInfo(
+            userId = info.userId,
+            isSignIn = info.isSignIn,
+            contSignNum = info.contSignNum,
+            userSignRank = info.userSignRank,
+            signTime = info.signTime,
+            signBonusPoint = info.signBonusPoint,
+            levelName = info.levelName,
+            levelUpScore = info.levelUpScore,
+            allLevelInfo = info.allLevelInfo.map {
+                SignResultBean.UserInfo.AllLevelInfo(it.id, it.name, it.score)
+            },
+        )
+    },
+    errorCode = "0",
+    time = time,
+)
