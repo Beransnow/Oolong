@@ -9,15 +9,12 @@ import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
-import com.huanchengfly.tieba.post.api.getCookie
-import com.huanchengfly.tieba.post.api.getUserAgent
 import com.huanchengfly.tieba.post.api.legacyCommonParams
 import com.huanchengfly.tieba.post.api.models.OAID
 import com.huanchengfly.tieba.post.api.retrofit.adapter.DeferredCallAdapterFactory
 import com.huanchengfly.tieba.post.api.retrofit.adapter.FlowCallAdapterFactory
 import com.huanchengfly.tieba.post.api.retrofit.converter.gson.GsonConverterFactory
 import com.huanchengfly.tieba.post.api.retrofit.converter.kotlinx.serialization.asConverterFactory
-import com.huanchengfly.tieba.post.api.retrofit.interceptors.AddWebCookieInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.CommonHeaderInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.CommonParamInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.ConnectivityInterceptor
@@ -84,11 +81,12 @@ object RetrofitTiebaApi {
         createFormApi<NewTiebaApi>(TiebaProfile.MESSAGE_FORM_12_52)
     }
 
+    /** Data requests of the in-app search page, sent as the web view sends them. */
     val HYBRID_TIEBA_API: AppHybridTiebaApi by lazy {
-        createJsonApi<AppHybridTiebaApi>("https://tieba.baidu.com/",
+        createJsonApi<AppHybridTiebaApi>(
+            TiebaProfile.WEB_12_52.baseUrl,
+            ProfileInterceptor(TiebaProfile.WEB_12_52, legacyCommonParams),
             CommonHeaderInterceptor(
-                Header.USER_AGENT to { getUserAgent("tieba/${ClientVersion.TIEBA_V12.version} skin/default") },
-                Header.HOST to { "tieba.baidu.com" },
                 Header.PRAGMA to { "no-cache" },
                 Header.CACHE_CONTROL to { "no-cache" },
                 Header.ACCEPT to { "application/json, text/plain, */*" },
@@ -97,30 +95,7 @@ object RetrofitTiebaApi {
                 "Sec-Fetch-Site" to { "same-origin" },
                 "Sec-Fetch-Mode" to { "cors" },
                 "Sec-Fetch-Dest" to { "empty" },
-                Header.COOKIE to {
-                    getCookie(
-                        "CUID" to { CuidUtils.getNewCuid() },
-                        "TBBRAND" to { Build.MODEL },
-                        "cuid_galaxy2" to { CuidUtils.getNewCuid() },
-                        "SP_FW_VER" to { "3.340.42" },
-                        "SG_FW_VER" to { "1.38.0" },
-                        "BDUSS" to { AccountUtil.getBduss() },
-                        "STOKEN" to { AccountUtil.getSToken() },
-                        "BAIDU_WISE_UID" to { ClientUtils.clientId },
-                        "USER_JUMP" to { "-1" },
-                        "BDUSS_BFESS" to { AccountUtil.getBduss() },
-                        "BAIDUID" to { ClientUtils.baiduId },
-                        "BAIDUID_BFESS" to { ClientUtils.baiduId },
-                        "mo_originid" to { "2" },
-                        "BAIDUZID" to { AccountUtil.getAccountInfo { zid } },
-                    )
-                }
             ),
-            AddWebCookieInterceptor,
-            CommonParamInterceptor(
-                Param.BDUSS to { AccountUtil.getBduss() },
-                Param.STOKEN to { AccountUtil.getSToken() },
-            )
         )
     }
 

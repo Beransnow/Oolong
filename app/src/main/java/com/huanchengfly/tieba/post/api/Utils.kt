@@ -13,11 +13,6 @@ fun getUserAgent(appendString: String? = null): String {
     return "${App.Config.userAgent ?: defaultUserAgent}$append"
 }
 
-fun getCookie(vararg cookies: Pair<String, () -> String?>): String {
-    return cookies.map { it.first to it.second() }.filterNot { it.second.isNullOrEmpty() }
-        .joinToString("; ") { "${it.first}:${it.second}" }
-}
-
 // ScreenInfo is only filled in once an activity starts; requests sent at startup need it earlier
 fun getScreenHeight(): Int =
     ScreenInfo.EXACT_SCREEN_HEIGHT.takeIf { it > 0 } ?: App.INSTANCE.resources.displayMetrics.heightPixels
