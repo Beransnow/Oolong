@@ -597,7 +597,8 @@ private fun ThreadMedia(
 ) {
     ThreadMedia(
         forumId = item.get { forumId },
-        forumName = item.get { forumName },
+        // Feed lists leave forumName empty and only fill in forumInfo
+        forumName = item.get { forumName.ifEmpty { forumInfo?.name.orEmpty() } },
         threadId = item.get { threadId },
         medias = item.getImmutableList { media },
         videoInfo = item.get { videoInfo }?.wrapImmutable(),
