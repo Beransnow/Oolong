@@ -11,6 +11,8 @@ import okhttp3.Request
 import okhttp3.Response
 import okio.Buffer
 import okio.ByteString
+import okio.GzipSource
+import okio.buffer
 import retrofit2.Invocation
 import java.io.File
 import java.net.URLEncoder
@@ -37,9 +39,34 @@ object RequestRecorder : Interceptor {
         val request = chain.request()
         val entry = runCatching { describe(request) }.getOrElse { "!! failed to describe: $it\n" }
         val response = chain.proceed(request)
-        write("$entry<- HTTP ${response.code}\n\n")
+        val body = runCatching { describeResponse(request, response) }.getOrNull().orEmpty()
+        write("$entry<- HTTP ${response.code}\n$body\n")
         return response
     }
+
+    private val errorCode = Regex("\"error_code\"\\s*:\\s*\"?(-?\\d+)")
+
+    /**
+     * The JSON body of form responses, which are small and are what migrations get checked
+     * against, and of any other JSON response with a non-zero `error_code`, so that verification
+     * responses can be studied once one occurs.
+     */
+    private fun describeResponse(request: Request, response: Response): String? {
+        if (response.body.contentType()?.subtype?.contains("protobuf") == true) return null
+        val peeked = response.peekBody(MAX_PEEKED_BODY).source()
+        val source = if (response.header("Content-Encoding").equals("gzip", ignoreCase = true)) {
+            GzipSource(peeked).buffer()
+        } else peeked
+        val body = source.use { it.readUtf8() }
+        if (request.body !is FormBody) {
+            val code = errorCode.find(body)?.groupValues?.get(1) ?: return null
+            if (code == "0") return null
+        }
+        return "response:\n  ${body.take(MAX_RECORDED_CHARS)}\n"
+    }
+
+    private const val MAX_PEEKED_BODY = 1024 * 1024L
+    private const val MAX_RECORDED_CHARS = 16 * 1024
 
     @Synchronized
     private fun write(text: String) {
