@@ -104,7 +104,7 @@ interface OfficialTiebaApi {
         @Field("call_from") callFrom: Int = 3,
         @Field("top_forum_num") topForumNum: Int = 0,
         @Field("tbs") tbs: String? = AccountUtil.getAccountInfo { this.tbs },
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
+        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
     ): Flow<ForumGuideBean>
 
     @Headers(
