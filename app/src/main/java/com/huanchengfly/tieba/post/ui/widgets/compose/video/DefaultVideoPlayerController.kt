@@ -176,8 +176,17 @@ internal class DefaultVideoPlayerController(
         }
     }
 
+    /**
+     * Number of [VideoPlayer]s currently using this controller. Toggling full screen recreates the
+     * player UI in another composition, and the new UI may initialize before the old one is
+     * disposed, so the players are only released once the last user is gone.
+     */
+    private var activeUsers = 0
+
     fun initialize() {
         Log.i("VideoPlayerController", "$this initialize")
+        activeUsers++
+        if (activeUsers > 1) return
         val currentState = _state.value
         exoPlayer.playWhenReady = currentState.isPlaying
         initialStateRunner = {
@@ -369,8 +378,8 @@ internal class DefaultVideoPlayerController(
 
     override fun release() {
         Log.i("VideoPlayerController", "$this release")
-        // initialize() lazily creates new players after a release, so release whatever
-        // instances exist now instead of guarding with a one-shot flag
+        if (activeUsers > 0) activeUsers--
+        if (activeUsers > 0) return
         _exoPlayer?.release()
         _previewExoPlayer?.release()
         _exoPlayer = null
