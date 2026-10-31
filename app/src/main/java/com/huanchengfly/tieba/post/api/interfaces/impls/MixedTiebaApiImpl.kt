@@ -992,47 +992,50 @@ object MixedTiebaApiImpl : ITiebaApi {
         lastRequestUnix: Long,
         loadType: Int
     ): Flow<UserLikeResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_API.userLikeFlow(
+        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.userLikeFlow(
             buildProtobufRequestBody(
                 UserLikeRequest(
                     UserLikeRequestData(
-                        common = buildCommonRequest(),
+                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
                         pageTag = pageTag,
                         lastRequestUnix = lastRequestUnix,
                         followType = 1,
                         loadType = loadType
                     )
-                )
+                ),
+                clientVersion = ClientVersion.TIEBA_V12,
             )
         )
     }
 
     override fun hotThreadListFlow(tabCode: String): Flow<HotThreadListResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_API.hotThreadListFlow(
+        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.hotThreadListFlow(
             buildProtobufRequestBody(
                 HotThreadListRequest(
                     HotThreadListRequestData(
-                        common = buildCommonRequest(),
+                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
                         tabCode = tabCode,
                         tabId = "1"
                     )
-                )
+                ),
+                clientVersion = ClientVersion.TIEBA_V12,
             )
         )
     }
 
     override fun topicListFlow(): Flow<TopicListResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_API.topicListFlow(
+        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.topicListFlow(
             buildProtobufRequestBody(
                 TopicListRequest(
                     TopicListRequestData(
-                        common = buildCommonRequest(),
+                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
                         call_from = "newbang",
                         list_type = "all",
                         need_tab_list = "0",
                         fid = 0L
                     )
-                )
+                ),
+                clientVersion = ClientVersion.TIEBA_V12,
             )
         )
     }
@@ -1054,17 +1057,18 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun forumRecommendNewFlow(
         sortType: Int
     ): Flow<ForumRecommendResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_API.forumRecommendFlow(
+        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.forumRecommendFlow(
             buildProtobufRequestBody(
                 ForumRecommendRequest(
                     ForumRecommendRequestData(
-                        common = buildCommonRequest(),
+                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
                         like_forum = 1,
                         recommend = 1,
                         sort_type = sortType,
                         topic = 0
                     )
-                )
+                ),
+                clientVersion = ClientVersion.TIEBA_V12,
             )
         )
     }
