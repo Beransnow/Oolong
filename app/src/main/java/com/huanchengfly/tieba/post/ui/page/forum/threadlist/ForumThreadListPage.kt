@@ -95,8 +95,9 @@ private fun getLoadMoreIntent(
     page: Int,
     threadListIds: List<Long>,
     isGood: Boolean = false,
+    goodClassifyId: Int? = null,
 ): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0)
+    return if (isGood) ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0, goodClassifyId ?: 0)
     else ForumThreadListUiIntent.LoadMore(
         forumId,
         forumName,
@@ -342,7 +343,9 @@ fun ForumThreadListPage(
     )
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
-        onRefresh = { viewModel.send(getRefreshIntent(context, forumName, isGood)) }
+        onRefresh = {
+            viewModel.send(getRefreshIntent(context, forumName, isGood, goodClassifyId = goodClassifyId ?: 0))
+        }
     )
     Box(
         modifier = Modifier.fillMaxSize()
@@ -377,7 +380,8 @@ fun ForumThreadListPage(
                             forumName,
                             currentPage,
                             threadListIds,
-                            isGood
+                            isGood,
+                            goodClassifyId
                         )
                     )
                 },
