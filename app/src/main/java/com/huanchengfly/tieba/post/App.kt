@@ -73,13 +73,14 @@ class App : Application(), SketchFactory {
     override fun onCreate() {
         INSTANCE = this
         super.onCreate()
-        ClientUtils.init(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setWebViewPath(this)
         }
+        // Before ClientUtils, whose sync request reads the install times set here
+        Config.init(this)
+        ClientUtils.init(this)
         LitePal.initialize(this)
         AccountUtil.init(this)
-        Config.init(this)
         AppIconUtil.setIcon()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         ThemeUtils.init(ThemeDelegate)
