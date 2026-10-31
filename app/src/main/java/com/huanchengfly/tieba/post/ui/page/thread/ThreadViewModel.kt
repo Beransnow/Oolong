@@ -224,8 +224,7 @@ class ThreadViewModel @Inject constructor(
     /** Only oldest first is paged by number; newest first has no page numbers to jump to. */
     fun jumpToPage(page: Int) {
         if (query.value.sort == ThreadSort.NewestFirst) return
-        scrollAfterRefresh = true
-        refreshFrom(ThreadCursor.Number(page))
+        refreshFrom(ThreadCursor.Number(page), scrollToFirstReply = true)
     }
 
     fun jumpToPost(postId: Long) {
@@ -245,11 +244,19 @@ class ThreadViewModel @Inject constructor(
         refresh()
     }
 
-    /** Immersive reading shows only the author's posts. */
+    /** Whether only the author's posts were shown before immersive reading turned that on. */
+    private var seeLzBeforeImmersive = false
+
+    /** Immersive reading shows only the author's posts; leaving it shows what was shown before. */
     fun toggleImmersive() {
         val immersive = !meta.value.immersive
         meta.update { it.copy(immersive = immersive) }
-        if (immersive) setSeeLz(true)
+        if (immersive) {
+            seeLzBeforeImmersive = query.value.seeLz
+            setSeeLz(true)
+        } else {
+            setSeeLz(seeLzBeforeImmersive)
+        }
     }
 
     fun agreeThread() = actions.launch("agree-thread") {
@@ -360,8 +367,9 @@ class ThreadViewModel @Inject constructor(
         readUpTo.value = postId
     }
 
-    private fun refreshFrom(key: ThreadCursor) {
+    private fun refreshFrom(key: ThreadCursor, scrollToFirstReply: Boolean = false) {
         refreshKey = key
+        scrollAfterRefresh = scrollToFirstReply
         posts.refresh(key)
     }
 
