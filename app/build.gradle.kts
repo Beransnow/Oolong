@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 fun loadProperties(name: String): Properties = Properties().apply {
@@ -49,6 +50,10 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    testOptions {
+        // Robolectric needs the merged resources for screenshot tests
+        unitTests.isIncludeAndroidResources = true
     }
     androidResources {
         // The app itself is Chinese-only; drop the translations dependencies bring in.
@@ -121,6 +126,11 @@ kotlin {
     }
 }
 
+roborazzi {
+    // Reference screenshots are committed; verifyRoborazziDebug compares against them
+    outputDir.set(layout.projectDirectory.dir("src/test/screenshots"))
+}
+
 composeCompiler {
     // Pass -PcomposeCompilerReports=true to generate stability reports and metrics
     if (providers.gradleProperty("composeCompilerReports").orNull.toBoolean()) {
@@ -169,6 +179,7 @@ dependencies {
 
     implementation(platform(libs.compose.bom))
     androidTestImplementation(platform(libs.compose.bom))
+    testImplementation(platform(libs.compose.bom))
 
     // Release builds strip the trace calls (see proguard-rules.pro), so only its initializers would remain
     debugRuntimeOnly(libs.compose.runtime.tracing)
@@ -228,6 +239,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.rules)

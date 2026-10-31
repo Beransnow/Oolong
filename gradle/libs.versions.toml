@@ -17,6 +17,7 @@ androidx-lifecycle = "2.11.0"
 androidx-media3 = "1.11.1"
 androidx-test = "1.7.0"
 kotlinx-coroutines = "1.11.0"
+roborazzi = "1.77.0"
 
 [libraries]
 # Kotlin
@@ -114,6 +115,9 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version = "5.5.1" }
 turbine = { module = "app.cash.turbine:turbine", version = "1.2.1" }
 mockk = { module = "io.mockk:mockk", version = "1.14.11" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.17" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.7.0" }
@@ -129,3 +133,4 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

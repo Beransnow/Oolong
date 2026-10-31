@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.wire) apply false
+    alias(libs.plugins.roborazzi) apply false
 }
 
 tasks.register<Delete>("clean") {
