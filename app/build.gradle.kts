@@ -104,6 +104,10 @@ android {
             excludes += "DebugProbesKt.bin"
         }
     }
+    lint {
+        // Existing issues are recorded here so that only new ones fail the build
+        baseline = file("lint-baseline.xml")
+    }
     namespace = "com.huanchengfly.tieba.post"
 }
 

@@ -41,8 +41,8 @@ jobs:
           cache-cleanup: on-success
           cache-read-only: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/4.0-dev' }}
 
-      - name: Build with Gradle
-        run: ./gradlew testDebugUnitTest assembleRelease
+      - name: Test, lint and build
+        run: ./gradlew testDebugUnitTest lintDebug assembleRelease
 
       - name: Read Output Metadata
         id: read_output_metadata
