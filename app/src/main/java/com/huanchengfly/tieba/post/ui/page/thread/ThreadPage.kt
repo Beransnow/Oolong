@@ -492,7 +492,7 @@ fun ThreadPage(
     extra: ThreadPageExtra? = null,
     threadInfo: ThreadInfo? = null,
     scrollToReply: Boolean = false,
-    viewModel: ThreadViewModel = pageViewModel(),
+    viewModel: LegacyThreadViewModel = pageViewModel(),
 ) {
     LazyLoad(loaded = viewModel.initialized) {
         viewModel.send(

@@ -69,7 +69,7 @@ private fun ThreadInfo.getNextPagePostId(
 
 @Stable
 @HiltViewModel
-class ThreadViewModel @Inject constructor() :
+class LegacyThreadViewModel @Inject constructor() :
     BaseViewModel<ThreadUiIntent, ThreadPartialChange, ThreadUiState, ThreadUiEvent>() {
     override fun createInitialState(): ThreadUiState = ThreadUiState()
 
