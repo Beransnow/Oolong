@@ -42,7 +42,7 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/4.0-dev' }}
 
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
+        run: ./gradlew testDebugUnitTest assembleRelease
 
       - name: Read Output Metadata
         id: read_output_metadata

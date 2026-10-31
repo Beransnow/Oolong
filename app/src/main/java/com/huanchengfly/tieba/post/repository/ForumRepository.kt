@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.model.ForumRuleAuthor
@@ -14,10 +14,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ForumRepository @Inject constructor() {
-    // Still goes through the legacy API singleton until the network layer is injectable
+class ForumRepository @Inject constructor(
+    private val api: ITiebaApi,
+) {
     suspend fun forumRuleDetail(forumId: Long): ForumRuleDetail = withContext(Dispatchers.IO) {
-        val response = TiebaApi.getInstance().forumRuleDetailFlow(forumId).first()
+        val response = api.forumRuleDetailFlow(forumId).first()
         checkNotNull(response.data_).toForumRuleDetail()
     }
 }

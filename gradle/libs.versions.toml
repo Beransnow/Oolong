@@ -110,6 +110,10 @@ ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.11" }
 
 # Test
 junit = { module = "junit:junit", version = "4.13.2" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+turbine = { module = "app.cash.turbine:turbine", version = "1.2.1" }
+mockk = { module = "io.mockk:mockk", version = "1.14.11" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.7.0" }
