@@ -155,16 +155,16 @@ object MixedTiebaApiImpl : ITiebaApi {
         picIndex: String,
         objType: String,
         prev: Boolean
-    ): Flow<PicPageBean> = RetrofitTiebaApi.MINI_TIEBA_API.picPageFlow(
+    ): Flow<PicPageBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.picPageFlow(
         forumId,
         forumName,
         threadId,
         picId,
         picIndex,
-        objType,
+        objType.ifEmpty { "other" },
         prev = if (prev) 10 else 0,
         next = if (prev) 0 else 10,
-        not_see_lz = if (seeLz) 0 else 1
+        notSeeLz = if (seeLz) 0 else 1
     )
 
     override fun unlikeForumFlow(

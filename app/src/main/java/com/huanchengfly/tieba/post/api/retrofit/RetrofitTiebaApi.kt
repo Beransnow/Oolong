@@ -30,7 +30,6 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.SortAndSignInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.StParamInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.AppHybridTiebaApi
-import com.huanchengfly.tieba.post.api.retrofit.interfaces.MiniTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.NewTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialProtobufTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialTiebaApi
@@ -80,21 +79,9 @@ object RetrofitTiebaApi {
     private val gsonConverterFactory = GsonConverterFactory.create()
     private val sortAndSignInterceptor = SortAndSignInterceptor("tiebaclient!!!")
 
+    /** Notification lists, sent through the message task form stack. */
     val NEW_TIEBA_API: NewTiebaApi by lazy {
-        createJsonApi<NewTiebaApi>(
-            "http://c.tieba.baidu.com/",
-            defaultCommonHeaderInterceptor,
-            CommonHeaderInterceptor(
-                Header.USER_AGENT to { "bdtb for Android 8.2.2" },
-                Header.CUID to { UIDUtil.finalCUID }
-            ),
-            defaultCommonParamInterceptor + CommonParamInterceptor(
-                Param.CUID to { UIDUtil.finalCUID },
-                Param.FROM to { "baidu_appstore" },
-                Param.CLIENT_VERSION to { "8.2.2" }
-            ),
-            stParamInterceptor,
-        )
+        createFormApi<NewTiebaApi>(TiebaProfile.MESSAGE_FORM_12_52)
     }
 
     val HYBRID_TIEBA_API: AppHybridTiebaApi by lazy {
@@ -134,26 +121,6 @@ object RetrofitTiebaApi {
                 Param.BDUSS to { AccountUtil.getBduss() },
                 Param.STOKEN to { AccountUtil.getSToken() },
             )
-        )
-    }
-
-    val MINI_TIEBA_API: MiniTiebaApi by lazy {
-        createJsonApi<MiniTiebaApi>(
-            "http://c.tieba.baidu.com/",
-            defaultCommonHeaderInterceptor,
-            CommonHeaderInterceptor(
-                Header.USER_AGENT to { "bdtb for Android 7.2.0.0" },
-                Header.CUID to { UIDUtil.finalCUID },
-                Header.CUID_GALAXY2 to { UIDUtil.finalCUID }
-            ),
-            defaultCommonParamInterceptor + CommonParamInterceptor(
-                Param.CUID to { UIDUtil.finalCUID },
-                Param.CUID_GALAXY2 to { UIDUtil.finalCUID },
-                Param.FROM to { "1021636m" },
-                Param.CLIENT_VERSION to { "7.2.0.0" },
-                Param.SUBAPP_TYPE to { "mini" }
-            ),
-            stParamInterceptor,
         )
     }
 
