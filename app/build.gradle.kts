@@ -191,7 +191,6 @@ dependencies {
     implementation(libs.jetbrains.annotations)
 
     implementation(libs.kotlin.stdlib)
-    implementation(libs.kotlin.reflect)
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
