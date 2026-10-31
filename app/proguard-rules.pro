@@ -1,15 +1,6 @@
-# 代码混淆压缩比，在0~7之间
--optimizationpasses 5
 # 混合时不使用大小写混合，混合后的类名为小写
 -dontusemixedcaseclassnames
-# 指定不去忽略非公共库的类
--dontskipnonpubliclibraryclasses
-# 不做预校验，preverify是proguard的四个步骤之一，Android不需要preverify，去掉这一步能够加快混淆速度。
--dontpreverify
--verbose
 
-#google推荐算法
--optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 # 避免混淆Annotation、内部类、泛型、匿名类
 -keepattributes *Annotation*,InnerClasses,Signature,EnclosingMethod,Exceptions
 # 重命名抛出异常时的文件名称
@@ -27,8 +18,6 @@
     *** get*();
 }
 
-# 保留R下面的资源
--keep class **.R$* {*;}
 # 保留四大组件，自定义的Application等这些类不被混淆
 # -keep public class * extends android.app.Fragment
 -keep public class * extends android.app.Activity
@@ -121,17 +110,15 @@
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 
--keep class cn.jzvd.*{*;}
-
 -keep class com.gyf.immersionbar.* {*;}
 -dontwarn com.gyf.immersionbar.**
 
+# Gson models. Wire protos share the package but are not reflected on beyond
+# their ADAPTER field, which converter-wire's consumer rules already keep.
 -keep class com.huanchengfly.tieba.post.models.** { *; }
--keep class com.huanchengfly.tieba.post.api.models.** { *; }
+-keep class !com.huanchengfly.tieba.post.api.models.protos.**, com.huanchengfly.tieba.post.api.models.** { *; }
 
 -keep public class com.huanchengfly.tieba.post.utils.TiebaLiteJavaScript { *; }
-
--dontwarn com.yanzhenjie.permission.**
 
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep public class * extends com.bumptech.glide.module.AppGlideModule
@@ -158,23 +145,13 @@
 -dontwarn com.zhihu.matisse.**
 -keep class com.zhihu.matisse.**{*;}
 
--keep class com.lijiankun24.** { *; }
-
 # uCrop
 -dontwarn com.yalantis.ucrop**
 -keep class com.yalantis.ucrop** { *; }
 -keep interface com.yalantis.ucrop** { *; }
 
 # kotlin
--keep class kotlin.** { *; }
--keep class kotlin.Metadata { *; }
 -dontwarn kotlin.**
--keepclassmembers class **$WhenMappings {
-    <fields>;
-}
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
-}
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
     static void checkParameterIsNotNull(java.lang.Object, java.lang.String);
 }
@@ -182,22 +159,10 @@
 
 # OkHttp3
 -dontwarn okhttp3.logging.**
--keep class okhttp3.internal.**{*;}
 -dontwarn okio.**
 
 # Retrofit
 -dontwarn retrofit2.**
--keep class retrofit2.** { *; }
--keep class com.alibaba.android.vlayout.ExposeLinearLayoutManagerEx { *; }
--keep class androidx.recyclerview.widget.RecyclerView$LayoutManager { *; }
--keep class androidx.recyclerview.widget.RecyclerView$LayoutParams { *; }
--keep class androidx.recyclerview.widget.RecyclerView$ViewHolder { *; }
--keep class androidx.recyclerview.widget.ChildHelper { *; }
--keep class androidx.recyclerview.widget.ChildHelper$Bucket { *; }
-
--keep class com.huanchengfly.tieba.post.plugins.** { *; }
-
--keep class com.squareup.wire.** { *; }
 
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
@@ -274,9 +239,6 @@
 # Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
 -keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
-
--keep,allowobfuscation,allowshrinking class com.billy.android.preloader.** { *; }
--keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.utils.preload.** { *; }
 
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface <1>
