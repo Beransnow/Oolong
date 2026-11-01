@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.core.network.TiebaServerException
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
+import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.user.LikedForumsResponse
 import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.BazhuSign
@@ -17,12 +19,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class UserRepositoryTest {
     private val remote = mockk<UserRemoteDataSource>()
-    private val repository = UserRepository(remote, mockk<AgreeRemoteDataSource>(relaxed = true), Dispatchers.Unconfined)
+    private val uploadRemote = mockk<UploadRemoteDataSource>()
+    private val repository = UserRepository(remote, mockk<AgreeRemoteDataSource>(relaxed = true), uploadRemote, Dispatchers.Unconfined)
 
     @Test
     fun `maps the profile`() = runTest {
@@ -82,5 +86,29 @@ class UserRepositoryTest {
 
         assertEquals(listOf(LikedForum(52, "吧名", "a", 7, "标语")), page.items)
         assertEquals(2, page.next)
+    }
+
+    @Test
+    fun `a portrait held for review counts as uploaded and says so`() = runTest {
+        coEvery { uploadRemote.uploadPortrait(any()) } throws TiebaServerException(300003, "头像已上传，审核中", null)
+
+        assertEquals("头像已上传，审核中", repository.uploadPortrait(byteArrayOf(1)))
+    }
+
+    @Test
+    fun `other upload errors are failures`() = runTest {
+        coEvery { uploadRemote.uploadPortrait(any()) } throws TiebaServerException(1, "错误", null)
+
+        assertFailsWith<TiebaServerException> { repository.uploadPortrait(byteArrayOf(1)) }
+    }
+
+    @Test
+    fun `saving the profile sends the birthday back unchanged`() = runTest {
+        coEvery { remote.modifyProfile(any(), any(), any(), any(), any()) } returns Unit
+        val profile = UserProfile(id = 7, name = "n", nameShow = "", portrait = "", birthdayTime = 946684800, birthdayShown = true)
+
+        repository.modifyProfile(profile, nickName = "新昵称", sex = 1, intro = "新简介")
+
+        io.mockk.coVerify { remote.modifyProfile("新昵称", 1, "新简介", true, 946684800) }
     }
 }

@@ -29,6 +29,9 @@ data class UserProfile(
     val bazhuTitle: String? = null,
     /** The field Tieba verified them as an expert in, when it did. */
     val godField: String? = null,
+    /** The birthday in Unix seconds, 0 when unset. */
+    val birthdayTime: Long = 0,
+    val birthdayShown: Boolean = false,
 ) {
     val displayName: String get() = nameShow.ifEmpty { name }
 }

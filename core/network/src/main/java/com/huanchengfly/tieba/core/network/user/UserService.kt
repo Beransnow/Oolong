@@ -26,6 +26,9 @@ interface UserFormService {
 
     @POST("c/c/user/unfollow")
     suspend fun unfollow(@Body body: RequestBody): JsonObject
+
+    @POST("c/c/profile/modify")
+    suspend fun modifyProfile(@Body body: RequestBody): JsonObject
 }
 
 /** A page of the forums a user follows, as far as they let others see. */

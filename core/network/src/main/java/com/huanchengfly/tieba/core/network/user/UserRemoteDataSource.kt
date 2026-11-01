@@ -113,4 +113,24 @@ class UserRemoteDataSource(
         )
         formService.unfollow(signedFormBody(params, withSig = false))
     }
+
+    /**
+     * Changes the user's own profile.
+     *
+     * @param birthdayTime the birthday in Unix seconds, sent back as the profile had it
+     * @param sex 1 male, 2 female
+     */
+    suspend fun modifyProfile(nickName: String, sex: Int, intro: String, birthdayShown: Boolean, birthdayTime: Long) {
+        val params = commonParams.form(formProfile) + listOf(
+            "birthday_show_status" to if (birthdayShown) "1" else "0",
+            "birthday_time" to birthdayTime.toString(),
+            "intro" to intro,
+            "sex" to sex.toString(),
+            "nick_name" to nickName,
+            "cam" to "",
+            "need_cam_decrypt" to "1",
+            "need_keep_nickname_flag" to "0",
+        )
+        formService.modifyProfile(signedFormBody(params, withSig = false))
+    }
 }

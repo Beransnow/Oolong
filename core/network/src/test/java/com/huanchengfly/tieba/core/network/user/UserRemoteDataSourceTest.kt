@@ -115,4 +115,23 @@ class UserRemoteDataSourceTest {
         assertSigned(unfollow.form(), withSig = false)
         assertEquals("2", unfollow.form().value("from_type"))
     }
+
+    @Test
+    fun `changes the user's own profile`() = runTest {
+        server.enqueue("""{"error_code":"0"}""")
+
+        dataSource.modifyProfile(nickName = "昵称", sex = 2, intro = "简介", birthdayShown = true, birthdayTime = 946684800)
+
+        val request = server.takeRequest()
+        assertEquals("/c/c/profile/modify", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("昵称", form.value("nick_name"))
+        assertEquals("2", form.value("sex"))
+        assertEquals("简介", form.value("intro"))
+        assertEquals("1", form.value("birthday_show_status"))
+        assertEquals("946684800", form.value("birthday_time"))
+        assertEquals("1", form.value("need_cam_decrypt"))
+        assertEquals("0", form.value("need_keep_nickname_flag"))
+    }
 }
