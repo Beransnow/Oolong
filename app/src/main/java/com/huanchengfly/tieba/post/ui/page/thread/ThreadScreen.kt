@@ -40,6 +40,7 @@ import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarFadeBand
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.animateHiddenFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -116,9 +117,12 @@ fun ThreadScreen(
         val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
         var contentTop by remember { mutableIntStateOf(0) }
-        val headerPinned by remember(listState, statusBarTop) {
+        val fadeBand = with(LocalDensity.current) { GlassTopBarFadeBand.roundToPx() }
+        val headerPinned by remember(listState, statusBarTop, fadeBand) {
             derivedStateOf {
-                listState.isThreadHeaderPinned(((contentTop - statusBarTop) * hiddenFraction).roundToInt())
+                // The pinned header sits above the bar's fade band, which slides away with the bar's rows
+                val barHiddenBy = ((contentTop - fadeBand - statusBarTop) * hiddenFraction).roundToInt()
+                listState.isThreadHeaderPinned(fadeBand + barHiddenBy)
             }
         }
         // A thread that can't scroll the bar's height away would leave an empty band where the bar was

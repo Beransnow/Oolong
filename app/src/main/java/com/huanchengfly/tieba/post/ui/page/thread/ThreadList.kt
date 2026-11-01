@@ -79,13 +79,14 @@ internal const val FIRST_REPLY_INDEX = 1
 private const val THREAD_HEADER_KEY = "ThreadHeader"
 
 /**
- * Whether the reply count header has scrolled up behind the top bar, so the bar should show it
- * pinned instead. [barHiddenBy] is how far the bar has slid up out of the way, in pixels.
+ * Whether the reply count header has scrolled up to where the top bar shows it pinned, so the
+ * bar should show it instead. [pinnedAbove] is how far above the end of the list's top padding
+ * the pinned header sits, in pixels.
  */
-internal fun LazyListState.isThreadHeaderPinned(barHiddenBy: Int): Boolean {
+internal fun LazyListState.isThreadHeaderPinned(pinnedAbove: Int): Boolean {
     val header = layoutInfo.visibleItemsInfo.firstOrNull { it.key == THREAD_HEADER_KEY }
-    // Item offsets start at the end of the top padding, which is the bottom of the bar when shown
-    return if (header != null) header.offset <= -barHiddenBy else firstVisibleItemIndex > FIRST_REPLY_INDEX
+    // Item offsets start at the end of the top padding
+    return if (header != null) header.offset <= -pinnedAbove else firstVisibleItemIndex > FIRST_REPLY_INDEX
 }
 
 /** The posts of the thread, or the first load or its error in their place. */
