@@ -7,7 +7,6 @@ import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
-import com.huanchengfly.tieba.post.api.booleanToString
 import com.huanchengfly.tieba.post.api.buildAdParam
 import com.huanchengfly.tieba.post.api.buildAppPosInfo
 import com.huanchengfly.tieba.post.api.buildCommonRequest
@@ -30,9 +29,6 @@ import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.NewCollectDataBean
 import com.huanchengfly.tieba.post.api.models.PicPageBean
-import com.huanchengfly.tieba.post.api.models.SearchForumBean
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
-import com.huanchengfly.tieba.post.api.models.SearchUserBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
@@ -53,9 +49,6 @@ import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequest
-import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequestData
-import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.AdParam
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequestData
@@ -68,7 +61,6 @@ import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
@@ -176,8 +168,6 @@ object MixedTiebaApiImpl : ITiebaApi {
                 tbs = tbs
             )
 
-    override fun searchUserFlow(keyword: String): Flow<SearchUserBean> =
-        RetrofitTiebaApi.HYBRID_TIEBA_API.searchUserFlow(keyword)
 
     override fun threadStoreFlow(page: Int, pageSize: Int): Flow<ThreadStoreBean> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadStoreFlow(
@@ -211,39 +201,8 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
 
 
-    override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
-        RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
 
-    override fun searchThreadFlow(
-        keyword: String, page: Int, sort: Int,
-    ): Flow<SearchThreadBean> =
-        RetrofitTiebaApi.HYBRID_TIEBA_API.searchThreadFlow(
-            keyword,
-            page,
-            sort
-        )
 
-    override fun searchPostFlow(
-        keyword: String,
-        forumName: String,
-        forumId: Long,
-        sortType: Int,
-        filterType: Int,
-        page: Int,
-        pageSize: Int,
-    ): Flow<SearchThreadBean> =
-        RetrofitTiebaApi.HYBRID_TIEBA_API.searchThreadFlow(
-            keyword,
-            page,
-            sortType,
-            filterType,
-            pageSize,
-            forumName,
-            ct = 2,
-            isUseZonghe = null,
-            clientVersion = ClientVersion.TIEBA_V12.version,
-            referer = "https://tieba.baidu.com/mo/q/hybrid-usergrow-search/searchGlobal?entryPage=frs&loadingSignal=1&forumName=${forumName.urlEncode()}&forumId=$forumId&customfullscreen=1&nonavigationbar=1&cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=${ClientVersion.TIEBA_V12.version}&_client_type=2"
-        )
 
     override fun checkReportPostAsync(postId: String): Deferred<ApiResult<CheckReportBean>> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.checkReportAsync(
@@ -561,21 +520,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun searchSuggestionsFlow(keyword: String, isForum: Boolean): Flow<SearchSugResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.searchSugFlow(
-            buildProtobufRequestBody(
-                SearchSugRequest(
-                    SearchSugRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        word = keyword,
-                        isforum = isForum.booleanToString()
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
 
     override fun getForumDetailFlow(forumId: Long): Flow<GetForumDetailResponse> {
         return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getForumDetailFlow(

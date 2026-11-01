@@ -26,7 +26,6 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.ProtoFailureRespons
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.SortAndSignInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.StParamInterceptor
-import com.huanchengfly.tieba.post.api.retrofit.interfaces.AppHybridTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialProtobufTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.SofireApi
@@ -36,14 +35,14 @@ import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.MobileInfoUtil
 import com.huanchengfly.tieba.post.utils.UIDUtil
+import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
 import okhttp3.ConnectionPool
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.wire.WireConverterFactory
-import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
 
 
 object RetrofitTiebaApi {
@@ -76,23 +75,6 @@ object RetrofitTiebaApi {
     private val sortAndSignInterceptor = SortAndSignInterceptor("tiebaclient!!!")
 
     /** Data requests of the in-app search page, sent as the web view sends them. */
-    val HYBRID_TIEBA_API: AppHybridTiebaApi by lazy {
-        createJsonApi<AppHybridTiebaApi>(
-            TiebaProfile.WEB_12_52.baseUrl,
-            ProfileInterceptor(TiebaProfile.WEB_12_52, legacyCommonParams),
-            CommonHeaderInterceptor(
-                Header.PRAGMA to { "no-cache" },
-                Header.CACHE_CONTROL to { "no-cache" },
-                Header.ACCEPT to { "application/json, text/plain, */*" },
-                Header.ACCEPT_LANGUAGE to { Header.ACCEPT_LANGUAGE_VALUE },
-                "X-Requested-With" to { "com.baidu.tieba" },
-                "Sec-Fetch-Site" to { "same-origin" },
-                "Sec-Fetch-Mode" to { "cors" },
-                "Sec-Fetch-Dest" to { "empty" },
-            ),
-        )
-    }
-
     /** Official form endpoints, sent through the classic form stack. */
     val OFFICIAL_TIEBA_API: OfficialTiebaApi by lazy {
         createFormApi<OfficialTiebaApi>(TiebaProfile.FORM_12_52)
@@ -156,34 +138,6 @@ object RetrofitTiebaApi {
             .build()
             .create(SofireApi::class.java)
     }
-
-    private inline fun <reified T : Any> createJsonApi(
-        baseUrl: String,
-        vararg interceptors: Interceptor
-    ) = Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .addCallAdapterFactory(DeferredCallAdapterFactory())
-        .addCallAdapterFactory(FlowCallAdapterFactory.create())
-        .addConverterFactory(NullOnEmptyConverterFactory())
-        .addConverterFactory(json.asConverterFactory())
-        .addConverterFactory(gsonConverterFactory)
-        .client(OkHttpClient.Builder().apply {
-            readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-            connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-            writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
-            interceptors.forEach {
-                addInterceptor(it)
-            }
-            addInterceptor(DropInterceptor)
-            addInterceptor(FailureResponseInterceptor)
-            addInterceptor(ForceLoginInterceptor)
-            addInterceptor(sortAndSignInterceptor)
-            addInterceptor(ConnectivityInterceptor)
-            if (BuildConfig.DEBUG) addNetworkInterceptor(RequestRecorder)
-            connectionPool(connectionPool)
-        }.build())
-        .build()
-        .create(T::class.java)
 
     private inline fun <reified T : Any> createFormApi(profile: TiebaProfile) = Retrofit.Builder()
         .baseUrl(profile.baseUrl)

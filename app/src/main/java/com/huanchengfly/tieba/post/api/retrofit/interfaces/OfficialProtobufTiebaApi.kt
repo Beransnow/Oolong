@@ -5,7 +5,6 @@ import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDeta
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
@@ -44,10 +43,6 @@ interface OfficialProtobufTiebaApi {
         @Body body: MyMultipartBody,
     ): Flow<PbFloorResponse>
 
-    @POST("/c/s/searchSug?cmd=309438&format=protobuf")
-    fun searchSugFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<SearchSugResponse>
 
     @POST("/c/f/forum/getforumdetail?cmd=303021&format=protobuf")
     fun getForumDetailFlow(
