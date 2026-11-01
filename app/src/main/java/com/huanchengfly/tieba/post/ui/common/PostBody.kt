@@ -5,6 +5,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,32 +62,39 @@ fun PostBody(
     content: ImmutableList<PostContent>,
     modifier: Modifier = Modifier,
     photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
+    fontSize: TextUnit = 15.sp,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    blockSpacing: Dp = 8.dp,
+    textPadding: PaddingValues = PaddingValues(0.dp),
 ) {
+    // Images run edge to edge of the body; padding the other blocks lets a caller bleed them
+    val padded = Modifier.padding(textPadding)
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(blockSpacing),
     ) {
         content.forEach { block ->
             when (block) {
-                is PostContent.Text -> PostText(block.spans)
-                is PostContent.Image -> PostImage(block, photoViewData(block))
-                is PostContent.Video -> PostVideo(block)
-                is PostContent.Voice -> PostVoice(block)
+                is PostContent.Text -> Box(padded) { PostText(block.spans, fontSize, lineHeight) }
+                is PostContent.Image -> PostImage(block, photoViewData(block), rounded = textPadding == PaddingValues(0.dp))
+                is PostContent.Video -> Box(padded) { PostVideo(block) }
+                is PostContent.Voice -> Box(padded) { PostVoice(block) }
             }
         }
     }
 }
 
 @Composable
-private fun PostText(spans: ImmutableList<TextSpan>) {
+private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHeight: TextUnit) {
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
     val text = remember(spans, accent, videoTag) { spans.toAnnotatedString(accent, videoTag) }
     PbContentText(
         text = text,
-        fontSize = 15.sp,
+        fontSize = fontSize,
+        lineHeight = lineHeight,
         style = MaterialTheme.typography.body1,
-        lineSpacing = 0.8.sp,
+        lineSpacing = if (lineHeight == TextUnit.Unspecified) 0.8.sp else 0.sp,
     )
 }
 
@@ -93,7 +104,7 @@ private fun mediaWidthFraction(): Float =
     if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
 
 @Composable
-private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?) {
+private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?, rounded: Boolean = true) {
     val context = LocalContext.current
     val url = remember(image) {
         ImageUtil.getUrl(context, true, image.originUrl, *image.urls.toTypedArray())
@@ -102,7 +113,7 @@ private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?) {
         imageUri = url,
         contentDescription = null,
         modifier = Modifier
-            .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+            .clip(RoundedCornerShape(if (rounded) context.appPreferences.radius.dp else 0.dp))
             .fillMaxWidth(mediaWidthFraction())
             .aspectRatio(image.aspectRatio),
         photoViewData = photoViewData,
@@ -192,9 +203,8 @@ fun List<TextSpan>.toAnnotatedString(accent: Color, videoTag: String): Annotated
  */
 @OptIn(ExperimentalTextApi::class)
 @Composable
-fun rememberSubPostText(subPost: SubPost, isLz: Boolean): AnnotatedString {
+fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = ExtendedTheme.colors.primary): AnnotatedString {
     val context = LocalContext.current
-    val nameColor = ExtendedTheme.colors.primary
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
     return remember(subPost, isLz, nameColor, accent, videoTag) {

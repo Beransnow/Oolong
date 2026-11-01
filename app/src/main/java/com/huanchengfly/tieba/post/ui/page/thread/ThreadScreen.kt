@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -116,6 +117,7 @@ fun ThreadScreen(
         val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
         var contentTop by remember { mutableIntStateOf(0) }
+        var pinnedHeaderHeight by remember { mutableIntStateOf(0) }
         val headerPinned by remember(listState, statusBarTop) {
             derivedStateOf {
                 listState.isThreadHeaderPinned(((contentTop - statusBarTop) * hiddenFraction).roundToInt())
@@ -140,7 +142,14 @@ fun ThreadScreen(
                     forum = state.thread?.forum,
                     onEvent = handleEvent,
                     pinnedContent = if (state.thread != null && headerPinned) {
-                        { ThreadHeader(state, handleEvent, backgroundColor = Color.Transparent) }
+                        {
+                            ThreadHeader(
+                                state,
+                                handleEvent,
+                                backgroundColor = Color.Transparent,
+                                modifier = Modifier.onSizeChanged { pinnedHeaderHeight = it.height },
+                            )
+                        }
                     } else null,
                 ) { hiddenFraction }
             },
@@ -158,7 +167,13 @@ fun ThreadScreen(
         ) { padding ->
             val density = LocalDensity.current
             SideEffect { contentTop = with(density) { padding.calculateTopPadding().roundToPx() } }
-            ThreadContent(state, preferences, listState, padding, handleEvent)
+            // Where the visible chrome ends, from the end of the top padding: the bar slides up as it
+            // hides, and the pinned header hangs below it
+            val chromeEnd = {
+                val barHiddenBy = ((contentTop - statusBarTop) * hiddenFraction).roundToInt()
+                -barHiddenBy + if (headerPinned) pinnedHeaderHeight else 0
+            }
+            ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd)
         }
     }
 

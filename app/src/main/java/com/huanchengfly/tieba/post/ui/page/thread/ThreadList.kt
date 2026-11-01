@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
@@ -98,6 +100,7 @@ internal fun ThreadContent(
     listState: LazyListState,
     padding: PaddingValues,
     onEvent: (ThreadEvent) -> Unit,
+    chromeEnd: () -> Int = { 0 },
 ) {
     val posts = state.posts
     val firstPost = state.firstPost ?: state.preview?.let { preview ->
@@ -175,19 +178,34 @@ internal fun ThreadContent(
                 if (posts.hasPrevious && !newestFirst) {
                     item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
                 }
-                items(
+                itemsIndexed(
                     items = posts.items,
-                    key = { "$POST_KEY_PREFIX${it.post.id}" },
-                ) { item ->
+                    key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
+                ) { index, item ->
                     Container {
-                        ThreadPostCard(
-                            item = item,
-                            options = options,
-                            onEvent = onEvent,
-                            isStoreMark = item.post.id == state.thread?.storeMarkPostId,
-                            canDelete = viewerId != null && item.post.author.id == viewerId,
-                            photoViewData = { photoViewData(item.post, it) },
-                        )
+                        if (options.immersive) {
+                            ThreadPostCard(
+                                item = item,
+                                options = options,
+                                onEvent = onEvent,
+                                isStoreMark = item.post.id == state.thread?.storeMarkPostId,
+                                canDelete = viewerId != null && item.post.author.id == viewerId,
+                                photoViewData = { photoViewData(item.post, it) },
+                            )
+                        } else {
+                            ThreadFloor(
+                                item = item,
+                                options = options,
+                                onEvent = onEvent,
+                                listState = listState,
+                                key = "$POST_KEY_PREFIX${item.post.id}",
+                                stickBelow = chromeEnd,
+                                startsRule = index == 0,
+                                isStoreMark = item.post.id == state.thread?.storeMarkPostId,
+                                canDelete = viewerId != null && item.post.author.id == viewerId,
+                                photoViewData = { photoViewData(item.post, it) },
+                            )
+                        }
                     }
                 }
                 if (loadingFirstTime) {
@@ -223,7 +241,17 @@ private fun FirstPost(
 ) {
     Container {
         Column {
-            ThreadPostCard(
+            if (!options.immersive) {
+                ThreadFirstPost(
+                    post = post,
+                    state = state,
+                    options = options,
+                    isStoreMark = post.id == state.thread?.storeMarkPostId,
+                    canDelete = viewerId != null && post.author.id == viewerId,
+                    photoViewData = { photoViewData(post, it) },
+                    onEvent = onEvent,
+                )
+            } else ThreadPostCard(
                 item = PostItem(post, blocked = false, blockedSubPosts = persistentSetOf()),
                 options = options,
                 // Replying to the first floor replies to the thread; it shows no replies inside it to reply to
@@ -247,12 +275,14 @@ private fun FirstPost(
                         .padding(16.dp)
                 )
             }
-            VerticalDivider(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 8.dp),
-                thickness = 2.dp
-            )
+            if (options.immersive) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                    thickness = 2.dp
+                )
+            }
         }
     }
 }
@@ -272,25 +302,26 @@ internal fun ThreadHeader(
         Row(
             modifier = Modifier
                 .background(backgroundColor)
-                .padding(8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = stringResource(R.string.title_thread_header, "${(state.thread?.replyCount ?: 1) - 1}"),
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
-                modifier = Modifier.padding(horizontal = 8.dp),
             )
             Spacer(modifier = Modifier.weight(1f))
+            // A segmented switch: the selected side is a pill on the track
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.height(IntrinsicSize.Min)
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(ExtendedTheme.colors.chip)
+                    .padding(3.dp),
             ) {
                 HeaderFilter(stringResource(R.string.text_all), selected = !state.query.seeLz) {
                     onEvent(ThreadEvent.SetSeeLz(false))
                 }
-                HorizontalDivider()
                 HeaderFilter(stringResource(R.string.title_see_lz), selected = state.query.seeLz) {
                     onEvent(ThreadEvent.SetSeeLz(true))
                 }
@@ -304,14 +335,16 @@ private fun HeaderFilter(text: String, selected: Boolean, onClick: () -> Unit) {
     Text(
         text = text,
         modifier = Modifier
-            .padding(horizontal = 8.dp)
+            .clip(CircleShape)
+            .background(if (selected) ExtendedTheme.colors.background else Color.Transparent)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 enabled = !selected,
                 onClick = onClick,
-            ),
-        fontSize = 13.sp,
+            )
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        fontSize = 12.sp,
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         color = if (selected) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
     )
