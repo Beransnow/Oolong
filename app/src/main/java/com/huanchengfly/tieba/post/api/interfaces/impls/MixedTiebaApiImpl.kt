@@ -14,7 +14,6 @@ import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
 import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
-import com.huanchengfly.tieba.post.api.legacyPostRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.ForumGuideBean
@@ -25,8 +24,6 @@ import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
@@ -206,54 +203,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             supportAbi = InstallState.supportAbi,
             installAppTime = App.Config.appFirstInstallTime,
         )
-    }
-
-    override fun addPostFlow(
-        content: String,
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        tbs: String?,
-        nameShow: String?,
-        postId: String?,
-        subPostId: String?,
-        replyUserId: String?
-    ): Flow<AddPostResponse> {
-        // Business fields as TiebaLite has always sent them; the data source adds the common
-        // request and the message task form fields
-        val data = AddPostRequestData(
-            anonymous = "1",
-            barrage_time = "0".takeIf { postId.isNullOrEmpty() },
-            can_no_forum = "0",
-            content = content,
-            entrance_type = "0",
-            fid = forumId,
-            floor_num = "0",
-            kw = forumName,
-            is_ad = "0",
-            is_addition = "0",
-            is_barrage = "0",
-            is_feedback = "0",
-            is_giftpost = "0",
-            is_pictxt = "0",
-            is_show_bless = 0,
-            is_twzhibo_thread = "0",
-            name_show = nameShow ?: AccountUtil.getAccountInfo { this.nameShow }
-                .orEmpty(),
-            new_vcode = "1",
-            post_from = if (postId.isNullOrEmpty() && subPostId.isNullOrEmpty()) "13" else if (subPostId.isNullOrEmpty()) "0" else null,
-            quote_id = postId,
-            reply_uid = replyUserId.takeIf { !postId.isNullOrEmpty() },
-            repostid = postId,
-            sub_post_id = subPostId,
-            show_custom_figure = 0,
-            takephoto_num = "0",
-            tid = threadId,
-            v_fid = "".takeIf { postId.isNullOrEmpty() },
-            v_fname = "".takeIf { postId.isNullOrEmpty() },
-            vcode_tag = "12",
-        )
-        return flow { emit(AddPostResponse(data_ = legacyPostRemoteDataSource.addPost(data, tbs))) }
     }
 
     override fun pbPageFlow(

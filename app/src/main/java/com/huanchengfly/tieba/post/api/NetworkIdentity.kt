@@ -229,7 +229,6 @@ interface LegacyNetworkEntryPoint {
     fun signRemoteDataSource(): SignRemoteDataSource
     fun likeRemoteDataSource(): LikeRemoteDataSource
     fun messageRemoteDataSource(): MessageRemoteDataSource
-    fun postRemoteDataSource(): PostRemoteDataSource
     fun uploadRemoteDataSource(): UploadRemoteDataSource
 }
 
@@ -248,9 +247,6 @@ internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
 
 internal val legacyMessageRemoteDataSource: MessageRemoteDataSource
     get() = legacyEntryPoint.messageRemoteDataSource()
-
-internal val legacyPostRemoteDataSource: PostRemoteDataSource
-    get() = legacyEntryPoint.postRemoteDataSource()
 
 internal val legacyUploadRemoteDataSource: UploadRemoteDataSource
     get() = legacyEntryPoint.uploadRemoteDataSource()
