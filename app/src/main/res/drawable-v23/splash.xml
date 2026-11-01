@@ -12,11 +12,10 @@
         </shape>
     </item>
     <item
-        android:width="120dp"
-        android:height="120dp"
-        android:gravity="center">
-        <bitmap android:src="@drawable/ic_splash" />
-    </item>
+        android:width="288dp"
+        android:height="288dp"
+        android:drawable="@drawable/ic_splash_screen"
+        android:gravity="center" />
     <item
         android:width="200dp"
         android:height="80dp"

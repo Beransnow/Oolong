@@ -12,6 +12,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
+import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,6 +120,9 @@ val LocalDevicePosture =
 
 // Tieba links from outside the app, opened natively when they have a counterpart
 private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com.baidu.tieba")
+
+// Length of the splash icon animation in ic_splash_screen_anim
+private const val SPLASH_ICON_MILLIS = 400L
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
@@ -246,8 +251,15 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        // Let the icon finish bubbling (it starts with the process), but never wait past that
+        val iconDone = Process.getStartUptimeMillis() + SPLASH_ICON_MILLIS
+        installSplashScreen().setKeepOnScreenCondition { SystemClock.uptimeMillis() < iconDone }
         super.onCreate(savedInstanceState)
+        // The condition is only checked when a frame is drawn
+        window.decorView.postDelayed(
+            { window.decorView.invalidate() },
+            (iconDone - SystemClock.uptimeMillis()).coerceAtLeast(0)
+        )
         window.decorView.setBackgroundColor(0)
         window.setBackgroundDrawable(ColorDrawable(0))
         launch {
