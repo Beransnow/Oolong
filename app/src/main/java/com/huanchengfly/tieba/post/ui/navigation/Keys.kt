@@ -111,6 +111,9 @@ data object AppThemeKey : Key
 data object CustomSettingsKey : Key
 
 @Serializable
+data object FontSizeKey : Key
+
+@Serializable
 data object HabitSettingsKey : Key
 
 @Serializable

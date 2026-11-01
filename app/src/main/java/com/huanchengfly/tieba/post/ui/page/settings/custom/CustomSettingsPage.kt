@@ -19,9 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.AppFontSizeActivity
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
@@ -29,6 +27,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
+import com.huanchengfly.tieba.post.ui.navigation.FontSizeKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -124,7 +123,7 @@ fun CustomSettingsPage(
                     TextPref(
                         title = stringResource(id = R.string.title_custom_font_size),
                         onClick = {
-                            context.goToActivity<AppFontSizeActivity>()
+                            navigator.navigate(FontSizeKey)
                         },
                         trailingContent = {
                             PrefsLinkValue(text = "${(context.appPreferences.fontScale * 100).roundToInt()}%")

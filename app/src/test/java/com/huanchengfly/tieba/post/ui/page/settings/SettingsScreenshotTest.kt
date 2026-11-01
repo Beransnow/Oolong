@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
 import com.huanchengfly.tieba.post.ui.navigation.NoOpNavigator
 import com.huanchengfly.tieba.post.ui.page.settings.account.AccountManagePage
 import com.huanchengfly.tieba.post.ui.page.settings.custom.CustomSettingsPage
+import com.huanchengfly.tieba.post.ui.page.settings.custom.FontSizePage
 import com.huanchengfly.tieba.post.ui.page.settings.habit.HabitSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.more.MoreSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.oksign.OKSignSettingsPage
@@ -35,6 +36,11 @@ class SettingsScreenshotTest {
     @Test
     fun appearance() {
         captureScreenshot { CustomSettingsPage(navigator = NoOpNavigator) }
+    }
+
+    @Test
+    fun fontSize() {
+        captureScreenshot { FontSizePage(navigator = NoOpNavigator) }
     }
 
     @Test
