@@ -25,6 +25,11 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -197,7 +202,17 @@ private fun TopThreadItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Chip(text = type, shape = RoundedCornerShape(3.dp))
+        val accent = forumAccentOrPrimary()
+        Text(
+            text = type,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = accent,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.14f))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        )
         Text(
             text = title,
             style = MaterialTheme.typography.subtitle2,

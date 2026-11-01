@@ -27,6 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.background
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
@@ -61,6 +65,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
  * header. They share the bar's background and float over the content: the scaffold does not pad
  * the content for them.
+ * @param wash a colour washed over the glass, strongest at the top and gone at the bottom edge,
+ * such as a forum's own colour on its page.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -70,6 +76,7 @@ fun GlassTopBar(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     hiddenFraction: () -> Float = { 0f },
+    wash: Color = Color.Unspecified,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
     // Last, so a trailing lambda passes the bar's rows, which the content is padded for
     content: (@Composable ColumnScope.() -> Unit)? = null,
@@ -78,7 +85,16 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
-            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass())
+            Box(
+                modifier = Modifier
+                    .layoutId(TopBarLayer.Background)
+                    .topBarGlass()
+                    .then(
+                        if (wash.isSpecified) {
+                            Modifier.background(Brush.verticalGradient(listOf(wash, wash.copy(alpha = 0f))))
+                        } else Modifier
+                    )
+            )
             Column(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Foreground)

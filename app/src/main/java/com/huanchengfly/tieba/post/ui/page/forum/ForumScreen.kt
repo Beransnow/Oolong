@@ -32,6 +32,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlin.math.roundToInt
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.background
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -121,6 +127,8 @@ fun ForumScreen(
         }
     }
 
+    val accent = rememberForumAccent(forum.avatar)
+    CompositionLocalProvider(LocalForumAccent provides accent) {
     GlassScaffold(
         scaffoldState = scaffoldState,
         backgroundColor = Color.Transparent,
@@ -132,13 +140,17 @@ fun ForumScreen(
                 onEvent = onEvent,
                 menuContent = { ForumMenu(onEvent, liked = forum.liked, dismiss = { dismiss() }) },
                 content = {
-                    val containerHeight by remember { derivedStateOf { with(density) { (headerHeight + heightOffset).toDp() } } }
+                    // Measured whole and shown from the bottom up as it collapses, in one pass, so
+                    // the first frame already shows all of it whatever height was last saved
                     Box(modifier = Modifier
-                        .height(containerHeight)
-                        .clipToBounds()) {
-                        Box(modifier = Modifier
-                            .wrapContentHeight(align = Alignment.Bottom, unbounded = true)
-                            .onSizeChanged { headerHeight = it.height.toFloat() }) {
+                        .clipToBounds()
+                        .layout { measurable, constraints ->
+                            val header = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+                            if (headerHeight != header.height.toFloat()) headerHeight = header.height.toFloat()
+                            val shown = (header.height + heightOffset).roundToInt().coerceIn(0, header.height)
+                            layout(header.width, shown) { header.place(0, shown - header.height) }
+                        }) {
+                        Box {
                             ForumHeader(
                                 forum = forum,
                                 loggedIn = state.loggedIn,
@@ -165,7 +177,8 @@ fun ForumScreen(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .floatingGlass(CircleShape)
+                        .shadow(elevation = 8.dp, shape = CircleShape)
+                        .background(forumAccentOrPrimary(), CircleShape)
                         .clickable {
                             coroutineScope.launch {
                                 listStateOf(state.selectedTab).animateScrollToItem(0)
@@ -175,7 +188,7 @@ fun ForumScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        tint = ExtendedTheme.colors.primary,
+                        tint = onForumAccent(),
                         imageVector = if (fab == ForumFab.Refresh) Icons.Rounded.Refresh else Icons.Rounded.VerticalAlignTop,
                         contentDescription = null
                     )
@@ -222,6 +235,7 @@ fun ForumScreen(
                 }
             }
         }
+    }
     }
 }
 

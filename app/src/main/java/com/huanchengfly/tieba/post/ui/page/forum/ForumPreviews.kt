@@ -25,6 +25,7 @@ internal object ForumPreviewData {
         id = 52,
         name = "测试",
         avatar = "",
+        slogan = "测试用的吧",
         memberCount = 1_234,
         liked = true,
         level = 7,

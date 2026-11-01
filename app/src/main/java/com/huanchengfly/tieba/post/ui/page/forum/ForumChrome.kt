@@ -32,6 +32,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import android.graphics.Typeface
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -65,7 +75,10 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.max
 import kotlin.math.min
 
-/** The forum's avatar and name, the viewer's level in it, and the follow or sign-in button. */
+/**
+ * The forum's front: its avatar and name with how many follow it and post in it, the viewer's
+ * level in its colour, and a full-width button to follow or sign in, next to the rules.
+ */
 @Composable
 internal fun ForumHeader(
     forum: ForumDetail,
@@ -73,68 +86,142 @@ internal fun ForumHeader(
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Avatar(data = forum.avatar, size = Sizes.Large, contentDescription = null)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = stringResource(id = R.string.title_forum, forum.name),
-                style = MaterialTheme.typography.h6,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = { onEvent(ForumEvent.OpenDetail) }
-                ),
-            )
-            AnimatedVisibility(visible = forum.liked) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    LinearProgressIndicator(
-                        progress = max(0f, min(1f, forum.score / max(1f, forum.levelUpScore.toFloat()))),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100))
-                            .height(8.dp),
-                        color = ExtendedTheme.colors.primary,
-                        backgroundColor = ExtendedTheme.colors.primary.copy(alpha = 0.25f)
-                    )
+    val accent = forumAccentOrPrimary()
+    val openDetail = Modifier.clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = { onEvent(ForumEvent.OpenDetail) }
+    )
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = openDetail) { Avatar(data = forum.avatar, size = ForumAvatarSize, contentDescription = null) }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f).then(openDetail)) {
+                Text(
+                    text = stringResource(id = R.string.title_forum, forum.name),
+                    fontSize = 24.sp,
+                    lineHeight = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ExtendedTheme.colors.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (forum.slogan.isNotBlank()) {
                     Text(
-                        text = stringResource(id = R.string.tip_forum_header_liked, forum.level.toString(), forum.levelName),
-                        style = MaterialTheme.typography.caption,
+                        text = forum.slogan,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
                         color = ExtendedTheme.colors.textSecondary,
-                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
-        if (loggedIn) {
-            Button(
-                onClick = { onEvent(ForumEvent.FollowOrSignIn) },
-                elevation = null,
-                shape = RoundedCornerShape(100),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = ExtendedTheme.colors.primary,
-                    contentColor = ExtendedTheme.colors.onAccent
-                ),
-                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                enabled = !forum.liked || !forum.signedIn
-            ) {
-                val text = when {
-                    !forum.liked -> stringResource(id = R.string.button_follow)
-                    forum.signedIn -> stringResource(id = R.string.button_signed_in, forum.signedDays)
-                    else -> stringResource(id = R.string.button_sign_in)
+        Spacer(modifier = Modifier.height(18.dp))
+        // Figures on the left, the viewer's level on the right, on one baseline
+        Row(verticalAlignment = Alignment.Bottom) {
+            ForumStat(forum.memberCount.getShortNumString(), stringResource(id = R.string.forum_stat_members))
+            Spacer(modifier = Modifier.width(24.dp))
+            ForumStat(forum.threadCount.getShortNumString(), stringResource(id = R.string.forum_stat_threads))
+            Spacer(modifier = Modifier.weight(1f))
+            AnimatedVisibility(visible = forum.liked) {
+                ForumLevel(forum, accent)
+            }
+        }
+        if (loggedIn || forum.ruleTitle != null) {
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (loggedIn) {
+                    val canAct = !forum.liked || !forum.signedIn
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .clip(CircleShape)
+                            .background(accent)
+                            .clickable(enabled = canAct) { onEvent(ForumEvent.FollowOrSignIn) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = when {
+                                !forum.liked -> stringResource(id = R.string.button_follow)
+                                forum.signedIn -> stringResource(id = R.string.button_signed_in, forum.signedDays)
+                                else -> stringResource(id = R.string.button_sign_in)
+                            },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onForumAccent(),
+                        )
+                    }
                 }
-                Text(text = text, fontSize = 13.sp)
+                if (forum.ruleTitle != null) {
+                    Box(
+                        modifier = Modifier
+                            .then(if (loggedIn) Modifier else Modifier.weight(1f))
+                            .height(40.dp)
+                            .clip(CircleShape)
+                            .background(ExtendedTheme.colors.chip)
+                            .clickable { onEvent(ForumEvent.OpenRule) }
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.desc_forum_rule),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ExtendedTheme.colors.text,
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun ForumStat(value: String, label: String) {
+    Column {
+        Text(text = value, fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, color = ExtendedTheme.colors.text)
+        Text(text = label, style = MaterialTheme.typography.caption, color = ExtendedTheme.colors.textSecondary)
+    }
+}
+
+/** The viewer's level in the forum, in the forum's colour, with progress to the next one. */
+@Composable
+private fun ForumLevel(forum: ForumDetail, accent: Color, modifier: Modifier = Modifier) {
+    val numerals = rememberNumerals()
+    Column(modifier = modifier, horizontalAlignment = Alignment.End) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(text = "LV", fontFamily = numerals, fontSize = 14.sp, color = accent)
+            Text(text = "${forum.level}", fontFamily = numerals, fontSize = 30.sp, lineHeight = 30.sp, color = accent)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .width(88.dp)
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.2f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(max(0f, min(1f, forum.score / max(1f, forum.levelUpScore.toFloat()))))
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(accent)
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberNumerals(): FontFamily {
+    val context = LocalContext.current
+    return remember { FontFamily(Typeface.createFromAsset(context.assets, "bebas.ttf")) }
+}
+
+private val ForumAvatarSize = 64.dp
 
 @Composable
 internal fun ForumHeaderPlaceholder(
@@ -147,7 +234,7 @@ internal fun ForumHeaderPlaceholder(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AvatarPlaceholder(size = Sizes.Large)
+        AvatarPlaceholder(size = 64.dp)
         Text(
             text = stringResource(id = R.string.title_forum, forumName),
             style = MaterialTheme.typography.h6,
@@ -181,7 +268,9 @@ internal fun ForumTopBar(
     menuContent: (@Composable MenuScope.() -> Unit)? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
+    val accent = LocalForumAccent.current
     GlassTopBar(
+        wash = if (accent.isSpecified) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.28f else 0.18f) else Color.Unspecified,
         title = { if (showTitle) GlassTopBarTitle(text = stringResource(id = R.string.title_forum, forumName)) },
         navigationIcon = { BackNavigationIcon(onBackPressed = { onEvent(ForumEvent.Back) }) },
         actions = {
@@ -246,7 +335,7 @@ internal fun ForumTabRow(
         indicator = { tabPositions -> PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions) },
         divider = {},
         backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.primary,
+        contentColor = forumAccentOrPrimary(),
         edgePadding = 0.dp,
         modifier = modifier.wrapContentWidth(align = Alignment.Start),
     ) {
@@ -271,14 +360,14 @@ internal fun ForumTabRow(
                             }
                         )
                     },
-                    selectedContentColor = ExtendedTheme.colors.primary,
+                    selectedContentColor = ExtendedTheme.colors.text,
                     unselectedContentColor = ExtendedTheme.colors.textSecondary
                 )
             } else {
                 Tab(
                     selected = selected,
                     onClick = { onSelect(index) },
-                    selectedContentColor = ExtendedTheme.colors.primary,
+                    selectedContentColor = ExtendedTheme.colors.text,
                     unselectedContentColor = ExtendedTheme.colors.textSecondary
                 ) {
                     Row(
