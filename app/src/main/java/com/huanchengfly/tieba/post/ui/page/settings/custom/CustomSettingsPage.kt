@@ -5,14 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Apps
-import androidx.compose.material.icons.outlined.BlurOff
-import androidx.compose.material.icons.outlined.Brightness2
-import androidx.compose.material.icons.outlined.BrightnessAuto
-import androidx.compose.material.icons.outlined.ColorLens
-import androidx.compose.material.icons.outlined.FontDownload
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,8 +28,6 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -50,6 +40,23 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentListOf
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
+import com.huanchengfly.tieba.post.utils.appPreferences
+import kotlin.math.roundToInt
+
+/** The theme in use, by the name the theme page gives it. */
+@Composable
+private fun currentThemeName(): String {
+    val theme by ThemeUtil.themeState
+    val values = stringArrayResource(id = R.array.theme_values)
+    val names = stringArrayResource(id = R.array.themeNames)
+    return when {
+        ThemeUtil.isUsingDynamicTheme() -> stringResource(id = R.string.title_dynamic_theme)
+        theme == ThemeUtil.THEME_CUSTOM -> stringResource(id = R.string.title_custom_color)
+        theme.startsWith(ThemeUtil.THEME_TRANSLUCENT) -> stringResource(id = R.string.title_theme_translucent)
+        else -> names.getOrNull(values.indexOf(theme)).orEmpty()
+    }
+}
 
 /** Appearance: the theme, night mode, text size and the app's icon, and the glass effects. */
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
@@ -84,17 +91,8 @@ fun CustomSettingsPage(
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_theme),
-                        summary = stringResource(id = R.string.summary_settings_theme),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.Palette,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        onClick = { navigator.navigate(AppThemePageDestination) }
+                        onClick = { navigator.navigate(AppThemePageDestination) },
+                        trailingContent = { PrefsLinkValue(text = currentThemeName()) },
                     )
                 }
             }
@@ -104,15 +102,7 @@ fun CustomSettingsPage(
                         key = "follow_system_night",
                         title = stringResource(id = R.string.title_settings_follow_system_night),
                         defaultChecked = true,
-                    ) {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.BrightnessAuto,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    }
+                    )
                 }
                 prefsItem {
                     val darkThemeValues = stringArrayResource(id = R.array.dark_theme_values)
@@ -121,15 +111,6 @@ fun CustomSettingsPage(
                         key = "dark_theme",
                         title = stringResource(id = R.string.settings_night_mode),
                         defaultValue = ThemeUtil.THEME_AMOLED_DARK,
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.Brightness2,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
                         entries = darkThemeValues.associateWith { value ->
                             darkThemeNames[darkThemeValues.indexOf(
                                 value
@@ -143,18 +124,12 @@ fun CustomSettingsPage(
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_custom_font_size),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.FontDownload,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
                         onClick = {
                             context.goToActivity<AppFontSizeActivity>()
-                        }
+                        },
+                        trailingContent = {
+                            PrefsLinkValue(text = "${(context.appPreferences.fontScale * 100).roundToInt()}%")
+                        },
                     )
                 }
                 prefsItem {
@@ -162,15 +137,6 @@ fun CustomSettingsPage(
                         key = "app_icon",
                         title = stringResource(id = R.string.settings_app_icon),
                         defaultValue = LauncherIcons.DEFAULT_ICON,
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.Apps,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
                         entries = mapOf(
                             LauncherIcons.NEW_ICON to "新图标",
                             LauncherIcons.NEW_ICON_INVERT to "新图标（反色）",
@@ -237,15 +203,6 @@ fun CustomSettingsPage(
                             title = stringResource(id = R.string.title_settings_use_themed_icon),
                             defaultChecked = false,
                             enabled = isCurrentSupportThemedIcon,
-                            leadingIcon = {
-                                LeadingIcon {
-                                    AvatarIcon(
-                                        icon = Icons.Outlined.ColorLens,
-                                        size = Sizes.Small,
-                                        contentDescription = null,
-                                    )
-                                }
-                            },
                             onCheckedChange = {
                                 AppIconUtil.setIcon(isThemed = it)
                             },
@@ -259,17 +216,8 @@ fun CustomSettingsPage(
                     SwitchPref(
                         key = ReduceTransparencyKey.name,
                         title = stringResource(id = R.string.title_settings_reduce_transparency),
-                        summary = stringResource(id = R.string.summary_settings_reduce_transparency),
                         defaultChecked = false,
-                    ) {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.BlurOff,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }

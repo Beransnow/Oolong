@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference that shows a list of entries in a DropDown
@@ -42,7 +43,7 @@ fun DropDownPref(
     onValueChange: ((String) -> Unit)? = null,
     useSelectedAsSummary: Boolean = false,
     dropdownBackgroundColor: Color? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null,
     entries: Map<String, String> = mapOf()

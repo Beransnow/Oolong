@@ -34,6 +34,9 @@ interface PrefsScope {
      * @param items All the prefs in this group
      */
     fun prefsGroup(header: @Composable PrefsScope.() -> Unit, items: PrefsScope.() -> Unit)
+
+    /** Adds a note under the settings before it, outside their block, for what their titles cannot say. */
+    fun prefsFooter(text: @Composable () -> String)
 }
 
 internal class PrefsScopeImpl : PrefsScope {
@@ -50,9 +53,15 @@ internal class PrefsScopeImpl : PrefsScope {
     override fun prefsItem(content: @Composable PrefsScope.() -> Unit) {
         _prefsItems.add(
             PrefsItem(
-                content = { @Composable { content() } }
+                content = { @Composable { content() } },
+                isSetting = true,
             )
         )
+    }
+
+    /** Adds a group's header or the space after it, which are not settings themselves. */
+    private fun addChrome(content: @Composable () -> Unit) {
+        _prefsItems.add(PrefsItem(content = { content }, isSetting = false))
     }
 
     override fun prefsGroup(title: String, items: PrefsScope.() -> Unit) {
@@ -65,14 +74,12 @@ internal class PrefsScopeImpl : PrefsScope {
         // add header index so we know where each group starts
         _headerIndexes.add(this.prefsItems.size)
 
-        this.prefsItem {
-            GroupHeader(title)
-        }
+        addChrome { GroupHeader(title) }
 
         // add all children to hierarchy
         this.apply(items)
 
-        this.prefsItem { Spacer(modifier = Modifier.height(16.dp)) }
+        addChrome { Spacer(modifier = Modifier.height(GroupSpacing)) }
 
         // add totalSize -2/-1 to footerIndexes as that is the index of the last item added and the spacer respectively
         _footerIndexes.add(this.prefsItems.size - 2)
@@ -86,18 +93,20 @@ internal class PrefsScopeImpl : PrefsScope {
         // add header index so we know where each group starts
         _headerIndexes.add(this.prefsItems.size)
 
-        this.prefsItem {
-            header()
-        }
+        addChrome { header() }
 
         // add all children to hierarchy
         this.apply(items)
 
-        this.prefsItem { Spacer(modifier = Modifier.height(16.dp)) }
+        addChrome { Spacer(modifier = Modifier.height(GroupSpacing)) }
 
         // add totalSize -2/-1 to footerIndexes as that is the index of the last item added and the spacer respectively
         _footerIndexes.add(this.prefsItems.size - 2)
         _footerIndexes.add(this.prefsItems.size - 1)
+    }
+
+    override fun prefsFooter(text: @Composable () -> String) {
+        addChrome { PrefsFooter(text()) }
     }
 
     fun getPrefsItem(index: Int): @Composable () -> Unit {
@@ -107,8 +116,12 @@ internal class PrefsScopeImpl : PrefsScope {
 }
 
 internal class PrefsItem(
-    val content: PrefsScope.(index: Int) -> @Composable () -> Unit
+    val content: PrefsScope.(index: Int) -> @Composable () -> Unit,
+    /** Whether it is a setting, which [PrefsScreen] sets in its group's block, rather than a header or a gap. */
+    val isSetting: Boolean,
 )
+
+private val GroupSpacing = 8.dp
 
 @Composable
 fun depend(key: String): Boolean {

@@ -2,13 +2,14 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChevron
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsListItem
 import com.huanchengfly.tieba.post.ui.common.prefs.ifNotNullThen
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 //TODO add single line title?
 
@@ -26,7 +27,8 @@ import com.huanchengfly.tieba.post.ui.common.prefs.ifNotNullThen
  * @param textColor Text colour of the [title] and [summary]
  * @param enabled If false, this Pref cannot be checked/unchecked
  * @param leadingIcon Icon which is positioned at the start of the Pref
- * @param trailingContent Composable content which is positioned at the end of the Pref
+ * @param trailingContent Composable content which is positioned at the end of the Pref; an arrow
+ * when the Pref opens something
  */
 @ExperimentalMaterialApi
 @Composable
@@ -37,10 +39,10 @@ fun TextPref(
     darkenOnDisable: Boolean = true,
     minimalHeight: Boolean = false,
     onClick: (() -> Unit)? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = onClick != null,
     leadingIcon: @Composable (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null
+    trailingContent: @Composable (() -> Unit)? = (@Composable { PrefsChevron() }).takeIf { onClick != null }
 ) {
     PrefsListItem(
         text = { Text(title) },

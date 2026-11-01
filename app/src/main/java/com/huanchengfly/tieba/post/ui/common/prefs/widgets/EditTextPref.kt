@@ -29,6 +29,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference which shows a TextField in a Dialog
@@ -60,7 +61,7 @@ fun EditTextPref(
     onValueSaved: ((String) -> Unit) = {},
     onValueChange: ((String) -> Unit) = {},
     dialogBackgroundColor: Color = MaterialTheme.colors.background,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     leadingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,
 ) {

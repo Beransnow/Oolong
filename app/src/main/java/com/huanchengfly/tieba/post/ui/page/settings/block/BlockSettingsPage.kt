@@ -2,10 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.settings.block
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.HideSource
-import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,13 +14,10 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.page.destinations.BlockListPageDestination
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
@@ -55,15 +48,6 @@ fun BlockSettingsPage(
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_block_list),
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.Block,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
                     onClick = { navigator.navigate(BlockListPageDestination) }
                 )
             }
@@ -72,31 +56,13 @@ fun BlockSettingsPage(
                     key = "hideBlockedContent",
                     title = stringResource(id = R.string.settings_hide_blocked_content),
                     defaultChecked = false
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.HideSource,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
+                )
             }
             prefsItem {
                 SwitchPref(
                     key = "blockVideo",
                     title = stringResource(id = R.string.settings_block_video),
-                    summary = stringResource(id = R.string.settings_block_video_summary),
                     defaultChecked = false,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.VideocamOff,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    }
                 )
             }
         }

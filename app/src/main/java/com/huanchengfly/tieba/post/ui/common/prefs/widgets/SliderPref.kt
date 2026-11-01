@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -17,6 +16,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.roundToDP
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 //todo add decimal places as param?
 
@@ -47,7 +47,7 @@ fun SliderPref(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     showValue: Boolean = false,
     steps: Int = 0,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null,
 ) {

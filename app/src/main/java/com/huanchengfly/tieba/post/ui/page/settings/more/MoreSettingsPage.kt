@@ -6,10 +6,9 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.OfflineBolt
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -18,30 +17,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.dependNot
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
+import androidx.compose.material.Text
+import androidx.compose.runtime.collectAsState
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
+import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import kotlinx.coroutines.flow.map
+import android.content.pm.verify.domain.DomainVerificationManager
+import android.content.pm.verify.domain.DomainVerificationUserState
+import androidx.annotation.RequiresApi
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
 
 @OptIn(ExperimentalMaterialApi::class)
 @Destination
@@ -63,6 +68,8 @@ fun MoreSettingsPage(
     ) { paddingValues ->
         val snackbarHostState = LocalSnackbarHostState.current
         val context = LocalContext.current
+        val linksGroup = stringResource(id = R.string.settings_group_links)
+        val storageGroup = stringResource(id = R.string.settings_group_storage)
         var cacheSize by remember { mutableStateOf("0.0B") }
         LaunchedEffect(Unit) {
             thread {
@@ -75,98 +82,125 @@ fun MoreSettingsPage(
             modifier = Modifier.fillMaxSize(),
             contentPadding = paddingValues,
         ) {
-            prefsItem {
-                SwitchPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = ImageVector.vectorResource(id = R.drawable.ic_chrome),
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    key = "use_webview",
-                    title = stringResource(id = R.string.title_use_webview),
-                    defaultChecked = true,
-                    summary = {
-                        if (it) stringResource(id = R.string.tip_use_webview_on)
-                        else stringResource(id = R.string.tip_use_webview)
-                    },
-                )
-            }
-            prefsItem {
-                SwitchPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = ImageVector.vectorResource(id = R.drawable.ic_today),
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    enabled = dependNot(key = "use_webview"),
-                    key = "use_custom_tabs",
-                    title = stringResource(id = R.string.title_use_custom_tabs),
-                    defaultChecked = true,
-                    summary = {
-                        if (it) stringResource(id = R.string.tip_use_custom_tab_on)
-                        else stringResource(id = R.string.tip_use_custom_tab)
-                    },
-                )
+            prefsGroup(linksGroup) {
+                prefsItem { LinkOpeningPref() }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // Links to an unverified domain only open in the app once the user allows them
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem { TiebaLinksPref() }
+                }
+                prefsFooter { stringResource(id = R.string.tip_tieba_links) }
+            }
+            prefsGroup(storageGroup) {
                 prefsItem {
                     TextPref(
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = Icons.Outlined.Link,
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        title = stringResource(id = R.string.title_open_supported_links),
-                        summary = stringResource(id = R.string.summary_open_supported_links),
+                        enabled = true,
+                        title = stringResource(id = R.string.title_clear_picture_cache),
                         onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(
-                                        Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                                        Uri.parse("package:${context.packageName}")
-                                    )
-                                )
+                            coroutineScope.launch {
+                                ImageCacheUtil.clearImageAllCache(context)
+                                cacheSize = "0.0B"
+                                snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
                             }
                         },
+                        trailingContent = { Text(text = cacheSize) },
                     )
                 }
-            }
-            prefsItem {
-                TextPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.OfflineBolt,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    enabled = true,
-                    title = stringResource(id = R.string.title_clear_picture_cache),
-                    onClick = {
-                        coroutineScope.launch {
-                            ImageCacheUtil.clearImageAllCache(context)
-                            cacheSize = "0.0B"
-                            snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
-                        }
-                    },
-                    summary = stringResource(id = R.string.tip_cache, cacheSize)
-                )
             }
         }
     }
 }
+
+/**
+ * How links outside Tieba open: in the app's own browser, in Custom Tabs, or in the system's
+ * browser. Tieba's own links always open in the app.
+ */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun LinkOpeningPref() {
+    val context = LocalContext.current
+    val dataStore = context.dataStore
+    val coroutineScope = rememberCoroutineScope()
+    val useWebView by remember { dataStore.data.map { it[UseWebView] ?: true } }.collectAsState(initial = true)
+    val useCustomTabs by remember { dataStore.data.map { it[UseCustomTabs] ?: true } }.collectAsState(initial = true)
+    val options = listOf(
+        stringResource(id = R.string.link_opening_webview),
+        stringResource(id = R.string.link_opening_custom_tabs),
+        stringResource(id = R.string.link_opening_browser),
+    )
+    val current = when {
+        useWebView -> 0
+        useCustomTabs -> 1
+        else -> 2
+    }
+    ClickMenu(
+        menuContent = {
+            options.forEachIndexed { index, name ->
+                PrefsChoiceItem(name = name, selected = index == current) {
+                    coroutineScope.launch {
+                        dataStore.edit {
+                            it[UseWebView] = index == 0
+                            it[UseCustomTabs] = index == 1
+                        }
+                    }
+                    dismiss()
+                }
+            }
+        },
+    ) {
+        TextPref(
+            title = stringResource(id = R.string.title_link_opening),
+            enabled = true,
+            trailingContent = { PrefsChoiceValue(text = options[current]) },
+        )
+    }
+}
+
+private val UseWebView = booleanPreferencesKey("use_webview")
+private val UseCustomTabs = booleanPreferencesKey("use_custom_tabs")
+
+/**
+ * Whether Tieba's links open in the app or in a browser. Links to an unverified domain only open
+ * in the app once the user allows them in the system's settings, which the row opens; the answer
+ * is read again on returning.
+ */
+@RequiresApi(Build.VERSION_CODES.S)
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun TiebaLinksPref() {
+    val context = LocalContext.current
+    var opensInApp by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        val state = context.getSystemService(DomainVerificationManager::class.java)
+            ?.getDomainVerificationUserState(context.packageName)
+        opensInApp = state != null && state.isLinkHandlingAllowed &&
+            state.hostToStateMap[TiebaHost] in setOf(
+                DomainVerificationUserState.DOMAIN_STATE_SELECTED,
+                DomainVerificationUserState.DOMAIN_STATE_VERIFIED,
+            )
+        onPauseOrDispose {}
+    }
+    TextPref(
+        title = stringResource(id = R.string.title_tieba_links),
+        onClick = {
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                )
+            }
+        },
+        trailingContent = {
+            PrefsExternal(
+                text = stringResource(
+                    id = if (opensInApp) R.string.value_tieba_links_app else R.string.value_tieba_links_browser
+                )
+            )
+        },
+    )
+}
+
+private const val TiebaHost = "tieba.baidu.com"

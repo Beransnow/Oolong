@@ -1,41 +1,45 @@
 package com.huanchengfly.tieba.post.ui.common.prefs
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
+/** A group's title: small grey text over its settings, lined up with their text. */
 @Composable
 fun GroupHeader(
     title: String,
     // Grey, like the app's other labels: the accent is kept for states such as switches
     color: Color = ExtendedTheme.colors.textSecondary
 ) {
-    Box(
-        Modifier
-            .padding(
-                start = StartPadding,
-            )
-            .fillMaxWidth(),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Text(
-            title,
-            color = color,
-            fontSize = LocalTextStyle.current.fontSize.times(FontSizeMultiplier),
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+    Text(
+        title,
+        color = color,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+    )
 }
 
-
-private val StartPadding = 16.dp
-private const val FontSizeMultiplier = 0.85f
+/** A note under a group of settings, lined up with their text. */
+@Composable
+fun PrefsFooter(text: String) {
+    Text(
+        text,
+        color = ExtendedTheme.colors.textSecondary,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 8.dp),
+    )
+}

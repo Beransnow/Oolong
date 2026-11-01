@@ -1,13 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.post
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
-import androidx.compose.material.icons.outlined.ImageSearch
-import androidx.compose.material.icons.outlined.SecurityUpdateWarning
-import androidx.compose.material.icons.outlined.SpeakerNotesOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -20,13 +14,10 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
-import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -40,8 +31,6 @@ fun PostSettingsPage(
 ) {
     val context = LocalContext.current
     val pickerNotSupported = stringResource(id = R.string.summary_photo_picker_not_supported)
-    val pickerInApp = stringResource(id = R.string.summary_do_not_use_photo_picker)
-    val pickerSystem = stringResource(id = R.string.summary_use_photo_picker)
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
@@ -65,30 +54,14 @@ fun PostSettingsPage(
                     key = "postOrReplyWarning",
                     title = stringResource(id = R.string.title_post_or_reply_warning),
                     defaultChecked = true,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.SecurityUpdateWarning,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
+                )
             }
             prefsItem {
                 SwitchPref(
                     key = "hideReply",
                     title = stringResource(id = R.string.title_hide_reply),
                     defaultChecked = false,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.SpeakerNotesOff,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
+                )
             }
             prefsItem {
                 ListPref(
@@ -101,40 +74,15 @@ fun PostSettingsPage(
                     ),
                     useSelectedAsSummary = true,
                     defaultValue = "2",
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.AutoMirrored.Outlined.BrandingWatermark,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
                 )
             }
             prefsItem {
                 SwitchPref(
                     key = "doNotUsePhotoPicker",
                     title = stringResource(id = R.string.title_do_not_use_photo_picker),
-                    summary = {
-                        if (!isPhotoPickerAvailable()) {
-                            pickerNotSupported
-                        } else if (it) {
-                            pickerInApp
-                        } else {
-                            pickerSystem
-                        }
-                    },
+                    // Only said when there is no system picker to choose instead
+                    summary = { pickerNotSupported.takeUnless { isPhotoPickerAvailable() } },
                     defaultChecked = false,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.ImageSearch,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
                     enabled = isPhotoPickerAvailable()
                 )
             }

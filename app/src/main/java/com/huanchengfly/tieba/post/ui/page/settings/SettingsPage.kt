@@ -2,19 +2,24 @@ package com.huanchengfly.tieba.post.ui.page.settings
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.Icon
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
@@ -44,16 +49,17 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+/** An entry's icon on the settings hub: a line icon in the text's colour, as on the "me" tab. */
 @Composable
 internal fun LeadingIcon(
     content: @Composable () -> Unit
 ) {
-    CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.primary) {
+    CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.text) {
         content()
-        Spacer(modifier = Modifier.width(56.dp))
     }
 }
 
+/** The account at the top of the hub: who is logged in, leading to their accounts, or to logging in. */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NowAccountItem(
@@ -63,37 +69,29 @@ fun NowAccountItem(
     val navigator = LocalNavigator.current
     if (account != null) {
         TextPref(
-            title = stringResource(id = R.string.title_account_manage),
-            summary = stringResource(id = R.string.summary_now_account, account.nameShow ?: account.name),
-            enabled = true,
+            title = account.nameShow ?: account.name,
             onClick = { navigator.navigate(AccountManagePageDestination) },
             leadingIcon = {
-                LeadingIcon {
-                    Avatar(
-                        data = StringUtil.getAvatarUrl(account.portrait),
-                        size = Sizes.Small,
-                        contentDescription = null
-                    )
-                }
+                Avatar(
+                    data = StringUtil.getAvatarUrl(account.portrait),
+                    size = Sizes.Small,
+                    contentDescription = null
+                )
             },
             modifier = modifier,
         )
     } else {
         TextPref(
-            title = stringResource(id = R.string.title_account_manage),
-            summary = stringResource(id = R.string.summary_not_logged_in),
-            enabled = true,
+            title = stringResource(id = R.string.title_login),
             onClick = { navigator.navigate(LoginPageDestination) },
             leadingIcon = {
-                LeadingIcon {
-                    AvatarIcon(
-                        icon = Icons.Rounded.AccountCircle,
-                        size = Sizes.Small,
-                        contentDescription = stringResource(id = R.string.title_new_account),
-                        color = ExtendedTheme.colors.onChip,
-                        backgroundColor = ExtendedTheme.colors.chip,
-                    )
-                }
+                AvatarIcon(
+                    icon = Icons.Rounded.AccountCircle,
+                    size = Sizes.Small,
+                    contentDescription = stringResource(id = R.string.title_new_account),
+                    color = ExtendedTheme.colors.onChip,
+                    backgroundColor = ExtendedTheme.colors.background,
+                )
             },
             modifier = modifier,
         )
@@ -124,114 +122,60 @@ fun SettingsPage(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = it,
             ) {
-                prefsItem {
-                    NowAccountItem(account = LocalAccount.current)
+                // Untitled groups: the account, how the app looks and reads, what it hides and
+                // does by itself, and the rest
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem {
+                        NowAccountItem(account = LocalAccount.current)
+                    }
                 }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_custom),
-                        summary = stringResource(id = R.string.summary_settings_custom),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_brush_black_24dp),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = { navigator.navigate(CustomSettingsPageDestination) }
-                    )
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_settings_custom),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.Palette, contentDescription = null) } },
+                            onClick = { navigator.navigate(CustomSettingsPageDestination) }
+                        )
+                    }
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_settings_read_habit),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.AutoStories, contentDescription = null) } },
+                            onClick = { navigator.navigate(HabitSettingsPageDestination) }
+                        )
+                    }
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_settings_post),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.EditNote, contentDescription = null) } },
+                            onClick = { navigator.navigate(PostSettingsPageDestination) }
+                        )
+                    }
                 }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_read_habit),
-                        summary = stringResource(id = R.string.summary_settings_habit),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_dashboard_customize_black_24),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = { navigator.navigate(HabitSettingsPageDestination) }
-                    )
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_block_settings),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.Block, contentDescription = null) } },
+                            onClick = { navigator.navigate(BlockSettingsPageDestination) }
+                        )
+                    }
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_oksign),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.TaskAlt, contentDescription = null) } },
+                            onClick = { navigator.navigate(OKSignSettingsPageDestination) }
+                        )
+                    }
                 }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_post),
-                        summary = stringResource(id = R.string.summary_settings_post),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_round_create),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = { navigator.navigate(PostSettingsPageDestination) }
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_block_settings),
-                        summary = stringResource(id = R.string.summary_block_settings),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_block),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = { navigator.navigate(BlockSettingsPageDestination) }
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_oksign),
-                        summary = stringResource(id = R.string.summary_settings_oksign),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_rocket_launch_black_24),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = {
-                            navigator.navigate(OKSignSettingsPageDestination)
-                        }
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_settings_more),
-                        summary = stringResource(id = R.string.summary_settings_more),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_more_horiz_black_24),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = {
-                            navigator.navigate(MoreSettingsPageDestination)
-                        }
-                    )
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.title_settings_more),
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.MoreHoriz, contentDescription = null) } },
+                            onClick = { navigator.navigate(MoreSettingsPageDestination) }
+                        )
+                    }
                 }
             }
         }

@@ -1,15 +1,43 @@
 package com.huanchengfly.tieba.post.ui.common.prefs
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentColor
+import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.UnfoldMore
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 
+/**
+ * A setting's row: its title over an optional summary, an icon before them on the settings hub
+ * only, and on the end whatever sets it (a switch, the chosen value) or an arrow to go further.
+ */
 @Composable
 @ExperimentalMaterialApi
 fun PrefsListItem(
@@ -19,141 +47,114 @@ fun PrefsListItem(
     icon: @Composable (() -> Unit)? = null,
     secondaryText: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     minimalHeight: Boolean = false,
     text: @Composable () -> Unit
 ) {
-
-    val typography = MaterialTheme.typography
-
-    val styledIcon = @Composable {
-        val alpha = when {
-            enabled || !darkenOnDisable -> ContentAlpha.high
-            else -> ContentAlpha.disabled
-        }
-        CompositionLocalProvider(LocalContentAlpha provides alpha) {
-            icon?.invoke()
-        }
-    }
-
-    val styledText = applyTextStyle(
-        typography.subtitle1,
-        textColor,
-        when {
-            enabled || !darkenOnDisable -> ContentAlpha.high
-            else -> ContentAlpha.disabled
-        },
-        text
-    )!!
-    val styledSecondaryText = applyTextStyle(
-        typography.body2,
-        textColor,
-        when {
-            enabled || !darkenOnDisable -> ContentAlpha.medium
-            else -> ContentAlpha.disabled
-        },
-        secondaryText
-    )
-    val styledTrailing = applyTextStyle(
-        typography.caption,
-        textColor,
-        when {
-            enabled || !darkenOnDisable -> ContentAlpha.high
-            else -> ContentAlpha.disabled
-        },
-        trailing
-    )
-
-    AnyLine.CustomListItem(
-        modifier = modifier,
-        minimalHeight,
-        styledIcon,
-        styledSecondaryText,
-        styledTrailing,
-        styledText
-    )
-}
-
-private object AnyLine {
-    private val MinHeight = 48.dp
-    private val MinHeightSmaller = 32.dp
-    private val IconMinPaddedWidth = 40.dp
-    private val ContentPadding = 16.dp
-    private val VerticalPadding = 16.dp
-    private val SingleLinePadding = 16.dp //used when no secondary text is supplied
-
-    @Composable
-    fun CustomListItem(
-        modifier: Modifier = Modifier,
-        minimalHeight: Boolean = true,
-        icon: @Composable (() -> Unit)? = null,
-        secondaryText: (@Composable (() -> Unit))? = null,
-        trailing: @Composable (() -> Unit)? = null,
-        text: @Composable (() -> Unit)
+    val alpha = if (enabled || !darkenOnDisable) 1f else DisabledAlpha
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = if (minimalHeight) 32.dp else 52.dp)
+            .padding(horizontal = 16.dp, vertical = if (secondaryText == null) 14.dp else 12.dp)
+            .alpha(alpha),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier
-                .heightIn(min = if (minimalHeight) MinHeightSmaller else MinHeight)
-                .padding(
-                    start = ContentPadding,
-                    end = ContentPadding,
-                    top = when {
-                        secondaryText == null && !minimalHeight -> SingleLinePadding
-                        else -> VerticalPadding
-                    },
-                    bottom = when {
-                        minimalHeight -> 0.dp
-                        secondaryText == null -> SingleLinePadding
-                        else -> VerticalPadding
-                    }
-                )
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            if (icon != null) {
-                val minSize = IconMinPaddedWidth
-                Box(
-                    Modifier.sizeIn(minWidth = minSize, minHeight = minSize),
-                    contentAlignment = Alignment.CenterStart
-                ) { icon() }
+        if (icon != null) {
+            CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.text) {
+                Box(modifier = Modifier.sizeIn(minWidth = 24.dp, minHeight = 24.dp), contentAlignment = Alignment.Center) { icon() }
             }
-
-            Column(
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.weight(1f)
-            ) {
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            ProvideTextStyle(TextStyle(color = textColor, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.Medium)) {
                 text()
-                secondaryText?.invoke()
             }
-
-            if (trailing != null) {
-                Spacer(modifier = Modifier.width(24.dp))
-                trailing.invoke()
+            if (secondaryText != null) {
+                ProvideTextStyle(TextStyle(color = ExtendedTheme.colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp)) {
+                    secondaryText()
+                }
+            }
+        }
+        if (trailing != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            ProvideTextStyle(TextStyle(color = ExtendedTheme.colors.textSecondary, fontSize = 14.sp)) {
+                CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.textSecondary) {
+                    trailing()
+                }
             }
         }
     }
 }
 
-private fun applyTextStyle(
-    textStyle: TextStyle,
-    textColor: Color,
-    contentAlpha: Float,
-    content: @Composable (() -> Unit)?
-): @Composable (() -> Unit)? {
-    if (content == null) return null
-    return {
-        val newTextStyle = textStyle.copy(
-            color = textColor.copy(alpha = contentAlpha)
+/** The arrow on a row that opens another page. */
+@Composable
+fun PrefsChevron() {
+    Icon(
+        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+        contentDescription = null,
+        tint = ExtendedTheme.colors.textSecondary.copy(alpha = 0.6f),
+        modifier = Modifier.size(20.dp),
+    )
+}
+
+/** A setting's current value with the arrow to the page that changes it. */
+@Composable
+fun PrefsLinkValue(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = text, maxLines = 1)
+        Spacer(modifier = Modifier.width(4.dp))
+        PrefsChevron()
+    }
+}
+
+/** The mark on a row that leaves the app, for a web page or the system's settings. */
+@Composable
+fun PrefsExternal(text: String? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (text != null) {
+            Text(text = text, maxLines = 1)
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+            contentDescription = null,
+            tint = ExtendedTheme.colors.textSecondary.copy(alpha = 0.6f),
+            modifier = Modifier.size(16.dp),
         )
-        CompositionLocalProvider(
-            LocalContentAlpha provides contentAlpha,
-            LocalTextStyle provides newTextStyle
-        ) {
-            content()
+    }
+}
+
+/** One option in a choice's menu, checked when it is the chosen one. */
+@Composable
+fun PrefsChoiceItem(name: String, selected: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(onClick = onClick) {
+        Text(text = name, modifier = Modifier.weight(1f))
+        if (selected) {
+            Spacer(modifier = Modifier.width(16.dp))
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = ExtendedTheme.colors.text,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
 
+/** A choice's value on the end of its row, with the up-and-down mark of a menu of values. */
+@Composable
+fun PrefsChoiceValue(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = text, maxLines = 1)
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            imageVector = Icons.Rounded.UnfoldMore,
+            contentDescription = null,
+            tint = ExtendedTheme.colors.textSecondary.copy(alpha = 0.6f),
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
 
-
+private const val DisabledAlpha = 0.38f

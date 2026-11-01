@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import android.util.Log
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +25,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference which shows a TextField in a Dialog
@@ -55,7 +55,7 @@ fun TimePickerPerf(
     defaultValue: String = "07:00",
     onValueSaved: (String) -> Unit = {},
     onValueChange: (String) -> Unit = {},
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     leadingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,
 ) {
@@ -103,6 +103,7 @@ fun TimePickerPerf(
         modifier = modifier,
         summary = summary(value),
         textColor = textColor,
+        trailingContent = { Text(text = value) },
         enabled = enabled,
         leadingIcon = leadingIcon,
         onClick = { if (enabled) dialogState.show() },

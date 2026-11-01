@@ -21,6 +21,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference that shows a list of entries in a Dialog where multiple entries can be selected at one time.
@@ -47,7 +48,7 @@ fun MultiSelectListPref(
     defaultValue: Set<String> = setOf(),
     onValuesChange: ((Set<String>) -> Unit)? = null,
     dialogBackgroundColor: Color = MaterialTheme.colors.surface,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     entries: Map<String, String> = mapOf() //TODO: Change to List?
 ) {

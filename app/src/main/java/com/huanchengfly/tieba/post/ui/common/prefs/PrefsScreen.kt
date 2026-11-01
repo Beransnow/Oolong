@@ -4,6 +4,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -45,21 +51,39 @@ fun PrefsScreen(
                 contentPadding = contentPadding,
             ) {
                 items(prefsScope.prefsItems.size) { index ->
-                    prefsScope.getPrefsItem(index)()
-
-                    if (dividerThickness != 0.dp
-                        && index != prefsScope.prefsItems.size - 1
-                        && !prefsScope.headerIndexes.contains(index)
-                        && !prefsScope.headerIndexes.contains(index + 1)
-                        && !prefsScope.footerIndexes.contains(index)
+                    val items = prefsScope.prefsItems
+                    val item = items[index]
+                    if (!item.isSetting) {
+                        prefsScope.getPrefsItem(index)()
+                        return@items
+                    }
+                    // Settings next to each other form one group, set apart by headers and gaps, and sit
+                    // in one grey block
+                    val first = index == 0 || !items[index - 1].isSetting
+                    val last = index == items.lastIndex || !items[index + 1].isSetting
+                    val shape = RoundedCornerShape(
+                        topStart = if (first) CardRadius else 0.dp,
+                        topEnd = if (first) CardRadius else 0.dp,
+                        bottomStart = if (last) CardRadius else 0.dp,
+                        bottomEnd = if (last) CardRadius else 0.dp,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(top = if (first && index == 0) 8.dp else 0.dp)
+                            .clip(shape)
+                            .background(ExtendedTheme.colors.chip)
+                            .padding(top = if (first) 4.dp else 0.dp, bottom = if (last) 4.dp else 0.dp)
                     ) {
-                        Divider(
-                            thickness = dividerThickness,
-                            indent = dividerIndent
-                        )
+                        prefsScope.getPrefsItem(index)()
+                    }
+                    if (dividerThickness != 0.dp && !last) {
+                        Divider(thickness = dividerThickness, indent = dividerIndent)
                     }
                 }
             }
         }
     }
 }
+
+private val CardRadius = 16.dp

@@ -13,6 +13,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
+import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
@@ -20,6 +23,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference that shows a list of entries in a Dialog where a single entry can be selected at one time.
@@ -50,7 +54,7 @@ fun ListPref(
     defaultValue: String? = null,
     onValueChange: ((String) -> Unit)? = null,
     useSelectedAsSummary: Boolean = false,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null,
     entries: Map<String, String> = emptyMap(), //TODO: Change to List?
@@ -80,20 +84,47 @@ fun ListPref(
         }
     }
 
+    val chosen = entries[selected] ?: "Not Set"
+    if (icons.isEmpty()) {
+        // Chosen in a menu where it is tapped, the way a forum's sort is
+        val choice = @Composable {
+            TextPref(
+                title = title,
+                summary = summary.takeUnless { useSelectedAsSummary },
+                leadingIcon = leadingIcon,
+                modifier = modifier,
+                textColor = textColor,
+                enabled = enabled,
+                trailingContent = { PrefsChoiceValue(text = chosen) },
+            )
+        }
+        if (enabled) {
+            ClickMenu(
+                menuContent = {
+                    entries.forEach { (value, name) ->
+                        PrefsChoiceItem(name = name, selected = value == selected) {
+                            if (value != selected) edit(value to name)
+                            dismiss()
+                        }
+                    }
+                },
+                content = choice,
+            )
+        } else {
+            choice()
+        }
+        return
+    }
     TextPref(
         title = title,
-        summary = when {
-            useSelectedAsSummary && selected != null -> entries[selected]
-            useSelectedAsSummary && selected == null -> "Not Set"
-            else -> summary
-        },
+        summary = summary.takeUnless { useSelectedAsSummary },
         leadingIcon = leadingIcon,
         modifier = modifier,
         textColor = textColor,
-        enabled = true,
-        onClick = { if (enabled) dialogState.show() },
+        enabled = enabled,
+        onClick = { dialogState.show() },
+        trailingContent = { PrefsChoiceValue(text = chosen) },
     )
-
     val itemTitle = remember(entries) { entries.map { it.value }.toImmutableList() }
     val itemValues = remember(entries) { entries.map { it.key }.toImmutableList() }
 

@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import kotlinx.coroutines.launch
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Simple preference with a trailing [Checkbox]
@@ -35,7 +36,7 @@ fun CheckBoxPref(
     summary: String? = null,
     defaultChecked: Boolean = false,
     onCheckedChange: ((Boolean) -> Unit)? = null,
-    textColor: Color = MaterialTheme.colors.onBackground,
+    textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null
 ) {
