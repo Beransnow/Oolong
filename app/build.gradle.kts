@@ -273,7 +273,6 @@ dependencies {
     implementation(libs.retrofit.converter.wire)
 
     implementation(libs.gson)
-    implementation(libs.litepal)
     implementation(libs.jaredrummler.colorpicker)
 
     implementation(libs.matisse)

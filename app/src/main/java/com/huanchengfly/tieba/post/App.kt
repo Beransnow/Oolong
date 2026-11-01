@@ -44,7 +44,6 @@ import com.huanchengfly.tieba.post.utils.Util
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.HiltAndroidApp
-import org.litepal.LitePal
 import kotlin.concurrent.thread
 
 
@@ -81,7 +80,6 @@ class App : Application(), SketchFactory {
         // Before ClientUtils, whose sync request reads the install times set here
         Config.init(this)
         ClientUtils.init(this)
-        LitePal.initialize(this)
         AccountUtil.init(this)
         AppIconUtil.setIcon()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
