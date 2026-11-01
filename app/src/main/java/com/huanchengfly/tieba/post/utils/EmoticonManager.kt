@@ -21,26 +21,22 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newFileUri
-import com.github.panpf.sketch.fetch.newResourceUri
-import com.github.panpf.sketch.request.LoadRequest
-import com.github.panpf.sketch.request.LoadResult
-import com.github.panpf.sketch.request.execute
+import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.fromJson
 import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.toJson
+import java.io.File
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.lang.ref.WeakReference
 
 @Composable
 fun calcLineHeightPx(style: TextStyle): Int {
@@ -138,7 +134,7 @@ object EmoticonManager {
                 ),
                 children = {
                     AsyncImage(
-                        imageUri = rememberEmoticonUri(id = id),
+                        model = rememberEmoticon(id = id),
                         contentDescription = stringResource(
                             id = R.string.emoticon,
                             getEmoticonNameById(id) ?: ""
@@ -267,17 +263,14 @@ object EmoticonManager {
         ).also { drawableCache[id] = it }
     }
 
-    fun getEmoticonUri(context: Context, id: String?): String {
-        id ?: return ""
+    /** The emoticon's image, bundled or downloaded, or null when it has neither. */
+    private fun getEmoticon(context: Context, id: String?): Any? {
+        id ?: return null
         val resId = getEmoticonResId(context, id)
         if (resId != 0) {
-            return newResourceUri(resId)
+            return resId
         }
-        val emoticonFile = getEmoticonFile(id)
-        if (!emoticonFile.exists()) {
-            return ""
-        }
-        return newFileUri(emoticonFile)
+        return getEmoticonFile(id).takeIf { it.exists() }
     }
 
     @Composable
@@ -288,9 +281,9 @@ object EmoticonManager {
     }
 
     @Composable
-    fun rememberEmoticonUri(id: String): String {
+    fun rememberEmoticon(id: String): Any? {
         val context = LocalContext.current
-        return remember(id) { getEmoticonUri(context, id) }
+        return remember(id) { getEmoticon(context, id) }
     }
 
     private suspend fun fetchEmoticons(context: Context) {
@@ -298,16 +291,9 @@ object EmoticonManager {
             val resId = getEmoticonResId(context, it)
             val emoticonFile = getEmoticonFile(it)
             if (resId == 0 && !emoticonFile.exists()) {
-                val loadEmoticonResult = LoadRequest(
-                    context,
-                    "http://static.tieba.baidu.com/tb/editor/images/client/$it.png"
-                ).execute()
-                if (loadEmoticonResult is LoadResult.Success) {
-                    ImageUtil.bitmapToFile(
-                        loadEmoticonResult.bitmap,
-                        emoticonFile,
-                        Bitmap.CompressFormat.PNG
-                    )
+                val bitmap = context.loadBitmap("http://static.tieba.baidu.com/tb/editor/images/client/$it.png")
+                if (bitmap != null) {
+                    ImageUtil.bitmapToFile(bitmap, emoticonFile, Bitmap.CompressFormat.PNG)
                 }
             }
         }

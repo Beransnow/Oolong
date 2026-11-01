@@ -24,25 +24,21 @@ import android.widget.Toast
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.github.panpf.sketch.disposeDisplay
-import com.github.panpf.sketch.request.Depth
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DownloadRequest
-import com.github.panpf.sketch.request.DownloadResult
-import com.github.panpf.sketch.request.enqueue
-import com.github.panpf.sketch.request.execute
-import com.github.panpf.sketch.transform.CircleCropTransformation
-import com.github.panpf.sketch.transform.RoundedCornersTransformation
+import coil3.dispose
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.crossfade
+import coil3.request.placeholder
+import coil3.request.transformations
+import coil3.transform.CircleCropTransformation
+import coil3.transform.RoundedCornersTransformation
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.components.images.downloadImage
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -51,6 +47,10 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object ImageUtil {
     /**
@@ -247,9 +247,9 @@ object ImageUtil {
     private fun downloadForShare(context: Context, url: String?, taskCallback: ShareTaskCallback) {
         if (url == null) return
         CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
-                val inputStream = downloadResult.data.data.newInputStream()
+            val image = context.downloadImage(url)
+            if (image != null) {
+                val inputStream = image.inputStream()
                 val pictureFolder = File(context.cacheDir, ".shareTemp")
                 if (pictureFolder.exists() || pictureFolder.mkdirs()) {
                     val fileName = "share_" + System.currentTimeMillis()
@@ -313,18 +313,19 @@ object ImageUtil {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return
         }
+        url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
+            val image = context.downloadImage(url)
+            if (image != null) {
                 var mimeType = "image/jpeg"
                 var fileName = URLUtil.guessFileName(url, null, mimeType)
-                downloadResult.data.data.newInputStream().use { inputStream ->
+                image.inputStream().use { inputStream ->
                     if (isGifFile(inputStream)) {
                         mimeType = "image/gif"
                         fileName = FileUtil.changeFileExtension(fileName, ".gif")
                     }
                 }
-                downloadResult.data.data.newInputStream().use { inputStream ->
+                image.inputStream().use { inputStream ->
                     val relativePath =
                         Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
                     val values = ContentValues().apply {
@@ -363,16 +364,17 @@ object ImageUtil {
     }
 
     private fun downloadBelowQ(context: Context, url: String?) {
+        url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
+            val image = context.downloadImage(url)
+            if (image != null) {
                 var fileName = URLUtil.guessFileName(url, null, "image/jpeg")
-                downloadResult.data.data.newInputStream().use { inputStream ->
+                image.inputStream().use { inputStream ->
                     if (isGifFile(inputStream)) {
                         fileName = FileUtil.changeFileExtension(fileName, ".gif")
                     }
                 }
-                downloadResult.data.data.newInputStream().use { inputStream ->
+                image.inputStream().use { inputStream ->
                     val pictureFolder =
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                     val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
@@ -443,7 +445,7 @@ object ImageUtil {
     }
 
     fun clear(imageView: ImageView?) {
-        imageView?.disposeDisplay()
+        imageView?.dispose()
     }
 
     fun getPlaceHolder(context: Context, radius: Int): Drawable {
@@ -484,39 +486,36 @@ object ImageUtil {
             imageView.clearColorFilter()
         }
         val radius = getRadiusDp(imageView.context).toFloat()
-        val requestBuilder =
-            if (skipNetworkCheck ||
+        val fromNetwork = skipNetworkCheck ||
                 type == LOAD_TYPE_AVATAR ||
                 imageLoadSettings == SETTINGS_ALL_ORIGIN ||
                 imageLoadSettings == SETTINGS_SMART_ORIGIN ||
                 (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(imageView.context))
-            ) {
-                imageView.setTag(R.id.image_load_tag, true)
-                DisplayRequest.Builder(imageView.context, url)
-            } else {
-                imageView.setTag(R.id.image_load_tag, false)
-                DisplayRequest.Builder(imageView.context, url).depth(Depth.LOCAL)
+        imageView.setTag(R.id.image_load_tag, fromNetwork)
+        imageView.load(url) {
+            if (!fromNetwork) {
+                networkCachePolicy(CachePolicy.DISABLED)
             }
-        when (type) {
-            LOAD_TYPE_SMALL_PIC -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, radius))
-                .transformations(RoundedCornersTransformation(radius.dpToPxFloat()))
+            when (type) {
+                LOAD_TYPE_SMALL_PIC -> {
+                    placeholder(getPlaceHolder(imageView.context, radius))
+                    transformations(RoundedCornersTransformation(radius.dpToPxFloat()))
+                }
 
-            LOAD_TYPE_AVATAR -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 6f))
-                .transformations(RoundedCornersTransformation(6f.dpToPxFloat()))
+                LOAD_TYPE_AVATAR -> {
+                    placeholder(getPlaceHolder(imageView.context, 6f))
+                    transformations(RoundedCornersTransformation(6f.dpToPxFloat()))
+                }
 
-            LOAD_TYPE_NO_RADIUS -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 0f))
+                LOAD_TYPE_NO_RADIUS -> placeholder(getPlaceHolder(imageView.context, 0f))
 
-            LOAD_TYPE_ALWAYS_ROUND -> requestBuilder
-                .placeholder(getPlaceHolder(imageView.context, 100f))
-                .transformations(CircleCropTransformation())
+                LOAD_TYPE_ALWAYS_ROUND -> {
+                    placeholder(getPlaceHolder(imageView.context, 100f))
+                    transformations(CircleCropTransformation())
+                }
+            }
+            crossfade(!noTransition)
         }
-        if (!noTransition) {
-            requestBuilder.crossfade()
-        }
-        requestBuilder.target(imageView).build().enqueue()
     }
 
     @JvmStatic

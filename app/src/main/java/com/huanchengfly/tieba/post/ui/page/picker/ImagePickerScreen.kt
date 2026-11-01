@@ -38,13 +38,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.request.DisplayRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DeviceAlbum
 import com.huanchengfly.tieba.post.model.DeviceImage
@@ -381,12 +382,17 @@ private fun AccessTip(
     )
 }
 
+/** About as large as a grid cell gets. */
+private val ThumbnailSize = 160.dp
+
 /** A picture on the device, cropped to fill [modifier]'s bounds. */
 @Composable
 private fun DeviceThumbnail(uri: Uri, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val cellPx = with(LocalDensity.current) { ThumbnailSize.roundToPx() }
     AsyncImage(
-        request = remember(uri) { DisplayRequest(context, uri.toString()) { crossfade() } },
+        // A fixed size keeps the grid from flickering and decodes no more than a cell shows
+        model = remember(uri, cellPx) { ImageRequest.Builder(context).data(uri).size(cellPx).build() },
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier.background(ExtendedTheme.colors.chip),

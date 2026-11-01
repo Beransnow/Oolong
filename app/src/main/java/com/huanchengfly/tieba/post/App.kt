@@ -19,17 +19,13 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import androidx.core.content.pm.PackageInfoCompat
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import com.github.gzuliyujiang.oaid.DeviceID
-import com.github.panpf.sketch.Sketch
-import com.github.panpf.sketch.SketchFactory
-import com.github.panpf.sketch.decode.GifAnimatedDrawableDecoder
-import com.github.panpf.sketch.decode.GifMovieDrawableDecoder
-import com.github.panpf.sketch.decode.HeifAnimatedDrawableDecoder
-import com.github.panpf.sketch.decode.WebpAnimatedDrawableDecoder
-import com.github.panpf.sketch.http.OkHttpStack
-import com.github.panpf.sketch.request.PauseLoadWhenScrollingDrawableDecodeInterceptor
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
+import com.huanchengfly.tieba.post.components.images.newAppImageLoader
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ThemeSwitcher
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
@@ -48,7 +44,7 @@ import kotlin.concurrent.thread
 
 
 @HiltAndroidApp
-class App : Application(), SketchFactory {
+class App : Application(), SingletonImageLoader.Factory {
     private val mActivityList: MutableList<Activity> = mutableListOf()
 
     @RequiresApi(api = 28)
@@ -754,24 +750,5 @@ class App : Application(), SketchFactory {
         }
     }
 
-    override fun createSketch(): Sketch = Sketch.Builder(this).apply {
-        httpStack(OkHttpStack.Builder().apply {
-            userAgent(System.getProperty("http.agent"))
-        }.build())
-        components {
-            addDrawableDecodeInterceptor(PauseLoadWhenScrollingDrawableDecodeInterceptor())
-            addDrawableDecoder(
-                when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> GifAnimatedDrawableDecoder.Factory()
-                    else -> GifMovieDrawableDecoder.Factory()
-                }
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                addDrawableDecoder(WebpAnimatedDrawableDecoder.Factory())
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                addDrawableDecoder(HeifAnimatedDrawableDecoder.Factory())
-            }
-        }
-    }.build()
+    override fun newImageLoader(context: PlatformContext): ImageLoader = newAppImageLoader(context)
 }

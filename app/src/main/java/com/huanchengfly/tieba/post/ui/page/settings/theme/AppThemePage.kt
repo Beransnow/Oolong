@@ -57,9 +57,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newFileUri
-import com.github.panpf.sketch.fetch.newResourceUri
+import coil3.compose.AsyncImage
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
@@ -84,6 +82,7 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.extension.toHexString
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.io.File
 
 @Destination
 @Composable
@@ -345,14 +344,11 @@ fun AppThemePage(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                val previewImageUri =
-                                    if (context.appPreferences.translucentThemeBackgroundPath != null) {
-                                        newFileUri(context.appPreferences.translucentThemeBackgroundPath!!)
-                                    } else {
-                                        newResourceUri(R.drawable.user_header)
-                                    }
+                                val previewImage: Any =
+                                    context.appPreferences.translucentThemeBackgroundPath?.let(::File)
+                                        ?: R.drawable.user_header
                                 AsyncImage(
-                                    imageUri = previewImageUri,
+                                    model = previewImage,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()

@@ -26,9 +26,10 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,11 +39,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.panpf.sketch.compose.rememberAsyncImageState
-import com.github.panpf.sketch.request.LoadState
-import com.github.panpf.zoomimage.SketchZoomAsyncImage
+import coil3.compose.AsyncImagePainter
+import com.github.panpf.zoomimage.CoilZoomAsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivityWithParcelable
+import com.huanchengfly.tieba.post.components.images.rememberImageDownloadProgress
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -63,40 +64,40 @@ private fun ViewPhoto(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        val state = rememberAsyncImageState()
-        val progress by remember {
-            derivedStateOf {
-                (state.progress?.completedLength?.toFloat() ?: 0f) / (state.progress?.totalLength
-                    ?: 1)
-            }
-        }
-        val showProgress by remember {
-            derivedStateOf {
-                state.loadState is LoadState.Started
-            }
-        }
-        SketchZoomAsyncImage(
-            imageUri = imageUri,
+        var loading by remember(imageUri) { mutableStateOf(true) }
+        // Null until bytes arrive, and for images shown from the cache
+        val progress by rememberImageDownloadProgress(imageUri)
+        CoilZoomAsyncImage(
+            model = imageUri,
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             onTap = onTap,
-            imageState = state,
+            onState = { loading = it is AsyncImagePainter.State.Loading },
         )
-        if (showProgress) {
+        if (loading) {
             Box(
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    progress = progress,
-                    color = ExtendedTheme.colors.accent,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(48.dp)
-                )
-                Text(
-                    text = "${(progress * 100).roundToInt()}%",
-                    color = ExtendedTheme.colors.accent,
-                    fontSize = 12.sp
-                )
+                val fraction = progress
+                if (fraction != null) {
+                    CircularProgressIndicator(
+                        progress = fraction,
+                        color = ExtendedTheme.colors.accent,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "${(fraction * 100).roundToInt()}%",
+                        color = ExtendedTheme.colors.accent,
+                        fontSize = 12.sp
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        color = ExtendedTheme.colors.accent,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
             }
         }
     }

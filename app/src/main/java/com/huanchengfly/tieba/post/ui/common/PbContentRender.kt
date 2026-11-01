@@ -36,7 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.panpf.sketch.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -207,7 +207,7 @@ data class VideoContentRender(
                 }
             } else {
                 AsyncImage(
-                    imageUri = picUrl,
+                    model = picUrl,
                     contentDescription = stringResource(id = R.string.desc_video),
                     modifier = picModifier
                         .clickable {

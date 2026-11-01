@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.MenuItem
@@ -21,12 +22,10 @@ import androidx.core.text.HtmlCompat
 import androidx.palette.graphics.Palette
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DisplayResult
-import com.github.panpf.sketch.request.LoadRequest
-import com.github.panpf.sketch.request.LoadResult
-import com.github.panpf.sketch.request.execute
-import com.github.panpf.sketch.resize.Scale
+import coil3.request.allowHardware
+import coil3.request.transformations
+import coil3.size.Precision
+import coil3.size.Scale
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.gyf.immersionbar.ImmersionBar
 import com.huanchengfly.tieba.post.*
@@ -37,7 +36,9 @@ import com.huanchengfly.tieba.post.api.LiteApi
 import com.huanchengfly.tieba.post.api.retrofit.doIfSuccess
 import com.huanchengfly.tieba.post.components.MyLinearLayoutManager
 import com.huanchengfly.tieba.post.components.dividers.HorizontalSpacesDecoration
-import com.huanchengfly.tieba.post.components.transformations.SketchBlurTransformation
+import com.huanchengfly.tieba.post.components.images.BlurTransformation
+import com.huanchengfly.tieba.post.components.images.loadBitmap
+import com.huanchengfly.tieba.post.components.images.loadDrawable
 import com.huanchengfly.tieba.post.interfaces.OnItemClickListener
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.theme.TintMaterialButton
@@ -102,14 +103,27 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
         )
     }
 
+    /** The picked background at screen size, blurred as chosen, in a bitmap whose colours can be read. */
+    private suspend fun loadBackground(): Drawable? = loadDrawable(mUri) {
+        size(App.ScreenInfo.EXACT_SCREEN_WIDTH, App.ScreenInfo.EXACT_SCREEN_HEIGHT)
+        scale(Scale.FILL)
+        allowHardware(false)
+        if (blur > 0) {
+            transformations(BlurTransformation(this@TranslucentThemeActivity, blur))
+        }
+    }
+
     private fun launchUCrop(sourceUri: Uri) {
         mProgress.visibility = View.VISIBLE
         launch {
-            val result = LoadRequest(this@TranslucentThemeActivity, sourceUri.toString()).execute()
-            if (result is LoadResult.Success) {
+            val bitmap = loadBitmap(sourceUri) {
+                size(App.ScreenInfo.EXACT_SCREEN_WIDTH * 2, App.ScreenInfo.EXACT_SCREEN_HEIGHT * 2)
+                precision(Precision.INEXACT)
+            }
+            if (bitmap != null) {
                 mProgress.visibility = View.GONE
                 val file =
-                    ImageUtil.bitmapToFile(result.bitmap, File(cacheDir, "origin_background.jpg"))
+                    ImageUtil.bitmapToFile(bitmap, File(cacheDir, "origin_background.jpg"))
                 val sourceFileUri = Uri.fromFile(file)
                 val destUri = Uri.fromFile(File(filesDir, "cropped_background.jpg"))
                 val height = App.ScreenInfo.EXACT_SCREEN_HEIGHT.toFloat()
@@ -146,7 +160,7 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
                         setCompressionFormat(Bitmap.CompressFormat.JPEG)
                     })
                     .start(this@TranslucentThemeActivity)
-            } else if (result is LoadResult.Error) {
+            } else {
                 mProgress.visibility = View.GONE
                 toastShort(R.string.text_load_failed)
             }
@@ -183,16 +197,11 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
             return
         }
         launch {
-            val result = DisplayRequest(this@TranslucentThemeActivity, mUri.toString()) {
-                resizeScale(Scale.CENTER_CROP)
-                if (blur > 0) {
-                    transformations(SketchBlurTransformation(blur))
-                }
-            }.execute()
-            if (result is DisplayResult.Success) {
-                result.drawable.alpha = alpha
-                findViewById<View>(R.id.background).background = result.drawable
-                mPalette = Palette.from(ImageUtil.drawableToBitmap(result.drawable)).generate()
+            val drawable = loadBackground()
+            if (drawable != null) {
+                drawable.alpha = alpha
+                findViewById<View>(R.id.background).background = drawable
+                mPalette = Palette.from(ImageUtil.drawableToBitmap(drawable)).generate()
                 mTranslucentThemeColorAdapter.setPalette(mPalette)
                 mSelectColor.visibility = View.VISIBLE
                 mProgress.visibility = View.GONE
@@ -343,15 +352,10 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
         }
         mProgress.visibility = View.VISIBLE
         launch {
-            val result = DisplayRequest(this@TranslucentThemeActivity, mUri.toString()) {
-                resizeScale(Scale.CENTER_CROP)
-                if (blur > 0) {
-                    transformations(SketchBlurTransformation(blur))
-                }
-            }.execute()
-            if (result is DisplayResult.Success) {
-                result.drawable.alpha = alpha
-                val bitmap = ImageUtil.drawableToBitmap(result.drawable)
+            val drawable = loadBackground()
+            if (drawable != null) {
+                drawable.alpha = alpha
+                val bitmap = ImageUtil.drawableToBitmap(drawable)
                 val file = ImageUtil.compressImage(
                     bitmap,
                     File(filesDir, "background_${System.currentTimeMillis()}.jpg"),

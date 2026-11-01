@@ -18,17 +18,14 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.github.panpf.sketch.fetch.newFileUri
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DisplayResult
-import com.github.panpf.sketch.request.execute
-import com.github.panpf.sketch.resize.Scale
+import coil3.size.Scale
 import com.google.android.material.appbar.AppBarLayout
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
 import com.huanchengfly.tieba.post.App.Companion.translucentBackground
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.BaseActivity
+import com.huanchengfly.tieba.post.components.images.loadDrawable
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getBoolean
 import com.huanchengfly.tieba.post.getInt
@@ -38,8 +35,9 @@ import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.theme.TintSwipeRefreshLayout
-import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 object ThemeUtil {
     val themeState: MutableState<String> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
@@ -356,14 +354,16 @@ object ThemeUtil {
             return
         }
         activity.launch {
-            val result = DisplayRequest(activity, newFileUri(backgroundFilePath)) {
-                resizeScale(Scale.CENTER_CROP)
-            }.execute()
-            if (result is DisplayResult.Success) {
+            val metrics = activity.resources.displayMetrics
+            val drawable = activity.loadDrawable(File(backgroundFilePath)) {
+                size(metrics.widthPixels, metrics.heightPixels)
+                scale(Scale.FILL)
+            }
+            if (drawable != null) {
                 if (useCache) {
-                    translucentBackground = result.drawable
+                    translucentBackground = drawable
                 }
-                view.background = result.drawable
+                view.background = drawable
             } else {
                 view.setBackgroundColor(Color.BLACK)
             }

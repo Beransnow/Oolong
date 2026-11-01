@@ -21,9 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newResourceUri
-import com.github.panpf.sketch.request.DisplayRequest
+import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.fade
@@ -124,13 +122,11 @@ fun Avatar(
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
-    val context = LocalContext.current
-
+    val placeholder = rememberImagePlaceholder()
     AsyncImage(
-        request = DisplayRequest(LocalContext.current, data) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
+        model = data,
+        placeholder = placeholder,
+        error = placeholder,
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier.clip(shape),
@@ -144,13 +140,11 @@ fun Avatar(
     contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-
+    val placeholder = rememberImagePlaceholder()
     AsyncImage(
-        request = DisplayRequest(LocalContext.current, newResourceUri(data)) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
+        model = data,
+        placeholder = placeholder,
+        error = placeholder,
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier

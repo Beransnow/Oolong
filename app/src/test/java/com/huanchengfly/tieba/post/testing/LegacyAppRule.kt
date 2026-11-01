@@ -2,6 +2,10 @@ package com.huanchengfly.tieba.post.testing
 
 import android.content.Context
 import android.content.ContextWrapper
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.intercept.Interceptor
+import coil3.request.ErrorResult
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import org.junit.rules.TestWatcher
@@ -14,7 +18,8 @@ import java.util.TimeZone
  * Provides what legacy UI code reads from globals ([App.INSTANCE], [App.ScreenInfo], [ThemeUtils])
  * without starting [App] itself, whose `onCreate` opens the database and syncs with the server.
  *
- * Also pins the time zone and locale, which formatted dates in screenshots depend on.
+ * Also pins the time zone and locale, which formatted dates in screenshots depend on, and keeps
+ * images from loading, so that they show their placeholders instead of going to the network.
  */
 class LegacyAppRule : TestWatcher() {
     private lateinit var timeZone: TimeZone
@@ -37,6 +42,13 @@ class LegacyAppRule : TestWatcher() {
             .set(null, app)
         App.ScreenInfo.DENSITY = context.resources.displayMetrics.density
         ThemeUtils.init(App.ThemeDelegate)
+        SingletonImageLoader.setUnsafe(
+            ImageLoader.Builder(context)
+                .components {
+                    add(Interceptor { chain -> ErrorResult(null, chain.request, IllegalStateException("No images in tests")) })
+                }
+                .build()
+        )
     }
 
     override fun finished(description: Description) {

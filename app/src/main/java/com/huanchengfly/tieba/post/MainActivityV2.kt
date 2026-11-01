@@ -30,6 +30,8 @@ import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.Text
+import androidx.compose.material.navigation.BottomSheetNavigator
+import androidx.compose.material.navigation.ModalBottomSheetLayout
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,10 +60,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.plusAssign
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.fetch.newFileUri
-import androidx.compose.material.navigation.BottomSheetNavigator
-import androidx.compose.material.navigation.ModalBottomSheetLayout
+import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -111,6 +110,8 @@ import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -124,7 +125,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
@@ -486,9 +486,9 @@ class MainActivityV2 : BaseComposeActivity() {
                     key = stringPreferencesKey("translucent_theme_background_path"),
                     defaultValue = ""
                 )
-                val backgroundUri by remember { derivedStateOf { newFileUri(backgroundPath) } }
+                val backgroundFile by remember { derivedStateOf { File(backgroundPath) } }
                 AsyncImage(
-                    imageUri = backgroundUri,
+                    model = backgroundFile,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

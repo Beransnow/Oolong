@@ -11,9 +11,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
-import com.github.panpf.sketch.request.LoadRequest
-import com.github.panpf.sketch.request.LoadResult
-import com.github.panpf.sketch.request.execute
+import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,8 +33,7 @@ fun rememberForumAccent(avatar: String): Color {
     val night = ExtendedTheme.colors.isNightMode
     val swatch by produceState<Int?>(initialValue = null, avatar) {
         value = runCatching {
-            val result = LoadRequest(context, avatar).execute()
-            val bitmap = (result as? LoadResult.Success)?.bitmap ?: return@runCatching null
+            val bitmap = context.loadBitmap(avatar) { size(128) } ?: return@runCatching null
             withContext(Dispatchers.Default) {
                 // The colour covering most of the avatar among those that are colourful at all
                 val palette = Palette.from(bitmap).generate()

@@ -3,7 +3,7 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import android.os.Looper
 import android.text.TextUtils
-import com.github.panpf.sketch.sketch
+import coil3.imageLoader
 import java.io.File
 import java.math.BigDecimal
 import kotlin.concurrent.thread
@@ -21,21 +21,9 @@ object ImageCacheUtil {
     fun clearImageDiskCache(context: Context) {
         try {
             if (Looper.myLooper() == Looper.getMainLooper()) {
-                thread {
-                    context.sketch
-                        .downloadCache
-                        .clear()
-                    context.sketch
-                        .resultCache
-                        .clear()
-                }
+                thread { context.imageLoader.diskCache?.clear() }
             } else {
-                context.sketch
-                    .downloadCache
-                    .clear()
-                context.sketch
-                    .resultCache
-                    .clear()
+                context.imageLoader.diskCache?.clear()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -47,11 +35,7 @@ object ImageCacheUtil {
      */
     fun clearImageMemoryCache(context: Context) {
         try {
-            if (Looper.myLooper() == Looper.getMainLooper()) { //只能在主线程执行
-                context.sketch
-                    .memoryCache
-                    .clear()
-            }
+            context.imageLoader.memoryCache?.clear()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -67,6 +51,7 @@ object ImageCacheUtil {
             context.externalCacheDir.toString() + File.separator + DEFAULT_DISK_CACHE_DIR
         deleteFolderFile(imageExternalCacheDir, false)
         deleteFolderFile(context.cacheDir.toString() + File.separator + ".shareTemp", false)
+        legacyCacheDirs(context).forEach { deleteFolderFile(it.path, true) }
     }
 
     /**
@@ -83,13 +68,18 @@ object ImageCacheUtil {
                 )
             ).toDouble()
             val shareCacheSize = getFolderSize(File(context.cacheDir, ".shareTemp")).toDouble()
-            val sketchCacheSize = context.sketch.run { downloadCache.size + resultCache.size }
-            return getFormatSize(glideCacheSize + shareCacheSize + sketchCacheSize)
+            val imageCacheSize = (context.imageLoader.diskCache?.size ?: 0L).toDouble()
+            val legacyCacheSize = legacyCacheDirs(context).sumOf { getFolderSize(it) }.toDouble()
+            return getFormatSize(glideCacheSize + shareCacheSize + imageCacheSize + legacyCacheSize)
         } catch (e: Exception) {
             e.printStackTrace()
         }
         return ""
     }
+
+    /** Where the image library used before kept its cache, left behind on updated installs. */
+    private fun legacyCacheDirs(context: Context): List<File> =
+        listOfNotNull(context.externalCacheDir, context.cacheDir).map { File(it, "sketch3") }.filter { it.exists() }
 
     /**
      * 获取指定文件夹内所有文件大小的和

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.Context
-import android.graphics.Color
 import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -18,8 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -28,6 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -35,19 +39,17 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.util.lerp
-import com.github.panpf.sketch.compose.AsyncImage
-import com.github.panpf.sketch.compose.rememberAsyncImageState
-import com.github.panpf.sketch.request.Depth
-import com.github.panpf.sketch.request.DisplayRequest
-import com.github.panpf.sketch.request.DisplayResult
-import com.github.panpf.sketch.stateimage.ThumbnailMemoryCacheStateImage
-import com.github.panpf.sketch.transform.MaskTransformation
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
 import com.huanchengfly.tieba.post.App
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
@@ -58,6 +60,18 @@ import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.NetworkUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+
+/** Darkens images in night mode, when the user asks for it. */
+private val DarkenFilter = ColorFilter.tint(Color(0x99000000), BlendMode.SrcAtop)
+
+/** What images show while they load, or when they cannot: a flat block of the placeholder colour. */
+@Composable
+fun rememberImagePlaceholder(): Painter {
+    val color = colorResource(
+        id = if (ExtendedTheme.colors.isNightMode) R.color.color_place_holder_night else R.color.color_place_holder
+    )
+    return remember(color) { ColorPainter(color) }
+}
 
 fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
     val imageLoadSettings =
@@ -146,17 +160,6 @@ private fun PreviewImage(
                 with(density) { layoutHeightPx.toDp() }
             }
 
-            val request = remember(imageUri) {
-                DisplayRequest(context, imageUri)
-            }
-
-            val originRequest = remember(imageUri, originImageUri) {
-                DisplayRequest(context, originImageUri ?: imageUri) {
-                    placeholder(ThumbnailMemoryCacheStateImage(imageUri))
-                    crossfade(fadeStart = false)
-                }
-            }
-
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -198,16 +201,17 @@ private fun PreviewImage(
                         .clip(RoundedCornerShape(6.dp))
                 ) {
                     AsyncImage(
-                        request = request,
+                        model = imageUri,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
 
+                    // Over the picture already shown, which stays visible until the original arrives
                     if (originImageUri != null && animProgress.value >= 1f) {
                         AsyncImage(
-                            request = originRequest,
+                            model = originImageUri,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize(),
@@ -235,37 +239,24 @@ fun NetworkImage(
     var shouldLoad by remember { mutableStateOf(shouldLoadImage(context, skipNetworkCheck)) }
     val enableClick = remember(photoViewData, shouldLoad) { photoViewData != null || !shouldLoad }
 
-    val colorMask =
-        if (ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode) {
-            MaskTransformation(Color.parseColor("#99000000"))
-        } else null
+    val darken = ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode
+    val placeholder = rememberImagePlaceholder()
 
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
 
     var layoutOffset by remember { mutableStateOf(Offset.Zero) }
 
-    val request = remember(imageUri, shouldLoad, colorMask) {
-        DisplayRequest(context, imageUri) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-            if (!shouldLoad) {
-                depth(Depth.LOCAL)
+    val request = remember(imageUri, shouldLoad) {
+        ImageRequest.Builder(context)
+            .data(imageUri)
+            .apply {
+                // Until tapped, only what is cached already
+                if (!shouldLoad) networkCachePolicy(CachePolicy.DISABLED)
             }
-            if (colorMask != null) {
-                transformations(colorMask)
-            }
-        }
+            .build()
     }
 
-    val state = rememberAsyncImageState()
-    val imageAspectRatio by remember {
-        derivedStateOf {
-            with(state.result) {
-                if (this is DisplayResult.Success) imageInfo.height.toFloat() / imageInfo.width
-                else 0f
-            }
-        }
-    }
+    var imageAspectRatio by remember { mutableFloatStateOf(0f) }
 
     var isLongPressing by remember { mutableStateOf(false) }
 
@@ -315,7 +306,11 @@ fun NetworkImage(
             .then(modifier)
     ) {
         AsyncImage(
-            request = request,
+            model = request,
+            placeholder = placeholder,
+            error = placeholder,
+            onSuccess = { imageAspectRatio = it.result.image.height.toFloat() / it.result.image.width },
+            colorFilter = if (darken) DarkenFilter else null,
             modifier = Modifier
                 .fillMaxSize()
                 .onSizeChanged {
@@ -326,7 +321,6 @@ fun NetworkImage(
                 },
             contentDescription = contentDescription,
             contentScale = contentScale,
-            state = state,
         )
     }
 }

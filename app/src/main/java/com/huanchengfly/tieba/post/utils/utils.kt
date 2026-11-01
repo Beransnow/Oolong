@@ -18,13 +18,11 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.github.panpf.sketch.request.LoadRequest
-import com.github.panpf.sketch.request.LoadResult
-import com.github.panpf.sketch.request.execute
 import com.google.android.material.snackbar.Snackbar
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
+import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
@@ -270,10 +268,10 @@ suspend fun requestPinShortcut(
     onFailure: (String) -> Unit = {}
 ) {
     if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
-        val imageResult = LoadRequest(context, iconImageUri).execute()
-        if (imageResult is LoadResult.Success) {
+        val icon = context.loadBitmap(iconImageUri)
+        if (icon != null) {
             val shortcutInfo = ShortcutInfoCompat.Builder(context, shortcutId)
-                .setIcon(IconCompat.createWithBitmap(imageResult.bitmap))
+                .setIcon(IconCompat.createWithBitmap(icon))
                 .setIntent(shortcutIntent)
                 .setShortLabel(label)
                 .build()

@@ -47,7 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import com.github.panpf.sketch.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
@@ -168,7 +168,7 @@ fun VideoPlayer(
                 ) {
                     if (thumbnailUrl != null) {
                         AsyncImage(
-                            imageUri = thumbnailUrl,
+                            model = thumbnailUrl,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop

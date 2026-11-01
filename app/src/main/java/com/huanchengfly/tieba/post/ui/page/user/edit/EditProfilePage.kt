@@ -47,7 +47,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.panpf.sketch.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -240,7 +240,7 @@ fun EditProfileCard(
                     .placeholder(visible = loading)
             ) {
                 AsyncImage(
-                    imageUri = StringUtil.getAvatarUrl(portrait),
+                    model = StringUtil.getAvatarUrl(portrait),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize()
                 )

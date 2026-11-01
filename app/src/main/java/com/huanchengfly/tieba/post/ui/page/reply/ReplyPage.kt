@@ -82,7 +82,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.addTextChangedListener
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.github.panpf.sketch.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -770,7 +770,7 @@ private fun ImagePanel(
             itemsIndexed(selectedImages) { index, imageUri ->
                 Box {
                     AsyncImage(
-                        imageUri = imageUri,
+                        model = imageUri,
                         contentDescription = stringResource(id = R.string.desc_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier

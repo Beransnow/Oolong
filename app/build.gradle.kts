@@ -186,6 +186,12 @@ dependencies {
 
     implementation(libs.zoomimage.compose.sketch)
 
+    implementation(libs.coil)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.gif)
+    implementation(libs.zoomimage.compose.coil3)
+
     implementation(platform(libs.compose.bom))
     androidTestImplementation(platform(libs.compose.bom))
     testImplementation(platform(libs.compose.bom))
