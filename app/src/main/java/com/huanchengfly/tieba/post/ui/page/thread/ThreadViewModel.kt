@@ -129,9 +129,6 @@ class ThreadViewModel @Inject constructor(
     /** A post to scroll to as soon as a page containing it loads. */
     private var scrollToPost: Long? = args.postId.takeIf { it != 0L }
 
-    /** Where newer posts are when newest first, as the page at the top of the list said. */
-    private var newerCursor: ThreadCursor? = null
-
     private val posts = pager(initialKey = refreshKey, itemKey = { post: Post -> post.id }) { key ->
         val page = repository.page(query.value, key)
         meta.update { meta ->
@@ -139,9 +136,6 @@ class ThreadViewModel @Inject constructor(
                 page = page.copy(firstPost = page.firstPost ?: meta.page?.firstPost),
                 maxPage = if (key == refreshKey) page.currentPage else maxOf(meta.maxPage, page.currentPage),
             )
-        }
-        if (key == refreshKey || key is ThreadCursor.Before && query.value.sort == ThreadSort.NewestFirst) {
-            page.posts.prev?.let { newerCursor = it }
         }
         if (key == refreshKey && scrollAfterRefresh) {
             scrollAfterRefresh = false
@@ -215,7 +209,11 @@ class ThreadViewModel @Inject constructor(
     /** The page before the first one loaded, or the newer posts when newest first. */
     fun loadPrevious() {
         if (query.value.sort == ThreadSort.NewestFirst) {
-            posts.loadPrevious(from = newerCursor ?: return refresh())
+            val newest = posts.state.value.items.firstOrNull() ?: return refresh()
+            val meta = meta.value
+            posts.loadPrevious(
+                from = ThreadCursor.newerThan(newest.id, meta.maxPage, meta.page?.lastPage ?: 0)
+            )
         } else {
             posts.loadPrevious()
         }

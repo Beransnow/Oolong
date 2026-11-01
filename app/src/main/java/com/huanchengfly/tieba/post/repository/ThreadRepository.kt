@@ -55,7 +55,8 @@ data class ThreadQuery(
 sealed interface ThreadCursor {
     /**
      * A page by number. Page 0 leaves it to the server, which returns the first page in the
-     * thread's order: the oldest posts, or the newest when newest first.
+     * thread's order: the oldest posts, or the newest when newest first. (The last-page flag
+     * only means something together with the total page count, so it isn't sent.)
      */
     data class Number(val page: Int) : ThreadCursor
 
@@ -75,6 +76,13 @@ sealed interface ThreadCursor {
     data class After(val postId: Long) : ThreadCursor
 
     companion object {
+        /**
+         * Posts newer than [newestPostId], the newest loaded when newest first, with the page
+         * after [maxPageSeen], the highest page loaded so far, while it isn't [lastPage].
+         */
+        fun newerThan(newestPostId: Long, maxPageSeen: Int, lastPage: Int): ThreadCursor =
+            Before(newestPostId, page = if (maxPageSeen < lastPage) maxPageSeen + 1 else 0)
+
         /** Where a thread opened at [postId], or from its start when 0, begins. */
         fun first(postId: Long = 0): ThreadCursor = if (postId != 0L) Anchor(postId) else Number(0)
     }
@@ -97,7 +105,10 @@ data class ThreadPage(
     val firstPost: Post?,
     val posts: Page<ThreadCursor, Post>,
     val currentPage: Int,
+    /** The number of pages as shown to the user. */
     val totalPage: Int,
+    /** The last page number as the server counts pages, for loading newer posts newest first. */
+    val lastPage: Int,
     val viewer: Viewer,
     /** The tbs to send with actions on this thread, or null to send the account's. */
     val tbs: String?,
@@ -259,16 +270,15 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
                 posts.isEmpty() -> null
                 // New replies can arrive at any time, so there is always something to look for
                 // Posts newer than the newest loaded, with the page after this one while there is one
-                sort == ThreadSort.NewestFirst -> ThreadCursor.Before(
-                    posts.first().id,
-                    page = if (page.current_page < page.total_page) page.current_page + 1 else 0,
-                )
+                sort == ThreadSort.NewestFirst ->
+                    ThreadCursor.newerThan(posts.first().id, page.current_page, page.total_page)
                 !hasPrevious -> null
                 else -> ThreadCursor.Before(posts.first().id, page.current_page - 1)
             },
         ),
         currentPage = page.current_page,
         totalPage = page.new_total_page,
+        lastPage = page.total_page,
         viewer = Viewer(user?.takeIf { it.is_login == 1 }?.toUser()),
         tbs = anti.tbs.ifEmpty { null },
     )

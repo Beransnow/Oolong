@@ -211,6 +211,24 @@ class ThreadViewModelTest {
     }
 
     @Test
+    fun `newer posts are asked for after the highest page seen`() = runTest {
+        respond(
+            data(listOf(post(1977), post(1976)), ProtoPage(current_page = 1, total_page = 123, has_more = 1)),
+            data(listOf(post(1963), post(1962)), ProtoPage(current_page = 121, total_page = 123, has_more = 1)),
+            data(emptyList()),
+        )
+        val viewModel = createViewModel(sortType = ThreadSort.NewestFirst.value)
+        runCurrent()
+        viewModel.loadMore()
+        runCurrent()
+
+        viewModel.loadPrevious()
+        runCurrent()
+
+        coVerify { remote.page(9_000, 122, 1977, 1, false, true, false, 0, 0, "", 0) }
+    }
+
+    @Test
     fun `opening at a post scrolls to it once loaded`() = runTest {
         respond(data(listOf(post(31))))
         val viewModel = createViewModel(postId = 31)
