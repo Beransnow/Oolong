@@ -1,5 +1,7 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
+import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.utils.BlockManager
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +11,12 @@ import javax.inject.Inject
 /** Whether the user's block rules hide something by [author] saying [content]. */
 fun interface BlockRules {
     fun blocks(author: User, content: String): Boolean
+}
+
+/** Whether the rules hide [thread], by its author or by what its title or abstract says. */
+fun BlockRules.blocks(thread: ThreadInfo): Boolean {
+    val author = User(id = thread.authorId, name = thread.author?.name.orEmpty(), nameShow = "", portrait = "")
+    return blocks(author, thread.title) || blocks(author, thread.abstractText)
 }
 
 interface BlockRuleSource {

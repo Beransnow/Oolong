@@ -20,9 +20,9 @@ import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
-import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
+import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.repository.ForumCursor
 import com.huanchengfly.tieba.post.repository.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
@@ -241,11 +241,6 @@ class ForumViewModel @Inject constructor(
         val items = threads.map { ForumThreadItem(it.wrapImmutable(), blocked = rules.blocks(it)) }.toImmutableList()
         blocked[tab] = Triple(threads, rules, items)
         return items
-    }
-
-    private fun BlockRules.blocks(thread: ThreadInfo): Boolean {
-        val author = User(id = thread.authorId, name = thread.author?.name.orEmpty(), nameShow = "", portrait = "")
-        return blocks(author, thread.title) || blocks(author, thread.abstractText)
     }
 }
 

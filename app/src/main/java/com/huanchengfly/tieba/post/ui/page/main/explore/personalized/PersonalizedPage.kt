@@ -35,9 +35,7 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,113 +44,75 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
-import com.huanchengfly.tieba.post.arch.CommonUiEvent.ScrollToTop.bindScrollToTopEvent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
+import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.models.ThreadItemData
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
+import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersonalizedPage(
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    viewModel: PersonalizedViewModel = pageViewModel()
+    viewModel: PersonalizedViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(PersonalizedUiIntent.Refresh)
-        viewModel.initialized = true
-    }
-    val navigator = LocalNavigator.current
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::isRefreshing,
-        initial = false
+    LaunchedEffect(Unit) { viewModel.open() }
+    onGlobalEvent<GlobalEvent.Refresh>(filter = { it.key == "personalized" }) { viewModel.refresh() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    PersonalizedScreen(
+        state = state,
+        events = rememberFeedThreadEvents(onAgree = viewModel::agree),
+        onRefresh = viewModel::refresh,
+        onLoadMore = viewModel::loadMore,
+        onDislike = viewModel::dislike,
+        contentPadding = contentPadding,
     )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::isLoadingMore,
-        initial = false
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::currentPage,
-        initial = 1
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::data,
-        initial = persistentListOf()
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::error,
-        initial = null
-    )
-    val refreshPosition by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::refreshPosition,
-        initial = 0
-    )
-    val hiddenThreadIds by viewModel.uiState.collectPartialAsState(
-        prop1 = PersonalizedUiState::hiddenThreadIds,
-        initial = persistentListOf()
-    )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(PersonalizedUiIntent.Refresh) }
-    )
+}
+
+/**
+ * Recommended threads, which pull down to refresh and load more at their end. After a refresh a
+ * bubble tells how many threads came, and a row marks where the threads already read begin.
+ */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun PersonalizedScreen(
+    state: PersonalizedState,
+    events: FeedThreadEvents,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+) {
+    val list = state.list
+    val refreshing = list.refresh == LoadStatus.Loading
+    val error = (list.refresh as? LoadStatus.Error)?.error
+    val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
-    viewModel.bindScrollToTopEvent(lazyListState = lazyListState)
-    val isEmpty by remember {
-        derivedStateOf {
-            data.isEmpty()
-        }
-    }
-    val isError by remember {
-        derivedStateOf {
-            error != null
-        }
-    }
-    var refreshCount by remember {
-        mutableIntStateOf(0)
-    }
-    var showRefreshTip by remember {
-        mutableStateOf(false)
-    }
+    var showRefreshTip by remember { mutableStateOf(false) }
 
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "personalized" }
-    ) {
-        viewModel.send(PersonalizedUiIntent.Refresh)
-    }
-    viewModel.onEvent<PersonalizedUiEvent.RefreshSuccess> {
-        refreshCount = it.count
-        showRefreshTip = true
-    }
-
-    if (showRefreshTip) {
-        LaunchedEffect(Unit) {
+    val lastRefresh = state.lastRefresh
+    if (lastRefresh != null) {
+        LaunchedEffect(lastRefresh.id) {
+            showRefreshTip = true
             launch {
                 delay(20)
                 lazyListState.scrollToItem(0, 0)
@@ -161,88 +121,36 @@ fun PersonalizedPage(
             showRefreshTip = false
         }
     }
-//    if (lazyListState.isScrollInProgress) {
-//        DisposableEffect(Unit) {
-//            PauseLoadWhenScrollingDrawableDecodeInterceptor.scrolling = true
-//            onDispose {
-//                PauseLoadWhenScrollingDrawableDecodeInterceptor.scrolling = false
-//            }
-//        }
-//    }
     StateScreen(
         modifier = Modifier.fillMaxSize(),
-        isEmpty = isEmpty,
-        isError = isError,
-        isLoading = isRefreshing,
-        onReload = { viewModel.send(PersonalizedUiIntent.Refresh) },
-        errorScreen = {
-            error?.let {
-                ErrorScreen(
-                    error = it.get()
-                )
-            }
-        }
+        isEmpty = list.items.isEmpty(),
+        isError = error != null,
+        isLoading = refreshing,
+        onReload = onRefresh,
+        errorScreen = { ErrorScreen(error = error) },
     ) {
         Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
             LoadMoreLayout(
-                isLoading = isLoadingMore,
-                onLoadMore = { viewModel.send(PersonalizedUiIntent.LoadMore(currentPage + 1)) },
-                loadEnd = false,
+                isLoading = list.append == LoadStatus.Loading,
+                onLoadMore = onLoadMore,
+                loadEnd = !list.hasMore,
                 lazyListState = lazyListState,
-                isEmpty = data.isEmpty()
+                isEmpty = list.items.isEmpty()
             ) {
                 FeedList(
                     state = lazyListState,
                     contentPadding = contentPadding,
-                    dataProvider = { data },
-                    refreshPositionProvider = { refreshPosition },
-                    hiddenThreadIdsProvider = { hiddenThreadIds },
-                    onItemClick = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.id,
-                                it.forumId,
-                                threadInfo = it
-                            )
-                        )
-                    },
-                    onItemReplyClick = {
-                        navigator.navigate(
-                            ThreadPageDestination(
-                                it.id,
-                                it.forumId,
-                                scrollToReply = true
-                            )
-                        )
-                    },
-                    onAgree = {
-                        viewModel.send(
-                            PersonalizedUiIntent.Agree(
-                                it.forumId,
-                                it.threadId,
-                                it.firstPostId,
-                                it.agree?.hasAgree ?: 0
-                            )
-                        )
-                    },
-                    onDislike = { item, clickTime, reasons ->
-                        viewModel.send(
-                            PersonalizedUiIntent.Dislike(
-                                item.forumInfo?.id ?: 0,
-                                item.threadId,
-                                reasons,
-                                clickTime
-                            )
-                        )
-                    },
-                    onRefresh = { viewModel.send(PersonalizedUiIntent.Refresh) },
-                    onOpenForum = { navigator.navigate(ForumPageDestination(it)) },
-                    onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) }
+                    items = list.items,
+                    newCount = state.newCount,
+                    disliked = state.disliked,
+                    events = events,
+                    onDislike = onDislike,
+                    onRefresh = onRefresh,
                 )
             }
 
             PullRefreshIndicator(
-                refreshing = isRefreshing,
+                refreshing = refreshing,
                 state = pullRefreshState,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -259,7 +167,7 @@ fun PersonalizedPage(
                     .align(Alignment.TopCenter)
                     .padding(top = contentPadding.calculateTopPadding())
             ) {
-                RefreshTip(refreshCount = refreshCount)
+                RefreshTip(refreshCount = lastRefresh?.count ?: 0)
             }
         }
     }
@@ -289,21 +197,13 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
 private fun FeedList(
     state: LazyListState,
     contentPadding: PaddingValues,
-    dataProvider: () -> ImmutableList<ThreadItemData>,
-    refreshPositionProvider: () -> Int,
-    hiddenThreadIdsProvider: () -> ImmutableList<Long>,
-    onItemClick: (ThreadInfo) -> Unit,
-    onItemReplyClick: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfo) -> Unit,
-    onDislike: (ThreadInfo, Long, ImmutableList<ImmutableHolder<DislikeReason>>) -> Unit,
+    items: ImmutableList<RecommendedItem>,
+    newCount: Int,
+    disliked: ImmutableSet<Long>,
+    events: FeedThreadEvents,
+    onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
     onRefresh: () -> Unit,
-    onOpenForum: (forumName: String) -> Unit = {},
-    onClickUser: (User) -> Unit = {},
 ) {
-    val data = dataProvider()
-    val refreshPosition = refreshPositionProvider()
-    val hiddenThreadIds = hiddenThreadIdsProvider()
-
     MyLazyColumn(
         state = state,
         contentPadding = contentPadding,
@@ -311,31 +211,22 @@ private fun FeedList(
         modifier = Modifier.fillMaxWidth(),
     ) {
         itemsIndexed(
-            items = data,
-            key = { _, (item) -> "${item.get { id }}" },
-            contentType = { _, (item) ->
+            items = items,
+            key = { _, item -> "${item.feed.thread.get { id }}" },
+            contentType = { _, item ->
+                val thread = item.feed.thread
                 when {
-                    item.get { videoInfo } != null -> "Video"
-                    item.get { media }.size == 1 -> "SingleMedia"
-                    item.get { media }.size > 1 -> "MultiMedia"
+                    thread.get { videoInfo } != null -> "Video"
+                    thread.get { media }.size == 1 -> "SingleMedia"
+                    thread.get { media }.size > 1 -> "MultiMedia"
                     else -> "PlainText"
                 }
             }
-        ) { index, (item, blocked, personalized, hidden) ->
-            val isHidden =
-                remember(
-                    hiddenThreadIds,
-                    item,
-                    hidden
-                ) { hiddenThreadIds.contains(item.get { threadId }) || hidden }
-            val isRefreshPosition =
-                remember(index, refreshPosition) { index + 1 == refreshPosition }
-            val isNotLast = remember(index, data.size) { index < data.size - 1 }
-            val showDivider = remember(
-                isHidden,
-                isRefreshPosition,
-                isNotLast
-            ) { !isHidden && !isRefreshPosition && isNotLast }
+        ) { index, (feed, dislikeOptions) ->
+            val (item, blocked) = feed
+            val isHidden = item.get { threadId } in disliked
+            val isRefreshPosition = index + 1 == newCount
+            val showDivider = !isHidden && !isRefreshPosition && index < items.size - 1
             Container {
                 AnimatedVisibility(
                     visible = !isHidden,
@@ -353,22 +244,17 @@ private fun FeedList(
                             Column {
                                 FeedCard(
                                     item = item,
-                                    onClick = onItemClick,
-                                    onClickReply = onItemReplyClick,
-                                    onAgree = onAgree,
-                                    onClickForum = remember {
-                                        {
-                                            onOpenForum(it.name)
-                                        }
-                                    },
-                                    onClickUser = onClickUser,
+                                    onClick = events.onOpen,
+                                    onClickReply = events.onOpenReplies,
+                                    onAgree = events.onAgree,
+                                    onClickForum = events.onOpenForum,
+                                    onClickUser = events.onOpenUser,
+                                    onClickOriginThread = events.onOpenOrigin,
                                 ) {
-                                    if (personalized != null) {
+                                    if (dislikeOptions.isNotEmpty()) {
                                         Dislike(
-                                            personalized = personalized,
-                                            onDislike = { clickTime, reasons ->
-                                                onDislike(item.get(), clickTime, reasons)
-                                            }
+                                            options = dislikeOptions,
+                                            onDislike = { clickTime, reasons -> onDislike(item.get(), reasons, clickTime) }
                                         )
                                     }
                                 }

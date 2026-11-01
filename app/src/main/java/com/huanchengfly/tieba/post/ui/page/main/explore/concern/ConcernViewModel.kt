@@ -1,226 +1,76 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
-import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
-import com.huanchengfly.tieba.post.api.models.protos.userLike.ConcernData
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.utils.appPreferences
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
+import com.huanchengfly.tieba.post.api.models.protos.hasAgreed
+import com.huanchengfly.tieba.post.arch.Actions
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.Pager
+import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
+import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
+import com.huanchengfly.tieba.post.ui.page.main.explore.mapItems
+import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-@Stable
+/** The threads of the users the user follows, loaded the first time the tab shows. */
 @HiltViewModel
-class ConcernViewModel @Inject constructor() :
-    BaseViewModel<ConcernUiIntent, ConcernPartialChange, ConcernUiState, ConcernUiEvent>() {
-    override fun createInitialState(): ConcernUiState = ConcernUiState()
+class ConcernViewModel @Inject constructor(
+    private val repository: ExploreRepository,
+    private val messages: MessageController,
+    blockRuleSource: BlockRuleSource,
+) : ViewModel() {
+    private val actions = Actions(viewModelScope)
+    private val pager = MutableStateFlow<Pager<String, ThreadInfo>?>(null)
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<ConcernUiIntent, ConcernPartialChange, ConcernUiState> =
-        ExplorePartialChangeProducer
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<PagerState<FeedThread>> = combine(
+        pager.flatMapLatest { it?.state ?: flowOf(PagerState(refresh = LoadStatus.Loading)) },
+        blockRuleSource.rules,
+    ) { list, rules ->
+        list.mapItems(rules::feedThread)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, PagerState(refresh = LoadStatus.Loading))
 
-    override fun dispatchEvent(partialChange: ConcernPartialChange): UiEvent? =
-        when (partialChange) {
-            is ConcernPartialChange.Refresh.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is ConcernPartialChange.LoadMore.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            else -> null
-        }
+    /** Starts loading the list unless it already has. */
+    fun open() {
+        pager()
+    }
 
-    private object ExplorePartialChangeProducer : PartialChangeProducer<ConcernUiIntent, ConcernPartialChange, ConcernUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ConcernUiIntent>): Flow<ConcernPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ConcernUiIntent.Refresh>().flatMapConcat { produceRefreshPartialChange() },
-                intentFlow.filterIsInstance<ConcernUiIntent.LoadMore>().flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ConcernUiIntent.Agree>().flatMapConcat { it.producePartialChange() },
-            )
+    fun refresh() = pager().refresh()
 
-        private fun produceRefreshPartialChange(): Flow<ConcernPartialChange.Refresh> =
-            TiebaApi.getInstance().userLikeFlow("", App.INSTANCE.appPreferences.userLikeLastRequestUnix, 1)
-                .map<UserLikeResponse, ConcernPartialChange.Refresh> {
-                    App.INSTANCE.appPreferences.userLikeLastRequestUnix = it.data_?.requestUnix ?: 0L
-                    ConcernPartialChange.Refresh.Success(
-                        data = it.toData(),
-                        hasMore = it.data_?.hasMore == 1,
-                        nextPageTag = it.data_?.pageTag ?: ""
-                    )
-                }
-                .onStart { emit(ConcernPartialChange.Refresh.Start) }
-                .catch { emit(ConcernPartialChange.Refresh.Failure(it)) }
+    fun loadMore() = pager().loadMore()
 
-        private fun ConcernUiIntent.LoadMore.producePartialChange(): Flow<ConcernPartialChange.LoadMore> =
-            TiebaApi.getInstance().userLikeFlow(pageTag, App.INSTANCE.appPreferences.userLikeLastRequestUnix, 2)
-                .map<UserLikeResponse, ConcernPartialChange.LoadMore> {
-                    ConcernPartialChange.LoadMore.Success(
-                        data = it.toData(),
-                        hasMore = it.data_?.hasMore == 1,
-                        nextPageTag = it.data_?.pageTag ?: ""
-                    )
-                }
-                .onStart { emit(ConcernPartialChange.LoadMore.Start) }
-                .catch { emit(ConcernPartialChange.LoadMore.Failure(error = it)) }
-
-        private fun ConcernUiIntent.Agree.producePartialChange(): Flow<ConcernPartialChange.Agree> =
-            TiebaApi.getInstance().opAgreeFlow(
-                AgreeTarget.Thread(threadId, postId), forumId, undo = hasAgree == 1
-            ).map<AgreeBean, ConcernPartialChange.Agree> { ConcernPartialChange.Agree.Success(threadId, hasAgree xor 1) }
-                .catch { emit(ConcernPartialChange.Agree.Failure(threadId, hasAgree, it)) }
-                .onStart { emit(ConcernPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
-
-        private fun UserLikeResponse.toData(): List<ConcernData> {
-            return data_?.threadInfo ?: emptyList()
+    fun agree(thread: ThreadInfo) {
+        val pager = pager.value ?: return
+        val agree = !thread.hasAgreed
+        actions.launch("agree-${thread.threadId}") {
+            pager.update { it.withAgreed(thread.threadId, agree) }
+            runCatching { repository.agreeThread(thread, agree) }.onFailure {
+                pager.update { it.withAgreed(thread.threadId, !agree) }
+                messages.showError(R.string.toast_agree_failed, it)
+            }
         }
     }
-}
 
-sealed interface ConcernUiIntent : UiIntent {
-    data object Refresh : ConcernUiIntent
-
-    data class LoadMore(val pageTag: String) : ConcernUiIntent
-
-    data class Agree(
-        val forumId: Long,
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Int,
-    ) : ConcernUiIntent
-}
-
-internal fun List<ConcernData>.distinctById(): ImmutableList<ConcernData> {
-    return distinctBy {
-        it.threadList?.id
-    }.toImmutableList()
-}
-
-sealed interface ConcernPartialChange : PartialChange<ConcernUiState> {
-    sealed class Agree private constructor() : ConcernPartialChange {
-        private fun List<ConcernData>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int,
-        ): ImmutableList<ConcernData> {
-            return map {
-                val threadInfo = it.threadList
-                if (threadInfo == null) it
-                else it.copy(
-                    threadList = if (threadInfo.threadId == threadId) {
-                        threadInfo.updateAgreeStatus(hasAgree)
-                    } else {
-                        threadInfo
-                    }
-                )
-            }.toImmutableList()
-        }
-
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                is Start -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Success -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-                is Failure -> {
-                    oldState.copy(data = oldState.data.updateAgreeStatus(threadId, hasAgree))
-                }
-            }
-
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val hasAgree: Int,
-            val error: Throwable
-        ) : Agree()
-    }
-
-    sealed class Refresh private constructor() : ConcernPartialChange {
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                Start -> oldState.copy(isRefreshing = true)
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    data = data.distinctById(),
-                    hasMore = hasMore,
-                    nextPageTag = nextPageTag,
-                )
-                is Failure -> oldState.copy(isRefreshing = false)
-            }
-
-        data object Start : Refresh()
-
-        data class Success(
-            val data: List<ConcernData>,
-            val hasMore: Boolean,
-            val nextPageTag: String,
-        ) : Refresh()
-
-        data class Failure(
-            val error: Throwable,
-        ) : Refresh()
-    }
-
-    sealed class LoadMore private constructor() : ConcernPartialChange {
-        override fun reduce(oldState: ConcernUiState): ConcernUiState =
-            when (this) {
-                Start -> oldState.copy(isLoadingMore = true)
-                is Success -> oldState.copy(
-                    isLoadingMore = false,
-                    data = (oldState.data + data).distinctById(),
-                    hasMore = hasMore,
-                    nextPageTag = nextPageTag,
-                )
-                is Failure -> oldState.copy(isLoadingMore = false)
-            }
-
-        data object Start : LoadMore()
-
-        data class Success(
-            val data: List<ConcernData>,
-            val hasMore: Boolean,
-            val nextPageTag: String,
-        ) : LoadMore()
-
-        data class Failure(
-            val error: Throwable,
-        ) : LoadMore()
+    private fun pager(): Pager<String, ThreadInfo> {
+        pager.value?.let { return it }
+        return pager(initialKey = "", itemKey = { thread: ThreadInfo -> thread.threadId }) { pageTag ->
+            repository.followedUsersThreads(pageTag)
+        }.also { pager.value = it }
     }
 }
-
-data class ConcernUiState(
-    val isRefreshing: Boolean = true,
-    val isLoadingMore: Boolean = false,
-    val hasMore: Boolean = true,
-    val nextPageTag: String = "",
-    val data: ImmutableList<ConcernData> = persistentListOf(),
-): UiState
-
-sealed interface ConcernUiEvent : UiEvent

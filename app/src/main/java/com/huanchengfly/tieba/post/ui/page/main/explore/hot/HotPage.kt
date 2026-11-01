@@ -26,6 +26,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,12 +39,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.model.HotCategory
+import com.huanchengfly.tieba.post.model.HotTopic
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
@@ -51,13 +54,13 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.HotTopicListPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
+import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
+import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
@@ -66,52 +69,44 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.itemsIndexed
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.ramcosta.composedestinations.annotation.Destination
 
-@OptIn(ExperimentalMaterialApi::class)
-@Destination
 @Composable
 fun HotPage(
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    viewModel: HotViewModel = pageViewModel()
+    viewModel: HotViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(HotUiIntent.Load)
-        viewModel.initialized = true
-    }
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "hot" }
-    ) {
-        viewModel.send(HotUiIntent.Load)
-    }
+    LaunchedEffect(Unit) { viewModel.open() }
+    onGlobalEvent<GlobalEvent.Refresh>(filter = { it.key == "hot" }) { viewModel.refresh() }
     val navigator = LocalNavigator.current
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::isRefreshing,
-        initial = false
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    HotScreen(
+        state = state,
+        events = rememberFeedThreadEvents(onAgree = viewModel::agree),
+        onRefresh = viewModel::refresh,
+        onSelectCategory = viewModel::selectCategory,
+        onOpenTopics = { navigator.navigate(HotTopicListPageDestination) },
+        contentPadding = contentPadding,
     )
-    val topicList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::topicList,
-        initial = emptyList()
-    )
-    val threadList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::threadList,
-        initial = emptyList()
-    )
-    val tabList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::tabList,
-        initial = emptyList()
-    )
-    val currentTabCode by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::currentTabCode,
-        initial = "all"
-    )
-    val isLoadingThreadList by viewModel.uiState.collectPartialAsState(
-        prop1 = HotUiState::isLoadingThreadList,
-        initial = false
-    )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isLoading,
-        onRefresh = { viewModel.send(HotUiIntent.Load) })
+}
+
+/** The hot topics and the hot threads ranking, which pull down to refresh. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun HotScreen(
+    state: HotState,
+    events: FeedThreadEvents,
+    onRefresh: () -> Unit,
+    onSelectCategory: (code: String) -> Unit,
+    onOpenTopics: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+) {
+    val isLoading = state.load == LoadStatus.Loading
+    val topicList = state.topics
+    val threadList = state.threads
+    val tabList = state.categories
+    val currentTabCode = state.category
+    val isLoadingThreadList = state.switching
+    val pullRefreshState = rememberPullRefreshState(refreshing = isLoading, onRefresh = onRefresh)
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
         MyLazyColumn(
             contentPadding = contentPadding,
@@ -163,13 +158,13 @@ fun HotPage(
                                         modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                     Text(
-                                        text = item.get { topicName },
+                                        text = item.name,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    when (item.get { tag }) {
-                                        2 -> Text(
+                                    when (item.tag) {
+                                        HotTopic.Tag.Hot -> Text(
                                             text = stringResource(id = R.string.topic_tag_hot),
                                             fontSize = 10.sp,
                                             color = White,
@@ -179,7 +174,7 @@ fun HotPage(
                                                 .padding(vertical = 2.dp, horizontal = 4.dp)
                                         )
 
-                                        1 -> Text(
+                                        HotTopic.Tag.New -> Text(
                                             text = stringResource(id = R.string.topic_tag_new),
                                             fontSize = 10.sp,
                                             color = White,
@@ -188,6 +183,7 @@ fun HotPage(
                                                 .background(OrangeA700)
                                                 .padding(vertical = 2.dp, horizontal = 4.dp)
                                         )
+                                        HotTopic.Tag.None -> {}
                                     }
                                 }
                             }
@@ -198,9 +194,7 @@ fun HotPage(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable {
-                                                navigator.navigate(HotTopicListPageDestination)
-                                            }
+                                            .clickable(onClick = onOpenTopics)
                                             .padding(vertical = 8.dp)
                                     ) {
                                         Text(
@@ -245,26 +239,15 @@ fun HotPage(
                                 item {
                                     ThreadListTab(
                                         text = stringResource(id = R.string.tab_all_hot_thread),
-                                        selected = currentTabCode == "all",
-                                        onSelected = {
-                                            viewModel.send(
-                                                HotUiIntent.RefreshThreadList(
-                                                    "all"
-                                                )
-                                            )
-                                        }
+                                        selected = currentTabCode == HotCategory.ALL,
+                                        onSelected = { onSelectCategory(HotCategory.ALL) }
                                     )
                                 }
                                 items(tabList) {
                                     ThreadListTab(
-                                        text = it.get { tabName },
-                                        selected = currentTabCode == it.get { tabCode },
-                                        onSelected = {
-                                            viewModel.send(
-                                                HotUiIntent.RefreshThreadList(
-                                                    it.get { tabCode })
-                                            )
-                                        }
+                                        text = it.name,
+                                        selected = currentTabCode == it.code,
+                                        onSelected = { onSelectCategory(it.code) }
                                     )
                                 }
                             }
@@ -290,81 +273,27 @@ fun HotPage(
                 } else {
                     itemsIndexed(
                         items = threadList,
-                        key = { _, item -> "Thread_${item.get { threadId }}" }
-                    ) { index, item ->
+                        key = { _, item -> "Thread_${item.thread.get { threadId }}" }
+                    ) { index, (item, blocked) ->
                         Container {
-                            FeedCard(
-                                item = item,
-                                onClick = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            threadInfo = it
-                                        )
-                                    )
-                                },
-                                onClickReply = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            scrollToReply = true
-                                        )
-                                    )
-                                },
-                                onAgree = {
-                                    viewModel.send(
-                                        HotUiIntent.Agree(
-                                            forumId = it.forumId,
-                                            threadId = it.threadId,
-                                            postId = it.firstPostId,
-                                            hasAgree = it.hasAgree
-                                        )
-                                    )
-                                },
-                                onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
-                                onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+                            BlockableContent(
+                                blocked = blocked,
+                                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                FeedCard(
+                                    item = item,
+                                    onClick = events.onOpen,
+                                    onClickReply = events.onOpenReplies,
+                                    onAgree = events.onAgree,
+                                    onClickForum = events.onOpenForum,
+                                    onClickUser = events.onOpenUser,
+                                    onClickOriginThread = events.onOpenOrigin,
                                 ) {
-                                    val color = when (index) {
-                                        0 -> RedA700
-                                        1 -> OrangeA700
-                                        2 -> Yellow
-                                        else -> MaterialTheme.colors.onBackground.copy(
-                                            ContentAlpha.medium
-                                        )
-                                    }
-                                    Text(
-                                        text = "${index + 1}",
-                                        color = color,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                    Text(
-                                        text = stringResource(
-                                            id = R.string.hot_num,
-                                            item.get { hotNum }.getShortNumString()
-                                        ),
-                                        style = MaterialTheme.typography.caption,
-                                        color = color
-                                    )
+                                    HotRank(index = index, hotNum = item.get { hotNum })
                                 }
                             }
                         }
-//                        ThreadListItem(
-//                            index = index,
-//                            itemHolder = item,
-//                            onClick = {
-//                                navigator.navigate(
-//                                    ThreadPageDestination(
-//                                        threadId = it.id,
-//                                        threadInfo = it
-//                                    )
-//                                )
-//                            }
-//                        )
                     }
                 }
             }
@@ -378,6 +307,32 @@ fun HotPage(
                 .padding(top = contentPadding.calculateTopPadding()),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
+        )
+    }
+}
+
+@Composable
+private fun HotRank(index: Int, hotNum: Int) {
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val color = when (index) {
+            0 -> RedA700
+            1 -> OrangeA700
+            2 -> Yellow
+            else -> MaterialTheme.colors.onBackground.copy(ContentAlpha.medium)
+        }
+        Text(
+            text = "${index + 1}",
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp
+        )
+        Text(
+            text = stringResource(id = R.string.hot_num, hotNum.getShortNumString()),
+            style = MaterialTheme.typography.caption,
+            color = color
         )
     }
 }

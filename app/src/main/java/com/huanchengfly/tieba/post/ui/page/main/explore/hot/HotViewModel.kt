@@ -1,261 +1,140 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
-import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AgreeBean
-import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
-import com.huanchengfly.tieba.post.api.models.protos.RecommendTopicList
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.api.models.protos.hasAgreed
+import com.huanchengfly.tieba.post.arch.Actions
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.model.HotCategory
+import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
+import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
+import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
+@Immutable
+data class HotState(
+    val topics: ImmutableList<HotTopic> = persistentListOf(),
+    val categories: ImmutableList<HotCategory> = persistentListOf(),
+    /** The code of the category whose threads are listed. */
+    val category: String = HotCategory.ALL,
+    val threads: ImmutableList<FeedThread> = persistentListOf(),
+    /** How loading the whole page went. */
+    val load: LoadStatus = LoadStatus.Loading,
+    /** Whether the threads of another category are on their way. */
+    val switching: Boolean = false,
+)
+
+/** The hot threads ranking, with its categories and the top hot topics; loaded the first time the tab shows. */
 @HiltViewModel
-class HotViewModel @Inject constructor() :
-    BaseViewModel<HotUiIntent, HotPartialChange, HotUiState, HotUiEvent>() {
-    override fun createInitialState(): HotUiState = HotUiState()
+class HotViewModel @Inject constructor(
+    private val repository: ExploreRepository,
+    private val messages: MessageController,
+    blockRuleSource: BlockRuleSource,
+) : ViewModel() {
+    private val actions = Actions(viewModelScope)
+    private val local = MutableStateFlow(Local())
+    private var loadJob: Job? = null
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<HotUiIntent, HotPartialChange, HotUiState> =
-        HotPartialChangeProducer
+    private data class Local(
+        val topics: List<HotTopic> = emptyList(),
+        val categories: List<HotCategory> = emptyList(),
+        val category: String = HotCategory.ALL,
+        val threads: List<ThreadInfo> = emptyList(),
+        val load: LoadStatus = LoadStatus.Loading,
+        val switching: Boolean = false,
+        val opened: Boolean = false,
+    )
 
-    private object HotPartialChangeProducer :
-        PartialChangeProducer<HotUiIntent, HotPartialChange, HotUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<HotUiIntent>): Flow<HotPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<HotUiIntent.Load>()
-                    .flatMapConcat { produceLoadPartialChange() },
-                intentFlow.filterIsInstance<HotUiIntent.RefreshThreadList>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<HotUiIntent.Agree>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
+    val state: StateFlow<HotState> = combine(local, blockRuleSource.rules) { local, rules ->
+        HotState(
+            topics = local.topics.toImmutableList(),
+            categories = local.categories.toImmutableList(),
+            category = local.category,
+            threads = local.threads.map(rules::feedThread).toImmutableList(),
+            load = local.load,
+            switching = local.switching,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, HotState())
 
-        private fun produceLoadPartialChange(): Flow<HotPartialChange.Load> =
-            TiebaApi.getInstance().hotThreadListFlow("all")
-                .map<HotThreadListResponse, HotPartialChange.Load> {
-                    HotPartialChange.Load.Success(
-                        it.data_?.topicList ?: emptyList(),
-                        it.data_?.hotThreadTabInfo ?: emptyList(),
-                        it.data_?.threadInfo ?: emptyList()
-                    )
-                }
-                .onStart { emit(HotPartialChange.Load.Start) }
-                .catch { emit(HotPartialChange.Load.Failure(it)) }
-
-        private fun HotUiIntent.RefreshThreadList.producePartialChange(): Flow<HotPartialChange.RefreshThreadList> =
-            TiebaApi.getInstance().hotThreadListFlow(tabCode)
-                .map<HotThreadListResponse, HotPartialChange.RefreshThreadList> {
-                    HotPartialChange.RefreshThreadList.Success(
-                        tabCode,
-                        it.data_?.threadInfo ?: emptyList()
-                    )
-                }
-                .onStart { emit(HotPartialChange.RefreshThreadList.Start(tabCode)) }
-                .catch { emit(HotPartialChange.RefreshThreadList.Failure(tabCode, it)) }
-
-        private fun HotUiIntent.Agree.producePartialChange(): Flow<HotPartialChange.Agree> =
-            TiebaApi.getInstance()
-                .opAgreeFlow(
-                    AgreeTarget.Thread(threadId, postId), forumId, undo = hasAgree == 1
-                )
-                .map<AgreeBean, HotPartialChange.Agree> {
-                    HotPartialChange.Agree.Success(
-                        threadId,
-                        hasAgree xor 1
-                    )
-                }
-                .onStart { emit(HotPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
-                .catch { emit(HotPartialChange.Agree.Failure(threadId, hasAgree, it)) }
+    /** Starts loading the page unless it already has. */
+    fun open() {
+        if (!local.value.opened) refresh()
     }
-}
 
-sealed interface HotUiIntent : UiIntent {
-    object Load : HotUiIntent
+    /** Loads the whole page again, back on the ranking of every category. */
+    fun refresh() = load(HotCategory.ALL, whole = true)
 
-    data class RefreshThreadList(val tabCode: String) : HotUiIntent
+    fun selectCategory(code: String) {
+        if (code != local.value.category) load(code, whole = false)
+    }
 
-    data class Agree(
-        val forumId: Long,
-        val threadId: Long,
-        val postId: Long,
-        val hasAgree: Int
-    ) : HotUiIntent
-}
-
-sealed interface HotPartialChange : PartialChange<HotUiState> {
-    sealed class Load : HotPartialChange {
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                Start -> oldState.copy(isRefreshing = true)
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    currentTabCode = "all",
-                    topicList = topicList.wrapImmutable(),
-                    tabList = tabList.wrapImmutable(),
-                    threadList = threadList.wrapImmutable()
-                )
-
-                is Failure -> oldState.copy(isRefreshing = false)
+    fun agree(thread: ThreadInfo) {
+        val agree = !thread.hasAgreed
+        actions.launch("agree-${thread.threadId}") {
+            setAgreed(thread.threadId, agree)
+            runCatching { repository.agreeThread(thread, agree) }.onFailure {
+                setAgreed(thread.threadId, !agree)
+                messages.showError(R.string.toast_agree_failed, it)
             }
-
-        object Start : Load()
-
-        data class Success(
-            val topicList: List<RecommendTopicList>,
-            val tabList: List<FrsTabInfo>,
-            val threadList: List<ThreadInfo>,
-        ) : Load()
-
-        data class Failure(
-            val error: Throwable
-        ) : Load()
-    }
-
-    sealed class RefreshThreadList : HotPartialChange {
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                is Start -> oldState.copy(isLoadingThreadList = true, currentTabCode = tabCode)
-                is Success -> oldState.copy(
-                    isLoadingThreadList = false,
-                    currentTabCode = tabCode,
-                    threadList = threadList.wrapImmutable()
-                )
-
-                is Failure -> oldState.copy(isLoadingThreadList = false)
-            }
-
-        data class Start(val tabCode: String) : RefreshThreadList()
-
-        data class Success(
-            val tabCode: String,
-            val threadList: List<ThreadInfo>
-        ) : RefreshThreadList()
-
-        data class Failure(
-            val tabCode: String,
-            val error: Throwable
-        ) : RefreshThreadList()
-    }
-
-    sealed class Agree private constructor() : HotPartialChange {
-        private fun List<ImmutableHolder<ThreadInfo>>.updateAgreeStatus(
-            threadId: Long,
-            hasAgree: Int
-        ): ImmutableList<ImmutableHolder<ThreadInfo>> {
-            return map {
-                val threadInfo = it.get()
-                if (threadInfo.threadId == threadId) {
-                    if (threadInfo.agree != null) {
-                        if (hasAgree != threadInfo.agree!!.hasAgree) {
-                            if (hasAgree == 1) {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum + 1,
-                                    agree = threadInfo.agree!!.copy(
-                                        agreeNum = threadInfo.agree!!.agreeNum + 1,
-                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum + 1,
-                                        hasAgree = 1
-                                    )
-                                )
-                            } else {
-                                threadInfo.copy(
-                                    agreeNum = threadInfo.agreeNum - 1,
-                                    agree = threadInfo.agree!!.copy(
-                                        agreeNum = threadInfo.agree!!.agreeNum - 1,
-                                        diffAgreeNum = threadInfo.agree!!.diffAgreeNum - 1,
-                                        hasAgree = 0
-                                    )
-                                )
-                            }
-                        } else {
-                            threadInfo
-                        }
-                    } else {
-                        threadInfo.copy(
-                            agreeNum = if (hasAgree == 1) threadInfo.agreeNum + 1 else threadInfo.agreeNum - 1
-                        )
-                    }
-                } else {
-                    threadInfo
-                }
-            }.wrapImmutable()
         }
+    }
 
-        override fun reduce(oldState: HotUiState): HotUiState =
-            when (this) {
-                is Start -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
+    private fun setAgreed(threadId: Long, agree: Boolean) =
+        local.update { it.copy(threads = it.threads.withAgreed(threadId, agree)) }
+
+    private fun load(code: String, whole: Boolean) {
+        loadJob?.cancel()
+        val previous = local.value.category
+        local.update {
+            if (whole) it.copy(load = LoadStatus.Loading, switching = false, opened = true)
+            else it.copy(category = code, switching = true)
+        }
+        loadJob = viewModelScope.launch {
+            try {
+                val hot = repository.hotThreads(code)
+                local.update {
+                    if (whole) {
+                        it.copy(
+                            topics = hot.topics,
+                            categories = hot.categories,
+                            category = code,
+                            threads = hot.threads,
+                            load = LoadStatus.Idle,
                         )
-                    )
+                    } else {
+                        it.copy(threads = hot.threads, switching = false)
+                    }
                 }
-
-                is Success -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
-                }
-
-                is Failure -> {
-                    oldState.copy(
-                        threadList = oldState.threadList.updateAgreeStatus(
-                            threadId,
-                            hasAgree
-                        )
-                    )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (whole) {
+                    local.update { it.copy(load = LoadStatus.Error(e)) }
+                } else {
+                    local.update { it.copy(category = previous, switching = false) }
+                    messages.show(R.string.toast_load_failed)
                 }
             }
-
-        data class Start(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Success(
-            val threadId: Long,
-            val hasAgree: Int
-        ) : Agree()
-
-        data class Failure(
-            val threadId: Long,
-            val hasAgree: Int,
-            val error: Throwable
-        ) : Agree()
+        }
     }
 }
-
-data class HotUiState(
-    val isRefreshing: Boolean = true,
-    val currentTabCode: String = "all",
-    val isLoadingThreadList: Boolean = false,
-    val topicList: ImmutableList<ImmutableHolder<RecommendTopicList>> = persistentListOf(),
-    val tabList: ImmutableList<ImmutableHolder<FrsTabInfo>> = persistentListOf(),
-    val threadList: ImmutableList<ImmutableHolder<ThreadInfo>> = persistentListOf(),
-) : UiState
-
-sealed interface HotUiEvent : UiEvent

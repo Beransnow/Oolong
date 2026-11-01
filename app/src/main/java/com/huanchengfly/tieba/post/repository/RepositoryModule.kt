@@ -34,6 +34,15 @@ abstract class RepositoryModule {
             VideoThreadFilter { context.appPreferences.blockVideo }
 
         @Provides
+        fun provideConcernFeedStore(@ApplicationContext context: Context): ConcernFeedStore = object : ConcernFeedStore {
+            override var lastRequestUnix: Long
+                get() = context.appPreferences.userLikeLastRequestUnix
+                set(value) {
+                    context.appPreferences.userLikeLastRequestUnix = value
+                }
+        }
+
+        @Provides
         fun provideEmoticonRegistry(): EmoticonRegistry = EmoticonRegistry(EmoticonManager::registerEmoticon)
     }
 }
