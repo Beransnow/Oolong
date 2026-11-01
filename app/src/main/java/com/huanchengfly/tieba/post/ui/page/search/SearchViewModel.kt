@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.arch.UiEvent
 import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.models.database.SearchHistory
+import com.huanchengfly.tieba.post.utils.SearchHistoryStore
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -29,10 +30,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
-import org.litepal.LitePal
-import org.litepal.extension.delete
-import org.litepal.extension.deleteAll
-import org.litepal.extension.find
 
 class SearchViewModel :
     BaseViewModel<SearchUiIntent, SearchPartialChange, SearchUiState, SearchUiEvent>() {
@@ -80,7 +77,7 @@ class SearchViewModel :
         private fun produceInitPartialChange() = flow<SearchPartialChange.Init> {
             emit(
                 SearchPartialChange.Init.Success(
-                    LitePal.order("timestamp DESC").find<SearchHistory>()
+                    SearchHistoryStore.all()
                 )
             )
         }.catch {
@@ -89,7 +86,7 @@ class SearchViewModel :
 
         private fun produceClearHistoryPartialChange() =
             flow<SearchPartialChange.ClearSearchHistory> {
-                LitePal.deleteAll<SearchHistory>()
+                SearchHistoryStore.clear()
                 emit(SearchPartialChange.ClearSearchHistory.Success)
             }.catch {
                 emit(SearchPartialChange.ClearSearchHistory.Failure(it.getErrorMessage()))
@@ -97,7 +94,7 @@ class SearchViewModel :
 
         private fun SearchUiIntent.DeleteSearchHistory.producePartialChange() =
             flow<SearchPartialChange.DeleteSearchHistory> {
-                LitePal.delete<SearchHistory>(id)
+                SearchHistoryStore.delete(id)
                 emit(SearchPartialChange.DeleteSearchHistory.Success(id))
             }.catch {
                 emit(SearchPartialChange.DeleteSearchHistory.Failure(it.getErrorMessage()))
@@ -108,7 +105,7 @@ class SearchViewModel :
                 .onEach {
                     if (it.isNotBlank()) {
                         runCatching {
-                            SearchHistory(it).saveOrUpdate("content = ?", it)
+                            SearchHistoryStore.add(it)
                         }
                     }
                 }

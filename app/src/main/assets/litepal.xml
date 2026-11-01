@@ -7,7 +7,5 @@
         <mapping class="com.huanchengfly.tieba.post.models.database.Draft" />
         <mapping class="com.huanchengfly.tieba.post.models.database.Block" />
         <mapping class="com.huanchengfly.tieba.post.models.database.TopForum" />
-        <mapping class="com.huanchengfly.tieba.post.models.database.SearchHistory" />
-        <mapping class="com.huanchengfly.tieba.post.models.database.SearchPostHistory" />
     </list>
 </litepal>

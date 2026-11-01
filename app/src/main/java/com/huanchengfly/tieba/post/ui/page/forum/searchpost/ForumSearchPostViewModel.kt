@@ -15,7 +15,9 @@ import com.huanchengfly.tieba.post.arch.UiIntent
 import com.huanchengfly.tieba.post.arch.UiState
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
+import com.huanchengfly.tieba.post.utils.SearchHistoryStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -33,11 +35,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import org.litepal.LitePal
-import org.litepal.extension.delete
-import org.litepal.extension.deleteAll
-import org.litepal.extension.find
-import javax.inject.Inject
 
 @HiltViewModel
 class ForumSearchPostViewModel @Inject constructor() :
@@ -89,9 +86,7 @@ class ForumSearchPostViewModel @Inject constructor() :
 
         private fun produceInitPartialChange(): Flow<ForumSearchPostPartialChange.Init> =
             flow<ForumSearchPostPartialChange.Init> {
-                val searchHistories = LitePal
-                    .order("timestamp DESC")
-                    .find<SearchPostHistory>()
+                val searchHistories = SearchHistoryStore.allInForums()
                 emit(ForumSearchPostPartialChange.Init.Success(searchHistories))
             }.catch {
                 emit(ForumSearchPostPartialChange.Init.Failure(it))
@@ -103,7 +98,7 @@ class ForumSearchPostViewModel @Inject constructor() :
                 .filter { it.isNotBlank() }
                 .onEach {
                     runCatching {
-                        SearchPostHistory(it, forumName).saveOrUpdate("content = ?", it)
+                        SearchHistoryStore.addInForum(it, forumName)
                     }
                 }
                 .flatMapConcat {
@@ -152,7 +147,7 @@ class ForumSearchPostViewModel @Inject constructor() :
 
         private fun ForumSearchPostUiIntent.DeleteHistory.producePartialChange(): Flow<ForumSearchPostPartialChange.DeleteHistory> =
             flow<ForumSearchPostPartialChange.DeleteHistory> {
-                LitePal.delete<SearchPostHistory>(id)
+                SearchHistoryStore.deleteInForum(id)
                 emit(ForumSearchPostPartialChange.DeleteHistory.Success(id))
             }.catch {
                 emit(ForumSearchPostPartialChange.DeleteHistory.Failure(it))
@@ -160,7 +155,7 @@ class ForumSearchPostViewModel @Inject constructor() :
 
         private fun produceClearHistoryPartialChange(): Flow<ForumSearchPostPartialChange.ClearHistory> =
             flow<ForumSearchPostPartialChange.ClearHistory> {
-                LitePal.deleteAll<SearchPostHistory>()
+                SearchHistoryStore.clearInForums()
                 emit(ForumSearchPostPartialChange.ClearHistory.Success)
             }.catch {
                 emit(ForumSearchPostPartialChange.ClearHistory.Failure(it))
