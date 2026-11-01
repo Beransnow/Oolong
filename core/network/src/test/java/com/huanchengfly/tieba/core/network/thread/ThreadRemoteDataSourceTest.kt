@@ -19,14 +19,14 @@ import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
-import kotlinx.coroutines.test.runTest
-import mockwebserver3.MockResponse
-import okio.Buffer
-import org.junit.After
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlinx.coroutines.test.runTest
+import mockwebserver3.MockResponse
+import okio.Buffer
+import org.junit.After
 
 class ThreadRemoteDataSourceTest {
     private val server = FormServer()
@@ -207,6 +207,42 @@ class ThreadRemoteDataSourceTest {
         assertEquals("12345", form.value("user_id"))
         assertEquals("tbs-value", form.value("tbs"))
         assertEquals("stoken-value", form.value("stoken"))
+    }
+
+    @Test
+    fun `removes a thread from the store page without its forum`() = runTest {
+        server.enqueue("""{"error_code":"0","error_msg":""}""")
+
+        dataSource.removeStore(threadId = 9_000, forumId = null)
+
+        assertEquals("null", server.takeRequest().form().value("fid"))
+    }
+
+    @Test
+    fun `lists a page of the thread store`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","error":{"errno":"0","errmsg":""},"store_thread":[{"thread_id":"9","title":"t","count":"2","post_no":"30","author":{"lz_uid":"7","name_show":"n"}}]}"""
+        )
+
+        val response = dataSource.threadStore(page = 2)
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/post/threadstore", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("20", form.value("rn"))
+        assertEquals("40", form.value("offset"))
+        assertEquals("12345", form.value("user_id"))
+        assertEquals("7", response.storeThread.single().author.lzUid)
+    }
+
+    @Test
+    fun `a thread store error is thrown`() = runTest {
+        server.enqueue("""{"error_code":"0","error":{"errno":"220034","errmsg":"操作太频繁"}}""")
+
+        val error = assertFailsWith<TiebaServerException> { dataSource.threadStore(page = 0) }
+
+        assertEquals(220034, error.code)
     }
 
     @Test

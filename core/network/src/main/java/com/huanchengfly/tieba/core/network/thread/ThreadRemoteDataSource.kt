@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.core.network.thread
 import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.TiebaProfile
+import com.huanchengfly.tieba.core.network.TiebaServerException
 import com.huanchengfly.tieba.core.network.form.signedFormBody
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.protobuf.ProtobufBody
@@ -142,7 +143,8 @@ class ThreadRemoteDataSource(
         formService.addStore(signedFormBody(params, withSig = false))
     }
 
-    suspend fun removeStore(threadId: Long, forumId: Long, tbs: String? = null) {
+    /** Removes the thread from the store; without [forumId], as the store page does, `fid` is sent as "null". */
+    suspend fun removeStore(threadId: Long, forumId: Long?, tbs: String? = null) {
         val session = checkNotNull(commonParams.session()) { "Not logged in" }
         val params = commonParams.form(formProfile, includeTbs = tbs == null) + listOfNotNull(
             "tid" to threadId.toString(),
@@ -151,6 +153,21 @@ class ThreadRemoteDataSource(
             tbs?.let { "tbs" to it },
         )
         formService.removeStore(signedFormBody(params, withSig = false))
+    }
+
+    /** A page (from 0) of the threads the user stored, newest first. */
+    suspend fun threadStore(page: Int): ThreadStoreResponse {
+        val session = checkNotNull(commonParams.session()) { "Not logged in" }
+        val params = commonParams.form(formProfile) + listOf(
+            "rn" to STORE_PAGE_SIZE.toString(),
+            "offset" to (STORE_PAGE_SIZE * page).toString(),
+            "user_id" to session.uid,
+        )
+        val response = formService.threadStore(signedFormBody(params, withSig = false))
+        val error = response.error
+        val code = error?.errno?.toIntOrNull() ?: 0
+        if (code != 0) throw TiebaServerException(code, error?.errmsg.orEmpty(), response)
+        return response
     }
 
     /**
@@ -199,5 +216,9 @@ class ThreadRemoteDataSource(
             tbs?.let { "tbs" to it },
         )
         formService.deleteThread(signedFormBody(params, withSig = false))
+    }
+
+    private companion object {
+        const val STORE_PAGE_SIZE = 20
     }
 }

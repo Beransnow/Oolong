@@ -2,6 +2,8 @@ package com.huanchengfly.tieba.core.network.thread
 
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
 import retrofit2.http.Body
@@ -20,9 +22,49 @@ interface ThreadService {
     @POST("c/c/post/rmstore")
     suspend fun removeStore(@Body body: RequestBody): JsonObject
 
+    @POST("c/f/post/threadstore")
+    suspend fun threadStore(@Body body: RequestBody): ThreadStoreResponse
+
     @POST("c/c/bawu/delpost")
     suspend fun deletePost(@Body body: RequestBody): JsonObject
 
     @POST("c/c/bawu/delthread")
     suspend fun deleteThread(@Body body: RequestBody): JsonObject
 }
+
+/** A page of the threads the user stored. */
+@Serializable
+data class ThreadStoreResponse(
+    val error: Error? = null,
+    @SerialName("store_thread") val storeThread: List<StoredThread> = emptyList(),
+) {
+    @Serializable
+    data class Error(
+        val errno: String? = null,
+        val errmsg: String? = null,
+    )
+
+    @Serializable
+    data class StoredThread(
+        @SerialName("thread_id") val threadId: String,
+        val title: String = "",
+        @SerialName("forum_name") val forumName: String = "",
+        val author: Author = Author(),
+        @SerialName("is_deleted") val isDeleted: String = "0",
+        @SerialName("max_pid") val maxPid: String = "0",
+        @SerialName("mark_pid") val markPid: String = "0",
+        /** The floor of the newest post. */
+        @SerialName("post_no") val postNo: String = "0",
+        /** How many posts came after the mark. */
+        val count: String = "0",
+    )
+
+    @Serializable
+    data class Author(
+        @SerialName("lz_uid") val lzUid: String? = null,
+        val name: String? = null,
+        @SerialName("name_show") val nameShow: String? = null,
+        @SerialName("user_portrait") val userPortrait: String? = null,
+    )
+}
+
