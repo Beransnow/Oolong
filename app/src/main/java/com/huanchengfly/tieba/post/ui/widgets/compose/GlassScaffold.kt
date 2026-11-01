@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -48,6 +49,8 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  *
  * Unlike the Material scaffold, the content is not placed between the bars: it is measured at
  * full size and receives [PaddingValues] covering the bars, the system bars and display cutouts.
+ * The top padding ends at the [GlassTopBarEdge] of a top bar that reports one, so the bar's fade
+ * overlaps the content instead of pushing it down.
  * Scrollable content should apply them as `contentPadding` so it can scroll behind the bars and
  * still reach every item. Bars are drawn over the content and can sample it through
  * [LocalGlassSource].
@@ -96,7 +99,9 @@ fun GlassScaffold(
                 val topBarPlaceables = subcompose(GlassScaffoldSlot.TopBar) {
                     chrome(topBar)
                 }.map { it.measure(loose) }
-                val topBarHeight = topBarPlaceables.maxOfOrNull { it.height } ?: 0
+                val topBarHeight = topBarPlaceables.maxOfOrNull {
+                    it[GlassTopBarEdge].takeIf { edge -> edge != AlignmentLine.Unspecified } ?: it.height
+                } ?: 0
 
                 val bottomBarPlaceables = subcompose(GlassScaffoldSlot.BottomBar) {
                     chrome(bottomBar)

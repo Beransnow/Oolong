@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.font.FontWeight
@@ -42,10 +43,16 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 private val TopBarHeight = 56.dp
 
 /**
- * How far the glass keeps fading out below the bar. Counted in the bar's height, so content at
- * rest starts below the fade and only content scrolled under it gets blurred.
+ * How far the glass keeps fading out below the bar. It overlaps the top of the content: content
+ * at rest starts at the bar's edge, above the fade, so the fade does not leave a gap under the bar.
  */
 private val TopBarFade = 16.dp
+
+/**
+ * The bottom edge of the solid part of a top bar, above its fade. [GlassScaffold] pads its
+ * content down to this line rather than to the full height of the bar.
+ */
+val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
 
 /**
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
@@ -120,7 +127,7 @@ fun GlassTopBar(
         val fade = TopBarFade.roundToPx()
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
             .measure(Constraints.fixed(foreground.width, foreground.height + fade))
-        layout(background.width, background.height) {
+        layout(background.width, background.height, mapOf(GlassTopBarEdge to foreground.height)) {
             background.place(0, 0)
             foreground.place(0, 0)
         }
@@ -147,7 +154,7 @@ fun GlassStatusBar(modifier: Modifier = Modifier) {
         val spacer = measurables[1].measure(constraints.copy(minHeight = 0))
         val background = measurables[0]
             .measure(Constraints.fixed(spacer.width, spacer.height + TopBarFade.roundToPx()))
-        layout(background.width, background.height) {
+        layout(background.width, background.height, mapOf(GlassTopBarEdge to spacer.height)) {
             background.place(0, 0)
         }
     }
