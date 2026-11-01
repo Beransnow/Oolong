@@ -35,9 +35,9 @@ import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.theme.TintSwipeRefreshLayout
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 object ThemeUtil {
     val themeState: MutableState<String> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
@@ -127,6 +127,15 @@ object ThemeUtil {
 
     fun setUseDynamicTheme(useDynamicTheme: Boolean) {
         dataStore.putBoolean(KEY_USE_DYNAMIC_THEME, useDynamicTheme)
+    }
+
+    /**
+     * Turns dynamic colour on. It colours the ordinary themes, so leaves the translucent theme for
+     * the theme used before it.
+     */
+    fun switchToDynamicTheme() {
+        if (isTranslucentTheme()) switchTheme(getOldTheme(), recordOldTheme = false)
+        setUseDynamicTheme(true)
     }
 
     fun isUsingDynamicTheme(): Boolean {
@@ -222,7 +231,8 @@ object ThemeUtil {
     fun isStatusBarFontDark(): Boolean {
         val theme = getRawTheme()
         return if (isTranslucentTheme(theme)) {
-            theme.contains("dark", ignoreCase = true)
+            // The saved theme is plain "translucent"; whether its text is dark is a separate setting
+            getCurrentTheme(theme) == THEME_TRANSLUCENT_DARK
         } else {
             !isNightMode(theme)
         }

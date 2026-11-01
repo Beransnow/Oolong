@@ -17,9 +17,8 @@ import androidx.compose.material.Surface
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.Dp
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeSource
@@ -79,7 +79,13 @@ fun GlassScaffold(
     overlay: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val hazeState = rememberHazeState()
+    // On the translucent theme the page joins the wallpaper's state, under its own key, so the
+    // chrome blurs the wallpaper too but not the other pages sharing that state
+    val wallpaper = LocalWallpaperGlass.current
+    val ownState = rememberHazeState()
+    val hazeState = wallpaper ?: ownState
+    val sourceKey = remember { Any() }
+    val glassSource = remember(hazeState) { GlassSource(hazeState, sourceKey.takeIf { wallpaper != null }) }
     val padding = remember { ScaffoldPadding() }
     val chromePadding = LocalChromePadding.current
     var consumedInsets by remember { mutableStateOf(WindowInsets(0, 0, 0, 0)) }
@@ -89,7 +95,7 @@ fun GlassScaffold(
 
     // Only chrome may sample the content; content that samples itself would draw recursively.
     val chrome: @Composable (@Composable () -> Unit) -> Unit = { slot ->
-        CompositionLocalProvider(LocalGlassSource provides hazeState) {
+        CompositionLocalProvider(LocalGlassSource provides glassSource) {
             ProvideGlassAppearance(slot)
         }
     }
@@ -132,7 +138,7 @@ fun GlassScaffold(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .hazeSource(hazeState)
+                            .hazeSource(hazeState, key = glassSource.key)
                     ) {
                         content(padding)
                     }

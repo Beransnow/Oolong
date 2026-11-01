@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,18 +58,18 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import coil3.compose.AsyncImage
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.activities.TranslucentThemeActivity
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.TranslucentThemeKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -266,7 +267,7 @@ fun AppThemePage(
                                     )
                                 )
                                 .clickable {
-                                    ThemeUtil.setUseDynamicTheme(true)
+                                    ThemeUtil.switchToDynamicTheme()
                                 }
                                 .padding(all = 16.dp)
                         ) {
@@ -338,19 +339,25 @@ fun AppThemePage(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(6.dp))
+                                    // On the translucent theme the tile shows the page's own wallpaper
+                                    .border(1.dp, ExtendedTheme.colors.divider, RoundedCornerShape(6.dp))
                                     .clickable {
-                                        context.goToActivity<TranslucentThemeActivity>()
+                                        navigator.navigate(TranslucentThemeKey)
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
+                                val backgroundPath by rememberPreferenceAsState(
+                                    key = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH),
+                                    defaultValue = "",
+                                )
                                 val previewImage: Any =
-                                    context.appPreferences.translucentThemeBackgroundPath?.let(::File)
-                                        ?: R.drawable.user_header
+                                    backgroundPath.takeIf { it.isNotEmpty() }?.let(::File) ?: R.drawable.user_header
                                 AsyncImage(
                                     model = previewImage,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                                    // The tile takes its height from its label, not the image's
+                                    modifier = Modifier.matchParentSize()
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -372,11 +379,14 @@ fun AppThemePage(
                                             } else {
                                                 Icons.Rounded.PhotoSizeSelectActual
                                             },
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            // Over a picture, so always light
+                                            tint = Color.White,
                                         )
                                         Text(
                                             text = stringResource(id = R.string.title_theme_translucent),
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
                                         )
                                     }
                                 }

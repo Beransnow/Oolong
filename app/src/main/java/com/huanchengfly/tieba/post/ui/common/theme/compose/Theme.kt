@@ -63,7 +63,6 @@ val LocalExtendedColors = staticCompositionLocalOf {
     )
 }
 
-
 @SuppressLint("ConflictingOnColor")
 fun getColorPalette(
     darkTheme: Boolean,
@@ -262,10 +261,13 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
     )
 }
 
+/**
+ * The colours of [theme]. [nowTheme] is the variant to draw, which for the translucent theme
+ * normally comes from the saved settings; previews pass another.
+ */
 @Composable
-private fun getThemeColorForTheme(theme: String): ExtendedColors {
+internal fun getThemeColorForTheme(theme: String, nowTheme: String = ThemeUtil.getCurrentTheme(theme)): ExtendedColors {
     val context = LocalContext.current
-    val nowTheme = ThemeUtil.getCurrentTheme(theme)
     val textColor =
         Color(App.ThemeDelegate.getColorByAttr(context, R.attr.colorText, nowTheme))
     val bottomBarColor =
@@ -411,8 +413,8 @@ fun TiebaLiteTheme(
     )
     val isDarkColorPalette by remember {
         derivedStateOf {
-            ThemeUtil.isNightMode(theme)
-                    || (ThemeUtil.isTranslucentTheme(theme) && theme.contains("light"))
+            ThemeUtil.isNightMode(theme) ||
+                (ThemeUtil.isTranslucentTheme(theme) && theme.contains("light"))
         }
     }
 

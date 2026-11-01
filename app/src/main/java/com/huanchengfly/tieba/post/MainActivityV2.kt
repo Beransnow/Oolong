@@ -80,8 +80,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalWallpaperGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.wallpaperGlassSource
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
@@ -98,7 +100,7 @@ import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestPermission
 import com.huanchengfly.tieba.post.utils.toTiebaKey
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -112,6 +114,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
@@ -427,7 +430,10 @@ class MainActivityV2 : BaseComposeActivity() {
             color = ExtendedTheme.colors.background,
             modifier = modifier
         ) {
-            if (ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)) {
+            val translucent = ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)
+            // Drawn once under every page and captured for their chrome to blur
+            val wallpaperGlass = rememberHazeState()
+            if (translucent) {
                 val backgroundPath by rememberPreferenceAsMutableState(
                     key = stringPreferencesKey("translucent_theme_background_path"),
                     defaultValue = ""
@@ -436,11 +442,14 @@ class MainActivityV2 : BaseComposeActivity() {
                 AsyncImage(
                     model = backgroundFile,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wallpaperGlassSource(wallpaperGlass),
                     contentScale = ContentScale.Crop
                 )
             }
-            content()
+            // Content stays in one place whatever the theme: moving it would rebuild every page
+            CompositionLocalProvider(LocalWallpaperGlass provides wallpaperGlass.takeIf { translucent }, content = content)
         }
     }
 

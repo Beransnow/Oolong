@@ -410,11 +410,6 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
-            android:name=".activities.TranslucentThemeActivity"
-            android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />

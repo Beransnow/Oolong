@@ -77,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.page.settings.more.MoreSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.oksign.OKSignSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.post.PostSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.theme.AppThemePage
+import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentThemePage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsPage
 import com.huanchengfly.tieba.post.ui.page.subposts.SubPostsSheetPage
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPage
@@ -115,6 +116,7 @@ private fun KeyContent(key: Key) {
         SettingsKey -> SettingsPage()
         AccountManageKey -> AccountManagePage()
         AppThemeKey -> AppThemePage()
+        TranslucentThemeKey -> TranslucentThemePage()
         CustomSettingsKey -> CustomSettingsPage()
         FontSizeKey -> FontSizePage()
         HabitSettingsKey -> HabitSettingsPage()
@@ -133,7 +135,7 @@ internal val Key.paneRole: PaneRole?
         MainKey, is ForumKey, SearchKey, HistoryKey, ThreadStoreKey, HotTopicListKey,
         is ForumSearchPostKey, SettingsKey, is NotificationsKey -> PaneRole.List
 
-        LoginKey -> PaneRole.Full
+        LoginKey, TranslucentThemeKey -> PaneRole.Full
         is SubPostsSheetKey, is CopyTextKey -> null
         else -> PaneRole.Detail
     }

@@ -7,27 +7,31 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.utils.ThemeUtil
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeSourceSelection
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
@@ -76,14 +80,62 @@ private fun currentGlassTier(): GlassTier {
 }
 
 /**
- * The content that floating chrome samples. Provided by [GlassScaffold]; null outside one, in
- * which case chrome falls back to [GlassTier.Solid].
+ * What floating chrome samples: the sources in [state] keyed [key], plus the translucent theme's
+ * wallpaper if it is in the same state. A null key takes every source.
+ */
+@Immutable
+class GlassSource(val state: HazeState, val key: Any? = null) {
+    val input: HazeInput.Sources = if (key == null) {
+        HazeInput.Sources(state)
+    } else {
+        HazeInput.Sources(state, HazeSourceSelection.Behind.where { it.key === key || it.key === WallpaperKey })
+    }
+}
+
+/**
+ * The content that floating chrome samples. Provided by [GlassScaffold]; outside one, chrome
+ * samples only the wallpaper on the translucent theme, and otherwise falls back to
+ * [GlassTier.Solid].
  *
  * Pages usually leave their background transparent and let the window draw it, so the captured
  * content alone is not opaque: every material composites the theme background behind it first,
  * or the sharp content would show through the blur.
  */
-val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
+val LocalGlassSource = staticCompositionLocalOf<GlassSource?> { null }
+
+/**
+ * The state the translucent theme's wallpaper is captured in, once under every page, so that
+ * chrome blurs the wallpaper along with its page and the wallpaper stays put as pages slide.
+ * Null on other themes.
+ */
+val LocalWallpaperGlass = staticCompositionLocalOf<HazeState?> { null }
+
+/** Captures the translucent theme's wallpaper for [LocalWallpaperGlass]. */
+fun Modifier.wallpaperGlassSource(state: HazeState): Modifier =
+    hazeSource(state, zIndex = WallpaperZIndex, key = WallpaperKey)
+
+private object WallpaperKey
+
+/** Below the scaffold content, which is captured at the default zIndex of 0. */
+private const val WallpaperZIndex = -1f
+
+@Composable
+private fun currentGlassSource(): GlassSource? =
+    LocalGlassSource.current ?: LocalWallpaperGlass.current?.let { remember(it) { GlassSource(it, WallpaperKey) } }
+
+/**
+ * What chrome is tinted with: the page's background, except on the translucent theme, whose
+ * background is clear: black under its light text, white under its dark text.
+ */
+private val ExtendedColors.chromeTint: Color
+    get() = when {
+        !ThemeUtil.isTranslucentTheme(theme) -> background
+        theme.contains("light") -> Color.Black
+        else -> Color.White
+    }
+
+private val ExtendedColors.isTranslucent: Boolean
+    get() = ThemeUtil.isTranslucentTheme(theme)
 
 /**
  * Background for a bar pinned to the top edge, like iOS's scroll edge: a strong blur under a tint
@@ -96,9 +148,11 @@ val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 @OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.topBarGlass(): Modifier {
-    val source = LocalGlassSource.current
+    val source = currentGlassSource()
     val tier = currentGlassTier()
-    val color = ExtendedTheme.colors.background
+    val colors = ExtendedTheme.colors
+    val color = colors.chromeTint
+    val tint = if (colors.isTranslucent) TranslucentTopBarTint else TopBarTint
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
     val fadePx = with(LocalDensity.current) { (if (solid) TopBarSolidFade else TopBarGlassFade).toPx() }
@@ -107,20 +161,21 @@ fun Modifier.topBarGlass(): Modifier {
     val edge = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 0f
     val measured = onSizeChanged { height = it.height }
     if (solid) {
-        val brush = remember(color, edge) {
+        val top = if (colors.isTranslucent) color.copy(alpha = TranslucentTopBarTint) else color
+        val brush = remember(top, edge) {
             Brush.verticalGradient(
-                0f to color,
-                edge to color,
-                1f to color.copy(alpha = 0f),
+                0f to top,
+                edge to top,
+                1f to top.copy(alpha = 0f),
             )
         }
         return measured.background(brush)
     }
-    val style = remember(color, edge) {
+    val style = remember(color, tint, edge) {
         // How far into the fade a point is: 0 above it, 1 at the bottom edge
         fun faded(t: Float) = if (t <= edge) 0f else ((t - edge) / (1f - edge)).coerceIn(0f, 1f)
         HazeBlurStyle {
-            backgroundColor(color)
+            backgroundColor(colors.background)
             blurRadius(40.dp)
             noiseFactor(0f)
             progressive(
@@ -138,7 +193,7 @@ fun Modifier.topBarGlass(): Modifier {
                             *Array(TopBarTintStops + 1) { i ->
                                 val t = i / TopBarTintStops.toFloat()
                                 val x = faded(t)
-                                t to color.copy(alpha = TopBarTint * (1f - x * x * x))
+                                t to color.copy(alpha = tint * (1f - x * x * x))
                             }
                         )
                     )
@@ -149,7 +204,7 @@ fun Modifier.topBarGlass(): Modifier {
     // Full resolution draws the blur at a radius that really shrinks down the bar. At lower
     // resolutions Haze fades a blurred copy over the sharp content instead, which shows both.
     return measured.hazeBlur(
-        input = HazeInput.Sources(source!!),
+        input = source!!.input,
         style = style,
         performanceMode = HazePerformanceMode.Quality,
     )
@@ -164,6 +219,9 @@ private val TopBarSolidFade = 16.dp
 /** The tint above the fade, of the page's background colour. */
 private const val TopBarTint = 0.8f
 
+/** The translucent theme's lighter tint, which keeps the wallpaper showing through. */
+private const val TranslucentTopBarTint = 0.45f
+
 /** Stops used to draw the tint's curve as a gradient. */
 private const val TopBarTintStops = 32
 
@@ -173,7 +231,7 @@ private const val TopBarTintStops = 32
 @OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
-    val source = LocalGlassSource.current
+    val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
     val shadowed = shadow(
@@ -184,6 +242,13 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
     )
     val edge = if (colors.isNightMode) Color.White.copy(alpha = 0.10f)
     else Color.Black.copy(alpha = 0.06f)
+    if (colors.isTranslucent && tier != GlassTier.Solid) {
+        // Over a wallpaper only a light blur, untinted, so the wallpaper still shows through
+        return shadowed
+            .clip(shape)
+            .hazeBlur(input = source!!.input, style = TranslucentFloatingStyle)
+            .border(0.5.dp, edge, shape)
+    }
     return when (tier) {
         GlassTier.Glass -> {
             val style = remember(shape, colors.background) {
@@ -193,7 +258,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
                     backgroundColor(colors.background)
                 }
             }
-            shadowed.hazeGlass(input = HazeInput.Sources(source!!), style = style)
+            shadowed.hazeGlass(input = source!!.input, style = style)
         }
 
         GlassTier.Blur -> {
@@ -207,16 +272,26 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
             }
             shadowed
                 .clip(shape)
-                .hazeBlur(input = HazeInput.Sources(source!!), style = style)
+                .hazeBlur(input = source!!.input, style = style)
                 .border(0.5.dp, edge, shape)
         }
 
         GlassTier.Solid -> shadowed
             .clip(shape)
-            .background(colors.background)
+            .background(if (colors.isTranslucent) colors.chromeTint.copy(alpha = TranslucentSolidTint) else colors.background)
             .border(0.5.dp, edge, shape)
     }
 }
+
+@OptIn(ExperimentalHazeApi::class)
+private val TranslucentFloatingStyle = HazeBlurStyle {
+    backgroundColor(Color.Transparent)
+    blurRadius(3.dp)
+    noiseFactor(0f)
+}
+
+/** Without a blur, floating chrome on the translucent theme needs some tint to stand apart. */
+private const val TranslucentSolidTint = 0.35f
 
 /**
  * Lets a [glassLens] drawn above this chrome magnify it along with the content behind it. Apply
@@ -224,9 +299,9 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
  */
 @Composable
 fun Modifier.lensTarget(): Modifier {
-    val source = LocalGlassSource.current
+    val source = currentGlassSource()
     if (source == null || currentGlassTier() != GlassTier.Glass) return this
-    return hazeSource(source, zIndex = LensTargetZIndex)
+    return hazeSource(source.state, zIndex = LensTargetZIndex, key = source.key)
 }
 
 /**
@@ -236,7 +311,7 @@ fun Modifier.lensTarget(): Modifier {
 @OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
-    val source = LocalGlassSource.current
+    val source = currentGlassSource()
     if (source == null || currentGlassTier() != GlassTier.Glass) return this
     val background = ExtendedTheme.colors.background
     val style = remember(shape, background) {
@@ -250,7 +325,7 @@ fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
     // Not inside any source of this state, so it sees the content and the lens targets. A lens is
     // looked through, so it renders at full quality; it is small and only shown while pressed.
     return hazeGlass(
-        input = HazeInput.Sources(source),
+        input = source.input,
         style = style,
         performanceMode = HazePerformanceMode.Quality,
     )
@@ -285,7 +360,7 @@ fun ProvideGlassAppearance(content: @Composable () -> Unit) {
     val adjusted = remember(configuration, night) {
         Configuration(configuration).apply {
             uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
-                    if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+                if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
         }
     }
     CompositionLocalProvider(LocalConfiguration provides adjusted, content = content)

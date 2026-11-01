@@ -101,6 +101,9 @@ data object CustomSettingsKey : Key
 data object FontSizeKey : Key
 
 @Serializable
+data object TranslucentThemeKey : Key
+
+@Serializable
 data object HabitSettingsKey : Key
 
 @Serializable
