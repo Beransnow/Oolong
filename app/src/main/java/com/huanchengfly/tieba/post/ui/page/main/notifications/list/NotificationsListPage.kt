@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -40,6 +39,12 @@ import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
+import com.huanchengfly.tieba.post.ui.widgets.compose.MetaText
+import com.huanchengfly.tieba.post.ui.widgets.compose.AuthorName
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -120,17 +125,23 @@ fun NotificationList(
                 contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
                 state = lazyListState,
             ) {
-                items(
+                itemsIndexed(
                     items = list.items,
-                    key = { (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
-                ) { (notification, blocked) ->
+                    key = { _, (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
+                ) { index, (notification, blocked) ->
                     Container {
-                        BlockableContent(
-                            blocked = blocked,
-                            blockedTip = { BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) } },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                        ) {
-                            NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
+                        Column {
+                            BlockableContent(
+                                blocked = blocked,
+                                blockedTip = { BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) } },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
+                            }
+                            // Divided like feed cards
+                            if (index < list.items.lastIndex) {
+                                VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
                         }
                     }
                 }
@@ -169,28 +180,37 @@ private fun NotificationItemContent(
                 avatar = {
                     Avatar(data = StringUtil.getAvatarUrl(author.portrait), size = Sizes.Small, contentDescription = null)
                 },
-                name = { Text(text = author.displayName) },
+                name = { AuthorName(text = AnnotatedString(author.displayName)) },
                 onClick = { onOpenUser(author.id) },
-                desc = { Text(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, notification.time)) },
+                desc = { MetaText(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, notification.time)) },
             ) {}
         }
-        EmoticonText(text = notification.content)
+        EmoticonText(
+            text = notification.content,
+            fontSize = 15.sp,
+            lineHeight = 24.sp,
+            color = ExtendedTheme.colors.text,
+        )
         val quoteText = when {
             type == NotificationType.AtMe -> notification.threadTitle
             notification.inPost -> notification.quoteContent
             else -> stringResource(id = R.string.text_message_list_item_reply_my_thread, notification.threadTitle)
         }
         if (quoteText != null) {
+            // What it answers, in the grey block replies quote in
             EmoticonText(
                 text = quoteText,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable { onOpenQuote(notification) }
-                    .background(ExtendedTheme.colors.chip, RoundedCornerShape(6.dp))
-                    .padding(8.dp),
-                color = ExtendedTheme.colors.onChip,
-                fontSize = 12.sp,
+                    .background(ExtendedTheme.colors.chip, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                color = ExtendedTheme.colors.textSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
