@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.io.File
 import okio.ByteString.Companion.toByteString
 import javax.inject.Inject
 
@@ -74,6 +75,8 @@ class UserRepository @Inject constructor(
             if (e.code == PORTRAIT_IN_REVIEW) e.message else throw e
         }
     }
+
+    suspend fun uploadPortrait(picture: File): String? = uploadPortrait(withContext(io) { picture.readBytes() })
 
     suspend fun agreeThread(post: PostInfoList, agree: Boolean) = withContext(io) {
         agreeRemote.opAgree(AgreeTarget.Thread(post.thread_id, post.post_id), post.forum_id, undo = !agree)

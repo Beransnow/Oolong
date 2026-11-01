@@ -83,8 +83,9 @@ import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfileActivity
+import com.huanchengfly.tieba.post.ui.page.destinations.EditProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -311,6 +312,7 @@ private fun UserProfileContentNormal(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val navigator = LocalNavigator.current
     val density = LocalDensity.current
 
     var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
@@ -472,7 +474,7 @@ private fun UserProfileContentNormal(
                                         return@UserProfileDetail
                                     }
                                     if (isSelf) {
-                                        context.goToActivity<EditProfileActivity>()
+                                        navigator.navigate(EditProfilePageDestination)
                                     } else if (!user.followed) {
                                         onFollow()
                                     } else {
@@ -528,6 +530,7 @@ private fun UserProfileContentExpanded(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val navigator = LocalNavigator.current
 
     GlassScaffold(
         topBar = {
@@ -602,7 +605,7 @@ private fun UserProfileContentExpanded(
                                 return@UserProfileDetail
                             }
                             if (isSelf) {
-                                context.goToActivity<EditProfileActivity>()
+                                navigator.navigate(EditProfilePageDestination)
                             } else if (!user.followed) {
                                 onFollow()
                             } else {

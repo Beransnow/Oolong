@@ -104,6 +104,10 @@
     <string name="tip_post_floor">第 %d 楼</string>
     <string name="my_info_service_center">服务中心</string>
     <string name="toast_success">成功</string>
+    <string name="toast_save_profile_failed">保存失败 %1$s</string>
+    <string name="toast_upload_portrait_failed">头像上传失败 %1$s</string>
+    <string name="toast_upload_portrait_success">头像上传成功</string>
+    <string name="toast_server_message">%1$s</string>
     <string name="title_report">举报</string>
     <string name="tip_empty">这里什么都没有</string>
     <string name="title_auto_sign">自动签到</string>
