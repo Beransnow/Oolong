@@ -75,6 +75,7 @@
     <string name="toast_add_success">添加成功</string>
     <string name="toast_unlike_success">取消关注成功</string>
     <string name="toast_unlike_failed">取消关注失败 %1$s</string>
+    <string name="toast_top_forum_failed">置顶失败 %1$s</string>
     <string name="content_top">置顶</string>
     <string name="tip_forum_header_liked">LV%1$s %2$s</string>
     <string name="title_forum_name">%1$s吧</string>

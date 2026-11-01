@@ -387,7 +387,7 @@ private fun ForumItem(
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomePage(
-    viewModel: HomeViewModel = pageViewModel<HomeUiIntent, HomeViewModel>(listOf(HomeUiIntent.Refresh)),
+    viewModel: LegacyHomeViewModel = pageViewModel<HomeUiIntent, LegacyHomeViewModel>(listOf(HomeUiIntent.Refresh)),
     canOpenExplore: Boolean = false,
     onOpenExplore: () -> Unit = {},
 ) {
