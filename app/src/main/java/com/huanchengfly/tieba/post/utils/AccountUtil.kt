@@ -16,10 +16,14 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.database.AccountEntity
+import com.huanchengfly.tieba.post.database.appDatabase
 import com.huanchengfly.tieba.post.models.database.Account
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapConcat
@@ -28,11 +32,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
-import org.litepal.LitePal
-import org.litepal.LitePal.findAll
-import org.litepal.LitePal.where
-import org.litepal.extension.findAllAsync
-import org.litepal.extension.findFirst
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 @Stable
@@ -66,16 +67,15 @@ object AccountUtil {
     val allAccounts: List<Account>
         get() = mutableAllAccountsState.value
 
+    private val dao get() = appDatabase.accountDao()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Loads the accounts, blocking: everything after startup expects to know who is logged in. */
     fun init(context: Context) {
-        val account = runCatching {
-            val loginUser =
-                context.getSharedPreferences("accountData", Context.MODE_PRIVATE).getInt("now", -1)
-            if (loginUser == -1) {
-                null
-            } else getAccountInfo(loginUser)
-        }.getOrNull()
-        mutableCurrentAccountState.value = account
-        mutableAllAccountsState.value = findAll(Account::class.java)
+        val accounts = runBlocking { dao.getAll() }.map { it.toAccount() }
+        val loginUser = context.getSharedPreferences("accountData", Context.MODE_PRIVATE).getInt("now", -1)
+        mutableAllAccountsState.value = accounts
+        mutableCurrentAccountState.value = accounts.firstOrNull { it.id == loginUser }
     }
 
     @JvmStatic
@@ -88,26 +88,39 @@ object AccountUtil {
         return currentAccount?.getter()
     }
 
+    /**
+     * Saves [account] over the account with the same uid, or as a new one, and sets its id. Then
+     * calls [callback] on the main thread with whether it was saved.
+     */
     fun newAccount(uid: String, account: Account, callback: (Boolean) -> Unit) {
-        account.saveOrUpdateAsync("uid = ?", uid).listen {
-            mutableAllAccountsState.value = findAll(Account::class.java)
-            callback(it)
+        scope.launch {
+            val saved = runCatching { save(account.apply { this.uid = uid }) }.isSuccess
+            withContext(Dispatchers.Main) { callback(saved) }
         }
     }
 
-    private fun getAccountInfo(accountId: Int): Account {
-        return where("id = ?", accountId.toString()).findFirst(Account::class.java)
+    /** Saves the account by its uid and sets its id; the current account follows if it is that one. */
+    suspend fun save(account: Account) {
+        account.id = dao.saveByUid(account.toEntity())
+        val accounts = dao.getAll().map { it.toAccount() }
+        mutableAllAccountsState.value = accounts
+        val current = currentAccount
+        if (current != null && current.uid == account.uid) {
+            mutableCurrentAccountState.value = accounts.firstOrNull { it.id == account.id }
+        }
     }
 
-    @JvmStatic
-    fun getAccountInfoByUid(uid: String): Account? {
-        return where("uid = ?", uid).findFirst<Account>()
+    fun saveAsync(account: Account) {
+        scope.launch { save(account) }
     }
 
+    private fun getAccountInfo(accountId: Int): Account? = allAccounts.firstOrNull { it.id == accountId }
+
     @JvmStatic
-    fun getAccountInfoByBduss(bduss: String): Account {
-        return where("bduss = ?", bduss).findFirst(Account::class.java)
-    }
+    fun getAccountInfoByUid(uid: String): Account? = allAccounts.firstOrNull { it.uid == uid }
+
+    @JvmStatic
+    fun getAccountInfoByBduss(bduss: String): Account? = allAccounts.firstOrNull { it.bduss == bduss }
 
     @JvmStatic
     fun isLoggedIn(): Boolean {
@@ -117,7 +130,7 @@ object AccountUtil {
     @JvmStatic
     fun switchAccount(context: Context, id: Int): Boolean {
         context.sendBroadcast(Intent().setAction(ACTION_SWITCH_ACCOUNT))
-        val account = runCatching { getAccountInfo(id) }.getOrNull() ?: return false
+        val account = getAccountInfo(id) ?: return false
         mutableCurrentAccountState.value = account
         GlobalScope.launch {
             emitGlobalEvent(GlobalEvent.AccountSwitched)
@@ -152,7 +165,7 @@ object AccountUtil {
         return TiebaApi.getInstance()
             .loginFlow(bduss, sToken)
             .zip(TiebaApi.getInstance().initNickNameFlow(bduss, sToken)) { loginBean, _ ->
-                getAccountInfoByUid(loginBean.user.id)?.apply {
+                getAccountInfoByUid(loginBean.user.id)?.copy()?.apply {
                     this.bduss = bduss
                     this.sToken = sToken
                     this.cookie = cookie ?: getBdussCookie(bduss)
@@ -184,17 +197,63 @@ object AccountUtil {
                         emit(account)
                     }
             }
-            .onEach { account ->
-                account.saveOrUpdateAsync("uid = ?", account.uid)
-                    .listen {
-                        LitePal.findAllAsync<Account>()
-                            .listen {
-                                mutableAllAccountsState.value = it
-                            }
-                    }
-            }
+            .onEach { account -> save(account) }
             .flowOn(Dispatchers.IO)
     }
+
+    private fun Account.toEntity() = AccountEntity(
+        id = id,
+        uid = uid,
+        name = name,
+        bduss = bduss,
+        tbs = tbs,
+        portrait = portrait,
+        stoken = sToken,
+        cookie = cookie,
+        nameShow = nameShow,
+        intro = intro,
+        sex = sex,
+        fansNum = fansNum,
+        postNum = postNum,
+        threadNum = threadNum,
+        concernNum = concernNum,
+        tbAge = tbAge,
+        age = age,
+        birthdayShowStatus = birthdayShowStatus,
+        birthdayTime = birthdayTime,
+        constellation = constellation,
+        tiebaUid = tiebaUid,
+        loadSuccess = loadSuccess,
+        uuid = uuid,
+        zid = zid,
+    )
+
+    private fun AccountEntity.toAccount() = Account(
+        uid = uid,
+        name = name,
+        bduss = bduss,
+        tbs = tbs,
+        portrait = portrait,
+        sToken = stoken,
+        cookie = cookie,
+        nameShow = nameShow,
+        intro = intro,
+        sex = sex,
+        fansNum = fansNum,
+        postNum = postNum,
+        threadNum = threadNum,
+        concernNum = concernNum,
+        tbAge = tbAge,
+        age = age,
+        birthdayShowStatus = birthdayShowStatus,
+        birthdayTime = birthdayTime,
+        constellation = constellation,
+        tiebaUid = tiebaUid,
+        loadSuccess = loadSuccess,
+        uuid = uuid,
+        zid = zid,
+        id = id,
+    )
 
     fun parseCookie(cookie: String): Map<String, String> {
         return cookie
@@ -210,26 +269,25 @@ object AccountUtil {
         val bduss = cookies["BDUSS"]
         val sToken = cookies["STOKEN"]
         if (bduss != null && sToken != null) {
-            val account = getAccountInfoByBduss(bduss)
-            account.apply {
-                this.sToken = sToken
-                this.cookie = cookie
-            }.update(account.id.toLong())
+            val account = getAccountInfoByBduss(bduss)?.copy() ?: return false
+            account.sToken = sToken
+            account.cookie = cookie
+            saveAsync(account)
             return true
         }
         return false
     }
 
     fun exit(context: Context) {
-        var accounts = allAccounts
-        var account = getLoginInfo() ?: return
-        account.delete()
+        val account = getLoginInfo() ?: return
+        val accounts = allAccounts.filterNot { it.id == account.id }
+        mutableAllAccountsState.value = accounts
+        scope.launch { dao.delete(account.id) }
         CookieManager.getInstance().removeAllCookies(null)
-        if (accounts.size > 1) {
-            accounts = allAccounts
-            account = accounts[0]
-            switchAccount(context, account.id)
-            Toast.makeText(context, "退出登录成功，已切换至账号 " + account.nameShow, Toast.LENGTH_SHORT).show()
+        if (accounts.isNotEmpty()) {
+            val next = accounts[0]
+            switchAccount(context, next.id)
+            Toast.makeText(context, "退出登录成功，已切换至账号 " + next.nameShow, Toast.LENGTH_SHORT).show()
             return
         }
         mutableCurrentAccountState.value = null

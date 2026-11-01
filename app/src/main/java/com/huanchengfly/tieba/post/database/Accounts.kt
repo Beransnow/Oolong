@@ -4,10 +4,11 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Index
+import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Upsert
-import kotlinx.coroutines.flow.Flow
+import androidx.room.Transaction
+import androidx.room.Update
 
 /** A logged-in account: its credentials, and the profile shown in the account list. */
 @Entity(tableName = "accounts", indices = [Index(value = ["uid"], unique = true)])
@@ -41,23 +42,24 @@ data class AccountEntity(
 @Dao
 interface AccountDao {
     @Query("SELECT * FROM accounts ORDER BY id")
-    fun all(): Flow<List<AccountEntity>>
-
-    @Query("SELECT * FROM accounts ORDER BY id")
     suspend fun getAll(): List<AccountEntity>
-
-    @Query("SELECT * FROM accounts WHERE id = :id")
-    suspend fun byId(id: Int): AccountEntity?
 
     @Query("SELECT * FROM accounts WHERE uid = :uid")
     suspend fun byUid(uid: String): AccountEntity?
 
-    @Query("SELECT * FROM accounts WHERE bduss = :bduss")
-    suspend fun byBduss(bduss: String): AccountEntity?
+    @Insert
+    suspend fun insert(account: AccountEntity): Long
 
-    /** Inserts the account, or replaces the one with the same id; returns its id. */
-    @Upsert
-    suspend fun upsert(account: AccountEntity): Long
+    @Update
+    suspend fun update(account: AccountEntity)
+
+    /** Saves the account over the one with the same uid, or as a new one; returns its id. */
+    @Transaction
+    suspend fun saveByUid(account: AccountEntity): Int {
+        val existing = byUid(account.uid) ?: return insert(account.copy(id = 0)).toInt()
+        update(account.copy(id = existing.id))
+        return existing.id
+    }
 
     @Query("DELETE FROM accounts WHERE id = :id")
     suspend fun delete(id: Int)

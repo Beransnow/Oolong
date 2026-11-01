@@ -3,6 +3,5 @@
     <dbname value="tblite" />
     <version value="37" />
     <list>
-        <mapping class="com.huanchengfly.tieba.post.models.database.Account" />
     </list>
 </litepal>

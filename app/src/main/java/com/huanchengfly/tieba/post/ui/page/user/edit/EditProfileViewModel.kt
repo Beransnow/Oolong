@@ -81,7 +81,7 @@ class EditProfileViewModel @Inject constructor() :
                             constellation = user.birthday_info?.constellation
                             tiebaUid = user.tieba_uid
                             loadSuccess = true
-                            updateAll("uid = ?", uid)
+                            AccountUtil.saveAsync(this)
                         }
                         EditProfilePartialChange.Init.Success(account = account)
                     }

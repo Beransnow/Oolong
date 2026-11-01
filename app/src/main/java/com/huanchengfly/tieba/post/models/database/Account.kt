@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.models.database
 
 import androidx.compose.runtime.Stable
-import org.litepal.crud.LitePalSupport
 
 @Stable
 data class Account @JvmOverloads constructor(
@@ -28,6 +27,5 @@ data class Account @JvmOverloads constructor(
     var loadSuccess: Boolean = false,
     var uuid: String? = "",
     var zid: String? = "",
-) : LitePalSupport() {
-    val id: Int = 0
-}
+    var id: Int = 0,
+)

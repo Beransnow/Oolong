@@ -73,7 +73,7 @@ class UserViewModel @Inject constructor() : BaseViewModel<UserUiIntent, UserPart
                             constellation = user.birthday_info?.constellation
                             tiebaUid = user.tieba_uid
                             loadSuccess = true
-                            updateAll("uid = ?", uid)
+                            AccountUtil.saveAsync(this)
                         }
                         UserPartialChange.Refresh.Success(account = account)
                     }

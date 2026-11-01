@@ -97,7 +97,7 @@ private object AccountSessionProvider : SessionProvider {
         val account = AccountUtil.getLoginInfo() ?: return
         if (account.tbs == tbs) return
         account.tbs = tbs
-        account.saveOrUpdateAsync("uid = ?", account.uid)
+        AccountUtil.saveAsync(account)
     }
 }
 
