@@ -36,8 +36,10 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,18 +110,20 @@ fun PersonalizedScreen(
     val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
     var showRefreshTip by remember { mutableStateOf(false) }
+    // Saved, so coming back from another page neither shows the tip again nor scrolls to the top
+    var handledRefresh by rememberSaveable { mutableIntStateOf(0) }
 
     val lastRefresh = state.lastRefresh
-    if (lastRefresh != null) {
-        LaunchedEffect(lastRefresh.id) {
-            showRefreshTip = true
-            launch {
-                delay(20)
-                lazyListState.scrollToItem(0, 0)
-            }
-            delay(2000)
-            showRefreshTip = false
+    LaunchedEffect(lastRefresh?.id) {
+        if (lastRefresh == null || lastRefresh.id == handledRefresh) return@LaunchedEffect
+        handledRefresh = lastRefresh.id
+        showRefreshTip = true
+        launch {
+            delay(20)
+            lazyListState.scrollToItem(0, 0)
         }
+        delay(2000)
+        showRefreshTip = false
     }
     StateScreen(
         modifier = Modifier.fillMaxSize(),
