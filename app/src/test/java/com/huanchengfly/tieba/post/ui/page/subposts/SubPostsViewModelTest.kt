@@ -161,7 +161,7 @@ class SubPostsViewModelTest {
         viewModel.delete(viewModel.state.value.subPosts.items[0].subPost)
         runCurrent()
         assertEquals(listOf(202L), viewModel.state.value.subPosts.items.map { it.subPost.id })
-        coVerify { remote.deletePost(52, "吧名", 9_000, 201, ownPost = true, isSubPost = false, tbs = "page-tbs") }
+        coVerify { remote.deletePost(52, "吧名", 9_000, 201, ownPost = true, isSubPost = true, tbs = "page-tbs") }
 
         viewModel.delete(null)
         runCurrent()

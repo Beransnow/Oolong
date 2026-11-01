@@ -162,11 +162,12 @@ class SubPostsViewModel @Inject constructor(
         val viewerId = sessionProvider.currentSession()?.uid?.toLongOrNull()
         val author = subPost?.author ?: page.post.author
         runCatching {
-            repository.deleteSubPost(
+            repository.deletePost(
                 forum = page.forum,
                 threadId = threadId,
-                subPostId = subPost?.id ?: page.post.id,
+                postId = subPost?.id ?: page.post.id,
                 ownPost = author.id == viewerId,
+                isSubPost = subPost != null,
                 tbs = page.tbs,
             )
         }

@@ -180,15 +180,16 @@ class ThreadRepository @Inject constructor(
         Unit
     }
 
-    /** Deletes a reply inside a post, sent the way the sub-post page has always sent it. */
-    suspend fun deleteSubPost(
+    /** Deletes a post, or with [isSubPost] a reply inside one, from the sub-post page. */
+    suspend fun deletePost(
         forum: ForumSummary,
         threadId: Long,
-        subPostId: Long,
+        postId: Long,
         ownPost: Boolean,
+        isSubPost: Boolean,
         tbs: String?,
     ) = withContext(io) {
-        remote.deletePost(forum.id, forum.name, threadId, subPostId, ownPost, isSubPost = false, tbs = tbs)
+        remote.deletePost(forum.id, forum.name, threadId, postId, ownPost, isSubPost = isSubPost, tbs = tbs)
     }
 
     /** Agrees with the thread, or takes it back when [agree] is false. */
