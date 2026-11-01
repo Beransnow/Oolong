@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.font.FontWeight
@@ -37,23 +38,34 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import kotlin.math.roundToInt
 
 private val TopBarHeight = 56.dp
 
 /** How far above its bottom edge the bar's glass fades out, so it ends at the edge without a line. */
 private val TopBarFade = 16.dp
 
-/** The same for the glass left behind the status bar, which is too short for [TopBarFade]. */
+/** The same for glass behind the status bar alone, which is too short for [TopBarFade]. */
 private val StatusBarFade = 8.dp
+
+/**
+ * The bottom edge of a top bar without its pinned rows. [GlassScaffold] pads its content down to
+ * this line, so pinned rows float over the content and can come and go without moving it.
+ */
+val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
 
 /**
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
  * Its background blurs the content behind it and fades out towards the bar's bottom edge instead
  * of ending at a hard line. Double-tapping it scrolls the page to the top.
  *
- * @param hiddenFraction 0 shows the bar, 1 moves it (and its fade) fully off screen. Glass stays
- * behind the status bar while the bar is hidden, so content never scrolls by sharp under it.
+ * @param hiddenFraction 0 shows the bar, 1 hides it: everything between the status bar and the
+ * pinned rows slides away. Glass stays behind the status bar and the pinned rows, so content
+ * never scrolls by sharp under them.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
+ * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
+ * header. They share the bar's background but float over the content: the scaffold does not pad
+ * the content for them.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -64,12 +76,12 @@ fun GlassTopBar(
     actions: @Composable RowScope.() -> Unit = {},
     hiddenFraction: () -> Float = { 0f },
     content: (@Composable ColumnScope.() -> Unit)? = null,
+    pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
-            Box(modifier = Modifier.layoutId(TopBarLayer.StatusBar).topBarGlass(StatusBarFade))
             Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(TopBarFade))
             Column(
                 modifier = Modifier
@@ -109,27 +121,31 @@ fun GlassTopBar(
                 }
                 content?.invoke(this)
             }
+            if (pinnedContent != null) {
+                Column(
+                    modifier = Modifier
+                        .layoutId(TopBarLayer.Pinned)
+                        .windowInsetsPadding(statusBar.only(WindowInsetsSides.Horizontal)),
+                    content = pinnedContent,
+                )
+            }
         },
         modifier = modifier,
     ) { measurables, constraints ->
-        val foreground = measurables.first { it.layoutId == TopBarLayer.Foreground }
-            .measure(constraints.copy(minHeight = 0))
-        val height = foreground.height
+        val loose = constraints.copy(minHeight = 0)
+        val foreground = measurables.first { it.layoutId == TopBarLayer.Foreground }.measure(loose)
+        val pinned = measurables.firstOrNull { it.layoutId == TopBarLayer.Pinned }?.measure(loose)
+        val height = foreground.height + (pinned?.height ?: 0)
+        // Hiding slides away the rows below the status bar, and the pinned rows move up after
+        // them. The glass shrinks rather than slides, so it still covers the status bar and the
+        // pinned rows and fades out at its new bottom edge.
+        val hidden = ((foreground.height - statusBar.getTop(this)) * hiddenFraction()).roundToInt()
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
-            .measure(Constraints.fixed(foreground.width, height))
-        val statusBarStrip = measurables.first { it.layoutId == TopBarLayer.StatusBar }
-            .measure(Constraints.fixed(foreground.width, statusBar.getTop(this)))
-        // Hiding moves the layers rather than the whole bar, so the status bar keeps its glass
-        // and the hidden bar no longer takes touches.
-        layout(foreground.width, height) {
-            if (hiddenFraction() > 0f) {
-                statusBarStrip.placeWithLayer(0, 0) { alpha = hiddenFraction() }
-            }
-            background.placeWithLayer(0, 0) { translationY = -height * hiddenFraction() }
-            foreground.placeWithLayer(0, 0) {
-                translationY = -height * hiddenFraction()
-                alpha = 1f - hiddenFraction()
-            }
+            .measure(Constraints.fixed(foreground.width, height - hidden))
+        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
+            background.place(0, 0)
+            foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }
+            pinned?.place(0, foreground.height - hidden)
         }
     }
 }
@@ -154,4 +170,4 @@ fun GlassTopBarTitle(text: String) {
     Text(text = text, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
-private enum class TopBarLayer { StatusBar, Background, Foreground }
+private enum class TopBarLayer { Background, Foreground, Pinned }
