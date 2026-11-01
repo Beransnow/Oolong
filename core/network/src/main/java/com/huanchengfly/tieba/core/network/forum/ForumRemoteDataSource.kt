@@ -5,6 +5,7 @@ import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.protobuf.ProtobufBody
+import com.huanchengfly.tieba.post.api.models.protos.RecommendForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequestData
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
@@ -15,6 +16,8 @@ import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListRequest
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListRequestData
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponseData
+import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequest
+import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequestData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequestData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponseData
@@ -39,6 +42,18 @@ class ForumRemoteDataSource(
         )
         val response = service.forumRuleDetail(ProtobufBody(request, commonParams.stokenField()))
         return checkNotNull(response.data_)
+    }
+
+    /** What the forum's info page shows: its avatar, counts, slogan and introduction. */
+    suspend fun forumDetail(forumId: Long): RecommendForumInfo {
+        val request = GetForumDetailRequest(
+            GetForumDetailRequestData(
+                common = commonParams.protobuf(profile),
+                forum_id = forumId,
+            )
+        )
+        val response = service.forumDetail(ProtobufBody(request, commonParams.stokenField()))
+        return checkNotNull(response.data_?.forum_info) { "No forum info" }
     }
 
     /**

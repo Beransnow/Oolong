@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.core.network.TiebaServerException
 import com.huanchengfly.tieba.core.network.fakeSession
 import com.huanchengfly.tieba.core.network.testing.multipartParts
 import com.huanchengfly.tieba.post.api.models.protos.Error
+import com.huanchengfly.tieba.post.api.models.protos.RecommendForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
@@ -20,19 +21,22 @@ import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabLi
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListRequestData
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponse
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponseData
+import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequest
+import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
+import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponseData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponseData
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okio.Buffer
 import org.junit.After
 import org.junit.Before
-import kotlin.random.Random
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.AdParam as FrsAdParam
 
 class ForumRemoteDataSourceTest {
@@ -198,6 +202,22 @@ class ForumRemoteDataSourceTest {
         val sent = ForumRuleDetailRequest.ADAPTER.decode(parts[1].second)
         assertEquals(52, sent.data_?.forum_id)
         assertEquals(commonParams.protobuf(TiebaProfile.PROTO_12_52), sent.data_?.common)
+    }
+
+    @Test
+    fun `asks for a forum's details`() = runTest {
+        enqueue(GetForumDetailResponse(data_ = GetForumDetailResponseData(forum_info = RecommendForumInfo(forum_name = "测试"))).encode())
+
+        val info = dataSource.forumDetail(52)
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/forum/getforumdetail?cmd=303021&format=protobuf", request.target)
+        val parts = multipartParts(request.headers["Content-Type"]!!, request.body!!)
+        assertEquals(listOf("stoken", "data"), parts.map { it.first })
+        val sent = GetForumDetailRequest.ADAPTER.decode(parts[1].second)
+        assertEquals(52, sent.data_?.forum_id)
+        assertEquals(commonParams.protobuf(TiebaProfile.PROTO_12_52), sent.data_?.common)
+        assertEquals("测试", info.forum_name)
     }
 
     @Test
