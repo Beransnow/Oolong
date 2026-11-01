@@ -8,6 +8,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -82,23 +87,20 @@ private fun currentGlassTier(): GlassTier {
 val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 
 /**
- * Background for a bar pinned to the top edge. Blur and tint are strongest at the top and fade to
- * nothing at the bottom, so the bar has no hard edge over the content.
- *
- * @param solidFraction fraction of the height, from the top, that stays fully tinted.
+ * Background for a bar pinned to the top edge. Blur and tint are strongest at the top and fade
+ * out over the last [fade] of its height, ending at its bottom edge without a hard line.
  */
 @Composable
-fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
+fun Modifier.topBarGlass(fade: Dp): Modifier {
     val source = LocalGlassSource.current
     val tier = currentGlassTier()
     val color = ExtendedTheme.colors.background
-    val tint = remember(color, solidFraction) {
-        Brush.verticalGradient(
-            0f to color.copy(alpha = 0.9f),
-            solidFraction to color.copy(alpha = 0.78f),
-            1f to color.copy(alpha = 0f),
-        )
-    }
+    var height by remember { mutableIntStateOf(0) }
+    val fadePx = with(LocalDensity.current) { fade.toPx() }
+    // Where the fade starts. The bar can change height, such as a header collapsing inside it,
+    // so this follows its size rather than being a fixed fraction.
+    val solidFraction = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 1f
+    val measured = onSizeChanged { height = it.height }
     if (source == null || tier == GlassTier.Solid) {
         val solid = remember(color, solidFraction) {
             Brush.verticalGradient(
@@ -107,9 +109,9 @@ fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
                 1f to color.copy(alpha = 0f),
             )
         }
-        return background(solid)
+        return measured.background(solid)
     }
-    val style = remember(color, tint) {
+    val style = remember(color, solidFraction) {
         HazeBlurStyle {
             backgroundColor(color)
             blurRadius(24.dp)
@@ -117,10 +119,20 @@ fun Modifier.topBarGlass(solidFraction: Float = 0.6f): Modifier {
             progressive(
                 HazeProgressive.verticalGradient(startIntensity = 1f, endIntensity = 0f)
             )
-            colorEffects(listOf(HazeColorEffect.tint(tint)))
+            colorEffects(
+                listOf(
+                    HazeColorEffect.tint(
+                        Brush.verticalGradient(
+                            0f to color.copy(alpha = 0.9f),
+                            solidFraction to color.copy(alpha = 0.78f),
+                            1f to color.copy(alpha = 0f),
+                        )
+                    )
+                )
+            )
         }
     }
-    return hazeBlur(input = HazeInput.Sources(source), style = style)
+    return measured.hazeBlur(input = HazeInput.Sources(source), style = style)
 }
 
 /**

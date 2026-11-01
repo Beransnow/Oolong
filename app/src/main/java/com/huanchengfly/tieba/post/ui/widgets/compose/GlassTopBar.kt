@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.font.FontWeight
@@ -41,22 +40,16 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 private val TopBarHeight = 56.dp
 
-/**
- * How far the glass keeps fading out below the bar. It overlaps the top of the content: content
- * at rest starts at the bar's edge, above the fade, so the fade does not leave a gap under the bar.
- */
+/** How far above its bottom edge the bar's glass fades out, so it ends at the edge without a line. */
 private val TopBarFade = 16.dp
 
-/**
- * The bottom edge of the solid part of a top bar, above its fade. [GlassScaffold] pads its
- * content down to this line rather than to the full height of the bar.
- */
-val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
+/** The same for the glass left behind the status bar, which is too short for [TopBarFade]. */
+private val StatusBarFade = 8.dp
 
 /**
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
- * Its background blurs the content behind it and fades out below the bar instead of ending at a
- * hard edge. Double-tapping it scrolls the page to the top.
+ * Its background blurs the content behind it and fades out towards the bar's bottom edge instead
+ * of ending at a hard line. Double-tapping it scrolls the page to the top.
  *
  * @param hiddenFraction 0 shows the bar, 1 moves it (and its fade) fully off screen. Glass stays
  * behind the status bar while the bar is hidden, so content never scrolls by sharp under it.
@@ -76,8 +69,8 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
-            Box(modifier = Modifier.layoutId(TopBarLayer.StatusBar).topBarGlass(0.5f))
-            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(0.8f))
+            Box(modifier = Modifier.layoutId(TopBarLayer.StatusBar).topBarGlass(StatusBarFade))
+            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(TopBarFade))
             Column(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Foreground)
@@ -121,15 +114,14 @@ fun GlassTopBar(
     ) { measurables, constraints ->
         val foreground = measurables.first { it.layoutId == TopBarLayer.Foreground }
             .measure(constraints.copy(minHeight = 0))
-        val fade = TopBarFade.roundToPx()
-        val height = foreground.height + fade
+        val height = foreground.height
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
             .measure(Constraints.fixed(foreground.width, height))
         val statusBarStrip = measurables.first { it.layoutId == TopBarLayer.StatusBar }
-            .measure(Constraints.fixed(foreground.width, statusBar.getTop(this) + fade))
+            .measure(Constraints.fixed(foreground.width, statusBar.getTop(this)))
         // Hiding moves the layers rather than the whole bar, so the status bar keeps its glass
         // and the hidden bar no longer takes touches.
-        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
+        layout(foreground.width, height) {
             if (hiddenFraction() > 0f) {
                 statusBarStrip.placeWithLayer(0, 0) { alpha = hiddenFraction() }
             }
@@ -148,24 +140,12 @@ fun GlassTopBar(
  */
 @Composable
 fun GlassStatusBar(modifier: Modifier = Modifier) {
-    Layout(
-        content = {
-            Box(modifier = Modifier.topBarGlass(0.5f))
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-            )
-        },
-        modifier = modifier,
-    ) { measurables, constraints ->
-        val spacer = measurables[1].measure(constraints.copy(minHeight = 0))
-        val background = measurables[0]
-            .measure(Constraints.fixed(spacer.width, spacer.height + TopBarFade.roundToPx()))
-        layout(background.width, background.height, mapOf(GlassTopBarEdge to spacer.height)) {
-            background.place(0, 0)
-        }
-    }
+    Spacer(
+        modifier = modifier
+            .fillMaxWidth()
+            .windowInsetsTopHeight(WindowInsets.statusBars)
+            .topBarGlass(StatusBarFade)
+    )
 }
 
 /** Single-line title text for [GlassTopBar]. */
