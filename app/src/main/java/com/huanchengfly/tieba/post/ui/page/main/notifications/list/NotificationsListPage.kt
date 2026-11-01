@@ -36,7 +36,6 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -154,8 +153,8 @@ fun NotificationList(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
+            backgroundColor = ExtendedTheme.colors.refreshIndicator,
+            contentColor = ExtendedTheme.colors.emphasis,
         )
     }
 }

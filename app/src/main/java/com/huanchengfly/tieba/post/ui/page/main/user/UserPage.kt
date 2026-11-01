@@ -49,7 +49,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.AboutKey
 import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
 import com.huanchengfly.tieba.post.ui.navigation.HistoryKey
@@ -400,8 +399,8 @@ fun UserScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                contentColor = ExtendedTheme.colors.emphasis,
             )
         }
     }

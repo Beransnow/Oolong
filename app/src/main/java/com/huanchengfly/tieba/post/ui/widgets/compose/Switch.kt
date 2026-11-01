@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -117,7 +118,7 @@ private fun BoxScope.SwitchImpl(
     val elevationOverlay = LocalElevationOverlay.current
     val absoluteElevation = LocalAbsoluteElevation.current + elevation
     val resolvedThumbColor =
-        if (thumbColor == MaterialTheme.colors.surface && elevationOverlay != null) {
+        if (thumbColor == ExtendedTheme.colors.card && elevationOverlay != null) {
             elevationOverlay.apply(thumbColor, absoluteElevation)
         } else {
             thumbColor
@@ -191,24 +192,24 @@ object SwitchDefaults {
      */
     @Composable
     fun colors(
-        checkedThumbColor: Color = MaterialTheme.colors.onSecondary,
-        checkedTrackColor: Color = MaterialTheme.colors.secondary,
+        checkedThumbColor: Color = ExtendedTheme.colors.onEmphasis,
+        checkedTrackColor: Color = ExtendedTheme.colors.emphasis,
         checkedTrackAlpha: Float = 1f,
-        uncheckedThumbColor: Color = MaterialTheme.colors.onBackground,
-        uncheckedTrackColor: Color = MaterialTheme.colors.onBackground,
+        uncheckedThumbColor: Color = ExtendedTheme.colors.text,
+        uncheckedTrackColor: Color = ExtendedTheme.colors.text,
         uncheckedTrackAlpha: Float = 1f,
         disabledCheckedThumbColor: Color = checkedThumbColor
             .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(MaterialTheme.colors.surface),
+            .compositeOver(ExtendedTheme.colors.card),
         disabledCheckedTrackColor: Color = checkedTrackColor
             .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(MaterialTheme.colors.surface),
+            .compositeOver(ExtendedTheme.colors.card),
         disabledUncheckedThumbColor: Color = uncheckedThumbColor
             .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(MaterialTheme.colors.surface),
+            .compositeOver(ExtendedTheme.colors.card),
         disabledUncheckedTrackColor: Color = uncheckedTrackColor
             .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(MaterialTheme.colors.surface)
+            .compositeOver(ExtendedTheme.colors.card)
     ): SwitchColors = DefaultSwitchColors(
         checkedThumbColor = checkedThumbColor,
         checkedTrackColor = checkedTrackColor.copy(alpha = checkedTrackAlpha),

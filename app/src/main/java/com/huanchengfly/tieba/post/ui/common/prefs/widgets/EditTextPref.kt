@@ -60,7 +60,7 @@ fun EditTextPref(
     defaultValue: String = "",
     onValueSaved: ((String) -> Unit) = {},
     onValueChange: ((String) -> Unit) = {},
-    dialogBackgroundColor: Color = MaterialTheme.colors.background,
+    dialogBackgroundColor: Color = ExtendedTheme.colors.background,
     textColor: Color = ExtendedTheme.colors.text,
     leadingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,

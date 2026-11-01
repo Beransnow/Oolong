@@ -83,7 +83,7 @@ fun Dislike(
                         text = stringResource(id = R.string.button_submit_dislike),
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(color = ExtendedTheme.colors.primary)
+                            .background(color = ExtendedTheme.colors.emphasis)
                             .clickable {
                                 dismiss()
                                 onDislike(clickTime, selectedReasons.toImmutableList())
@@ -113,7 +113,7 @@ fun Dislike(
                         span = { if (it.wide) 2 else 1 }
                     ) {
                         val backgroundColor by animateColorAsState(
-                            targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.primary else ExtendedTheme.colors.chip
+                            targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip
                         )
                         val contentColor by animateColorAsState(
                             targetValue = if (selectedReasons.contains(it)) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip

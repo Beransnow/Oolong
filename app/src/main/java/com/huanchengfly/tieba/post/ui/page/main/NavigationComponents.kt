@@ -32,7 +32,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -112,14 +111,14 @@ fun NavigationRail(
                 modifier = Modifier
                     .offset { IntOffset(0, (indicator.value * itemHeight.toPx()).roundToInt()) }
                     .size(width = itemWidth, height = itemHeight)
-                    .background(MaterialTheme.colors.secondary.copy(alpha = 0.12f), NavPillShape)
+                    .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
             )
             Column {
                 navigationItems.fastForEachIndexed { index, navigationItem ->
                     val selected = index == currentPosition
                     val title = navigationItem.title(selected)
                     val contentColor =
-                        if (selected) MaterialTheme.colors.secondary else themeColors.textSecondary
+                        if (selected) ExtendedTheme.colors.emphasis else themeColors.textSecondary
                     Column(
                         modifier = Modifier
                             .size(width = itemWidth, height = itemHeight)
@@ -179,7 +178,7 @@ private fun NavItemIcon(
                     .clip(CircleShape)
                     .align(Alignment.TopEnd)
                     .background(
-                        color = MaterialTheme.colors.secondary,
+                        color = ExtendedTheme.colors.emphasis,
                         shape = CircleShape
                     ),
             )
@@ -318,14 +317,14 @@ fun FloatingNavBar(
                         .offset { IntOffset((indicator.value * itemWidthPx).roundToInt(), 0) }
                         .size(width = itemWidth, height = itemHeight)
                         .graphicsLayer { alpha = 1f - press.value }
-                        .background(MaterialTheme.colors.secondary.copy(alpha = 0.12f), NavPillShape)
+                        .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
                 )
                 Row {
                     navigationItems.fastForEachIndexed { index, navigationItem ->
                         val selected = index == currentPosition
                         val title = navigationItem.title(selected)
                         val contentColor =
-                            if (index == highlighted) MaterialTheme.colors.secondary
+                            if (index == highlighted) ExtendedTheme.colors.emphasis
                             else themeColors.textSecondary
                         Column(
                             modifier = Modifier

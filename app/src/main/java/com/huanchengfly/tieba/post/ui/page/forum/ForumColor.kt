@@ -49,7 +49,7 @@ fun rememberForumAccent(avatar: String): Color {
 
 /** The forum's colour where there is one, the theme's primary colour otherwise. */
 @Composable
-fun forumAccentOrPrimary(): Color = LocalForumAccent.current.takeOrElse { ExtendedTheme.colors.primary }
+fun forumAccentOrPrimary(): Color = LocalForumAccent.current.takeOrElse { ExtendedTheme.colors.emphasis }
 
 /** Text and icons on [forumAccentOrPrimary]. */
 @Composable

@@ -18,7 +18,6 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
@@ -77,8 +76,8 @@ fun SearchThreadResults(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                contentColor = ExtendedTheme.colors.emphasis,
             )
         }
     }

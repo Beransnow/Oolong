@@ -78,7 +78,7 @@ private class BottomSheetScene<T : Any>(
             sheetContent = { entry.Content() },
             sheetState = state,
             sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-            sheetBackgroundColor = ExtendedTheme.colors.windowBackground,
+            sheetBackgroundColor = ExtendedTheme.colors.sheet,
             scrimColor = Color.Black.copy(alpha = 0.32f),
             content = {},
         )

@@ -47,7 +47,7 @@ fun MultiSelectListPref(
     summary: String? = null,
     defaultValue: Set<String> = setOf(),
     onValuesChange: ((Set<String>) -> Unit)? = null,
-    dialogBackgroundColor: Color = MaterialTheme.colors.surface,
+    dialogBackgroundColor: Color = ExtendedTheme.colors.card,
     textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     // TODO: Change to List?
@@ -118,7 +118,7 @@ fun MultiSelectListPref(
                                 Checkbox(
                                     checked = isSelected,
                                     onCheckedChange = { onSelectionChanged() },
-                                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colors.primary)
+                                    colors = CheckboxDefaults.colors(checkedColor = ExtendedTheme.colors.accent)
                                 )
                                 Text(
                                     text = current.second,

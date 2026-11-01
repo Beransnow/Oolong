@@ -355,7 +355,7 @@ private fun SearchSuggestionList(
 private fun SearchSuggestionListPreview() {
     TiebaLiteTheme {
         Box(
-            modifier = Modifier.background(ExtendedTheme.colors.topBar)
+            modifier = Modifier.background(ExtendedTheme.colors.background)
         ) {
             SearchSuggestionList(
                 suggestions = persistentListOf("1", "2", "3"),
@@ -382,7 +382,7 @@ private fun ColumnScope.SearchTabRow(
         },
         divider = {},
         backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.onTopBar,
+        contentColor = ExtendedTheme.colors.topBarContent,
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
             .width(76.dp * pages.size),
@@ -561,7 +561,7 @@ private fun SearchTopBar(
         placeholder = {
             Text(
                 text = stringResource(id = R.string.hint_search),
-                color = ExtendedTheme.colors.onTopBarSurface.copy(alpha = ContentAlpha.medium)
+                color = ExtendedTheme.colors.onSearchField.copy(alpha = ContentAlpha.medium)
             )
         },
         prependIcon = {
@@ -594,7 +594,7 @@ fun PreviewSearchBox() {
         Box(
             modifier = Modifier
                 .height(64.dp)
-                .background(ExtendedTheme.colors.topBar)
+                .background(ExtendedTheme.colors.background)
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         ) {
             SearchTopBar(

@@ -185,9 +185,9 @@ fun AppThemePage(
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             modifier = Modifier.weight(1f),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
-                                cursorColor = ExtendedTheme.colors.primary,
-                                focusedBorderColor = ExtendedTheme.colors.primary,
-                                focusedLabelColor = ExtendedTheme.colors.primary
+                                cursorColor = ExtendedTheme.colors.emphasis,
+                                focusedBorderColor = ExtendedTheme.colors.emphasis,
+                                focusedLabelColor = ExtendedTheme.colors.emphasis
                             )
                         )
                         IconButton(
@@ -282,19 +282,19 @@ fun AppThemePage(
                                         Icons.Rounded.Colorize
                                     },
                                     contentDescription = null,
-                                    tint = ExtendedTheme.colors.windowBackground
+                                    tint = ExtendedTheme.colors.sheet
                                 )
                                 Text(
                                     text = stringResource(id = R.string.title_dynamic_theme),
                                     fontWeight = FontWeight.Bold,
-                                    color = ExtendedTheme.colors.windowBackground
+                                    color = ExtendedTheme.colors.sheet
                                 )
                             }
                         }
                     }
                 }
                 item {
-                    ProvideContentColor(color = ExtendedTheme.colors.windowBackground) {
+                    ProvideContentColor(color = ExtendedTheme.colors.sheet) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -532,7 +532,7 @@ private fun ThemeItem(
             Icon(
                 imageVector = Icons.Rounded.Check,
                 contentDescription = stringResource(id = R.string.desc_checked),
-                tint = ExtendedTheme.colors.primary
+                tint = ExtendedTheme.colors.emphasis
             )
         }
     }

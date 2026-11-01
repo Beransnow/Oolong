@@ -165,7 +165,7 @@ fun ActionItem(
     contentDescription: String,
     onClick: () -> Unit
 ) {
-    ProvideContentColor(color = ExtendedTheme.colors.onTopBar) {
+    ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
         IconButton(onClick = onClick) {
             Icon(
                 imageVector = icon,
@@ -177,7 +177,7 @@ fun ActionItem(
 
 @Composable
 fun BackNavigationIcon(onBackPressed: () -> Unit) {
-    ProvideContentColor(color = ExtendedTheme.colors.onTopBar) {
+    ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
         IconButton(onClick = onBackPressed) {
             Icon(
                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_round_arrow_back),
@@ -236,8 +236,8 @@ fun TitleCentredToolbar(
     TopAppBarContainer(
         topBar = {
             TopAppBar(
-                backgroundColor = ExtendedTheme.colors.topBar,
-                contentColor = ExtendedTheme.colors.onTopBar,
+                backgroundColor = ExtendedTheme.colors.background,
+                contentColor = ExtendedTheme.colors.topBarContent,
                 elevation = 0.dp
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -246,7 +246,7 @@ fun TitleCentredToolbar(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxHeight()
                     ) {
-                        ProvideContentColor(color = ExtendedTheme.colors.onTopBar) {
+                        ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
                             navigationIcon?.invoke()
 
                             Spacer(modifier = Modifier.weight(1f))
@@ -263,7 +263,7 @@ fun TitleCentredToolbar(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
-                            ProvideContentColor(color = ExtendedTheme.colors.onTopBar) {
+                            ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
                                 title()
                             }
                         }
@@ -299,8 +299,8 @@ fun Toolbar(
     title: @Composable (() -> Unit),
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    backgroundColor: Color = ExtendedTheme.colors.topBar,
-    contentColor: Color = ExtendedTheme.colors.onTopBar,
+    backgroundColor: Color = ExtendedTheme.colors.background,
+    contentColor: Color = ExtendedTheme.colors.topBarContent,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     TopAppBarContainer(
@@ -348,7 +348,7 @@ fun TopAppBarContainer(
         Spacer(
             modifier = statusBarModifier
                 .fillMaxWidth()
-                .background(color = ExtendedTheme.colors.topBar)
+                .background(color = ExtendedTheme.colors.background)
         )
         Column(
             modifier = Modifier
@@ -368,7 +368,7 @@ fun TopAppBarContainer(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = ExtendedTheme.colors.topBar),
+                    .background(color = ExtendedTheme.colors.background),
             ) {
                 content()
             }

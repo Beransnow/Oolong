@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -42,11 +43,11 @@ fun TimePicker(
     divider: NumberPickerDivider = NumberPickerDivider(),
     itemStyles: ItemStyles = ItemStyles(
         defaultTextStyle = MaterialTheme.typography.body1.copy(
-            color = MaterialTheme.colors.onBackground.copy(alpha = ContentAlpha.medium),
+            color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.medium),
             fontWeight = FontWeight.Normal
         ),
         selectedTextStyle = MaterialTheme.typography.h5.copy(
-            color = MaterialTheme.colors.onBackground.copy(alpha = ContentAlpha.high),
+            color = ExtendedTheme.colors.text.copy(alpha = ContentAlpha.high),
             fontWeight = FontWeight.Medium
         )
     )

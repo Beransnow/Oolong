@@ -125,7 +125,7 @@ fun BlockListScreen(
                         },
                         divider = {},
                         backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.onTopBar,
+                        contentColor = ExtendedTheme.colors.topBarContent,
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .width(84.dp * 2),

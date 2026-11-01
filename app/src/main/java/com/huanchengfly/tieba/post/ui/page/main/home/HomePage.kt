@@ -81,7 +81,6 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
 import com.huanchengfly.tieba.post.ui.navigation.SearchKey
@@ -125,13 +124,13 @@ fun SearchBoxPreview() {
 @Composable
 fun SearchBox(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = ExtendedTheme.colors.topBarSurface,
-    contentColor: Color = ExtendedTheme.colors.onTopBarSurface,
+    backgroundColor: Color = ExtendedTheme.colors.searchField,
+    contentColor: Color = ExtendedTheme.colors.onSearchField,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = modifier
-            .background(ExtendedTheme.colors.topBar)
+            .background(ExtendedTheme.colors.background)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Surface(
@@ -663,8 +662,8 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                contentColor = ExtendedTheme.colors.emphasis,
             )
         }
     }

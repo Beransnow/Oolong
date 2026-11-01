@@ -266,7 +266,7 @@ fun SearchThreadItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
+                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onQuotePostClick(quoted)
                             },
@@ -280,7 +280,7 @@ fun SearchThreadItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
+                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onMainPostClick(thread)
                             },
@@ -389,8 +389,8 @@ fun SearchBox(
     appendIcon: @Composable () -> Unit = {},
     focusRequester: FocusRequester = remember { FocusRequester() },
     shape: Shape = RectangleShape,
-    color: Color = ExtendedTheme.colors.topBarSurface,
-    contentColor: Color = ExtendedTheme.colors.onTopBarSurface,
+    color: Color = ExtendedTheme.colors.searchField,
+    contentColor: Color = ExtendedTheme.colors.onSearchField,
     elevation: Dp = 0.dp,
 ) {
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }

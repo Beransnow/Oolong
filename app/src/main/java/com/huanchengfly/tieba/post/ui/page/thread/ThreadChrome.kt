@@ -44,7 +44,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.loadMoreIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -182,7 +181,7 @@ internal fun LoadMorePill(
     Surface(
         elevation = 8.dp,
         shape = RoundedCornerShape(100),
-        color = ExtendedTheme.colors.loadMoreIndicator,
+        color = ExtendedTheme.colors.refreshIndicator,
         contentColor = ExtendedTheme.colors.text
     ) {
         Row(
@@ -203,7 +202,7 @@ internal fun LoadMorePill(
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 3.dp,
-                        color = ExtendedTheme.colors.primary
+                        color = ExtendedTheme.colors.emphasis
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }

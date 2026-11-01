@@ -39,7 +39,7 @@ val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
             )
         }
     }
-//    CircularProgressIndicator(modifier = Modifier.size(48.dp), color = MaterialTheme.colors.primary)
+//    CircularProgressIndicator(modifier = Modifier.size(48.dp), color = ExtendedTheme.colors.accent)
 }
 
 val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {

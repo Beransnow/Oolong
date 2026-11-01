@@ -40,7 +40,7 @@ fun Button(
     shape: Shape = RoundedCornerShape(100),
     border: BorderStroke? = null,
     colors: ButtonColors = ButtonDefaults.buttonColors(
-        backgroundColor = ExtendedTheme.colors.primary,
+        backgroundColor = ExtendedTheme.colors.emphasis,
         contentColor = ExtendedTheme.colors.onAccent
     ),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,

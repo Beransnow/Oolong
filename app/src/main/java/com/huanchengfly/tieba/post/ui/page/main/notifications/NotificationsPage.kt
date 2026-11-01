@@ -73,7 +73,7 @@ fun NotificationsPage(
                             },
                             divider = {},
                             backgroundColor = Color.Transparent,
-                            contentColor = ExtendedTheme.colors.onTopBar,
+                            contentColor = ExtendedTheme.colors.topBarContent,
                         ) {
                             pages.forEachIndexed { index, pair ->
                                 Tab(
@@ -149,7 +149,7 @@ fun NotificationsTab(
                         },
                         divider = {},
                         backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.onTopBar,
+                        contentColor = ExtendedTheme.colors.topBarContent,
                     ) {
                         pages.forEachIndexed { index, pair ->
                             Tab(

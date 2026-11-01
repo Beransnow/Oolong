@@ -733,7 +733,7 @@ fun ThreadAgreeBtn(
     modifier: Modifier = Modifier,
 ) {
     val contentColor =
-        if (hasAgree) ExtendedTheme.colors.primary else ExtendedTheme.colors.textSecondary
+        if (hasAgree) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.textSecondary
     val animatedColor by animateColorAsState(contentColor, label = "agreeBtnContentColor")
 
     ActionBtn(
@@ -829,7 +829,7 @@ fun FeedCard(
                         originThreadInfo = it,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
+                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onClickOriginThread(it.get())
                             }
@@ -904,7 +904,7 @@ fun FeedCard(
                         originThreadInfo = it,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.floorCard)
+                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onClickOriginThread(it.get())
                             }

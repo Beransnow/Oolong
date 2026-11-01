@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapsingScrollBehavior
@@ -188,8 +187,8 @@ fun ForumScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = contentPadding.calculateTopPadding()),
-                    backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                    contentColor = ExtendedTheme.colors.primary,
+                    backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                    contentColor = ExtendedTheme.colors.emphasis,
                 )
             }
         }

@@ -52,7 +52,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.HotTopicListKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
@@ -145,7 +144,7 @@ fun HotScreen(
                                             0 -> RedA700
                                             1 -> OrangeA700
                                             2 -> Yellow
-                                            else -> MaterialTheme.colors.onBackground.copy(
+                                            else -> ExtendedTheme.colors.text.copy(
                                                 ContentAlpha.medium
                                             )
                                         },
@@ -188,7 +187,7 @@ fun HotScreen(
                                 }
                             }
                             item {
-                                ProvideContentColor(color = ExtendedTheme.colors.primary) {
+                                ProvideContentColor(color = ExtendedTheme.colors.emphasis) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -305,8 +304,8 @@ fun HotScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
+            backgroundColor = ExtendedTheme.colors.refreshIndicator,
+            contentColor = ExtendedTheme.colors.emphasis,
         )
     }
 }
@@ -321,7 +320,7 @@ private fun HotRank(index: Int, hotNum: Int) {
             0 -> RedA700
             1 -> OrangeA700
             2 -> Yellow
-            else -> MaterialTheme.colors.onBackground.copy(ContentAlpha.medium)
+            else -> ExtendedTheme.colors.text.copy(ContentAlpha.medium)
         }
         Text(
             text = "${index + 1}",
@@ -382,7 +381,7 @@ private fun ThreadListTab(
     onSelected: () -> Unit
 ) {
     val textColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip)
-    val backgroundColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.chip)
+    val backgroundColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip)
     Text(
         text = text,
         textAlign = TextAlign.Center,
@@ -406,14 +405,14 @@ private fun ChipHeader(
     modifier: Modifier = Modifier
 ) {
     Text(
-        color = if (invert) MaterialTheme.colors.onSecondary else ExtendedTheme.colors.onChip,
+        color = if (invert) ExtendedTheme.colors.onEmphasis else ExtendedTheme.colors.onChip,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         text = text,
         modifier = Modifier
             .clip(RoundedCornerShape(100))
             .then(modifier)
-            .background(color = if (invert) MaterialTheme.colors.secondary else ExtendedTheme.colors.chip)
+            .background(color = if (invert) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip)
             .padding(horizontal = 16.dp, vertical = 4.dp)
     )
 }

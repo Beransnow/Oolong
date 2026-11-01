@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AlignVerticalTop
@@ -55,7 +54,6 @@ import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
@@ -122,7 +120,7 @@ internal fun ThreadContent(
                 error != null -> remember { StateScreenScope { onEvent(ThreadEvent.Retry) } }
                     .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
 
-                loadingFirstTime -> CircularProgressIndicator(color = ExtendedTheme.colors.primary)
+                loadingFirstTime -> CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
             }
         }
         return
@@ -208,7 +206,7 @@ internal fun ThreadContent(
                 if (loadingFirstTime) {
                     item(key = "Loading") {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = ExtendedTheme.colors.primary)
+                            CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
                         }
                     }
                 }
@@ -221,8 +219,8 @@ internal fun ThreadContent(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = padding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
+            backgroundColor = ExtendedTheme.colors.refreshIndicator,
+            contentColor = ExtendedTheme.colors.emphasis,
         )
     }
 }
@@ -265,7 +263,7 @@ private fun FirstPost(
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.floorCard)
+                        .background(ExtendedTheme.colors.inset)
                         .clickable {
                             onEvent(ThreadEvent.OpenOriginThread(origin.get { tid.toLong() }, origin.get { fid }))
                         }
@@ -293,7 +291,7 @@ internal fun ThreadHeader(
     state: ThreadState,
     onEvent: (ThreadEvent) -> Unit,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colors.background,
+    backgroundColor: Color = ExtendedTheme.colors.background,
 ) {
     Container(modifier = modifier) {
         Row(

@@ -662,7 +662,7 @@ private fun UserProfileTabRow(
         },
         divider = {},
         backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.primary,
+        contentColor = ExtendedTheme.colors.emphasis,
         edgePadding = 0.dp,
         modifier = modifier.wrapContentWidth(align = Alignment.Start),
     ) {
@@ -674,7 +674,7 @@ private fun UserProfileTabRow(
                         pagerState.animateScrollToPage(i)
                     }
                 },
-                selectedContentColor = ExtendedTheme.colors.primary,
+                selectedContentColor = ExtendedTheme.colors.emphasis,
                 unselectedContentColor = ExtendedTheme.colors.textSecondary,
             ) {
                 Row(
@@ -854,12 +854,12 @@ private fun UserProfileDetail(
                     imageVector = Icons.Rounded.Verified,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = ExtendedTheme.colors.primary,
+                    tint = ExtendedTheme.colors.emphasis,
                 )
                 Text(
                     text = verifiedText,
                     style = MaterialTheme.typography.body2,
-                    color = ExtendedTheme.colors.primary,
+                    color = ExtendedTheme.colors.emphasis,
                 )
             }
         }

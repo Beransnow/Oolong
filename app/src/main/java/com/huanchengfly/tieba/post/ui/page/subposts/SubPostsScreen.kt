@@ -225,7 +225,7 @@ private fun SubPostsContent(
                 remember { StateScreenScope { onEvent(SubPostsEvent.Retry) } }
                     .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
             } else {
-                CircularProgressIndicator(color = ExtendedTheme.colors.primary)
+                CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
             }
         }
         return

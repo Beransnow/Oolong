@@ -53,7 +53,7 @@ fun CopyTextDialogPage(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxSize()
-            .background(color = ExtendedTheme.colors.windowBackground)
+            .background(color = ExtendedTheme.colors.sheet)
     ) {
         CopyTextPageContent(
             text = text,
@@ -78,7 +78,7 @@ private fun CopyTextPageContent(
         modifier = Modifier
             .widthIn(max = MaxReadingWidth)
             .fillMaxWidth()
-            .background(color = ExtendedTheme.colors.windowBackground)
+            .background(color = ExtendedTheme.colors.sheet)
             .systemBarsPadding()
             .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

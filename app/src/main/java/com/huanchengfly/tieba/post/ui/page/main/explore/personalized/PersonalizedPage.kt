@@ -55,7 +55,6 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
@@ -159,8 +158,8 @@ fun PersonalizedScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                contentColor = ExtendedTheme.colors.emphasis,
             )
 
             AnimatedVisibility(
@@ -184,7 +183,7 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
             .padding(top = 72.dp)
             .clip(RoundedCornerShape(100))
             .background(
-                color = ExtendedTheme.colors.primary,
+                color = ExtendedTheme.colors.emphasis,
                 shape = RoundedCornerShape(100)
             )
             .padding(horizontal = 16.dp, vertical = 8.dp)

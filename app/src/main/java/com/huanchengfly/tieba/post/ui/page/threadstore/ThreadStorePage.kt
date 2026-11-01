@@ -46,7 +46,6 @@ import com.huanchengfly.tieba.post.model.StoredThread
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -169,8 +168,8 @@ fun ThreadStoreScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = contentPaddings.calculateTopPadding()),
-                    backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                    contentColor = ExtendedTheme.colors.primary,
+                    backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                    contentColor = ExtendedTheme.colors.emphasis,
                 )
             }
         }

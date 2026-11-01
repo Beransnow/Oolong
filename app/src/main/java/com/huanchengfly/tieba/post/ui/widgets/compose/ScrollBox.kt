@@ -7,7 +7,6 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.roundToInt
 
 private const val TAG = "UniversalScrollBox"
@@ -33,7 +33,7 @@ private fun TwoFloats(width: Float, height: Float) = androidx.compose.ui.geometr
 fun UniversalScrollBox(
     modifier: Modifier = Modifier,
     scrollBarStroke: Dp = 2.dp,
-    scrollBarColor: Color = MaterialTheme.colors.secondary.copy(alpha = 0.5F),
+    scrollBarColor: Color = ExtendedTheme.colors.emphasis.copy(alpha = 0.5F),
     content: @Composable () -> Unit
 ) {
     Box(

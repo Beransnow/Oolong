@@ -161,7 +161,7 @@ internal fun PhotoMenuOverlay(viewer: PhotoViewer, menu: PhotoMenu, origin: Offs
                     clip = true
                     shadowElevation = 16.dp.toPx() * p.coerceIn(0f, 1f)
                 }
-                .background(colors.windowBackground)
+                .background(colors.sheet)
                 .padding(vertical = 6.dp),
         ) {
             actions.forEachIndexed { index, action ->

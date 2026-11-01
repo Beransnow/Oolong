@@ -47,7 +47,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Shapes
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -90,7 +89,7 @@ private fun TopicImage(
             text = "${index + 1}",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colors.background,
+            color = ExtendedTheme.colors.background,
             fontFamily = FontFamily(
                 Typeface.createFromAsset(
                     LocalContext.current.assets,
@@ -103,7 +102,7 @@ private fun TopicImage(
                         0 -> RedA700
                         1 -> OrangeA700
                         2 -> Yellow
-                        else -> MaterialTheme.colors.onBackground.copy(ContentAlpha.medium)
+                        else -> ExtendedTheme.colors.text.copy(ContentAlpha.medium)
                     }
                 )
                 .padding(4.dp)
@@ -234,8 +233,8 @@ fun HotTopicListScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                contentColor = ExtendedTheme.colors.emphasis,
             )
         }
     }

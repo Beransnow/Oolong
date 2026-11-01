@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 object PlaceholderDefaults {
     val fadeAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
@@ -68,14 +69,14 @@ object PlaceholderDefaults {
 
     @Composable
     fun color(
-        backgroundColor: Color = MaterialTheme.colors.surface,
+        backgroundColor: Color = ExtendedTheme.colors.card,
         contentColor: Color = contentColorFor(backgroundColor),
         contentAlpha: Float = 0.1f,
     ): Color = contentColor.copy(contentAlpha).compositeOver(backgroundColor)
 
     @Composable
     fun fadeHighlightColor(
-        backgroundColor: Color = MaterialTheme.colors.surface,
+        backgroundColor: Color = ExtendedTheme.colors.card,
         alpha: Float = 0.3f,
     ): Color = backgroundColor.copy(alpha = alpha)
 }

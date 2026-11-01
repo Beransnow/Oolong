@@ -159,7 +159,7 @@ fun LoginPage(
                                 text = currentHost,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                color = ExtendedTheme.colors.onTopBarSecondary,
+                                color = ExtendedTheme.colors.topBarContentSecondary,
                                 style = MaterialTheme.typography.caption
                             )
                         }

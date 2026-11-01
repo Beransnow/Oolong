@@ -400,7 +400,7 @@ private fun RowButton(text: String, onClick: () -> Unit) {
         maxLines = 1,
         modifier = Modifier
             .clip(ChipShape)
-            .background(colors.windowBackground)
+            .background(colors.sheet)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp),
     )
@@ -415,7 +415,7 @@ private fun ToggleChip(
 ) {
     val colors = ExtendedTheme.colors
     val background = if (checked) colors.text else colors.chip
-    val content = if (checked) colors.windowBackground else colors.textSecondary
+    val content = if (checked) colors.sheet else colors.textSecondary
     Row(
         modifier = Modifier
             .height(26.dp)
@@ -473,7 +473,7 @@ internal fun ComposerIconButton(
                 fontSize = 10.sp,
                 lineHeight = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = colors.windowBackground,
+                color = colors.sheet,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 3.dp, end = 3.dp)
@@ -499,7 +499,7 @@ private fun SendButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
     ) {
         if (busy) {
             CircularProgressIndicator(
-                color = colors.windowBackground,
+                color = colors.sheet,
                 strokeWidth = 2.dp,
                 modifier = Modifier.size(16.dp),
             )
@@ -507,7 +507,7 @@ private fun SendButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Rounded.ArrowUpward,
                 contentDescription = stringResource(id = R.string.send_reply),
-                tint = colors.windowBackground,
+                tint = colors.sheet,
                 modifier = Modifier.size(22.dp),
             )
         }

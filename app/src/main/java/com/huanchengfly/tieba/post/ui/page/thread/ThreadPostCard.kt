@@ -199,7 +199,7 @@ private fun SubPosts(
             .fillMaxWidth()
             .then(indent)
             .clip(RoundedCornerShape(6.dp))
-            .background(ExtendedTheme.colors.floorCard)
+            .background(ExtendedTheme.colors.inset)
             .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {

@@ -522,7 +522,7 @@ fun ReplyChrome(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(with(density) { keyboardTop.toDp() })
-                    .background(colors.windowBackground)
+                    .background(colors.sheet)
                     .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
             ) {
                 panel()
@@ -572,7 +572,7 @@ private fun MorphingGlass(bounds: Rect, radius: Dp, opaque: Boolean, squareBotto
             // Grown into a surface, the glass reads as thicker: a deeper shadow under it
             .shadow(elevation = 18.dp, shape = shape, ambientColor = Color.Black.copy(alpha = 0.18f), spotColor = Color.Black.copy(alpha = 0.22f))
             .floatingGlass(shape)
-            .then(if (opaque) Modifier.background(colors.windowBackground, shape) else Modifier)
+            .then(if (opaque) Modifier.background(colors.sheet, shape) else Modifier)
     )
 }
 

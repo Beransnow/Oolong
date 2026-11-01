@@ -424,7 +424,7 @@ fun HighlightText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = ExtendedTheme.colors.primary,
+    highlightColor: Color = ExtendedTheme.colors.emphasis,
     highlightStyle: TextStyle = style,
 ) {
     HighlightText(
@@ -476,7 +476,7 @@ fun HighlightText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
-    highlightColor: Color = ExtendedTheme.colors.primary,
+    highlightColor: Color = ExtendedTheme.colors.emphasis,
     highlightStyle: TextStyle = style,
 ) {
     val mergedHighlightStyle = remember(highlightStyle, highlightColor) {

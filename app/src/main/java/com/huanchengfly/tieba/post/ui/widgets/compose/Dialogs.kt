@@ -69,8 +69,8 @@ fun DialogScope.DialogPositiveButton(
             .fillMaxWidth(),
         shape = RoundedCornerShape(100),
         colors = ButtonDefaults.textButtonColors(
-            backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = MaterialTheme.colors.onSecondary
+            backgroundColor = ExtendedTheme.colors.emphasis,
+            contentColor = ExtendedTheme.colors.onEmphasis
         ),
     ) {
         Text(
@@ -300,9 +300,9 @@ fun PromptDialog(
                     .focusRequester(focusRequester)
                     .fillMaxWidth(),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    cursorColor = ExtendedTheme.colors.primary,
-                    focusedBorderColor = ExtendedTheme.colors.primary,
-                    focusedLabelColor = ExtendedTheme.colors.primary
+                    cursorColor = ExtendedTheme.colors.emphasis,
+                    focusedBorderColor = ExtendedTheme.colors.emphasis,
+                    focusedLabelColor = ExtendedTheme.colors.emphasis
                 )
             )
             LaunchedEffect(focusRequester) {
@@ -409,7 +409,7 @@ fun Dialog(
                 .fillMaxWidth()
                 .padding(16.dp)
                 .background(
-                    color = ExtendedTheme.colors.windowBackground,
+                    color = ExtendedTheme.colors.sheet,
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(vertical = 24.dp),

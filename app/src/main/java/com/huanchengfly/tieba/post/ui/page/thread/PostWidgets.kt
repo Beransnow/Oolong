@@ -108,8 +108,8 @@ fun UserNameText(
             ),
             "Bawu" to buildChipInlineContent(
                 bawuType ?: "",
-                color = ExtendedTheme.colors.primary,
-                backgroundColor = ExtendedTheme.colors.primary.copy(alpha = 0.1f)
+                color = ExtendedTheme.colors.emphasis,
+                backgroundColor = ExtendedTheme.colors.emphasis.copy(alpha = 0.1f)
             ),
             "Lz" to buildChipInlineContent(stringResource(id = R.string.tip_lz)),
         ),

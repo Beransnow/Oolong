@@ -178,7 +178,7 @@ private fun AlbumSwitcher(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colors.surface),
+            modifier = Modifier.background(ExtendedTheme.colors.card),
         ) {
             albums.forEach { album ->
                 DropdownMenuItem(
@@ -277,7 +277,7 @@ private fun SelectedOnlyBanner(onSelectMore: () -> Unit) {
             style = MaterialTheme.typography.body2,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onSelectMore, color = ExtendedTheme.colors.primary) {
+        TextButton(onClick = onSelectMore, color = ExtendedTheme.colors.emphasis) {
             Text(text = stringResource(id = R.string.button_picker_select_more))
         }
     }
@@ -337,7 +337,7 @@ private fun SelectionBadge(order: Int?, modifier: Modifier = Modifier) {
             .clip(CircleShape)
             .then(
                 if (order != null) {
-                    Modifier.background(ExtendedTheme.colors.primary)
+                    Modifier.background(ExtendedTheme.colors.emphasis)
                 } else {
                     Modifier
                         .background(Color.Black.copy(alpha = 0.2f))

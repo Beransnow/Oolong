@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +35,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
 @SuppressLint("ComposableLambdaParameterPosition", "ComposableLambdaParameterNaming")
@@ -51,7 +51,7 @@ fun SeekBar(
     onSeekStopped: (stoppedProgress: Long) -> Unit = {},
     seekerPopup: @Composable () -> Unit = {},
     showSeekerDuration: Boolean = true,
-    color: Color = MaterialTheme.colors.primary,
+    color: Color = ExtendedTheme.colors.accent,
     secondaryColor: Color = Color.White.copy(alpha = 0.6f)
 ) {
     // if there is an ongoing drag, only dragging progress is evaluated.
@@ -226,7 +226,7 @@ fun SeekBar(
 @Composable
 fun Indicator(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colors.primary,
+    color: Color = ExtendedTheme.colors.accent,
 ) {
     Canvas(modifier = modifier) {
         val radius = size.height / 2

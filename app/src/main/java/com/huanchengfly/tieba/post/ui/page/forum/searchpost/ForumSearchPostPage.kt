@@ -68,7 +68,6 @@ import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
@@ -307,7 +306,7 @@ fun ForumSearchPostScreen(
                                         id = R.string.hint_search_in_ba,
                                         forumName
                                     ),
-                                    color = ExtendedTheme.colors.onTopBarSurface.copy(alpha = ContentAlpha.medium)
+                                    color = ExtendedTheme.colors.onSearchField.copy(alpha = ContentAlpha.medium)
                                 )
                             },
                             prependIcon = {
@@ -469,8 +468,8 @@ fun ForumSearchPostScreen(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(top = paddingValues.calculateTopPadding()),
-                            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                            contentColor = ExtendedTheme.colors.primary,
+                            backgroundColor = ExtendedTheme.colors.refreshIndicator,
+                            contentColor = ExtendedTheme.colors.emphasis,
                         )
                     }
                 }

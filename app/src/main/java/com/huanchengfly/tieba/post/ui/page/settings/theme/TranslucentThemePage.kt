@@ -298,7 +298,7 @@ private fun BoxScope.SettingsPanel(modifier: Modifier = Modifier, content: @Comp
             .fillMaxWidth()
             .heightIn(max = 520.dp)
             .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .background(ExtendedTheme.colors.windowBackground)
+            .background(ExtendedTheme.colors.sheet)
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(vertical = 12.dp),
@@ -500,7 +500,7 @@ private fun rememberWallpaperPicker(output: File, onPicked: () -> Unit): () -> U
             .withOptions(UCrop.Options().apply {
                 setShowCropFrame(true)
                 setShowCropGrid(true)
-                setToolbarColor(colors.windowBackground.toArgb())
+                setToolbarColor(colors.sheet.toArgb())
                 setToolbarWidgetColor(colors.text.toArgb())
                 setActiveControlsWidgetColor(colors.accent.toArgb())
                 setCompressionFormat(Bitmap.CompressFormat.JPEG)

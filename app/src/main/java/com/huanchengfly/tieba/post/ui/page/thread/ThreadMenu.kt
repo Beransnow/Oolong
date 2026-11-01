@@ -136,7 +136,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuToggle(
 ) {
     val colors = ExtendedTheme.colors
     val background by animateColorAsState(if (checked) colors.text else colors.chip, label = "toggleBackground")
-    val content by animateColorAsState(if (checked) colors.windowBackground else colors.textSecondary, label = "toggleContent")
+    val content by animateColorAsState(if (checked) colors.sheet else colors.textSecondary, label = "toggleContent")
     Column(
         modifier = Modifier
             .weight(1f)
@@ -177,7 +177,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuAction(
                 .background(if (on) colors.text else colors.chip),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = if (on) colors.windowBackground else colors.text)
+            Icon(imageVector = icon, contentDescription = null, tint = if (on) colors.sheet else colors.text)
         }
         Text(text = text, fontSize = 12.sp, color = colors.textSecondary, maxLines = 1)
     }

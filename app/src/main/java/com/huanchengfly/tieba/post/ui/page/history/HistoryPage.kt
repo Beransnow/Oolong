@@ -94,7 +94,7 @@ fun HistoryScreen(
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = stringResource(id = R.string.title_history_delete),
-                            tint = ExtendedTheme.colors.onTopBar
+                            tint = ExtendedTheme.colors.topBarContent
                         )
                     }
                 },
@@ -109,7 +109,7 @@ fun HistoryScreen(
                         },
                         divider = {},
                         backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.primary,
+                        contentColor = ExtendedTheme.colors.emphasis,
                         modifier = Modifier
                             .width(100.dp * 2)
                             .align(Alignment.CenterHorizontally)
@@ -127,8 +127,8 @@ fun HistoryScreen(
                                     pagerState.animateScrollToPage(0)
                                 }
                             },
-                            selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+                            selectedContentColor = ExtendedTheme.colors.topBarContent,
+                            unselectedContentColor = ExtendedTheme.colors.topBarContentSecondary
                         )
                         Tab(
                             text = {
@@ -143,8 +143,8 @@ fun HistoryScreen(
                                     pagerState.animateScrollToPage(1)
                                 }
                             },
-                            selectedContentColor = ExtendedTheme.colors.onTopBar,
-                            unselectedContentColor = ExtendedTheme.colors.onTopBarSecondary
+                            selectedContentColor = ExtendedTheme.colors.topBarContent,
+                            unselectedContentColor = ExtendedTheme.colors.topBarContentSecondary
                         )
                     }
                 }

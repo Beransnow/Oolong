@@ -203,7 +203,7 @@ fun List<TextSpan>.toAnnotatedString(accent: Color, videoTag: String): Annotated
  */
 @OptIn(ExperimentalTextApi::class)
 @Composable
-fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = ExtendedTheme.colors.primary): AnnotatedString {
+fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = ExtendedTheme.colors.emphasis): AnnotatedString {
     val context = LocalContext.current
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
