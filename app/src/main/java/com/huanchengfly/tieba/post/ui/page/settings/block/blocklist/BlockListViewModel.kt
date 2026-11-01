@@ -1,157 +1,59 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
 
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.*
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.Actions
+import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.models.database.Block
-import com.huanchengfly.tieba.post.toJson
-import com.huanchengfly.tieba.post.utils.BlockManager
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import com.huanchengfly.tieba.post.repository.BlockListRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
-class BlockListViewModel :
-    BaseViewModel<BlockListUiIntent, BlockListPartialChange, BlockListUiState, BlockListUiEvent>() {
-    override fun createInitialState(): BlockListUiState = BlockListUiState()
+@Immutable
+data class BlockListState(
+    val blackList: ImmutableList<Block> = persistentListOf(),
+    val whiteList: ImmutableList<Block> = persistentListOf(),
+    /** Whether the rules are still being read. */
+    val loading: Boolean = true,
+)
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<BlockListUiIntent, BlockListPartialChange, BlockListUiState> =
-        BlockSettingsPartialChangeProducer
+/** The block and allow lists, which follow the saved rules. */
+@HiltViewModel
+class BlockListViewModel @Inject constructor(
+    private val repository: BlockListRepository,
+    private val messages: MessageController,
+) : ViewModel() {
+    private val actions = Actions(viewModelScope)
 
-    override fun dispatchEvent(partialChange: BlockListPartialChange): UiEvent? =
-        when (partialChange) {
-            is BlockListPartialChange.Load.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is BlockListPartialChange.Add.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is BlockListPartialChange.Delete.Failure -> CommonUiEvent.Toast(partialChange.error.getErrorMessage())
-            is BlockListPartialChange.Add.Success -> BlockListUiEvent.Success.Add
-            is BlockListPartialChange.Delete.Success -> BlockListUiEvent.Success.Delete
-            else -> null
-        }
+    val state: StateFlow<BlockListState> = repository.rules.map { rules ->
+        BlockListState(
+            blackList = rules.filter { it.category == Block.CATEGORY_BLACK_LIST }.toImmutableList(),
+            whiteList = rules.filter { it.category == Block.CATEGORY_WHITE_LIST }.toImmutableList(),
+            loading = false,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, BlockListState())
 
-    private object BlockSettingsPartialChangeProducer :
-        PartialChangeProducer<BlockListUiIntent, BlockListPartialChange, BlockListUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<BlockListUiIntent>): Flow<BlockListPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<BlockListUiIntent.Load>()
-                    .flatMapConcat { produceLoadPartialChange() },
-                intentFlow.filterIsInstance<BlockListUiIntent.Add>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<BlockListUiIntent.Delete>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
-
-        private fun produceLoadPartialChange(): Flow<BlockListPartialChange.Load> =
-            flowOf<BlockListPartialChange.Load>(
-                BlockListPartialChange.Load.Success(
-                    BlockManager.blackList,
-                    BlockManager.whiteList
-                )
-            )
-                .onStart { BlockListPartialChange.Load.Start }
-                .catch { emit(BlockListPartialChange.Load.Failure(it)) }
-
-        private fun BlockListUiIntent.Add.producePartialChange(): Flow<BlockListPartialChange.Add> =
-            flow<BlockListPartialChange.Add> {
-                val block = Block(
-                    category = category, type = Block.TYPE_KEYWORD, keywords = keywords.toJson()
-                )
-                emit(BlockListPartialChange.Add.Success(BlockManager.addBlock(block)))
-            }.catch { emit(BlockListPartialChange.Add.Failure(it)) }
-
-        private fun BlockListUiIntent.Delete.producePartialChange(): Flow<BlockListPartialChange.Delete> =
-            flow<BlockListPartialChange.Delete> {
-                BlockManager.removeBlock(id)
-                emit(BlockListPartialChange.Delete.Success(id))
-            }.catch { emit(BlockListPartialChange.Delete.Failure(it)) }
-    }
-}
-
-sealed interface BlockListUiIntent : UiIntent {
-    object Load : BlockListUiIntent
-
-    data class Add(
-        val category: Int,
-        val keywords: List<String>
-    ) : BlockListUiIntent
-
-    data class Delete(
-        val id: Long,
-    ) : BlockListUiIntent
-}
-
-sealed interface BlockListPartialChange : PartialChange<BlockListUiState> {
-    sealed class Load : BlockListPartialChange {
-        override fun reduce(oldState: BlockListUiState): BlockListUiState =
-            when (this) {
-                Start -> oldState.copy(isLoading = true)
-                is Success -> oldState.copy(
-                    isLoading = false,
-                    blackList = blackList,
-                    whiteList = whiteList
-                )
-
-                is Failure -> oldState.copy(isLoading = false)
-            }
-
-        object Start : Load()
-
-        data class Success(val blackList: List<Block>, val whiteList: List<Block>) : Load()
-
-        data class Failure(val error: Throwable) : Load()
+    /** Adds a rule matching every word of [keywords], which are separated by spaces. */
+    fun add(category: Int, keywords: String) = actions.launch("add") {
+        val words = keywords.split(" ").filter { it.isNotBlank() }
+        if (words.isEmpty()) return@launch
+        runCatching { repository.addKeywords(category, words) }
+            .onSuccess { messages.show(R.string.toast_add_success) }
+            .onFailure { messages.showError(R.string.toast_server_message, it) }
     }
 
-    sealed class Add : BlockListPartialChange {
-        override fun reduce(oldState: BlockListUiState): BlockListUiState =
-            when (this) {
-                is Success -> {
-                    val newBlackList =
-                        if (item.category == Block.CATEGORY_BLACK_LIST) {
-                            oldState.blackList + item
-                        } else {
-                            oldState.blackList
-                        }
-                    val newWhiteList =
-                        if (item.category == Block.CATEGORY_WHITE_LIST) {
-                            oldState.whiteList + item
-                        } else {
-                            oldState.whiteList
-                        }
-                    oldState.copy(blackList = newBlackList, whiteList = newWhiteList)
-                }
-
-                is Failure -> oldState
-            }
-
-        data class Success(val item: Block) : Add()
-
-        data class Failure(val error: Throwable) : Add()
-    }
-
-    sealed class Delete : BlockListPartialChange {
-        override fun reduce(oldState: BlockListUiState): BlockListUiState =
-            when (this) {
-                is Success -> {
-                    val newBlackList = oldState.blackList.filterNot { it.id == deletedId }
-                    val newWhiteList = oldState.whiteList.filterNot { it.id == deletedId }
-                    oldState.copy(blackList = newBlackList, whiteList = newWhiteList)
-                }
-
-                is Failure -> oldState
-            }
-
-        data class Success(val deletedId: Long) : Delete()
-
-        data class Failure(val error: Throwable) : Delete()
-    }
-}
-
-data class BlockListUiState(
-    val isLoading: Boolean = true,
-    val blackList: List<Block> = emptyList(),
-    val whiteList: List<Block> = emptyList(),
-) : UiState
-
-sealed interface BlockListUiEvent : UiEvent {
-    sealed interface Success : BlockListUiEvent {
-        object Add : Success
-        object Delete : Success
+    fun remove(block: Block) = actions.launch("remove-${block.id}") {
+        runCatching { repository.remove(block.id) }
+            .onSuccess { messages.show(R.string.toast_delete_success) }
+            .onFailure { messages.showError(R.string.toast_delete_failure, it) }
     }
 }

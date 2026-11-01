@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,24 +37,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
@@ -70,26 +66,34 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Destination
 @Composable
 fun BlockListPage(
-    viewModel: BlockListViewModel = pageViewModel<BlockListUiIntent, BlockListViewModel>(
-        listOf(BlockListUiIntent.Load)
-    ),
     navigator: DestinationsNavigator,
+    viewModel: BlockListViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    BlockListScreen(
+        state = state,
+        onBack = { navigator.navigateUp() },
+        onAdd = viewModel::add,
+        onRemove = viewModel::remove,
+    )
+}
+
+/** The block and allow lists in two tabs, with buttons to add to either. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun BlockListScreen(
+    state: BlockListState,
+    onBack: () -> Unit,
+    onAdd: (category: Int, keywords: String) -> Unit,
+    onRemove: (Block) -> Unit,
 ) {
     var addBlockCategory by remember { mutableStateOf(Block.CATEGORY_BLACK_LIST) }
     val dialogState = rememberDialogState()
     PromptDialog(
-        onConfirm = {
-            viewModel.send(
-                BlockListUiIntent.Add(
-                    category = addBlockCategory,
-                    keywords = it.split(" ")
-                )
-            )
-        },
+        onConfirm = { onAdd(addBlockCategory, it) },
         dialogState = dialogState,
         title = {
             Text(
@@ -101,28 +105,15 @@ fun BlockListPage(
         Text(text = stringResource(id = R.string.tip_add_block))
     }
 
-    val context = LocalContext.current
     val pagerState = rememberPagerState { 2 }
     val coroutineScope = rememberCoroutineScope()
-    val blackList by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::blackList,
-        initial = emptyList()
-    )
-    val whiteList by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::whiteList,
-        initial = emptyList()
-    )
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = BlockListUiState::isLoading,
-        initial = false
-    )
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_block_list)) },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
+                    BackNavigationIcon(onBackPressed = onBack)
                 },
                 content = {
                     TabRow(
@@ -218,30 +209,17 @@ fun BlockListPage(
             }
         }
     ) { paddingValues ->
-        val snackbarHostState = LocalSnackbarHostState.current
-        viewModel.onEvent<BlockListUiEvent.Success> {
-            snackbarHostState.showSnackbar(
-                when (it) {
-                    is BlockListUiEvent.Success.Add -> context.getString(R.string.toast_add_success)
-                    is BlockListUiEvent.Success.Delete -> context.getString(R.string.toast_delete_success)
-                }
-            )
-        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             key = { it },
             verticalAlignment = Alignment.Top
         ) { position ->
-            val items by remember {
-                derivedStateOf {
-                    if (position == 0) blackList else whiteList
-                }
-            }
+            val items = if (position == 0) state.blackList else state.whiteList
             StateScreen(
                 isEmpty = items.isEmpty(),
                 isError = false,
-                isLoading = isLoading,
+                isLoading = state.loading,
                 loadingScreen = {
                     MyLazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = paddingValues) {
                         items(4) {
@@ -254,13 +232,7 @@ fun BlockListPage(
                 MyLazyColumn(Modifier.fillMaxSize(), contentPadding = paddingValues) {
                     items(items, key = { it.id }) {
                         LongClickMenu(menuContent = {
-                            DropdownMenuItem(onClick = {
-                                viewModel.send(
-                                    BlockListUiIntent.Delete(
-                                        it.id
-                                    )
-                                )
-                            }) {
+                            DropdownMenuItem(onClick = { onRemove(it) }) {
                                 Text(text = stringResource(id = R.string.title_delete))
                             }
                         }) {
