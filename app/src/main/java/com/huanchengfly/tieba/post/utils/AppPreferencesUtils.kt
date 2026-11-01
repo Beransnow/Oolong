@@ -16,15 +16,14 @@ import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.getLong
 import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.utils.ThemeUtil.TRANSLUCENT_THEME_LIGHT
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
 
 
 open class AppPreferencesUtils private constructor(ctx: Context) {
@@ -38,10 +37,8 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         }
     }
 
-    private val contextWeakReference: WeakReference<Context> = WeakReference(ctx)
-
-    private val context: Context
-        get() = contextWeakReference.get()!!
+    /** The application context, which lives as long as the process, so holding it leaks nothing. */
+    private val context: Context = ctx.applicationContext
 
     private val preferencesDataStore: DataStore<Preferences>
         get() = context.dataStore
