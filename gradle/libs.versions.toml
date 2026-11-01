@@ -8,7 +8,6 @@ wire = "6.4.0"
 
 compose-bom = "2026.09.00"
 compose-destinations = "1.11.9"
-sketch = "3.3.2"
 coil = "3.6.3"
 lottie = "6.7.1"
 retrofit = "3.0.0"
@@ -95,12 +94,6 @@ wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire"
 gson = { module = "com.google.code.gson:gson", version = "2.15.0" }
 
 # Image
-sketch-core = { module = "io.github.panpf.sketch3:sketch", version.ref = "sketch" }
-sketch-compose = { module = "io.github.panpf.sketch3:sketch-compose", version.ref = "sketch" }
-sketch-extensions-compose = { module = "io.github.panpf.sketch3:sketch-extensions-compose", version.ref = "sketch" }
-sketch-gif = { module = "io.github.panpf.sketch3:sketch-gif", version.ref = "sketch" }
-sketch-okhttp = { module = "io.github.panpf.sketch3:sketch-okhttp", version.ref = "sketch" }
-zoomimage-compose-sketch = { module = "io.github.panpf.zoomimage:zoomimage-compose-sketch", version = "1.0.2" }
 coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }

@@ -178,14 +178,6 @@ dependencies {
     implementation(libs.haze.blur)
     implementation(libs.haze.glass)
 
-    implementation(libs.sketch.core)
-    implementation(libs.sketch.compose)
-    implementation(libs.sketch.extensions.compose)
-    implementation(libs.sketch.gif)
-    implementation(libs.sketch.okhttp)
-
-    implementation(libs.zoomimage.compose.sketch)
-
     implementation(libs.coil)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
