@@ -41,7 +41,7 @@ import dev.chrisbanes.haze.rememberHazeState
  */
 val LocalChromePadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
-private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar }
+private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar, Overlay }
 
 /**
  * A scaffold whose content fills the whole window and scrolls behind its bars.
@@ -60,6 +60,10 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  * The padding is one object whose values change as the bars are measured, so content that reads
  * it while it is laid out, such as a lazy list's content padding, follows a bar that changes
  * height in the same frame instead of a frame behind.
+ *
+ * [overlay] is chrome over the whole scaffold, above the bars: for chrome that grows out of a bar,
+ * such as a reply box opening from the bottom bar, which would move the content if it grew inside
+ * the bar's slot. The bar's slot then keeps the bar's resting height and the overlay draws it.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -72,6 +76,7 @@ fun GlassScaffold(
     snackbarHost: @Composable (SnackbarHostState) -> Unit = { SwipeToDismissSnackbarHost(it) },
     backgroundColor: Color = MaterialTheme.colors.background,
     contentColor: Color = contentColorFor(backgroundColor),
+    overlay: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val hazeState = rememberHazeState()
@@ -146,6 +151,10 @@ fun GlassScaffold(
                 val snackbarHeight = snackbarPlaceables.maxOfOrNull { it.height } ?: 0
                 val fabSpace = if (fabHeight > 0) fabHeight + margin else 0
 
+                val overlayPlaceables = subcompose(GlassScaffoldSlot.Overlay) {
+                    chrome(overlay)
+                }.map { it.measure(constraints) }
+
                 layout(width, height) {
                     contentPlaceables.forEach { it.place(0, 0) }
                     topBarPlaceables.forEach { it.place(0, 0) }
@@ -160,6 +169,7 @@ fun GlassScaffold(
                             height - bottom - fabSpace - snackbarHeight
                         )
                     }
+                    overlayPlaceables.forEach { it.place(0, 0) }
                 }
             }
         }
