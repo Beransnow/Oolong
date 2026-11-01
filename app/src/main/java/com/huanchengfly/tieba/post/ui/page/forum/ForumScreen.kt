@@ -147,7 +147,6 @@ fun ForumScreen(
                     ForumTabRow(
                         tabs = tabs,
                         pagerState = pagerState,
-                        sorts = forum.sorts,
                         sortType = state.sortType,
                         onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
                         onEvent = onEvent,

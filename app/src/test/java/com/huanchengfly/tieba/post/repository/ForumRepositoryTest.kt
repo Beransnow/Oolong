@@ -91,12 +91,6 @@ class ForumRepositoryTest {
                     FrsTabInfo(tabId = 99, tabType = 15, tabName = "吧友互助", isGeneralTab = 1),
                     FrsTabInfo(tabId = 507, tabType = 102, tabName = "合辑", isGeneralTab = 1),
                 ),
-                menu = listOf(
-                    FrsTabInfo(tabId = 7, tabType = 13, tabName = "智能排序"),
-                    FrsTabInfo(tabId = 2, tabType = 14, tabName = "回复时间排序"),
-                    FrsTabInfo(tabId = 3, tabType = 14, tabName = "发布时间排序"),
-                    FrsTabInfo(tabId = 99, tabType = 14, tabName = "未知"),
-                ),
             ),
             forum_rule = ForumRuleStatus(has_forum_rule = 1, title = "吧规"),
         )
@@ -109,8 +103,7 @@ class ForumRepositoryTest {
                 levelName = "七级", score = 30, levelUpScore = 100, signedIn = true, signedDays = 5,
                 hasHead = true, ruleTitle = "吧规",
                 goodClasses = persistentListOf(GoodClass(0, "全部"), GoodClass(3, "攻略")),
-                tabs = persistentListOf(ForumTab.Good, ForumTab.Hot, ForumTab.Latest, ForumTab.Custom(99, "吧友互助", 15)),
-                sorts = persistentListOf(ForumSort("智能排序", 3), ForumSort("回复时间排序", 0), ForumSort("发布时间排序", 1)),
+                tabs = persistentListOf(ForumTab.Good, ForumTab.Latest, ForumTab.Hot, ForumTab.Custom(99, "吧友互助", 15)),
             ),
             page.forum,
         )
@@ -140,13 +133,13 @@ class ForumRepositoryTest {
     }
 
     @Test
-    fun `hot and good threads are asked for as such`() = runTest {
+    fun `hot threads come in the server's order and good threads by reply time`() = runTest {
         coEvery { remote.page(any(), any(), any(), any(), any(), any()) } returns frsPage(hasMore = false)
 
         repository.threads("吧名", 0, ForumTab.Hot, ForumCursor.FrsPage(1), sortType = ForumSort.POST_TIME)
         repository.threads("吧名", 0, ForumTab.Good, ForumCursor.FrsPage(1), goodClassId = 3)
 
-        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
+        coVerify { remote.page("吧名", 1, 1, null, false, 0) }
         coVerify { remote.page("吧名", 1, 1, 0, true, 3) }
     }
 

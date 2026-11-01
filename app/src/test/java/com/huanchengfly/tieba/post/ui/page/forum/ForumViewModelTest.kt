@@ -113,7 +113,7 @@ class ForumViewModelTest {
         assertEquals(ForumSort.POST_TIME, state.sortType)
         assertEquals(listOf(1L), state.list(ForumTab.Latest).items.map { it.thread.get { id } })
         assertEquals(
-            listOf(ForumTab.Good, ForumTab.Hot, ForumTab.Latest, ForumTab.Custom(99, "吧友互助", 15)),
+            listOf(ForumTab.Good, ForumTab.Latest, ForumTab.Hot, ForumTab.Custom(99, "吧友互助", 15)),
             state.tabs,
         )
         assertTrue(state.loggedIn)
@@ -137,7 +137,7 @@ class ForumViewModelTest {
         val state = viewModel.state.value
         assertEquals(listOf(2L), state.list(ForumTab.Hot).items.map { it.thread.get { id } })
         assertEquals(listOf(3L), state.list(ForumTab.Custom(99, "吧友互助", 15)).items.map { it.thread.get { id } })
-        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
+        coVerify { remote.page("吧名", 1, 1, null, false, 0) }
         assertEquals(listOf("吧名"), saved.map { it.name })
     }
 

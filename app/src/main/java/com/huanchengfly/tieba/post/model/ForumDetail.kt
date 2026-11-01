@@ -29,8 +29,6 @@ data class ForumDetail(
     /** The classes good threads are filed under; id 0 is all of them. */
     val goodClasses: ImmutableList<GoodClass> = persistentListOf(),
     val tabs: ImmutableList<ForumTab> = ForumTab.Fixed,
-    /** The orders the forum offers for its latest threads; empty when it sends none. */
-    val sorts: ImmutableList<ForumSort> = persistentListOf(),
 ) {
     val summary: ForumSummary get() = ForumSummary(id, name, avatar)
 }
@@ -52,15 +50,12 @@ sealed interface ForumTab {
 
     companion object {
         /** The tabs every forum has, in the order they come before its own. */
-        val Fixed: ImmutableList<ForumTab> = persistentListOf(Good, Hot, Latest)
+        val Fixed: ImmutableList<ForumTab> = persistentListOf(Good, Latest, Hot)
     }
 }
 
-/** An order of a forum's latest threads, named as the forum names it; [sortType] goes to frs/page. */
-@Immutable
-data class ForumSort(val name: String, val sortType: Int) {
-    companion object {
-        const val REPLY_TIME = 0
-        const val POST_TIME = 1
-    }
+/** The sort types of the two orders a forum's latest threads can be listed in. */
+object ForumSort {
+    const val REPLY_TIME = 0
+    const val POST_TIME = 1
 }

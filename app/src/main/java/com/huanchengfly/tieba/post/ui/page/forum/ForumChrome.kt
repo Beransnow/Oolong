@@ -62,7 +62,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -236,19 +235,12 @@ private fun tabTextStyle() = MaterialTheme.typography.button.copy(
 internal fun ForumTabRow(
     tabs: ImmutableList<ForumTab>,
     pagerState: PagerState,
-    sorts: ImmutableList<ForumSort>,
     sortType: Int,
     onSelect: (Int) -> Unit,
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val selectedIndex = pagerState.currentPage.coerceIn(0, max(0, tabs.lastIndex))
-    val choices = sorts.ifEmpty {
-        persistentListOf(
-            ForumSort(stringResource(id = R.string.title_sort_by_reply), ForumSort.REPLY_TIME),
-            ForumSort(stringResource(id = R.string.title_sort_by_send), ForumSort.POST_TIME),
-        )
-    }
     ScrollableTabRow(
         selectedTabIndex = selectedIndex,
         indicator = { tabPositions -> PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions) },
@@ -267,9 +259,12 @@ internal fun ForumTabRow(
                     text = { Text(text = tab.title(), style = tabTextStyle()) },
                     menuContent = {
                         ListSinglePicker(
-                            itemTitles = choices.map { it.name }.toImmutableList(),
-                            itemValues = choices.map { it.sortType }.toImmutableList(),
-                            selectedPosition = choices.indexOfFirst { it.sortType == sortType },
+                            itemTitles = persistentListOf(
+                                stringResource(id = R.string.title_sort_by_reply),
+                                stringResource(id = R.string.title_sort_by_send),
+                            ),
+                            itemValues = SortTypes,
+                            selectedPosition = SortTypes.indexOf(sortType),
                             onItemSelected = { _, _, value, changed ->
                                 if (changed) onEvent(ForumEvent.SetSort(value))
                                 dismiss()
@@ -299,6 +294,8 @@ internal fun ForumTabRow(
         }
     }
 }
+
+private val SortTypes = persistentListOf(ForumSort.REPLY_TIME, ForumSort.POST_TIME)
 
 @Composable
 internal fun ForumTab.title(): String = when (this) {
