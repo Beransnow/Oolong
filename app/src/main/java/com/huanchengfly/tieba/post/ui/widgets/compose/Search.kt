@@ -54,8 +54,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.model.QuotedPost
+import com.huanchengfly.tieba.post.model.SearchAuthor
+import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -66,23 +68,23 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlin.math.min
 
 @Composable
 fun QuotePostCard(
-    quotePostInfo: SearchThreadBean.PostInfo,
-    mainPost: SearchThreadBean.MainPost,
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit,
+    quoted: QuotedPost,
+    thread: QuotedPost,
+    onThreadClick: (QuotedPost) -> Unit,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<SearchThreadBean.MediaInfo> = persistentListOf(),
+    pictures: ImmutableList<String> = persistentListOf(),
+    mediaCount: Int = pictures.size,
     keyword: String? = null,
 ) {
-    val quoteContentString = remember(quotePostInfo) {
+    val quoteContentString = remember(quoted) {
         buildAnnotatedStringWithUser(
-            quotePostInfo.user.userId,
-            quotePostInfo.user.userName ?: "",
-            quotePostInfo.user.showNickname,
-            quotePostInfo.content
+            quoted.author.id.toString(),
+            quoted.author.name,
+            quoted.author.nameShow,
+            quoted.content
         )
     }
     Column(
@@ -97,15 +99,16 @@ fun QuotePostCard(
             highlightKeywords = (keyword?.split(" ") ?: emptyList()).toImmutableList()
         )
         MainPostCard(
-            mainPost = mainPost,
+            thread = thread,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .background(ExtendedTheme.colors.card)
                 .clickable {
-                    onMainPostClick(mainPost)
+                    onThreadClick(thread)
                 },
-            medias = medias,
+            pictures = pictures,
+            mediaCount = mediaCount,
             keyword = keyword
         )
     }
@@ -113,17 +116,18 @@ fun QuotePostCard(
 
 @Composable
 fun MainPostCard(
-    mainPost: SearchThreadBean.MainPost,
+    thread: QuotedPost,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<SearchThreadBean.MediaInfo> = persistentListOf(),
+    pictures: ImmutableList<String> = persistentListOf(),
+    mediaCount: Int = pictures.size,
     keyword: String? = null,
 ) {
-    val titleString = remember(mainPost) {
+    val titleString = remember(thread) {
         buildAnnotatedStringWithUser(
-            mainPost.user.userId,
-            mainPost.user.userName ?: "",
-            mainPost.user.showNickname,
-            mainPost.title
+            thread.author.id.toString(),
+            thread.author.name,
+            thread.author.nameShow,
+            thread.title
         )
     }
     Column(
@@ -138,28 +142,28 @@ fun MainPostCard(
             overflow = TextOverflow.Ellipsis,
             highlightKeywords = (keyword?.split(" ") ?: emptyList()).toImmutableList()
         )
-        if (mainPost.content.isNotBlank()) {
+        if (thread.content.isNotBlank()) {
             PbContentText(
-                text = mainPost.content,
+                text = thread.content,
                 style = MaterialTheme.typography.body2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        SearchMedia(medias = medias)
+        SearchMedia(pictures = pictures, mediaCount = mediaCount)
     }
 }
 
 @Composable
 fun SearchThreadList(
-    data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
+    data: ImmutableList<SearchedPost>,
     lazyListState: LazyListState,
-    onItemClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
-    onItemUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
-    onItemForumClick: (SearchThreadBean.ForumInfo) -> Unit,
+    onItemClick: (SearchedPost) -> Unit,
+    onItemUserClick: (SearchAuthor) -> Unit,
+    onItemForumClick: (forumName: String) -> Unit,
     modifier: Modifier = Modifier,
-    onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
+    onQuotePostClick: (QuotedPost) -> Unit = {},
+    onMainPostClick: (QuotedPost) -> Unit = {},
     hideForum: Boolean = false,
     searchKeyword: String? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -191,8 +195,8 @@ fun SearchThreadList(
 
 @Composable
 fun SearchThreadUserHeader(
-    user: SearchThreadBean.UserInfoBean,
-    time: String,
+    user: SearchAuthor,
+    time: Long,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -208,8 +212,8 @@ fun SearchThreadUserHeader(
             Text(
                 text = StringUtil.getUsernameAnnotatedString(
                     LocalContext.current,
-                    user.userName.orEmpty(),
-                    user.showNickname,
+                    user.name,
+                    user.nameShow,
                     color = LocalContentColor.current
                 )
             )
@@ -226,13 +230,13 @@ fun SearchThreadUserHeader(
 
 @Composable
 fun SearchThreadItem(
-    item: SearchThreadBean.ThreadInfoBean,
-    onClick: (SearchThreadBean.ThreadInfoBean) -> Unit,
-    onUserClick: (SearchThreadBean.UserInfoBean) -> Unit,
-    onForumClick: (SearchThreadBean.ForumInfo) -> Unit,
+    item: SearchedPost,
+    onClick: (SearchedPost) -> Unit,
+    onUserClick: (SearchAuthor) -> Unit,
+    onForumClick: (forumName: String) -> Unit,
     modifier: Modifier = Modifier,
-    onQuotePostClick: (SearchThreadBean.PostInfo) -> Unit = {},
-    onMainPostClick: (SearchThreadBean.MainPost) -> Unit = {},
+    onQuotePostClick: (QuotedPost) -> Unit = {},
+    onMainPostClick: (QuotedPost) -> Unit = {},
     hideForum: Boolean = false,
     searchKeyword: String? = null,
 ) {
@@ -240,79 +244,83 @@ fun SearchThreadItem(
         modifier = modifier,
         header = {
             SearchThreadUserHeader(
-                user = item.user,
+                user = item.author,
                 time = item.time,
-                onClick = { onUserClick(item.user) }
+                onClick = { onUserClick(item.author) }
             )
         },
         content = {
             ThreadContent(
                 title = item.title,
                 abstractText = item.content,
-                showTitle = item.mainPost == null && item.title.isNotBlank(),
+                showTitle = item.thread == null && item.title.isNotBlank(),
                 showAbstract = item.content.isNotBlank(),
                 maxLines = 2,
                 highlightKeywords = (searchKeyword?.split(" ") ?: emptyList()).toImmutableList(),
             )
-            if (item.mainPost != null) {
-                if (item.postInfo != null) {
+            val thread = item.thread
+            val quoted = item.quoted
+            if (thread != null) {
+                if (quoted != null) {
                     QuotePostCard(
-                        quotePostInfo = item.postInfo,
-                        mainPost = item.mainPost,
-                        onMainPostClick = onMainPostClick,
+                        quoted = quoted,
+                        thread = thread,
+                        onThreadClick = onMainPostClick,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
                             .background(ExtendedTheme.colors.floorCard)
                             .clickable {
-                                onQuotePostClick(item.postInfo)
+                                onQuotePostClick(quoted)
                             },
-                        medias = item.media.toImmutableList(),
+                        pictures = item.pictures,
+                        mediaCount = item.mediaCount,
                         keyword = searchKeyword
                     )
                 } else {
                     MainPostCard(
-                        mainPost = item.mainPost,
+                        thread = thread,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
                             .background(ExtendedTheme.colors.floorCard)
                             .clickable {
-                                onMainPostClick(item.mainPost)
+                                onMainPostClick(thread)
                             },
-                        medias = item.media.toImmutableList(),
+                        pictures = item.pictures,
+                        mediaCount = item.mediaCount,
                         keyword = searchKeyword
                     )
                 }
             } else {
-                SearchMedia(medias = item.media.toImmutableList())
+                SearchMedia(pictures = item.pictures, mediaCount = item.mediaCount)
             }
             if (!hideForum && item.forumName.isNotEmpty()) {
                 ForumInfoChip(
-                    imageUriProvider = { item.forumInfo.avatar },
+                    imageUriProvider = { item.forumAvatar },
                     nameProvider = { item.forumName }
                 ) {
-                    onForumClick(item.forumInfo)
+                    onForumClick(item.forumName)
                 }
             }
         },
         action = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 ThreadReplyBtn(
-                    replyNum = item.postNum.parseCount().toInt(),
+                    replyNum = item.replyCount,
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadAgreeBtn(
                     hasAgree = false,
-                    agreeNum = item.likeNum.parseCount().toInt(),
+                    agreeNum = item.agreeCount,
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )
 
                 ThreadShareBtn(
-                    shareNum = item.shareNum.parseCount(),
+                    shareNum = item.shareCount,
                     onClick = {},
                     modifier = Modifier.weight(1f)
                 )
@@ -322,21 +330,18 @@ fun SearchThreadItem(
     )
 }
 
+/** Up to three of a search result's pictures, with a badge counting its media when there are more. */
 @Composable
 fun SearchMedia(
-    medias: ImmutableList<SearchThreadBean.MediaInfo>,
+    pictures: ImmutableList<String>,
     modifier: Modifier = Modifier,
+    mediaCount: Int = pictures.size,
 ) {
     val context = LocalContext.current
 
-    val pics = medias.filter { it.type == "pic" }
-//    val video = medias.filter { it.type == "flash" }
-
-    val picCount = remember(pics) {
-        pics.size
-    }
-    val hasPhoto = remember(picCount) { picCount > 0 }
-    val isSinglePhoto = remember(picCount) { picCount == 1 }
+    val picCount = pictures.size
+    val hasPhoto = picCount > 0
+    val isSinglePhoto = picCount == 1
     val hideMedia = context.appPreferences.hideMedia
 
     val windowWidthSizeClass = BaseComposeActivity.LocalWindowSizeClass.current.widthSizeClass
@@ -347,15 +352,9 @@ fun SearchMedia(
     }
 
     if (hasPhoto && !hideMedia) {
-        val mediaWidthFraction = remember(isSinglePhoto, singleMediaFraction) {
-            if (isSinglePhoto) singleMediaFraction else 1f
-        }
-        val mediaAspectRatio = remember(isSinglePhoto) {
-            if (isSinglePhoto) 2f else 3f
-        }
-        val showMediaCount = remember(pics) { min(pics.size, 3) }
-        val hasMoreMedia = remember(pics) { pics.size > 3 }
-        val showMedias = remember(pics) { pics.subList(0, showMediaCount) }
+        val mediaWidthFraction = if (isSinglePhoto) singleMediaFraction else 1f
+        val mediaAspectRatio = if (isSinglePhoto) 2f else 3f
+        val showMedias = remember(pictures) { pictures.take(3) }
         Row(
             modifier = modifier,
             verticalAlignment = Alignment.CenterVertically,
@@ -371,7 +370,7 @@ fun SearchMedia(
                 ) {
                     showMedias.fastForEach { pic ->
                         NetworkImage(
-                            imageUri = pic.bigPic ?: pic.smallPic ?: pic.waterPic ?: "",
+                            imageUri = pic,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxHeight()
@@ -381,10 +380,10 @@ fun SearchMedia(
                         )
                     }
                 }
-                if (hasMoreMedia) {
+                if (picCount > 3) {
                     Badge(
                         icon = Icons.Rounded.PhotoSizeSelectActual,
-                        text = "${medias.size}",
+                        text = "$mediaCount",
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(8.dp)
@@ -490,18 +489,4 @@ fun SearchBox(
             }
         }
     }
-}
-
-/**
- * Search results may abbreviate counts, e.g. "1W" or "1.2万" for 10,000 and 12,000.
- */
-private fun String.parseCount(): Long {
-    val value = trim()
-    val multiplier = when (value.lastOrNull()) {
-        'W', 'w', '万' -> 10_000L
-        'K', 'k' -> 1_000L
-        else -> 1L
-    }
-    val number = if (multiplier == 1L) value else value.dropLast(1)
-    return number.toBigDecimalOrNull()?.multiply(multiplier.toBigDecimal())?.toLong() ?: 0L
 }

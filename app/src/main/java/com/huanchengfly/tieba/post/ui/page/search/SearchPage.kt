@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.search
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -43,19 +44,16 @@ import androidx.compose.material.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -64,22 +62,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.models.database.SearchHistory
+import com.huanchengfly.tieba.post.model.SearchHistoryItem
+import com.huanchengfly.tieba.post.model.SearchOrder
+import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
-import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumPage
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadPage
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadSortType
-import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadUiEvent
-import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserPage
+import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumList
+import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadResults
+import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserList
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -99,8 +97,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
 
 @Immutable
@@ -114,7 +111,6 @@ data class SearchPageItem(
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
 
-@OptIn(ExperimentalFoundationApi::class, FlowPreview::class)
 @Destination(
     deepLinks = [
         DeepLink(uriPattern = "tblite://search")
@@ -123,118 +119,128 @@ data class SearchPageItem(
 @Composable
 fun SearchPage(
     navigator: DestinationsNavigator,
-    viewModel: SearchViewModel = pageViewModel<SearchUiIntent, SearchViewModel>(
-        listOf(SearchUiIntent.Init)
-    ),
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
-    val searchHistories by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUiState::searchHistories,
-        initial = persistentListOf()
-    )
-    val keyword by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUiState::keyword,
-        initial = ""
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var input by rememberSaveable { mutableStateOf("") }
 
-    val isKeywordEmpty by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUiState::isKeywordEmpty,
-        initial = true
-    )
-    val suggestions by viewModel.uiState.collectPartialAsState(
-        prop1 = SearchUiState::suggestions,
-        initial = persistentListOf()
-    )
-
-    val showSuggestions by remember {
-        derivedStateOf { suggestions.isNotEmpty() }
+    LaunchedEffect(state.keyword) {
+        if (state.keyword.isNotEmpty()) input = state.keyword
     }
-
-    var inputKeyword by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        snapshotFlow { inputKeyword }
-            .debounce(500)
-            .collect {
-                viewModel.send(SearchUiIntent.KeywordInputChanged(it))
-            }
-    }
-
-    LaunchedEffect(keyword) {
-        if (keyword.isNotEmpty() && keyword != inputKeyword) {
-            inputKeyword = keyword
-        }
-    }
-
     MyBackHandler(
-        enabled = !isKeywordEmpty,
+        enabled = state.keyword.isNotEmpty(),
         currentScreen = SearchPageDestination
     ) {
-        viewModel.send(SearchUiIntent.SubmitKeyword(""))
+        viewModel.search("")
     }
 
+    ProvideNavigator(navigator = navigator) {
+        SearchScreen(
+            state = state,
+            input = input,
+            onInputChange = {
+                input = it
+                viewModel.onInputChange(it)
+            },
+            onSearch = {
+                input = it
+                viewModel.search(it)
+            },
+            onBack = {
+                if (state.keyword.isEmpty()) navigator.navigateUp() else viewModel.search("")
+            },
+            onOpenTab = viewModel::open,
+            onRefreshTab = viewModel::refresh,
+            onLoadMoreThreads = viewModel::loadMoreThreads,
+            onSetOrder = viewModel::setOrder,
+            onForget = viewModel::forget,
+            onClearHistory = viewModel::clearHistory,
+            onOpenForum = { navigator.navigate(ForumPageDestination(it)) },
+            onOpenUser = { navigator.navigate(UserProfilePageDestination(it)) },
+            onOpenThread = { navigator.navigate(ThreadPageDestination(threadId = it.threadId)) },
+        )
+    }
+}
+
+/**
+ * The search page: the history and suggestions while the user types a keyword, then the forums,
+ * threads and users found, in tabs.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun SearchScreen(
+    state: SearchState,
+    input: String,
+    onInputChange: (String) -> Unit,
+    onSearch: (String) -> Unit,
+    onBack: () -> Unit,
+    onOpenTab: (SearchTab) -> Unit,
+    onRefreshTab: (SearchTab) -> Unit,
+    onLoadMoreThreads: () -> Unit,
+    onSetOrder: (SearchOrder) -> Unit,
+    onForget: (SearchHistoryItem) -> Unit,
+    onClearHistory: () -> Unit,
+    onOpenForum: (forumName: String) -> Unit,
+    onOpenUser: (uid: Long) -> Unit,
+    onOpenThread: (SearchedPost) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
+    val searching = state.keyword.isNotEmpty()
 
-    val initialSortType = remember { SearchThreadSortType.SORT_TYPE_NEWEST }
-    var searchThreadSortType by remember { mutableIntStateOf(initialSortType) }
-    LaunchedEffect(searchThreadSortType) {
-        emitGlobalEvent(SearchThreadUiEvent.SwitchSortType(searchThreadSortType))
-    }
-    viewModel.onEvent<SearchUiEvent.KeywordChanged> {
-        inputKeyword = it.keyword
-        if (it.keyword.isNotBlank()) emitGlobalEventSuspend(it)
-    }
-
-    val pages by remember {
-        derivedStateOf {
-            persistentListOf(
-                SearchPageItem(
-                    id = "forum",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_forum),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    content = { SearchForumPage(keyword = keyword, contentPadding = it) }
-                ),
-                SearchPageItem(
-                    id = "thread",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_thread),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    content = {
-                        SearchThreadPage(
-                            keyword = keyword,
-                            initialSortType = initialSortType,
-                            contentPadding = it,
-                        )
-                    },
-                    supportSort = true,
-                    sortTypes = persistentMapOf(
-                        context.getString(R.string.title_search_order_new) to SearchThreadSortType.SORT_TYPE_NEWEST,
-                        context.getString(R.string.title_search_order_old) to SearchThreadSortType.SORT_TYPE_OLDEST,
-                        context.getString(R.string.title_search_order_relevant) to SearchThreadSortType.SORT_TYPE_RELATIVE,
-                    ),
-                    selectedSortType = { searchThreadSortType },
-                    onSelectedSortTypeChange = { searchThreadSortType = it }
-                ),
-                SearchPageItem(
-                    id = "user",
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.title_search_user),
-                            fontWeight = if (it) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    content = { SearchUserPage(keyword = keyword, contentPadding = it) }
-                ),
-            )
-        }
-    }
+    val orderNames = persistentMapOf(
+        stringResource(R.string.title_search_order_new) to SearchOrder.Newest,
+        stringResource(R.string.title_search_order_old) to SearchOrder.Oldest,
+        stringResource(R.string.title_search_order_relevant) to SearchOrder.Relevant,
+    )
+    val pages = persistentListOf(
+        SearchPageItem(
+            id = "forum",
+            text = { TabText(R.string.title_search_forum, it) },
+            content = { padding ->
+                LaunchedEffect(state.keyword) { onOpenTab(SearchTab.Forums) }
+                SearchForumList(
+                    state = state.forums,
+                    onRefresh = { onRefreshTab(SearchTab.Forums) },
+                    onOpen = { onOpenForum(it.name) },
+                    contentPadding = padding,
+                )
+            }
+        ),
+        SearchPageItem(
+            id = "thread",
+            text = { TabText(R.string.title_search_thread, it) },
+            content = { padding ->
+                LaunchedEffect(state.keyword) { onOpenTab(SearchTab.Threads) }
+                SearchThreadResults(
+                    list = state.threads,
+                    keyword = state.keyword,
+                    onRefresh = { onRefreshTab(SearchTab.Threads) },
+                    onLoadMore = onLoadMoreThreads,
+                    onOpen = onOpenThread,
+                    onOpenUser = { author -> author.id.takeIf { it != 0L }?.let(onOpenUser) },
+                    onOpenForum = onOpenForum,
+                    contentPadding = padding,
+                )
+            },
+            supportSort = true,
+            sortTypes = orderNames.mapValues { it.value.ordinal }.toImmutableMap(),
+            selectedSortType = { state.order.ordinal },
+            onSelectedSortTypeChange = { onSetOrder(SearchOrder.entries[it]) }
+        ),
+        SearchPageItem(
+            id = "user",
+            text = { TabText(R.string.title_search_user, it) },
+            content = { padding ->
+                LaunchedEffect(state.keyword) { onOpenTab(SearchTab.Users) }
+                SearchUserList(
+                    state = state.users,
+                    onRefresh = { onRefreshTab(SearchTab.Users) },
+                    onOpen = { onOpenUser(it.id) },
+                    contentPadding = padding,
+                )
+            }
+        ),
+    )
     val pagerState = rememberPagerState { pages.size }
     GlassScaffold(
         topBar = {
@@ -249,75 +255,62 @@ fun SearchPage(
                         // The bar styles its title slot as a title; the field keeps body text.
                         ProvideTextStyle(MaterialTheme.typography.body1) {
                             SearchTopBar(
-                                keyword = inputKeyword,
-                                onKeywordChange = { inputKeyword = it },
-                                onKeywordSubmit = {
-                                    viewModel.send(SearchUiIntent.SubmitKeyword(it))
-                                },
-                                onBack = {
-                                    if (isKeywordEmpty) {
-                                        navigator.navigateUp()
-                                    } else {
-                                        viewModel.send(SearchUiIntent.SubmitKeyword(""))
-                                    }
-                                }
+                                keyword = input,
+                                onKeywordChange = onInputChange,
+                                onKeywordSubmit = onSearch,
+                                onBack = onBack,
                             )
                         }
                     }
                 },
             ) {
-                if (!isKeywordEmpty) {
+                if (searching) {
                     SearchTabRow(pagerState = pagerState, pages = pages)
                 }
             }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-            if (!isKeywordEmpty) {
-                ProvideNavigator(navigator = navigator) {
-                    LazyLoadHorizontalPager(
-                        state = pagerState,
-                        key = { pages[it].id },
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        pages[it].content(paddingValues)
-                    }
+            if (searching) {
+                LazyLoadHorizontalPager(
+                    state = pagerState,
+                    key = { pages[it].id },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    pages[it].content(paddingValues)
                 }
+            } else if (state.suggestions.isNotEmpty() && input.isNotBlank()) {
+                SearchSuggestionList(
+                    suggestions = state.suggestions,
+                    contentPadding = paddingValues,
+                    onItemClick = onSearch,
+                )
             } else {
-                if (showSuggestions) {
-                    SearchSuggestionList(
-                        suggestions = suggestions,
-                        contentPadding = paddingValues,
-                        onItemClick = {
-                            inputKeyword = it
-                            viewModel.send(SearchUiIntent.SubmitKeyword(it))
-                        }
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(paddingValues)
-                    ) {
-                        Container {
-                            SearchHistoryList(
-                                searchHistories = searchHistories,
-                                onSearchHistoryClick = {
-                                    inputKeyword = it.content
-                                    viewModel.send(SearchUiIntent.SubmitKeyword(it.content))
-                                },
-                                expanded = expanded,
-                                onToggleExpand = { expanded = !expanded },
-                                onDelete = { viewModel.send(SearchUiIntent.DeleteSearchHistory(it.id)) },
-                                onClear = { viewModel.send(SearchUiIntent.ClearSearchHistory) }
-                            )
-                        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(paddingValues)
+                ) {
+                    Container {
+                        SearchHistoryList(
+                            searchHistories = state.history,
+                            onSearchHistoryClick = { onSearch(it.keyword) },
+                            expanded = expanded,
+                            onToggleExpand = { expanded = !expanded },
+                            onDelete = onForget,
+                            onClear = onClearHistory,
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TabText(@StringRes text: Int, selected: Boolean) {
+    Text(text = stringResource(id = text), fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -453,11 +446,11 @@ private fun ColumnScope.SearchTabRow(
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SearchHistoryList(
-    searchHistories: ImmutableList<SearchHistory>,
-    onSearchHistoryClick: (SearchHistory) -> Unit,
+    searchHistories: ImmutableList<SearchHistoryItem>,
+    onSearchHistoryClick: (SearchHistoryItem) -> Unit,
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
-    onDelete: (SearchHistory) -> Unit = {},
+    onDelete: (SearchHistoryItem) -> Unit = {},
     onClear: () -> Unit = {},
 ) {
     val hasItem = remember(searchHistories) {
@@ -511,7 +504,7 @@ private fun SearchHistoryList(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = searchHistory.content
+                        text = searchHistory.keyword
                     )
                 }
             }
@@ -628,7 +621,7 @@ fun PreviewSearchHistoryList() {
         Box(modifier = Modifier.background(ExtendedTheme.colors.background)) {
             SearchHistoryList(
                 searchHistories = (0..20).map {
-                    SearchHistory(content = if (it % 2 == 0) "记录$it" else "搜索记录$it")
+                    SearchHistoryItem(id = it.toLong(), keyword = if (it % 2 == 0) "记录$it" else "搜索记录$it")
                 }.toImmutableList(),
                 onSearchHistoryClick = {},
                 expanded = expanded,

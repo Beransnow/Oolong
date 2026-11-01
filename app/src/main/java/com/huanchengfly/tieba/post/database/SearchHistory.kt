@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 /** A keyword searched for across Tieba. */
 @Entity(tableName = "search_history", indices = [Index(value = ["content"], unique = true)])
@@ -35,6 +36,9 @@ interface SearchHistoryDao {
     @Query("SELECT * FROM search_history ORDER BY timestamp DESC")
     suspend fun all(): List<SearchHistoryEntity>
 
+    @Query("SELECT * FROM search_history ORDER BY timestamp DESC")
+    fun allFlow(): Flow<List<SearchHistoryEntity>>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(history: SearchHistoryEntity): Long
 
@@ -55,6 +59,9 @@ interface SearchHistoryDao {
 
     @Query("SELECT * FROM forum_search_history ORDER BY timestamp DESC")
     suspend fun allInForums(): List<ForumSearchHistoryEntity>
+
+    @Query("SELECT * FROM forum_search_history ORDER BY timestamp DESC")
+    fun allInForumsFlow(): Flow<List<ForumSearchHistoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertInForum(history: ForumSearchHistoryEntity): Long

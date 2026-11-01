@@ -1,369 +1,126 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
-import com.huanchengfly.tieba.post.App
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.SearchThreadBean
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.models.database.SearchPostHistory
-import com.huanchengfly.tieba.post.utils.SearchHistoryStore
+import com.huanchengfly.tieba.post.arch.Actions
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.Pager
+import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.model.ForumSearchOrder
+import com.huanchengfly.tieba.post.model.SearchHistoryItem
+import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.repository.SearchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-@HiltViewModel
-class ForumSearchPostViewModel @Inject constructor() :
-    BaseViewModel<ForumSearchPostUiIntent, ForumSearchPostPartialChange, ForumSearchPostUiState, UiEvent>() {
-    override fun createInitialState(): ForumSearchPostUiState = ForumSearchPostUiState()
-
-    override fun createPartialChangeProducer(): PartialChangeProducer<ForumSearchPostUiIntent, ForumSearchPostPartialChange, ForumSearchPostUiState> =
-        ForumSearchPostPartialChangeProducer
-
-    override fun dispatchEvent(partialChange: ForumSearchPostPartialChange): UiEvent? =
-        when (partialChange) {
-            is ForumSearchPostPartialChange.DeleteHistory.Failure -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(
-                    R.string.toast_delete_failure,
-                    partialChange.error.getErrorMessage()
-                )
-            )
-
-            is ForumSearchPostPartialChange.ClearHistory.Success -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(R.string.toast_clear_success)
-            )
-
-            is ForumSearchPostPartialChange.ClearHistory.Failure -> CommonUiEvent.Toast(
-                App.INSTANCE.getString(
-                    R.string.toast_clear_failure,
-                    partialChange.error.getErrorMessage()
-                )
-            )
-
-            else -> null
-        }
-
-    private object ForumSearchPostPartialChangeProducer :
-        PartialChangeProducer<ForumSearchPostUiIntent, ForumSearchPostPartialChange, ForumSearchPostUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ForumSearchPostUiIntent>): Flow<ForumSearchPostPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ForumSearchPostUiIntent.Init>()
-                    .flatMapConcat { produceInitPartialChange() },
-                intentFlow.filterIsInstance<ForumSearchPostUiIntent.Refresh>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ForumSearchPostUiIntent.LoadMore>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ForumSearchPostUiIntent.DeleteHistory>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ForumSearchPostUiIntent.ClearHistory>()
-                    .flatMapConcat { produceClearHistoryPartialChange() },
-            )
-
-        private fun produceInitPartialChange(): Flow<ForumSearchPostPartialChange.Init> =
-            flow<ForumSearchPostPartialChange.Init> {
-                val searchHistories = SearchHistoryStore.allInForums()
-                emit(ForumSearchPostPartialChange.Init.Success(searchHistories))
-            }.catch {
-                emit(ForumSearchPostPartialChange.Init.Failure(it))
-            }
-
-        @OptIn(ExperimentalCoroutinesApi::class)
-        private fun ForumSearchPostUiIntent.Refresh.producePartialChange(): Flow<ForumSearchPostPartialChange.Refresh> =
-            flowOf(keyword.trim())
-                .filter { it.isNotBlank() }
-                .onEach {
-                    runCatching {
-                        SearchHistoryStore.addInForum(it, forumName)
-                    }
-                }
-                .flatMapConcat {
-                    TiebaApi.getInstance()
-                        .searchPostFlow(it, forumName, forumId, sortType, filterType)
-                }
-                .map<SearchThreadBean, ForumSearchPostPartialChange.Refresh> {
-                    val postList = it.data.postList.toImmutableList()
-                    ForumSearchPostPartialChange.Refresh.Success(
-                        keyword = keyword,
-                        data = postList,
-                        hasMore = it.data.hasMore == 1,
-                        sortType = sortType,
-                        filterType = filterType,
-                    )
-                }
-                .onStart {
-                    emit(
-                        ForumSearchPostPartialChange.Refresh.Start(
-                            keyword,
-                            forumName,
-                            sortType,
-                            filterType
-                        )
-                    )
-                }
-                .catch { emit(ForumSearchPostPartialChange.Refresh.Failure(it)) }
-                .flowOn(Dispatchers.IO)
-
-        private fun ForumSearchPostUiIntent.LoadMore.producePartialChange(): Flow<ForumSearchPostPartialChange.LoadMore> =
-            TiebaApi.getInstance()
-                .searchPostFlow(keyword, forumName, forumId, sortType, filterType, page + 1)
-                .map<SearchThreadBean, ForumSearchPostPartialChange.LoadMore> {
-                    val postList = it.data.postList.toImmutableList()
-                    ForumSearchPostPartialChange.LoadMore.Success(
-                        keyword = keyword,
-                        data = postList,
-                        hasMore = it.data.hasMore == 1,
-                        page = page + 1,
-                        sortType = sortType,
-                        filterType = filterType,
-                    )
-                }
-                .onStart { emit(ForumSearchPostPartialChange.LoadMore.Start) }
-                .catch { emit(ForumSearchPostPartialChange.LoadMore.Failure(it)) }
-
-        private fun ForumSearchPostUiIntent.DeleteHistory.producePartialChange(): Flow<ForumSearchPostPartialChange.DeleteHistory> =
-            flow<ForumSearchPostPartialChange.DeleteHistory> {
-                SearchHistoryStore.deleteInForum(id)
-                emit(ForumSearchPostPartialChange.DeleteHistory.Success(id))
-            }.catch {
-                emit(ForumSearchPostPartialChange.DeleteHistory.Failure(it))
-            }
-
-        private fun produceClearHistoryPartialChange(): Flow<ForumSearchPostPartialChange.ClearHistory> =
-            flow<ForumSearchPostPartialChange.ClearHistory> {
-                SearchHistoryStore.clearInForums()
-                emit(ForumSearchPostPartialChange.ClearHistory.Success)
-            }.catch {
-                emit(ForumSearchPostPartialChange.ClearHistory.Failure(it))
-            }
-    }
-}
-
-sealed interface ForumSearchPostUiIntent : UiIntent {
-    data object Init : ForumSearchPostUiIntent
-
-    data class Refresh(
-        val keyword: String,
-        val forumName: String,
-        val forumId: Long,
-        val sortType: Int,
-        val filterType: Int,
-    ) : ForumSearchPostUiIntent
-
-    data class LoadMore(
-        val keyword: String,
-        val forumName: String,
-        val forumId: Long,
-        val page: Int,
-        val sortType: Int,
-        val filterType: Int,
-    ) : ForumSearchPostUiIntent
-
-    data class DeleteHistory(val id: Long) : ForumSearchPostUiIntent
-
-    data object ClearHistory : ForumSearchPostUiIntent
-}
-
-sealed interface ForumSearchPostPartialChange : PartialChange<ForumSearchPostUiState> {
-    sealed class Init : ForumSearchPostPartialChange {
-        override fun reduce(oldState: ForumSearchPostUiState): ForumSearchPostUiState =
-            when (this) {
-                is Success -> oldState.copy(
-                    searchHistories = searchHistories.toImmutableList()
-                )
-
-                is Failure -> oldState
-            }
-
-        data class Success(
-            val searchHistories: List<SearchPostHistory>,
-        ) : Init()
-
-        data class Failure(
-            val error: Throwable,
-        ) : Init()
-    }
-
-    sealed class Refresh : ForumSearchPostPartialChange {
-        override fun reduce(oldState: ForumSearchPostUiState): ForumSearchPostUiState =
-            when (this) {
-                is Start -> {
-                    val newSearchHistories = (oldState.searchHistories
-                        .filterNot { it.content == keyword } + SearchPostHistory(
-                        keyword,
-                        forumName
-                    ))
-                        .sortedByDescending { it.timestamp }
-                    oldState.copy(
-                        isRefreshing = true,
-                        isLoadingMore = false,
-                        error = null,
-                        searchHistories = newSearchHistories.toImmutableList(),
-                        keyword = keyword,
-                        sortType = sortType,
-                        filterType = filterType,
-                    )
-                }
-
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    isLoadingMore = false,
-                    error = null,
-                    currentPage = 1,
-                    hasMore = hasMore,
-                    keyword = keyword,
-                    data = data,
-                    sortType = sortType,
-                    filterType = filterType,
-                )
-
-                is Failure -> oldState.copy(
-                    isRefreshing = false,
-                    isLoadingMore = false,
-                    error = error.wrapImmutable()
-                )
-            }
-
-        data class Start(
-            val keyword: String,
-            val forumName: String,
-            val sortType: Int,
-            val filterType: Int,
-        ) : Refresh()
-
-        data class Success(
-            val keyword: String,
-            val data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
-            val hasMore: Boolean,
-            val sortType: Int,
-            val filterType: Int,
-        ) : Refresh()
-
-        data class Failure(
-            val error: Throwable,
-        ) : Refresh()
-    }
-
-    sealed class LoadMore : ForumSearchPostPartialChange {
-        override fun reduce(oldState: ForumSearchPostUiState): ForumSearchPostUiState =
-            when (this) {
-                is Start -> oldState.copy(
-                    isRefreshing = false,
-                    isLoadingMore = true,
-                    error = null,
-                )
-
-                is Success -> oldState.copy(
-                    isRefreshing = false,
-                    isLoadingMore = false,
-                    error = null,
-                    currentPage = page,
-                    hasMore = hasMore,
-                    data = (oldState.data + data).toImmutableList(),
-                )
-
-                is Failure -> oldState.copy(
-                    isRefreshing = false,
-                    isLoadingMore = false,
-                    error = error.wrapImmutable()
-                )
-            }
-
-        data object Start : LoadMore()
-
-        data class Success(
-            val keyword: String,
-            val data: ImmutableList<SearchThreadBean.ThreadInfoBean>,
-            val hasMore: Boolean,
-            val page: Int,
-            val sortType: Int,
-            val filterType: Int,
-        ) : LoadMore()
-
-        data class Failure(
-            val error: Throwable,
-        ) : LoadMore()
-    }
-
-    sealed class DeleteHistory : ForumSearchPostPartialChange {
-        override fun reduce(oldState: ForumSearchPostUiState): ForumSearchPostUiState =
-            when (this) {
-                is Success -> oldState.copy(
-                    searchHistories = oldState.searchHistories.filterNot { it.id == id }
-                        .toImmutableList()
-                )
-
-                is Failure -> oldState
-            }
-
-        data class Success(val id: Long) : DeleteHistory()
-
-        data class Failure(
-            val error: Throwable,
-        ) : DeleteHistory()
-    }
-
-    sealed class ClearHistory : ForumSearchPostPartialChange {
-        override fun reduce(oldState: ForumSearchPostUiState): ForumSearchPostUiState =
-            when (this) {
-                is Success -> oldState.copy(
-                    searchHistories = persistentListOf()
-                )
-
-                is Failure -> oldState
-            }
-
-        data object Success : ClearHistory()
-
-        data class Failure(
-            val error: Throwable,
-        ) : ClearHistory()
-    }
-}
-
-data class ForumSearchPostUiState(
-    val isRefreshing: Boolean = true,
-    val isLoadingMore: Boolean = false,
-    val error: ImmutableHolder<Throwable>? = null,
-    val searchHistories: ImmutableList<SearchPostHistory> = persistentListOf(),
-    val currentPage: Int = 1,
-    val hasMore: Boolean = true,
+@Immutable
+data class ForumSearchPostState(
+    val forumName: String,
+    /** The keyword searched for; empty until the user searches, while the history shows. */
     val keyword: String = "",
-    val data: ImmutableList<SearchThreadBean.ThreadInfoBean> = persistentListOf(),
-    val sortType: Int = ForumSearchPostSortType.NEWEST,
-    val filterType: Int = ForumSearchPostFilterType.ALL,
-) : UiState
+    val order: ForumSearchOrder = ForumSearchOrder.Newest,
+    val onlyThreads: Boolean = false,
+    val list: PagerState<SearchedPost> = PagerState(refresh = LoadStatus.Loading),
+    /** The keywords searched for in any forum. */
+    val history: ImmutableList<SearchHistoryItem> = persistentListOf(),
+)
 
-object ForumSearchPostSortType {
-    const val NEWEST = 1
-    const val RELATIVE = 2
-}
+/** Searching one forum's threads and replies. */
+@HiltViewModel
+class ForumSearchPostViewModel @Inject constructor(
+    savedState: SavedStateHandle,
+    private val repository: SearchRepository,
+    private val messages: MessageController,
+) : ViewModel() {
+    private val forumName: String = checkNotNull(savedState["forumName"])
+    private val forumId: Long = checkNotNull(savedState["forumId"])
 
-object ForumSearchPostFilterType {
-    const val ONLY_THREAD = 1
-    const val ALL = 2
+    private val actions = Actions(viewModelScope)
+    private val local = MutableStateFlow(Local())
+    private val pager = MutableStateFlow<Pager<Int, SearchedPost>?>(null)
+
+    private data class Local(
+        val keyword: String = "",
+        val order: ForumSearchOrder = ForumSearchOrder.Newest,
+        val onlyThreads: Boolean = false,
+    )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<ForumSearchPostState> = combine(
+        local,
+        pager.flatMapLatest { it?.state ?: flowOf(PagerState(refresh = LoadStatus.Loading)) },
+        repository.forumHistory,
+    ) { local, list, history ->
+        ForumSearchPostState(
+            forumName = forumName,
+            keyword = local.keyword,
+            order = local.order,
+            onlyThreads = local.onlyThreads,
+            list = list,
+            history = history.toImmutableList(),
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumSearchPostState(forumName))
+
+    /** Searches for [keyword]; a blank one is ignored. */
+    fun search(keyword: String) {
+        val trimmed = keyword.trim()
+        if (trimmed.isEmpty()) return
+        local.update { it.copy(keyword = trimmed) }
+        viewModelScope.launch { runCatching { repository.remember(trimmed, forumName) } }
+        load()
+    }
+
+    fun refresh() = load()
+
+    fun loadMore() {
+        pager.value?.loadMore()
+    }
+
+    fun setOrder(order: ForumSearchOrder) {
+        if (order == local.value.order) return
+        local.update { it.copy(order = order) }
+        load()
+    }
+
+    fun setOnlyThreads(onlyThreads: Boolean) {
+        if (onlyThreads == local.value.onlyThreads) return
+        local.update { it.copy(onlyThreads = onlyThreads) }
+        load()
+    }
+
+    fun forget(item: SearchHistoryItem) = actions.launch("forget-${item.id}") {
+        runCatching { repository.forget(item) }.onFailure { messages.showError(R.string.toast_delete_failure, it) }
+    }
+
+    fun clearHistory() = actions.launch("clear") {
+        runCatching { repository.clearForumHistory() }
+            .onSuccess { messages.show(R.string.toast_clear_success) }
+            .onFailure { messages.showError(R.string.toast_clear_failure, it) }
+    }
+
+    private fun load() {
+        val (keyword, order, onlyThreads) = local.value
+        if (keyword.isEmpty()) return
+        pager.value = pager(initialKey = 1, itemKey = { post: SearchedPost -> "${post.threadId}_${post.postId}_${post.subPostId}" }) { page ->
+            repository.threadsInForum(keyword, forumName, forumId, order, onlyThreads, page)
+        }
+    }
 }
