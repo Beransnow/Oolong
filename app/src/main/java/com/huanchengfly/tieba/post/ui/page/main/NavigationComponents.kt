@@ -112,6 +112,8 @@ fun NavigationRail(
                         } else {
                             onChangePosition(index)
                         }
+                        // As on the floating bar, so opening notifications clears their badge here too
+                        navigationItem.onClick?.invoke()
                     },
                     icon = {
                         Box {
