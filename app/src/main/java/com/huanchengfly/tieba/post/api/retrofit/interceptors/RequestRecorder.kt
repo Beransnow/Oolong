@@ -1,9 +1,14 @@
 package com.huanchengfly.tieba.post.api.retrofit.interceptors
 
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.api.legacySessionProvider
 import com.squareup.wire.FieldEncoding
 import com.squareup.wire.ProtoReader
+import java.io.File
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.MultipartReader
@@ -14,11 +19,6 @@ import okio.ByteString
 import okio.GzipSource
 import okio.buffer
 import retrofit2.Invocation
-import java.io.File
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Debug-only network interceptor that appends every request, as sent on the wire, to a text file
@@ -78,11 +78,11 @@ object RequestRecorder : Interceptor {
 
     private fun redact(text: String): String {
         var result = text.replace(secretCookie) { "${it.groupValues[1]}=<${it.groupValues[1].uppercase()}>" }
-        val account = AccountUtil.getLoginInfo() ?: return result
+        val session = legacySessionProvider.currentSession() ?: return result
         listOf(
-            "BDUSS" to account.bduss,
-            "STOKEN" to account.sToken,
-            "TBS" to account.tbs,
+            "BDUSS" to session.bduss,
+            "STOKEN" to session.stoken,
+            "TBS" to session.tbs,
         ).forEach { (name, value) ->
             if (value.isNullOrEmpty()) return@forEach
             result = result

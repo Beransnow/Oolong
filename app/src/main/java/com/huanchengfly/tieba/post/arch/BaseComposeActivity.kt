@@ -14,13 +14,15 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.huanchengfly.tieba.post.activities.BaseActivity
+import com.huanchengfly.tieba.post.repository.AccountRepository
+import com.huanchengfly.tieba.post.ui.common.ProvideAccounts
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.calculateWindowSizeClass
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.rememberSystemUiController
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccountProvider
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import javax.inject.Inject
 
 abstract class BaseComposeActivityWithParcelable<DATA : Parcelable> : BaseComposeActivityWithData<DATA>() {
     abstract val dataExtraKey: String
@@ -52,6 +54,9 @@ abstract class BaseComposeActivityWithData<DATA> : BaseComposeActivity() {
 }
 
 abstract class BaseComposeActivity : BaseActivity() {
+    @Inject
+    lateinit var accountRepository: AccountRepository
+
     override val isNeedImmersionBar: Boolean = false
     override val isNeedFixBg: Boolean = false
     override val isNeedSetTheme: Boolean = false
@@ -81,7 +86,7 @@ abstract class BaseComposeActivity : BaseActivity() {
                     onCreateContent(systemUiController)
                 }
 
-                LocalAccountProvider {
+                ProvideAccounts(accountRepository) {
                     CompositionLocalProvider(
                         LocalWindowSizeClass provides calculateWindowSizeClass(activity = this)
                     ) {

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.model.UserProfile
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import javax.inject.Inject
 
 /** Keeps the logged-in user's profile with their account, which shows it before it reloads. */
@@ -9,9 +8,9 @@ fun interface OwnProfileCache {
     fun store(profile: UserProfile)
 }
 
-class AccountOwnProfileCache @Inject constructor() : OwnProfileCache {
+class AccountOwnProfileCache @Inject constructor(private val accounts: AccountRepository) : OwnProfileCache {
     override fun store(profile: UserProfile) {
-        val account = AccountUtil.getAccountInfoByUid(profile.id.toString())?.copy() ?: return
+        val account = accounts.accountByUid(profile.id.toString())?.copy() ?: return
         account.apply {
             nameShow = profile.displayName
             portrait = profile.portrait
@@ -27,6 +26,6 @@ class AccountOwnProfileCache @Inject constructor() : OwnProfileCache {
             tiebaUid = profile.tiebaUid
             loadSuccess = true
         }
-        AccountUtil.saveAsync(account)
+        accounts.saveAsync(account)
     }
 }

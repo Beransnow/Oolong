@@ -26,7 +26,7 @@ import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
-import com.huanchengfly.tieba.post.utils.AccountUtil
+import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.DeviceUtils
@@ -39,6 +39,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
@@ -85,8 +86,11 @@ private object AppInstallIdentity : InstallIdentity {
     override val lastUpdateTime: Long get() = App.Config.appLastUpdateTime
 }
 
-private object AccountSessionProvider : SessionProvider {
-    override fun currentSession(): Session? = AccountUtil.getLoginInfo()?.let {
+/** The current account's session. Lazy, as logging in needs the network that needs this. */
+class AccountSessionProvider @Inject constructor(
+    private val accounts: dagger.Lazy<AccountRepository>,
+) : SessionProvider {
+    override fun currentSession(): Session? = accounts.get().current.value?.let {
         Session(
             uid = it.uid,
             name = it.name,
@@ -98,10 +102,10 @@ private object AccountSessionProvider : SessionProvider {
     }
 
     override fun updateTbs(tbs: String) {
-        val account = AccountUtil.getLoginInfo() ?: return
+        val account = accounts.get().current.value?.copy() ?: return
         if (account.tbs == tbs) return
         account.tbs = tbs
-        AccountUtil.saveAsync(account)
+        accounts.get().saveAsync(account)
     }
 }
 
@@ -117,7 +121,7 @@ object NetworkIdentityModule {
     fun provideInstallIdentity(): InstallIdentity = AppInstallIdentity
 
     @Provides
-    fun provideSessionProvider(): SessionProvider = AccountSessionProvider
+    fun provideSessionProvider(provider: AccountSessionProvider): SessionProvider = provider
 
     @Provides
     @Singleton
@@ -234,6 +238,7 @@ object NetworkIdentityModule {
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface LegacyNetworkEntryPoint {
+    fun sessionProvider(): SessionProvider
     fun accountRemoteDataSource(): AccountRemoteDataSource
     fun threadRemoteDataSource(): ThreadRemoteDataSource
 }
@@ -242,7 +247,10 @@ private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
     EntryPointAccessors.fromApplication(App.INSTANCE, LegacyNetworkEntryPoint::class.java)
 }
 
-/** For the legacy singletons ([com.huanchengfly.tieba.post.utils.AccountUtil] and friends), which can't be injected. */
+/** For the legacy singletons, which can't be injected. */
+internal val legacySessionProvider: SessionProvider
+    get() = legacyEntryPoint.sessionProvider()
+
 internal val legacyAccountRemoteDataSource: AccountRemoteDataSource
     get() = legacyEntryPoint.accountRemoteDataSource()
 

@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
+import com.huanchengfly.tieba.post.repository.AccountActions
+import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -56,9 +58,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
+import com.huanchengfly.tieba.post.utils.parseCookie
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -78,6 +79,7 @@ fun LoginPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
+    val accounts = LocalAccountActions.current
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
     val webViewNavigator = rememberWebViewNavigator()
@@ -217,6 +219,7 @@ fun LoginPage(
                 client = remember(navigator) {
                     LoginWebViewClient(
                         navigator,
+                        accounts,
                         coroutineScope,
                         snackbarHostState
                     )
@@ -235,7 +238,8 @@ fun LoginPage(
 }
 
 class LoginWebViewClient(
-    nativeNavigator: Navigator? = null,
+    nativeNavigator: Navigator?,
+    private val accounts: AccountActions,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
 ) : MyWebViewClient(nativeNavigator) {
@@ -271,49 +275,30 @@ class LoginWebViewClient(
                     duration = SnackbarDuration.Indefinite
                 )
             }
+            isLoadingAccount = true
             coroutineScope.launch {
-                AccountUtil.fetchAccountFlow(bduss, sToken, cookieStr)
-                    .catch {
-                        coroutineScope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
+                runCatching { accounts.logIn(bduss, sToken, cookieStr) }
+                    .onSuccess { account ->
+                        isLoadingAccount = false
+                        accounts.switchTo(account.id)
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        launch {
                             snackbarHostState.showSnackbar(
-                                context.getString(
-                                    R.string.text_login_failed,
-                                    it.getErrorMessage()
-                                ), duration = SnackbarDuration.Short
+                                context.getString(R.string.text_login_success),
+                                duration = SnackbarDuration.Short
                             )
                         }
-                        navigator.loadUrl(LOGIN_URL)
-                        isLoadingAccount = false
+                        delay(1500L)
+                        nativeNavigator?.navigateUp()
                     }
-                    .flowOn(Dispatchers.Main)
-                    .collect { account ->
+                    .onFailure {
                         isLoadingAccount = false
-                        AccountUtil.newAccount(account.uid, account) {
-                            if (it) {
-                                AccountUtil.switchAccount(context, account.id)
-                                coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        context.getString(R.string.text_login_success),
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                                coroutineScope.launch {
-                                    delay(1500L)
-                                    nativeNavigator?.navigateUp()
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    snackbarHostState.showSnackbar(
-                                        context.getString(R.string.text_login_failed_default),
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
-                                view.loadUrl(LOGIN_URL)
-                            }
-                        }
+                        navigator.loadUrl(LOGIN_URL)
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar(
+                            context.getString(R.string.text_login_failed, it.getErrorMessage()),
+                            duration = SnackbarDuration.Short
+                        )
                     }
             }
         }

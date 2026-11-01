@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -55,6 +56,8 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
 import com.huanchengfly.tieba.post.models.PermissionBean
+import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
@@ -71,14 +74,15 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DialogUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.utils.bdussCookie
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import com.huanchengfly.tieba.post.utils.isTiebaHost
+import com.huanchengfly.tieba.post.utils.parseCookie
 import com.huanchengfly.tieba.post.utils.toTiebaKey
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -95,6 +99,7 @@ fun WebViewPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
+    val account by rememberUpdatedState(LocalAccount.current)
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
     val webViewNavigator = rememberWebViewNavigator()
@@ -253,7 +258,7 @@ fun WebViewPage(
                         displayZoomControls = false
                     }
                 },
-                client = remember(navigator) { MyWebViewClient(navigator) },
+                client = remember(navigator) { MyWebViewClient(navigator) { account } },
                 chromeClient = remember { MyWebChromeClient(context, coroutineScope) }
             )
 
@@ -282,6 +287,8 @@ fun isInternalHost(host: String): Boolean {
 
 open class MyWebViewClient(
     protected val nativeNavigator: Navigator? = null,
+    /** The account whose login the pages get. */
+    private val account: () -> Account? = { null },
 ) : AccompanistWebViewClient() {
     val context: Context
         get() = state.webView?.context ?: App.INSTANCE
@@ -419,12 +426,12 @@ open class MyWebViewClient(
 
     open fun injectCookies(url: String) {
         val cookieStr = CookieManager.getInstance().getCookie(url) ?: ""
-        val cookies = AccountUtil.parseCookie(cookieStr)
+        val cookies = parseCookie(cookieStr)
         val BDUSS = cookies["BDUSS"]
-        val currentAccountBDUSS = AccountUtil.getBduss()
+        val currentAccountBDUSS = account()?.bduss
         if (currentAccountBDUSS != null && BDUSS != currentAccountBDUSS) {
             CookieManager.getInstance()
-                .setCookie(url, AccountUtil.getBdussCookie(currentAccountBDUSS))
+                .setCookie(url, bdussCookie(currentAccountBDUSS))
         }
     }
 

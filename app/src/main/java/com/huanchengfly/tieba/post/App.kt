@@ -29,7 +29,6 @@ import com.huanchengfly.tieba.post.components.images.newAppImageLoader
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ThemeSwitcher
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -76,7 +75,6 @@ class App : Application(), SingletonImageLoader.Factory {
         // Before ClientUtils, whose sync request reads the install times set here
         Config.init(this)
         ClientUtils.init(this)
-        AccountUtil.init(this)
         AppIconUtil.setIcon()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         ThemeUtils.init(ThemeDelegate)

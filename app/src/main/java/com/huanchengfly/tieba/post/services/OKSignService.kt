@@ -19,8 +19,8 @@ import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
+import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ProgressListener
 import com.huanchengfly.tieba.post.utils.SingleAccountSigner
 import com.huanchengfly.tieba.post.utils.extension.addFlag
@@ -40,6 +40,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     @Inject
     lateinit var likes: LikeRemoteDataSource
+
+    @Inject
+    lateinit var accounts: AccountRepository
 
     private var job: Job = Job()
     override val coroutineContext: CoroutineContext
@@ -68,12 +71,13 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     override fun onHandleIntent(intent: Intent?) {
         Log.i(TAG, "onHandleWork")
         if (intent?.action == ACTION_START_SIGN) {
-            val loginInfo = AccountUtil.getLoginInfo()
+            val loginInfo = accounts.current.value
             if (loginInfo != null) {
                 runBlocking {
                     SingleAccountSigner(
                         this@OKSignService,
-                        AccountUtil.getLoginInfo()!!,
+                        loginInfo,
+                        accounts,
                         signs,
                         likes,
                     )

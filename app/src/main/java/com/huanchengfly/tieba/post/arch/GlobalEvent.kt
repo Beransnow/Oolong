@@ -18,8 +18,6 @@ import kotlinx.coroutines.launch
 
 /** Events any part of the app may send and any page may listen for. */
 sealed interface GlobalEvent {
-    data object AccountSwitched : GlobalEvent
-
     data object ScrollToTop : GlobalEvent
 
     data class Refresh(val key: String) : GlobalEvent

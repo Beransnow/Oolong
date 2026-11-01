@@ -29,6 +29,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.SearchKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -43,7 +44,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch

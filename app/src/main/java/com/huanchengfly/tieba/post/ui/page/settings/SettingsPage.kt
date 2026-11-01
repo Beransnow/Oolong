@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -45,7 +46,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 /** An entry's icon on the settings hub: a line icon in the text's colour, as on the "me" tab. */

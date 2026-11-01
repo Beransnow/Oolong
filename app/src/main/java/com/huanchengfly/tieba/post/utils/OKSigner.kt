@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.repository.AccountRepository
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.properties.Delegates
@@ -45,53 +46,11 @@ abstract class IOKSigner(
     }
 }
 
-/*
-class MultiAccountSigner(
-        context: Context
-) : IOKSigner(context) {
-    private val accounts: MutableList<Account> = mutableListOf()
-
-    override suspend fun start() {
-        accounts.clear()
-        accounts.addAll(AccountUtil.allAccounts)
-    }
-
-    interface ProgressListener {
-        fun onStart(
-                total: Int
-        )
-
-        fun onProgressStart(
-                signDataBean: SignDataBean,
-                current: Int,
-                total: Int
-        )
-
-        fun onProgressFinish(
-                signResultBean: SignResponse,
-                current: Int,
-                total: Int
-        )
-
-        fun onFinish(
-                success: Boolean,
-                signedCount: Int,
-                total: Int
-        )
-
-        fun onFailure(
-                current: Int,
-                total: Int,
-                errorCode: Int,
-                errorMsg: String
-        )
-    }
-}
-*/
 
 class SingleAccountSigner(
     context: Context,
     private val account: Account,
+    private val accounts: AccountRepository,
     signs: SignRemoteDataSource,
     private val likes: LikeRemoteDataSource,
 ) : IOKSigner(context, signs) {
@@ -133,7 +92,7 @@ class SingleAccountSigner(
         var userName: String by Delegates.notNull()
         var tbs: String by Delegates.notNull()
         Log.i(TAG, "start")
-        AccountUtil.fetchAccountFlow(account)
+        flow { emit(accounts.refresh(account)) }
             .flatMapConcat { account ->
                 userName = account.name
                 tbs = account.tbs

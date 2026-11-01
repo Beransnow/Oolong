@@ -47,6 +47,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.navigation.AboutKey
@@ -66,7 +67,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil

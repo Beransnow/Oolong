@@ -80,7 +80,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
@@ -98,6 +97,7 @@ import com.huanchengfly.tieba.post.utils.requestPermission
 import com.huanchengfly.tieba.post.utils.toTiebaKey
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -192,21 +192,21 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     private fun fetchAccount() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            if (AccountUtil.isLoggedIn()) {
-                AccountUtil.fetchAccountFlow()
-                    .flowOn(Dispatchers.IO)
-                    .catch { e ->
-                        toastShort(e.getErrorMessage())
-                        e.printStackTrace()
-                    }
-                    .collect()
+        val account = accountRepository.current.value ?: return
+        lifecycleScope.launch {
+            try {
+                accountRepository.refresh(account)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                toastShort(e.getErrorMessage())
+                e.printStackTrace()
             }
         }
     }
 
     private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && accountRepository.current.value != null) {
             requestPermission {
                 permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
                 description = getString(R.string.desc_permission_post_notifications)

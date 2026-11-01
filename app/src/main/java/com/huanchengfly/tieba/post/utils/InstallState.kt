@@ -18,9 +18,9 @@ object InstallState {
     private val prefs
         get() = App.INSTANCE.getSharedPreferences(SharedPreferencesUtil.SP_APP_DATA, Context.MODE_PRIVATE)
 
-    /** `first_login`: `"1"` until an account has logged in on this device. */
-    val firstLogin: String
-        get() = if (prefs.getBoolean(KEY_LOGGED_IN_BEFORE, false) || AccountUtil.allAccounts.isNotEmpty()) "0" else "1"
+    /** `first_login`: `"1"` until an account has logged in on this device, as [hasAccounts] also tells. */
+    fun firstLogin(hasAccounts: Boolean): String =
+        if (prefs.getBoolean(KEY_LOGGED_IN_BEFORE, false) || hasAccounts) "0" else "1"
 
     fun onLoginSucceeded() {
         prefs.edit { putBoolean(KEY_LOGGED_IN_BEFORE, true) }

@@ -53,12 +53,13 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
+import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
+import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 @Composable
@@ -74,6 +75,8 @@ fun AccountNavIcon(
 ) {
     val navigator = LocalNavigator.current
     val currentAccount = LocalAccount.current
+    val allAccounts = LocalAllAccounts.current
+    val accounts = LocalAccountActions.current
     if (spacer) Spacer(modifier = Modifier.width(12.dp))
     if (currentAccount == null) {
         Image(
@@ -93,9 +96,8 @@ fun AccountNavIcon(
         val menuState = rememberMenuState()
         LongClickMenu(
             menuContent = {
-                val allAccounts = AccountUtil.allAccounts
                 allAccounts.forEach {
-                    DropdownMenuItem(onClick = { AccountUtil.switchAccount(context, it.id) }) {
+                    DropdownMenuItem(onClick = { accounts.switchTo(it.id) }) {
                         Box(
                             modifier = Modifier
                                 .clip(CircleShape)

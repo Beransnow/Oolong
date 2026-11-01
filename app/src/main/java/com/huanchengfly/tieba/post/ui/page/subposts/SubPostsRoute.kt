@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -25,7 +26,6 @@ import com.huanchengfly.tieba.post.ui.page.reply.ReplyArgs
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyDialog
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPreferences
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.launch
 

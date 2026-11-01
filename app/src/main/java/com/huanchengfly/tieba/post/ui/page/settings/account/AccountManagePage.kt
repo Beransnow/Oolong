@@ -17,10 +17,15 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
+import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
+import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
@@ -38,9 +43,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AccountUtil
-import com.huanchengfly.tieba.post.utils.AccountUtil.AllAccounts
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -63,7 +65,9 @@ fun AccountManagePage(
         },
     ) { paddingValues ->
         val account = LocalAccount.current
-        val accounts = AllAccounts.current
+        val accounts = LocalAllAccounts.current
+        val actions = LocalAccountActions.current
+        val resources = LocalResources.current
         val context = LocalContext.current
         val accountsGroup = stringResource(id = R.string.settings_group_accounts)
         // Copying the BDUSS and logging out both ask first: one gives the account away, the
@@ -79,7 +83,16 @@ fun AccountManagePage(
         val exitDialog = rememberDialogState()
         ConfirmDialog(
             dialogState = exitDialog,
-            onConfirm = { AccountUtil.exit(context) },
+            onConfirm = {
+                val next = actions.logOut()
+                context.toastShort(
+                    if (next != null) {
+                        resources.getString(R.string.toast_exit_account_switched, next.nameShow ?: next.name)
+                    } else {
+                        resources.getString(R.string.toast_exit_account_success)
+                    }
+                )
+            },
             confirmText = stringResource(id = R.string.title_exit_account),
         ) {
             Text(text = stringResource(id = R.string.message_exit_account, account?.nameShow ?: account?.name.orEmpty()))
@@ -104,7 +117,7 @@ fun AccountManagePage(
                                     contentDescription = null,
                                 )
                             },
-                            onClick = { if (!current) AccountUtil.switchAccount(context, item.id) },
+                            onClick = { if (!current) actions.switchTo(item.id) },
                             trailingContent = if (current) {
                                 {
                                     Icon(
