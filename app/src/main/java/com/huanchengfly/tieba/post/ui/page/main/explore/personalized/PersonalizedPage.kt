@@ -259,10 +259,7 @@ private fun FeedList(
                                     }
                                 }
                                 if (showDivider) {
-                                    VerticalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 2.dp
-                                    )
+                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                             }
                         }

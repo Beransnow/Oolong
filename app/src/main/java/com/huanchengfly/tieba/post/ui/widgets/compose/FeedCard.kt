@@ -51,6 +51,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.offset
+import com.huanchengfly.tieba.post.models.PhotoViewData
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -130,28 +135,34 @@ private fun UserHeader(
             )
         },
         name = {
-            Text(
+            AuthorName(
                 text = StringUtil.getUsernameAnnotatedString(
                     context = LocalContext.current,
                     username = user.get { name },
                     nickname = user.get { nameShow },
                     color = LocalContentColor.current
-                ),
-                color = ExtendedTheme.colors.text
+                )
             )
         },
         onClick = onClick,
         desc = {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(
-                    context,
-                    time.toString()
-                )
-            )
+            MetaText(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
         },
         content = content,
         modifier = modifier
     )
+}
+
+/** An author's name in a card: medium weight, between the title and the time. */
+@Composable
+private fun AuthorName(text: AnnotatedString) {
+    Text(text = text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = ExtendedTheme.colors.text)
+}
+
+/** The time and other small facts under a name. */
+@Composable
+private fun MetaText(text: String) {
+    Text(text = text, fontSize = 12.sp, lineHeight = 16.sp, color = ExtendedTheme.colors.textSecondary)
 }
 
 @Composable
@@ -178,24 +189,18 @@ fun UserHeader(
             )
         },
         name = {
-            Text(
+            AuthorName(
                 text = StringUtil.getUsernameAnnotatedString(
                     context = LocalContext.current,
                     username = name,
                     nickname = nameShow,
                     color = LocalContentColor.current
-                ),
-                color = ExtendedTheme.colors.text
+                )
             )
         },
         onClick = onClick,
         desc = (@Composable {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(
-                    context,
-                    time.toString()
-                )
-            )
+            MetaText(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
         }).takeIf { time != null },
         content = content,
         modifier = modifier
@@ -261,6 +266,10 @@ fun Badge(
     }
 }
 
+/**
+ * A thread's title over its summary: the title bold and at most two lines, the summary regular
+ * and at most [maxLines] lines.
+ */
 @Composable
 fun ThreadContent(
     modifier: Modifier = Modifier,
@@ -270,47 +279,53 @@ fun ThreadContent(
     showTitle: Boolean = true,
     showAbstract: Boolean = true,
     isGood: Boolean = false,
-    maxLines: Int = 5,
+    maxLines: Int = 3,
     highlightKeywords: ImmutableList<String> = persistentListOf(),
 ) {
-    val content = buildAnnotatedString {
-        if (showTitle) {
-            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                if (isGood) {
-                    withStyle(style = SpanStyle(color = ExtendedTheme.colors.accent)) {
-                        append(stringResource(id = R.string.tip_good))
-                    }
-                    append(" ")
-                }
-
-                if (tabName.isNotBlank()) {
-                    append(tabName)
-                    append(" | ")
-                }
-
-                append(title)
-            }
-        }
-        if (showTitle && showAbstract) {
-            append('\n')
-        }
-        if (showAbstract) {
-            append(abstractText.emoticonString)
-        }
-    }
-
-    HighlightText(
-        text = content,
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .then(modifier),
-        fontSize = 15.sp,
-        lineSpacing = 0.8.sp,
-        overflow = TextOverflow.Ellipsis,
-        maxLines = maxLines,
-        style = MaterialTheme.typography.body1,
-        highlightKeywords = highlightKeywords
-    )
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (showTitle) {
+            val goodTip = stringResource(id = R.string.tip_good)
+            val accent = ExtendedTheme.colors.accent
+            HighlightText(
+                text = buildAnnotatedString {
+                    if (isGood) {
+                        withStyle(style = SpanStyle(color = accent)) { append(goodTip) }
+                        append(" ")
+                    }
+                    if (tabName.isNotBlank()) {
+                        append(tabName)
+                        append(" | ")
+                    }
+                    append(title)
+                },
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = ExtendedTheme.colors.text,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 2,
+                style = MaterialTheme.typography.body1,
+                highlightKeywords = highlightKeywords
+            )
+        }
+        if (showAbstract) {
+            HighlightText(
+                text = abstractText.emoticonString,
+                fontSize = 15.sp,
+                lineHeight = 24.sp,
+                color = ExtendedTheme.colors.text,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = maxLines,
+                style = MaterialTheme.typography.body1,
+                highlightKeywords = highlightKeywords
+            )
+        }
+    }
 }
 
 @Composable
@@ -347,12 +362,8 @@ fun FeedCardPlaceholder() {
             )
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                repeat(3) {
-                    ActionBtnPlaceholder(
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+            FeedCardActions(forum = {}) {
+                repeat(3) { ActionBtnPlaceholder() }
             }
         }
     )
@@ -368,29 +379,30 @@ fun ForumInfoChip(
     val name = nameProvider()
     Row(
         modifier = Modifier
-            .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(4.dp))
+            .height(28.dp)
+            .clip(CircleShape)
             .background(color = ExtendedTheme.colors.chip)
             .clickable(onClick = onClick)
-            .padding(4.dp),
+            .padding(start = if (imageUri != null) 4.dp else 10.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         imageUri?.let {
             Avatar(
                 data = imageUri,
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(1f),
-                shape = RoundedCornerShape(4.dp)
+                modifier = Modifier.size(20.dp),
+                shape = CircleShape
             )
         }
         Text(
             text = stringResource(id = R.string.title_forum_name, name),
             style = MaterialTheme.typography.body2,
             color = ExtendedTheme.colors.onChip,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -500,12 +512,6 @@ private fun ThreadMedia(
                     }
                 }
             } else if (hasPhoto) {
-                val mediaWidthFraction = remember(isSinglePhoto, singleMediaFraction) {
-                    if (isSinglePhoto) singleMediaFraction else 1f
-                }
-                val mediaAspectRatio = remember(isSinglePhoto) {
-                    if (isSinglePhoto) 2f else 3f
-                }
                 if (hideMedia) {
                     val photoViewData = remember(
                         medias, forumId, forumName, threadId
@@ -539,49 +545,55 @@ private fun ThreadMedia(
                         }
                     )
                 } else {
-                    val showMediaCount = remember(medias) { min(medias.size, 3) }
-                    val hasMoreMedia = remember(medias) { medias.size > 3 }
-                    val showMedias = remember(medias) { medias.subList(0, showMediaCount) }
-                    Box {
+                    val photoViewData = { index: Int ->
+                        getPhotoViewData(
+                            medias = medias.map { it.get() },
+                            forumId = forumId,
+                            forumName = forumName,
+                            threadId = threadId,
+                            index = index
+                        )
+                    }
+                    if (isSinglePhoto) {
+                        SinglePhoto(
+                            media = medias[0],
+                            photoViewData = remember(medias, forumId, forumName, threadId) { photoViewData(0) },
+                            modifier = Modifier.fillMaxWidth(singleMediaFraction),
+                        )
+                    } else {
+                        // Equal squares, at most three, the last one counting the rest
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth(mediaWidthFraction)
-                                .aspectRatio(mediaAspectRatio)
-                                .clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier.fillMaxWidth(if (singleMediaFraction < 1f) 0.75f else 1f),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            showMedias.fastForEachIndexed { index, media ->
-                                val photoViewData = remember(
-                                    index, medias, forumId, forumName, threadId
-                                ) {
-                                    getPhotoViewData(
-                                        medias = medias.map { it.get() },
-                                        forumId = forumId,
-                                        forumName = forumName,
-                                        threadId = threadId,
-                                        index = index
-                                    )
-                                }
-                                NetworkImage(
-                                    imageUri = remember(media) { media.url },
-                                    contentDescription = null,
+                            val shown = medias.subList(0, min(medias.size, 3))
+                            shown.fastForEachIndexed { index, media ->
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxHeight()
-                                        .weight(1f),
-                                    photoViewData = photoViewData,
-                                    contentScale = ContentScale.Crop,
-                                    enablePreview = true
-                                )
+                                        .weight(1f)
+                                        .aspectRatio(1f)
+                                ) {
+                                    NetworkImage(
+                                        imageUri = remember(media) { media.url },
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(MediaShape),
+                                        photoViewData = remember(index, medias, forumId, forumName, threadId) { photoViewData(index) },
+                                        contentScale = ContentScale.Crop,
+                                        enablePreview = true
+                                    )
+                                    if (index == shown.lastIndex && medias.size > shown.size) {
+                                        Badge(
+                                            icon = Icons.Rounded.PhotoSizeSelectActual,
+                                            text = "${medias.size}",
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .padding(8.dp)
+                                        )
+                                    }
+                                }
                             }
-                        }
-                        if (hasMoreMedia) {
-                            Badge(
-                                icon = Icons.Rounded.PhotoSizeSelectActual,
-                                text = "${medias.size}",
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
-                            )
                         }
                     }
                 }
@@ -589,6 +601,42 @@ private fun ThreadMedia(
         }
     }
 }
+
+/**
+ * One picture at its own shape: a wide one fills the width, no taller than [SinglePhotoMaxHeight];
+ * a tall one is narrower, cut to no taller than 4:3.
+ */
+@Composable
+private fun SinglePhoto(
+    media: ImmutableHolder<Media>,
+    photoViewData: PhotoViewData,
+    modifier: Modifier = Modifier,
+) {
+    val ratio = remember(media) {
+        val width = media.get { width }.toFloat()
+        val height = media.get { height }.toFloat()
+        if (width > 0f && height > 0f && media.get { isLongPic } != 1) width / height else 3f / 4
+    }
+    BoxWithConstraints(modifier = modifier) {
+        val wide = ratio >= 1f
+        val width = if (wide) maxWidth else maxWidth * TallPhotoWidthFraction
+        val height = if (wide) minOf(width / ratio, SinglePhotoMaxHeight) else minOf(width / ratio, width * 4 / 3)
+        NetworkImage(
+            imageUri = remember(media) { media.url },
+            contentDescription = null,
+            modifier = Modifier
+                .size(width, height)
+                .clip(MediaShape),
+            photoViewData = photoViewData,
+            contentScale = ContentScale.Crop,
+            enablePreview = true
+        )
+    }
+}
+
+private val MediaShape = RoundedCornerShape(8.dp)
+private val SinglePhotoMaxHeight = 220.dp
+private const val TallPhotoWidthFraction = 0.6f
 
 @Composable
 private fun ThreadMedia(
@@ -800,28 +848,21 @@ fun FeedCard(
                             .padding(16.dp)
                     )
                 }
-
-            if (showForum) ThreadForumInfo(item = item, onClick = onClickForum)
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            FeedCardActions(forum = { if (showForum) ThreadForumInfo(item = item, onClick = onClickForum) }) {
                 ThreadShareBtn(
                     shareNum = item.get { shareNum },
                     onClick = {},
-                    modifier = Modifier.weight(1f)
                 )
-
                 ThreadReplyBtn(
                     replyNum = item.get { replyNum },
                     onClick = { onClickReply(item.get()) },
-                    modifier = Modifier.weight(1f)
                 )
-
                 ThreadAgreeBtn(
                     hasAgree = item.get { agree?.hasAgree == 1 },
                     agreeNum = item.get { agreeNum },
                     onClick = { onAgree(item.get()) },
-                    modifier = Modifier.weight(1f)
                 )
             }
         },
@@ -882,32 +923,29 @@ fun FeedCard(
                             .padding(16.dp)
                     )
                 }
-
-            ThreadForumInfo(
-                forumName = item.get { forum_name },
-                forumAvatar = null,
-                onClick = { onClickForum(item.get { forum_name }) }
-            )
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            FeedCardActions(
+                forum = {
+                    ThreadForumInfo(
+                        forumName = item.get { forum_name },
+                        forumAvatar = null,
+                        onClick = { onClickForum(item.get { forum_name }) }
+                    )
+                }
+            ) {
                 ThreadShareBtn(
                     shareNum = item.get { share_num }.toLong(),
                     onClick = {},
-                    modifier = Modifier.weight(1f)
                 )
-
                 ThreadReplyBtn(
                     replyNum = item.get { reply_num },
                     onClick = { onClickReply(item.get()) },
-                    modifier = Modifier.weight(1f)
                 )
-
                 ThreadAgreeBtn(
                     hasAgree = item.get { agree?.hasAgree == 1 },
                     agreeNum = item.get { agree_num },
                     onClick = { onAgree(item.get()) },
-                    modifier = Modifier.weight(1f)
                 )
             }
         },
@@ -916,13 +954,33 @@ fun FeedCard(
     )
 }
 
+/**
+ * A card's last row: the thread's forum on the left, and share, reply and like on the right, the
+ * last one's text lined up with the card's edge.
+ */
+@Composable
+private fun FeedCardActions(
+    forum: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(modifier = Modifier.weight(1f)) { forum() }
+        Row(modifier = Modifier.offset(x = ActionPadding), content = actions)
+    }
+}
+
+private val ActionPadding = 8.dp
+
 @Composable
 private fun ActionBtnPlaceholder(
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = Modifier
-            .padding(vertical = 16.dp)
+            .padding(horizontal = ActionPadding, vertical = 12.dp)
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -950,7 +1008,7 @@ private fun ActionBtn(
     val clickableModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Row(
         modifier = clickableModifier
-            .padding(vertical = 16.dp)
+            .padding(horizontal = ActionPadding, vertical = 12.dp)
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -959,8 +1017,8 @@ private fun ActionBtn(
             Box(modifier = Modifier.size(18.dp)) {
                 icon()
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            ProvideTextStyle(value = MaterialTheme.typography.caption) {
+            Spacer(modifier = Modifier.width(4.dp))
+            ProvideTextStyle(value = MaterialTheme.typography.caption.copy(fontSize = 13.sp)) {
                 text()
             }
         }
