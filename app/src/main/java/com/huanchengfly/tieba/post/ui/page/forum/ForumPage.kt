@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -588,135 +589,8 @@ fun ForumPage(
                                 Text(text = stringResource(id = R.string.title_unfollow))
                             }
                         },
-                        forumId = forumInfo?.get { id }
-                    )
-                },
-                floatingActionButton = {
-                    if (context.appPreferences.forumFabFunction != "hide") {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .floatingGlass(CircleShape)
-                                .clickable {
-                                    when (context.appPreferences.forumFabFunction) {
-                                        "refresh" -> {
-                                            coroutineScope.launch {
-                                                emitGlobalEventSuspend(
-                                                    ForumThreadListUiEvent.BackToTop(
-                                                        currentPage == 1
-                                                    )
-                                                )
-                                                emitGlobalEventSuspend(
-                                                    ForumThreadListUiEvent.Refresh(
-                                                        currentPage == 1,
-                                                        getSortType(
-                                                            context,
-                                                            forumName
-                                                        )
-                                                    )
-                                                )
-                                            }
-                                        }
-
-                                        "back_to_top" -> {
-                                            coroutineScope.launch {
-                                                emitGlobalEvent(
-                                                    ForumThreadListUiEvent.BackToTop(
-                                                        currentPage == 1
-                                                    )
-                                                )
-                                            }
-                                        }
-
-                                        else -> {
-                                            context.toastShort(R.string.toast_feature_unavailable)
-                                        }
-                                    }
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                tint = ExtendedTheme.colors.primary,
-                                imageVector = when (context.appPreferences.forumFabFunction) {
-                                    "refresh" -> Icons.Rounded.Refresh
-                                    "back_to_top" -> Icons.Rounded.VerticalAlignTop
-                                    else -> Icons.Rounded.Add
-                                },
-                                contentDescription = null
-                            )
-                        }
-                    }
-                }
-            ) { contentPadding ->
-                var isFakeLoading by remember { mutableStateOf(false) }
-
-                LaunchedEffect(isFakeLoading) {
-                    if (isFakeLoading) {
-                        delay(1000)
-                        isFakeLoading = false
-                    }
-                }
-
-                PullToRefreshLayout(
-                    refreshing = isFakeLoading,
-                    onRefresh = {
-                        coroutineScope.emitGlobalEvent(
-                            ForumThreadListUiEvent.Refresh(
-                                currentPage == 1,
-                                getSortType(
-                                    context,
-                                    forumName
-                                )
-                            )
-                        )
-                        isFakeLoading = true
-                    }
-                ) {
-                    val headerNestedScrollConnection = remember {
-                        object : NestedScrollConnection {
-                            override fun onPreScroll(
-                                available: Offset,
-                                source: NestedScrollSource,
-                            ): Offset {
-                                if (available.y < 0) {
-                                    val prevHeightOffset = heightOffset
-                                    heightOffset = max(heightOffset + available.y, -headerHeight)
-                                    if (prevHeightOffset != heightOffset) {
-                                        return available.copy(x = 0f)
-                                    }
-                                }
-
-                                return Offset.Zero
-                            }
-
-                            override fun onPostScroll(
-                                consumed: Offset,
-                                available: Offset,
-                                source: NestedScrollSource,
-                            ): Offset {
-                                if (available.y > 0f) {
-                                    // Adjust the height offset in case the consumed delta Y is less than what was
-                                    // recorded as available delta Y in the pre-scroll.
-                                    val prevHeightOffset = heightOffset
-                                    heightOffset = min(heightOffset + available.y, 0f)
-                                    if (prevHeightOffset != heightOffset) {
-                                        return available.copy(x = 0f)
-                                    }
-                                }
-
-                                return Offset.Zero
-                            }
-                        }
-                    }
-
-                    // The header collapses under the bar instead of scrolling behind it; the
-                    // thread lists pad themselves for the navigation bar.
-                    Box(
-                        modifier = Modifier
-                            .padding(top = contentPadding.calculateTopPadding())
-                            .nestedScroll(headerNestedScrollConnection)
-                    ) {
-                        Column {
+                        forumId = forumInfo?.get { id },
+                        content = {
                             val containerHeight by remember {
                                 derivedStateOf {
                                     with(density) {
@@ -873,21 +747,155 @@ fun ForumPage(
                                     }
                                 }
                             }
+                        },
+                    )
+                },
+                floatingActionButton = {
+                    if (context.appPreferences.forumFabFunction != "hide") {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .floatingGlass(CircleShape)
+                                .clickable {
+                                    when (context.appPreferences.forumFabFunction) {
+                                        "refresh" -> {
+                                            coroutineScope.launch {
+                                                emitGlobalEventSuspend(
+                                                    ForumThreadListUiEvent.BackToTop(
+                                                        currentPage == 1
+                                                    )
+                                                )
+                                                emitGlobalEventSuspend(
+                                                    ForumThreadListUiEvent.Refresh(
+                                                        currentPage == 1,
+                                                        getSortType(
+                                                            context,
+                                                            forumName
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                        }
 
-                            if (forumInfo != null) {
-                                HorizontalPager(
-                                    state = pagerState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    key = { it },
-                                    verticalAlignment = Alignment.Top,
-                                    userScrollEnabled = true,
-                                ) {
-                                    ForumThreadListPage(
-                                        forumId = forumInfo!!.get { id },
-                                        forumName = forumInfo!!.get { name },
-                                        isGood = it == 1,
-                                    )
+                                        "back_to_top" -> {
+                                            coroutineScope.launch {
+                                                emitGlobalEvent(
+                                                    ForumThreadListUiEvent.BackToTop(
+                                                        currentPage == 1
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                        else -> {
+                                            context.toastShort(R.string.toast_feature_unavailable)
+                                        }
+                                    }
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                tint = ExtendedTheme.colors.primary,
+                                imageVector = when (context.appPreferences.forumFabFunction) {
+                                    "refresh" -> Icons.Rounded.Refresh
+                                    "back_to_top" -> Icons.Rounded.VerticalAlignTop
+                                    else -> Icons.Rounded.Add
+                                },
+                                contentDescription = null
+                            )
+                        }
+                    }
+                }
+            ) { contentPadding ->
+                var isFakeLoading by remember { mutableStateOf(false) }
+
+                LaunchedEffect(isFakeLoading) {
+                    if (isFakeLoading) {
+                        delay(1000)
+                        isFakeLoading = false
+                    }
+                }
+
+                PullToRefreshLayout(
+                    refreshing = isFakeLoading,
+                    onRefresh = {
+                        coroutineScope.emitGlobalEvent(
+                            ForumThreadListUiEvent.Refresh(
+                                currentPage == 1,
+                                getSortType(
+                                    context,
+                                    forumName
+                                )
+                            )
+                        )
+                        isFakeLoading = true
+                    },
+                    indicator = { isRefreshing, willLoad ->
+                        Text(
+                            text = if (isRefreshing || willLoad)
+                                stringResource(id = R.string.release_to_refresh)
+                            else stringResource(id = R.string.pull_down_to_refresh),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = contentPadding.calculateTopPadding() + 8.dp),
+                            style = MaterialTheme.typography.caption,
+                        )
+                    },
+                ) {
+                    val headerNestedScrollConnection = remember {
+                        object : NestedScrollConnection {
+                            override fun onPreScroll(
+                                available: Offset,
+                                source: NestedScrollSource,
+                            ): Offset {
+                                if (available.y < 0) {
+                                    val prevHeightOffset = heightOffset
+                                    heightOffset = max(heightOffset + available.y, -headerHeight)
+                                    if (prevHeightOffset != heightOffset) {
+                                        return available.copy(x = 0f)
+                                    }
                                 }
+
+                                return Offset.Zero
+                            }
+
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource,
+                            ): Offset {
+                                if (available.y > 0f) {
+                                    // Adjust the height offset in case the consumed delta Y is less than what was
+                                    // recorded as available delta Y in the pre-scroll.
+                                    val prevHeightOffset = heightOffset
+                                    heightOffset = min(heightOffset + available.y, 0f)
+                                    if (prevHeightOffset != heightOffset) {
+                                        return available.copy(x = 0f)
+                                    }
+                                }
+
+                                return Offset.Zero
+                            }
+                        }
+                    }
+
+                    // The header and tabs ride in the bar, so the lists scroll under all of them
+                    // and the header collapses by shrinking the bar.
+                    Box(modifier = Modifier.nestedScroll(headerNestedScrollConnection)) {
+                        if (forumInfo != null) {
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize(),
+                                key = { it },
+                                verticalAlignment = Alignment.Top,
+                                userScrollEnabled = true,
+                            ) {
+                                ForumThreadListPage(
+                                    forumId = forumInfo!!.get { id },
+                                    forumName = forumInfo!!.get { name },
+                                    isGood = it == 1,
+                                    contentPadding = contentPadding,
+                                )
                             }
                         }
                     }
@@ -983,6 +991,7 @@ private fun ForumToolbar(
     showTitle: Boolean,
     menuContent: @Composable (MenuScope.() -> Unit)? = null,
     forumId: Long? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val navigator = LocalNavigator.current
     GlassTopBar(
@@ -1028,7 +1037,8 @@ private fun ForumToolbar(
                     }
                 }
             }
-        }
+        },
+        content = content,
     )
 }
 

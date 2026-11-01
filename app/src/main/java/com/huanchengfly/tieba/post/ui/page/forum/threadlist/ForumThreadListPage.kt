@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -174,6 +172,8 @@ private fun ThreadList(
     onOpenForumRule: (() -> Unit)? = null,
     onOriginThreadClicked: (OriginThreadInfo) -> Unit = {},
     onUserClicked: (User) -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    header: (@Composable () -> Unit)? = null,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
     val itemFraction = when (windowSizeClass.widthSizeClass) {
@@ -184,8 +184,11 @@ private fun ThreadList(
         state = state,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = WindowInsets.navigationBars.asPaddingValues()
+        contentPadding = contentPadding,
     ) {
+        if (header != null) {
+            item(key = "Header") { header() }
+        }
         if (!forumRuleTitle.isNullOrEmpty()) {
             item(key = "ForumRule") {
                 TopThreadItem(
@@ -262,6 +265,7 @@ fun ForumThreadListPage(
     forumId: Long,
     forumName: String,
     isGood: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: ForumThreadListViewModel = if (isGood) pageViewModel<GoodThreadListViewModel>() else pageViewModel<LatestThreadListViewModel>()
 ) {
     val context = LocalContext.current
@@ -353,23 +357,6 @@ fun ForumThreadListPage(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            if (isGood) {
-                GoodClassifyTabs(
-                    goodClassifyHolders = goodClassifies,
-                    selectedItem = goodClassifyId,
-                    onSelected = {
-                        viewModel.send(
-                            getRefreshIntent(
-                                context,
-                                forumName,
-                                true,
-                                goodClassifyId = it
-                            )
-                        )
-                    }
-                )
-            }
-
             LoadMoreLayout(
                 isLoading = isLoadingMore,
                 onLoadMore = {
@@ -425,6 +412,25 @@ fun ForumThreadListPage(
                     onOpenForumRule = {
                         navigator.navigate(ForumRuleDetailPageDestination(forumId))
                     },
+                    contentPadding = contentPadding,
+                    header = if (isGood) {
+                        {
+                            GoodClassifyTabs(
+                                goodClassifyHolders = goodClassifies,
+                                selectedItem = goodClassifyId,
+                                onSelected = {
+                                    viewModel.send(
+                                        getRefreshIntent(
+                                            context,
+                                            forumName,
+                                            true,
+                                            goodClassifyId = it
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                    } else null,
                     onOriginThreadClicked = {
                         navigator.navigate(
                             ThreadPageDestination(
@@ -432,15 +438,18 @@ fun ForumThreadListPage(
                                 forumId = it.fid,
                             )
                         )
-                    }
-                ) { navigator.navigate(UserProfilePageDestination(it.id)) }
+                    },
+                    onUserClicked = { navigator.navigate(UserProfilePageDestination(it.id)) },
+                )
             }
         }
 
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentPadding.calculateTopPadding()),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )
