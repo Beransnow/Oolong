@@ -7,6 +7,7 @@ import android.os.Build
 import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
+import com.huanchengfly.tieba.core.network.explore.ExploreRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
@@ -179,6 +180,14 @@ object NetworkIdentityModule {
         commonParams: CommonParams,
         device: DeviceIdentity,
     ): UserRemoteDataSource = UserRemoteDataSource(network, commonParams, device)
+
+    @Provides
+    @Singleton
+    fun provideExploreRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+        device: DeviceIdentity,
+    ): ExploreRemoteDataSource = ExploreRemoteDataSource(network, commonParams, device)
 
     @Provides
     @Singleton
