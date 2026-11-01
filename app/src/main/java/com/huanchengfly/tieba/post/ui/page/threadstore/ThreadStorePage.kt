@@ -18,9 +18,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -38,12 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.onEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.dpToPxFloat
+import com.huanchengfly.tieba.post.model.StoredThread
+import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -58,7 +58,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -74,7 +73,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalTextApi::class)
 @Destination(
     deepLinks = [
         DeepLink(uriPattern = "tblite://favorite")
@@ -83,126 +81,89 @@ private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSiz
 @Composable
 fun ThreadStorePage(
     navigator: DestinationsNavigator,
-    viewModel: ThreadStoreViewModel = pageViewModel()
+    viewModel: ThreadStoreViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(ThreadStoreUiIntent.Refresh)
-        viewModel.initialized = true
-    }
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::isRefreshing,
-        initial = false
-    )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::isLoadingMore,
-        initial = false
-    )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::hasMore,
-        initial = true
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::currentPage,
-        initial = 0
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::data,
-        initial = emptyList()
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = ThreadStoreUiState::error,
-        initial = null
-    )
-    val isError by remember { derivedStateOf { error != null } }
-
+    val list by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scaffoldState = rememberScaffoldState()
-    viewModel.onEvent<ThreadStoreUiEvent.Delete.Failure> {
-        scaffoldState.snackbarHostState.showSnackbar(
-            context.getString(
-                R.string.delete_store_failure,
-                it.errorMsg
+    ThreadStoreScreen(
+        list = list,
+        onBack = { navigator.navigateUp() },
+        onRefresh = viewModel::refresh,
+        onLoadMore = viewModel::loadMore,
+        onRemove = viewModel::remove,
+        onOpenUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+        onOpen = { thread ->
+            navigator.navigate(
+                ThreadPageDestination(
+                    threadId = thread.threadId,
+                    postId = thread.markPostId,
+                    seeLz = context.appPreferences.collectThreadSeeLz,
+                    sortType = if (context.appPreferences.collectThreadDescSort) ThreadSortType.SORT_TYPE_DESC else ThreadSortType.SORT_TYPE_DEFAULT,
+                    from = ThreadPageFrom.FROM_STORE,
+                    extra = ThreadPageFromStoreExtra(
+                        maxPid = thread.maxPostId,
+                        maxFloor = thread.latestFloor
+                    )
+                )
             )
-        )
-    }
-    viewModel.onEvent<ThreadStoreUiEvent.Delete.Success> {
-        scaffoldState.snackbarHostState.showSnackbar(context.getString(R.string.delete_store_success))
-    }
+        },
+    )
+}
+
+/** The threads the user stored; pulls down to refresh, and long pressing one offers to remove it. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun ThreadStoreScreen(
+    list: PagerState<StoredThread>,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onRemove: (StoredThread) -> Unit,
+    onOpenUser: (User) -> Unit,
+    onOpen: (StoredThread) -> Unit,
+) {
+    val isRefreshing = list.refresh == LoadStatus.Loading
+    val error = (list.refresh as? LoadStatus.Error)?.error
     GlassScaffold(
         backgroundColor = Color.Transparent,
-        scaffoldState = scaffoldState,
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_my_collect)) },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
+                    BackNavigationIcon(onBackPressed = onBack)
                 }
             )
         }
     ) { contentPaddings ->
         StateScreen(
-            isEmpty = data.isEmpty(),
-            isError = isError,
+            isEmpty = list.items.isEmpty(),
+            isError = error != null,
             isLoading = isRefreshing,
             modifier = Modifier.fillMaxSize(),
-            onReload = {
-                viewModel.send(ThreadStoreUiIntent.Refresh)
-            },
-            errorScreen = {
-                error?.let {
-                    val (e) = it
-                    ErrorScreen(error = e)
-                }
-            }
+            onReload = onRefresh,
+            errorScreen = { ErrorScreen(error = error) }
         ) {
-            val pullRefreshState = rememberPullRefreshState(
-                refreshing = isRefreshing,
-                onRefresh = { viewModel.send(ThreadStoreUiIntent.Refresh) }
-            )
+            val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = onRefresh)
 
             val lazyListState = rememberLazyListState()
 
             Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
                 LoadMoreLayout(
-                    isLoading = isLoadingMore,
-                    onLoadMore = { viewModel.send(ThreadStoreUiIntent.LoadMore(currentPage + 1)) },
-                    loadEnd = !hasMore,
+                    isLoading = list.append == LoadStatus.Loading,
+                    onLoadMore = onLoadMore,
+                    loadEnd = !list.hasMore,
                     lazyListState = lazyListState
                 ) {
                     MyLazyColumn(state = lazyListState, contentPadding = contentPaddings) {
                         items(
-                            items = data,
+                            items = list.items,
                             key = { it.threadId }
-                        ) { info ->
+                        ) { thread ->
                             StoreItem(
-                                info = info,
-                                onUserClick = {
-                                    info.author.lzUid?.let {
-                                        navigator.navigate(UserProfilePageDestination(it.toLong()))
-                                    }
-                                },
-                                onClick = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = info.threadId.toLong(),
-                                            postId = info.markPid.toLong(),
-                                            seeLz = context.appPreferences.collectThreadSeeLz,
-                                            sortType = if(context.appPreferences.collectThreadDescSort) ThreadSortType.SORT_TYPE_DESC else ThreadSortType.SORT_TYPE_DEFAULT,
-                                            from = ThreadPageFrom.FROM_STORE,
-                                            extra = ThreadPageFromStoreExtra(
-                                                maxPid = info.maxPid.toLong(),
-                                                maxFloor = info.postNo.toInt()
-                                            )
-                                        )
-                                    )
-                                },
-                                onDelete = {
-                                    viewModel.send(
-                                        ThreadStoreUiIntent.Delete(
-                                            info.threadId
-                                        )
-                                    )
-                                }
+                                info = thread,
+                                onUserClick = { thread.author?.let(onOpenUser) },
+                                onClick = { onOpen(thread) },
+                                onDelete = { onRemove(thread) }
                             )
                         }
                     }
@@ -225,14 +186,14 @@ fun ThreadStorePage(
 @OptIn(ExperimentalTextApi::class)
 @Composable
 private fun StoreItem(
-    info: ThreadStoreBean.ThreadStoreInfo,
+    info: StoredThread,
     onUserClick: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasUpdate = remember(info) { info.count != "0" && info.postNo != "0" }
-    val isDeleted = remember(info) { info.isDeleted == "1" }
+    val hasUpdate = info.hasUpdate
+    val isDeleted = info.deleted
     val textMeasurer = rememberTextMeasurer()
     LongClickMenu(
         menuContent = {
@@ -250,7 +211,7 @@ private fun StoreItem(
             UserHeader(
                 avatar = {
                     Avatar(
-                        data = StringUtil.getAvatarUrl(info.author.userPortrait),
+                        data = StringUtil.getAvatarUrl(info.author?.portrait),
                         size = Sizes.Small,
                         contentDescription = null
                     )
@@ -259,8 +220,8 @@ private fun StoreItem(
                     Text(
                         text = getUsernameAnnotatedString(
                             LocalContext.current,
-                            info.author.name ?: "",
-                            info.author.nameShow,
+                            info.author?.name.orEmpty(),
+                            info.author?.nameShow,
                             LocalContentColor.current
                         )
                     )
@@ -272,13 +233,13 @@ private fun StoreItem(
                     append(info.title)
                     if (hasUpdate) {
                         append(" ")
-                        appendInlineContent("Update", info.postNo)
+                        appendInlineContent("Update", info.latestFloor.toString())
                     }
                 }
             }
             val updateTip = stringResource(
                 id = R.string.tip_thread_store_update,
-                info.postNo
+                info.latestFloor.toString()
             )
             val result = remember {
                 textMeasurer.measure(
