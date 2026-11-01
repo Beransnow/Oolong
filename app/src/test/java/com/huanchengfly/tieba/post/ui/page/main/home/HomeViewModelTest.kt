@@ -65,6 +65,15 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `starts out loading rather than as a guest`() = runTest {
+        coEvery { repository.followedForums() } returns listOf(forum(1))
+
+        val viewModel = createViewModel()
+
+        assertEquals(LoadStatus.Loading, viewModel.state.value.load)
+    }
+
+    @Test
     fun `a guest has nothing to load`() = runTest {
         session = null
 
@@ -72,6 +81,7 @@ class HomeViewModelTest {
         runCurrent()
 
         assertEquals(false, viewModel.state.value.loggedIn)
+        assertEquals(LoadStatus.Idle, viewModel.state.value.load)
         coVerify(exactly = 0) { repository.followedForums() }
     }
 

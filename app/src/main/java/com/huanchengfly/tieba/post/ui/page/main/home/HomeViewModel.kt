@@ -52,7 +52,9 @@ class HomeViewModel @Inject constructor(
 
     private data class Local(
         val forums: List<FollowedForum> = emptyList(),
-        val load: LoadStatus = LoadStatus.Idle,
+        // Loading until refresh() knows whether there is anyone to load for, so a logged-in user
+        // never sees the guest page first
+        val load: LoadStatus = LoadStatus.Loading,
         val historyExpanded: Boolean = true,
         val loggedIn: Boolean = false,
     )
@@ -67,7 +69,7 @@ class HomeViewModel @Inject constructor(
                 historyExpanded = local.historyExpanded,
                 loggedIn = local.loggedIn,
             )
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState())
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState(load = LoadStatus.Loading))
 
     init {
         refresh()
