@@ -154,7 +154,8 @@ class ThreadRemoteDataSource(
     }
 
     /**
-     * Deletes a post, or with [isSubPost] a reply inside one.
+     * Deletes a post, or with [isSubPost] a reply inside one. No reason is sent: deleting one's
+     * own post has none, and moderating with a reason isn't offered.
      *
      * @param ownPost whether the post is the user's own; otherwise it is deleted as a moderator
      */
@@ -175,32 +176,26 @@ class ThreadRemoteDataSource(
             "isfloor" to if (isSubPost) "1" else "0",
             "src" to if (isSubPost) "3" else "1",
             "is_vipdel" to if (ownPost) "0" else "1",
-            "delete_my_post" to if (ownPost) "1" else "0",
+            ("delete_my_post" to "1").takeIf { ownPost },
             tbs?.let { "tbs" to it },
         )
         formService.deletePost(signedFormBody(params, withSig = false))
     }
 
-    /**
-     * @param ownThread whether the thread is the user's own; otherwise it is deleted as a moderator
-     * @param hide whether to only hide the thread from the forum
-     */
+    /** @param ownThread whether the thread is the user's own; otherwise it is deleted as a moderator */
     suspend fun deleteThread(
         forumId: Long,
         forumName: String,
         threadId: Long,
         ownThread: Boolean,
-        hide: Boolean = false,
         tbs: String? = null,
     ) {
         val params = commonParams.form(formProfile, includeTbs = tbs == null) + listOfNotNull(
             "fid" to forumId.toString(),
             "word" to forumName,
             "z" to threadId.toString(),
-            "src" to "1",
             "is_vipdel" to "0",
-            "delete_my_thread" to if (ownThread) "1" else "0",
-            "is_frs_mask" to if (hide) "1" else "0",
+            ("delete_my_thread" to "1").takeIf { ownThread },
             tbs?.let { "tbs" to it },
         )
         formService.deleteThread(signedFormBody(params, withSig = false))

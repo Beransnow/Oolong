@@ -250,7 +250,8 @@ class ThreadRemoteDataSourceTest {
         assertEquals("1", form.value("isfloor"))
         assertEquals("3", form.value("src"))
         assertEquals("1", form.value("is_vipdel"))
-        assertEquals("0", form.value("delete_my_post"))
+        assertNull(form.value("delete_my_post"))
+        assertNull(form.value("reason"))
     }
 
     @Test
@@ -266,11 +267,20 @@ class ThreadRemoteDataSourceTest {
         assertEquals("52", form.value("fid"))
         assertEquals("吧名", form.value("word"))
         assertEquals("9000", form.value("z"))
-        assertEquals("1", form.value("src"))
         assertEquals("0", form.value("is_vipdel"))
         assertEquals("1", form.value("delete_my_thread"))
-        assertEquals("0", form.value("is_frs_mask"))
+        assertNull(form.value("src"))
+        assertNull(form.value("is_frs_mask"))
         assertEquals("tbs-value", form.value("tbs"))
+    }
+
+    @Test
+    fun `deletes another user's thread as a moderator without the own-thread flag`() = runTest {
+        server.enqueue("""{"error_code":"0","error_msg":""}""")
+
+        dataSource.deleteThread(52, "吧名", threadId = 9_000, ownThread = false)
+
+        assertNull(server.takeRequest().form().value("delete_my_thread"))
     }
 
     @Test
