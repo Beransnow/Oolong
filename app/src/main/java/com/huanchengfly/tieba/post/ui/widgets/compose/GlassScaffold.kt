@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +17,8 @@ import androidx.compose.material.Surface
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeSource
@@ -57,6 +56,10 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  *
  * Bars that hide on scroll should move with an offset or graphics layer, not by changing size,
  * so the padding stays stable and the content does not jump.
+ *
+ * The padding is one object whose values change as the bars are measured, so content that reads
+ * it while it is laid out, such as a lazy list's content padding, follows a bar that changes
+ * height in the same frame instead of a frame behind.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -72,6 +75,7 @@ fun GlassScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val hazeState = rememberHazeState()
+    val padding = remember { ScaffoldPadding() }
     val chromePadding = LocalChromePadding.current
     var consumedInsets by remember { mutableStateOf(WindowInsets(0, 0, 0, 0)) }
     val insets = WindowInsets.systemBars
@@ -114,12 +118,10 @@ fun GlassScaffold(
                 val left = insets.getLeft(this, layoutDirection)
                 val right = insets.getRight(this, layoutDirection)
                 val isLtr = layoutDirection == LayoutDirection.Ltr
-                val padding = PaddingValues(
-                    start = (if (isLtr) left else right).toDp(),
-                    top = top.toDp(),
-                    end = (if (isLtr) right else left).toDp(),
-                    bottom = bottom.toDp(),
-                )
+                padding.start = (if (isLtr) left else right).toDp()
+                padding.top = top.toDp()
+                padding.end = (if (isLtr) right else left).toDp()
+                padding.bottom = bottom.toDp()
 
                 val contentPlaceables = subcompose(GlassScaffoldSlot.Content) {
                     Box(
@@ -164,14 +166,46 @@ fun GlassScaffold(
     }
 }
 
-/** Adds [other] to these padding values side by side, e.g. scaffold padding plus list spacing. */
+/**
+ * The padding [GlassScaffold] gives its content, updated as the bars are measured. Its values are
+ * state, read wherever the padding is used.
+ */
+@Stable
+private class ScaffoldPadding : PaddingValues {
+    var start by mutableStateOf(0.dp)
+    var top by mutableStateOf(0.dp)
+    var end by mutableStateOf(0.dp)
+    var bottom by mutableStateOf(0.dp)
+
+    override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
+        if (layoutDirection == LayoutDirection.Ltr) start else end
+
+    override fun calculateTopPadding(): Dp = top
+
+    override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
+        if (layoutDirection == LayoutDirection.Ltr) end else start
+
+    override fun calculateBottomPadding(): Dp = bottom
+}
+
+/**
+ * Adds [other] to these padding values side by side, e.g. scaffold padding plus list spacing. The
+ * sum is worked out when it is read, so it follows the scaffold's padding as that changes.
+ */
 @Composable
 fun PaddingValues.plus(other: PaddingValues): PaddingValues {
-    val layoutDirection = LocalLayoutDirection.current
-    return PaddingValues(
-        start = calculateStartPadding(layoutDirection) + other.calculateStartPadding(layoutDirection),
-        top = calculateTopPadding() + other.calculateTopPadding(),
-        end = calculateEndPadding(layoutDirection) + other.calculateEndPadding(layoutDirection),
-        bottom = calculateBottomPadding() + other.calculateBottomPadding(),
-    )
+    val base = this
+    return remember(base, other) {
+        object : PaddingValues {
+            override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
+                base.calculateLeftPadding(layoutDirection) + other.calculateLeftPadding(layoutDirection)
+
+            override fun calculateTopPadding(): Dp = base.calculateTopPadding() + other.calculateTopPadding()
+
+            override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
+                base.calculateRightPadding(layoutDirection) + other.calculateRightPadding(layoutDirection)
+
+            override fun calculateBottomPadding(): Dp = base.calculateBottomPadding() + other.calculateBottomPadding()
+        }
+    }
 }
