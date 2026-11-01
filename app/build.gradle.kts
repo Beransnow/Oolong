@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.androidx.room)
 }
 
 fun loadProperties(name: String): Properties = Properties().apply {
@@ -140,6 +141,10 @@ composeCompiler {
     stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose_stability_configuration.txt"))
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
     //Local Files
 //    implementation fileTree(include: ["*.jar"], dir: "libs")
@@ -231,6 +236,9 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.palette)
     implementation(libs.androidx.window)

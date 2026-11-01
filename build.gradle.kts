@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.wire) apply false
     alias(libs.plugins.roborazzi) apply false
+    alias(libs.plugins.androidx.room) apply false
 }
 
 tasks.register<Delete>("clean") {
