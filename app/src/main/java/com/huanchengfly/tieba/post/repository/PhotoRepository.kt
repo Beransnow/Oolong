@@ -41,6 +41,10 @@ class PhotoRepository @Inject constructor(
                         url = it.img.original.bigCdnSrc.takeIf { _ -> it.showOriginalBtn == "1" },
                         overallIndex = it.overallIndex.toIntOrNull() ?: 0,
                         postId = it.postId?.toLongOrNull(),
+                        author = it.author?.let { author -> author.nameShow ?: author.name },
+                        text = it.descr.joinToString("") { part -> part.text }.trim().takeIf(String::isNotEmpty),
+                        width = it.img.original.width,
+                        height = it.img.original.height,
                     )
                 },
             )

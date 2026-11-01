@@ -86,7 +86,19 @@ data class PicPageResponse(
         @SerialName("show_original_btn") val showOriginalBtn: String = "0",
         val img: Img = Img(),
         @SerialName("post_id") val postId: String? = null,
+        val author: PicAuthor? = null,
+        /** The text of the post the picture is in. */
+        val descr: List<Text> = emptyList(),
     )
+
+    @Serializable
+    data class PicAuthor(
+        val name: String? = null,
+        @SerialName("name_show") val nameShow: String? = null,
+    )
+
+    @Serializable
+    data class Text(val type: Int = 0, val text: String = "")
 
     @Serializable
     data class Img(val original: Original = Original())
@@ -96,6 +108,8 @@ data class PicPageResponse(
         val id: String = "",
         @SerialName("big_cdn_src") val bigCdnSrc: String = "",
         @SerialName("original_src") val originalSrc: String = "",
+        val width: Int = 0,
+        val height: Int = 0,
     )
 }
 

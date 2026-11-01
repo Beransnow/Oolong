@@ -38,8 +38,10 @@ class PhotoViewViewModelTest {
             PicturePage(total = 20, pictures = listOf(picture("c", 13), picture("d", 14)))
         val viewModel = PhotoViewViewModel(repository)
 
-        viewModel.start(PhotoViewData(data = source, picItems = listOf(item("a"), item("b"), item("c")), index = 2))
-        viewModel.start(PhotoViewData())
+        val data = PhotoViewData(data = source, picItems = listOf(item("a"), item("b"), item("c")), index = 2)
+        viewModel.start(data)
+        // Shown again, as when the window is recreated: nothing starts over
+        viewModel.start(data)
         runCurrent()
 
         val state = viewModel.state.value
@@ -66,6 +68,21 @@ class PhotoViewViewModelTest {
         assertEquals(listOf("x", "y", "c"), state.pictures.map { it.picId })
         assertEquals(2, state.currentIndex)
         assertEquals(false, state.hasPrevious)
+    }
+
+    @Test
+    fun `opening other pictures drops the ones shown before`() = runTest {
+        coEvery { repository.pictures(source, "c", 3, false) } returns PicturePage(20, listOf(picture("c", 3)))
+        val viewModel = PhotoViewViewModel(repository)
+
+        viewModel.start(PhotoViewData(data = source, picItems = listOf(item("a"), item("b"), item("c")), index = 2))
+        viewModel.start(PhotoViewData(picItems = listOf(item("x"), item("y")), index = 1))
+        runCurrent()
+
+        val state = viewModel.state.value
+        assertEquals(listOf("x", "y"), state.pictures.map { it.picId })
+        assertEquals(1, state.currentIndex)
+        assertEquals(null, state.source)
     }
 
     @Test

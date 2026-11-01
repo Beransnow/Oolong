@@ -78,11 +78,10 @@ import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindo
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.findActivity
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
+import com.huanchengfly.tieba.post.ui.page.photoview.LocalPhotoViewer
 import com.huanchengfly.tieba.post.ui.utils.getPhotoViewData
 import com.huanchengfly.tieba.post.ui.utils.rememberSystemUiController
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.PlaceholderHighlight
@@ -510,6 +509,7 @@ private fun ThreadMedia(
                 }
             } else if (hasPhoto) {
                 if (hideMedia) {
+                    val photoViewer = LocalPhotoViewer.current
                     val photoViewData = remember(
                         medias, forumId, forumName, threadId
                     ) {
@@ -532,14 +532,7 @@ private fun ThreadMedia(
                             Text(text = stringResource(id = R.string.btn_open_photos, mediaCount))
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            context.goToActivity<PhotoViewActivity> {
-                                putExtra(
-                                    PhotoViewActivity.EXTRA_PHOTO_VIEW_DATA,
-                                    photoViewData
-                                )
-                            }
-                        }
+                        onClick = { photoViewer?.open(photoViewData) }
                     )
                 } else {
                     val photoViewData = { index: Int ->

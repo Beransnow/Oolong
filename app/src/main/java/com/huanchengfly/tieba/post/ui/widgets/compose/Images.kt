@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -34,6 +36,7 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
@@ -44,19 +47,19 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.lerp
 import coil3.compose.AsyncImage
+import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
-import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity.Companion.EXTRA_PHOTO_VIEW_DATA
+import com.huanchengfly.tieba.post.ui.page.photoview.LocalPhotoViewer
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.NetworkUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -257,8 +260,16 @@ fun NetworkImage(
     }
 
     var imageAspectRatio by remember { mutableFloatStateOf(0f) }
+    var memoryCacheKey by remember { mutableStateOf<MemoryCache.Key?>(null) }
 
     var isLongPressing by remember { mutableStateOf(false) }
+
+    // The viewer opens out of this picture and closes back into it
+    val viewer = LocalPhotoViewer.current
+    val picId = photoViewData?.picItems?.getOrNull(photoViewData.index)?.picId
+    if (viewer != null && picId != null) {
+        DisposableEffect(viewer, picId) { onDispose { viewer.place(picId, null) } }
+    }
 
     if (enablePreview) {
         PreviewImage(
@@ -287,12 +298,12 @@ fun NetworkImage(
                             if (!shouldLoad) {
                                 shouldLoad = true
                             } else if (photoViewData != null) {
-                                context.goToActivity<PhotoViewActivity> {
-                                    putExtra(
-                                        EXTRA_PHOTO_VIEW_DATA,
-                                        photoViewData
-                                    )
-                                }
+                                viewer?.open(
+                                    data = photoViewData,
+                                    from = Rect(layoutOffset, layoutSize.toSize()),
+                                    thumbnail = memoryCacheKey,
+                                    aspect = imageAspectRatio,
+                                )
                             }
                         }
                     )
@@ -309,7 +320,10 @@ fun NetworkImage(
             model = request,
             placeholder = placeholder,
             error = placeholder,
-            onSuccess = { imageAspectRatio = it.result.image.height.toFloat() / it.result.image.width },
+            onSuccess = {
+                imageAspectRatio = it.result.image.height.toFloat() / it.result.image.width
+                memoryCacheKey = it.result.memoryCacheKey
+            },
             colorFilter = if (darken) DarkenFilter else null,
             modifier = Modifier
                 .fillMaxSize()
@@ -318,6 +332,14 @@ fun NetworkImage(
                 }
                 .onGloballyPositioned {
                     layoutOffset = it.positionInWindow()
+                    if (viewer != null && picId != null) {
+                        val shown = it.boundsInWindow()
+                        viewer.place(
+                            picId = picId,
+                            bounds = Rect(layoutOffset, it.size.toSize()),
+                            visible = shown.height >= it.size.height / 2f && shown.width >= it.size.width / 2f,
+                        )
+                    }
                 },
             contentDescription = contentDescription,
             contentScale = contentScale,

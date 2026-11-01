@@ -13,47 +13,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.navigation3.scene.Scene
-import com.huanchengfly.tieba.post.LocalNotificationCountFlow
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.main.LocalMainTabs
-import com.huanchengfly.tieba.post.ui.page.main.LocalNavigationRailShown
-import com.huanchengfly.tieba.post.ui.page.main.MainTabs
-import com.huanchengfly.tieba.post.ui.page.main.NavigationRail
-import com.huanchengfly.tieba.post.ui.page.main.rememberMainTabItems
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.ui.NavDisplay
+import com.huanchengfly.tieba.post.LocalNotificationCountFlow
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStrategy
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
 import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogProperties
 import com.huanchengfly.tieba.post.ui.page.forum.ForumPage
@@ -63,8 +56,14 @@ import com.huanchengfly.tieba.post.ui.page.forum.searchpost.ForumSearchPostPage
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPage
 import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainTabs
+import com.huanchengfly.tieba.post.ui.page.main.LocalNavigationRailShown
 import com.huanchengfly.tieba.post.ui.page.main.MainPage
+import com.huanchengfly.tieba.post.ui.page.main.MainTabs
+import com.huanchengfly.tieba.post.ui.page.main.NavigationRail
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
+import com.huanchengfly.tieba.post.ui.page.main.rememberMainTabItems
+import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewerHost
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.about.AboutPage
@@ -85,6 +84,8 @@ import com.huanchengfly.tieba.post.ui.page.threadstore.ThreadStorePage
 import com.huanchengfly.tieba.post.ui.page.user.UserProfilePage
 import com.huanchengfly.tieba.post.ui.page.user.edit.EditProfilePage
 import com.huanchengfly.tieba.post.ui.page.webview.WebViewPage
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** Whether the entry being composed is the top of the back stack, as opposed to one below a sheet or dialog. */
 val LocalIsTopEntry = compositionLocalOf { true }
@@ -212,62 +213,64 @@ fun AppNavDisplay(
         LocalIsPop provides isPop,
         LocalBackStackChange provides change,
     ) {
-        Row(modifier = modifier.fillMaxSize()) {
-            AnimatedVisibility(
-                visible = showRail,
-                enter = expandHorizontally(),
-                exit = shrinkHorizontally(),
-            ) {
-                MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
-            }
-            // NavDisplay lays out no container of its own: sheets and dialogs are emitted beside
-            // the pages, so they need a box here, not the row, to cover them
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .then(
-                        if (showRail) {
-                            Modifier.consumeWindowInsets(
-                                WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
-                            )
-                        } else Modifier
-                    ),
-            ) {
-                NavDisplay(
-                    backStack = backStack,
-                    modifier = Modifier.fillMaxSize(),
-                    onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
-                    entryDecorators = listOf(
-                        rememberSaveableStateHolderNavEntryDecorator(),
-                        rememberViewModelStoreNavEntryDecorator(),
-                    ),
-                    sceneStrategies = strategies,
-                    transitionSpec = {
-                        if (relayout) PageTransitions.crossFade() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
-                    },
-                    popTransitionSpec = {
-                        if (relayout) PageTransitions.crossFade() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                    },
-                    entryProvider = entryProvider {
-                        entry<Page>(
-                            clazzContentKey = { it.id },
-                            metadata = { it.key.metadata() },
-                        ) { page ->
-                            val isTop = backStack.lastOrNull() == page
-                            val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
-                            CompositionLocalProvider(
-                                LocalIsTopEntry provides isTop,
-                                LocalNavigator provides pageNavigator,
-                            ) {
-                                if (page.key.readsAtWidth) {
-                                    ReadingWidth { KeyContent(page.key) }
-                                } else {
-                                    KeyContent(page.key)
+        PhotoViewerHost {
+            Row(modifier = modifier.fillMaxSize()) {
+                AnimatedVisibility(
+                    visible = showRail,
+                    enter = expandHorizontally(),
+                    exit = shrinkHorizontally(),
+                ) {
+                    MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+                }
+                // NavDisplay lays out no container of its own: sheets and dialogs are emitted beside
+                // the pages, so they need a box here, not the row, to cover them
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(
+                            if (showRail) {
+                                Modifier.consumeWindowInsets(
+                                    WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
+                                )
+                            } else Modifier
+                        ),
+                ) {
+                    NavDisplay(
+                        backStack = backStack,
+                        modifier = Modifier.fillMaxSize(),
+                        onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+                        entryDecorators = listOf(
+                            rememberSaveableStateHolderNavEntryDecorator(),
+                            rememberViewModelStoreNavEntryDecorator(),
+                        ),
+                        sceneStrategies = strategies,
+                        transitionSpec = {
+                            if (relayout) PageTransitions.crossFade() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                        },
+                        popTransitionSpec = {
+                            if (relayout) PageTransitions.crossFade() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                        },
+                        entryProvider = entryProvider {
+                            entry<Page>(
+                                clazzContentKey = { it.id },
+                                metadata = { it.key.metadata() },
+                            ) { page ->
+                                val isTop = backStack.lastOrNull() == page
+                                val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
+                                CompositionLocalProvider(
+                                    LocalIsTopEntry provides isTop,
+                                    LocalNavigator provides pageNavigator,
+                                ) {
+                                    if (page.key.readsAtWidth) {
+                                        ReadingWidth { KeyContent(page.key) }
+                                    } else {
+                                        KeyContent(page.key)
+                                    }
                                 }
                             }
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             }
         }
     }

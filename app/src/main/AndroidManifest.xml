@@ -73,11 +73,6 @@
         </service>
 
         <activity
-            android:name=".ui.page.photoview.PhotoViewActivity"
-            android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden"
-            android:theme="@style/AppTheme.PhotoView"
-            android:windowSoftInputMode="adjustResize" />
-        <activity
             android:name=".ui.page.picker.ImagePickerActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden" />
 

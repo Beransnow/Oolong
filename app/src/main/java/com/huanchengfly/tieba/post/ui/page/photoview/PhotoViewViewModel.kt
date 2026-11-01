@@ -13,10 +13,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import javax.inject.Inject
 
 @Immutable
@@ -34,7 +37,8 @@ data class PhotoViewState(
 
 /**
  * The picture viewer. It starts with the pictures it was given and, when it knows which thread
- * they are from, loads the rest of the thread's pictures around them as the user pages.
+ * they are from, loads the rest of the thread's pictures around them as the user pages. One
+ * lives as long as the window and serves each opening in turn.
  */
 @HiltViewModel
 class PhotoViewViewModel @Inject constructor(
@@ -42,13 +46,18 @@ class PhotoViewViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(PhotoViewState())
     val state: StateFlow<PhotoViewState> = _state.asStateFlow()
-    private val loads = Actions(viewModelScope)
-    private var started = false
+    private var session = SupervisorJob(viewModelScope.coroutineContext.job)
+    private var loads = Actions(CoroutineScope(viewModelScope.coroutineContext + session))
+    private var shown: PhotoViewData? = null
 
-    /** Shows [data]; later calls, after a configuration change, do nothing. */
+    /** Shows [data], dropping what was shown before; showing the same again does nothing. */
     fun start(data: PhotoViewData) {
-        if (started) return
-        started = true
+        if (data == shown) return
+        shown = data
+        session.cancel()
+        session = SupervisorJob(viewModelScope.coroutineContext.job)
+        loads = Actions(CoroutineScope(viewModelScope.coroutineContext + session))
+        _state.value = PhotoViewState()
         val source = data.data
         if (source == null) {
             _state.value = given(data)
