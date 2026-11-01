@@ -12,11 +12,14 @@ import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadList
 import com.huanchengfly.tieba.post.api.models.protos.personalized.DislikeReason
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponseData
 import com.huanchengfly.tieba.post.api.models.protos.personalized.ThreadPersonalized
+import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
+import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponseData
 import com.huanchengfly.tieba.post.api.models.protos.userLike.ConcernData
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponseData
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.model.RankedTopic
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -91,6 +94,15 @@ class ExploreRepositoryTest {
         assertEquals(listOf(HotTopic(1, "热", HotTopic.Tag.Hot), HotTopic(2, "新", HotTopic.Tag.New)), hot.topics)
         assertEquals(listOf(HotCategory("game", "游戏")), hot.categories)
         assertEquals(listOf(9L), hot.threads.map { it.id })
+    }
+
+    @Test
+    fun `maps the full topics ranking`() = runTest {
+        coEvery { remote.topics() } returns TopicListResponseData(
+            topic_list = listOf(NewTopicList(topic_id = 1, topic_name = "话题", topic_desc = "描述", discuss_num = 5, topic_image = "i", topic_tag = 2)),
+        )
+
+        assertEquals(listOf(RankedTopic(1, "话题", "描述", "i", 5, HotTopic.Tag.Hot)), repository.topics())
     }
 
     @Test

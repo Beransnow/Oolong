@@ -1,79 +1,55 @@
 package com.huanchengfly.tieba.post.ui.page.hottopic.list
 
-import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.protos.topicList.NewTopicList
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.model.RankedTopic
+import com.huanchengfly.tieba.post.repository.ExploreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
+@Immutable
+data class HotTopicListState(
+    val topics: ImmutableList<RankedTopic> = persistentListOf(),
+    val load: LoadStatus = LoadStatus.Loading,
+)
+
+/** The full hot topics ranking. */
 @HiltViewModel
-class HotTopicListViewModel @Inject constructor() :
-    BaseViewModel<HotTopicListUiIntent, HotTopicListPartialChange, HotTopicListUiState, UiEvent>() {
-    override fun createInitialState(): HotTopicListUiState = HotTopicListUiState()
+class HotTopicListViewModel @Inject constructor(
+    private val repository: ExploreRepository,
+) : ViewModel() {
+    private val _state = MutableStateFlow(HotTopicListState())
+    val state: StateFlow<HotTopicListState> = _state.asStateFlow()
+    private var loadJob: Job? = null
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<HotTopicListUiIntent, HotTopicListPartialChange, HotTopicListUiState> =
-        HotTopicListPartialChangeProducer
-
-    private object HotTopicListPartialChangeProducer :
-        PartialChangeProducer<HotTopicListUiIntent, HotTopicListPartialChange, HotTopicListUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<HotTopicListUiIntent>): Flow<HotTopicListPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<HotTopicListUiIntent.Load>()
-                    .flatMapConcat { produceLoadPartialChange() }
-            )
-
-        private fun produceLoadPartialChange(): Flow<HotTopicListPartialChange.Load> =
-            TiebaApi.getInstance().topicListFlow()
-                .map<TopicListResponse, HotTopicListPartialChange.Load> {
-                    HotTopicListPartialChange.Load.Success(it.data_?.topic_list ?: emptyList())
-                }
-                .onStart { emit(HotTopicListPartialChange.Load.Start) }
-                .catch { emit(HotTopicListPartialChange.Load.Failure(it)) }
+    init {
+        refresh()
     }
-}
 
-sealed interface HotTopicListUiIntent : UiIntent {
-    object Load : HotTopicListUiIntent
-}
-
-sealed interface HotTopicListPartialChange : PartialChange<HotTopicListUiState> {
-    sealed class Load : HotTopicListPartialChange {
-        override fun reduce(oldState: HotTopicListUiState): HotTopicListUiState = when (this) {
-            Start -> oldState.copy(isRefreshing = true)
-            is Success -> oldState.copy(isRefreshing = false, topicList = topicList)
-            is Failure -> oldState.copy(isRefreshing = false)
+    fun refresh() {
+        loadJob?.cancel()
+        _state.update { it.copy(load = LoadStatus.Loading) }
+        loadJob = viewModelScope.launch {
+            try {
+                val topics = repository.topics()
+                _state.value = HotTopicListState(topics.toImmutableList(), LoadStatus.Idle)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                _state.update { it.copy(load = LoadStatus.Error(e)) }
+            }
         }
-
-        object Start : Load()
-
-        data class Success(
-            val topicList: List<NewTopicList>
-        ) : Load()
-
-        data class Failure(
-            val error: Throwable
-        ) : Load()
     }
 }
-
-data class HotTopicListUiState(
-    val isRefreshing: Boolean = true,
-    val topicList: List<NewTopicList> = emptyList()
-) : UiState

@@ -25,6 +25,17 @@ data class HotTopic(val id: Long, val name: String, val tag: Tag = Tag.None) {
     enum class Tag { None, New, Hot }
 }
 
+/** A topic on the full hot topics ranking. */
+@Immutable
+data class RankedTopic(
+    val id: Long,
+    val name: String,
+    val description: String,
+    val image: String,
+    val discussCount: Long,
+    val tag: HotTopic.Tag = HotTopic.Tag.None,
+)
+
 /** A category of the hot threads ranking. */
 @Immutable
 data class HotCategory(val code: String, val name: String) {

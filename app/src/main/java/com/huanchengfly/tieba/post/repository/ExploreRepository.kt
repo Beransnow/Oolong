@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotThreads
 import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.model.RankedTopic
 import com.huanchengfly.tieba.post.model.RecommendedThread
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
@@ -57,16 +58,25 @@ class ExploreRepository @Inject constructor(
         val response = remote.hotThreads(code)
         HotThreads(
             topics = response.topicList.map { topic ->
-                val tag = when (topic.tag) {
-                    1 -> HotTopic.Tag.New
-                    2 -> HotTopic.Tag.Hot
-                    else -> HotTopic.Tag.None
-                }
-                HotTopic(topic.topicId, topic.topicName, tag)
+                HotTopic(topic.topicId, topic.topicName, topicTag(topic.tag))
             },
             categories = response.hotThreadTabInfo.map { HotCategory(it.tabCode, it.tabName) },
             threads = response.threadInfo,
         )
+    }
+
+    /** The full hot topics ranking. */
+    suspend fun topics(): List<RankedTopic> = withContext(io) {
+        remote.topics().topic_list.map {
+            RankedTopic(
+                id = it.topic_id,
+                name = it.topic_name,
+                description = it.topic_desc,
+                image = it.topic_image,
+                discussCount = it.discuss_num,
+                tag = topicTag(it.topic_tag),
+            )
+        }
     }
 
     /**
@@ -92,6 +102,12 @@ class ExploreRepository @Inject constructor(
         val hideVideos = videoFilter.hidesVideos()
         return threads.filter { it.ala_info == null && !(hideVideos && it.videoInfo != null) }
     }
+}
+
+private fun topicTag(tag: Int) = when (tag) {
+    1 -> HotTopic.Tag.New
+    2 -> HotTopic.Tag.Hot
+    else -> HotTopic.Tag.None
 }
 
 private fun ThreadPersonalized.dislikeOptions() = dislikeResource.map {
