@@ -42,6 +42,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -80,6 +83,9 @@ private const val POST_KEY_PREFIX = "Post_"
 
 /** The index of the first reply in the list, after the first floor and the reply count header. */
 internal const val FIRST_REPLY_INDEX = 1
+
+/** How far below the top bar's fade the pinned header's text needs to start, beyond its own padding. */
+private val PinnedHeaderFadeClearance = 8.dp
 
 /** The posts of the thread, or the first load or its error in their place. */
 @OptIn(ExperimentalMaterialApi::class)
@@ -289,6 +295,9 @@ private fun ThreadHeader(state: ThreadState, onEvent: (ThreadEvent) -> Unit, mod
 /**
  * The header again, held under the top bar once the list has scrolled past it. A sticky list
  * header would stick to the top of the screen, behind the floating bar.
+ *
+ * The bar's fade (or the status-bar strip's, once the bar has hidden) blurs what is under it, so
+ * the header slides down out of it over the first pixels scrolled and fills the gap it leaves.
  */
 @Composable
 private fun PinnedThreadHeader(
@@ -302,13 +311,28 @@ private fun PinnedThreadHeader(
     if (!pinned) return
     val density = LocalDensity.current
     val statusBar = WindowInsets.statusBars.getTop(density)
+    val clearance = with(density) { PinnedHeaderFadeClearance.roundToPx() }
+    val background = MaterialTheme.colors.background
+    fun drop(): Int {
+        val scrolledPast = if (listState.firstVisibleItemIndex == FIRST_REPLY_INDEX) {
+            listState.firstVisibleItemScrollOffset
+        } else {
+            clearance
+        }
+        return minOf(scrolledPast, clearance)
+    }
     ThreadHeader(
         state = state,
         onEvent = onEvent,
-        modifier = Modifier.offset {
-            val belowBar = padding.calculateTopPadding().roundToPx()
-            IntOffset(0, maxOf(statusBar, (belowBar * (1 - barsHiddenFraction())).roundToInt()))
-        },
+        modifier = Modifier
+            .offset {
+                val belowBar = padding.calculateTopPadding().roundToPx()
+                IntOffset(0, maxOf(statusBar, (belowBar * (1 - barsHiddenFraction())).roundToInt()) + drop())
+            }
+            .drawBehind {
+                val drop = drop().toFloat()
+                drawRect(background, Offset(0f, -drop), Size(size.width, drop))
+            },
     )
 }
 
