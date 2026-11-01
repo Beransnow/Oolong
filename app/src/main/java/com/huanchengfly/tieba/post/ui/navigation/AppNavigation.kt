@@ -198,10 +198,15 @@ fun AppNavDisplay(
     val overlap = PageTransitions.rememberOverlap()
     val ids = backStack.map { (it as Page).id }
     val previousIds = remember { mutableStateOf(ids) }
-    val isPop = remember(ids) {
+    val railJump = remember { RailJump() }
+    val change = remember(ids) {
         val previous = previousIds.value
         previousIds.value = ids
-        ids.size < previous.size && previous.subList(0, ids.size) == ids
+        BackStackChange(before = previous.toSet(), after = ids.toSet(), jump = railJump.pending)
+            .also { railJump.pending = false }
+    }
+    val isPop = remember(ids) {
+        change.before.size > ids.size && change.before.containsAll(ids)
     }
     // The window changing between one pane and two lays the same pages out again; that is not
     // a page opening, so it does not slide
@@ -215,6 +220,7 @@ fun AppNavDisplay(
         LocalMainTabs provides tabs,
         LocalNavigationRailShown provides showRail,
         LocalIsPop provides isPop,
+        LocalBackStackChange provides change,
     ) {
         Row(modifier = modifier.fillMaxSize()) {
             AnimatedVisibility(
@@ -222,7 +228,7 @@ fun AppNavDisplay(
                 enter = expandHorizontally(),
                 exit = shrinkHorizontally(),
             ) {
-                MainRail(backStack, tabs, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+                MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
             }
             // NavDisplay lays out no container of its own: sheets and dialogs are emitted beside
             // the pages, so they need a box here, not the row, to cover them
@@ -247,10 +253,10 @@ fun AppNavDisplay(
                     ),
                     sceneStrategies = strategies,
                     transitionSpec = {
-                        if (relayout) PageTransitions.relayout() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                        if (relayout) PageTransitions.crossFade() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
                     },
                     popTransitionSpec = {
-                        if (relayout) PageTransitions.relayout() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                        if (relayout) PageTransitions.crossFade() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
                     },
                     entryProvider = entryProvider {
                         entry<Page>(
@@ -305,12 +311,17 @@ private class ListDetailStateHolder(val state: ListDetailState, val strategy: Li
 
 private val ListPaneWidthKey = floatPreferencesKey("list_pane_width")
 
+/** Set by the rail just before it clears the stack, so the panes switch across instead of stepping back. */
+private class RailJump {
+    var pending = false
+}
+
 /**
  * The rail beside the panes. Choosing a tab closes every open page and shows the main page on
  * that tab; choosing the tab already shown, with nothing open, refreshes it.
  */
 @Composable
-private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, showLabels: Boolean) {
+private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, jump: RailJump, showLabels: Boolean) {
     val coroutineScope = rememberCoroutineScope()
     val items = rememberMainTabItems(tabs)
     val selectedIndex = items.indexOfFirst { it.id == tabs.selected }.coerceAtLeast(0)
@@ -321,6 +332,7 @@ private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, showLabels
             if (backStack.size == 1 && index == selectedIndex) {
                 coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(item.id))
             } else {
+                jump.pending = backStack.size > 1
                 while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
                 tabs.selected = item.id
             }

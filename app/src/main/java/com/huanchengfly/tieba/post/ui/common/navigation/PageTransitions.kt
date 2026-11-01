@@ -109,11 +109,14 @@ object PageTransitions {
         )
     }
 
-    /** The same pages laid out again for a new window size: a quick cross-fade, nothing slides. */
-    fun relayout(): ContentTransform =
-        fadeIn(tween(RelayoutMillis)) togetherWith fadeOut(tween(RelayoutMillis))
+    /**
+     * A quick cross-fade, for changes that are not a step deeper or back: one page swapped for
+     * another at the same level, or the same pages laid out again for a new window size.
+     */
+    fun crossFade(): ContentTransform =
+        fadeIn(tween(CrossFadeMillis)) togetherWith fadeOut(tween(CrossFadeMillis))
 
-    private const val RelayoutMillis = 200
+    private const val CrossFadeMillis = 200
 
     /**
      * Gives a page an opaque background, so the page underneath doesn't show

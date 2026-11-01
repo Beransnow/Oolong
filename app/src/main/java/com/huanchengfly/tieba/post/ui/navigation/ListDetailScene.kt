@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -53,7 +55,6 @@ import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
@@ -222,10 +223,19 @@ private fun <T : Any> ListDetailLayout(
     }
 }
 
+/**
+ * The latest change to the back stack, by page ids: the panes tell a step deeper or back, which
+ * slides, from a page swapped for another, which fades. [jump] marks the rail clearing the stack.
+ */
+@Immutable
+class BackStackChange(val before: Set<Any>, val after: Set<Any>, val jump: Boolean)
+
+val LocalBackStackChange = compositionLocalOf { BackStackChange(emptySet(), emptySet(), jump = false) }
+
 /** A pane showing [entry], or the empty pane while there is none, animating as pages change in it. */
 @Composable
 private fun <T : Any> Pane(entry: NavEntry<T>?) {
-    val isPop = LocalIsPop.current
+    val change = LocalBackStackChange.current
     val overlap = PageTransitions.rememberOverlap()
     // Pages size themselves by the window; in a pane, the pane is their window
     BoxWithConstraints {
@@ -234,8 +244,21 @@ private fun <T : Any> Pane(entry: NavEntry<T>?) {
             targetState = entry,
             contentKey = { it?.contentKey },
             transitionSpec = {
-                if (isPop) PageTransitions.popTransitionSpec<NavEntry<T>?>(overlap)()
-                else PageTransitions.transitionSpec<NavEntry<T>?>(overlap)()
+                val from = initialState?.contentKey
+                val to = targetState?.contentKey
+                // The empty pane counts as the bottom of the pane: the first page opened slides in
+                // over it, and closing the last slides back to it
+                when {
+                    change.jump -> PageTransitions.crossFade()
+                    // The page stays below the new one: a step deeper
+                    (from == null || from in change.after) && to != null && to !in change.before ->
+                        PageTransitions.transitionSpec<NavEntry<T>?>(overlap)()
+                    // The page left and the one below shows again: a step back
+                    from != null && from !in change.after && (to == null || to in change.before) ->
+                        PageTransitions.popTransitionSpec<NavEntry<T>?>(overlap)()
+                    // One page swapped for another, as a list opening a different thread
+                    else -> PageTransitions.crossFade()
+                }
             },
             modifier = Modifier.fillMaxSize(),
             label = "Pane",
