@@ -11,35 +11,35 @@ import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListPage
-import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListUiEvent
+import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListContent
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Destination(
     deepLinks = [
         DeepLink(uriPattern = "tblite://history")
@@ -47,37 +47,56 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun HistoryPage(
-    navigator: DestinationsNavigator
+    navigator: DestinationsNavigator,
+    viewModel: HistoryViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    HistoryScreen(
+        state = state,
+        onBack = { navigator.navigateUp() },
+        onClear = viewModel::clear,
+        onLoadMore = viewModel::loadMore,
+        onDelete = viewModel::delete,
+        onOpen = { entry ->
+            when (entry) {
+                is HistoryEntry.Forum -> navigator.navigate(ForumPageDestination(entry.name))
+                is HistoryEntry.Thread -> navigator.navigate(
+                    ThreadPageDestination(
+                        entry.threadId,
+                        postId = entry.postId,
+                        seeLz = entry.seeLz,
+                        from = ThreadPageFrom.FROM_HISTORY
+                    )
+                )
+            }
+        },
+    )
+}
+
+/** The visited threads and forums, in two tabs. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HistoryScreen(
+    state: HistoryState,
+    onBack: () -> Unit,
+    onClear: () -> Unit,
+    onLoadMore: (HistoryTab) -> Unit,
+    onDelete: (HistoryEntry) -> Unit,
+    onOpen: (HistoryEntry) -> Unit,
 ) {
     val pagerState = rememberPagerState { 2 }
     val coroutineScope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
-
-    val context = LocalContext.current
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
-        scaffoldState = scaffoldState,
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_history)) },
                 navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
+                    BackNavigationIcon(onBackPressed = onBack)
                 },
                 actions = {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            HistoryUtil.deleteAll()
-                            emitGlobalEvent(HistoryListUiEvent.DeleteAll)
-                            launch {
-                                scaffoldState.snackbarHostState.showSnackbar(
-                                    context.getString(
-                                        R.string.toast_clear_success
-                                    )
-                                )
-                            }
-                        }
-                    }) {
+                    IconButton(onClick = onClear) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
                             contentDescription = stringResource(id = R.string.title_history_delete),
@@ -138,19 +157,29 @@ fun HistoryPage(
             )
         }
     ) { contentPaddings ->
-        ProvideNavigator(navigator = navigator) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                key = { it },
-                verticalAlignment = Alignment.Top,
-                userScrollEnabled = true,
-            ) {
-                if (it == 0) {
-                    HistoryListPage(type = HistoryUtil.TYPE_THREAD, contentPadding = contentPaddings)
-                } else {
-                    HistoryListPage(type = HistoryUtil.TYPE_FORUM, contentPadding = contentPaddings)
-                }
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            key = { it },
+            verticalAlignment = Alignment.Top,
+            userScrollEnabled = true,
+        ) {
+            if (it == 0) {
+                HistoryListContent(
+                    list = state.threads,
+                    onLoadMore = { onLoadMore(HistoryTab.Threads) },
+                    onOpen = onOpen,
+                    onDelete = onDelete,
+                    contentPadding = contentPaddings,
+                )
+            } else {
+                HistoryListContent(
+                    list = state.forums,
+                    onLoadMore = { onLoadMore(HistoryTab.Forums) },
+                    onOpen = onOpen,
+                    onDelete = onDelete,
+                    contentPadding = contentPaddings,
+                )
             }
         }
     }
