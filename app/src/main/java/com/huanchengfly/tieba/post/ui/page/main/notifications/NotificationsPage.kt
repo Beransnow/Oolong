@@ -68,33 +68,34 @@ fun NotificationsPage(
                         BackNavigationIcon {
                             navigator.navigateUp()
                         }
-                    }
-                ) {
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        indicator = { tabPositions ->
-                            PagerTabIndicator(
-                                pagerState = pagerState,
-                                tabPositions = tabPositions
-                            )
-                        },
-                        divider = {},
-                        backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.onTopBar,
-                    ) {
-                        pages.forEachIndexed { index, pair ->
-                            Tab(
-                                text = { Text(text = pair.first) },
-                                selected = pagerState.currentPage == index,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                },
-                            )
+                    },
+                    content = {
+                        TabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            indicator = { tabPositions ->
+                                PagerTabIndicator(
+                                    pagerState = pagerState,
+                                    tabPositions = tabPositions
+                                )
+                            },
+                            divider = {},
+                            backgroundColor = Color.Transparent,
+                            contentColor = ExtendedTheme.colors.onTopBar,
+                        ) {
+                            pages.forEachIndexed { index, pair ->
+                                Tab(
+                                    text = { Text(text = pair.first) },
+                                    selected = pagerState.currentPage == index,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                    },
+                                )
+                            }
                         }
-                    }
-                }
+                    },
+                )
             },
             modifier = Modifier.fillMaxSize(),
         ) { paddingValues ->
@@ -143,32 +144,33 @@ fun NotificationsPage(
                         navigator.navigate(SearchPageDestination)
                     }
                 },
-            ) {
-                TabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    indicator = { tabPositions ->
-                        PagerTabIndicator(
-                            pagerState = pagerState,
-                            tabPositions = tabPositions
-                        )
-                    },
-                    divider = {},
-                    backgroundColor = Color.Transparent,
-                    contentColor = ExtendedTheme.colors.onTopBar,
-                ) {
-                    pages.forEachIndexed { index, pair -> 
-                        Tab(
-                            text = { Text(text = pair.first) },
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            },
-                        )
+                content = {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        indicator = { tabPositions ->
+                            PagerTabIndicator(
+                                pagerState = pagerState,
+                                tabPositions = tabPositions
+                            )
+                        },
+                        divider = {},
+                        backgroundColor = Color.Transparent,
+                        contentColor = ExtendedTheme.colors.onTopBar,
+                    ) {
+                        pages.forEachIndexed { index, pair -> 
+                            Tab(
+                                text = { Text(text = pair.first) },
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
+                            )
+                        }
                     }
-                }
-            }
+                },
+            )
         },
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
