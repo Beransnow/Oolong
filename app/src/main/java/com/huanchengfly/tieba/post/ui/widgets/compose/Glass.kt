@@ -89,9 +89,9 @@ val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 
 /**
  * Background for a bar pinned to the top edge. The blur is strongest at the top and eases off
- * down the whole bar, slowly at first and faster towards the bottom, until it ends at the bottom
- * edge; the tint follows the same curve. Content under the bar fades from blurred to sharp
- * without a visible edge.
+ * down the whole bar until it ends at the bottom edge; the tint follows the same curve. The curve
+ * flattens out at the bottom, so content that has just scrolled under the bar only softens and
+ * blurs more the further up it goes.
  *
  * Without a blur, an opaque background fades out over the last [fade] of the height instead.
  */
@@ -150,8 +150,8 @@ fun Modifier.topBarGlass(fade: Dp): Modifier {
     )
 }
 
-/** How a top bar's blur and tint ease off from its top (0) to its bottom edge (1). */
-private val TopBarEasing = Easing { t -> t * t }
+/** How a top bar's blur and tint ease off from its top (0) to its bottom edge (1): a smoothstep. */
+private val TopBarEasing = Easing { t -> t * t * (3f - 2f * t) }
 
 /** The tint at the top of a top bar, behind the status bar. */
 private const val TopBarTint = 0.75f
