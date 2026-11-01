@@ -7,25 +7,31 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.api.models.protos.resolvedAuthorId
+import com.huanchengfly.tieba.post.database.BlockEntity
+import com.huanchengfly.tieba.post.database.appDatabase
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.litepal.LitePal
-import org.litepal.extension.delete
-import org.litepal.extension.findAllAsync
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object BlockManager {
-    private val blockList: MutableList<Block> = mutableListOf()
+    private val dao get() = appDatabase.blockDao()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var blockList: List<Block> = emptyList()
 
     private val _version = MutableStateFlow(0)
 
     /** Changes whenever a rule is added or removed, so that what was filtered can be filtered again. */
     val version: StateFlow<Int> = _version.asStateFlow()
-
-    private fun changed() = _version.update { it + 1 }
 
     val blackList: List<Block>
         get() = blockList.filter { it.category == Block.CATEGORY_BLACK_LIST }
@@ -33,36 +39,37 @@ object BlockManager {
     val whiteList: List<Block>
         get() = blockList.filter { it.category == Block.CATEGORY_WHITE_LIST }
 
-    fun addBlock(block: Block) {
-        block.save()
-        blockList.add(block)
-        changed()
-    }
+    /** Saves the rule and returns it with its id. The rules in use follow shortly after. */
+    suspend fun addBlock(block: Block): Block = block.copy(id = dao.insert(block.toEntity()))
 
+    /** Saves the rule in the background, then calls [callback] on the main thread with whether it was. */
     fun addBlockAsync(
         block: Block,
         callback: ((Boolean) -> Unit)? = null,
     ) {
-        block.saveAsync()
-            .listen {
-                callback?.invoke(it)
-                blockList.add(block)
-                changed()
-            }
-    }
-
-    fun removeBlock(id: Long) {
-        LitePal.delete<Block>(id)
-        blockList.removeAll { it.id == id }
-        changed()
-    }
-
-    fun init() {
-        LitePal.findAllAsync<Block>().listen { blocks ->
-            blockList.addAll(blocks)
-            changed()
+        scope.launch {
+            val saved = runCatching { dao.insert(block.toEntity()) }.isSuccess
+            withContext(Dispatchers.Main) { callback?.invoke(saved) }
         }
     }
+
+    suspend fun removeBlock(id: Long) = dao.delete(id)
+
+    /** Starts following the saved rules. */
+    fun init() {
+        scope.launch {
+            dao.all().collect { blocks ->
+                blockList = blocks.map { it.toBlock() }
+                _version.update { it + 1 }
+            }
+        }
+    }
+
+    private fun Block.toEntity() =
+        BlockEntity(id = id, category = category, type = type, keywords = keywords, username = username, uid = uid)
+
+    private fun BlockEntity.toBlock() =
+        Block(category = category, type = type, keywords = keywords, username = username, uid = uid, id = id)
 
     fun shouldBlock(content: String): Boolean {
         return blackList.any { block ->

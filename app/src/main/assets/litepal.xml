@@ -5,7 +5,6 @@
     <list>
         <mapping class="com.huanchengfly.tieba.post.models.database.Account" />
         <mapping class="com.huanchengfly.tieba.post.models.database.Draft" />
-        <mapping class="com.huanchengfly.tieba.post.models.database.Block" />
         <mapping class="com.huanchengfly.tieba.post.models.database.TopForum" />
     </list>
 </litepal>

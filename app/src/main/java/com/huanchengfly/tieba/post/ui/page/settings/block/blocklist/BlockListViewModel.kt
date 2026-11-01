@@ -53,8 +53,7 @@ class BlockListViewModel :
                 val block = Block(
                     category = category, type = Block.TYPE_KEYWORD, keywords = keywords.toJson()
                 )
-                BlockManager.addBlock(block)
-                emit(BlockListPartialChange.Add.Success(block))
+                emit(BlockListPartialChange.Add.Success(BlockManager.addBlock(block)))
             }.catch { emit(BlockListPartialChange.Add.Failure(it)) }
 
         private fun BlockListUiIntent.Delete.producePartialChange(): Flow<BlockListPartialChange.Delete> =

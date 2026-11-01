@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.models.database
 
 import com.huanchengfly.tieba.post.fromJson
-import org.litepal.crud.LitePalSupport
 
 data class Block @JvmOverloads constructor(
     val category: Int = 0,
@@ -9,8 +8,8 @@ data class Block @JvmOverloads constructor(
     val keywords: String? = null,
     val username: String? = null,
     val uid: String? = null,
-) : LitePalSupport() {
-    val id: Long = 0L
+    val id: Long = 0L,
+) {
     companion object {
         const val CATEGORY_BLACK_LIST = 10
         const val CATEGORY_WHITE_LIST = 11
