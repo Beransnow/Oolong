@@ -11,10 +11,13 @@ import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.database.DraftDao
+import com.huanchengfly.tieba.post.database.DraftEntity
 import com.huanchengfly.tieba.post.repository.PostRepository
 import com.huanchengfly.tieba.post.repository.PostedReply
 import com.huanchengfly.tieba.post.repository.ReplyTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -28,7 +31,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 enum class ReplyPanelType {
     NONE,
@@ -58,6 +60,7 @@ data class ReplyState(
 @HiltViewModel
 class ReplyViewModel @Inject constructor(
     private val repository: PostRepository,
+    private val drafts: DraftDao,
     private val messages: MessageController,
     @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
@@ -79,6 +82,17 @@ class ReplyViewModel @Inject constructor(
     }
 
     fun setOriginalImages(original: Boolean) = _state.update { it.copy(originalImages = original) }
+
+    /** The unsent reply saved under [hash], a hash of what it replies to. */
+    suspend fun draft(hash: String): String? = drafts.content(hash)
+
+    fun saveDraft(hash: String, text: String) {
+        appScope.launch { drafts.upsert(DraftEntity(hash, text)) }
+    }
+
+    fun deleteDraft(hash: String) {
+        appScope.launch { drafts.delete(hash) }
+    }
 
     /**
      * Uploads the picked pictures, if any, and posts [text] with them to [target].

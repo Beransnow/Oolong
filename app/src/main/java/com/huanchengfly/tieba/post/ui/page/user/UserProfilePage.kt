@@ -107,7 +107,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -145,6 +144,7 @@ fun UserProfilePage(
                     onFollow = viewModel::toggleFollow,
                     onUnfollow = viewModel::toggleFollow,
                     onRefresh = viewModel::refreshAll,
+                    onAddToList = viewModel::addToList,
                     listContent = { tab, expanded -> UserProfileList(state, tab, expanded, viewModel) },
                 )
             }
@@ -187,6 +187,7 @@ private fun UserProfileContent(
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
+    onAddToList: (allow: Boolean) -> Unit,
     listContent: @Composable (UserTab, Boolean) -> Unit,
 ) {
     when (LocalWindowSizeClass.current.widthSizeClass) {
@@ -199,6 +200,7 @@ private fun UserProfileContent(
                 onBack = onBack,
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
+                onAddToList = onAddToList,
                 listContent = listContent,
             )
         }
@@ -213,6 +215,7 @@ private fun UserProfileContent(
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
                 onRefresh = onRefresh,
+                onAddToList = onAddToList,
                 listContent = listContent,
             )
         }
@@ -225,9 +228,8 @@ private fun UserProfileToolbar(
     isSelf: Boolean,
     showTitle: Boolean,
     onBack: () -> Unit,
+    onAddToList: (allow: Boolean) -> Unit,
 ) {
-    val context = LocalContext.current
-
     GlassTopBar(
         title = {
             AnimatedVisibility(
@@ -242,37 +244,19 @@ private fun UserProfileToolbar(
             BackNavigationIcon(onBackPressed = onBack)
         },
         actions = {
-            user.takeUnless { isSelf }?.let {
+            if (!isSelf) {
                 ClickMenu(
                     menuContent = {
                         DropdownMenuItem(
                             onClick = {
-                                BlockManager.addBlockAsync(
-                                    Block(
-                                        category = Block.CATEGORY_BLACK_LIST,
-                                        type = Block.TYPE_USER,
-                                        username = it.name,
-                                        uid = it.id.toString()
-                                    )
-                                ) {
-                                    if (it) context.toastShort(R.string.toast_add_success)
-                                }
+                                onAddToList(false)
                             }
                         ) {
                             Text(text = stringResource(id = R.string.menu_add_user_to_black_list))
                         }
                         DropdownMenuItem(
                             onClick = {
-                                BlockManager.addBlockAsync(
-                                    Block(
-                                        category = Block.CATEGORY_WHITE_LIST,
-                                        type = Block.TYPE_USER,
-                                        username = it.name,
-                                        uid = it.id.toString()
-                                    )
-                                ) {
-                                    if (it) context.toastShort(R.string.toast_add_success)
-                                }
+                                onAddToList(true)
                             }
                         ) {
                             Text(text = stringResource(id = R.string.menu_add_user_to_white_list))
@@ -306,6 +290,7 @@ private fun UserProfileContentNormal(
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
+    onAddToList: (allow: Boolean) -> Unit,
     listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -334,7 +319,8 @@ private fun UserProfileContentNormal(
                 user = user,
                 isSelf = isSelf,
                 showTitle = !isShowHeaderArea,
-                onBack = onBack
+                onBack = onBack,
+                onAddToList = onAddToList,
             )
         }
     ) { paddingValues ->
@@ -524,6 +510,7 @@ private fun UserProfileContentExpanded(
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
+    onAddToList: (allow: Boolean) -> Unit,
     listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -536,7 +523,8 @@ private fun UserProfileContentExpanded(
                 user = user,
                 isSelf = isSelf,
                 showTitle = false,
-                onBack = onBack
+                onBack = onBack,
+                onAddToList = onAddToList,
             )
         }
     ) { paddingValues ->

@@ -108,7 +108,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
-import com.huanchengfly.tieba.post.utils.DraftStore
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -241,12 +240,12 @@ internal fun ReplyPageContent(
             .collect {
                 Log.i("ReplyPage", "collect: $it")
                 if (!replySuccess) {
-                    DraftStore.save(hash, it)
+                    viewModel.saveDraft(hash, it)
                 }
             }
     }
     LaunchedEffect(Unit) {
-        DraftStore.content(hash)?.let { setText(it) }
+        viewModel.draft(hash)?.let { setText(it) }
     }
     val textLength by remember { derivedStateOf { curText.length } }
     val isTextEmpty by remember { derivedStateOf { curText.isEmpty() } }
@@ -258,7 +257,7 @@ internal fun ReplyPageContent(
             } else {
                 context.toastShort(R.string.toast_reply_success, it.expInc)
             }
-            DraftStore.delete(hash)
+            viewModel.deleteDraft(hash)
             onBack()
         }
     }

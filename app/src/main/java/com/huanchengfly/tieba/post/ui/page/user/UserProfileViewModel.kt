@@ -15,6 +15,8 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
+import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.user.post.PostListItemData
@@ -59,6 +61,7 @@ data class UserProfileState(
 class UserProfileViewModel @AssistedInject constructor(
     @Assisted key: UserProfileKey,
     private val repository: UserRepository,
+    private val blockList: BlockListRepository,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
 ) : ViewModel() {
@@ -137,6 +140,16 @@ class UserProfileViewModel @AssistedInject constructor(
         runCatching { repository.profile(uid) }
             .onSuccess { user -> profile.update { it.copy(profile = user, load = LoadStatus.Idle) } }
             .onFailure { e -> profile.update { it.copy(load = LoadStatus.Error(e)) } }
+    }
+
+    /** Puts the user on the block list, or on the allow list when [allow]. */
+    fun addToList(allow: Boolean) {
+        val user = profile.value.profile ?: return
+        val category = if (allow) Block.CATEGORY_WHITE_LIST else Block.CATEGORY_BLACK_LIST
+        actions.launch("block") {
+            runCatching { blockList.addUser(category, user.id, user.name) }
+                .onSuccess { messages.show(R.string.toast_add_success) }
+        }
     }
 
     /** Follows the user, or unfollows them when followed; the button shows the change at once. */

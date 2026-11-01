@@ -3,16 +3,16 @@ package com.huanchengfly.tieba.post.repository
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.database.HistoryDao
+import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.database.TopForumDao
 import com.huanchengfly.tieba.post.database.TopForumEntity
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
-import com.huanchengfly.tieba.post.utils.HistoryUtil
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 /** What the home page lists: the forums the user follows, pins and visited lately. */
 class HomeRepository @Inject constructor(
@@ -45,7 +45,7 @@ class HomeRepository @Inject constructor(
     val pinnedForumIds: Flow<Set<Long>> =
         topForumDao.forumIdsFlow().map { ids -> ids.mapNotNull { it.toLongOrNull() }.toSet() }
 
-    val visitedForums: Flow<List<VisitedForum>> = historyDao.latest(HistoryUtil.TYPE_FORUM, VISITED_LIMIT).map { entries ->
+    val visitedForums: Flow<List<VisitedForum>> = historyDao.latest(HistoryEntity.TYPE_FORUM, VISITED_LIMIT).map { entries ->
         entries.map { VisitedForum(name = it.data, title = it.title, avatar = it.avatar.orEmpty()) }
     }
 
@@ -60,6 +60,6 @@ class HomeRepository @Inject constructor(
 
     private companion object {
         /** How many visited forums the home page offers, as many as a page of history holds. */
-        const val VISITED_LIMIT = HistoryUtil.PAGE_SIZE
+        const val VISITED_LIMIT = 100
     }
 }

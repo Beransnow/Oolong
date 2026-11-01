@@ -14,13 +14,13 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
     @Binds
-    abstract fun bindBlockRuleSource(source: BlockManagerRuleSource): BlockRuleSource
+    abstract fun bindBlockRuleSource(source: DatabaseBlockRuleSource): BlockRuleSource
 
     @Binds
-    abstract fun bindThreadHistory(history: HistoryUtilThreadHistory): ThreadHistory
+    abstract fun bindThreadHistory(history: DatabaseThreadHistory): ThreadHistory
 
     @Binds
-    abstract fun bindForumHistory(history: HistoryUtilForumHistory): ForumHistory
+    abstract fun bindForumHistory(history: DatabaseForumHistory): ForumHistory
 
     @Binds
     abstract fun bindForumSortStore(store: DataStoreForumSortStore): ForumSortStore

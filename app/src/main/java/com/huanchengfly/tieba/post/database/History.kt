@@ -27,7 +27,12 @@ data class HistoryEntity(
     val extras: String? = null,
     val avatar: String? = null,
     val username: String? = null,
-)
+) {
+    companion object {
+        const val TYPE_FORUM = 1
+        const val TYPE_THREAD = 2
+    }
+}
 
 @Dao
 interface HistoryDao {

@@ -9,18 +9,17 @@ import com.huanchengfly.tieba.post.database.AppDatabase
 import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
-import com.huanchengfly.tieba.post.utils.HistoryUtil
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 class HomeRepositoryTest {
@@ -70,9 +69,9 @@ class HomeRepositoryTest {
 
     @Test
     fun `visited forums come from the forum history, latest first`() = runBlocking {
-        database.historyDao().visit(HistoryEntity(type = HistoryUtil.TYPE_FORUM, data = "旧吧", title = "旧吧吧"), timestamp = 1)
-        database.historyDao().visit(HistoryEntity(type = HistoryUtil.TYPE_THREAD, data = "9000", title = "帖子"), timestamp = 2)
-        database.historyDao().visit(HistoryEntity(type = HistoryUtil.TYPE_FORUM, data = "新吧", title = "新吧吧", avatar = "a"), timestamp = 3)
+        database.historyDao().visit(HistoryEntity(type = HistoryEntity.TYPE_FORUM, data = "旧吧", title = "旧吧吧"), timestamp = 1)
+        database.historyDao().visit(HistoryEntity(type = HistoryEntity.TYPE_THREAD, data = "9000", title = "帖子"), timestamp = 2)
+        database.historyDao().visit(HistoryEntity(type = HistoryEntity.TYPE_FORUM, data = "新吧", title = "新吧吧", avatar = "a"), timestamp = 3)
 
         assertEquals(
             listOf(VisitedForum("新吧", "新吧吧", "a"), VisitedForum("旧吧", "旧吧吧", "")),

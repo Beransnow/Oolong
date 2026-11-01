@@ -5,13 +5,12 @@ import com.huanchengfly.tieba.post.database.HistoryDao
 import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
-import com.huanchengfly.tieba.post.utils.HistoryUtil
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
 
 /** The threads and forums the user visited, most recent first. */
 class HistoryRepository @Inject constructor(
@@ -20,11 +19,11 @@ class HistoryRepository @Inject constructor(
 ) {
     /** Up to [limit] of the latest visited threads, and the latest again whenever they change. */
     fun threads(limit: Int): Flow<List<HistoryEntry.Thread>> =
-        dao.latest(HistoryUtil.TYPE_THREAD, limit).map { entries -> entries.mapNotNull { it.toThread() } }
+        dao.latest(HistoryEntity.TYPE_THREAD, limit).map { entries -> entries.mapNotNull { it.toThread() } }
 
     /** Up to [limit] of the latest visited forums, and the latest again whenever they change. */
     fun forums(limit: Int): Flow<List<HistoryEntry.Forum>> =
-        dao.latest(HistoryUtil.TYPE_FORUM, limit).map { entries -> entries.map { it.toForum() } }
+        dao.latest(HistoryEntity.TYPE_FORUM, limit).map { entries -> entries.map { it.toForum() } }
 
     suspend fun delete(entry: HistoryEntry) = withContext(io) { dao.delete(entry.id) }
 

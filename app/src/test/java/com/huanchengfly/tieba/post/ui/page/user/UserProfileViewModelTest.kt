@@ -37,6 +37,7 @@ class UserProfileViewModelTest {
     private fun createViewModel(uid: Long = 7) = UserProfileViewModel(
         key = UserProfileKey(uid),
         repository = repository,
+        blockList = mockk(relaxed = true),
         messages = object : MessageController {
             override fun show(message: Int, vararg args: Any) {
                 shown += message

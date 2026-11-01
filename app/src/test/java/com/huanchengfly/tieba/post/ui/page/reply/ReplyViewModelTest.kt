@@ -9,13 +9,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ReplyViewModelTest {
     @get:Rule
@@ -29,7 +29,7 @@ class ReplyViewModelTest {
     fun `uploads the pictures first and posts them after the text`() = runTest {
         coEvery { repository.uploadPictures("测试", listOf("content://a"), true) } returns listOf("#(pic,1,2,3)")
         coEvery { repository.reply(target, "文字\n#(pic,1,2,3)", null) } returns PostedReply(9, 100, "")
-        val viewModel = ReplyViewModel(repository, messages, backgroundScope)
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), messages, backgroundScope)
         viewModel.addImages(listOf("content://a"))
         viewModel.setOriginalImages(true)
 
@@ -44,7 +44,7 @@ class ReplyViewModelTest {
     @Test
     fun `nothing is posted when a picture fails to upload`() = runTest {
         coEvery { repository.uploadPictures(any(), any(), any()) } throws IOException()
-        val viewModel = ReplyViewModel(repository, messages, backgroundScope)
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), messages, backgroundScope)
         viewModel.addImages(listOf("content://a", "content://b"))
         viewModel.removeImage(0)
 

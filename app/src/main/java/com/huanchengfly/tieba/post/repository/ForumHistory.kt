@@ -2,31 +2,35 @@ package com.huanchengfly.tieba.post.repository
 
 import android.content.Context
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.ForumHistoryExtra
-import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.arch.ApplicationScope
+import com.huanchengfly.tieba.post.database.HistoryDao
+import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.model.ForumDetail
-import com.huanchengfly.tieba.post.utils.HistoryUtil
+import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 
 /** The browsing history of forums. */
 fun interface ForumHistory {
     fun save(forum: ForumDetail)
 }
 
-class HistoryUtilForumHistory @Inject constructor(
+class DatabaseForumHistory @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val dao: HistoryDao,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : ForumHistory {
     override fun save(forum: ForumDetail) {
-        HistoryUtil.saveHistory(
-            History(
-                title = context.getString(R.string.title_forum, forum.name),
-                data = forum.name,
-                type = HistoryUtil.TYPE_FORUM,
-                extras = Json.encodeToString(ForumHistoryExtra(forum.id)),
-                avatar = forum.avatar,
-            ),
+        val entry = HistoryEntity(
+            type = HistoryEntity.TYPE_FORUM,
+            data = forum.name,
+            title = context.getString(R.string.title_forum, forum.name),
+            extras = Json.encodeToString(ForumHistoryExtra(forum.id)),
+            avatar = forum.avatar,
         )
+        scope.launch { dao.visit(entry, System.currentTimeMillis()) }
     }
 }
