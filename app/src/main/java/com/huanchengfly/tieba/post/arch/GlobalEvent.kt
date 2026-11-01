@@ -17,7 +17,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
-sealed interface GlobalEvent : UiEvent {
+/** Events any part of the app may send and any page may listen for. */
+sealed interface GlobalEvent {
     data object AccountSwitched : GlobalEvent
 
     data object ScrollToTop : GlobalEvent
@@ -55,23 +56,23 @@ sealed interface GlobalEvent : UiEvent {
     ) : GlobalEvent
 }
 
-private val globalEventSharedFlow: MutableSharedFlow<UiEvent> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+private val globalEventSharedFlow: MutableSharedFlow<GlobalEvent> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
     MutableSharedFlow(0, 2, BufferOverflow.DROP_OLDEST)
 }
 
 val GlobalEventFlow = globalEventSharedFlow.asSharedFlow()
 
-fun CoroutineScope.emitGlobalEvent(event: UiEvent) {
+fun CoroutineScope.emitGlobalEvent(event: GlobalEvent) {
     launch {
         globalEventSharedFlow.emit(event)
     }
 }
 
-suspend fun emitGlobalEventSuspend(event: UiEvent) {
+suspend fun emitGlobalEventSuspend(event: GlobalEvent) {
     globalEventSharedFlow.emit(event)
 }
 
-inline fun <reified Event : UiEvent> CoroutineScope.onGlobalEvent(
+inline fun <reified Event : GlobalEvent> CoroutineScope.onGlobalEvent(
     noinline filter: (Event) -> Boolean = { true },
     noinline listener: suspend (Event) -> Unit,
 ): Job {
@@ -90,7 +91,7 @@ inline fun <reified Event : UiEvent> CoroutineScope.onGlobalEvent(
 }
 
 @Composable
-inline fun <reified Event : UiEvent> onGlobalEvent(
+inline fun <reified Event : GlobalEvent> onGlobalEvent(
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     noinline filter: (Event) -> Boolean = { true },
     noinline listener: suspend (Event) -> Unit,

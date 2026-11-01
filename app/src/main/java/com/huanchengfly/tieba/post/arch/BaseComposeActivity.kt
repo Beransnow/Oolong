@@ -3,9 +3,7 @@ package com.huanchengfly.tieba.post.arch
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
-import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -106,40 +104,10 @@ abstract class BaseComposeActivity : BaseActivity() {
     @Composable
     abstract fun Content()
 
-    fun handleCommonEvent(event: CommonUiEvent) {
-        when (event) {
-            is CommonUiEvent.Toast -> {
-                Toast.makeText(this, event.message, event.length).show()
-            }
-
-            else -> {}
-        }
-    }
-
     companion object {
         val LocalWindowSizeClass =
             staticCompositionLocalOf<WindowSizeClass> {
                 WindowSizeClass.calculateFromSize(DpSize(0.dp, 0.dp))
             }
-    }
-}
-
-
-
-sealed interface CommonUiEvent : UiEvent {
-    object ScrollToTop : CommonUiEvent
-
-    object NavigateUp : CommonUiEvent
-
-    data class Toast(
-        val message: CharSequence,
-        val length: Int = android.widget.Toast.LENGTH_SHORT
-    ) : CommonUiEvent
-
-    @Composable
-    fun BaseViewModel<*, *, *, *>.bindScrollToTopEvent(lazyListState: LazyListState) {
-        onEvent<ScrollToTop> {
-            lazyListState.scrollToItem(0, 0)
-        }
     }
 }
