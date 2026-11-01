@@ -31,9 +31,6 @@ import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequest
-import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailRequestData
-import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequest
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
@@ -373,20 +370,6 @@ object MixedTiebaApiImpl : ITiebaApi {
 
 
 
-    override fun getForumDetailFlow(forumId: Long): Flow<GetForumDetailResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.getForumDetailFlow(
-            buildProtobufRequestBody(
-                GetForumDetailRequest(
-                    GetForumDetailRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        forum_id = forumId,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
 
     override fun getUserInfoFlow(): Flow<GetUserInfoResponse> {
         return getUserInfoFlow(AccountUtil.getUid()!!.toLong(), null, null)

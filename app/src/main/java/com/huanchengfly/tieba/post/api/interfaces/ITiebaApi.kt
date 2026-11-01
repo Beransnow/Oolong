@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.api.interfaces
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
@@ -217,14 +216,6 @@ interface ITiebaApi {
 
 
 
-    /**
-     * 获取吧信息
-     *
-     * @param forumId 吧 ID
-     */
-    fun getForumDetailFlow(
-        forumId: Long,
-    ): Flow<GetForumDetailResponse>
 
     /**
      * 获得当前用户信息（需登录）

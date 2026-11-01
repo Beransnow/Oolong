@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.api.retrofit.interfaces
 
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
@@ -34,10 +33,6 @@ interface OfficialProtobufTiebaApi {
 
 
 
-    @POST("/c/f/forum/getforumdetail?cmd=303021&format=protobuf")
-    fun getForumDetailFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<GetForumDetailResponse>
 
     @POST("/c/u/user/getuserinfo?cmd=303024&format=protobuf")
     fun getUserInfoFlow(
