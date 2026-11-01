@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.ktlint)
     alias(libs.plugins.androidx.room)
 }
 
@@ -115,7 +116,7 @@ androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             (output as VariantOutputImpl).outputFileName.set(
-                "${variant.buildType}-${applicationVersionName}(${applicationVersionCode}).apk"
+                "${variant.buildType}-$applicationVersionName($applicationVersionCode).apk"
             )
         }
     }
@@ -132,6 +133,10 @@ roborazzi {
     outputDir.set(layout.projectDirectory.dir("src/test/screenshots"))
 }
 
+ktlint {
+    version.set(libs.versions.ktlint)
+}
+
 composeCompiler {
     // Pass -PcomposeCompilerReports=true to generate stability reports and metrics
     if (providers.gradleProperty("composeCompilerReports").orNull.toBoolean()) {
@@ -146,7 +151,7 @@ room {
 }
 
 dependencies {
-    //Local Files
+    // Local Files
 //    implementation fileTree(include: ["*.jar"], dir: "libs")
 
     implementation(libs.godaddy.color.picker)
@@ -222,7 +227,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    //AndroidX
+    // AndroidX
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
@@ -241,7 +246,7 @@ dependencies {
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.swiperefreshlayout)
 
-    //Test
+    // Test
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -257,7 +262,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestRuntimeOnly(libs.androidx.test.runner)
-
 
     implementation(libs.google.material)
 

@@ -4,6 +4,11 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.wire)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktlint)
+}
+
+ktlint {
+    version.set(libs.versions.ktlint)
 }
 
 wire {

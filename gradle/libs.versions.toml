@@ -17,6 +17,8 @@ androidx-media3 = "1.11.1"
 androidx-test = "1.7.0"
 kotlinx-coroutines = "1.11.0"
 roborazzi = "1.77.0"
+ktlint = "1.8.0"
+ktlintGradle = "14.2.0"
 haze = "2.0.1"
 room = "2.8.5"
 
@@ -136,3 +138,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
