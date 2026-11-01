@@ -18,9 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,15 +29,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.PbContent
-import com.huanchengfly.tieba.post.api.models.protos.RecommendForumInfo
-import com.huanchengfly.tieba.post.api.models.protos.plainText
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.arch.pageViewModel
-import com.huanchengfly.tieba.post.arch.wrapImmutable
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.model.ForumIntro
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -51,7 +45,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -63,43 +56,26 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun ForumDetailPage(
     forumId: Long,
     navigator: DestinationsNavigator,
-    viewModel: ForumDetailViewModel = pageViewModel(),
+    viewModel: ForumDetailViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(ForumDetailUiIntent.Load(forumId))
-        viewModel.initialized = true
-    }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    ForumDetailScreen(state = state, onBack = { navigator.navigateUp() }, onReload = viewModel::refresh)
+}
 
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumDetailUiState::isLoading,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumDetailUiState::error,
-        initial = null
-    )
-    val forumInfo by viewModel.uiState.collectPartialAsState(
-        prop1 = ForumDetailUiState::forumInfo,
-        initial = null
-    )
-
-    val isEmpty by remember {
-        derivedStateOf { forumInfo == null }
-    }
-    val isError by remember {
-        derivedStateOf { error != null }
-    }
-
+/** A forum's avatar, counts, slogan and introduction. */
+@Composable
+fun ForumDetailScreen(
+    state: ForumDetailState,
+    onBack: () -> Unit,
+    onReload: () -> Unit,
+) {
+    val error = (state.load as? LoadStatus.Error)?.error
     StateScreen(
-        isEmpty = isEmpty,
-        isError = isError,
-        isLoading = isLoading,
-        onReload = {
-            viewModel.send(ForumDetailUiIntent.Load(forumId))
-        },
-        errorScreen = {
-            ErrorScreen(error = error.getOrNull())
-        },
+        isEmpty = state.intro == null,
+        isError = error != null,
+        isLoading = state.load == LoadStatus.Loading,
+        onReload = onReload,
+        errorScreen = { ErrorScreen(error = error) },
         modifier = Modifier.fillMaxSize(),
     ) {
         GlassScaffold(
@@ -109,15 +85,13 @@ fun ForumDetailPage(
                         GlassTopBarTitle(text = stringResource(id = R.string.title_forum_info))
                     },
                     navigationIcon = {
-                        BackNavigationIcon {
-                            navigator.navigateUp()
-                        }
+                        BackNavigationIcon(onBackPressed = onBack)
                     }
                 )
             }
         ) { paddingValues ->
             Container {
-                forumInfo?.let {
+                state.intro?.let {
                     ForumDetailContent(
                         forumInfo = it,
                         contentPadding = paddingValues,
@@ -131,13 +105,10 @@ fun ForumDetailPage(
 
 @Composable
 private fun ForumDetailContent(
-    forumInfo: ImmutableHolder<RecommendForumInfo>,
+    forumInfo: ForumIntro,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val intro = remember(forumInfo) {
-        forumInfo.get { content.plainText }
-    }
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -150,12 +121,12 @@ private fun ForumDetailContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Avatar(
-                data = forumInfo.get { avatar },
+                data = forumInfo.avatar,
                 size = Sizes.Medium,
                 contentDescription = null,
             )
             Text(
-                text = stringResource(id = R.string.title_forum, forumInfo.get { forum_name }),
+                text = stringResource(id = R.string.title_forum, forumInfo.name),
                 style = MaterialTheme.typography.h6
             )
         }
@@ -167,12 +138,12 @@ private fun ForumDetailContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StatCardItem(
-                statNum = forumInfo.get { member_count },
+                statNum = forumInfo.memberCount,
                 statText = stringResource(id = R.string.text_stat_follow)
             )
             HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
             StatCardItem(
-                statNum = forumInfo.get { thread_count },
+                statNum = forumInfo.threadCount,
                 statText = stringResource(id = R.string.text_stat_threads)
             )
         }
@@ -181,8 +152,8 @@ private fun ForumDetailContent(
         ) {
             Chip(text = stringResource(id = R.string.title_forum_intro))
             Column {
-                Text(text = forumInfo.get { slogan }, style = MaterialTheme.typography.body1)
-                Text(text = intro, style = MaterialTheme.typography.body1)
+                Text(text = forumInfo.slogan, style = MaterialTheme.typography.body1)
+                Text(text = forumInfo.intro, style = MaterialTheme.typography.body1)
             }
         }
     }
@@ -221,19 +192,20 @@ private fun RowScope.StatCardItem(
 fun PreviewForumDetailPage() {
     TiebaLiteTheme {
         ForumDetailContent(
-            forumInfo = RecommendForumInfo(
-                forum_name = "minecraft",
-                slogan = "位于百度贴吧的像素点之家",
-                content = listOf(
-                    PbContent(
-                        type = 0,
-                        text = "minecraft……",
-                    )
-                ),
-                member_count = 2520287,
-                thread_count = 31531580
-            ).wrapImmutable(),
+            forumInfo = ForumDetailPreviewData.intro,
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+/** A sample forum, shared by the preview above and the screenshot tests. */
+internal object ForumDetailPreviewData {
+    val intro = ForumIntro(
+        name = "minecraft",
+        avatar = "",
+        memberCount = 2520287,
+        threadCount = 31531580,
+        slogan = "位于百度贴吧的像素点之家",
+        intro = "minecraft……",
+    )
 }

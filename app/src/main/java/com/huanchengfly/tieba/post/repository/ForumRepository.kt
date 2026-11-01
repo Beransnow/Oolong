@@ -7,23 +7,25 @@ import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
+import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
+import com.huanchengfly.tieba.post.api.models.protos.plainText
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.model.ForumDetail
+import com.huanchengfly.tieba.post.model.ForumIntro
 import com.huanchengfly.tieba.post.model.ForumRuleAuthor
 import com.huanchengfly.tieba.post.model.ForumRuleDetail
 import com.huanchengfly.tieba.post.model.ForumRuleItem
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** Whether the user hides threads with videos from thread lists. */
 fun interface VideoThreadFilter {
@@ -67,6 +69,18 @@ class ForumRepository @Inject constructor(
 ) {
     suspend fun forumRuleDetail(forumId: Long): ForumRuleDetail = withContext(io) {
         remote.forumRuleDetail(forumId).toForumRuleDetail()
+    }
+
+    suspend fun forumIntro(forumId: Long): ForumIntro = withContext(io) {
+        val info = remote.forumDetail(forumId)
+        ForumIntro(
+            name = info.forum_name,
+            avatar = info.avatar,
+            memberCount = info.member_count,
+            threadCount = info.thread_count,
+            slogan = info.slogan,
+            intro = info.content.plainText,
+        )
     }
 
     /**

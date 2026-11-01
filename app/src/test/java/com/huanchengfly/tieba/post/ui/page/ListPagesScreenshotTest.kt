@@ -1,7 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page
 
+import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
+import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailPreviewData
+import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailScreen
+import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailState
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPreviewData
 import com.huanchengfly.tieba.post.ui.page.history.HistoryPreviewScreen
 import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPreviewData
@@ -15,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The smaller list pages: history, the hot topics ranking and the block list. */
+/** The smaller pages: history, the hot topics ranking, a forum's info and the block list. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w393dp-h851dp-xxhdpi")
@@ -31,6 +35,13 @@ class ListPagesScreenshotTest {
     @Test
     fun hotTopics() {
         captureScreenshot { HotTopicListScreen(state = HotTopicListPreviewData.loaded, onBack = {}, onRefresh = {}) }
+    }
+
+    @Test
+    fun forumDetail() {
+        captureScreenshot {
+            ForumDetailScreen(state = ForumDetailState(ForumDetailPreviewData.intro, LoadStatus.Idle), onBack = {}, onReload = {})
+        }
     }
 
     @Test

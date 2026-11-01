@@ -14,6 +14,7 @@ import com.huanchengfly.tieba.post.api.models.protos.ForumRuleStatus
 import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
 import com.huanchengfly.tieba.post.api.models.protos.Page
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
+import com.huanchengfly.tieba.post.api.models.protos.RecommendForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
@@ -27,6 +28,7 @@ import com.huanchengfly.tieba.post.api.models.protos.frsPage.SignUser
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponseData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponseData
 import com.huanchengfly.tieba.post.model.ForumDetail
+import com.huanchengfly.tieba.post.model.ForumIntro
 import com.huanchengfly.tieba.post.model.ForumRuleAuthor
 import com.huanchengfly.tieba.post.model.ForumRuleDetail
 import com.huanchengfly.tieba.post.model.ForumRuleItem
@@ -37,13 +39,13 @@ import com.huanchengfly.tieba.post.ui.common.TextContentRender
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
 
 class ForumRepositoryTest {
     private val remote = mockk<ForumRemoteDataSource>()
@@ -74,6 +76,16 @@ class ForumRepositoryTest {
         user_list = users,
         anti = Anti(tbs = "page-tbs"),
     )
+
+    @Test
+    fun `maps a forum's intro with its introduction as plain text`() = runTest {
+        coEvery { remote.forumDetail(52) } returns RecommendForumInfo(
+            forum_name = "测试", avatar = "a", member_count = 10, thread_count = 20, slogan = "标语",
+            content = listOf(PbContent(type = 0, text = "介绍")),
+        )
+
+        assertEquals(ForumIntro("测试", "a", 10, 20, "标语", "介绍"), repository.forumIntro(52))
+    }
 
     @Test
     fun `the first page of a forum comes with the forum and its tabs`() = runTest {
