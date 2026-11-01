@@ -261,11 +261,8 @@ object MixedTiebaApiImpl : ITiebaApi {
             ).toJson()
         )
 
-
     override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())
-
-
 
     override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
@@ -301,7 +298,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             referer = "https://tieba.baidu.com/mo/q/hybrid-usergrow-search/searchGlobal?entryPage=frs&loadingSignal=1&forumName=${forumName.urlEncode()}&forumId=$forumId&customfullscreen=1&nonavigationbar=1&cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=${ClientVersion.TIEBA_V12.version}&_client_type=2"
         )
 
-
     override fun checkReportPostAsync(postId: String): Deferred<ApiResult<CheckReportBean>> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.checkReportAsync(
             category = "1",
@@ -322,26 +318,6 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun loginFlow(bduss: String, sToken: String): Flow<LoginBean> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.loginFlow("$bduss|", sToken)
             .onEach { InstallState.onLoginSucceeded() }
-
-    override fun profileModifyFlow(
-        birthdayShowStatus: Boolean,
-        birthdayTime: String,
-        intro: String,
-        sex: String,
-        nickName: String,
-    ): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.profileModify(
-            birthdayShowStatus.booleanToString(),
-            birthdayTime,
-            intro,
-            sex,
-            nickName
-        )
-
-    override fun imgPortrait(file: File): Flow<CommonResponse> = flow {
-        legacyUploadRemoteDataSource.uploadPortrait(file.readBytes().toByteString())
-        emit(CommonResponse())
-    }
 
     override fun getForumListFlow(): Flow<GetForumListBean> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.getForumListFlow()
@@ -732,8 +708,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-
-
     override fun getUserInfoFlow(): Flow<GetUserInfoResponse> {
         return getUserInfoFlow(AccountUtil.getUid()!!.toLong(), null, null)
     }
@@ -761,7 +735,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             )
         )
     }
-
 }
 
 private fun SignResponse.toSignResultBean() = SignResultBean(

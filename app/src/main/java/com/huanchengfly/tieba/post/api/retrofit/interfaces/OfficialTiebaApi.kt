@@ -21,7 +21,6 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 import retrofit2.http.*
 
-
 interface OfficialTiebaApi {
     @POST("/c/f/pb/picpage")
     @FormUrlEncoded
@@ -53,8 +52,6 @@ interface OfficialTiebaApi {
         @Field("dislike_from") dislike_from: String = "homepage",
         @Field("stoken") stoken: String? = AccountUtil.getSToken()
     ): Flow<CommonResponse>
-
-
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
@@ -103,20 +100,6 @@ interface OfficialTiebaApi {
         @Field("page") page: String = "1",
         @Field("pn") pn: String = "1",
     ): Flow<Profile>
-
-    @POST("/c/c/profile/modify")
-    @FormUrlEncoded
-    fun profileModify(
-        @Field("birthday_show_status") birthdayShowStatus: String,
-        @Field("birthday_time") birthdayTime: String,
-        @Field("intro") intro: String,
-        @Field("sex") sex: String,
-        @Field("nick_name") nickName: String,
-        @Field("stoken") sToken: String = AccountUtil.getSToken()!!,
-        @Field("cam") cam: String = "",
-        @Field("need_cam_decrypt") needCamDecrypt: String = "1",
-        @Field("need_keep_nickname_flag") needKeepNicknameFlag: String = "0",
-    ): Flow<CommonResponse>
 
     @POST("/c/f/excellent/personalized")
     @FormUrlEncoded
@@ -310,7 +293,6 @@ interface OfficialTiebaApi {
         @Field("delete_my_post") deleteMyPost: Int,
         @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
     ): Flow<CommonResponse>
-
 }
 
 internal fun base64NoWrap(text: String): String =

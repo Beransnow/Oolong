@@ -246,8 +246,6 @@ interface ITiebaApi {
         dislikeBean: DislikeBean
     ): Flow<CommonResponse>
 
-
-
     /**
      * 搜索吧
      *
@@ -291,7 +289,6 @@ interface ITiebaApi {
         pageSize: Int = 20,
     ): Flow<SearchThreadBean>
 
-
     /**
      * 获取举报贴子/回贴页面 URL
      *
@@ -326,33 +323,6 @@ interface ITiebaApi {
         bduss: String,
         sToken: String
     ): Flow<LoginBean>
-
-    /**
-     * 修改个人资料
-     *
-     * @param birthdayShowStatus 是否仅显示星座
-     * @param birthdayTime 生日时间戳 / 1000
-     * @param intro 个人简介（最多 500 字）
-     * @param sex 性别（1 = 男，2 = 女）
-     * @param nickName 昵称
-     */
-    fun profileModifyFlow(
-        birthdayShowStatus: Boolean,
-        birthdayTime: String,
-        intro: String,
-        sex: String,
-        nickName: String,
-    ): Flow<CommonResponse>
-
-    /**
-     * 上传头像
-     *
-     * @param file 图片 File 对象
-     *
-     */
-    fun imgPortrait(
-        file: File
-    ): Flow<CommonResponse>
 
     /**
      * 获取吧列表
@@ -437,7 +407,6 @@ interface ITiebaApi {
     ): Flow<ThreadListResponse>
 
     fun syncFlow(clientId: String? = null): Flow<Sync>
-
 
     /**
      * 回贴（App 接口）
@@ -536,8 +505,6 @@ interface ITiebaApi {
     fun getForumDetailFlow(
         forumId: Long,
     ): Flow<GetForumDetailResponse>
-
-
 
     /**
      * 获得当前用户信息（需登录）
