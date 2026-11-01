@@ -62,6 +62,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -180,12 +181,16 @@ private fun Header(
 private fun ForumItemPlaceholder(
     showAvatar: Boolean,
 ) {
+    if (!showAvatar) {
+        CompactForumItemPlaceholder()
+        return
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        if (showAvatar) {
+        run {
             Image(
                 painter = rememberDrawablePainter(
                     drawable = ImageUtil.getPlaceHolder(
@@ -237,6 +242,31 @@ private fun ForumItemPlaceholder(
 }
 
 @Composable
+private fun CompactForumItemPlaceholder() {
+    val placeholder = Modifier.placeholder(visible = true, color = ExtendedTheme.colors.chip, shape = CircleShape)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = CenterVertically,
+    ) {
+        Box(modifier = Modifier.size(CompactAvatarSize).then(placeholder))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "",
+            modifier = Modifier
+                .weight(1f)
+                .placeholder(visible = true, color = ExtendedTheme.colors.chip, shape = RectangleShape),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Box(modifier = Modifier.width(CompactLevelWidth).height(18.dp).then(placeholder))
+    }
+}
+
+@Composable
 private fun ForumItemMenuContent(
     menuState: MenuState,
     isTopForum: Boolean,
@@ -284,17 +314,17 @@ private fun ForumItemContent(
     item: FollowedForum,
     showAvatar: Boolean
 ) {
+    if (!showAvatar) {
+        CompactForumItemContent(item)
+        return
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        AnimatedVisibility(visible = showAvatar) {
-            Row {
-                Avatar(data = item.avatar, size = 40.dp, contentDescription = null)
-                Spacer(modifier = Modifier.width(14.dp))
-            }
-        }
+        Avatar(data = item.avatar, size = 40.dp, contentDescription = null)
+        Spacer(modifier = Modifier.width(14.dp))
         Text(
             color = ExtendedTheme.colors.text,
             text = item.name,
@@ -341,6 +371,60 @@ private fun ForumItemContent(
         }
     }
 }
+
+/**
+ * A forum in the two-column list: a small avatar, the name, and its level with the signed-in mark
+ * in a pill of fixed width, so the pills line up down each column whether signed in or not.
+ */
+@Composable
+private fun CompactForumItemContent(item: FollowedForum) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = CenterVertically,
+    ) {
+        Avatar(data = item.avatar, size = CompactAvatarSize, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            color = ExtendedTheme.colors.text,
+            text = item.name,
+            modifier = Modifier.weight(1f),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Row(
+            modifier = Modifier
+                .width(CompactLevelWidth)
+                .height(18.dp)
+                .background(color = ExtendedTheme.colors.chip, shape = CircleShape),
+            verticalAlignment = CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "${item.level}",
+                color = ExtendedTheme.colors.onChip,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            if (item.signedIn) {
+                Spacer(modifier = Modifier.width(2.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = stringResource(id = R.string.tip_signed),
+                    modifier = Modifier.size(11.dp),
+                    tint = ExtendedTheme.colors.onChip
+                )
+            }
+        }
+    }
+}
+
+private val CompactAvatarSize = 24.dp
+private val CompactLevelWidth = 38.dp
 
 @Composable
 private fun ForumItem(
