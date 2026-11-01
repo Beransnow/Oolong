@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
-import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.core.network.VerificationChallenge
+import com.huanchengfly.tieba.core.network.VerificationRequiredException
 import com.huanchengfly.tieba.post.repository.PostRepository
 import com.huanchengfly.tieba.post.repository.PostedReply
 import com.huanchengfly.tieba.post.repository.ReplyTarget
@@ -8,10 +9,10 @@ import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -22,14 +23,13 @@ class ReplyViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = mockk<PostRepository>()
-    private val messages = mockk<MessageController>(relaxed = true)
     private val target = ReplyTarget(52, "测试", 9)
 
     @Test
     fun `uploads the pictures first and posts them after the text`() = runTest {
         coEvery { repository.uploadPictures("测试", listOf("content://a"), true) } returns listOf("#(pic,1,2,3)")
         coEvery { repository.reply(target, "文字\n#(pic,1,2,3)", null) } returns PostedReply(9, 100, "")
-        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), messages, backgroundScope)
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), backgroundScope)
         viewModel.addImages(listOf("content://a"))
         viewModel.setOriginalImages(true)
 
@@ -44,7 +44,7 @@ class ReplyViewModelTest {
     @Test
     fun `nothing is posted when a picture fails to upload`() = runTest {
         coEvery { repository.uploadPictures(any(), any(), any()) } throws IOException()
-        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), messages, backgroundScope)
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), backgroundScope)
         viewModel.addImages(listOf("content://a", "content://b"))
         viewModel.removeImage(0)
 
@@ -53,7 +53,37 @@ class ReplyViewModelTest {
 
         coVerify { repository.uploadPictures("测试", listOf("content://b"), false) }
         coVerify(exactly = 0) { repository.reply(any(), any(), any()) }
-        verify { messages.showError(any(), any()) }
+        assertIs<ReplyError.Upload>(viewModel.state.value.error)
+        assertEquals(false, viewModel.state.value.busy)
+    }
+
+    @Test
+    fun `the little tail goes after the text unless turned off`() = runTest {
+        coEvery { repository.reply(target, any(), null) } returns PostedReply(9, 100, "")
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), backgroundScope)
+
+        viewModel.send(target, "文字", tbs = null, tail = "尾巴")
+        runCurrent()
+        viewModel.begin()
+        viewModel.setWithTail(false)
+        viewModel.send(target, "再来", tbs = null, tail = "尾巴")
+        runCurrent()
+
+        coVerify { repository.reply(target, "文字\n尾巴", null) }
+        coVerify { repository.reply(target, "再来", null) }
+    }
+
+    @Test
+    fun `a request to verify is kept for the composer to show`() = runTest {
+        val challenge = VerificationChallenge.Security(code = 3250021)
+        coEvery { repository.reply(any(), any(), any()) } throws VerificationRequiredException(3250021, "", challenge)
+        val viewModel = ReplyViewModel(repository, mockk(relaxed = true), backgroundScope)
+
+        viewModel.send(target, "文字", tbs = null)
+        runCurrent()
+
+        assertEquals(ReplyError.Verification(challenge), viewModel.state.value.error)
+        assertEquals(false, viewModel.state.value.sent)
         assertEquals(false, viewModel.state.value.busy)
     }
 }

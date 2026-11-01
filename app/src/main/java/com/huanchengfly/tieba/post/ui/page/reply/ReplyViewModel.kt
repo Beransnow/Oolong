@@ -3,13 +3,12 @@ package com.huanchengfly.tieba.post.ui.page.reply
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.core.network.VerificationChallenge
+import com.huanchengfly.tieba.core.network.VerificationRequiredException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.database.DraftDao
 import com.huanchengfly.tieba.post.database.DraftEntity
@@ -39,6 +38,18 @@ enum class ReplyPanelType {
     VOICE
 }
 
+/** Why the last attempt to send did not go through, shown in the composer above the text kept. */
+sealed interface ReplyError {
+    /** The server wants the account verified first. */
+    data class Verification(val challenge: VerificationChallenge) : ReplyError
+
+    /** A picture could not be uploaded; [message] may be empty. */
+    data class Upload(val message: String) : ReplyError
+
+    /** The server turned the reply down, or it never got there; [message] may be empty. */
+    data class Send(val code: Int, val message: String) : ReplyError
+}
+
 @Immutable
 data class ReplyState(
     val uploading: Boolean = false,
@@ -49,6 +60,9 @@ data class ReplyState(
     val images: ImmutableList<String> = persistentListOf(),
     /** Whether to upload the images as they are rather than compressed. */
     val originalImages: Boolean = false,
+    /** Whether the little tail set in settings goes at the end of this reply. */
+    val withTail: Boolean = true,
+    val error: ReplyError? = null,
 ) {
     val busy: Boolean get() = uploading || sending
 }
@@ -61,7 +75,6 @@ data class ReplyState(
 class ReplyViewModel @Inject constructor(
     private val repository: PostRepository,
     private val drafts: DraftDao,
-    private val messages: MessageController,
     @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
@@ -73,7 +86,16 @@ class ReplyViewModel @Inject constructor(
     /** Each reply that went through, once. */
     val sent: Flow<PostedReply> = _sent.receiveAsFlow()
 
+    /** Starts a new reply: what the last one picked, chose or ran into is cleared. */
+    fun begin() {
+        _state.value = ReplyState()
+    }
+
     fun switchPanel(panel: ReplyPanelType) = _state.update { it.copy(panel = panel) }
+
+    fun setWithTail(withTail: Boolean) = _state.update { it.copy(withTail = withTail) }
+
+    fun dismissError() = _state.update { it.copy(error = null) }
 
     fun addImages(uris: List<String>) = _state.update { it.copy(images = (it.images + uris).toImmutableList()) }
 
@@ -95,14 +117,18 @@ class ReplyViewModel @Inject constructor(
     }
 
     /**
-     * Uploads the picked pictures, if any, and posts [text] with them to [target].
+     * Uploads the picked pictures, if any, and posts [text] with them to [target]. What goes wrong
+     * is kept in [ReplyState.error] for the composer to show, with the text left as it was.
      *
      * @param tbs a fresher `tbs` than the account's, such as the one the thread page returned
+     * @param tail the little tail to add at the end, when [ReplyState.withTail] is on
      */
-    fun send(target: ReplyTarget, text: String, tbs: String?) = actions.launch("send") {
+    fun send(target: ReplyTarget, text: String, tbs: String?, tail: String? = null) = actions.launch("send") {
+        _state.update { it.copy(error = null) }
+        val withTail = if (!tail.isNullOrBlank() && _state.value.withTail) "$text\n$tail" else text
         val images = _state.value.images
         val content = if (images.isEmpty()) {
-            text
+            withTail
         } else {
             _state.update { it.copy(uploading = true) }
             val pictures = try {
@@ -110,13 +136,13 @@ class ReplyViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                messages.showError(R.string.toast_upload_image_failed, e)
+                _state.update { it.copy(error = ReplyError.Upload(e.message.orEmpty())) }
                 null
             } finally {
                 _state.update { it.copy(uploading = false) }
             }
             pictures ?: return@launch
-            "$text\n${pictures.joinToString("\n")}"
+            "$withTail\n${pictures.joinToString("\n")}"
         }
 
         _state.update { it.copy(sending = true) }
@@ -127,9 +153,10 @@ class ReplyViewModel @Inject constructor(
             _sent.send(reply)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: VerificationRequiredException) {
+            _state.update { it.copy(sending = false, error = ReplyError.Verification(e.challenge)) }
         } catch (e: Throwable) {
-            _state.update { it.copy(sending = false) }
-            messages.show(R.string.toast_reply_failed, e.getErrorCode(), e.getErrorMessage())
+            _state.update { it.copy(sending = false, error = ReplyError.Send(e.getErrorCode(), e.message.orEmpty())) }
         }
     }
 

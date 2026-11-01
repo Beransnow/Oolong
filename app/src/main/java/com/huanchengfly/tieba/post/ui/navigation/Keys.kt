@@ -44,19 +44,6 @@ data class SubPostsSheetKey(
 }
 
 @Serializable
-data class ReplyKey(
-    val forumId: Long,
-    val forumName: String,
-    val threadId: Long,
-    val postId: Long? = null,
-    val subPostId: Long? = null,
-    val replyUserId: Long? = null,
-    val replyUserName: String? = null,
-    val replyUserPortrait: String? = null,
-    val tbs: String? = null,
-) : Key
-
-@Serializable
 data class CopyTextKey(val text: String) : Key
 
 @Serializable

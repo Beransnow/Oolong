@@ -39,7 +39,7 @@ enum class Presentation { Page, Sheet, Dialog }
 
 val Key.presentation: Presentation
     get() = when (this) {
-        is ReplyKey, is SubPostsSheetKey -> Presentation.Sheet
+        is SubPostsSheetKey -> Presentation.Sheet
         is CopyTextKey -> Presentation.Dialog
         else -> Presentation.Page
     }

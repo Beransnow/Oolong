@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -42,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,7 +54,15 @@ import com.huanchengfly.tieba.post.ui.page.thread.PostItem
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadEvent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPostCard
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPreferences
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.page.reply.Content
+import com.huanchengfly.tieba.post.ui.page.reply.Panel
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyCapsuleContent
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChrome
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeBarHeight
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeState
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyComposer
+import com.huanchengfly.tieba.post.ui.page.reply.panelShown
+import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -65,15 +71,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
-import com.huanchengfly.tieba.post.utils.StringUtil
 
 /**
  * The replies inside a post, as a page of its own or, with [isSheet], in a bottom sheet over the
@@ -90,6 +93,8 @@ fun SubPostsScreen(
     replyAvatar: String? = null,
     preferences: ThreadPreferences = ThreadPreferences(),
     listState: LazyListState = rememberLazyListState(),
+    chrome: ReplyChromeState = rememberReplyChromeState(),
+    reply: ReplyComposer? = null,
 ) {
     val deleteDialog = rememberDialogState()
     var deleting by remember { mutableStateOf<SubPost?>(null) }
@@ -103,9 +108,37 @@ fun SubPostsScreen(
     }
     val title = state.post?.let { stringResource(id = R.string.title_sub_posts, it.floor) }
         ?: stringResource(id = R.string.title_sub_posts_default)
+    val canReply = replyAvatar != null && !preferences.hideReply && state.post != null
+    // The capsule is drawn over the page, so the composer can grow out of it; this keeps the
+    // content clear of it at rest
     val replyBar: @Composable () -> Unit = {
-        if (replyAvatar != null && !preferences.hideReply && state.post != null) {
-            ReplyCapsule(replyAvatar) { handleEvent(SubPostsEvent.ReplyToPost) }
+        if (canReply) {
+            Spacer(
+                modifier = Modifier
+                    .windowInsetsPadding(
+                        WindowInsets.navigationBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Bottom)
+                    )
+                    .height(ReplyChromeBarHeight)
+            )
+        }
+    }
+    val replyChrome: @Composable () -> Unit = {
+        if (canReply && replyAvatar != null) {
+            ReplyChrome(
+                state = chrome,
+                replyCapsule = { ReplyCapsuleContent(replyAvatar, reply?.editor?.text.orEmpty()) },
+                actions = null,
+                menu = null,
+                menuFooter = {},
+                composer = { handle -> reply?.Content(handle) },
+                panel = { reply?.Panel() },
+                panelShown = reply?.panelShown() ?: false,
+                onOpenComposer = { handleEvent(SubPostsEvent.ReplyToPost) },
+                onDismiss = { reply?.close() ?: chrome.close() },
+                onExitFullScreen = { chrome.fullScreen = false },
+                onEnterFullScreen = { chrome.fullScreen = true },
+                hiddenFraction = { 0f },
+            )
         }
     }
     val content: @Composable (PaddingValues) -> Unit = { padding ->
@@ -113,21 +146,24 @@ fun SubPostsScreen(
     }
 
     if (isSheet) {
-        MyScaffold(
-            modifier = modifier.fillMaxSize(),
-            topBar = {
-                TitleCentredToolbar(
-                    title = { Text(text = title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6) },
-                    navigationIcon = {
-                        IconButton(onClick = { onEvent(SubPostsEvent.Back) }) {
-                            Icon(imageVector = Icons.Rounded.Close, contentDescription = stringResource(id = R.string.btn_close))
-                        }
-                    },
-                )
-            },
-            bottomBar = replyBar,
-            content = content,
-        )
+        Box(modifier = modifier.fillMaxSize()) {
+            MyScaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    TitleCentredToolbar(
+                        title = { Text(text = title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6) },
+                        navigationIcon = {
+                            IconButton(onClick = { onEvent(SubPostsEvent.Back) }) {
+                                Icon(imageVector = Icons.Rounded.Close, contentDescription = stringResource(id = R.string.btn_close))
+                            }
+                        },
+                    )
+                },
+                bottomBar = replyBar,
+                content = content,
+            )
+            replyChrome()
+        }
     } else {
         GlassScaffold(
             modifier = modifier,
@@ -153,6 +189,7 @@ fun SubPostsScreen(
                 )
             },
             bottomBar = replyBar,
+            overlay = replyChrome,
             content = content,
         )
     }
@@ -279,47 +316,4 @@ internal fun SubPostsState.indexOfSubPost(subPostId: Long): Int? {
     if (index == -1) return null
     // The post and the reply count header come first, then the load-previous row when shown
     return 2 + (if (subPosts.hasPrevious) 1 else 0) + index
-}
-
-private val ReplyCapsuleShape = RoundedCornerShape(percent = 50)
-
-/** A floating reply box with the user's avatar. */
-@Composable
-private fun ReplyCapsule(avatar: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(
-                WindowInsets.navigationBars.union(WindowInsets.displayCutout)
-                    .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
-            )
-            .height(64.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .fillMaxWidth()
-                .floatingGlass(ReplyCapsuleShape)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Avatar(data = StringUtil.getAvatarUrl(avatar), size = Sizes.Tiny, contentDescription = null)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(ReplyCapsuleShape)
-                    .background(ExtendedTheme.colors.bottomBarSurface)
-                    .clickable(onClick = onClick)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            ) {
-                Text(
-                    text = stringResource(id = R.string.tip_reply_thread),
-                    style = MaterialTheme.typography.caption,
-                    color = ExtendedTheme.colors.onBottomBarSurface,
-                )
-            }
-        }
-    }
 }

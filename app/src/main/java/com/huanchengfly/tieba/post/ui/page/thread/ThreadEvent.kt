@@ -32,6 +32,9 @@ sealed interface ThreadEvent {
     data object ReportThread : ThreadEvent
     data object Share : ThreadEvent
     data object CopyLink : ThreadEvent
+
+    /** Open this thread in the official client, to reply there. */
+    data object OpenInOfficialClient : ThreadEvent
     data class StoreAt(val post: Post) : ThreadEvent
     data object StoreAtLastRead : ThreadEvent
     data object RemoveStore : ThreadEvent

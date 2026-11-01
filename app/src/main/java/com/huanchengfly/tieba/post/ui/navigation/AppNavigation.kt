@@ -65,7 +65,6 @@ import com.huanchengfly.tieba.post.ui.page.hottopic.list.HotTopicListPage
 import com.huanchengfly.tieba.post.ui.page.login.LoginPage
 import com.huanchengfly.tieba.post.ui.page.main.MainPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
-import com.huanchengfly.tieba.post.ui.page.reply.ReplyPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.about.AboutPage
@@ -98,17 +97,6 @@ private fun KeyContent(key: Key) {
         is ThreadKey -> ThreadPage(key)
         is SubPostsKey -> SubPostsPage(key)
         is SubPostsSheetKey -> SubPostsSheetPage(key)
-        is ReplyKey -> ReplyPage(
-            forumId = key.forumId,
-            forumName = key.forumName,
-            threadId = key.threadId,
-            postId = key.postId,
-            subPostId = key.subPostId,
-            replyUserId = key.replyUserId,
-            replyUserName = key.replyUserName,
-            replyUserPortrait = key.replyUserPortrait,
-            tbs = key.tbs,
-        )
         is CopyTextKey -> CopyTextDialogPage(key.text)
         is ForumKey -> ForumPage(key)
         is ForumDetailKey -> ForumDetailPage(key)
@@ -145,7 +133,7 @@ internal val Key.paneRole: PaneRole?
         is ForumSearchPostKey, SettingsKey, is NotificationsKey -> PaneRole.List
 
         LoginKey -> PaneRole.Full
-        is ReplyKey, is SubPostsSheetKey, is CopyTextKey -> null
+        is SubPostsSheetKey, is CopyTextKey -> null
         else -> PaneRole.Detail
     }
 

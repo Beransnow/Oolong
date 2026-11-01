@@ -1,21 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ModalBottomSheetLayout
-import androidx.compose.material.ModalBottomSheetState
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Text
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,18 +35,25 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.repository.ThreadSort
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.reply.ChromeSurface
+import com.huanchengfly.tieba.post.ui.page.reply.Content
+import com.huanchengfly.tieba.post.ui.page.reply.Panel
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChrome
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeBarHeight
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyCapsuleContent
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeState
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyComposer
+import com.huanchengfly.tieba.post.ui.page.reply.panelShown
+import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.animateHiddenFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberHideOnScrollState
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -57,7 +65,8 @@ fun ThreadScreen(
     preferences: ThreadPreferences = ThreadPreferences(),
     listState: LazyListState = rememberLazyListState(),
     scaffoldState: ScaffoldState = rememberScaffoldState(),
-    sheetState: ModalBottomSheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, skipHalfExpanded = true),
+    chrome: ReplyChromeState = rememberReplyChromeState(),
+    reply: ReplyComposer? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val jumpDialog = rememberDialogState()
@@ -68,9 +77,7 @@ fun ThreadScreen(
 
     val handleEvent: (ThreadEvent) -> Unit = { event ->
         when (event) {
-            ThreadEvent.OpenMenu -> coroutineScope.launch {
-                if (sheetState.isVisible) sheetState.hide() else sheetState.show()
-            }
+            ThreadEvent.OpenMenu -> chrome.openMenu()
 
             is ThreadEvent.DeletePost -> {
                 deleting = event.post
@@ -81,38 +88,7 @@ fun ThreadScreen(
         }
     }
 
-    ModalBottomSheetLayout(
-        sheetState = sheetState,
-        sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-        sheetBackgroundColor = ExtendedTheme.colors.windowBackground,
-        scrimColor = Color.Transparent,
-        sheetContent = {
-            ThreadMenu(
-                seeLz = state.query.seeLz,
-                stored = state.thread?.isStored == true,
-                immersive = state.immersive,
-                newestFirst = newestFirst,
-                canDelete = viewer != null && state.thread?.author?.id == viewer.id,
-                onEvent = { event ->
-                    coroutineScope.launch { sheetState.hide() }
-                    onEvent(event)
-                },
-                onJumpToPage = {
-                    coroutineScope.launch { sheetState.hide() }
-                    jumpDialog.show()
-                },
-                onDelete = {
-                    coroutineScope.launch { sheetState.hide() }
-                    deleting = null
-                    deleteDialog.show()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            )
-        },
-        modifier = modifier,
-    ) {
+    Box(modifier = modifier) {
         val hide = rememberHideOnScrollState()
         val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
@@ -153,15 +129,63 @@ fun ThreadScreen(
                     } else null,
                 ) { hiddenFraction }
             },
+            // The capsules are drawn by the overlay, so the composer and the menu can grow out of
+            // them; this keeps the content clear of them at rest
             bottomBar = {
+                if (state.thread != null) {
+                    Spacer(
+                        modifier = Modifier
+                            .windowInsetsPadding(
+                                WindowInsets.navigationBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Bottom)
+                            )
+                            .height(ReplyChromeBarHeight)
+                    )
+                }
+            },
+            overlay = {
                 val thread = state.thread
                 if (thread != null) {
-                    ThreadReplyBar(
-                        viewer = viewer,
-                        agree = thread.agree,
-                        hideReply = preferences.hideReply,
-                        onEvent = handleEvent,
-                    ) { hiddenFraction }
+                    val draft = reply?.editor?.text.orEmpty()
+                    ReplyChrome(
+                        state = chrome,
+                        replyCapsule = if (viewer != null && !preferences.hideReply) {
+                            { ReplyCapsuleContent(viewer.portrait, draft) }
+                        } else null,
+                        actions = { ThreadActions(thread.agree, handleEvent) },
+                        menu = {
+                            ThreadMenu(
+                                seeLz = state.query.seeLz,
+                                stored = thread.isStored,
+                                immersive = state.immersive,
+                                newestFirst = newestFirst,
+                                canDelete = viewer != null && thread.author.id == viewer.id,
+                                currentPage = state.currentPage,
+                                totalPage = state.totalPage,
+                                onEvent = { event ->
+                                    chrome.close()
+                                    onEvent(event)
+                                },
+                                onJumpToPage = {
+                                    chrome.close()
+                                    jumpDialog.show()
+                                },
+                                onDelete = {
+                                    chrome.close()
+                                    deleting = null
+                                    deleteDialog.show()
+                                },
+                            )
+                        },
+                        menuFooter = { ThreadMenuFooter(thread.agree, handleEvent, onClose = chrome::close) },
+                        composer = { handle -> reply?.Content(handle) },
+                        panel = { reply?.Panel() },
+                        panelShown = reply?.panelShown() ?: false,
+                        onOpenComposer = { handleEvent(ThreadEvent.Reply(post = null)) },
+                        onDismiss = { if (reply != null && chrome.surface == ChromeSurface.Composer) reply.close() else chrome.close() },
+                        onExitFullScreen = { chrome.fullScreen = false },
+                        onEnterFullScreen = { chrome.fullScreen = true },
+                        hiddenFraction = { hiddenFraction },
+                    )
                 }
             },
         ) { padding ->

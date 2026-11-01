@@ -2,11 +2,9 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,16 +24,22 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
-import com.huanchengfly.tieba.post.ui.navigation.ReplyKey
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsSheetKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.reply.ChromeSurface
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyTo
+import com.huanchengfly.tieba.post.ui.page.reply.openInOfficialClient
+import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
+import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyComposer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -59,7 +63,8 @@ fun ThreadRoute(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val scaffoldState = rememberScaffoldState()
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+    val chrome = rememberReplyChromeState()
+    val reply = rememberReplyComposer(chrome)
     val hideReply by rememberPreferenceAsState(booleanPreferencesKey("hideReply"), false)
     val hideBlocked by rememberPreferenceAsState(booleanPreferencesKey("hideBlockedContent"), false)
 
@@ -100,7 +105,7 @@ fun ThreadRoute(
 
     val storeMarkDialog = rememberDialogState()
     var storeMarkUpdate by remember { mutableStateOf<Post?>(null) }
-    MyBackHandler(enabled = !sheetState.isVisible) {
+    MyBackHandler(enabled = chrome.surface == ChromeSurface.None) {
         val update = viewModel.storeMarkUpdate()
         if (update != null) {
             storeMarkUpdate = update
@@ -139,19 +144,30 @@ fun ThreadRoute(
             ThreadEvent.OpenForum -> thread?.let { navigator.navigate(ForumKey(it.forum.name)) }
             is ThreadEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is ThreadEvent.Reply -> if (thread != null) {
-                val replyTo = event.subPost?.author ?: event.post?.author
-                navigator.navigate(
-                    ReplyKey(
-                        forumId = thread.forum.id,
-                        forumName = thread.forum.name,
-                        threadId = thread.id,
-                        postId = event.post?.id,
-                        subPostId = event.subPost?.id,
-                        replyUserId = replyTo?.id,
-                        replyUserName = replyTo?.displayName,
-                        replyUserPortrait = replyTo?.portrait,
+                val post = event.post
+                val subPost = event.subPost
+                val replyTo = subPost?.author ?: post?.author
+                coroutineScope.launch {
+                    reply.open(
+                        target = ReplyTarget(
+                            forumId = thread.forum.id,
+                            forumName = thread.forum.name,
+                            threadId = thread.id,
+                            postId = post?.id,
+                            subPostId = subPost?.id,
+                            replyUserId = replyTo?.id,
+                        ),
+                        replyTo = if (post != null && replyTo != null) {
+                            ReplyTo(
+                                name = replyTo.displayName,
+                                portrait = replyTo.portrait,
+                                floor = post.floor,
+                                quote = (subPost?.content ?: post.content).plainText(),
+                            )
+                        } else null,
+                        subPostAuthor = subPost?.author?.let { it.portrait to it.displayName },
                     )
-                )
+                }
             }
 
             is ThreadEvent.OpenSubPosts -> if (thread != null) {
@@ -184,6 +200,7 @@ fun ThreadRoute(
                 thread?.title ?: state.preview?.title,
             )
 
+            ThreadEvent.OpenInOfficialClient -> openInOfficialClient(context, state.query.threadId, postId = null)
             ThreadEvent.CopyLink -> TiebaUtil.copyText(
                 context,
                 "https://tieba.baidu.com/p/${state.query.threadId}?see_lz=${if (state.query.seeLz) 1 else 0}"
@@ -205,7 +222,12 @@ fun ThreadRoute(
             preferences = ThreadPreferences(hideReply = hideReply, hideBlocked = hideBlocked),
             listState = listState,
             scaffoldState = scaffoldState,
-            sheetState = sheetState,
+            chrome = chrome,
+            reply = reply,
         )
     }
 }
+
+/** The words of a post, for quoting it: its text, without pictures or other media. */
+private fun List<PostContent>.plainText(): String =
+    filterIsInstance<PostContent.Text>().joinToString("") { text -> text.spans.joinToString("") { it.text } }.trim()
