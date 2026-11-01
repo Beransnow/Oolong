@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,6 +65,7 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 internal fun ThreadTopBar(
     forum: ForumSummary?,
     onEvent: (ThreadEvent) -> Unit,
+    pinnedContent: (@Composable ColumnScope.() -> Unit)?,
     hiddenFraction: () -> Float,
 ) {
     GlassTopBar(
@@ -98,6 +100,7 @@ internal fun ThreadTopBar(
         },
         navigationIcon = { BackNavigationIcon { onEvent(ThreadEvent.Back) } },
         hiddenFraction = hiddenFraction,
+        pinnedContent = pinnedContent,
     )
 }
 

@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -35,21 +33,16 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
@@ -73,7 +66,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
 import com.huanchengfly.tieba.post.utils.ImageUtil
-import kotlin.math.roundToInt
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,8 +76,17 @@ private const val POST_KEY_PREFIX = "Post_"
 /** The index of the first reply in the list, after the first floor and the reply count header. */
 internal const val FIRST_REPLY_INDEX = 1
 
-/** How far below the top bar's fade the pinned header's text needs to start, beyond its own padding. */
-private val PinnedHeaderFadeClearance = 8.dp
+private const val THREAD_HEADER_KEY = "ThreadHeader"
+
+/**
+ * Whether the reply count header has scrolled up behind the top bar, so the bar should show it
+ * pinned instead. [barHiddenBy] is how far the bar has slid up out of the way, in pixels.
+ */
+internal fun LazyListState.isThreadHeaderPinned(barHiddenBy: Int): Boolean {
+    val header = layoutInfo.visibleItemsInfo.firstOrNull { it.key == THREAD_HEADER_KEY }
+    // Item offsets start at the end of the top padding, which is the bottom of the bar when shown
+    return if (header != null) header.offset <= -barHiddenBy else firstVisibleItemIndex > FIRST_REPLY_INDEX
+}
 
 /** The posts of the thread, or the first load or its error in their place. */
 @OptIn(ExperimentalMaterialApi::class)
@@ -95,7 +96,6 @@ internal fun ThreadContent(
     preferences: ThreadPreferences,
     listState: LazyListState,
     padding: PaddingValues,
-    barsHiddenFraction: () -> Float,
     onEvent: (ThreadEvent) -> Unit,
 ) {
     val posts = state.posts
@@ -169,7 +169,7 @@ internal fun ThreadContent(
                     }
                 }
                 if (state.thread != null) {
-                    item(key = "ThreadHeader") { ThreadHeader(state, onEvent) }
+                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
                 }
                 if (posts.hasPrevious && !newestFirst) {
                     item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
@@ -198,8 +198,6 @@ internal fun ThreadContent(
                 }
             }
         }
-
-        if (state.thread != null) PinnedThreadHeader(state, listState, padding, barsHiddenFraction, onEvent)
 
         PullRefreshIndicator(
             refreshing = pullRefreshing,
@@ -258,13 +256,21 @@ private fun FirstPost(
     }
 }
 
-/** The reply count and the switch between all posts and the thread author's. */
+/**
+ * The reply count and the switch between all posts and the thread author's. Shown in the list
+ * above the replies, and pinned in the top bar, on its glass, once the list scrolls past it.
+ */
 @Composable
-private fun ThreadHeader(state: ThreadState, onEvent: (ThreadEvent) -> Unit, modifier: Modifier = Modifier) {
+internal fun ThreadHeader(
+    state: ThreadState,
+    onEvent: (ThreadEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colors.background,
+) {
     Container(modifier = modifier) {
         Row(
             modifier = Modifier
-                .background(MaterialTheme.colors.background)
+                .background(backgroundColor)
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -290,50 +296,6 @@ private fun ThreadHeader(state: ThreadState, onEvent: (ThreadEvent) -> Unit, mod
             }
         }
     }
-}
-
-/**
- * The header again, held under the top bar once the list has scrolled past it. A sticky list
- * header would stick to the top of the screen, behind the floating bar.
- *
- * The bar's fade (or the status-bar strip's, once the bar has hidden) blurs what is under it, so
- * the header slides down out of it over the first pixels scrolled and fills the gap it leaves.
- */
-@Composable
-private fun PinnedThreadHeader(
-    state: ThreadState,
-    listState: LazyListState,
-    padding: PaddingValues,
-    barsHiddenFraction: () -> Float,
-    onEvent: (ThreadEvent) -> Unit,
-) {
-    val pinned by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex >= FIRST_REPLY_INDEX } }
-    if (!pinned) return
-    val density = LocalDensity.current
-    val statusBar = WindowInsets.statusBars.getTop(density)
-    val clearance = with(density) { PinnedHeaderFadeClearance.roundToPx() }
-    val background = MaterialTheme.colors.background
-    fun drop(): Int {
-        val scrolledPast = if (listState.firstVisibleItemIndex == FIRST_REPLY_INDEX) {
-            listState.firstVisibleItemScrollOffset
-        } else {
-            clearance
-        }
-        return minOf(scrolledPast, clearance)
-    }
-    ThreadHeader(
-        state = state,
-        onEvent = onEvent,
-        modifier = Modifier
-            .offset {
-                val belowBar = padding.calculateTopPadding().roundToPx()
-                IntOffset(0, maxOf(statusBar, (belowBar * (1 - barsHiddenFraction())).roundToInt()) + drop())
-            }
-            .drawBehind {
-                val drop = drop().toFloat()
-                drawRect(background, Offset(0f, -drop), Size(size.width, drop))
-            },
-    )
 }
 
 @Composable

@@ -1,7 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +18,10 @@ import androidx.compose.material.Text
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
@@ -35,6 +43,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.animateHiddenFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberHideOnScrollState
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -103,10 +112,25 @@ fun ThreadScreen(
     ) {
         val hide = rememberHideOnScrollState()
         val hiddenFraction by hide.animateHiddenFraction()
+        val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
+        var contentTop by remember { mutableIntStateOf(0) }
+        val headerPinned by remember(listState, statusBarTop) {
+            derivedStateOf {
+                listState.isThreadHeaderPinned(((contentTop - statusBarTop) * hiddenFraction).roundToInt())
+            }
+        }
         GlassScaffold(
             modifier = Modifier.nestedScroll(hide.nestedScrollConnection),
             scaffoldState = scaffoldState,
-            topBar = { ThreadTopBar(state.thread?.forum, handleEvent) { hiddenFraction } },
+            topBar = {
+                ThreadTopBar(
+                    forum = state.thread?.forum,
+                    onEvent = handleEvent,
+                    pinnedContent = if (state.thread != null && headerPinned) {
+                        { ThreadHeader(state, handleEvent, backgroundColor = Color.Transparent) }
+                    } else null,
+                ) { hiddenFraction }
+            },
             bottomBar = {
                 val thread = state.thread
                 if (thread != null) {
@@ -119,7 +143,9 @@ fun ThreadScreen(
                 }
             },
         ) { padding ->
-            ThreadContent(state, preferences, listState, padding, { hiddenFraction }, handleEvent)
+            val density = LocalDensity.current
+            SideEffect { contentTop = with(density) { padding.calculateTopPadding().roundToPx() } }
+            ThreadContent(state, preferences, listState, padding, handleEvent)
         }
     }
 
