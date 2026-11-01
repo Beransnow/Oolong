@@ -70,8 +70,9 @@ fun GlassTopBar(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     hiddenFraction: () -> Float = { 0f },
-    content: (@Composable ColumnScope.() -> Unit)? = null,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
+    // Last, so a trailing lambda passes the bar's rows, which the content is padded for
+    content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
