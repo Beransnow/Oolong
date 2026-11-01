@@ -80,16 +80,16 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.addTextChangedListener
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.panpf.sketch.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.pxToDpFloat
+import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -107,7 +107,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.DraftStore
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
@@ -122,7 +121,6 @@ import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import java.util.UUID
 import kotlin.math.max
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -158,7 +156,7 @@ fun ReplyDialog(
             elevation = 0.dp,
         ) {
             ReplyPageContent(
-                viewModel = pageViewModel(),
+                viewModel = hiltViewModel(),
                 onBack = { dismiss() },
                 forumId = args.forumId,
                 forumName = args.forumName,
@@ -199,33 +197,16 @@ internal fun ReplyPageContent(
     }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val curTbs = remember(tbs) { tbs ?: AccountUtil.getAccountInfo { this.tbs }.orEmpty() }
 
-    val isUploading by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isUploading,
-        initial = false
-    )
-    val isSending by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isSending,
-        initial = false
-    )
-    val isReplying by remember { derivedStateOf { isUploading || isSending } }
-    val replySuccess by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::replySuccess,
-        initial = false
-    )
-    val curKeyboardType by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::replyPanelType,
-        initial = NONE
-    )
-    val selectedImageList by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::selectedImageList,
-        initial = persistentListOf()
-    )
-    val isOriginImage by viewModel.uiState.collectPartialAsState(
-        prop1 = ReplyUiState::isOriginImage,
-        initial = false
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val isReplying = state.busy
+    val replySuccess = state.sent
+    val curKeyboardType = state.panel
+    val selectedImageList = state.images
+    val isOriginImage = state.originalImages
+    val target = remember(forumId, forumName, threadId, postId, subPostId, replyUserId) {
+        ReplyTarget(forumId, forumName, threadId, postId, subPostId, replyUserId)
+    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     var initialText by remember { mutableStateOf("") }
@@ -273,38 +254,15 @@ internal fun ReplyPageContent(
     val textLength by remember { derivedStateOf { curText.length } }
     val isTextEmpty by remember { derivedStateOf { curText.isEmpty() } }
 
-    viewModel.onEvent<ReplyUiEvent.ReplySuccess> {
-        if (it.expInc.isEmpty()) {
-            context.toastShort(R.string.toast_reply_success_default)
-        } else {
-            context.toastShort(R.string.toast_reply_success, it.expInc)
-        }
-        DraftStore.delete(hash)
-        onBack()
-    }
-
-    var waitUploadSuccessToSend by remember { mutableStateOf(false) }
-    viewModel.onEvent<ReplyUiEvent.UploadSuccess> {
-        if (waitUploadSuccessToSend) {
-            waitUploadSuccessToSend = false
-            val imageContent = it.resultList
-                .joinToString("\n") { image ->
-                    // ImageUploader only returns results that carry picId and picInfo
-                    val originPic = checkNotNull(image.picInfo).originPic
-                    "#(pic,${image.picId},${originPic.width},${originPic.height})"
-                }
-            viewModel.send(
-                ReplyUiIntent.Send(
-                    "${getText()}\n$imageContent",
-                    forumId,
-                    forumName,
-                    threadId,
-                    curTbs,
-                    postId,
-                    subPostId,
-                    replyUserId,
-                )
-            )
+    LaunchedEffect(viewModel) {
+        viewModel.sent.collect {
+            if (it.expInc.isEmpty()) {
+                context.toastShort(R.string.toast_reply_success_default)
+            } else {
+                context.toastShort(R.string.toast_reply_success, it.expInc)
+            }
+            DraftStore.delete(hash)
+            onBack()
         }
     }
 
@@ -334,10 +292,10 @@ internal fun ReplyPageContent(
                 closingPanel = true
                 startClosingAnimation = false
             }
-            viewModel.send(ReplyUiIntent.SwitchPanel(NONE))
+            viewModel.switchPanel(NONE)
         } else {
             hideKeyboard()
-            viewModel.send(ReplyUiIntent.SwitchPanel(type))
+            viewModel.switchPanel(type)
         }
     }
 
@@ -576,29 +534,7 @@ internal fun ReplyPageContent(
                         } else {
                             "回复 #(reply, ${replyUserPortrait}, ${replyUserName}) :${getText()}"
                         }
-                        if (selectedImageList.isEmpty()) {
-                            viewModel.send(
-                                ReplyUiIntent.Send(
-                                    content = replyContent,
-                                    forumId = forumId,
-                                    forumName = forumName,
-                                    threadId = threadId,
-                                    tbs = curTbs,
-                                    postId = postId,
-                                    subPostId = subPostId,
-                                    replyUserId = replyUserId
-                                )
-                            )
-                        } else {
-                            waitUploadSuccessToSend = true
-                            viewModel.send(
-                                ReplyUiIntent.UploadImages(
-                                    forumName,
-                                    selectedImageList,
-                                    isOriginImage
-                                )
-                            )
-                        }
+                        viewModel.send(target, replyContent, tbs)
                     },
                     enabled = canSend,
                     modifier = Modifier.size(24.dp)
@@ -634,14 +570,14 @@ internal fun ReplyPageContent(
                         ImagePanel(
                             selectedImages = selectedImageList,
                             onNewImageSelected = { uris ->
-                                viewModel.send(ReplyUiIntent.AddImage(uris.map { it.toString() }))
+                                viewModel.addImages(uris.map { it.toString() })
                             },
                             onRemoveImage = {
-                                viewModel.send(ReplyUiIntent.RemoveImage(it))
+                                viewModel.removeImage(it)
                             },
                             isOriginImage = isOriginImage,
                             onIsOriginImageChange = {
-                                viewModel.send(ReplyUiIntent.ToggleIsOriginImage(it))
+                                viewModel.setOriginalImages(it)
                             },
                             modifier = Modifier
                                 .fillMaxSize()
@@ -742,7 +678,7 @@ fun ReplyPage(
     replyUserName: String? = null,
     replyUserPortrait: String? = null,
     tbs: String? = null,
-    viewModel: ReplyViewModel = pageViewModel(),
+    viewModel: ReplyViewModel = hiltViewModel(),
 ) {
     ReplyPageContent(
         viewModel = viewModel,

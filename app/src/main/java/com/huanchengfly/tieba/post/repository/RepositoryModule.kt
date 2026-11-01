@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.content.Context
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.Binds
@@ -41,6 +42,9 @@ abstract class RepositoryModule {
                     context.appPreferences.userLikeLastRequestUnix = value
                 }
         }
+
+        @Provides
+        fun providePosterName(): PosterName = PosterName { AccountUtil.getAccountInfo { nameShow } }
 
         @Provides
         fun provideEmoticonRegistry(): EmoticonRegistry = EmoticonRegistry(EmoticonManager::registerEmoticon)

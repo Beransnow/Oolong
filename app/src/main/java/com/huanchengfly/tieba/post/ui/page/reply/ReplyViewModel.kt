@@ -1,38 +1,33 @@
 package com.huanchengfly.tieba.post.ui.page.reply
 
-import android.net.Uri
-import android.util.Log
-import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.App
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
-import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
-import com.huanchengfly.tieba.post.arch.CommonUiEvent
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
-import com.huanchengfly.tieba.post.components.ImageUploader
-import com.huanchengfly.tieba.post.repository.AddPostRepository
-import com.huanchengfly.tieba.post.utils.FileUtil
+import com.huanchengfly.tieba.post.arch.Actions
+import com.huanchengfly.tieba.post.arch.ApplicationScope
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.repository.PostRepository
+import com.huanchengfly.tieba.post.repository.PostedReply
+import com.huanchengfly.tieba.post.repository.ReplyTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class ReplyPanelType {
@@ -42,238 +37,96 @@ enum class ReplyPanelType {
     VOICE
 }
 
-@Stable
+@Immutable
+data class ReplyState(
+    val uploading: Boolean = false,
+    val sending: Boolean = false,
+    /** Whether the reply went through, after which the draft is no longer saved. */
+    val sent: Boolean = false,
+    val panel: ReplyPanelType = ReplyPanelType.NONE,
+    val images: ImmutableList<String> = persistentListOf(),
+    /** Whether to upload the images as they are rather than compressed. */
+    val originalImages: Boolean = false,
+) {
+    val busy: Boolean get() = uploading || sending
+}
+
+/**
+ * Writing a reply: the panel shown under the editor, the pictures picked, and sending, which
+ * uploads the pictures first and appends them to the text.
+ */
 @HiltViewModel
-class ReplyViewModel @Inject constructor() :
-    BaseViewModel<ReplyUiIntent, ReplyPartialChange, ReplyUiState, ReplyUiEvent>() {
-    override fun createInitialState() = ReplyUiState()
+class ReplyViewModel @Inject constructor(
+    private val repository: PostRepository,
+    private val messages: MessageController,
+    @ApplicationScope private val appScope: CoroutineScope,
+) : ViewModel() {
+    private val actions = Actions(viewModelScope)
+    private val _state = MutableStateFlow(ReplyState())
+    val state: StateFlow<ReplyState> = _state.asStateFlow()
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> =
-        ReplyPartialChangeProducer
+    private val _sent = Channel<PostedReply>(Channel.BUFFERED)
 
-    override fun dispatchEvent(partialChange: ReplyPartialChange): UiEvent? = when (partialChange) {
-        is ReplyPartialChange.Send.Success -> ReplyUiEvent.ReplySuccess(
-            partialChange.threadId,
-            partialChange.postId,
-            partialChange.expInc
-        )
+    /** Each reply that went through, once. */
+    val sent: Flow<PostedReply> = _sent.receiveAsFlow()
 
-        is ReplyPartialChange.UploadImages.Success -> ReplyUiEvent.UploadSuccess(partialChange.resultList)
+    fun switchPanel(panel: ReplyPanelType) = _state.update { it.copy(panel = panel) }
 
-        is ReplyPartialChange.Send.Failure -> CommonUiEvent.Toast(
-            App.INSTANCE.getString(
-                R.string.toast_reply_failed,
-                partialChange.errorCode,
-                partialChange.errorMessage
-            )
-        )
+    fun addImages(uris: List<String>) = _state.update { it.copy(images = (it.images + uris).toImmutableList()) }
 
-        is ReplyPartialChange.UploadImages.Failure -> CommonUiEvent.Toast(
-            App.INSTANCE.getString(
-                R.string.toast_upload_image_failed,
-                partialChange.errorMessage
-            )
-        )
-
-        else -> null
+    fun removeImage(index: Int) = _state.update { state ->
+        state.copy(images = state.images.filterIndexed { i, _ -> i != index }.toImmutableList())
     }
 
-    private object ReplyPartialChangeProducer :
-        PartialChangeProducer<ReplyUiIntent, ReplyPartialChange, ReplyUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ReplyUiIntent>): Flow<ReplyPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ReplyUiIntent.UploadImages>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.Send>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.SwitchPanel>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.AddImage>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.RemoveImage>()
-                    .flatMapConcat { it.producePartialChange() },
-                intentFlow.filterIsInstance<ReplyUiIntent.ToggleIsOriginImage>()
-                    .flatMapConcat { it.producePartialChange() },
-            )
+    fun setOriginalImages(original: Boolean) = _state.update { it.copy(originalImages = original) }
 
-        private fun ReplyUiIntent.Send.producePartialChange(): Flow<ReplyPartialChange.Send> {
-            return AddPostRepository
-                .addPost(
-                    content,
-                    forumId,
-                    forumName,
-                    threadId,
-                    tbs,
-                    postId = postId,
-                    subPostId = subPostId,
-                    replyUserId = replyUserId
-                )
-                .map<AddPostResponse, ReplyPartialChange.Send> {
-                    if (it.data_ == null) throw TiebaUnknownException
-                    ReplyPartialChange.Send.Success(
-                        threadId = it.data_!!.tid,
-                        postId = it.data_!!.pid,
-                        expInc = it.data_!!.exp?.inc.orEmpty()
-                    )
-                }
-                .onStart { emit(ReplyPartialChange.Send.Start) }
-                .catch {
-                    Log.i("ReplyViewModel", "failure: ${it.message}")
-                    it.printStackTrace()
-                    emit(ReplyPartialChange.Send.Failure(it.getErrorCode(), it.getErrorMessage()))
-                }
-        }
-
-        private fun ReplyUiIntent.UploadImages.producePartialChange() =
-            ImageUploader(forumName)
-                .uploadImages(
-                    imageUris.map {
-                        FileUtil.getRealPathFromUri(
-                            App.INSTANCE,
-                            Uri.parse(it)
-                        )
-                    },
-                    isOriginImage
-                )
-                .map<List<UploadPictureResultBean>, ReplyPartialChange.UploadImages> {
-                    ReplyPartialChange.UploadImages.Success(it)
-                }
-                .onStart { emit(ReplyPartialChange.UploadImages.Start) }
-                .catch {
-                    it.printStackTrace()
-                    emit(
-                        ReplyPartialChange.UploadImages.Failure(
-                            it.getErrorCode(),
-                            it.getErrorMessage()
-                        )
-                    )
-                }
-
-        private fun ReplyUiIntent.SwitchPanel.producePartialChange() =
-            flowOf(ReplyPartialChange.SwitchPanel(panelType))
-
-        private fun ReplyUiIntent.AddImage.producePartialChange() =
-            flowOf(ReplyPartialChange.AddImage(imageUris))
-
-        private fun ReplyUiIntent.RemoveImage.producePartialChange() =
-            flowOf(ReplyPartialChange.RemoveImage(imageIndex))
-
-        private fun ReplyUiIntent.ToggleIsOriginImage.producePartialChange() =
-            flowOf(ReplyPartialChange.ToggleIsOriginImage(isOriginImage))
-    }
-}
-
-sealed interface ReplyUiIntent : UiIntent {
-    data class UploadImages(
-        val forumName: String,
-        val imageUris: List<String>,
-        val isOriginImage: Boolean
-    ) : ReplyUiIntent
-
-    data class Send(
-        val content: String,
-        val forumId: Long,
-        val forumName: String,
-        val threadId: Long,
-        val tbs: String,
-        val postId: Long? = null,
-        val subPostId: Long? = null,
-        val replyUserId: Long? = null,
-    ) : ReplyUiIntent
-
-    data class SwitchPanel(val panelType: ReplyPanelType) : ReplyUiIntent
-
-    data class AddImage(val imageUris: List<String>) : ReplyUiIntent
-
-    data class RemoveImage(val imageIndex: Int) : ReplyUiIntent
-
-    data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyUiIntent
-}
-
-sealed interface ReplyPartialChange : PartialChange<ReplyUiState> {
-    sealed class UploadImages : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState = when (this) {
-            is Start -> oldState.copy(isUploading = true)
-            is Success -> oldState.copy(
-                isUploading = false,
-                uploadImageResultList = resultList.toImmutableList()
-            )
-
-            is Failure -> oldState.copy(isUploading = false)
-        }
-
-        object Start : UploadImages()
-
-        data class Success(val resultList: List<UploadPictureResultBean>) : UploadImages()
-
-        data class Failure(
-            val errorCode: Int,
-            val errorMessage: String
-        ) : UploadImages()
-    }
-
-    sealed class Send : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState {
-            return when (this) {
-                is Start -> oldState.copy(isSending = true)
-                is Success -> oldState.copy(isSending = false, replySuccess = true)
-                is Failure -> oldState.copy(isSending = false, replySuccess = false)
+    /**
+     * Uploads the picked pictures, if any, and posts [text] with them to [target].
+     *
+     * @param tbs a fresher `tbs` than the account's, such as the one the thread page returned
+     */
+    fun send(target: ReplyTarget, text: String, tbs: String?) = actions.launch("send") {
+        val images = _state.value.images
+        val content = if (images.isEmpty()) {
+            text
+        } else {
+            _state.update { it.copy(uploading = true) }
+            val pictures = try {
+                repository.uploadPictures(target.forumName, images, _state.value.originalImages)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                messages.showError(R.string.toast_upload_image_failed, e)
+                null
+            } finally {
+                _state.update { it.copy(uploading = false) }
             }
+            pictures ?: return@launch
+            "$text\n${pictures.joinToString("\n")}"
         }
 
-        object Start : Send()
-
-        data class Success(
-            val threadId: String,
-            val postId: String,
-            val expInc: String
-        ) : Send()
-
-        data class Failure(
-            val errorCode: Int,
-            val errorMessage: String
-        ) : Send()
+        _state.update { it.copy(sending = true) }
+        try {
+            val reply = repository.reply(target, content, tbs)
+            _state.update { it.copy(sending = false, sent = true) }
+            announce(target, reply)
+            _sent.send(reply)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            _state.update { it.copy(sending = false) }
+            messages.show(R.string.toast_reply_failed, e.getErrorCode(), e.getErrorMessage())
+        }
     }
 
-    data class SwitchPanel(val panelType: ReplyPanelType) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(replyPanelType = panelType)
+    /** Tells the thread and floor pages about the new reply, so that they can show it. */
+    private fun announce(target: ReplyTarget, reply: PostedReply) {
+        val event = if (target.postId != null) {
+            GlobalEvent.ReplySuccess(target.threadId, target.postId, target.postId, target.subPostId, reply.postId)
+        } else {
+            GlobalEvent.ReplySuccess(target.threadId, reply.postId)
+        }
+        // The page closes on success, so the event must outlive this view model
+        appScope.launch { emitGlobalEvent(event) }
     }
-
-    data class AddImage(val imageUris: List<String>) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(selectedImageList = (oldState.selectedImageList + imageUris).toImmutableList())
-    }
-
-    data class RemoveImage(val imageIndex: Int) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(selectedImageList = (oldState.selectedImageList - oldState.selectedImageList[imageIndex]).toImmutableList())
-    }
-
-    data class ToggleIsOriginImage(val isOriginImage: Boolean) : ReplyPartialChange {
-        override fun reduce(oldState: ReplyUiState): ReplyUiState =
-            oldState.copy(isOriginImage = isOriginImage)
-    }
-}
-
-data class ReplyUiState(
-    val isSending: Boolean = false,
-    val replySuccess: Boolean = false,
-    val replyPanelType: ReplyPanelType = ReplyPanelType.NONE,
-
-    val isUploading: Boolean = false,
-    val isOriginImage: Boolean = false,
-    val selectedImageList: ImmutableList<String> = persistentListOf(),
-    val uploadImageResultList: ImmutableList<UploadPictureResultBean> = persistentListOf(),
-) : UiState
-
-sealed interface ReplyUiEvent : UiEvent {
-    data class UploadSuccess(val resultList: List<UploadPictureResultBean>) : ReplyUiEvent
-
-    data class ReplySuccess(
-        val threadId: String,
-        val postId: String,
-        val expInc: String
-    ) : ReplyUiEvent
 }
