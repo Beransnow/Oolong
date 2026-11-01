@@ -28,6 +28,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,9 +43,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
@@ -67,6 +68,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
@@ -232,22 +234,14 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserPage(
-    viewModel: UserViewModel = pageViewModel<UserUiIntent, UserViewModel>(
-        listOf(
-            UserUiIntent.Refresh
-        )
-    )
+    viewModel: UserViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
-    val isLoading by viewModel.uiState.collectPartialAsState(
-        prop1 = UserUiState::isLoading,
-        initial = false
-    )
-    val account by viewModel.uiState.collectPartialAsState(
-        prop1 = UserUiState::account,
-        initial = null
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val isLoading = state.isLoading
+    val account = LocalAccount.current
+    LaunchedEffect(account?.uid) { viewModel.refresh() }
 
     val switchToNightDialogState = rememberDialogState()
     ConfirmDialog(
@@ -270,7 +264,7 @@ fun UserPage(
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(
             refreshing = isLoading,
-            onRefresh = { viewModel.send(UserUiIntent.Refresh) })
+            onRefresh = viewModel::refresh)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -287,15 +281,15 @@ fun UserPage(
                         modifier = Modifier
                             .padding(top = 8.dp)
                             .clickable {
-                                navigator.navigate(UserProfilePageDestination(account!!.uid.toLong()))
+                                navigator.navigate(UserProfilePageDestination(account.uid.toLong()))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
-                        userName = account!!.nameShow ?: account!!.name,
-                        userIntro = account!!.intro ?: stringResource(id = R.string.tip_no_intro),
-                        avatar = StringUtil.getAvatarUrl(account!!.portrait),
+                        userName = account.nameShow ?: account.name,
+                        userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
+                        avatar = StringUtil.getAvatarUrl(account.portrait),
                     )
                     StatCard(
-                        account = account!!,
+                        account = account,
                         modifier = Modifier
                             .padding(16.dp)
                             .clip(RoundedCornerShape(8.dp))

@@ -25,6 +25,9 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindForumSortStore(store: DataStoreForumSortStore): ForumSortStore
 
+    @Binds
+    abstract fun bindOwnProfileCache(cache: AccountOwnProfileCache): OwnProfileCache
+
     companion object {
         @Provides
         fun provideVideoThreadFilter(@ApplicationContext context: Context): VideoThreadFilter =
