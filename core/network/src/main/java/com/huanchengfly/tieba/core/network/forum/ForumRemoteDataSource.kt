@@ -49,7 +49,7 @@ class ForumRemoteDataSource(
      *
      * @param page page number, from 1
      * @param loadType 1 for the first page or a refresh, 2 for the next page
-     * @param sortType 2 by reply time, 3 by posting time, 4 hottest first
+     * @param sortType 0 by reply time, 1 by post time, 2 by liking users, 3 smart, 4 by likes
      * @param good whether to load the good threads, of [goodClassId] or of every class for 0
      */
     suspend fun page(

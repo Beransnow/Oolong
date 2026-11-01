@@ -52,7 +52,7 @@ class ForumViewModelTest {
     private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
     private val saved = mutableListOf<ForumDetail>()
     private val shown = mutableListOf<Int>()
-    private val sorts = mutableMapOf<String, ForumSort>()
+    private val sorts = mutableMapOf<String, Int>()
 
     private val custom = FrsTabInfo(tabId = 99, tabType = 15, tabName = "吧友互助", isGeneralTab = 1)
 
@@ -79,7 +79,7 @@ class ForumViewModelTest {
         coEvery { remote.page(any(), any(), any(), any(), any(), any()) } returnsMany pages.toList()
     }
 
-    private fun TestScope.createViewModel(storedSort: ForumSort = ForumSort.ReplyTime) = ForumViewModel(
+    private fun TestScope.createViewModel(storedSort: Int = ForumSort.REPLY_TIME) = ForumViewModel(
         savedState = SavedStateHandle(mapOf("forumName" to "吧名")),
         repository = forumRepository(remote, likeRemote, signRemote, agreeRemote = agreeRemote),
         blockRuleSource = object : BlockRuleSource {
@@ -87,10 +87,10 @@ class ForumViewModelTest {
         },
         history = { saved += it },
         sortStore = object : ForumSortStore {
-            override suspend fun sort(forumName: String) = sorts[forumName] ?: storedSort
+            override suspend fun sortType(forumName: String) = sorts[forumName] ?: storedSort
 
-            override suspend fun setSort(forumName: String, sort: ForumSort) {
-                sorts[forumName] = sort
+            override suspend fun setSortType(forumName: String, sortType: Int) {
+                sorts[forumName] = sortType
             }
         },
         messages = object : MessageController {
@@ -105,12 +105,12 @@ class ForumViewModelTest {
     fun `loads the forum with its latest threads in the stored order`() = runTest {
         respond(frsPage())
 
-        val viewModel = createViewModel(storedSort = ForumSort.PostTime)
+        val viewModel = createViewModel(storedSort = ForumSort.POST_TIME)
         runCurrent()
 
         val state = viewModel.state.value
         assertEquals("吧名", state.forum?.name)
-        assertEquals(ForumSort.PostTime, state.sort)
+        assertEquals(ForumSort.POST_TIME, state.sortType)
         assertEquals(listOf(1L), state.list(ForumTab.Latest).items.map { it.thread.get { id } })
         assertEquals(
             listOf(ForumTab.Good, ForumTab.Hot, ForumTab.Latest, ForumTab.Custom(99, "吧友互助", 15)),
@@ -118,7 +118,7 @@ class ForumViewModelTest {
         )
         assertTrue(state.loggedIn)
         assertEquals(listOf("吧名"), saved.map { it.name })
-        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
+        coVerify { remote.page("吧名", 1, 1, 1, false, 0) }
     }
 
     @Test
@@ -137,7 +137,7 @@ class ForumViewModelTest {
         val state = viewModel.state.value
         assertEquals(listOf(2L), state.list(ForumTab.Hot).items.map { it.thread.get { id } })
         assertEquals(listOf(3L), state.list(ForumTab.Custom(99, "吧友互助", 15)).items.map { it.thread.get { id } })
-        coVerify { remote.page("吧名", 1, 1, 4, false, 0) }
+        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
         assertEquals(listOf("吧名"), saved.map { it.name })
     }
 
@@ -147,12 +147,12 @@ class ForumViewModelTest {
         val viewModel = createViewModel()
         runCurrent()
 
-        viewModel.setSort(ForumSort.PostTime)
+        viewModel.setSort(ForumSort.POST_TIME)
         runCurrent()
 
         assertEquals(listOf(5L), viewModel.state.value.list(ForumTab.Latest).items.map { it.thread.get { id } })
-        assertEquals(ForumSort.PostTime, sorts["吧名"])
-        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
+        assertEquals(ForumSort.POST_TIME, sorts["吧名"])
+        coVerify { remote.page("吧名", 1, 1, 1, false, 0) }
     }
 
     @Test
@@ -167,8 +167,8 @@ class ForumViewModelTest {
         runCurrent()
 
         assertEquals(3, viewModel.state.value.goodClassId)
-        coVerify { remote.page("吧名", 1, 1, -1, true, 0) }
-        coVerify { remote.page("吧名", 1, 1, -1, true, 3) }
+        coVerify { remote.page("吧名", 1, 1, 0, true, 0) }
+        coVerify { remote.page("吧名", 1, 1, 0, true, 3) }
     }
 
     @Test

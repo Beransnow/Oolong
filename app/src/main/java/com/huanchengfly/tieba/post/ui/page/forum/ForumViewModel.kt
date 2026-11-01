@@ -56,7 +56,8 @@ data class ForumState(
     /** The forum, once the first page of a tab that lists it has loaded. */
     val forum: ForumDetail? = null,
     val selectedTab: ForumTab = ForumTab.Latest,
-    val sort: ForumSort = ForumSort.ReplyTime,
+    /** The sort type of the latest threads. */
+    val sortType: Int = ForumSort.REPLY_TIME,
     /** The class of good threads listed, 0 for all of them. */
     val goodClassId: Int = 0,
     val lists: ImmutableMap<ForumTab, PagerState<ForumThreadItem>> = persistentMapOf(),
@@ -94,7 +95,7 @@ class ForumViewModel @Inject constructor(
 
     private data class Selection(
         val tab: ForumTab = ForumTab.Latest,
-        val sort: ForumSort = ForumSort.ReplyTime,
+        val sortType: Int = ForumSort.REPLY_TIME,
         val goodClassId: Int = 0,
     )
 
@@ -116,7 +117,7 @@ class ForumViewModel @Inject constructor(
                 forumName = forumName,
                 forum = forum,
                 selectedTab = selection.tab,
-                sort = selection.sort,
+                sortType = selection.sortType,
                 goodClassId = selection.goodClassId,
                 lists = lists.mapValues { (tab, list) -> list.withItems(items(tab, list.items, rules)) }.toImmutableMap(),
                 loggedIn = sessionProvider.currentSession() != null,
@@ -125,8 +126,8 @@ class ForumViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val sort = runCatching { sortStore.sort(forumName) }.getOrDefault(ForumSort.ReplyTime)
-            selection.update { it.copy(sort = sort) }
+            val sortType = runCatching { sortStore.sortType(forumName) }.getOrDefault(ForumSort.REPLY_TIME)
+            selection.update { it.copy(sortType = sortType) }
             pagerOf(selection.value.tab)
         }
     }
@@ -136,10 +137,10 @@ class ForumViewModel @Inject constructor(
         pagerOf(tab)
     }
 
-    fun setSort(sort: ForumSort) {
-        if (sort == selection.value.sort) return
-        selection.update { it.copy(sort = sort) }
-        viewModelScope.launch { runCatching { sortStore.setSort(forumName, sort) } }
+    fun setSort(sortType: Int) {
+        if (sortType == selection.value.sortType) return
+        selection.update { it.copy(sortType = sortType) }
+        viewModelScope.launch { runCatching { sortStore.setSortType(forumName, sortType) } }
         pagers.value[ForumTab.Latest]?.refresh()
     }
 
@@ -221,7 +222,7 @@ class ForumViewModel @Inject constructor(
                 forumId = forum.value?.id ?: 0,
                 tab = tab,
                 cursor = cursor,
-                sort = selection.sort,
+                sortType = selection.sortType,
                 goodClassId = selection.goodClassId,
             )
             page.forum?.let { loaded ->

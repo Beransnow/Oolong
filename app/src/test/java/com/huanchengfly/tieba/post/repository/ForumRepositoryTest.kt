@@ -76,7 +76,7 @@ class ForumRepositoryTest {
 
     @Test
     fun `the first page of a forum comes with the forum and its tabs`() = runTest {
-        coEvery { remote.page("吧名", 1, 1, 2, false, 0) } returns frsPage(
+        coEvery { remote.page("吧名", 1, 1, 0, false, 0) } returns frsPage(
             forum = ForumInfo(
                 id = FORUM_ID, name = "吧名", avatar = "a", member_num = 10, is_like = 1, user_level = 7,
                 level_name = "七级", cur_score = 30, levelup_score = 100, has_frs_star = 1,
@@ -89,6 +89,12 @@ class ForumRepositoryTest {
                     FrsTabInfo(tabId = 1, tabType = 13, tabName = "热门"),
                     FrsTabInfo(tabId = 99, tabType = 15, tabName = "吧友互助", isGeneralTab = 1),
                     FrsTabInfo(tabId = 507, tabType = 102, tabName = "合辑", isGeneralTab = 1),
+                ),
+                menu = listOf(
+                    FrsTabInfo(tabId = 7, tabType = 13, tabName = "智能排序"),
+                    FrsTabInfo(tabId = 2, tabType = 14, tabName = "回复时间排序"),
+                    FrsTabInfo(tabId = 3, tabType = 14, tabName = "发布时间排序"),
+                    FrsTabInfo(tabId = 99, tabType = 14, tabName = "未知"),
                 ),
             ),
             forum_rule = ForumRuleStatus(has_forum_rule = 1, title = "吧规"),
@@ -103,6 +109,7 @@ class ForumRepositoryTest {
                 hasHead = true, ruleTitle = "吧规",
                 goodClasses = persistentListOf(GoodClass(0, "全部"), GoodClass(3, "攻略")),
                 tabs = persistentListOf(ForumTab.Good, ForumTab.Hot, ForumTab.Latest, ForumTab.Custom(99, "吧友互助", 15)),
+                sorts = persistentListOf(ForumSort("智能排序", 3), ForumSort("回复时间排序", 0), ForumSort("发布时间排序", 1)),
             ),
             page.forum,
         )
@@ -112,34 +119,34 @@ class ForumRepositoryTest {
     @Test
     fun `the threads listed by id are loaded in batches before the next page`() = runTest {
         val ids = (100L until 140L).toList()
-        coEvery { remote.page("吧名", 1, 1, 3, false, 0) } returns frsPage(ids = ids)
-        coEvery { remote.threadList(FORUM_ID, "吧名", 1, 3, any()) } answers {
+        coEvery { remote.page("吧名", 1, 1, 1, false, 0) } returns frsPage(ids = ids)
+        coEvery { remote.threadList(FORUM_ID, "吧名", 1, 1, any()) } answers {
             ThreadListResponseData(thread_list = arg<List<Long>>(4).map { thread(it) })
         }
-        coEvery { remote.page("吧名", 2, 2, 3, false, 0) } returns frsPage(threads = listOf(thread(200)), hasMore = false)
+        coEvery { remote.page("吧名", 2, 2, 1, false, 0) } returns frsPage(threads = listOf(thread(200)), hasMore = false)
 
         var cursor: ForumCursor? = ForumCursor.FrsPage(1)
         val loaded = mutableListOf<Long>()
         while (cursor != null) {
-            val page = repository.threads("吧名", FORUM_ID, ForumTab.Latest, cursor, sort = ForumSort.PostTime).threads
+            val page = repository.threads("吧名", FORUM_ID, ForumTab.Latest, cursor, sortType = ForumSort.POST_TIME).threads
             loaded += page.items.map { it.id }
             cursor = page.next
         }
 
         assertEquals(listOf(1L) + ids + 200L, loaded)
-        coVerify { remote.threadList(FORUM_ID, "吧名", 1, 3, ids.take(30)) }
-        coVerify { remote.threadList(FORUM_ID, "吧名", 1, 3, ids.drop(30)) }
+        coVerify { remote.threadList(FORUM_ID, "吧名", 1, 1, ids.take(30)) }
+        coVerify { remote.threadList(FORUM_ID, "吧名", 1, 1, ids.drop(30)) }
     }
 
     @Test
     fun `hot and good threads are asked for as such`() = runTest {
         coEvery { remote.page(any(), any(), any(), any(), any(), any()) } returns frsPage(hasMore = false)
 
-        repository.threads("吧名", 0, ForumTab.Hot, ForumCursor.FrsPage(1), sort = ForumSort.PostTime)
+        repository.threads("吧名", 0, ForumTab.Hot, ForumCursor.FrsPage(1), sortType = ForumSort.POST_TIME)
         repository.threads("吧名", 0, ForumTab.Good, ForumCursor.FrsPage(1), goodClassId = 3)
 
-        coVerify { remote.page("吧名", 1, 1, 4, false, 0) }
-        coVerify { remote.page("吧名", 1, 1, -1, true, 3) }
+        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
+        coVerify { remote.page("吧名", 1, 1, 0, true, 3) }
     }
 
     @Test

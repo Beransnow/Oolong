@@ -80,10 +80,10 @@ class ForumRepository @Inject constructor(
         forumId: Long,
         tab: ForumTab,
         cursor: ForumCursor,
-        sort: ForumSort = ForumSort.ReplyTime,
+        sortType: Int = ForumSort.REPLY_TIME,
         goodClassId: Int = 0,
     ): ForumThreadsPage = withContext(io) {
-        val sortType = tab.sortType(sort)
+        val sortType = tab.sortType(sortType)
         when (cursor) {
             is ForumCursor.FrsPage -> {
                 val data = remote.page(
@@ -186,14 +186,17 @@ class ForumRepository @Inject constructor(
     }
 }
 
-private fun ForumTab.sortType(sort: ForumSort): Int = when (this) {
-    ForumTab.Good -> -1
-    ForumTab.Hot -> 4
-    else -> when (sort) {
-        ForumSort.ReplyTime -> 2
-        ForumSort.PostTime -> 3
-    }
+private fun ForumTab.sortType(latestSortType: Int): Int = when (this) {
+    ForumTab.Good -> ForumSort.REPLY_TIME
+    ForumTab.Hot -> SMART_SORT_TYPE
+    else -> latestSortType
 }
+
+/** The sort type of the smart order. */
+private const val SMART_SORT_TYPE = 3
+
+/** The sort type each order in the nav menu stands for, by its tab id. */
+private val MenuSortTypes = mapOf(2 to 0, 3 to 1, 6 to 2, 7 to 3, 8 to 4)
 
 private fun FrsPageResponseData.toForumDetail(): ForumDetail? {
     val forum = forum ?: return null
@@ -219,6 +222,9 @@ private fun FrsPageResponseData.toForumDetail(): ForumDetail? {
         ruleTitle = forum_rule?.takeIf { it.has_forum_rule == 1 }?.title?.takeIf { it.isNotEmpty() },
         goodClasses = forum.good_classify.map { GoodClass(it.class_id, it.class_name) }.toImmutableList(),
         tabs = (ForumTab.Fixed + custom).toImmutableList(),
+        sorts = nav_tab_info?.menu.orEmpty()
+            .mapNotNull { menu -> MenuSortTypes[menu.tabId]?.let { ForumSort(menu.tabName, it) } }
+            .toImmutableList(),
     )
 }
 

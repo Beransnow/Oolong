@@ -10,35 +10,27 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-/** How each forum's latest threads were last ordered, or the order set in the settings. */
+/** The sort type each forum's latest threads were last ordered by, or the one set in the settings. */
 interface ForumSortStore {
-    suspend fun sort(forumName: String): ForumSort
+    suspend fun sortType(forumName: String): Int
 
-    suspend fun setSort(forumName: String, sort: ForumSort)
+    suspend fun setSortType(forumName: String, sortType: Int)
 }
 
 /**
- * Keeps each forum's order in the preferences the old forum page used, where 0 is reply time and
- * 1 post time, the two values the settings page offers too.
+ * Keeps each forum's sort type in the preferences the old forum page used; the settings page
+ * offers 0 (reply time) and 1 (post time) as the default.
  */
 class DataStoreForumSortStore @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ForumSortStore {
-    override suspend fun sort(forumName: String): ForumSort {
-        val default = context.appPreferences.defaultSortType?.toIntOrNull() ?: 0
-        val stored = context.dataStore.data.first()[key(forumName)] ?: default
-        return when (stored) {
-            1 -> ForumSort.PostTime
-            else -> ForumSort.ReplyTime
-        }
+    override suspend fun sortType(forumName: String): Int {
+        val default = context.appPreferences.defaultSortType?.toIntOrNull() ?: ForumSort.REPLY_TIME
+        return context.dataStore.data.first()[key(forumName)] ?: default
     }
 
-    override suspend fun setSort(forumName: String, sort: ForumSort) {
-        val stored = when (sort) {
-            ForumSort.ReplyTime -> 0
-            ForumSort.PostTime -> 1
-        }
-        context.dataStore.edit { it[key(forumName)] = stored }
+    override suspend fun setSortType(forumName: String, sortType: Int) {
+        context.dataStore.edit { it[key(forumName)] = sortType }
     }
 
     private fun key(forumName: String) = intPreferencesKey("${forumName}_sort_type")
