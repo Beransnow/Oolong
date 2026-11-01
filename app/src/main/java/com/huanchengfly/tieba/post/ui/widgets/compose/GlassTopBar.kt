@@ -41,25 +41,26 @@ import kotlin.math.roundToInt
 private val TopBarHeight = 56.dp
 
 /**
- * Empty space at the bottom of a top bar, below its last row, where its glass fades out. The blur
- * eases off over this distance instead of stopping at the rows, and ends at the bar's bottom edge.
+ * How far a top bar's glass reaches below its last row, where it fades out. The band overlaps
+ * the top of the content: the blur is faint by then, and content at rest starts right below the
+ * rows instead of a band's height further down.
  */
-val GlassTopBarFadeBand = 24.dp
+private val TopBarFadeBand = 24.dp
 
 /** The same below the status bar, for [GlassStatusBar]. */
 private val StatusBarFadeBand = 16.dp
 
 /**
- * The bottom edge of a top bar without its pinned rows: its other rows and its fade band.
- * [GlassScaffold] pads its content down to this line, so pinned rows float over the content and
- * can come and go without moving it.
+ * The bottom edge of a top bar's rows, without its pinned rows and its fade band. [GlassScaffold]
+ * pads its content down to this line, so pinned rows float over the content and can come and go
+ * without moving it.
  */
 val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
 
 /**
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
- * Its background blurs the content behind it and fades out over [GlassTopBarFadeBand] at its
- * bottom, below its rows, instead of ending at a hard line. Double-tapping it scrolls the page to
+ * Its background blurs the content behind it and fades out over [TopBarFadeBand] below its
+ * rows, instead of ending at a hard line. Double-tapping it scrolls the page to
  * the top.
  *
  * @param hiddenFraction 0 shows the bar, 1 hides it: everything between the status bar and the
@@ -67,7 +68,7 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * never scrolls by sharp under them.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
- * header. They share the bar's background, above its fade band, but float over the content: the
+ * header. They share the bar's background, above its fade band, and float over the content: the
  * scaffold does not pad the content for them.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -85,7 +86,7 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
-            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(GlassTopBarFadeBand))
+            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(TopBarFadeBand))
             Column(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Foreground)
@@ -138,7 +139,7 @@ fun GlassTopBar(
         val loose = constraints.copy(minHeight = 0)
         val foreground = measurables.first { it.layoutId == TopBarLayer.Foreground }.measure(loose)
         val pinned = measurables.firstOrNull { it.layoutId == TopBarLayer.Pinned }?.measure(loose)
-        val band = GlassTopBarFadeBand.roundToPx()
+        val band = TopBarFadeBand.roundToPx()
         val height = foreground.height + (pinned?.height ?: 0) + band
         // Hiding slides away the rows below the status bar, and the pinned rows move up after
         // them. The glass shrinks rather than slides, so it still covers the status bar and the
@@ -146,7 +147,7 @@ fun GlassTopBar(
         val hidden = ((foreground.height - statusBar.getTop(this)) * hiddenFraction()).roundToInt()
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
             .measure(Constraints.fixed(foreground.width, height - hidden))
-        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height + band)) {
+        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
             background.place(0, 0)
             foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }
             pinned?.place(0, foreground.height - hidden)
@@ -160,13 +161,18 @@ fun GlassTopBar(
  */
 @Composable
 fun GlassStatusBar(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .topBarGlass(StatusBarFadeBand)
-            .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
-            .height(StatusBarFadeBand)
-    )
+    val statusBars = WindowInsets.statusBars
+    Layout(
+        content = { Box(modifier = Modifier.topBarGlass(StatusBarFadeBand)) },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val statusBar = statusBars.getTop(this)
+        val glass = measurables.first()
+            .measure(Constraints.fixed(constraints.maxWidth, statusBar + StatusBarFadeBand.roundToPx()))
+        layout(glass.width, glass.height, mapOf(GlassTopBarEdge to statusBar)) {
+            glass.place(0, 0)
+        }
+    }
 }
 
 /** Single-line title text for [GlassTopBar]. */
