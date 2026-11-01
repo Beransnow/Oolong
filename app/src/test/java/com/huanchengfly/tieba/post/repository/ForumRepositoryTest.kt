@@ -55,6 +55,7 @@ class ForumRepositoryTest {
     private fun thread(id: Long, authorId: Long = 0, live: Boolean = false, video: Boolean = false) = ThreadInfo(
         id = id,
         authorId = authorId,
+        author = User(id = authorId).takeIf { authorId != 0L },
         ala_info = if (live) AlaLiveInfo() else null,
         videoInfo = if (video) VideoInfo() else null,
     )

@@ -172,12 +172,15 @@ class ForumRepository @Inject constructor(
         agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forumId, undo = !agree)
     }
 
-    /** Fills in the authors from [users], and drops live streams and, if the user hides them, videos. */
+    /**
+     * Takes the authors from [users], since a thread's own author holds little more than the id,
+     * and drops live streams and, if the user hides them, videos.
+     */
     private fun filter(threads: List<ThreadInfo>, users: List<User>): List<ThreadInfo> {
         val hideVideos = videoFilter.hidesVideos()
         return threads
             .filter { it.ala_info == null && !(hideVideos && it.videoInfo != null) }
-            .map { thread -> if (thread.author != null) thread else thread.copy(author = users.find { it.id == thread.authorId }) }
+            .map { thread -> thread.copy(author = users.find { it.id == thread.authorId } ?: thread.author) }
     }
 
     private companion object {
