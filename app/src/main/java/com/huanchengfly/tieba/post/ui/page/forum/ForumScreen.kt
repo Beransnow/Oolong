@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,13 +34,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import kotlin.math.roundToInt
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -88,9 +83,8 @@ fun ForumScreen(
     fun listStateOf(tab: ForumTab) = listStates.getOrPut(tab) { LazyListState() }
 
     // The header and tabs ride in the bar, so the lists scroll under all of them and the header
-    // collapses by shrinking the bar
+    // collapses by shrinking the bar, its name docking as the bar's title
     val collapse = rememberCollapsingScrollBehavior()
-    val headerShown by remember { derivedStateOf { collapse.state.collapsedFraction < 1f } }
     val currentList = state.list(state.selectedTab)
     val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
     val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = { onEvent(ForumEvent.Refresh) })
@@ -103,33 +97,16 @@ fun ForumScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             ForumTopBar(
-                forumName = forum.name,
-                showTitle = !headerShown,
                 onEvent = onEvent,
                 menuContent = { ForumMenu(onEvent, liked = forum.liked, dismiss = { dismiss() }) },
                 content = {
-                    // Measured whole and shown from the bottom up as it collapses, in one pass, so
-                    // the first frame already shows all of it whatever height was last saved
-                    Box(modifier = Modifier
-                        .clipToBounds()
-                        .layout { measurable, constraints ->
-                            val header = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-                            val limit = -header.height.toFloat()
-                            if (collapse.state.heightOffsetLimit != limit) collapse.state.heightOffsetLimit = limit
-                            val shown = (header.height + collapse.state.heightOffset).roundToInt().coerceIn(0, header.height)
-                            layout(header.width, shown) { header.place(0, shown - header.height) }
-                        }) {
-                        Box {
-                            ForumHeader(
-                                forum = forum,
-                                loggedIn = state.loggedIn,
-                                onEvent = onEvent,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                            )
-                        }
-                    }
+                    ForumHeader(
+                        forum = forum,
+                        loggedIn = state.loggedIn,
+                        onEvent = onEvent,
+                        collapse = collapse.state,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     ForumTabRow(
                         tabs = tabs,
                         pagerState = pagerState,
@@ -228,8 +205,6 @@ private fun ForumLoading(state: ForumState, onEvent: (ForumEvent) -> Unit, modif
         modifier = modifier.fillMaxSize(),
         topBar = {
             ForumTopBar(
-                forumName = state.forumName,
-                showTitle = false,
                 onEvent = onEvent,
                 canSearch = false,
                 menuContent = { ForumMenu(onEvent, liked = false, dismiss = { dismiss() }) },

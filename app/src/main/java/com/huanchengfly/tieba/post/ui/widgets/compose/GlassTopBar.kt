@@ -43,7 +43,17 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.roundToInt
 
-private val TopBarHeight = 56.dp
+/** The height of a [GlassTopBar]'s row of icons and title, below the status bar. */
+internal val GlassTopBarRowHeight = 56.dp
+
+private val TopBarRowPadding = 4.dp
+private val TitlePadding = 8.dp
+
+/**
+ * Where the title starts in a [GlassTopBar] with a navigation icon, for things that move into the
+ * title's place: past the row's padding, the 48dp icon button and the title's own padding.
+ */
+internal val GlassTopBarTitleStart = TopBarRowPadding + 48.dp + TitlePadding
 
 /**
  * The bottom edge of a top bar's rows, without its pinned rows. [GlassScaffold] pads its content
@@ -111,8 +121,8 @@ fun GlassTopBar(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(TopBarHeight)
-                        .padding(horizontal = 4.dp),
+                        .height(GlassTopBarRowHeight)
+                        .padding(horizontal = TopBarRowPadding),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ProvideContentColor(color = ExtendedTheme.colors.text) {
@@ -120,7 +130,7 @@ fun GlassTopBar(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = if (navigationIcon != null) 8.dp else 12.dp),
+                                .padding(start = if (navigationIcon != null) TitlePadding else 12.dp),
                         ) {
                             ProvideTextStyle(
                                 value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)

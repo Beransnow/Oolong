@@ -59,7 +59,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarRowHeight
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitleStart
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
@@ -72,53 +74,154 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.util.lerp
+import kotlin.math.roundToInt
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * The forum's front: its avatar and name with how many follow it and post in it, the viewer's
- * level in its colour, and a full-width button to follow or sign in, next to the rules.
+ * The forum's front: its avatar and name over its slogan, how many follow it and post in it, the
+ * viewer's level in its colour, and a full-width button to follow or sign in, next to the rules.
+ *
+ * It collapses with [collapse], following the finger: the avatar and name rise into the top bar's
+ * row and stay there as its title, the slogan fades, and the rest slides up under the bar, fading
+ * as it goes. The header tells [collapse] how far it can collapse once it has measured itself.
  */
 @Composable
 internal fun ForumHeader(
     forum: ForumDetail,
     loggedIn: Boolean,
     onEvent: (ForumEvent) -> Unit,
+    collapse: CollapsingState,
     modifier: Modifier = Modifier,
 ) {
-    val accent = forumAccentOrPrimary()
     val openDetail = Modifier.clickable(
         interactionSource = remember { MutableInteractionSource() },
         indication = null,
         onClick = { onEvent(ForumEvent.OpenDetail) }
     )
-    Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = openDetail) { Avatar(data = forum.avatar, size = ForumAvatarSize, contentDescription = null) }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f).then(openDetail)) {
+    Layout(
+        content = {
+            Box(modifier = Modifier.layoutId(HeaderPart.Avatar).then(openDetail)) {
+                Avatar(data = forum.avatar, size = ForumAvatarSize, contentDescription = null)
+            }
+            Text(
+                text = stringResource(id = R.string.title_forum, forum.name),
+                fontSize = NameFontSize,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = ExtendedTheme.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.layoutId(HeaderPart.Name).then(openDetail),
+            )
+            if (forum.slogan.isNotBlank()) {
                 Text(
-                    text = stringResource(id = R.string.title_forum, forum.name),
-                    fontSize = 24.sp,
-                    lineHeight = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ExtendedTheme.colors.text,
+                    text = forum.slogan,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    color = ExtendedTheme.colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.layoutId(HeaderPart.Slogan),
                 )
-                if (forum.slogan.isNotBlank()) {
-                    Text(
-                        text = forum.slogan,
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        color = ExtendedTheme.colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+            }
+            ForumHeaderDetails(forum, loggedIn, onEvent, modifier = Modifier.layoutId(HeaderPart.Details))
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val padding = HeaderPadding.roundToPx()
+        val avatarSize = ForumAvatarSize.roundToPx()
+        val nameStart = padding + avatarSize + NameGap.roundToPx()
+        val nameWidth = (width - nameStart - padding).coerceAtLeast(0)
+        val name = measurables.first { it.layoutId == HeaderPart.Name }
+        val nameHeight = name.minIntrinsicHeight(nameWidth)
+        val slogan = measurables.firstOrNull { it.layoutId == HeaderPart.Slogan }
+            ?.measure(Constraints(maxWidth = nameWidth))
+        val sloganHeight = slogan?.height ?: 0
+        val identityHeight = max(avatarSize, nameHeight + sloganHeight)
+        val detailsWidth = (width - 2 * padding).coerceAtLeast(0)
+        val details = measurables.first { it.layoutId == HeaderPart.Details }
+            .measure(Constraints.fixedWidth(detailsWidth))
+        val detailsTop = padding + identityHeight + DetailsGap.roundToPx()
+        val height = detailsTop + details.height + padding
+        if (collapse.heightOffsetLimit != -height.toFloat()) collapse.heightOffsetLimit = -height.toFloat()
+        val collapsed = -collapse.heightOffset
+
+        // Docked, the avatar sits small and centred in the bar's row above the header, with the
+        // name after it at the title's size. The avatar rises with the header until it docks.
+        val rowHeight = GlassTopBarRowHeight.toPx()
+        val dockedAvatarSize = DockedAvatarSize.toPx()
+        val avatarTop = padding + (identityHeight - avatarSize) / 2f
+        val dockedAvatarTop = -(rowHeight + dockedAvatarSize) / 2f
+        val progress = (collapsed / (avatarTop - dockedAvatarTop)).coerceIn(0f, 1f)
+        val avatarScale = lerp(1f, dockedAvatarSize / avatarSize, progress)
+        val titleStart = GlassTopBarTitleStart.toPx()
+
+        val dockedNameScale = DockedNameFontSize.value / NameFontSize.value
+        val nameScale = lerp(1f, dockedNameScale, progress)
+        val dockedNameStart = titleStart + dockedAvatarSize + DockedNameGap.toPx()
+        // Narrowed as it docks so that it ends before the bar's actions
+        val dockedNameWidth = (width - dockedNameStart - ForumBarActionsWidth.toPx()) / dockedNameScale
+        val namePlaceable = name.measure(
+            Constraints(maxWidth = lerp(nameWidth.toFloat(), dockedNameWidth, progress).roundToInt().coerceIn(0, nameWidth))
+        )
+        val nameCenter = padding + (identityHeight - nameHeight - sloganHeight) / 2f + nameHeight / 2f
+        val nameTop = lerp(nameCenter, -rowHeight / 2f, progress) - namePlaceable.height * nameScale / 2f
+        val nameX = lerp(nameStart.toFloat(), dockedNameStart, progress)
+
+        val detailsY = detailsTop - collapsed
+        // The details slide under the bar's row and are cut at its edge, fading out before half
+        // of them has gone
+        val cut = (-detailsY).coerceIn(0f, details.height.toFloat())
+        val detailsAlpha = ((detailsY + details.height / 2f) / (details.height / 2f + DetailsFade.toPx())).coerceIn(0f, 1f)
+
+        layout(width, (height - collapsed).roundToInt().coerceIn(0, height)) {
+            details.placeWithLayer(padding, detailsY.roundToInt()) {
+                alpha = detailsAlpha
+                clip = cut > 0f
+                shape = TopCutShape(cut)
+            }
+            slogan?.placeWithLayer(nameX.roundToInt(), (nameTop + namePlaceable.height * nameScale).roundToInt()) {
+                alpha = (1f - progress / SloganFadeEnd).coerceIn(0f, 1f)
+            }
+            measurables.first { it.layoutId == HeaderPart.Avatar }
+                .measure(Constraints.fixed(avatarSize, avatarSize))
+                .placeWithLayer(lerp(padding.toFloat(), titleStart, progress).roundToInt(), lerp(avatarTop, dockedAvatarTop, progress).roundToInt()) {
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = avatarScale
+                    scaleY = avatarScale
                 }
+            namePlaceable.placeWithLayer(nameX.roundToInt(), nameTop.roundToInt()) {
+                transformOrigin = TransformOrigin(0f, 0f)
+                scaleX = nameScale
+                scaleY = nameScale
             }
         }
-        Spacer(modifier = Modifier.height(18.dp))
+    }
+}
+
+/** Below the forum's name: its figures, the viewer's level, and the buttons. */
+@Composable
+private fun ForumHeaderDetails(
+    forum: ForumDetail,
+    loggedIn: Boolean,
+    onEvent: (ForumEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val accent = forumAccentOrPrimary()
+    Column(modifier = modifier) {
         // Figures on the left, the viewer's level on the right, on one baseline
         Row(verticalAlignment = Alignment.Bottom) {
             ForumStat(forum.memberCount.getShortNumString(), stringResource(id = R.string.forum_stat_members))
@@ -178,6 +281,29 @@ internal fun ForumHeader(
         }
     }
 }
+
+private enum class HeaderPart { Avatar, Name, Slogan, Details }
+
+/** Clips away the top [cut] pixels. */
+private class TopCutShape(private val cut: Float) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density) =
+        Outline.Rectangle(Rect(0f, cut, size.width, size.height))
+}
+
+private val HeaderPadding = 16.dp
+private val NameGap = 14.dp
+private val DetailsGap = 18.dp
+private val NameFontSize = 24.sp
+private val DockedAvatarSize = 28.dp
+private val DockedNameGap = 10.dp
+/** The bar title's size. */
+private val DockedNameFontSize = 20.sp
+/** Search and the menu, and the row's padding after them. */
+private val ForumBarActionsWidth = 48.dp * 2 + 4.dp
+/** How far below the bar's edge the details start to fade. */
+private val DetailsFade = 32.dp
+/** How far into docking the slogan has faded out. */
+private const val SloganFadeEnd = 0.4f
 
 @Composable
 private fun ForumStat(value: String, label: String) {
@@ -256,13 +382,11 @@ internal fun ForumHeaderPlaceholder(
 }
 
 /**
- * The top bar: back, the forum's name once the header has scrolled away, search and the menu,
- * with [content] (the header and tabs) below in the bar.
+ * The top bar: back, search and the menu, with [content] (the header and tabs) below in the bar.
+ * It has no title of its own: the header's name docks in its place as the header collapses.
  */
 @Composable
 internal fun ForumTopBar(
-    forumName: String,
-    showTitle: Boolean,
     onEvent: (ForumEvent) -> Unit,
     canSearch: Boolean = true,
     menuContent: (@Composable MenuScope.() -> Unit)? = null,
@@ -271,7 +395,7 @@ internal fun ForumTopBar(
     val accent = LocalForumAccent.current
     GlassTopBar(
         wash = if (accent.isSpecified) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.28f else 0.18f) else Color.Unspecified,
-        title = { if (showTitle) GlassTopBarTitle(text = stringResource(id = R.string.title_forum, forumName)) },
+        title = {},
         navigationIcon = { BackNavigationIcon(onBackPressed = { onEvent(ForumEvent.Back) }) },
         actions = {
             if (canSearch) {

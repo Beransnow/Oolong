@@ -1,7 +1,14 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.dp
+import com.github.takahirom.roborazzi.captureRoboImage
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
+import com.huanchengfly.tieba.post.testing.ScreenshotFrame
 import com.huanchengfly.tieba.post.testing.captureScreenshot
 import com.huanchengfly.tieba.post.testing.captureScreenshotPaused
 import org.junit.Rule
@@ -34,6 +41,26 @@ class ForumScreenScreenshotTest {
     @Test
     fun notFollowed() {
         captureScreenshot { ForumScreen(state = ForumPreviewData.notFollowed, onEvent = {}) }
+    }
+
+    /** Held part way up: the avatar and name on their way into the bar, the rest sliding under it. */
+    @Test
+    fun collapsing() {
+        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.loaded, onEvent = {}) } }
+        composeRule.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -viewConfiguration.touchSlop - 1f))
+            moveBy(Offset(0f, -40.dp.toPx()))
+        }
+        composeRule.onRoot().captureRoboImage()
+    }
+
+    /** Collapsed: the avatar and name are the bar's title. */
+    @Test
+    fun collapsed() {
+        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.loaded, onEvent = {}) } }
+        composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top + 1f, durationMillis = 1_000) }
+        composeRule.onRoot().captureRoboImage()
     }
 
     @Test
