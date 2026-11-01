@@ -15,7 +15,14 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME).build()
+        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
+            .addCallback(
+                LegacyDatabaseImport(
+                    legacyFile = context.getDatabasePath(LegacyDatabaseImport.LEGACY_NAME),
+                    accountPrefs = context.getSharedPreferences("accountData", Context.MODE_PRIVATE),
+                )
+            )
+            .build()
 
     @Provides
     fun provideAccountDao(database: AppDatabase) = database.accountDao()
