@@ -10,6 +10,8 @@ data class ForumDetail(
     val id: Long,
     val name: String,
     val avatar: String,
+    /** The forum's one-line introduction, empty when it has none. */
+    val slogan: String = "",
     val memberCount: Int = 0,
     val threadCount: Int = 0,
     val postCount: Int = 0,

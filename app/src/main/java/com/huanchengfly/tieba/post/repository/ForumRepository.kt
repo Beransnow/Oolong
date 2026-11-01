@@ -206,6 +206,7 @@ private fun FrsPageResponseData.toForumDetail(): ForumDetail? {
         id = forum.id,
         name = forum.name,
         avatar = forum.avatar,
+        slogan = forum.slogan,
         memberCount = forum.member_num,
         threadCount = forum.thread_num,
         postCount = forum.post_num,
