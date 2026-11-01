@@ -54,33 +54,7 @@ interface OfficialTiebaApi {
         @Field("stoken") stoken: String? = AccountUtil.getSToken()
     ): Flow<CommonResponse>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/user/unfollow")
-    @FormUrlEncoded
-    fun unfollowFlow(
-        @Field("portrait") portrait: String,
-        @Field("tbs") tbs: String,
-        @Field("authsid") authsid: String = "null",
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-        @Field("from_type") fromType: Int = 2,
-        @Field("in_live") inLive: Int = 0,
-        @Field("timestamp") timestamp: Long = System.currentTimeMillis()
-    ): Flow<CommonResponse>
 
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-        "${FormParamsInterceptor.WITH_SIG}: 1",
-    )
-    @POST("/c/c/user/follow")
-    @FormUrlEncoded
-    fun followFlow(
-        @Field("portrait") portrait: String,
-        @Field("tbs") tbs: String,
-        @Field("authsid") authsid: String = "null",
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-        @Field("from_type") fromType: Int = 2,
-        @Field("in_live") inLive: Int = 0
-    ): Flow<FollowBean>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
@@ -337,16 +311,6 @@ interface OfficialTiebaApi {
         @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
     ): Flow<CommonResponse>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/f/forum/like")
-    @FormUrlEncoded
-    fun userLikeForumFlow(
-        @Field("page_no") page: Int = 1,
-        @Field("page_size") pageSize: Int = 50,
-        @Field("uid") uid: String?,
-        @Field("friend_uid") friendUid: String?,
-        @Field("is_guest") is_guest: String?,
-    ): Flow<UserLikeForumBean>
 }
 
 internal fun base64NoWrap(text: String): String =

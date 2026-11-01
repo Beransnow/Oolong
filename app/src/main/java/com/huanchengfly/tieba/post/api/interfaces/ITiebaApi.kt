@@ -15,7 +15,6 @@ import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
-import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.models.DislikeBean
 import kotlinx.coroutines.Deferred
@@ -247,31 +246,7 @@ interface ITiebaApi {
         dislikeBean: DislikeBean
     ): Flow<CommonResponse>
 
-    /**
-     * 关注用户（客户端接口）
-     *
-     * **需登录**
-     *
-     * @param portrait 头像
-     * @param tbs tbs
-     */
-    fun followFlow(
-        portrait: String,
-        tbs: String
-    ): Flow<FollowBean>
 
-    /**
-     * 取关用户（客户端接口）
-     *
-     * **需登录**
-     *
-     * @param portrait 头像
-     * @param tbs tbs
-     */
-    fun unfollowFlow(
-        portrait: String,
-        tbs: String
-    ): Flow<CommonResponse>
 
     /**
      * 搜索吧
@@ -562,23 +537,7 @@ interface ITiebaApi {
         forumId: Long,
     ): Flow<GetForumDetailResponse>
 
-    /**
-     * 查看用户的所有主题贴/回复
-     *
-     * @param uid 用户 ID
-     * @param page 分页页码（从 1 开始）
-     * @param isThread 是否查看主题贴
-     */
-    fun userPostFlow(
-        uid: Long,
-        page: Int = 1,
-        isThread: Boolean = true,
-    ): Flow<UserPostResponse>
 
-    fun userLikeForumFlow(
-        uid: String,
-        page: Int = 1,
-    ): Flow<UserLikeForumBean>
 
     /**
      * 获得当前用户信息（需登录）

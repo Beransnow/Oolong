@@ -24,7 +24,6 @@ import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.FollowBean
 import com.huanchengfly.tieba.post.api.models.ForumGuideBean
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
 import com.huanchengfly.tieba.post.api.models.InitNickNameBean
@@ -40,7 +39,6 @@ import com.huanchengfly.tieba.post.api.models.SearchUserBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
 import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
-import com.huanchengfly.tieba.post.api.models.UserLikeForumBean
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
@@ -80,9 +78,6 @@ import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeRequest
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeRequestData
 import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
-import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequest
-import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostRequestData
-import com.huanchengfly.tieba.post.api.models.protos.userPost.UserPostResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
@@ -270,15 +265,7 @@ object MixedTiebaApiImpl : ITiebaApi {
     override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())
 
-    override fun followFlow(
-        portrait: String,
-        tbs: String
-    ): Flow<FollowBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.followFlow(portrait, tbs)
 
-    override fun unfollowFlow(
-        portrait: String,
-        tbs: String
-    ): Flow<CommonResponse> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.unfollowFlow(portrait, tbs)
 
     override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
@@ -745,40 +732,7 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun userPostFlow(uid: Long, page: Int, isThread: Boolean): Flow<UserPostResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.userPostFlow(
-            buildProtobufRequestBody(
-                UserPostRequest(
-                    UserPostRequestData(
-                        uid = uid,
-                        rn = 20,
-                        is_thread = if (isThread) 1 else 0,
-                        need_content = 1,
-                        pn = page,
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        scr_w = getScreenWidth(),
-                        scr_h = getScreenHeight(),
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        q_type = 1,
-                        is_view_card = if (isThread) 1 else 0,
-                        subtype = 0.takeUnless { isThread },
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-                needSToken = true
-            )
-        )
-    }
 
-    override fun userLikeForumFlow(uid: String, page: Int): Flow<UserLikeForumBean> {
-        val myUid = AccountUtil.getUid()
-        return RetrofitTiebaApi.OFFICIAL_TIEBA_API.userLikeForumFlow(
-            page = page,
-            uid = myUid,
-            friendUid = if (!TextUtils.equals(uid, myUid)) uid else null,
-            is_guest = if (!TextUtils.equals(uid, myUid)) "1" else null
-        )
-    }
 
     override fun getUserInfoFlow(): Flow<GetUserInfoResponse> {
         return getUserInfoFlow(AccountUtil.getUid()!!.toLong(), null, null)
