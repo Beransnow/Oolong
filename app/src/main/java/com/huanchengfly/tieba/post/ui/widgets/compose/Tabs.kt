@@ -174,20 +174,26 @@ fun TabRow(
                 TabPosition(tabWidth.toDp() * index, tabWidth.toDp())
             }
 
+            // Subcomposing while placing breaks layout inside the glass top bar, so the divider
+            // and indicator are measured here rather than in the placement block.
+            val dividerPlaceables = subcompose(TabSlots.Divider, divider).map {
+                it.measure(constraints.copy(minHeight = 0))
+            }
+            val indicatorPlaceables = subcompose(TabSlots.Indicator) {
+                indicator(tabPositions)
+            }.map {
+                it.measure(Constraints.fixed(tabRowWidth, tabRowHeight))
+            }
+
             layout(tabRowWidth, tabRowHeight) {
                 tabPlaceables.forEachIndexed { index, placeable ->
                     placeable.placeRelative(index * tabWidth, 0)
                 }
-
-                subcompose(TabSlots.Divider, divider).forEach {
-                    val placeable = it.measure(constraints.copy(minHeight = 0))
-                    placeable.placeRelative(0, tabRowHeight - placeable.height)
+                dividerPlaceables.forEach {
+                    it.placeRelative(0, tabRowHeight - it.height)
                 }
-
-                subcompose(TabSlots.Indicator) {
-                    indicator(tabPositions)
-                }.forEach {
-                    it.measure(Constraints.fixed(tabRowWidth, tabRowHeight)).placeRelative(0, 0)
+                indicatorPlaceables.forEach {
+                    it.placeRelative(0, 0)
                 }
             }
         }
@@ -291,7 +297,7 @@ fun ScrollableTabRow(
             }
 
             // The divider is measured with its own height, and width equal to the total width of
-            // the tab row. Subcomposing while placing breaks layout inside a layered parent, so
+            // the tab row. Subcomposing while placing breaks layout inside the glass top bar, so
             // the divider and indicator are measured here rather than in the placement block.
             val dividerPlaceables = subcompose(TabSlots.Divider, divider).map {
                 it.measure(
