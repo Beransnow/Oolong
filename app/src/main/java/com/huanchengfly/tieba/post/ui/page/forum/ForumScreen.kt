@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -21,7 +21,7 @@ import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -79,8 +79,8 @@ fun ForumScreen(
         }
     }
     val coroutineScope = rememberCoroutineScope()
-    val listStates = remember { mutableMapOf<ForumTab, LazyListState>() }
-    fun listStateOf(tab: ForumTab) = listStates.getOrPut(tab) { LazyListState() }
+    // Saved, so each tab keeps its place while another page is open on top
+    val listStates = tabs.associateWith { tab -> key(tab) { rememberLazyListState() } }
 
     // The header and tabs ride in the bar, so the lists scroll under all of them and the header
     // collapses by shrinking the bar, its name docking as the bar's title
@@ -127,7 +127,7 @@ fun ForumScreen(
                         .background(forumAccentOrPrimary(), CircleShape)
                         .clickable {
                             coroutineScope.launch {
-                                listStateOf(state.selectedTab).animateScrollToItem(0)
+                                listStates[state.selectedTab]?.animateScrollToItem(0)
                                 if (fab == ForumFab.Refresh) onEvent(ForumEvent.Refresh)
                             }
                         },
@@ -174,7 +174,7 @@ fun ForumScreen(
                         tab = tab,
                         list = list,
                         onEvent = onEvent,
-                        listState = listStateOf(tab),
+                        listState = listStates.getValue(tab),
                         contentPadding = contentPadding,
                         ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
                         goodClasses = forum.goodClasses.takeIf { tab == ForumTab.Good },
