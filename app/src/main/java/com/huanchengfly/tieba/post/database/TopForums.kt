@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 /** A followed forum the user pinned to the top of the home page. */
 @Entity(tableName = "top_forums")
@@ -18,6 +19,9 @@ data class TopForumEntity(
 interface TopForumDao {
     @Query("SELECT forum_id FROM top_forums")
     suspend fun forumIds(): List<String>
+
+    @Query("SELECT forum_id FROM top_forums")
+    fun forumIdsFlow(): Flow<List<String>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(forum: TopForumEntity)

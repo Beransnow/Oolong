@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 /**
  * A visited thread or forum. [data] is the thread id or the forum name, depending on [type];
@@ -32,6 +33,10 @@ data class HistoryEntity(
 interface HistoryDao {
     @Query("SELECT * FROM history WHERE type = :type ORDER BY timestamp DESC, count DESC LIMIT :limit OFFSET :offset")
     suspend fun page(type: Int, limit: Int, offset: Int): List<HistoryEntity>
+
+    /** The latest [limit] entries of [type], followed as they change. */
+    @Query("SELECT * FROM history WHERE type = :type ORDER BY timestamp DESC, count DESC LIMIT :limit")
+    fun latest(type: Int, limit: Int): Flow<List<HistoryEntity>>
 
     @Query("SELECT * FROM history WHERE type = :type AND data = :data")
     suspend fun find(type: Int, data: String): HistoryEntity?
