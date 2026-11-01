@@ -111,4 +111,14 @@ class BackStackNavigatorTest {
 
         assertEquals(listOf(MainKey, ThreadKey(1), UserProfileKey(3)), keys)
     }
+
+    @Test
+    fun subPostsOpenAsAPageBesideTheThreadWithTwoPanes() {
+        val thread = push(ThreadKey(1))
+        navigator.twoPane = true
+
+        navigator.forPage(thread).navigate(SubPostsSheetKey(threadId = 1, postId = 2))
+
+        assertEquals(listOf(MainKey, ThreadKey(1), SubPostsKey(threadId = 1, postId = 2)), keys)
+    }
 }

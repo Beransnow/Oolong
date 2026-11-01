@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
@@ -146,6 +147,13 @@ internal val Key.paneRole: PaneRole?
         else -> PaneRole.Detail
     }
 
+/**
+ * Whether [this] is read rather than scanned, so it keeps to [MaxReadingWidth] on wide windows.
+ * Lists lay themselves out for the width they get; web pages and logging in are sized by the web.
+ */
+private val Key.readsAtWidth: Boolean
+    get() = paneRole == PaneRole.Detail && this !is WebViewKey
+
 private fun Key.metadata(): Map<String, Any> = when (presentation) {
     Presentation.Sheet -> BottomSheetSceneStrategy.bottomSheet()
     Presentation.Dialog -> DialogSceneStrategy.dialog(CopyTextDialogProperties)
@@ -186,6 +194,7 @@ fun AppNavDisplay(
     }
 
     val navigator = remember(backStack) { BackStackNavigator(backStack) }
+    SideEffect { navigator.twoPane = twoPane }
     val overlap = PageTransitions.rememberOverlap()
     val ids = backStack.map { (it as Page).id }
     val previousIds = remember { mutableStateOf(ids) }
@@ -254,7 +263,11 @@ fun AppNavDisplay(
                                 LocalIsTopEntry provides isTop,
                                 LocalNavigator provides pageNavigator,
                             ) {
-                                KeyContent(page.key)
+                                if (page.key.readsAtWidth) {
+                                    ReadingWidth { KeyContent(page.key) }
+                                } else {
+                                    KeyContent(page.key)
+                                }
                             }
                         }
                     },

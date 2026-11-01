@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.MaxReadingWidth
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -71,8 +73,10 @@ private fun CopyTextPageContent(
     onCopy: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
+    // It is read like a page, so it keeps to a page's reading width on wide windows
     Column(
         modifier = Modifier
+            .widthIn(max = MaxReadingWidth)
             .fillMaxWidth()
             .background(color = ExtendedTheme.colors.windowBackground)
             .systemBarsPadding()

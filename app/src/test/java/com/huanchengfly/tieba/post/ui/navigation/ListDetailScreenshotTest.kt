@@ -93,7 +93,12 @@ class ListDetailScreenshotTest {
                     if (twoPane) ListDetailSceneStrategy<Fake>(state) {} else null,
                     FramedSinglePaneSceneStrategy(),
                 ),
-                entryProvider = { fake -> NavEntry(fake, metadata = paneRole(fake.role)) { FakePage(fake) } },
+                entryProvider = { fake ->
+                    NavEntry(fake, metadata = paneRole(fake.role)) {
+                        // As the app does: a page to read keeps to its reading width
+                        if (fake.role == PaneRole.Detail) ReadingWidth { FakePage(fake) } else FakePage(fake)
+                    }
+                },
             )
         }
     }

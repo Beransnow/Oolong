@@ -49,6 +49,12 @@ val Key.presentation: Presentation
  * page wherever it shows: with two panes the page on the left is not the top of the stack.
  */
 class BackStackNavigator(private val backStack: NavBackStack<NavKey>) : Navigator {
+    /**
+     * Whether two panes show. Sub-posts then open as a page beside the thread, where there is
+     * room for them, instead of a sheet over both panes.
+     */
+    var twoPane = false
+
     override fun navigate(key: Key) = navigate(key, from = null)
 
     override fun navigateUp() {
@@ -62,7 +68,8 @@ class BackStackNavigator(private val backStack: NavBackStack<NavKey>) : Navigato
         override fun navigateUp() = close(page)
     }
 
-    private fun navigate(key: Key, from: Page?) {
+    private fun navigate(target: Key, from: Page?) {
+        val key = if (twoPane && target is SubPostsSheetKey) target.asPage() else target
         if (key.presentation == Presentation.Page) {
             // A list opens pages in place of what it opened before, so back leaves the list in
             // one step instead of retracing every thread read from it. With one pane the list is

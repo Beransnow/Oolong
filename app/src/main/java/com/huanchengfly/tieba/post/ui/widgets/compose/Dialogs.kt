@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -34,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -44,9 +47,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.Visibility
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
@@ -367,6 +368,12 @@ fun BaseDialog(
     }
 }
 
+/** Below this the window is a phone's, where dialogs rise from the bottom edge. */
+private val CompactWindowMaxWidth = 600.dp
+
+/** Wider, a dialog's few lines and buttons spread too far apart. */
+private val MaxDialogWidth = 560.dp
+
 @Composable
 fun Dialog(
     modifier: Modifier = Modifier,
@@ -378,12 +385,15 @@ fun Dialog(
     buttons: @Composable (DialogScope.() -> Unit) = {},
     content: @Composable (DialogScope.() -> Unit),
 ) {
-    val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
+    // A dialog covers the whole window, whatever pane opened it
+    val compactWindow = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width.toDp() < CompactWindowMaxWidth
+    }
     BaseDialog(
         modifier = modifier,
         dialogState = dialogState,
         onDismiss = onDismiss,
-        direction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
+        direction = if (compactWindow) {
             DirectionState.BOTTOM
         } else {
             DirectionState.CENTER
@@ -395,13 +405,8 @@ fun Dialog(
             modifier = modifier
                 .wrapContentHeight()
                 .animateContentSize()
-                .fillMaxWidth(
-                    fraction = if (windowWidthSizeClass == WindowWidthSizeClass.Compact) {
-                        1f
-                    } else {
-                        0.6f
-                    }
-                )
+                .widthIn(max = MaxDialogWidth)
+                .fillMaxWidth()
                 .padding(16.dp)
                 .background(
                     color = ExtendedTheme.colors.windowBackground,
