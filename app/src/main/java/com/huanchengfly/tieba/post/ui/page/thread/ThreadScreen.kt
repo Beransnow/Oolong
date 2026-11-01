@@ -18,6 +18,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -25,6 +26,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -118,6 +120,17 @@ fun ThreadScreen(
             derivedStateOf {
                 listState.isThreadHeaderPinned(((contentTop - statusBarTop) * hiddenFraction).roundToInt())
             }
+        }
+        // A thread that can't scroll the bar's height away would leave an empty band where the bar was
+        val tooShortToHide by remember(listState) {
+            derivedStateOf {
+                !listState.canScrollForward &&
+                    listState.firstVisibleItemIndex == 0 &&
+                    listState.firstVisibleItemScrollOffset < contentTop
+            }
+        }
+        LaunchedEffect(hide) {
+            snapshotFlow { hide.hidden && tooShortToHide }.collect { if (it) hide.show() }
         }
         GlassScaffold(
             modifier = Modifier.nestedScroll(hide.nestedScrollConnection),
