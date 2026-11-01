@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
+import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
 import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
@@ -170,6 +171,14 @@ object NetworkIdentityModule {
         commonParams: CommonParams,
         device: DeviceIdentity,
     ): ThreadRemoteDataSource = ThreadRemoteDataSource(network, commonParams, device)
+
+    @Provides
+    @Singleton
+    fun provideUserRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+        device: DeviceIdentity,
+    ): UserRemoteDataSource = UserRemoteDataSource(network, commonParams, device)
 
     @Provides
     @Singleton
