@@ -756,6 +756,8 @@ fun FeedCard(
     onClickUser: (User) -> Unit = {},
     onClickForum: (SimpleForum) -> Unit = {},
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
+    /** Whether to show the thread's forum, which a forum's own list leaves out. */
+    showForum: Boolean = true,
     dislikeAction: @Composable () -> Unit = {},
 ) {
     Card(
@@ -799,7 +801,7 @@ fun FeedCard(
                     )
                 }
 
-            ThreadForumInfo(item = item, onClick = onClickForum)
+            if (showForum) ThreadForumInfo(item = item, onClick = onClickForum)
         },
         action = {
             Row(modifier = Modifier.fillMaxWidth()) {

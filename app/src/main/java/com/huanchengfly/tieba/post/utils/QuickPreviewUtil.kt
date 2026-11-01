@@ -12,7 +12,6 @@ import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.repository.FrsPageRepository
 import com.huanchengfly.tieba.post.repository.PbPageRepository
-import com.huanchengfly.tieba.post.ui.page.forum.getSortType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
@@ -105,7 +104,7 @@ object QuickPreviewUtil {
         link: ClipBoardForumLink,
         lifeCycle: Lifecycle? = null,
     ): Flow<PreviewInfo> =
-        FrsPageRepository.frsPage(link.forumName, 1, 1, getSortType(context, link.forumName))
+        FrsPageRepository.frsPage(link.forumName, 1, 1, sortType = 2)
             .map {
                 PreviewInfo(
                     clipBoardLink = link,
