@@ -7,7 +7,6 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
-import kotlinx.coroutines.flow.Flow
 
 /**
  * A visited thread or forum. [data] is the thread id or the forum name, depending on [type];
@@ -32,10 +31,7 @@ data class HistoryEntity(
 @Dao
 interface HistoryDao {
     @Query("SELECT * FROM history WHERE type = :type ORDER BY timestamp DESC, count DESC LIMIT :limit OFFSET :offset")
-    fun page(type: Int, limit: Int, offset: Int): Flow<List<HistoryEntity>>
-
-    @Query("SELECT * FROM history ORDER BY timestamp DESC, count DESC LIMIT :limit")
-    suspend fun latest(limit: Int): List<HistoryEntity>
+    suspend fun page(type: Int, limit: Int, offset: Int): List<HistoryEntity>
 
     @Query("SELECT * FROM history WHERE type = :type AND data = :data")
     suspend fun find(type: Int, data: String): HistoryEntity?
@@ -60,8 +56,9 @@ interface HistoryDao {
         }
     }
 
+    /** Returns how many rows were deleted. */
     @Query("DELETE FROM history WHERE id = :id")
-    suspend fun delete(id: Long)
+    suspend fun delete(id: Long): Int
 
     @Query("DELETE FROM history")
     suspend fun clear()

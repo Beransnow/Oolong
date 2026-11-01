@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.models.database
 
 import androidx.compose.runtime.Immutable
-import org.litepal.crud.LitePalSupport
 
 @Immutable
 data class History(
@@ -13,6 +12,5 @@ data class History(
     val extras: String? = null,
     val avatar: String? = null,
     val username: String? = null,
-) : LitePalSupport() {
-    val id: Long = 0L
-}
+    val id: Long = 0L,
+)

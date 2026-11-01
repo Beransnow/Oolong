@@ -12,7 +12,6 @@ import com.huanchengfly.tieba.post.models.database.History
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.HistoryUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -20,12 +19,9 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import org.litepal.LitePal
-import org.litepal.extension.deleteAll
 import javax.inject.Inject
 
 abstract class HistoryListViewModel :
@@ -100,10 +96,9 @@ private class HistoryListPartialChangeProducer(val type: Int) :
             .catch { HistoryListPartialChange.LoadMore.Failure(it) }
 
     private fun HistoryListUiIntent.Delete.producePartialChange() =
-        flow { emit(LitePal.deleteAll<History>("id = ?", "$id")) }
-            .flowOn(Dispatchers.IO)
+        flow { emit(HistoryUtil.delete(id)) }
             .map {
-                if (it > 0) HistoryListPartialChange.Delete.Success(id)
+                if (it) HistoryListPartialChange.Delete.Success(id)
                 else HistoryListPartialChange.Delete.Failure(IllegalStateException("未知错误"))
             }
             .catch { emit(HistoryListPartialChange.Delete.Failure(it)) }
