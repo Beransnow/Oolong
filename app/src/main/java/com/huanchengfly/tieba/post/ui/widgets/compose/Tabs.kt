@@ -283,36 +283,47 @@ fun ScrollableTabRow(
                 layoutHeight = maxOf(layoutHeight, it.height)
             }
 
+            val tabPositions = mutableListOf<TabPosition>()
+            var tabLeft = padding
+            tabPlaceables.forEach {
+                tabPositions.add(TabPosition(left = tabLeft.toDp(), width = it.width.toDp()))
+                tabLeft += it.width
+            }
+
+            // The divider is measured with its own height, and width equal to the total width of
+            // the tab row. Subcomposing while placing breaks layout inside a layered parent, so
+            // the divider and indicator are measured here rather than in the placement block.
+            val dividerPlaceables = subcompose(TabSlots.Divider, divider).map {
+                it.measure(
+                    constraints.copy(
+                        minHeight = 0,
+                        minWidth = layoutWidth,
+                        maxWidth = layoutWidth
+                    )
+                )
+            }
+
+            // The indicator container is measured to fill the entire space occupied by the tab row.
+            val indicatorPlaceables = subcompose(TabSlots.Indicator) {
+                indicator(tabPositions)
+            }.map {
+                it.measure(Constraints.fixed(layoutWidth, layoutHeight))
+            }
+
             // Position the children.
             layout(layoutWidth, layoutHeight) {
-                // Place the tabs
-                val tabPositions = mutableListOf<TabPosition>()
                 var left = padding
                 tabPlaceables.forEach {
                     it.placeRelative(left, 0)
-                    tabPositions.add(TabPosition(left = left.toDp(), width = it.width.toDp()))
                     left += it.width
                 }
 
-                // The divider is measured with its own height, and width equal to the total width
-                // of the tab row, and then placed on top of the tabs.
-                subcompose(TabSlots.Divider, divider).forEach {
-                    val placeable = it.measure(
-                        constraints.copy(
-                            minHeight = 0,
-                            minWidth = layoutWidth,
-                            maxWidth = layoutWidth
-                        )
-                    )
-                    placeable.placeRelative(0, layoutHeight - placeable.height)
+                // The divider goes on top of the tabs, and the indicator on top of the divider.
+                dividerPlaceables.forEach {
+                    it.placeRelative(0, layoutHeight - it.height)
                 }
-
-                // The indicator container is measured to fill the entire space occupied by the tab
-                // row, and then placed on top of the divider.
-                subcompose(TabSlots.Indicator) {
-                    indicator(tabPositions)
-                }.forEach {
-                    it.measure(Constraints.fixed(layoutWidth, layoutHeight)).placeRelative(0, 0)
+                indicatorPlaceables.forEach {
+                    it.placeRelative(0, 0)
                 }
 
                 scrollableTabData.onLaidOut(
