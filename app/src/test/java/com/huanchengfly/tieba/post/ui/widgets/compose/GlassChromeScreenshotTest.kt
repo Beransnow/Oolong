@@ -76,10 +76,13 @@ class GlassChromeScreenshotTest {
         collapsed: Float,
         firstVisibleItem: Int,
         withNavBar: Boolean = true,
+        topBarHidden: Float = 0f,
     ) {
         CompositionLocalProvider(LocalGlassTier provides tier) {
             GlassScaffold(
-                topBar = { GlassTopBar(title = { GlassTopBarTitle(text = "首页") }) },
+                topBar = {
+                    GlassTopBar(title = { GlassTopBarTitle(text = "首页") }, hiddenFraction = { topBarHidden })
+                },
                 bottomBar = {
                     if (withNavBar) {
                         FloatingNavBar(
@@ -148,6 +151,10 @@ class GlassChromeScreenshotTest {
     @Test
     fun navBarCollapsed() =
         captureScreenshot { Page(GlassTier.forDevice(), collapsed = 1f, firstVisibleItem = 3) }
+
+    @Test
+    fun topBarHidden() =
+        captureScreenshot { Page(GlassTier.forDevice(), collapsed = 0f, firstVisibleItem = 3, topBarHidden = 1f) }
 
     @Test
     fun solidTier() = captureScreenshot { Page(GlassTier.Solid, collapsed = 0f, firstVisibleItem = 3) }

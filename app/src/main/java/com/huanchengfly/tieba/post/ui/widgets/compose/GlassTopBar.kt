@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
@@ -59,7 +58,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * Its background blurs the content behind it and fades out below the bar instead of ending at a
  * hard edge. Double-tapping it scrolls the page to the top.
  *
- * @param hiddenFraction 0 shows the bar, 1 moves it (and its fade) fully off screen.
+ * @param hiddenFraction 0 shows the bar, 1 moves it (and its fade) fully off screen. Glass stays
+ * behind the status bar while the bar is hidden, so content never scrolls by sharp under it.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -73,16 +73,22 @@ fun GlassTopBar(
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
+            Box(modifier = Modifier.layoutId(TopBarLayer.StatusBar).topBarGlass(0.5f))
             Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(0.8f))
             Column(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Foreground)
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onDoubleClick = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) },
+                        onClick = {},
+                    )
                     .windowInsetsPadding(
-                        WindowInsets.statusBars
-                            .union(WindowInsets.displayCutout)
-                            .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                        statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
                     )
             ) {
                 Row(
@@ -111,25 +117,27 @@ fun GlassTopBar(
                 content?.invoke(this)
             }
         },
-        modifier = modifier
-            .graphicsLayer {
-                translationY = -size.height * hiddenFraction()
-            }
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onDoubleClick = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) },
-                onClick = {},
-            ),
+        modifier = modifier,
     ) { measurables, constraints ->
         val foreground = measurables.first { it.layoutId == TopBarLayer.Foreground }
             .measure(constraints.copy(minHeight = 0))
         val fade = TopBarFade.roundToPx()
+        val height = foreground.height + fade
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
-            .measure(Constraints.fixed(foreground.width, foreground.height + fade))
-        layout(background.width, background.height, mapOf(GlassTopBarEdge to foreground.height)) {
-            background.place(0, 0)
-            foreground.place(0, 0)
+            .measure(Constraints.fixed(foreground.width, height))
+        val statusBarStrip = measurables.first { it.layoutId == TopBarLayer.StatusBar }
+            .measure(Constraints.fixed(foreground.width, statusBar.getTop(this) + fade))
+        // Hiding moves the layers rather than the whole bar, so the status bar keeps its glass
+        // and the hidden bar no longer takes touches.
+        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
+            if (hiddenFraction() > 0f) {
+                statusBarStrip.placeWithLayer(0, 0) { alpha = hiddenFraction() }
+            }
+            background.placeWithLayer(0, 0) { translationY = -height * hiddenFraction() }
+            foreground.placeWithLayer(0, 0) {
+                translationY = -height * hiddenFraction()
+                alpha = 1f - hiddenFraction()
+            }
         }
     }
 }
@@ -166,4 +174,4 @@ fun GlassTopBarTitle(text: String) {
     Text(text = text, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
-private enum class TopBarLayer { Background, Foreground }
+private enum class TopBarLayer { StatusBar, Background, Foreground }
