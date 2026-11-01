@@ -5,7 +5,7 @@ import app.cash.turbine.test
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.post.arch.LoadState
 import com.huanchengfly.tieba.post.repository.FORUM_ID
-import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.forumRepository
 import com.huanchengfly.tieba.post.repository.forumRuleDetail
 import com.huanchengfly.tieba.post.repository.forumRuleData
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
@@ -26,7 +26,7 @@ class ForumRuleDetailViewModelTest {
 
     private fun createViewModel() = ForumRuleDetailViewModel(
         savedStateHandle = SavedStateHandle(mapOf("forumId" to FORUM_ID)),
-        forumRepository = ForumRepository(remote),
+        forumRepository = forumRepository(remote),
     )
 
     @Test
