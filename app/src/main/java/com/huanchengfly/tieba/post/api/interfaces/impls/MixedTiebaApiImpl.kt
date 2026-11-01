@@ -6,11 +6,8 @@ import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.ClientVersion
-import com.huanchengfly.tieba.post.api.buildAdParam
-import com.huanchengfly.tieba.post.api.buildAppPosInfo
 import com.huanchengfly.tieba.post.api.buildCommonRequest
 import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
-import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
 import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
@@ -24,22 +21,11 @@ import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequestData
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequest
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.threadList.AdParam
-import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
-import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequestData
-import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
-import com.huanchengfly.tieba.post.api.urlEncode
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
@@ -110,88 +96,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         emit(forums)
     }
 
-    override fun frsPage(
-        forumName: String,
-        page: Int,
-        loadType: Int,
-        sortType: Int,
-        goodClassifyId: Int?
-    ): Flow<FrsPageResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.frsPageFlow(
-            buildProtobufRequestBody(
-                FrsPageRequest(
-                    FrsPageRequestData(
-                        ad_param = buildAdParam(),
-                        app_pos = buildAppPosInfo(),
-                        call_from = 0,
-                        category_id = 0,
-                        cid = goodClassifyId ?: 0,
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        ctime = 0,
-                        data_size = 0,
-                        hot_thread_id = 0,
-                        is_default_navtab = 0,
-                        is_good = if (goodClassifyId != null) 1 else 0,
-                        is_selection = 0,
-                        kw = forumName.urlEncode(),
-                        last_click_tid = 0,
-                        load_type = loadType,
-                        net_error = 0,
-                        pn = page,
-                        q_type = 2,
-                        rn = 90,
-                        rn_need = 30,
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth(),
-                        sort_type = sortType,
-                        st_param = 0,
-                        st_type = "recom_flist",
-                        up_schema = "",
-                        with_group = 1,
-                        yuelaou_locate = ""
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12
-            ),
-            forumName = forumName.urlEncode()
-        )
-    }
-
-    override fun threadList(
-        forumId: Long,
-        forumName: String,
-        page: Int,
-        sortType: Int,
-        threadIds: String
-    ): Flow<ThreadListResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.threadListFlow(
-            buildProtobufRequestBody(
-                ThreadListRequest(
-                    ThreadListRequestData(
-                        ad_param = AdParam(3, 0, null),
-                        app_pos = buildAppPosInfo(),
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth(),
-                        forum_id = forumId,
-                        forum_name = forumName,
-                        pn = page,
-                        q_type = 2,
-                        user_id = AccountUtil.getUid()?.toLongOrNull(),
-                        thread_ids = threadIds,
-                        sort_type = sortType,
-                        need_abstract = 0,
-                        st_type = 0,
-                        last_click_tid = 0
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12
-            )
-        )
-    }
-
     override fun syncFlow(clientId: String?): Flow<Sync> {
         val pushSwitch = InstallState.pushSwitch()
         return RetrofitTiebaApi.OFFICIAL_TIEBA_API.sync(
@@ -202,75 +106,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             runningAbi = InstallState.runningAbi,
             supportAbi = InstallState.supportAbi,
             installAppTime = App.Config.appFirstInstallTime,
-        )
-    }
-
-    override fun pbPageFlow(
-        threadId: Long,
-        page: Int,
-        postId: Long,
-        seeLz: Boolean,
-        back: Boolean,
-        sortType: Int,
-        forumId: Long?,
-        stType: String,
-        mark: Int,
-        lastPostId: Long?,
-    ): Flow<PbPageResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.pbPageFlow(
-            buildProtobufRequestBody(
-                PbPageRequest(
-                    PbPageRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        kz = threadId,
-                        pid = postId,
-                        pn = page,
-                        r = sortType,
-                        lz = if (seeLz) 1 else 0,
-                        forum_id = forumId ?: 0,
-                        ad_param = com.huanchengfly.tieba.post.api.models.protos.pbPage.AdParam(
-                            load_count = 0,
-                            refresh_count = 1,
-                            is_req_ad = 1
-                        ),
-                        mark = mark,
-                        last_pid = lastPostId ?: 0,
-                        app_pos = buildAppPosInfo(),
-                        back = if (back) 1 else 0,
-                        banner = 0,
-                        broadcast_id = 0,
-                        floor_rn = 4,
-                        floor_sort_type = 1,
-                        from_push = 0,
-                        from_smart_frs = 0,
-                        immersion_video_comment_source = 0,
-                        is_comm_reverse = 0,
-                        is_fold_comment_req = 0,
-                        is_jumpfloor = 0,
-                        jumpfloor_num = 0,
-                        need_repost_recommend_forum = 0,
-                        obj_locate = "",
-                        obj_param1 = "10",
-                        obj_source = "",
-                        ori_ugc_type = 0,
-                        pb_rn = 0,
-                        q_type = 2,
-                        request_times = 0,
-                        rn = 15,
-                        s_model = 0,
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth(),
-                        similar_from = 0,
-                        source_type = 2,
-                        st_type = stType,
-                        thread_type = 0,
-                        weipost = 0,
-                        with_floor = 1
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12
-            )
         )
     }
 

@@ -1,10 +1,7 @@
 package com.huanchengfly.tieba.post.api.interfaces
 
 import com.huanchengfly.tieba.post.api.models.*
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
@@ -83,67 +80,7 @@ interface ITiebaApi {
      */
     fun allForumGuideFlow(): Flow<List<ForumGuideBean.LikeForum>>
 
-    /**
-     * 吧页面
-     *
-     * @param forumName 吧名
-     * @param page 页码（从 1 开始）
-     * @param loadType 加载类型（1 - 下拉刷新 2 - 加载更多）
-     * @param sortType 排序
-     * @param goodClassifyId 精品贴分类
-     */
-    fun frsPage(
-        forumName: String,
-        page: Int,
-        loadType: Int,
-        sortType: Int,
-        goodClassifyId: Int? = null
-    ): Flow<FrsPageResponse>
-
-    /**
-     * 吧页面 - 贴子列表
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param page 页码（从 1 开始）
-     * @param sortType 排序
-     */
-    fun threadList(
-        forumId: Long,
-        forumName: String,
-        page: Int,
-        sortType: Int,
-        threadIds: String = "",
-    ): Flow<ThreadListResponse>
-
     fun syncFlow(clientId: String? = null): Flow<Sync>
-
-    /**
-     * 贴子页（Flow）
-     *
-     * @param threadId 贴子 ID
-     * @param page 页码（从 1 开始）
-     * @param postId 回复 ID
-     * @param seeLz 是否只看楼主
-     * @param back 是否向前翻页
-     * @param sortType 排序类型
-     * @param forumId 吧 ID
-     * @param stType 来源类型（？）
-     * @param mark 是否收藏
-     * @param lastPostId 最后一条回复 ID
-     */
-    fun pbPageFlow(
-        threadId: Long,
-        page: Int = 0,
-        postId: Long = 0L,
-        seeLz: Boolean = false,
-        back: Boolean = false,
-        sortType: Int = 0,
-        forumId: Long? = null,
-        stType: String = "",
-        mark: Int = 0,
-        lastPostId: Long? = null,
-    ): Flow<PbPageResponse>
 
     /**
      * 获得当前用户信息（需登录）
