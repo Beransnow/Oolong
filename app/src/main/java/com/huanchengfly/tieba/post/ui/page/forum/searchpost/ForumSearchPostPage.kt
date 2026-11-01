@@ -89,7 +89,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -204,7 +203,6 @@ private fun SearchHistoryList(
     }
 }
 
-@Destination(navArgsDelegate = ForumSearchPostKey::class)
 @Composable
 fun ForumSearchPostPage(
     key: ForumSearchPostKey,

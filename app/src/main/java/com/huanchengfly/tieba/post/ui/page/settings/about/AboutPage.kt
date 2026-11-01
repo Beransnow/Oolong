@@ -32,9 +32,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.utils.launchUrl
-import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
 @Composable
 fun AboutPage(
     navigator: Navigator = LocalNavigator.current,

@@ -41,7 +41,6 @@ import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlin.math.roundToInt
 import kotlinx.collections.immutable.persistentListOf
 
@@ -61,7 +60,6 @@ private fun currentThemeName(): String {
 
 /** Appearance: the theme, night mode, text size and the app's icon, and the glass effects. */
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
-@Destination
 @Composable
 fun CustomSettingsPage(
     navigator: Navigator = LocalNavigator.current

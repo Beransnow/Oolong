@@ -64,10 +64,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.GsonUtil
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 
-@Destination
 @Composable
 fun BlockListPage(
     navigator: Navigator = LocalNavigator.current,

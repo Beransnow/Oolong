@@ -59,7 +59,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import com.ramcosta.composedestinations.annotation.Destination
 
 @Composable
 private fun TopicImage(
@@ -161,7 +160,6 @@ private fun TopicBody(
     }
 }
 
-@Destination
 @Composable
 fun HotTopicListPage(
     navigator: Navigator = LocalNavigator.current,

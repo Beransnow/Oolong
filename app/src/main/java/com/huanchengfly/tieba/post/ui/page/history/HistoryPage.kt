@@ -37,10 +37,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 
-@Destination
 @Composable
 fun HistoryPage(
     navigator: Navigator = LocalNavigator.current,

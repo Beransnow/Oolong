@@ -21,11 +21,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
-import com.ramcosta.composedestinations.annotation.Destination
 
 /** Posting and replying: the risk warning, the reply entry, watermarks and the picture picker. */
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
-@Destination
 @Composable
 fun PostSettingsPage(
     navigator: Navigator = LocalNavigator.current

@@ -41,10 +41,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.LoadStateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.persistentListOf
 
-@Destination(navArgsDelegate = ForumRuleDetailKey::class)
 @Composable
 fun ForumRuleDetailPage(
     key: ForumRuleDetailKey,

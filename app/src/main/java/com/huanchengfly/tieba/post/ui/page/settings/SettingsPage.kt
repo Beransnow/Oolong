@@ -47,7 +47,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.Destination
 
 /** An entry's icon on the settings hub: a line icon in the text's colour, as on the "me" tab. */
 @Composable
@@ -99,7 +98,6 @@ fun NowAccountItem(
 }
 
 @OptIn(ExperimentalMaterialApi::class)
-@Destination
 @Composable
 fun SettingsPage(
     navigator: Navigator = LocalNavigator.current,

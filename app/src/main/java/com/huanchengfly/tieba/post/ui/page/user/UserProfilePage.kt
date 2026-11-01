@@ -111,7 +111,6 @@ import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -120,7 +119,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Destination(navArgsDelegate = UserProfileKey::class)
 @Composable
 fun UserProfilePage(
     key: UserProfileKey,

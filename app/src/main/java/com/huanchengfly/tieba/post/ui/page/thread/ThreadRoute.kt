@@ -36,7 +36,6 @@ import com.huanchengfly.tieba.post.ui.navigation.SubPostsSheetKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -101,7 +100,7 @@ fun ThreadRoute(
 
     val storeMarkDialog = rememberDialogState()
     var storeMarkUpdate by remember { mutableStateOf<Post?>(null) }
-    MyBackHandler(enabled = !sheetState.isVisible, currentScreen = ThreadPageDestination) {
+    MyBackHandler(enabled = !sheetState.isVisible) {
         val update = viewModel.storeMarkUpdate()
         if (update != null) {
             storeMarkUpdate = update

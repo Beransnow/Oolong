@@ -1,26 +1,22 @@
 package com.huanchengfly.tieba.post.ui.common.navigation
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -30,25 +26,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
-import androidx.navigation.Navigator
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.scene.Scene
+import androidx.navigation3.scene.SceneStrategy
+import androidx.navigation3.scene.SceneStrategyScope
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
-import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
-import com.ramcosta.composedestinations.manualcomposablecalls.ManualComposableCalls
-import com.ramcosta.composedestinations.navigation.DependenciesContainerBuilder
-import com.ramcosta.composedestinations.scope.DestinationScope
-import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.spec.DestinationStyle
-import com.ramcosta.composedestinations.spec.NavGraphSpec
-import com.ramcosta.composedestinations.spec.NavHostEngine
-import com.ramcosta.composedestinations.spec.Route
 import kotlin.math.roundToInt
+
+/** Whether the latest change to the back stack removed pages, as opposed to adding them. */
+val LocalIsPop = compositionLocalOf { false }
 
 /**
  * Page transitions in the style of a navigation stack: the new page slides in
@@ -78,86 +66,70 @@ object PageTransitions {
 
     private fun <T> spec(): FiniteAnimationSpec<T> = tween(DurationMillis, easing = Easing)
 
+    /** Whether pages overlap as they slide, which follows the theme. */
     @Composable
-    @OptIn(ExperimentalAnimationApi::class)
-    fun rememberNavHostEngine(): NavHostEngine {
+    fun rememberOverlap(): State<Boolean> {
         val overlap = !ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)
         val overlapState = remember { mutableStateOf(overlap) }
         SideEffect { overlapState.value = overlap }
-        val engine = rememberAnimatedNavHostEngine(
-            navHostContentAlignment = Alignment.TopStart,
-            rootDefaultAnimations = defaultAnimations(overlapState),
-        )
-        return remember(engine) { FramedNavHostEngine(engine) }
+        return overlapState
     }
 
     private fun underPageOffset(fullOffset: Int, overlap: Boolean): Int =
         if (overlap) (fullOffset * UnderPageOffset).roundToInt() else fullOffset
 
-    private fun defaultAnimations(overlap: State<Boolean>) = RootNavGraphDefaultAnimations(
-        enterTransition = {
-            slideIntoContainer(
-                AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = spec<IntOffset>(),
-                initialOffset = { it }
-            )
-        },
-        exitTransition = {
-            slideOutOfContainer(
-                AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = spec<IntOffset>(),
-                targetOffset = { -underPageOffset(it, overlap.value) }
-            )
-        },
-        popEnterTransition = {
-            slideIntoContainer(
-                AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = spec<IntOffset>(),
-                initialOffset = { -underPageOffset(it, overlap.value) }
-            )
-        },
-        popExitTransition = {
-            slideOutOfContainer(
-                AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = spec<IntOffset>(),
-                targetOffset = { it }
-            )
-        },
-    )
+    fun <T : Any> transitionSpec(
+        overlap: State<Boolean>,
+    ): AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
+        slideIntoContainer(
+            AnimatedContentTransitionScope.SlideDirection.Start,
+            animationSpec = spec<IntOffset>(),
+            initialOffset = { it }
+        ) togetherWith slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.End,
+            animationSpec = spec<IntOffset>(),
+            targetOffset = { -underPageOffset(it, overlap.value) }
+        )
+    }
+
+    fun <T : Any> popTransitionSpec(
+        overlap: State<Boolean>,
+    ): AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
+        slideIntoContainer(
+            AnimatedContentTransitionScope.SlideDirection.Start,
+            animationSpec = spec<IntOffset>(),
+            initialOffset = { -underPageOffset(it, overlap.value) }
+        ) togetherWith slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.End,
+            animationSpec = spec<IntOffset>(),
+            targetOffset = { it }
+        )
+    }
 
     /**
      * Gives a page an opaque background, so the page underneath doesn't show
-     * through while the two overlap, plus the dim and the edge shadow.
+     * through while the two overlap, plus the dim and the edge shadow. Works on
+     * whatever area the page is given, so a scene can frame each of its panes.
      */
     @Composable
-    private fun PageFrame(
-        scope: AnimatedVisibilityScope,
-        entry: NavBackStackEntry,
-        navController: NavController,
-        content: @Composable () -> Unit,
-    ) {
+    fun PageFrame(content: @Composable () -> Unit) {
         if (ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)) {
             content()
             return
         }
 
-        // A page entering with saved state is coming back from underneath a
-        // popped page; a new page has none.
-        var shownBefore by rememberSaveable { mutableStateOf(false) }
-        val returning = remember { shownBefore }
-        SideEffect { shownBefore = true }
-
+        // Entering on a pop means coming back from underneath; leaving on a push means being covered
+        val isPop = LocalIsPop.current
         val underPageDim = if (ExtendedTheme.colors.isNightMode) UnderPageDimNight else UnderPageDim
-        val transition = scope.transition
+        val transition = LocalNavAnimatedContentScope.current.transition
         val dim = transition.animateFloat(
             transitionSpec = { spec() },
             label = "PageDim",
         ) { state ->
             when (state) {
-                EnterExitState.PreEnter -> if (returning) underPageDim else 0f
+                EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
                 EnterExitState.Visible -> 0f
-                EnterExitState.PostExit ->
-                    if (navController.previousBackStackEntry?.id == entry.id) underPageDim else 0f
+                EnterExitState.PostExit -> if (isPop) 0f else underPageDim
             }
         }
 
@@ -194,64 +166,19 @@ object PageTransitions {
             content()
         }
     }
+}
 
-    private class FramedDestination<T>(
-        private val wrapped: DestinationSpec<T>,
-    ) : DestinationSpec<T> by wrapped {
-        // Inside Content(), `destination` is the scope's, i.e. this wrapper.
-        @Composable
-        override fun DestinationScope<T>.Content() {
-            val scope = this as? AnimatedVisibilityScope
-            if (scope == null) {
-                with(wrapped) { Content() }
-                return
-            }
-            PageFrame(scope, navBackStackEntry, navController) {
-                with(wrapped) { Content() }
-            }
-        }
-    }
+/** Shows the top entry alone, in a [PageTransitions.PageFrame]. */
+class FramedSinglePaneSceneStrategy<T : Any> : SceneStrategy<T> {
+    override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T> =
+        FramedSinglePaneScene(entry = entries.last(), previousEntries = entries.dropLast(1))
+}
 
-    private class FramedNavHostEngine(
-        private val delegate: NavHostEngine,
-    ) : NavHostEngine {
-        override val type: NavHostEngine.Type
-            get() = delegate.type
-
-        @Composable
-        override fun rememberNavController(
-            vararg navigators: Navigator<out NavDestination>,
-        ): NavHostController = delegate.rememberNavController(*navigators)
-
-        @Composable
-        override fun NavHost(
-            modifier: Modifier,
-            route: String,
-            startRoute: Route,
-            navController: NavHostController,
-            builder: NavGraphBuilder.() -> Unit,
-        ) = delegate.NavHost(modifier, route, startRoute, navController, builder)
-
-        override fun NavGraphBuilder.navigation(
-            navGraph: NavGraphSpec,
-            builder: NavGraphBuilder.() -> Unit,
-        ) = with(delegate) { navigation(navGraph, builder) }
-
-        // ManualComposableCalls is library-restricted but part of the signature being overridden.
-        @SuppressLint("RestrictedApi")
-        override fun <T> NavGraphBuilder.composable(
-            destination: DestinationSpec<T>,
-            navController: NavHostController,
-            dependenciesContainerBuilder: @Composable DependenciesContainerBuilder<*>.() -> Unit,
-            manualComposableCalls: ManualComposableCalls,
-        ) {
-            val framed = when (destination.style) {
-                is DestinationStyle.Default, is DestinationStyle.Animated -> FramedDestination(destination)
-                else -> destination
-            }
-            with(delegate) {
-                composable(framed, navController, dependenciesContainerBuilder, manualComposableCalls)
-            }
-        }
-    }
+private data class FramedSinglePaneScene<T : Any>(
+    val entry: NavEntry<T>,
+    override val previousEntries: List<NavEntry<T>>,
+) : Scene<T> {
+    override val key: Any = entry.contentKey
+    override val entries: List<NavEntry<T>> = listOf(entry)
+    override val content: @Composable () -> Unit = { PageTransitions.PageFrame { entry.Content() } }
 }

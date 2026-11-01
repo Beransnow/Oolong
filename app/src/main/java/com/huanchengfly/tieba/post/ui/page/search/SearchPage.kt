@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumList
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadResults
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserList
@@ -91,7 +90,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -111,7 +109,6 @@ data class SearchPageItem(
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
 
-@Destination
 @Composable
 fun SearchPage(
     navigator: Navigator = LocalNavigator.current,
@@ -125,7 +122,6 @@ fun SearchPage(
     }
     MyBackHandler(
         enabled = state.keyword.isNotEmpty(),
-        currentScreen = SearchPageDestination
     ) {
         viewModel.search("")
     }

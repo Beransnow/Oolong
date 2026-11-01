@@ -31,11 +31,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
-@Destination
 @Composable
 fun NotificationsPage(
     navigator: Navigator = LocalNavigator.current,
@@ -107,9 +105,10 @@ fun NotificationsPage(
     }
 }
 
+/** The notifications tab of the main page; [NotificationsPage] is the page links open. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NotificationsPage(
+fun NotificationsTab(
     initialTab: Int = 0,
 ) {
     val navigator = LocalNavigator.current

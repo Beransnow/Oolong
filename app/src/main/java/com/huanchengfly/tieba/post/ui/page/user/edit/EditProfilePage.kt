@@ -67,12 +67,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.PickMediasContract
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.ramcosta.composedestinations.annotation.Destination
 import com.yalantis.ucrop.UCrop
 import java.io.File
 import kotlinx.collections.immutable.persistentListOf
 
-@Destination
 @Composable
 fun EditProfilePage(
     navigator: Navigator = LocalNavigator.current,

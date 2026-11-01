@@ -5,7 +5,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.serialization.Serializable
 
 object ThreadPageFrom {
@@ -36,7 +35,6 @@ object ThreadSortType {
     const val SORT_TYPE_DEFAULT = SORT_TYPE_ASC
 }
 
-@Destination(navArgsDelegate = ThreadKey::class)
 @Composable
 fun ThreadPage(
     key: ThreadKey,

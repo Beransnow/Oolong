@@ -12,40 +12,30 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.Surface
-import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.Text
-import androidx.compose.material.navigation.BottomSheetNavigator
-import androidx.compose.material.navigation.ModalBottomSheetLayout
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,9 +44,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.plusAssign
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import coil3.compose.AsyncImage
@@ -70,17 +57,17 @@ import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.services.NotifyJobService
-import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.navigation.DestinationsNavigatorAdapter
+import com.huanchengfly.tieba.post.ui.navigation.AppNavDisplay
+import com.huanchengfly.tieba.post.ui.navigation.BackStackNavigator
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Key
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
+import com.huanchengfly.tieba.post.ui.navigation.rememberAppBackStack
 import com.huanchengfly.tieba.post.ui.navigation.toDeepLinkKey
-import com.huanchengfly.tieba.post.ui.navigation.toDirection
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.NavGraphs
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
@@ -109,14 +96,8 @@ import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestPermission
 import com.huanchengfly.tieba.post.utils.toTiebaKey
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
-import com.ramcosta.composedestinations.utils.currentDestinationFlow
-import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -128,33 +109,15 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
 val LocalDevicePosture =
     staticCompositionLocalOf<State<DevicePosture>> { throw IllegalStateException("not allowed here!") }
-val LocalNavController =
-    staticCompositionLocalOf<NavHostController> { throw IllegalStateException("not allowed here!") }
-val LocalDestination = compositionLocalOf<DestinationSpec<*>?> { null }
 
 // Tieba links from outside the app, opened natively when they have a counterpart
 private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com.baidu.tieba")
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun rememberBottomSheetNavigator(
-    animationSpec: AnimationSpec<Float> = SwipeableDefaults.AnimationSpec,
-    skipHalfExpanded: Boolean = false
-): BottomSheetNavigator {
-    val sheetState = rememberModalBottomSheetState(
-        ModalBottomSheetValue.Hidden,
-        animationSpec = animationSpec,
-        skipHalfExpanded = skipHalfExpanded
-    )
-    return remember(sheetState) { BottomSheetNavigator(sheetState) }
-}
 
 @AndroidEntryPoint
 class MainActivityV2 : BaseComposeActivity() {
@@ -201,33 +164,13 @@ class MainActivityV2 : BaseComposeActivity() {
             )
     }
 
-    private var direction: Key? = null
-    private var waitingNavCollectorToNavigate = AtomicBoolean(false)
-    private var myNavController: NavHostController? = null
-        set(value) {
-            field = value
-            if (value != null && waitingNavCollectorToNavigate.get() && direction != null) {
-                launch {
-                    value.currentDestinationFlow
-                        .take(1)
-                        .collect {
-                            if (waitingNavCollectorToNavigate.get() && direction != null) {
-                                value.toDestinationsNavigator().navigate(direction!!.toDirection())
-                                waitingNavCollectorToNavigate.set(false)
-                                direction = null
-                            }
-                        }
-                }
-            }
-        }
+    private var navigator: Navigator? = null
 
-    private fun navigate(direction: Key) {
-        if (myNavController == null) {
-            waitingNavCollectorToNavigate.set(true)
-            this.direction = direction
-        } else {
-            myNavController?.toDestinationsNavigator()?.navigate(direction.toDirection())
-        }
+    /** A page linked to before the pages are shown, which then start with it over the first. */
+    private var linkedKey: Key? = null
+
+    private fun navigate(key: Key) {
+        navigator?.navigate(key) ?: run { linkedKey = key }
     }
 
     /** Opens the page [intent] links to, over the pages already open. */
@@ -447,36 +390,17 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
-                val navController = rememberNavController()
-                val engine = PageTransitions.rememberNavHostEngine()
-                val navigator = TiebaNavHostDefaults.rememberBottomSheetNavigator()
-                val currentDestination by navController.currentDestinationAsState()
-
-                navController.navigatorProvider += navigator
-
-                CompositionLocalProvider(
-                    LocalNavController provides navController,
-                    LocalDestination provides currentDestination,
-                    LocalNavigator provides remember(navController) {
-                        DestinationsNavigatorAdapter(navController.toDestinationsNavigator())
-                    },
-                ) {
-                    ModalBottomSheetLayout(
-                        bottomSheetNavigator = navigator,
-                        sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                        sheetBackgroundColor = ExtendedTheme.colors.windowBackground,
-                        scrimColor = Color.Black.copy(alpha = 0.32f),
-                    ) {
-                        DestinationsNavHost(
-                            navController = navController,
-                            navGraph = NavGraphs.root,
-                            engine = engine,
-                        )
+                val backStack = rememberAppBackStack(linked = linkedKey)
+                val navigator = remember(backStack) { BackStackNavigator(backStack) }
+                CompositionLocalProvider(LocalNavigator provides navigator) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AppNavDisplay(backStack = backStack)
                     }
                 }
 
                 SideEffect {
-                    myNavController = navController
+                    this.navigator = navigator
+                    linkedKey = null
                 }
             }
         }
@@ -532,12 +456,4 @@ class MainActivityV2 : BaseComposeActivity() {
             }
         }
     }
-}
-
-private object TiebaNavHostDefaults {
-    @Composable
-    fun rememberBottomSheetNavigator(): BottomSheetNavigator = rememberBottomSheetNavigator(
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        skipHalfExpanded = true
-    )
 }

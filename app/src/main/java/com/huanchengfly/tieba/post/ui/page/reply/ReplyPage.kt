@@ -95,7 +95,6 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.NONE
@@ -116,8 +115,6 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import java.util.UUID
 import kotlin.math.max
 import kotlinx.collections.immutable.ImmutableList
@@ -301,7 +298,7 @@ internal fun ReplyPageContent(
 
     MyBackHandler(
         enabled = curKeyboardType != NONE,
-        currentScreen = ReplyPageDestination.takeUnless { isDialog }
+        onlyOnTop = !isDialog,
     ) {
         switchToPanel(NONE)
     }
@@ -665,7 +662,6 @@ internal fun ReplyPageContent(
 }
 
 // TODO: 将软键盘状态相关逻辑抽离出来
-@Destination(style = DestinationStyleBottomSheet::class)
 @Composable
 fun ReplyPage(
     navigator: Navigator = LocalNavigator.current,

@@ -80,7 +80,6 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import com.huanchengfly.tieba.post.utils.isTiebaHost
 import com.huanchengfly.tieba.post.utils.toTiebaKey
-import com.ramcosta.composedestinations.annotation.Destination
 import java.lang.ref.WeakReference
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -90,7 +89,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 @SuppressLint("SetJavaScriptEnabled")
-@Destination
 @Composable
 fun WebViewPage(
     initialUrl: String,

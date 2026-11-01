@@ -33,20 +33,13 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.spec.DestinationStyle
 
-object CopyTextDialogStyle : DestinationStyle.Dialog {
-    override val properties: DialogProperties
-        get() = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
-}
-
-@Destination(
-    style = CopyTextDialogStyle::class
+/** The copy page fills the window, drawing under the system bars. */
+val CopyTextDialogProperties = DialogProperties(
+    usePlatformDefaultWidth = false,
+    decorFitsSystemWindows = false,
 )
+
 @Composable
 fun CopyTextDialogPage(
     text: String,

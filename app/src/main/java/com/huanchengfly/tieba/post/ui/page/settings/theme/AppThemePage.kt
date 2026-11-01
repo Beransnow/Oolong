@@ -82,10 +82,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.extension.toHexString
-import com.ramcosta.composedestinations.annotation.Destination
 import java.io.File
 
-@Destination
 @Composable
 fun AppThemePage(
     navigator: Navigator = LocalNavigator.current,

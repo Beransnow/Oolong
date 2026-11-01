@@ -51,7 +51,7 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.ExplorePage
 import com.huanchengfly.tieba.post.ui.page.main.home.HomePage
-import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
+import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsTab
 import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
@@ -61,8 +61,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.animateHiddenFraction
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberHideOnScrollState
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -105,8 +103,6 @@ private fun NavigationWrapper(
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationGraphicsApi::class)
-@RootNavGraph(start = true)
-@Destination
 @Composable
 fun MainPage(
     navigator: Navigator = LocalNavigator.current,
@@ -184,7 +180,7 @@ fun MainPage(
                         viewModel.clearMessages()
                     },
                     content = {
-                        NotificationsPage()
+                        NotificationsTab()
                     }
                 ),
                 NavigationItem(

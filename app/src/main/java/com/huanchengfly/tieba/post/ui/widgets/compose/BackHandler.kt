@@ -1,22 +1,19 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import com.huanchengfly.tieba.post.LocalDestination
-import com.ramcosta.composedestinations.spec.DestinationSpec
+import com.huanchengfly.tieba.post.ui.navigation.LocalIsTopEntry
 
-@SuppressLint("RestrictedApi")
+/**
+ * Handles back while [enabled]. Pages stay composed under sheets and dialogs, so by default the
+ * handler only takes back while its page is on top; pass [onlyOnTop] false outside navigation.
+ */
 @Composable
 fun MyBackHandler(
     enabled: Boolean,
-    currentScreen: DestinationSpec<*>? = null,
+    onlyOnTop: Boolean = true,
     onBack: () -> Unit,
 ) {
-    val currentDestination = LocalDestination.current
-
-    val shouldEnable =
-        enabled && (currentScreen == null || currentDestination?.baseRoute == currentScreen.baseRoute)
-
-    BackHandler(enabled = shouldEnable, onBack = onBack)
+    val isTop = LocalIsTopEntry.current
+    BackHandler(enabled = enabled && (!onlyOnTop || isTop), onBack = onBack)
 }
