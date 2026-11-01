@@ -94,19 +94,6 @@ interface OfficialTiebaApi {
         @Field("user_id") userId: String = AccountUtil.getUid()!!,
     ): Flow<GetForumListBean>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/f/forum/forumGuide")
-    @FormUrlEncoded
-    fun forumGuideFlow(
-        @Field("page_no") pageNo: Int,
-        @Field("res_num") resNum: Int,
-        @Field("sort_type") sortType: Int = 3,
-        @Field("call_from") callFrom: Int = 3,
-        @Field("top_forum_num") topForumNum: Int = 0,
-        @Field("tbs") tbs: String? = AccountUtil.getAccountInfo { this.tbs },
-        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
-    ): Flow<ForumGuideBean>
-
     @Headers(
         "${Header.NO_COMMON_PARAMS}: BDUSS"
     )

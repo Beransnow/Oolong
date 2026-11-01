@@ -101,7 +101,6 @@ import okio.ByteString.Companion.toByteString
 import java.io.File
 
 object MixedTiebaApiImpl : ITiebaApi {
-    private const val FORUM_GUIDE_PAGE_SIZE = 50
 
     override fun personalizedFlow(loadType: Int, page: Int): Flow<PersonalizedBean> {
         return RetrofitTiebaApi.OFFICIAL_TIEBA_API.personalizedFlow(loadType, page)
@@ -434,13 +433,19 @@ object MixedTiebaApiImpl : ITiebaApi {
         val forums = mutableListOf<ForumGuideBean.LikeForum>()
         var pageNo = 1
         do {
-            val page = RetrofitTiebaApi.OFFICIAL_TIEBA_API
-                .forumGuideFlow(pageNo = pageNo, resNum = FORUM_GUIDE_PAGE_SIZE)
-                .first()
-            val pageForums = page.likeForum.orEmpty()
+            val page = legacyLikeRemoteDataSource.forumGuide(pageNo)
+            val pageForums = page.likeForum.orEmpty().map {
+                ForumGuideBean.LikeForum(
+                    forumId = it.forumId.toLong(),
+                    forumName = it.forumName,
+                    levelId = it.levelId?.toIntOrNull() ?: 0,
+                    isSign = it.isSign?.toIntOrNull() ?: 0,
+                    avatar = it.avatar,
+                )
+            }
             forums += pageForums
             pageNo++
-        } while (page.likeForumHasMore && pageForums.isNotEmpty())
+        } while (page.hasMore && pageForums.isNotEmpty())
         emit(forums)
     }
 

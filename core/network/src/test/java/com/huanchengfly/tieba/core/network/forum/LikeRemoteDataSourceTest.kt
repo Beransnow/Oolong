@@ -48,6 +48,32 @@ class LikeRemoteDataSourceTest {
     }
 
     @Test
+    fun `lists a page of the followed forums`() = runTest {
+        server.enqueue(
+            """{"error_code":0,"like_forum_has_more":true,"like_forum":[
+            {"forum_id":52,"forum_name":"吧名","level_id":7,"is_sign":1,"avatar":"a","need_trans":true}]}"""
+        )
+
+        val response = dataSource.forumGuide(page = 2)
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/forum/forumGuide", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("2", form.value("page_no"))
+        assertEquals("50", form.value("res_num"))
+        assertEquals("3", form.value("sort_type"))
+        assertEquals("3", form.value("call_from"))
+        assertEquals("0", form.value("top_forum_num"))
+        assertEquals("tbs-value", form.value("tbs"))
+        assertEquals(true, response.hasMore)
+        assertEquals(
+            ForumGuideResponse.LikeForum(forumId = "52", forumName = "吧名", levelId = "7", isSign = "1", avatar = "a"),
+            response.likeForum?.single(),
+        )
+    }
+
+    @Test
     fun `unfollows a forum without sig`() = runTest {
         server.enqueue("""{"error_code":"0","error_msg":""}""")
 

@@ -50,4 +50,21 @@ class LikeRemoteDataSource(
         )
         service.unfavolike(signedFormBody(params, withSig = false))
     }
+
+    /**
+     * A page of the forums the user follows, [pageSize] at a time. Unlike the forum list of
+     * forum recommendations, this has no limit of 200 forums.
+     *
+     * @param page page number, from 1
+     */
+    suspend fun forumGuide(page: Int, pageSize: Int = 50): ForumGuideResponse {
+        val params = commonParams.form(profile, includeTbs = true) + listOf(
+            "page_no" to page.toString(),
+            "res_num" to pageSize.toString(),
+            "sort_type" to "3",
+            "call_from" to "3",
+            "top_forum_num" to "0",
+        )
+        return service.forumGuide(signedFormBody(params, withSig = false))
+    }
 }

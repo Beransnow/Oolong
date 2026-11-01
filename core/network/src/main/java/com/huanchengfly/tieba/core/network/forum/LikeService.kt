@@ -13,6 +13,28 @@ interface LikeService {
 
     @POST("c/c/forum/unfavolike")
     suspend fun unfavolike(@Body body: RequestBody): JsonObject
+
+    @POST("c/f/forum/forumGuide")
+    suspend fun forumGuide(@Body body: RequestBody): ForumGuideResponse
+}
+
+/** A page of the forums the user follows. */
+@Serializable
+data class ForumGuideResponse(
+    @SerialName("like_forum") val likeForum: List<LikeForum>? = null,
+    /** `true` or `false`, sent as either a boolean or a string. */
+    @SerialName("like_forum_has_more") val likeForumHasMore: String? = null,
+) {
+    val hasMore: Boolean get() = likeForumHasMore == "true" || likeForumHasMore == "1"
+
+    @Serializable
+    data class LikeForum(
+        @SerialName("forum_id") val forumId: String,
+        @SerialName("forum_name") val forumName: String,
+        @SerialName("level_id") val levelId: String? = null,
+        @SerialName("is_sign") val isSign: String? = null,
+        val avatar: String? = null,
+    )
 }
 
 @Serializable
