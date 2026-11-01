@@ -360,8 +360,7 @@ fun SearchMedia(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .weight(1f),
-                            contentScale = ContentScale.Crop,
-                            enablePreview = true
+                            contentScale = ContentScale.Crop
                         )
                     }
                 }

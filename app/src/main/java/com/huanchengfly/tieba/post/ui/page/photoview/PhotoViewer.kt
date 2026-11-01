@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.photoview
 
-import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -9,7 +8,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,16 +16,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.unit.dp
 import coil3.memory.MemoryCache
 import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
-import com.huanchengfly.tieba.post.ui.widgets.compose.ReduceTransparencyKey
 
 /** Pictures opened out of a thumbnail: where it sat, and what it already showed. */
 @Immutable
@@ -42,14 +34,13 @@ internal data class PhotoOpening(
     val id: Long,
 )
 
-/** A picture held up out of its thumbnail by a long press, with what can be done with it. */
+/** What can be done with a picture, offered where a long press on it landed. */
 @Immutable
-internal data class PhotoPeek(
-    val data: PhotoViewData,
-    /** The thumbnail's bounds in the window. */
-    val from: Rect,
-    val thumbnail: MemoryCache.Key?,
-    val aspect: Float,
+internal data class PhotoMenu(
+    /** The picture's original. */
+    val url: String,
+    /** Where the press landed, in the window. */
+    val at: Offset,
     val id: Long,
 )
 
@@ -69,19 +60,16 @@ class PhotoViewer internal constructor() {
     /** The thumbnails on screen, by picture id. */
     internal val thumbnails = mutableStateMapOf<String, PhotoThumbnail>()
 
-    internal var peeking by mutableStateOf<PhotoPeek?>(null)
+    internal var menu by mutableStateOf<PhotoMenu?>(null)
         private set
 
-    /** Where the finger that held the picture up is, in the window, while it stays down. */
-    internal var peekFinger by mutableStateOf<Offset?>(null)
+    /** Where the finger that opened the menu is, in the window, while it stays down. */
+    internal var menuFinger by mutableStateOf<Offset?>(null)
         private set
 
     /** Where that finger last lifted, counted so each lift is heard once. */
-    internal var peekLift by mutableStateOf<Pair<Int, Offset>?>(null)
+    internal var menuLift by mutableStateOf<Pair<Int, Offset>?>(null)
         private set
-
-    /** How far the page under a held-up picture is blurred, from 0 to 1. */
-    internal var backdrop by mutableFloatStateOf(0f)
 
     private var opened = 0L
 
@@ -96,30 +84,30 @@ class PhotoViewer internal constructor() {
     }
 
     /**
-     * Holds the picture of [data] up out of its thumbnail at [from], over the blurred page, with
-     * what can be done with it below. The finger that pressed stays in charge until it lifts:
-     * report it with [moveFinger] and [liftFinger].
+     * Offers what can be done with the picture at [url] where a long press landed, [at] in the
+     * window. The finger that pressed stays in charge until it lifts: report it with
+     * [moveFinger] and [liftFinger].
      */
-    fun peek(data: PhotoViewData, from: Rect, thumbnail: MemoryCache.Key? = null, aspect: Float = 0f) {
-        peekFinger = null
-        peeking = PhotoPeek(data, from, thumbnail, aspect, ++opened)
+    fun showMenu(url: String, at: Offset) {
+        menuFinger = null
+        menu = PhotoMenu(url, at, ++opened)
     }
 
-    /** The finger holding a picture up moved to [position] in the window. */
+    /** The finger that opened the menu moved to [position] in the window. */
     fun moveFinger(position: Offset) {
-        if (peeking != null) peekFinger = position
+        if (menu != null) menuFinger = position
     }
 
-    /** The finger holding a picture up lifted at [position]; over an action, that action runs. */
+    /** The finger that opened the menu lifted at [position]; over an action, that action runs. */
     fun liftFinger(position: Offset) {
-        if (peeking == null) return
-        peekFinger = null
-        peekLift = ((peekLift?.first ?: 0) + 1) to position
+        if (menu == null) return
+        menuFinger = null
+        menuLift = ((menuLift?.first ?: 0) + 1) to position
     }
 
-    internal fun closePeek() {
-        peeking = null
-        peekFinger = null
+    internal fun closeMenu() {
+        menu = null
+        menuFinger = null
     }
 
     /** Notes where picture [picId]'s thumbnail is; [bounds] null when it leaves the screen. */
@@ -141,20 +129,11 @@ fun PhotoViewerHost(content: @Composable () -> Unit) {
     val viewer = remember { PhotoViewer() }
     var origin by remember { mutableStateOf(Offset.Zero) }
     CompositionLocalProvider(LocalPhotoViewer provides viewer) {
-        val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
-        val blurs = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !reduceTransparency
         Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
-            Box(
-                modifier = Modifier.graphicsLayer {
-                    val radius = viewer.backdrop * 24.dp.toPx()
-                    renderEffect = if (blurs && radius > 0f) BlurEffect(radius, radius, TileMode.Decal) else null
-                },
-            ) {
-                content()
-            }
-            viewer.peeking?.let { peek ->
-                key(peek.id) {
-                    PhotoPeekOverlay(viewer = viewer, peek = peek, origin = origin)
+            content()
+            viewer.menu?.let { menu ->
+                key(menu.id) {
+                    PhotoMenuOverlay(viewer = viewer, menu = menu, origin = origin)
                 }
             }
             viewer.opening?.let { opening ->

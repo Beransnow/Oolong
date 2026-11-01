@@ -49,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,7 +99,6 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.download
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -159,21 +157,6 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         LaunchedEffect(Unit) {
             progress.animateTo(1f, spring(dampingRatio = 0.86f, stiffness = 420f))
             phase = Phase.Open
-        }
-        // Opened from a picture held up, the page stays blurred until the black covers it. Only
-        // while opening: closing runs the same progress back down, and must not blur the page again
-        LaunchedEffect(Unit) {
-            val blurred = viewer.backdrop
-            if (blurred > 0f) {
-                snapshotFlow { progress.value }
-                    .takeWhile { it < 1f }
-                    .collect { viewer.backdrop = blurred * (1f - it.coerceIn(0f, 1f)) }
-                viewer.backdrop = 0f
-            }
-        }
-        // However the viewer goes, as when closed while still opening, it leaves the page clear
-        DisposableEffect(Unit) {
-            onDispose { if (viewer.peeking == null) viewer.backdrop = 0f }
         }
         LaunchedEffect(state.currentIndex, pictures.isNotEmpty()) {
             if (pictures.isNotEmpty() && pagerState.currentPage != state.currentIndex) {

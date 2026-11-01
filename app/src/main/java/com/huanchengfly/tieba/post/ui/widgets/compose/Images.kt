@@ -79,7 +79,6 @@ fun NetworkImage(
     photoViewData: PhotoViewData? = null,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
-    enablePreview: Boolean = false,
 ) {
     val context = LocalContext.current
 
@@ -113,26 +112,22 @@ fun NetworkImage(
         DisposableEffect(viewer, picId) { onDispose { viewer.place(picId, null) } }
     }
     val haptic = LocalHapticFeedback.current
-    // Held up by a long press, the picture follows this finger until it lifts
-    var peeking by remember { mutableStateOf(false) }
+    // After a long press, the picture's menu follows this finger until it lifts
+    var menuOpen by remember { mutableStateOf(false) }
     var boxOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(
         modifier = Modifier
-            .pointerInput(enableClick, photoViewData, viewer, enablePreview) {
+            .pointerInput(enableClick, photoViewData, viewer) {
                 if (enableClick) {
+                    val url = photoViewData?.picItems?.getOrNull(photoViewData.index)?.originUrl
                     detectTapGestures(
-                        onLongPress = if (enablePreview && viewer != null && photoViewData != null) {
-                            {
+                        onLongPress = if (viewer != null && url != null) {
+                            { offset ->
                                 if (shouldLoad) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    peeking = true
-                                    viewer.peek(
-                                        data = photoViewData,
-                                        from = Rect(layoutOffset, layoutSize.toSize()),
-                                        thumbnail = memoryCacheKey,
-                                        aspect = imageAspectRatio,
-                                    )
+                                    menuOpen = true
+                                    viewer.showMenu(url, at = boxOffset + offset)
                                 }
                             }
                         } else {
@@ -161,11 +156,11 @@ fun NetworkImage(
                         val change = awaitPointerEvent().changes.firstOrNull() ?: break
                         val position = boxOffset + change.position
                         if (!change.pressed) {
-                            if (peeking) viewer.liftFinger(position)
-                            peeking = false
+                            if (menuOpen) viewer.liftFinger(position)
+                            menuOpen = false
                             break
                         }
-                        if (peeking) viewer.moveFinger(position)
+                        if (menuOpen) viewer.moveFinger(position)
                     }
                 }
             }
@@ -211,7 +206,6 @@ fun NetworkImage(
     photoViewDataProvider: (() -> PhotoViewData)? = null,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
-    enablePreview: Boolean = false,
 ) {
     val imageUri by rememberUpdatedState(newValue = imageUriProvider())
     val photoViewData by rememberUpdatedState(newValue = photoViewDataProvider?.invoke())
@@ -223,6 +217,5 @@ fun NetworkImage(
         photoViewData = photoViewData,
         contentScale = contentScale,
         skipNetworkCheck = skipNetworkCheck,
-        enablePreview = enablePreview
     )
 }

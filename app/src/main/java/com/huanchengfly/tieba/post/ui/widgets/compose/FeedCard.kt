@@ -570,8 +570,7 @@ private fun ThreadMedia(
                                             .fillMaxSize()
                                             .clip(MediaShape),
                                         photoViewData = remember(index, medias, forumId, forumName, threadId) { photoViewData(index) },
-                                        contentScale = ContentScale.Crop,
-                                        enablePreview = true
+                                        contentScale = ContentScale.Crop
                                     )
                                     if (index == shown.lastIndex && medias.size > shown.size) {
                                         Badge(
@@ -618,8 +617,7 @@ private fun SinglePhoto(
                 .size(width, height)
                 .clip(MediaShape),
             photoViewData = photoViewData,
-            contentScale = ContentScale.Crop,
-            enablePreview = true
+            contentScale = ContentScale.Crop
         )
     }
 }
