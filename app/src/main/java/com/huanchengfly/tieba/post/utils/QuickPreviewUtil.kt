@@ -10,10 +10,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.ClipBoardForumLink
 import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
-import com.huanchengfly.tieba.post.repository.FrsPageRepository
-import com.huanchengfly.tieba.post.repository.PbPageRepository
+import com.huanchengfly.tieba.post.repository.linkPreviewRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -77,19 +77,14 @@ object QuickPreviewUtil {
         link: ClipBoardThreadLink,
         lifeCycle: Lifecycle? = null,
     ): Flow<PreviewInfo> =
-        PbPageRepository
-            .pbPage(link.threadId.toLong())
+        flow { emit(linkPreviewRepository.thread(link.threadId.toLong())) }
             .map {
                 PreviewInfo(
                     clipBoardLink = link,
                     url = link.url,
-                    title = it.data_?.thread?.title,
-                    subtitle = context.getString(
-                        R.string.subtitle_quick_preview_thread,
-                        it.data_?.forum?.name,
-                        it.data_?.thread?.replyNum?.toString()
-                    ),
-                    icon = Icon(StringUtil.getAvatarUrl(it.data_?.thread?.author?.portrait))
+                    title = it.title,
+                    subtitle = context.getString(R.string.subtitle_quick_preview_thread, it.forumName, it.replyCount.toString()),
+                    icon = Icon(StringUtil.getAvatarUrl(it.authorPortrait))
                 )
             }
             .catch { it.printStackTrace() }
@@ -104,7 +99,7 @@ object QuickPreviewUtil {
         link: ClipBoardForumLink,
         lifeCycle: Lifecycle? = null,
     ): Flow<PreviewInfo> =
-        FrsPageRepository.frsPage(link.forumName, 1, 1, sortType = 2)
+        flow { emit(linkPreviewRepository.forum(link.forumName)) }
             .map {
                 PreviewInfo(
                     clipBoardLink = link,
@@ -113,8 +108,8 @@ object QuickPreviewUtil {
                         R.string.title_forum,
                         link.forumName
                     ),
-                    subtitle = it.data_?.forum?.slogan,
-                    icon = Icon(it.data_?.forum?.avatar)
+                    subtitle = it.slogan,
+                    icon = Icon(it.avatar)
                 )
             }
             .catch { it.printStackTrace() }
