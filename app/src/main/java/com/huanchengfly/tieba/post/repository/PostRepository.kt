@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.repository
 import android.content.Context
 import android.net.Uri
 import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
+import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.components.ImageUploader
@@ -36,6 +37,7 @@ fun interface PosterName {
 /** Replying to threads, with pictures uploaded first. */
 class PostRepository @Inject constructor(
     private val remote: PostRemoteDataSource,
+    private val uploads: UploadRemoteDataSource,
     private val posterName: PosterName,
     @ApplicationContext private val context: Context,
     @IoDispatcher private val io: CoroutineDispatcher,
@@ -61,7 +63,7 @@ class PostRepository @Inject constructor(
      */
     suspend fun uploadPictures(forumName: String, uris: List<String>, original: Boolean): List<String> = withContext(io) {
         val paths = uris.map { FileUtil.getRealPathFromUri(context, Uri.parse(it)) }
-        ImageUploader(forumName).uploadImages(paths, original).first().map { image ->
+        ImageUploader(uploads, forumName).uploadImages(paths, original).first().map { image ->
             // ImageUploader only returns results that carry picId and picInfo
             val originPic = checkNotNull(image.picInfo).originPic
             "#(pic,${image.picId},${originPic.width},${originPic.height})"

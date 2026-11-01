@@ -13,16 +13,22 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.legacyMessageRemoteDataSource
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import kotlinx.coroutines.CancellationException
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class NotifyJobService : JobService() {
+    @Inject
+    lateinit var messages: MessageRemoteDataSource
+
     private val scope = MainScope()
     var notificationManager: NotificationManager? = null
     private fun createChannel(id: String, name: String) {
@@ -53,7 +59,7 @@ class NotifyJobService : JobService() {
         }
         scope.launch {
             val message = try {
-                legacyMessageRemoteDataSource.reminder().message
+                messages.reminder().message
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

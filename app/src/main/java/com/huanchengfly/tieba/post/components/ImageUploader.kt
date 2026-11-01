@@ -5,8 +5,8 @@ import android.graphics.BitmapFactory
 import com.huanchengfly.tieba.core.network.upload.PictureChunk
 import com.huanchengfly.tieba.core.network.upload.PictureWatermark
 import com.huanchengfly.tieba.core.network.upload.UploadPictureResponse
+import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.PicInfo
 import com.huanchengfly.tieba.post.api.models.PicInfoItem
 import com.huanchengfly.tieba.post.api.models.UploadPictureResultBean
@@ -30,6 +30,7 @@ import java.io.File
 import java.io.RandomAccessFile
 
 class ImageUploader(
+    private val remote: UploadRemoteDataSource,
     private val forumName: String,
     private val chunkSize: Int = DEFAULT_CHUNK_SIZE
 ) {
@@ -138,7 +139,7 @@ class ImageUploader(
                         it.read(chunkBytes)
                     }
                 }
-                last = legacyUploadRemoteDataSource.uploadPictureChunk(
+                last = remote.uploadPictureChunk(
                     PictureChunk(
                         resourceId = "$fileMd5$chunkSize",
                         chunkNo = chunk.toInt() + 1,

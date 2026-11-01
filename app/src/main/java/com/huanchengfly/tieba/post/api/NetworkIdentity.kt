@@ -234,33 +234,17 @@ object NetworkIdentityModule {
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface LegacyNetworkEntryPoint {
-    fun signRemoteDataSource(): SignRemoteDataSource
     fun accountRemoteDataSource(): AccountRemoteDataSource
     fun threadRemoteDataSource(): ThreadRemoteDataSource
-    fun likeRemoteDataSource(): LikeRemoteDataSource
-    fun messageRemoteDataSource(): MessageRemoteDataSource
-    fun uploadRemoteDataSource(): UploadRemoteDataSource
 }
 
 private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
     EntryPointAccessors.fromApplication(App.INSTANCE, LegacyNetworkEntryPoint::class.java)
 }
 
-/** For the legacy API singletons, which can't be injected. */
-internal val legacySignRemoteDataSource: SignRemoteDataSource
-    get() = legacyEntryPoint.signRemoteDataSource()
-
+/** For the legacy singletons ([com.huanchengfly.tieba.post.utils.AccountUtil] and friends), which can't be injected. */
 internal val legacyAccountRemoteDataSource: AccountRemoteDataSource
     get() = legacyEntryPoint.accountRemoteDataSource()
 
 internal val legacyThreadRemoteDataSource: ThreadRemoteDataSource
     get() = legacyEntryPoint.threadRemoteDataSource()
-
-internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
-    get() = legacyEntryPoint.likeRemoteDataSource()
-
-internal val legacyMessageRemoteDataSource: MessageRemoteDataSource
-    get() = legacyEntryPoint.messageRemoteDataSource()
-
-internal val legacyUploadRemoteDataSource: UploadRemoteDataSource
-    get() = legacyEntryPoint.uploadRemoteDataSource()

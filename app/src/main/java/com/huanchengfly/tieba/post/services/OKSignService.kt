@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
+import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.SignDataBean
@@ -22,6 +24,8 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ProgressListener
 import com.huanchengfly.tieba.post.utils.SingleAccountSigner
 import com.huanchengfly.tieba.post.utils.extension.addFlag
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +33,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 
+@AndroidEntryPoint
 class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
+    @Inject
+    lateinit var signs: SignRemoteDataSource
+
+    @Inject
+    lateinit var likes: LikeRemoteDataSource
+
     private var job: Job = Job()
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
@@ -62,7 +73,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
                 runBlocking {
                     SingleAccountSigner(
                         this@OKSignService,
-                        AccountUtil.getLoginInfo()!!
+                        AccountUtil.getLoginInfo()!!,
+                        signs,
+                        likes,
                     )
                         .apply {
                             setProgressListener(this@OKSignService)

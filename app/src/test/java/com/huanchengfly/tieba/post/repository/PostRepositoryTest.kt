@@ -16,7 +16,7 @@ import kotlin.test.assertNull
 
 class PostRepositoryTest {
     private val remote = mockk<PostRemoteDataSource>()
-    private val repository = PostRepository(remote, { "昵称" }, mockk<Context>(), Dispatchers.Unconfined)
+    private val repository = PostRepository(remote, mockk(), { "昵称" }, mockk<Context>(), Dispatchers.Unconfined)
     private val sent = slot<AddPostRequestData>()
 
     init {

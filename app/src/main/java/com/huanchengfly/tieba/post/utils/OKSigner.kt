@@ -3,11 +3,10 @@ package com.huanchengfly.tieba.post.utils
 import android.content.Context
 import android.util.Log
 import com.huanchengfly.tieba.core.network.forum.ForumGuideResponse
+import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.MSignResponse
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignResponse
-import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
-import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.SignDataBean
@@ -23,7 +22,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 abstract class IOKSigner(
-    context: Context
+    context: Context,
+    protected val signs: SignRemoteDataSource,
 ) {
     private val contextWeakReference: WeakReference<Context> = WeakReference(context)
 
@@ -33,7 +33,7 @@ abstract class IOKSigner(
     abstract suspend fun start(): Boolean
 
     fun signFlow(signDataBean: SignDataBean): Flow<SignResponse> = flow {
-        emit(legacySignRemoteDataSource.sign(signDataBean.forumId.toLong(), signDataBean.forumName, signDataBean.tbs))
+        emit(signs.sign(signDataBean.forumId.toLong(), signDataBean.forumName, signDataBean.tbs))
     }
 
     fun getSignDelay(): Long {
@@ -91,8 +91,10 @@ class MultiAccountSigner(
 
 class SingleAccountSigner(
     context: Context,
-    private val account: Account
-) : IOKSigner(context) {
+    private val account: Account,
+    signs: SignRemoteDataSource,
+    private val likes: LikeRemoteDataSource,
+) : IOKSigner(context, signs) {
     companion object {
         const val TAG = "SingleAccountSigner"
     }
@@ -112,6 +114,18 @@ class SingleAccountSigner(
         return this
     }
 
+    /** Every forum the user follows, page by page. */
+    private suspend fun followedForums(): List<ForumGuideResponse.LikeForum> {
+        val forums = mutableListOf<ForumGuideResponse.LikeForum>()
+        var pageNo = 1
+        do {
+            val page = likes.forumGuide(pageNo++)
+            val pageForums = page.likeForum.orEmpty()
+            forums += pageForums
+        } while (page.hasMore && pageForums.isNotEmpty())
+        return forums
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun start(): Boolean {
         var result = false
@@ -123,7 +137,7 @@ class SingleAccountSigner(
             .flatMapConcat { account ->
                 userName = account.name
                 tbs = account.tbs
-                flow { emit(legacySignRemoteDataSource.forumList()) }
+                flow { emit(signs.forumList()) }
             }
             .zip(
                 flow { emit(followedForums()) }
@@ -152,7 +166,7 @@ class SingleAccountSigner(
                         // At most MAX_MSIGN_FORUMS forums per request
                         val results = mSignData.map { it.forumId.toLong() }
                             .chunked(SignRemoteDataSource.MAX_MSIGN_FORUMS)
-                            .map { legacySignRemoteDataSource.mSign(it, tbs) }
+                            .map { signs.mSign(it, tbs) }
                         emit(results.flatMap { it.info })
                     }
                 } else {
@@ -281,16 +295,4 @@ interface ProgressListener {
         errorCode: Int,
         errorMsg: String
     )
-}
-
-/** Every forum the user follows, page by page. */
-private suspend fun followedForums(): List<ForumGuideResponse.LikeForum> {
-    val forums = mutableListOf<ForumGuideResponse.LikeForum>()
-    var pageNo = 1
-    do {
-        val page = legacyLikeRemoteDataSource.forumGuide(pageNo++)
-        val pageForums = page.likeForum.orEmpty()
-        forums += pageForums
-    } while (page.hasMore && pageForums.isNotEmpty())
-    return forums
 }
