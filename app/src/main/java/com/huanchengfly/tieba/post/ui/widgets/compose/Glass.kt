@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.animation.core.Easing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -87,21 +88,24 @@ private fun currentGlassTier(): GlassTier {
 val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 
 /**
- * Background for a bar pinned to the top edge. Blur and tint fade out over the last [fade] of its
- * height, ending at its bottom edge without a hard line.
+ * Background for a bar pinned to the top edge. The blur is strongest at the top and eases off
+ * down the whole bar, slowly at first and faster towards the bottom, until it ends at the bottom
+ * edge; the tint follows the same curve. Content under the bar fades from blurred to sharp
+ * without a visible edge.
+ *
+ * Without a blur, an opaque background fades out over the last [fade] of the height instead.
  */
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.topBarGlass(fade: Dp): Modifier {
     val source = LocalGlassSource.current
     val tier = currentGlassTier()
     val color = ExtendedTheme.colors.background
-    var height by remember { mutableIntStateOf(0) }
-    val fadePx = with(LocalDensity.current) { fade.toPx() }
-    // Where the fade starts. The bar can change height, such as a header collapsing inside it,
-    // so this follows its size rather than being a fixed fraction.
-    val solidFraction = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 1f
-    val measured = onSizeChanged { height = it.height }
     if (source == null || tier == GlassTier.Solid) {
+        var height by remember { mutableIntStateOf(0) }
+        val fadePx = with(LocalDensity.current) { fade.toPx() }
+        // The bar can change height, such as a header collapsing inside it, so this follows its size
+        val solidFraction = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 1f
         val solid = remember(color, solidFraction) {
             Brush.verticalGradient(
                 0f to color,
@@ -109,20 +113,16 @@ fun Modifier.topBarGlass(fade: Dp): Modifier {
                 1f to color.copy(alpha = 0f),
             )
         }
-        return measured.background(solid)
+        return onSizeChanged { height = it.height }.background(solid)
     }
-    val style = remember(color, solidFraction) {
+    val style = remember(color) {
         HazeBlurStyle {
             backgroundColor(color)
-            blurRadius(24.dp)
+            blurRadius(40.dp)
             noiseFactor(0f)
-            // Full blur down to the fade, so rows near the bottom of a tall bar stay readable
             progressive(
                 HazeProgressive.verticalGradient(
-                    easing = { t ->
-                        if (solidFraction >= 1f) 0f
-                        else ((t - solidFraction) / (1f - solidFraction)).coerceIn(0f, 1f)
-                    },
+                    easing = TopBarEasing,
                     startIntensity = 1f,
                     endIntensity = 0f,
                 )
@@ -131,17 +131,33 @@ fun Modifier.topBarGlass(fade: Dp): Modifier {
                 listOf(
                     HazeColorEffect.tint(
                         Brush.verticalGradient(
-                            0f to color.copy(alpha = 0.9f),
-                            solidFraction to color.copy(alpha = 0.78f),
-                            1f to color.copy(alpha = 0f),
+                            *Array(TopBarTintStops + 1) { i ->
+                                val t = i / TopBarTintStops.toFloat()
+                                t to color.copy(alpha = TopBarTint * (1f - TopBarEasing.transform(t)))
+                            }
                         )
                     )
                 )
             )
         }
     }
-    return measured.hazeBlur(input = HazeInput.Sources(source), style = style)
+    // Full resolution draws the blur at a radius that really shrinks down the bar. At lower
+    // resolutions Haze fades a blurred copy over the sharp content instead, which shows both.
+    return hazeBlur(
+        input = HazeInput.Sources(source),
+        style = style,
+        performanceMode = HazePerformanceMode.Quality,
+    )
 }
+
+/** How a top bar's blur and tint ease off from its top (0) to its bottom edge (1). */
+private val TopBarEasing = Easing { t -> t * t }
+
+/** The tint at the top of a top bar, behind the status bar. */
+private const val TopBarTint = 0.75f
+
+/** Stops used to draw [TopBarEasing] as a gradient for the tint. */
+private const val TopBarTintStops = 8
 
 /**
  * Background for a floating, rounded piece of chrome such as the navigation pill.
