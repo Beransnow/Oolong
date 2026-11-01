@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
+import com.huanchengfly.tieba.core.network.search.SearchRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
@@ -188,6 +189,14 @@ object NetworkIdentityModule {
         commonParams: CommonParams,
         device: DeviceIdentity,
     ): ExploreRemoteDataSource = ExploreRemoteDataSource(network, commonParams, device)
+
+    @Provides
+    @Singleton
+    fun provideSearchRemoteDataSource(
+        network: TiebaNetwork,
+        commonParams: CommonParams,
+        device: DeviceIdentity,
+    ): SearchRemoteDataSource = SearchRemoteDataSource(network, commonParams, device)
 
     @Provides
     @Singleton
