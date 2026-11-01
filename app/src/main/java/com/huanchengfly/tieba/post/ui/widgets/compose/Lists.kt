@@ -44,6 +44,7 @@ fun ListMenuItem(
             text = text,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
+            color = ExtendedTheme.colors.text,
             maxLines = 1,
             modifier = Modifier.weight(1f),
         )
