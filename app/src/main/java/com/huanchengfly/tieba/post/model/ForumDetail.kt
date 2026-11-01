@@ -24,6 +24,8 @@ data class ForumDetail(
     val signedIn: Boolean = false,
     /** Days in a row the viewer has signed in. */
     val signedDays: Int = 0,
+    /** How many have signed in to the forum today. */
+    val todaySignCount: Int = 0,
     /** Whether the page shows a star or activity header image, which following it reports. */
     val hasHead: Boolean = false,
     /** The title of the forum's rules, when it has any. */

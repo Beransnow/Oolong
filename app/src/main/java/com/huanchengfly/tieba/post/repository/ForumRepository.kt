@@ -231,6 +231,7 @@ private fun FrsPageResponseData.toForumDetail(): ForumDetail? {
         levelUpScore = forum.levelup_score,
         signedIn = signUser?.is_sign_in == 1,
         signedDays = signUser?.cont_sign_num ?: 0,
+        todaySignCount = forum.sign_in_info?.forum_info?.current_rank_info?.sign_count ?: 0,
         hasHead = forum.has_frs_star == 1 || activity_head?.head_imgs?.isNotEmpty() == true,
         ruleTitle = forum_rule?.takeIf { it.has_forum_rule == 1 }?.title?.takeIf { it.isNotEmpty() },
         goodClasses = forum.good_classify.map { GoodClass(it.class_id, it.class_name) }.toImmutableList(),

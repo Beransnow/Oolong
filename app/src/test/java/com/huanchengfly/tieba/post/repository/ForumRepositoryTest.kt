@@ -23,6 +23,8 @@ import com.huanchengfly.tieba.post.api.models.protos.frsPage.Classify
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.NavTabInfo
+import com.huanchengfly.tieba.post.api.models.protos.frsPage.RankInfo
+import com.huanchengfly.tieba.post.api.models.protos.frsPage.SignForum
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.SignInfo
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.SignUser
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponseData
@@ -93,7 +95,10 @@ class ForumRepositoryTest {
             forum = ForumInfo(
                 id = FORUM_ID, name = "吧名", avatar = "a", member_num = 10, is_like = 1, user_level = 7,
                 level_name = "七级", cur_score = 30, levelup_score = 100, has_frs_star = 1,
-                sign_in_info = SignInfo(user_info = SignUser(is_sign_in = 1, cont_sign_num = 5)),
+                sign_in_info = SignInfo(
+                    user_info = SignUser(is_sign_in = 1, cont_sign_num = 5),
+                    forum_info = SignForum(current_rank_info = RankInfo(sign_count = 1_200)),
+                ),
                 good_classify = listOf(Classify(class_id = 0, class_name = "全部"), Classify(class_id = 3, class_name = "攻略")),
             ),
         ).copy(
@@ -113,7 +118,7 @@ class ForumRepositoryTest {
             ForumDetail(
                 id = FORUM_ID, name = "吧名", avatar = "a", memberCount = 10, liked = true, level = 7,
                 levelName = "七级", score = 30, levelUpScore = 100, signedIn = true, signedDays = 5,
-                hasHead = true, ruleTitle = "吧规",
+                todaySignCount = 1_200, hasHead = true, ruleTitle = "吧规",
                 goodClasses = persistentListOf(GoodClass(0, "全部"), GoodClass(3, "攻略")),
                 tabs = persistentListOf(ForumTab.Good, ForumTab.Latest, ForumTab.Hot, ForumTab.Custom(99, "吧友互助", 15)),
             ),
