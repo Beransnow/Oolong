@@ -176,7 +176,8 @@ object NetworkIdentityModule {
     fun provideMessageRemoteDataSource(
         network: TiebaNetwork,
         commonParams: CommonParams,
-    ): MessageRemoteDataSource = MessageRemoteDataSource(network, commonParams)
+        device: DeviceIdentity,
+    ): MessageRemoteDataSource = MessageRemoteDataSource(network, commonParams, device)
 
     @Provides
     @Singleton

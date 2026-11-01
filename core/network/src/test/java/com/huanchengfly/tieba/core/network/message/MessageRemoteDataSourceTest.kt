@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.core.network.message
 
+import com.huanchengfly.tieba.core.network.FakeDevice
 import com.huanchengfly.tieba.core.network.TiebaProfile
 import com.huanchengfly.tieba.core.network.testing.FormServer
 import com.huanchengfly.tieba.core.network.testing.assertSigned
@@ -13,7 +14,7 @@ import kotlin.test.assertNull
 
 class MessageRemoteDataSourceTest {
     private val server = FormServer()
-    private val dataSource = MessageRemoteDataSource(server.network, server.commonParams)
+    private val dataSource = MessageRemoteDataSource(server.network, server.commonParams, FakeDevice)
 
     @After
     fun tearDown() = server.close()
@@ -37,5 +38,47 @@ class MessageRemoteDataSourceTest {
             form.map { it.first }.filter { it != "sign" }.sorted() + "sign")
         assertEquals("2", response.message?.replyMe)
         assertEquals("1", response.message?.fans)
+    }
+
+    @Test
+    fun `lists a page of replies to the user`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","reply_list":[{"is_floor":"1","title":"标题","content":"回复","quote_content":"原文",
+            "replyer":{"id":"7","name":"n","name_show":"昵称","portrait":"p"},"thread_id":"9000","post_id":"201",
+            "quote_pid":"200","time":"1700000000"}],"page":{"current_page":"2","has_more":"1"}}"""
+        )
+
+        val response = dataSource.replyMe(page = 2)
+
+        val request = server.takeRequest()
+        assertEquals("/c/u/feed/replyme", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("2", form.value("pn"))
+        assertEquals("12345", form.value("uid"))
+        assertEquals("0", form.value("time"))
+        assertEquals("0", form.value("tid"))
+        assertEquals("0", form.value("is_first"))
+        assertEquals("", form.value("call_from"))
+        assertEquals(FakeDevice.screenDensity.toString(), form.value("scr_dip"))
+        assertEquals(
+            FeedItem(
+                isFloor = "1", title = "标题", content = "回复", quoteContent = "原文",
+                replyer = FeedItem.User("7", "n", "昵称", "p"), threadId = "9000", postId = "201",
+                quotePid = "200", time = "1700000000",
+            ),
+            response.replyList.single(),
+        )
+        assertEquals("1", response.page?.hasMore)
+    }
+
+    @Test
+    fun `an empty list of mentions may come as a string`() = runTest {
+        server.enqueue("""{"error_code":"0","at_list":"","page":{"has_more":"0"}}""")
+
+        val response = dataSource.atMe(page = 1)
+
+        assertEquals("/c/u/feed/atme", server.takeRequest().target)
+        assertEquals(emptyList(), response.atList)
     }
 }
