@@ -139,7 +139,8 @@ object NetworkIdentityModule {
     fun provideForumRemoteDataSource(
         network: TiebaNetwork,
         commonParams: CommonParams,
-    ): ForumRemoteDataSource = ForumRemoteDataSource(network, commonParams)
+        device: DeviceIdentity,
+    ): ForumRemoteDataSource = ForumRemoteDataSource(network, commonParams, device)
 
     @Provides
     @Singleton
