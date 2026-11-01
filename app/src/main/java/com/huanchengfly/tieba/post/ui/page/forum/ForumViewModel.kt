@@ -1,321 +1,258 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
-import androidx.compose.runtime.Stable
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.CommonResponse
-import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
-import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
-import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseViewModel
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.huanchengfly.tieba.core.network.identity.SessionProvider
+import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
+import com.huanchengfly.tieba.post.api.models.protos.abstractText
+import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
+import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.PartialChange
-import com.huanchengfly.tieba.post.arch.PartialChangeProducer
-import com.huanchengfly.tieba.post.arch.UiEvent
-import com.huanchengfly.tieba.post.arch.UiIntent
-import com.huanchengfly.tieba.post.arch.UiState
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.Pager
+import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.arch.wrapImmutable
-import com.huanchengfly.tieba.post.repository.FrsPageRepository
+import com.huanchengfly.tieba.post.model.ForumDetail
+import com.huanchengfly.tieba.post.model.ForumSort
+import com.huanchengfly.tieba.post.model.ForumTab
+import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.BlockRules
+import com.huanchengfly.tieba.post.repository.ForumCursor
+import com.huanchengfly.tieba.post.repository.ForumHistory
+import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.repository.ForumSortStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
+/** A thread in a forum's list, and whether the block rules hide it. */
+@Immutable
+data class ForumThreadItem(val thread: ImmutableHolder<ThreadInfo>, val blocked: Boolean = false)
+
+@Immutable
+data class ForumState(
+    val forumName: String,
+    /** The forum, once the first page of a tab that lists it has loaded. */
+    val forum: ForumDetail? = null,
+    val selectedTab: ForumTab = ForumTab.Latest,
+    val sort: ForumSort = ForumSort.ReplyTime,
+    /** The class of good threads listed, 0 for all of them. */
+    val goodClassId: Int = 0,
+    val lists: ImmutableMap<ForumTab, PagerState<ForumThreadItem>> = persistentMapOf(),
+    val loggedIn: Boolean = false,
+) {
+    val tabs: ImmutableList<ForumTab> get() = forum?.tabs ?: ForumTab.Fixed
+
+    fun list(tab: ForumTab): PagerState<ForumThreadItem> = lists[tab] ?: PagerState()
+
+    /** How the page's first load went, which shows instead of the page until the forum is known. */
+    val firstLoad: LoadStatus get() = if (forum != null) LoadStatus.Idle else list(selectedTab).refresh
+}
+
+/**
+ * A forum's page: the forum, and a list of threads for each of its tabs, each loaded the first
+ * time its tab is shown.
+ */
 @HiltViewModel
-class ForumViewModel @Inject constructor() :
-    BaseViewModel<ForumUiIntent, ForumPartialChange, ForumUiState, ForumUiEvent>() {
-    override fun createInitialState(): ForumUiState = ForumUiState()
+class ForumViewModel @Inject constructor(
+    savedState: SavedStateHandle,
+    private val repository: ForumRepository,
+    blockRuleSource: BlockRuleSource,
+    private val history: ForumHistory,
+    private val sortStore: ForumSortStore,
+    private val messages: MessageController,
+    private val sessionProvider: SessionProvider,
+) : ViewModel() {
+    private val forumName: String = checkNotNull(savedState["forumName"])
 
-    override fun createPartialChangeProducer(): PartialChangeProducer<ForumUiIntent, ForumPartialChange, ForumUiState> =
-        ForumPartialChangeProducer
+    private val forum = MutableStateFlow<ForumDetail?>(null)
+    private var tbs: String? = null
+    private val selection = MutableStateFlow(Selection())
+    private val pagers = MutableStateFlow<Map<ForumTab, Pager<ForumCursor, ThreadInfo>>>(emptyMap())
+    private val actions = Actions(viewModelScope)
 
-    override fun dispatchEvent(partialChange: ForumPartialChange): UiEvent? {
-        return when (partialChange) {
-            is ForumPartialChange.SignIn.Success -> ForumUiEvent.SignIn.Success(
-                partialChange.signBonusPoint,
-                partialChange.userSignRank
-            )
+    private data class Selection(
+        val tab: ForumTab = ForumTab.Latest,
+        val sort: ForumSort = ForumSort.ReplyTime,
+        val goodClassId: Int = 0,
+    )
 
-            is ForumPartialChange.SignIn.Failure -> ForumUiEvent.SignIn.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
+    /** Block flags for the last lists and rules seen, which most state changes leave as they are. */
+    private val blocked = mutableMapOf<ForumTab, Triple<List<ThreadInfo>, BlockRules, ImmutableList<ForumThreadItem>>>()
 
-            is ForumPartialChange.Like.Success -> ForumUiEvent.Like.Success(partialChange.data.info.memberSum)
-            is ForumPartialChange.Like.Failure -> ForumUiEvent.Like.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
-
-            is ForumPartialChange.Unlike.Success -> ForumUiEvent.Unlike.Success
-            is ForumPartialChange.Unlike.Failure -> ForumUiEvent.Unlike.Failure(
-                partialChange.error.getErrorCode(),
-                partialChange.error.getErrorMessage()
-            )
-
-            else -> null
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val listStates = pagers.flatMapLatest { pagers ->
+        if (pagers.isEmpty()) {
+            flowOf(emptyMap())
+        } else {
+            combine(pagers.map { (tab, pager) -> pager.state.map { tab to it } }) { it.toMap() }
         }
     }
 
-    private object ForumPartialChangeProducer :
-        PartialChangeProducer<ForumUiIntent, ForumPartialChange, ForumUiState> {
-        @OptIn(ExperimentalCoroutinesApi::class)
-        override fun toPartialChangeFlow(intentFlow: Flow<ForumUiIntent>): Flow<ForumPartialChange> =
-            merge(
-                intentFlow.filterIsInstance<ForumUiIntent.Load>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.SignIn>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.Like>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.Unlike>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
-                intentFlow.filterIsInstance<ForumUiIntent.ToggleShowHeader>()
-                    .flatMapConcat { it.produceLoadPartialChange() },
+    val state: StateFlow<ForumState> =
+        combine(forum, selection, listStates, blockRuleSource.rules) { forum, selection, lists, rules ->
+            ForumState(
+                forumName = forumName,
+                forum = forum,
+                selectedTab = selection.tab,
+                sort = selection.sort,
+                goodClassId = selection.goodClassId,
+                lists = lists.mapValues { (tab, list) -> list.withItems(items(tab, list.items, rules)) }.toImmutableMap(),
+                loggedIn = sessionProvider.currentSession() != null,
             )
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumState(forumName))
 
-        private fun ForumUiIntent.Load.produceLoadPartialChange() =
-            FrsPageRepository.frsPage(forumName, 1, 1, sortType, null, true)
-                .map {
-                    if (it.data_?.forum != null) ForumPartialChange.Load.Success(
-                        it.data_!!.forum!!,
-                        it.data_!!.anti?.tbs,
-                        hasHead = it.data_!!.forum!!.has_frs_star == 1 ||
-                                it.data_!!.activity_head?.head_imgs?.isNotEmpty() == true,
-                    )
-                    else ForumPartialChange.Load.Failure(NullPointerException("未知错误"))
+    init {
+        viewModelScope.launch {
+            val sort = runCatching { sortStore.sort(forumName) }.getOrDefault(ForumSort.ReplyTime)
+            selection.update { it.copy(sort = sort) }
+            pagerOf(selection.value.tab)
+        }
+    }
+
+    fun selectTab(tab: ForumTab) {
+        selection.update { it.copy(tab = tab) }
+        pagerOf(tab)
+    }
+
+    fun setSort(sort: ForumSort) {
+        if (sort == selection.value.sort) return
+        selection.update { it.copy(sort = sort) }
+        viewModelScope.launch { runCatching { sortStore.setSort(forumName, sort) } }
+        pagers.value[ForumTab.Latest]?.refresh()
+    }
+
+    fun setGoodClass(classId: Int) {
+        if (classId == selection.value.goodClassId) return
+        selection.update { it.copy(goodClassId = classId) }
+        pagers.value[ForumTab.Good]?.refresh()
+    }
+
+    /** Reloads the shown tab, and with it the forum when that tab lists it. */
+    fun refresh() = pagerOf(selection.value.tab).refresh()
+
+    fun loadMore() = pagerOf(selection.value.tab).loadMore()
+
+    /** Follows the forum, or when it is followed signs in to it. */
+    fun followOrSignIn() {
+        val forum = forum.value ?: return
+        if (!forum.liked) like(forum) else if (!forum.signedIn) signIn(forum)
+    }
+
+    private fun like(forum: ForumDetail) = actions.launch("like") {
+        runCatching { repository.like(forum, tbs) }
+            .onSuccess {
+                this@ForumViewModel.forum.value = it
+                messages.show(R.string.toast_like_success, it.memberCount.toString())
+            }
+            .onFailure { messages.showError(R.string.toast_like_failed, it) }
+    }
+
+    private fun signIn(forum: ForumDetail) = actions.launch("sign-in") {
+        runCatching { repository.signIn(forum, tbs) }
+            .onSuccess {
+                this@ForumViewModel.forum.value = it.forum
+                messages.show(R.string.toast_sign_success, it.bonusPoints.toString(), it.rank.toString())
+            }
+            .onFailure { messages.showError(R.string.toast_sign_failed, it) }
+    }
+
+    fun unlike() {
+        val forum = forum.value ?: return
+        actions.launch("unlike") {
+            runCatching { repository.unlike(forum, tbs) }
+                .onSuccess {
+                    this@ForumViewModel.forum.value = it
+                    messages.show(R.string.toast_unlike_success)
                 }
-                .onStart { emit(ForumPartialChange.Load.Start) }
-                .catch { emit(ForumPartialChange.Load.Failure(it)) }
+                .onFailure { messages.showError(R.string.toast_unlike_failed, it) }
+        }
+    }
 
-        private fun ForumUiIntent.SignIn.produceLoadPartialChange() =
-            TiebaApi.getInstance().signFlow("$forumId", forumName, tbs)
-                .map { signResultBean ->
-                    if (signResultBean.userInfo?.signBonusPoint != null &&
-                        signResultBean.userInfo.levelUpScore != null &&
-                        signResultBean.userInfo.contSignNum != null &&
-                        signResultBean.userInfo.userSignRank != null &&
-                        signResultBean.userInfo.isSignIn != null &&
-                        signResultBean.userInfo.levelName != null &&
-                        signResultBean.userInfo.allLevelInfo.isNotEmpty()
-                    ) {
-                        val levelUpScore = signResultBean.userInfo.levelUpScore.toInt()
-                        ForumPartialChange.SignIn.Success(
-                            signResultBean.userInfo.signBonusPoint.toInt(),
-                            levelUpScore,
-                            signResultBean.userInfo.contSignNum.toInt(),
-                            signResultBean.userInfo.userSignRank.toInt(),
-                            signResultBean.userInfo.isSignIn.toInt(),
-                            signResultBean.userInfo.allLevelInfo.last { it.score.toInt() < levelUpScore }.id.toInt(),
-                            signResultBean.userInfo.levelName
-                        )
-                    } else ForumPartialChange.SignIn.Failure(NullPointerException("未知错误"))
-                }
-                .catch { emit(ForumPartialChange.SignIn.Failure(it)) }
+    fun agree(tab: ForumTab, threadId: Long) {
+        val pager = pagers.value[tab] ?: return
+        val thread = pager.state.value.items.firstOrNull { it.id == threadId } ?: return
+        val agree = thread.agree?.hasAgree != 1
+        actions.launch("agree-$threadId") {
+            setAgreed(threadId, agree)
+            runCatching { repository.agreeThread(thread, agree) }.onFailure {
+                setAgreed(threadId, !agree)
+                messages.showError(R.string.toast_agree_failed, it)
+            }
+        }
+    }
 
-        private fun ForumUiIntent.Like.produceLoadPartialChange() =
-            TiebaApi.getInstance().likeForumFlow("$forumId", forumName, tbs, hasHead)
-                .map<LikeForumResultBean, ForumPartialChange.Like> {
-                    ForumPartialChange.Like.Success(it)
-                }
-                .catch { emit(ForumPartialChange.Like.Failure(it)) }
+    /** Marks the thread agreed or not in every list holding it. */
+    private fun setAgreed(threadId: Long, agree: Boolean) {
+        pagers.value.values.forEach { pager ->
+            pager.update { items ->
+                items.map { if (it.id == threadId) it.updateAgreeStatus(if (agree) 1 else 0) else it }
+            }
+        }
+    }
 
-        private fun ForumUiIntent.Unlike.produceLoadPartialChange() =
-            TiebaApi.getInstance().unlikeForumFlow("$forumId", forumName, tbs)
-                .map<CommonResponse, ForumPartialChange.Unlike> {
-                    ForumPartialChange.Unlike.Success
-                }
-                .catch { emit(ForumPartialChange.Unlike.Failure(it)) }
+    private fun pagerOf(tab: ForumTab): Pager<ForumCursor, ThreadInfo> {
+        pagers.value[tab]?.let { return it }
+        val pager = pager(initialKey = ForumCursor.first(tab), itemKey = { thread: ThreadInfo -> thread.id }) { cursor ->
+            val selection = selection.value
+            val page = repository.threads(
+                forumName = forumName,
+                forumId = forum.value?.id ?: 0,
+                tab = tab,
+                cursor = cursor,
+                sort = selection.sort,
+                goodClassId = selection.goodClassId,
+            )
+            page.forum?.let { loaded ->
+                if (forum.value == null) history.save(loaded)
+                forum.value = loaded
+                tbs = page.tbs ?: tbs
+            }
+            page.threads
+        }
+        pagers.update { it + (tab to pager) }
+        return pager
+    }
 
-        private fun ForumUiIntent.ToggleShowHeader.produceLoadPartialChange() =
-            flowOf(ForumPartialChange.ToggleShowHeader(showHeader))
+    private fun items(tab: ForumTab, threads: List<ThreadInfo>, rules: BlockRules): ImmutableList<ForumThreadItem> {
+        blocked[tab]?.takeIf { it.first === threads && it.second === rules }?.let { return it.third }
+        val items = threads.map { ForumThreadItem(it.wrapImmutable(), blocked = rules.blocks(it)) }.toImmutableList()
+        blocked[tab] = Triple(threads, rules, items)
+        return items
+    }
+
+    private fun BlockRules.blocks(thread: ThreadInfo): Boolean {
+        val author = User(id = thread.authorId, name = thread.author?.name.orEmpty(), nameShow = "", portrait = "")
+        return blocks(author, thread.title) || blocks(author, thread.abstractText)
     }
 }
 
-sealed interface ForumUiIntent : UiIntent {
-    data class Load(
-        val forumName: String,
-        val sortType: Int = -1
-    ) : ForumUiIntent
-
-    data class SignIn(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String
-    ) : ForumUiIntent
-
-    data class Like(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String,
-        val hasHead: Boolean,
-    ) : ForumUiIntent
-
-    data class Unlike(
-        val forumId: Long,
-        val forumName: String,
-        val tbs: String
-    ) : ForumUiIntent
-
-    data class ToggleShowHeader(
-        val showHeader: Boolean
-    ) : ForumUiIntent
-}
-
-sealed interface ForumPartialChange : PartialChange<ForumUiState> {
-    sealed class Load : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            Start -> oldState.copy(isLoading = true)
-            is Success -> oldState.copy(
-                isLoading = true,
-                isError = false,
-                forum = forum.wrapImmutable(),
-                tbs = tbs,
-                hasHead = hasHead,
-            )
-
-            is Failure -> oldState.copy(isLoading = false, isError = true)
-        }
-
-        object Start : Load()
-
-        data class Success(
-            val forum: ForumInfo,
-            val tbs: String?,
-            val hasHead: Boolean,
-        ) : Load()
-
-        data class Failure(
-            val error: Throwable
-        ) : Load()
-    }
-
-    sealed class SignIn : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable {
-                    copy(
-                        user_level = level,
-                        level_name = levelName,
-                        cur_score = oldState.forum.get { cur_score } + signBonusPoint,
-                        levelup_score = levelUpScore,
-                        sign_in_info = oldState.forum.get { sign_in_info }?.copy(
-                            user_info = oldState.forum.get { sign_in_info }?.user_info?.copy(
-                                is_sign_in = isSignIn,
-                                user_sign_rank = userSignRank,
-                                cont_sign_num = contSignNum
-                            )
-                        )
-                    )
-                }
-            )
-        }
-
-        data class Success(
-            val signBonusPoint: Int,
-            val levelUpScore: Int,
-            val contSignNum: Int,
-            val userSignRank: Int,
-            val isSignIn: Int,
-            val level: Int,
-            val levelName: String
-        ) : SignIn()
-
-        data class Failure(
-            val error: Throwable
-        ) : SignIn()
-    }
-
-    sealed class Like : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable {
-                    copy(
-                        is_like = 1,
-                        cur_score = data.info.curScore.toInt(),
-                        levelup_score = data.info.levelUpScore.toInt(),
-                        user_level = data.info.levelId.toInt(),
-                        level_name = data.info.levelName,
-                        member_num = data.info.memberSum.toInt()
-                    )
-                }
-            )
-        }
-
-        data class Success(val data: LikeForumResultBean) : Like()
-
-        data class Failure(val error: Throwable) : Like()
-    }
-
-    sealed class Unlike : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState = when (this) {
-            is Failure -> oldState
-            is Success -> oldState.copy(
-                forum = oldState.forum?.getImmutable { copy(is_like = 0) }
-            )
-        }
-
-        object Success : Unlike()
-
-        data class Failure(val error: Throwable) : Unlike()
-    }
-
-    data class ToggleShowHeader(val showHeader: Boolean) : ForumPartialChange {
-        override fun reduce(oldState: ForumUiState): ForumUiState =
-            oldState.copy(showForumHeader = showHeader)
-    }
-}
-
-data class ForumUiState(
-    val isLoading: Boolean = false,
-    val isError: Boolean = false,
-    val forum: ImmutableHolder<ForumInfo>? = null,
-    val tbs: String? = null,
-    /** Whether the forum shows a star or activity header image, sent when following it. */
-    val hasHead: Boolean = false,
-    val showForumHeader: Boolean = true
-) : UiState
-
-sealed interface ForumUiEvent : UiEvent {
-    sealed interface SignIn : ForumUiEvent {
-        data class Success(
-            val signBonusPoint: Int,
-            val userSignRank: Int,
-        ) : SignIn
-
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : SignIn
-    }
-
-    sealed interface Like : ForumUiEvent {
-        data class Success(
-            val memberSum: String
-        ) : Like
-
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : Like
-    }
-
-    sealed interface Unlike : ForumUiEvent {
-        object Success : Like
-
-        data class Failure(
-            val errorCode: Int,
-            val errorMsg: String,
-        ) : Like
-    }
-}
+private fun <T, R> PagerState<T>.withItems(items: ImmutableList<R>) = PagerState(
+    items = items,
+    refresh = refresh,
+    append = append,
+    prepend = prepend,
+    hasMore = hasMore,
+    hasPrevious = hasPrevious,
+)

@@ -19,6 +19,12 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindThreadHistory(history: HistoryUtilThreadHistory): ThreadHistory
 
+    @Binds
+    abstract fun bindForumHistory(history: HistoryUtilForumHistory): ForumHistory
+
+    @Binds
+    abstract fun bindForumSortStore(store: DataStoreForumSortStore): ForumSortStore
+
     companion object {
         @Provides
         fun provideVideoThreadFilter(@ApplicationContext context: Context): VideoThreadFilter =

@@ -369,7 +369,7 @@ private suspend fun sendToDesktop(
 @Composable
 fun ForumPage(
     forumName: String,
-    viewModel: ForumViewModel = pageViewModel(),
+    viewModel: LegacyForumViewModel = pageViewModel(),
     navigator: DestinationsNavigator
 ) {
     val context = LocalContext.current
