@@ -2,21 +2,25 @@ package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
 import android.util.Log
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.MSignBean
-import com.huanchengfly.tieba.post.api.models.SignResultBean
+import com.huanchengfly.tieba.core.network.forum.ForumGuideResponse
+import com.huanchengfly.tieba.core.network.sign.MSignResponse
+import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
+import com.huanchengfly.tieba.core.network.sign.SignResponse
+import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
+import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorCode
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.models.database.Account
+import java.lang.ref.WeakReference
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.properties.Delegates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import java.lang.ref.WeakReference
-import java.util.concurrent.ThreadLocalRandom
-import kotlin.properties.Delegates
 
 abstract class IOKSigner(
     context: Context
@@ -28,9 +32,8 @@ abstract class IOKSigner(
 
     abstract suspend fun start(): Boolean
 
-    fun signFlow(signDataBean: SignDataBean): Flow<SignResultBean> {
-        return TiebaApi.getInstance()
-            .signFlow(signDataBean.forumId, signDataBean.forumName, signDataBean.tbs)
+    fun signFlow(signDataBean: SignDataBean): Flow<SignResponse> = flow {
+        emit(legacySignRemoteDataSource.sign(signDataBean.forumId.toLong(), signDataBean.forumName, signDataBean.tbs))
     }
 
     fun getSignDelay(): Long {
@@ -65,7 +68,7 @@ class MultiAccountSigner(
         )
 
         fun onProgressFinish(
-                signResultBean: SignResultBean,
+                signResultBean: SignResponse,
                 current: Int,
                 total: Int
         )
@@ -120,24 +123,24 @@ class SingleAccountSigner(
             .flatMapConcat { account ->
                 userName = account.name
                 tbs = account.tbs
-                TiebaApi.getInstance().getForumListFlow()
+                flow { emit(legacySignRemoteDataSource.forumList()) }
             }
             .zip(
-                TiebaApi.getInstance().allForumGuideFlow()
+                flow { emit(followedForums()) }
             ) { getForumListBean, likeForums ->
                 val useMSign = context.appPreferences.oksignUseOfficialOksign
-                val mSignLevel = getForumListBean.level.toInt()
-                val mSignMax = getForumListBean.msignStepNum.toInt()
+                val mSignLevel = getForumListBean.level.toIntOrNull() ?: 0
+                val mSignMax = getForumListBean.msignStepNum.toIntOrNull() ?: 0
                 signData.addAll(
                     likeForums
-                        .filter { it.isSign != 1 }
+                        .filter { it.isSign != "1" }
                         .map {
                             SignDataBean(
                                 it.forumName,
-                                it.forumId.toString(),
+                                it.forumId,
                                 userName,
                                 tbs,
-                                it.levelId >= mSignLevel && signData.size < mSignMax
+                                (it.levelId?.toIntOrNull() ?: 0) >= mSignLevel && signData.size < mSignMax
                             )
                         }
                 )
@@ -145,8 +148,13 @@ class SingleAccountSigner(
                 mSignCount = 0
                 (if (useMSign) {
                     val mSignData = signData.filter { it.canUseMSign }
-                    TiebaApi.getInstance().mSign(mSignData.joinToString(",") { it.forumId }, tbs)
-                        .map { it.info }
+                    flow {
+                        // At most MAX_MSIGN_FORUMS forums per request
+                        val results = mSignData.map { it.forumId.toLong() }
+                            .chunked(SignRemoteDataSource.MAX_MSIGN_FORUMS)
+                            .map { legacySignRemoteDataSource.mSign(it, tbs) }
+                        emit(results.flatMap { it.info })
+                    }
                 } else {
                     flow { emit(emptyList()) }
                 })
@@ -160,9 +168,9 @@ class SingleAccountSigner(
             .flattenConcat()
             .flatMapConcat { mSignInfo ->
                 val newSignData = if (mSignInfo.isNotEmpty()) {
-                    val mSignInfoMap = mutableMapOf<String, MSignBean.Info>()
-                    mSignInfo.forEach {
-                        mSignInfoMap[it.forumId] = it
+                    val mSignInfoMap = mutableMapOf<String, MSignResponse.ForumResult>()
+                    mSignInfo.forEach { info ->
+                        info.forumId?.let { mSignInfoMap[it] = info }
                     }
                     val signedCount = mSignInfo.filter { it.signed == "1" }.size
                     successCount += signedCount
@@ -256,7 +264,7 @@ interface ProgressListener {
 
     fun onProgressFinish(
         signDataBean: SignDataBean,
-        signResultBean: SignResultBean,
+        signResultBean: SignResponse,
         current: Int,
         total: Int
     )
@@ -273,4 +281,16 @@ interface ProgressListener {
         errorCode: Int,
         errorMsg: String
     )
+}
+
+/** Every forum the user follows, page by page. */
+private suspend fun followedForums(): List<ForumGuideResponse.LikeForum> {
+    val forums = mutableListOf<ForumGuideResponse.LikeForum>()
+    var pageNo = 1
+    do {
+        val page = legacyLikeRemoteDataSource.forumGuide(pageNo++)
+        val pageForums = page.likeForum.orEmpty()
+        forums += pageForums
+    } while (page.hasMore && pageForums.isNotEmpty())
+    return forums
 }

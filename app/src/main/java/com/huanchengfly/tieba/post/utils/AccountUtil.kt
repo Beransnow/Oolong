@@ -11,30 +11,29 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.huanchengfly.tieba.core.network.account.LoginResponse
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.LoginBean
+import com.huanchengfly.tieba.post.api.legacyAccountRemoteDataSource
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.database.AccountEntity
 import com.huanchengfly.tieba.post.database.appDatabase
 import com.huanchengfly.tieba.post.models.database.Account
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.util.UUID
 
 @Stable
 object AccountUtil {
@@ -141,13 +140,13 @@ object AccountUtil {
 
     private fun updateAccount(
         account: Account,
-        loginBean: LoginBean,
+        login: LoginResponse,
     ) {
         account.apply {
-            uid = loginBean.user.id
-            name = loginBean.user.name
-            portrait = loginBean.user.portrait
-            tbs = loginBean.anti.tbs
+            uid = login.user.id
+            name = login.user.name
+            portrait = login.user.portrait
+            tbs = login.anti.tbs
             if (uuid.isNullOrBlank()) uuid = UUID.randomUUID().toString()
         }
     }
@@ -156,50 +155,43 @@ object AccountUtil {
         return fetchAccountFlow(account.bduss, account.sToken, account.cookie)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    /**
+     * Logs in with [bduss] and [sToken], which need not be the current account's, and saves the
+     * account with what the server says about it.
+     */
     fun fetchAccountFlow(
         bduss: String,
         sToken: String,
         cookie: String? = null
-    ): Flow<Account> {
-        return TiebaApi.getInstance()
-            .loginFlow(bduss, sToken)
-            .zip(TiebaApi.getInstance().initNickNameFlow(bduss, sToken)) { loginBean, _ ->
-                getAccountInfoByUid(loginBean.user.id)?.copy()?.apply {
-                    this.bduss = bduss
-                    this.sToken = sToken
-                    this.cookie = cookie ?: getBdussCookie(bduss)
-                    updateAccount(this, loginBean)
-                } ?: Account(
-                    loginBean.user.id,
-                    loginBean.user.name,
-                    bduss,
-                    loginBean.anti.tbs,
-                    loginBean.user.portrait,
-                    sToken,
-                    cookie ?: getBdussCookie(bduss),
-                )
-            }
-            .zip(SofireUtils.fetchZid()) { account, zid ->
-                account.apply { this.zid = zid }
-            }
-            .flatMapConcat { account ->
-                TiebaApi.getInstance()
-                    .getUserInfoFlow(account.uid.toLong(), account.bduss, account.sToken)
-                    .map { checkNotNull(it.data_?.user) }
-                    .map { user ->
-                        account.apply {
-                            nameShow = user.nameShow
-                            portrait = user.portrait
-                        }
-                    }
-                    .catch {
-                        emit(account)
-                    }
-            }
-            .onEach { account -> save(account) }
-            .flowOn(Dispatchers.IO)
-    }
+    ): Flow<Account> = flow {
+        val remote = legacyAccountRemoteDataSource
+        val login = coroutineScope {
+            val nickname = async { remote.initNickname(bduss, sToken) }
+            remote.login(bduss, sToken, firstLogin = InstallState.firstLogin == "1").also { nickname.await() }
+        }
+        InstallState.onLoginSucceeded()
+        val account = getAccountInfoByUid(login.user.id)?.copy()?.apply {
+            this.bduss = bduss
+            this.sToken = sToken
+            this.cookie = cookie ?: getBdussCookie(bduss)
+            updateAccount(this, login)
+        } ?: Account(
+            login.user.id,
+            login.user.name,
+            bduss,
+            login.anti.tbs,
+            login.user.portrait,
+            sToken,
+            cookie ?: getBdussCookie(bduss),
+        )
+        account.zid = SofireUtils.fetchZid().first()
+        runCatching { remote.userInfo(account.uid.toLong(), bduss, sToken) }.onSuccess { user ->
+            account.nameShow = user.nameShow
+            account.portrait = user.portrait
+        }
+        save(account)
+        emit(account)
+    }.flowOn(Dispatchers.IO)
 
     private fun Account.toEntity() = AccountEntity(
         id = id,

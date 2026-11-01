@@ -1,20 +1,21 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.os.Build
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.huanchengfly.tieba.core.network.account.SyncInfo
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.api.TiebaApi
+import com.huanchengfly.tieba.post.api.legacyAccountRemoteDataSource
 import com.huanchengfly.tieba.post.dataStore
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.lang.ref.WeakReference
 
 object ClientUtils {
     private const val CLIENT_ID = "client_id"
@@ -78,13 +79,24 @@ object ClientUtils {
     }
 
     private suspend fun sync(context: Context) {
-        TiebaApi.getInstance()
-            .syncFlow(clientId)
-            .catch { it.printStackTrace() }
-            .collect {
+        val pushSwitch = InstallState.pushSwitch()
+        val info = SyncInfo(
+            clientId = clientId,
+            pushSwitch = pushSwitch.current,
+            lastPushSwitch = pushSwitch.last,
+            lastPushSwitchTime = pushSwitch.lastChangeTime,
+            runningAbi = InstallState.runningAbi,
+            supportAbi = InstallState.supportAbi,
+            installTime = App.Config.appFirstInstallTime,
+            board = Build.BOARD,
+            incremental = Build.VERSION.INCREMENTAL,
+        )
+        runCatching { legacyAccountRemoteDataSource.sync(info) }
+            .onSuccess {
                 clientId = it.client.clientId
                 sampleId = it.wlConfig.sampleId
                 save(context, it.client.clientId, it.wlConfig.sampleId)
             }
+            .onFailure { it.printStackTrace() }
     }
 }

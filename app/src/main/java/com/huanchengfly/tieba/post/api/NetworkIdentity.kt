@@ -236,6 +236,8 @@ object NetworkIdentityModule {
 interface LegacyNetworkEntryPoint {
     fun commonParams(): CommonParams
     fun signRemoteDataSource(): SignRemoteDataSource
+    fun accountRemoteDataSource(): AccountRemoteDataSource
+    fun threadRemoteDataSource(): ThreadRemoteDataSource
     fun likeRemoteDataSource(): LikeRemoteDataSource
     fun messageRemoteDataSource(): MessageRemoteDataSource
     fun uploadRemoteDataSource(): UploadRemoteDataSource
@@ -250,6 +252,12 @@ internal val legacyCommonParams: CommonParams get() = legacyEntryPoint.commonPar
 
 internal val legacySignRemoteDataSource: SignRemoteDataSource
     get() = legacyEntryPoint.signRemoteDataSource()
+
+internal val legacyAccountRemoteDataSource: AccountRemoteDataSource
+    get() = legacyEntryPoint.accountRemoteDataSource()
+
+internal val legacyThreadRemoteDataSource: ThreadRemoteDataSource
+    get() = legacyEntryPoint.threadRemoteDataSource()
 
 internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
     get() = legacyEntryPoint.likeRemoteDataSource()

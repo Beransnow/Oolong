@@ -13,8 +13,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import com.huanchengfly.tieba.core.network.sign.SignResponse
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
@@ -22,12 +22,12 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ProgressListener
 import com.huanchengfly.tieba.post.utils.SingleAccountSigner
 import com.huanchengfly.tieba.post.utils.extension.addFlag
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
-import kotlin.coroutines.CoroutineContext
 
 class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     private var job: Job = Job()
@@ -186,7 +186,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     override fun onProgressFinish(
         signDataBean: SignDataBean,
-        signResultBean: SignResultBean,
+        signResultBean: SignResponse,
         current: Int,
         total: Int
     ) {
@@ -197,14 +197,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
                 current + 1,
                 total
             ),
-            if (signResultBean.userInfo?.signBonusPoint != null)
-                getString(
-                    R.string.text_singing_progress_exp,
-                    signDataBean.forumName,
-                    signResultBean.userInfo.signBonusPoint
-                )
-            else
-                getString(R.string.text_singing_progress, signDataBean.forumName)
+            signResultBean.userInfo?.signBonusPoint?.let {
+                getString(R.string.text_singing_progress_exp, signDataBean.forumName, it)
+            } ?: getString(R.string.text_singing_progress, signDataBean.forumName)
         )
     }
 
