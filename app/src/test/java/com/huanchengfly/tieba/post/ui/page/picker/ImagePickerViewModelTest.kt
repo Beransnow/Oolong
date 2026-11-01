@@ -1,0 +1,102 @@
+package com.huanchengfly.tieba.post.ui.page.picker
+
+import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
+import com.huanchengfly.tieba.post.model.DeviceImage
+import com.huanchengfly.tieba.post.repository.DeviceImageRepository
+import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+@RunWith(RobolectricTestRunner::class)
+class ImagePickerViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private val repository = mockk<DeviceImageRepository>()
+
+    private fun uri(id: Int) = Uri.parse("content://media/external/images/media/$id")
+
+    private fun image(id: Int, album: Long) = DeviceImage(uri(id), album, "album $album", "image/jpeg")
+
+    private fun viewModel(maxItems: Int, saved: SavedStateHandle = SavedStateHandle(mapOf("max_items" to maxItems))) =
+        ImagePickerViewModel(repository, saved)
+
+    @Test
+    fun `lists every picture first, then the folders by size`() = runTest {
+        coEvery { repository.images() } returns listOf(image(1, 10), image(2, 20), image(3, 20), image(4, 10), image(5, 20))
+        val viewModel = viewModel(maxItems = 1)
+
+        viewModel.load()
+        runCurrent()
+
+        val state = viewModel.state.value
+        assertEquals(listOf(null, 20L, 10L), state.albums.map { it.id })
+        assertEquals(listOf(5, 3, 2), state.albums.map { it.count })
+        assertEquals(listOf(uri(1), uri(2), uri(1)), state.albums.map { it.cover })
+        assertEquals(5, state.images.size)
+
+        viewModel.showAlbum(20)
+
+        assertEquals(listOf(uri(2), uri(3), uri(5)), viewModel.state.value.images.map { it.uri })
+    }
+
+    @Test
+    fun `keeps the picks in order and refuses one over the limit`() = runTest {
+        coEvery { repository.images() } returns (1..4).map { image(it, 10) }
+        val viewModel = viewModel(maxItems = 2)
+        viewModel.load()
+        runCurrent()
+
+        viewModel.toggle(uri(3))
+        viewModel.toggle(uri(1))
+        viewModel.toggle(uri(2))
+
+        assertEquals(listOf(uri(3), uri(1)), viewModel.state.value.selected)
+        assertEquals(2, viewModel.limitReached.first())
+
+        viewModel.toggle(uri(3))
+
+        assertEquals(listOf(uri(1)), viewModel.state.value.selected)
+    }
+
+    @Test
+    fun `keeps the picks across process death and drops those no longer readable`() = runTest {
+        coEvery { repository.images() } returns (1..4).map { image(it, 10) }
+        val saved = SavedStateHandle(mapOf("max_items" to 9))
+        viewModel(maxItems = 9, saved).apply {
+            load()
+            runCurrent()
+            toggle(uri(2))
+            toggle(uri(4))
+        }
+
+        coEvery { repository.images() } returns (1..3).map { image(it, 10) }
+        val restored = viewModel(maxItems = 9, saved)
+        assertEquals(listOf(uri(2), uri(4)), restored.state.value.selected)
+        restored.load()
+        runCurrent()
+
+        assertEquals(listOf(uri(2)), restored.state.value.selected)
+    }
+
+    @Test
+    fun `shows nothing when the pictures cannot be read`() = runTest {
+        coEvery { repository.images() } throws SecurityException()
+        val viewModel = viewModel(maxItems = 1)
+
+        viewModel.load()
+        runCurrent()
+
+        assertEquals(true, viewModel.state.value.loaded)
+        assertEquals(0, viewModel.state.value.images.size)
+    }
+}

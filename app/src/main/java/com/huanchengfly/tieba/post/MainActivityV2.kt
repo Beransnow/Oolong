@@ -433,7 +433,7 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         onGlobalEvent<GlobalEvent.StartSelectImages> {
             pickMediasLauncher.launch(
-                PickMediasRequest(it.id, it.maxCount, it.mediaType)
+                PickMediasRequest(it.id, it.maxCount)
             )
         }
         onGlobalEvent<GlobalEvent.StartActivityForResult> {

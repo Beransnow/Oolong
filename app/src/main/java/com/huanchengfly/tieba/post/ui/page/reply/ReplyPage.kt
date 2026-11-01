@@ -110,7 +110,6 @@ import com.huanchengfly.tieba.post.ui.widgets.edittext.widget.UndoableEditText
 import com.huanchengfly.tieba.post.utils.DraftStore
 import com.huanchengfly.tieba.post.utils.Emoticon
 import com.huanchengfly.tieba.post.utils.EmoticonManager
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
@@ -801,7 +800,6 @@ private fun ImagePanel(
                                     GlobalEvent.StartSelectImages(
                                         id,
                                         9 - selectedImages.size,
-                                        PickMediasRequest.ImageOnly
                                     )
                                 )
                             },

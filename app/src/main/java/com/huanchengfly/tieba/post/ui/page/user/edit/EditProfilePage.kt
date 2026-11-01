@@ -4,7 +4,6 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -67,12 +66,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasContract
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.requestPermission
-import com.huanchengfly.tieba.post.utils.shouldUsePhotoPicker
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.yalantis.ucrop.UCrop
@@ -86,8 +82,6 @@ fun EditProfilePage(
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val storagePermissionTip = stringResource(id = R.string.tip_permission_storage)
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -103,24 +97,7 @@ fun EditProfilePage(
         onNickNameChange = viewModel::setNickName,
         onIntroChange = viewModel::setIntro,
         onSexChange = viewModel::setSex,
-        onUploadPortrait = {
-            if (shouldUsePhotoPicker()) {
-                pickPortrait()
-            } else {
-                context.requestPermission {
-                    permissions = when {
-                        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ->
-                            listOf(PermissionUtils.READ_EXTERNAL_STORAGE, PermissionUtils.WRITE_EXTERNAL_STORAGE)
-
-                        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> listOf(PermissionUtils.READ_EXTERNAL_STORAGE)
-                        else -> listOf(PermissionUtils.READ_MEDIA_IMAGES)
-                    }
-                    description = storagePermissionTip
-                    onGranted = { pickPortrait() }
-                    onDenied = { context.toastShort(R.string.toast_no_permission_upload_portrait) }
-                }
-            }
-        },
+        onUploadPortrait = pickPortrait,
     )
 }
 
@@ -164,7 +141,7 @@ private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
                 }
             })
     }
-    return { pickLauncher.launch(PickMediasRequest(mediaType = PickMediasRequest.ImageOnly)) }
+    return { pickLauncher.launch(PickMediasRequest()) }
 }
 
 /** The editing page: the profile card under a bar with save, or placeholders while it loads. */

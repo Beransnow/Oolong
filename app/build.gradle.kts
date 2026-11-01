@@ -275,7 +275,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.jaredrummler.colorpicker)
 
-    implementation(libs.matisse)
     implementation(libs.xxpermissions)
     implementation(libs.immersionbar)
 

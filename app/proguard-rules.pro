@@ -131,11 +131,6 @@
     *;
 }
 
-# Matisse
--dontwarn com.squareup.picasso.**
--dontwarn com.zhihu.matisse.**
--keep class com.zhihu.matisse.**{*;}
-
 # uCrop
 -dontwarn com.yalantis.ucrop**
 -keep class com.yalantis.ucrop** { *; }

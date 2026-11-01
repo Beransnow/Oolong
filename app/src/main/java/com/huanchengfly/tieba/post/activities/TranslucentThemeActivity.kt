@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -48,9 +47,9 @@ import com.huanchengfly.tieba.post.utils.ThemeUtil.TRANSLUCENT_THEME_LIGHT
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.yalantis.ucrop.UCrop
+import java.io.File
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import java.io.File
 
 class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListener,
     ColorPickerDialogListener {
@@ -449,9 +448,7 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
             R.id.button_back -> {
                 finish()
             }
-            R.id.select_pic -> askPermission {
-                selectImageLauncher.launch(PickMediasRequest(mediaType = PickMediasRequest.ImageOnly))
-            }
+            R.id.select_pic -> selectImageLauncher.launch(PickMediasRequest())
             R.id.custom_color -> {
                 val primaryColorPicker = ColorPickerDialog.newBuilder()
                     .setDialogTitle(R.string.title_color_picker_primary)
@@ -475,31 +472,6 @@ class TranslucentThemeActivity : BaseActivity(), View.OnClickListener, OnSeekBar
                 appPreferences.translucentBackgroundTheme = TRANSLUCENT_THEME_LIGHT
                 refreshTheme()
             }
-        }
-    }
-
-    private fun askPermission(granted: () -> Unit) {
-        if (shouldUsePhotoPicker()) {
-            granted()
-            return
-        }
-        requestPermission {
-            unchecked = true
-            permissions = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                listOf(
-                    PermissionUtils.READ_EXTERNAL_STORAGE,
-                    PermissionUtils.WRITE_EXTERNAL_STORAGE
-                )
-            } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                listOf(
-                    PermissionUtils.READ_EXTERNAL_STORAGE
-                )
-            } else {
-                listOf(PermissionUtils.READ_MEDIA_IMAGES)
-            }
-            description = getString(R.string.tip_permission_storage)
-            onGranted = granted
-            onDenied = { toastShort(R.string.toast_no_permission_insert_photo) }
         }
     }
 

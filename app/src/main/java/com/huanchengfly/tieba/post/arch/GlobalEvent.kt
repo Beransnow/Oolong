@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -28,7 +27,6 @@ sealed interface GlobalEvent {
     data class StartSelectImages(
         val id: String,
         val maxCount: Int,
-        val mediaType: PickMediasRequest.MediaType
     ) : GlobalEvent
 
     data class SelectedImages(
