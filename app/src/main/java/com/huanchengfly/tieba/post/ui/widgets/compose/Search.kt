@@ -209,7 +209,7 @@ fun SearchThreadUserHeader(
             )
         },
         name = {
-            Text(
+            AuthorName(
                 text = StringUtil.getUsernameAnnotatedString(
                     LocalContext.current,
                     user.name,
@@ -219,9 +219,7 @@ fun SearchThreadUserHeader(
             )
         },
         desc = {
-            Text(
-                text = DateTimeUtils.getRelativeTimeString(LocalContext.current, time)
-            )
+            MetaText(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, time))
         },
         onClick = onClick,
         modifier = modifier
@@ -295,35 +293,23 @@ fun SearchThreadItem(
             } else {
                 SearchMedia(pictures = item.pictures, mediaCount = item.mediaCount)
             }
-            if (!hideForum && item.forumName.isNotEmpty()) {
-                ForumInfoChip(
-                    imageUriProvider = { item.forumAvatar },
-                    nameProvider = { item.forumName }
-                ) {
-                    onForumClick(item.forumName)
-                }
-            }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                ThreadReplyBtn(
-                    replyNum = item.replyCount,
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadAgreeBtn(
-                    hasAgree = false,
-                    agreeNum = item.agreeCount,
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
-                )
-
-                ThreadShareBtn(
-                    shareNum = item.shareCount,
-                    onClick = {},
-                    modifier = Modifier.weight(1f)
-                )
+            FeedCardActions(
+                forum = {
+                    if (!hideForum && item.forumName.isNotEmpty()) {
+                        ForumInfoChip(
+                            imageUriProvider = { item.forumAvatar },
+                            nameProvider = { item.forumName }
+                        ) {
+                            onForumClick(item.forumName)
+                        }
+                    }
+                }
+            ) {
+                ThreadShareBtn(shareNum = item.shareCount, onClick = {})
+                ThreadReplyBtn(replyNum = item.replyCount, onClick = {})
+                ThreadAgreeBtn(hasAgree = false, agreeNum = item.agreeCount, onClick = {})
             }
         },
         onClick = { onClick(item) },

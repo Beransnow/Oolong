@@ -155,13 +155,13 @@ private fun UserHeader(
 
 /** An author's name in a card: medium weight, between the title and the time. */
 @Composable
-private fun AuthorName(text: AnnotatedString) {
+internal fun AuthorName(text: AnnotatedString) {
     Text(text = text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = ExtendedTheme.colors.text)
 }
 
 /** The time and other small facts under a name. */
 @Composable
-private fun MetaText(text: String) {
+internal fun MetaText(text: String) {
     Text(text = text, fontSize = 12.sp, lineHeight = 16.sp, color = ExtendedTheme.colors.textSecondary)
 }
 
@@ -305,11 +305,11 @@ fun ThreadContent(
                 },
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
-                fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 2,
-                style = MaterialTheme.typography.body1,
+                // Bold in the style rather than as a parameter, so highlighted keywords stay bold
+                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold),
                 highlightKeywords = highlightKeywords
             )
         }
@@ -959,7 +959,7 @@ fun FeedCard(
  * last one's text lined up with the card's edge.
  */
 @Composable
-private fun FeedCardActions(
+internal fun FeedCardActions(
     forum: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
 ) {
