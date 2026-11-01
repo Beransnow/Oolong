@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,6 +40,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
@@ -95,56 +97,7 @@ fun ThreadPostCard(
             indication = null,
             onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
             menuContent = {
-                if (!options.hideReply) {
-                    DropdownMenuItem(
-                        onClick = {
-                            onEvent(ThreadEvent.Reply(post))
-                            menuState.expanded = false
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.btn_reply))
-                    }
-                }
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(ThreadEvent.Copy(post.content.plainText))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(text = stringResource(id = R.string.menu_copy))
-                }
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(ThreadEvent.Report(post.id))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(text = stringResource(id = R.string.title_report))
-                }
-                if (canStore) {
-                    DropdownMenuItem(
-                        onClick = {
-                            onEvent(if (isStoreMark) ThreadEvent.RemoveStore else ThreadEvent.StoreAt(post))
-                            menuState.expanded = false
-                        }
-                    ) {
-                        Text(
-                            text = stringResource(
-                                id = if (isStoreMark) R.string.title_collect_on else R.string.title_collect_floor
-                            )
-                        )
-                    }
-                }
-                if (canDelete) {
-                    DropdownMenuItem(
-                        onClick = {
-                            onEvent(ThreadEvent.DeletePost(post))
-                            menuState.expanded = false
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.title_delete))
-                    }
-                }
+                PostMenuItems(post, options.hideReply, isStoreMark, canStore, canDelete, menuState, onEvent)
             }
         ) {
             Card(
@@ -305,34 +258,7 @@ private fun SubPostItem(
     val menuState = rememberMenuState()
     LongClickMenu(
         menuState = menuState,
-        menuContent = {
-            if (!hideReply) {
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(ThreadEvent.Reply(post, subPost))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(text = stringResource(id = R.string.title_reply))
-                }
-            }
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(ThreadEvent.Copy(subPost.content.plainText))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(text = stringResource(id = R.string.menu_copy))
-            }
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(ThreadEvent.Report(subPost.id))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(text = stringResource(id = R.string.title_report))
-            }
-        },
+        menuContent = { SubPostMenuItems(post, subPost, hideReply, menuState, onEvent) },
         shape = RoundedCornerShape(0),
         onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) }
     ) {
@@ -354,5 +280,105 @@ private fun SubPostItem(
                 )
             )
         }
+    }
+}
+
+/** What a long press on a post offers. */
+@Composable
+internal fun ColumnScope.PostMenuItems(
+    post: Post,
+    hideReply: Boolean,
+    isStoreMark: Boolean,
+    canStore: Boolean,
+    canDelete: Boolean,
+    menuState: MenuState,
+    onEvent: (ThreadEvent) -> Unit,
+) {
+    if (!hideReply) {
+        DropdownMenuItem(
+            onClick = {
+                onEvent(ThreadEvent.Reply(post))
+                menuState.expanded = false
+            }
+        ) {
+            Text(text = stringResource(id = R.string.btn_reply))
+        }
+    }
+    DropdownMenuItem(
+        onClick = {
+            onEvent(ThreadEvent.Copy(post.content.plainText))
+            menuState.expanded = false
+        }
+    ) {
+        Text(text = stringResource(id = R.string.menu_copy))
+    }
+    DropdownMenuItem(
+        onClick = {
+            onEvent(ThreadEvent.Report(post.id))
+            menuState.expanded = false
+        }
+    ) {
+        Text(text = stringResource(id = R.string.title_report))
+    }
+    if (canStore) {
+        DropdownMenuItem(
+            onClick = {
+                onEvent(if (isStoreMark) ThreadEvent.RemoveStore else ThreadEvent.StoreAt(post))
+                menuState.expanded = false
+            }
+        ) {
+            Text(
+                text = stringResource(
+                    id = if (isStoreMark) R.string.title_collect_on else R.string.title_collect_floor
+                )
+            )
+        }
+    }
+    if (canDelete) {
+        DropdownMenuItem(
+            onClick = {
+                onEvent(ThreadEvent.DeletePost(post))
+                menuState.expanded = false
+            }
+        ) {
+            Text(text = stringResource(id = R.string.title_delete))
+        }
+    }
+}
+
+/** What a long press on a reply inside a post offers. */
+@Composable
+internal fun ColumnScope.SubPostMenuItems(
+    post: Post,
+    subPost: SubPost,
+    hideReply: Boolean,
+    menuState: MenuState,
+    onEvent: (ThreadEvent) -> Unit,
+) {
+    if (!hideReply) {
+        DropdownMenuItem(
+            onClick = {
+                onEvent(ThreadEvent.Reply(post, subPost))
+                menuState.expanded = false
+            }
+        ) {
+            Text(text = stringResource(id = R.string.title_reply))
+        }
+    }
+    DropdownMenuItem(
+        onClick = {
+            onEvent(ThreadEvent.Copy(subPost.content.plainText))
+            menuState.expanded = false
+        }
+    ) {
+        Text(text = stringResource(id = R.string.menu_copy))
+    }
+    DropdownMenuItem(
+        onClick = {
+            onEvent(ThreadEvent.Report(subPost.id))
+            menuState.expanded = false
+        }
+    ) {
+        Text(text = stringResource(id = R.string.title_report))
     }
 }
