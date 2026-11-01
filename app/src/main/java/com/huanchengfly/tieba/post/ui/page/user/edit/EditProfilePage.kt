@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.user.edit
 
 import android.app.Activity
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,9 +47,6 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.github.panpf.sketch.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.toastShort
@@ -118,28 +114,19 @@ private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
     }
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val source = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
-        Glide.with(context)
-            .asFile()
-            .load(source)
-            .into(object : CustomTarget<File>() {
-                override fun onLoadCleared(placeholder: Drawable?) {}
-
-                override fun onResourceReady(resource: File, transition: Transition<in File>?) {
-                    val intent = UCrop.of(Uri.fromFile(resource), Uri.fromFile(cropped))
-                        .withAspectRatio(1f, 1f)
-                        .withOptions(UCrop.Options().apply {
-                            setShowCropFrame(true)
-                            setShowCropGrid(true)
-                            setToolbarColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
-                            setToolbarWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorTextOnPrimary))
-                            setActiveControlsWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorAccent))
-                            setLogoColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
-                            setCompressionFormat(Bitmap.CompressFormat.JPEG)
-                        })
-                        .getIntent(context)
-                    cropLauncher.launch(intent)
-                }
+        val intent = UCrop.of(source, Uri.fromFile(cropped))
+            .withAspectRatio(1f, 1f)
+            .withOptions(UCrop.Options().apply {
+                setShowCropFrame(true)
+                setShowCropGrid(true)
+                setToolbarColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
+                setToolbarWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorTextOnPrimary))
+                setActiveControlsWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorAccent))
+                setLogoColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
+                setCompressionFormat(Bitmap.CompressFormat.JPEG)
             })
+            .getIntent(context)
+        cropLauncher.launch(intent)
     }
     return { pickLauncher.launch(PickMediasRequest()) }
 }

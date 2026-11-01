@@ -475,7 +475,7 @@ object ImageUtil {
         skipNetworkCheck: Boolean,
         noTransition: Boolean,
     ) {
-        if (!Util.canLoadGlide(imageView.context)) {
+        if (!Util.canLoadImage(imageView.context)) {
             return
         }
         if (isNightMode()) {

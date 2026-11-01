@@ -176,7 +176,7 @@ public class Util {
         return drawable;
     }
 
-    public static boolean canLoadGlide(Context context) {
+    public static boolean canLoadImage(Context context) {
         if (context instanceof Activity) {
             return !((Activity) context).isDestroyed();
         }

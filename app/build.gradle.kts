@@ -261,10 +261,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestRuntimeOnly(libs.androidx.test.runner)
 
-    //Glide
-    implementation(libs.glide)
-    ksp(libs.glide.ksp)
-    implementation(libs.glide.okhttp3.integration)
 
     implementation(libs.google.material)
 
