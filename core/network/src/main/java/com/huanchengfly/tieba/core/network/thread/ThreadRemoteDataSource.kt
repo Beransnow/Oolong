@@ -155,6 +155,46 @@ class ThreadRemoteDataSource(
         formService.removeStore(signedFormBody(params, withSig = false))
     }
 
+    /**
+     * Ten of the thread's pictures after [picId], or with [previous] the ten before it.
+     *
+     * @param picIndex the position of [picId] among all the thread's pictures, from 1
+     * @param objType where the pictures were opened from, "other" when unknown
+     * @param postId the post the picture is in, 0 for none
+     */
+    suspend fun picPage(
+        forumId: Long,
+        forumName: String,
+        threadId: Long,
+        picId: String,
+        picIndex: Int,
+        objType: String,
+        previous: Boolean,
+        seeLz: Boolean,
+        postId: Long,
+    ): PicPageResponse {
+        val params = commonParams.form(formProfile) + listOfNotNull(
+            "forum_id" to forumId.toString(),
+            "kw" to forumName,
+            "tid" to threadId.toString(),
+            "pic_id" to picId,
+            "pic_index" to picIndex.toString(),
+            "obj_type" to objType.ifEmpty { "other" },
+            "prev" to if (previous) "10" else "0",
+            "next" to if (previous) "0" else "10",
+            "not_see_lz" to if (seeLz) "0" else "1",
+            ("post_id" to postId.toString()).takeIf { postId != 0L },
+            "page_name" to "PB",
+            commonParams.session()?.let { "user_id" to it.uid },
+            "scr_h" to device.screenHeight.toString(),
+            "scr_w" to device.screenWidth.toString(),
+            "q_type" to "2",
+            "_os_version" to device.osVersion,
+            "applist" to "",
+        )
+        return formService.picPage(signedFormBody(params, withSig = false))
+    }
+
     /** A page (from 0) of the threads the user stored, newest first. */
     suspend fun threadStore(page: Int): ThreadStoreResponse {
         val session = checkNotNull(commonParams.session()) { "Not logged in" }

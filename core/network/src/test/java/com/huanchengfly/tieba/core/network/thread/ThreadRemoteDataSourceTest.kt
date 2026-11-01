@@ -219,6 +219,31 @@ class ThreadRemoteDataSourceTest {
     }
 
     @Test
+    fun `asks for the pictures before one as a signed form`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","pic_amount":"30","pic_list":[{"overall_index":"5","show_original_btn":"1","img":{"original":{"id":"p5","big_cdn_src":"b","original_src":"o"}},"post_id":"77"}]}"""
+        )
+
+        val response = dataSource.picPage(
+            forumId = 52, forumName = "测试", threadId = 9_000, picId = "p6", picIndex = 6,
+            objType = "", previous = true, seeLz = false, postId = 0,
+        )
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/pb/picpage", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("other", form.value("obj_type"))
+        assertEquals("10", form.value("prev"))
+        assertEquals("0", form.value("next"))
+        assertEquals("1", form.value("not_see_lz"))
+        assertEquals(null, form.value("post_id"))
+        assertEquals("12345", form.value("user_id"))
+        assertEquals("p5", response.picList.single().img.original.id)
+        assertEquals("30", response.picAmount)
+    }
+
+    @Test
     fun `lists a page of the thread store`() = runTest {
         server.enqueue(
             """{"error_code":"0","error":{"errno":"0","errmsg":""},"store_thread":[{"thread_id":"9","title":"t","count":"2","post_no":"30","author":{"lz_uid":"7","name_show":"n"}}]}"""

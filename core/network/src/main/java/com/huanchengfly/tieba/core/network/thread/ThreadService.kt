@@ -22,6 +22,9 @@ interface ThreadService {
     @POST("c/c/post/rmstore")
     suspend fun removeStore(@Body body: RequestBody): JsonObject
 
+    @POST("c/f/pb/picpage")
+    suspend fun picPage(@Body body: RequestBody): PicPageResponse
+
     @POST("c/f/post/threadstore")
     suspend fun threadStore(@Body body: RequestBody): ThreadStoreResponse
 
@@ -68,3 +71,27 @@ data class ThreadStoreResponse(
     )
 }
 
+/** A run of a thread's pictures around one of them. */
+@Serializable
+data class PicPageResponse(
+    @SerialName("pic_amount") val picAmount: String = "0",
+    @SerialName("pic_list") val picList: List<Pic> = emptyList(),
+) {
+    @Serializable
+    data class Pic(
+        @SerialName("overall_index") val overallIndex: String = "0",
+        @SerialName("show_original_btn") val showOriginalBtn: String = "0",
+        val img: Img = Img(),
+        @SerialName("post_id") val postId: String? = null,
+    )
+
+    @Serializable
+    data class Img(val original: Original = Original())
+
+    @Serializable
+    data class Original(
+        val id: String = "",
+        @SerialName("big_cdn_src") val bigCdnSrc: String = "",
+        @SerialName("original_src") val originalSrc: String = "",
+    )
+}
