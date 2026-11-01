@@ -1,38 +1,23 @@
 package com.huanchengfly.tieba.post.ui.common.theme.compose
 
 import androidx.compose.ui.graphics.Color
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 
+@Deprecated("Part of the palette", ReplaceWith("refreshIndicator"))
 val ExtendedColors.pullRefreshIndicator: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
-        windowBackground
-    } else {
-        indicator
-    }
+    get() = refreshIndicator
 
+@Deprecated("Part of the palette", ReplaceWith("refreshIndicator"))
 val ExtendedColors.loadMoreIndicator: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
-        windowBackground
-    } else {
-        indicator
-    }
+    get() = refreshIndicator
 
-val ExtendedColors.threadBottomBar: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
-        windowBackground
-    } else {
-        bottomBar
-    }
-
+@Deprecated("Part of the palette", ReplaceWith("menu"))
 val ExtendedColors.menuBackground: Color
-    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
-        windowBackground
-    } else {
-        card
-    }
+    get() = menu
 
+@Deprecated("Part of the palette", ReplaceWith("invertChip"))
 val ExtendedColors.invertChipBackground: Color
-    get() = if (ThemeUtil.isNightMode(theme)) primary.copy(alpha = 0.3f) else primary
+    get() = invertChip
 
+@Deprecated("Part of the palette", ReplaceWith("onInvertChip"))
 val ExtendedColors.invertChipContent: Color
-    get() = if (ThemeUtil.isNightMode(theme)) primary else onPrimary
+    get() = onInvertChip

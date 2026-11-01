@@ -242,7 +242,7 @@ private fun WallpaperPreview(source: File, version: Int, wallpaper: TranslucentW
 @Composable
 private fun PreviewColors(wallpaper: TranslucentWallpaper, content: @Composable () -> Unit) {
     val colors = getThemeColorForTheme(ThemeUtil.THEME_TRANSLUCENT, wallpaper.variant).let { colors ->
-        wallpaper.accent?.let { colors.copy(primary = Color(it)) } ?: colors
+        wallpaper.accent?.let { colors.copy(emphasis = Color(it), invertChip = Color(it)) } ?: colors
     }
     CompositionLocalProvider(LocalExtendedColors provides colors, content = content)
 }

@@ -14,18 +14,19 @@ import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
 /**
  * Every colour every theme gives, against [GOLDEN]. Restructuring the palette must not change
- * a single one; run with `-DupdatePalette=true` to write the file anew after a deliberate change.
+ * a single one; run with the environment variable `UPDATE_PALETTE=true` to write the file anew
+ * after a deliberate change.
  */
 @RunWith(RobolectricTestRunner::class)
 class PaletteSnapshotTest {
@@ -81,11 +82,13 @@ class PaletteSnapshotTest {
         }
         val actual = setups.joinToString("\n") { captured.getValue(it.name) } + "\n"
 
+        File(ACTUAL).apply { parentFile?.mkdirs() }.writeText(actual)
         val golden = File(GOLDEN)
-        if (System.getProperty("updatePalette") == "true" || !golden.exists()) {
+        val update = System.getenv("UPDATE_PALETTE") == "true"
+        if (update || !golden.exists()) {
             golden.parentFile?.mkdirs()
             golden.writeText(actual)
-            if (System.getProperty("updatePalette") != "true") fail("Wrote $GOLDEN; check it in")
+            if (!update) fail("Wrote $GOLDEN; check it in")
             return
         }
         assertEquals(golden.readText(), actual)
@@ -100,11 +103,6 @@ class PaletteSnapshotTest {
                 field.name to Color(field.getLong(colors).toULong())
             }
         val derived = listOf(
-            "~pullRefreshIndicator" to colors.pullRefreshIndicator,
-            "~loadMoreIndicator" to colors.loadMoreIndicator,
-            "~menuBackground" to colors.menuBackground,
-            "~invertChipBackground" to colors.invertChipBackground,
-            "~invertChipContent" to colors.invertChipContent,
             "m.primary" to material.primary,
             "m.secondary" to material.secondary,
             "m.onSecondary" to material.onSecondary,
@@ -121,5 +119,6 @@ class PaletteSnapshotTest {
 
     private companion object {
         const val GOLDEN = "src/test/resources/theme/palette.txt"
+        const val ACTUAL = "build/palette-actual.txt"
     }
 }
