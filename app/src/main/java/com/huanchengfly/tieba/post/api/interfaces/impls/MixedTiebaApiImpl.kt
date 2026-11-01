@@ -62,9 +62,6 @@ import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedRequest
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedRequestData
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileRequest
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileRequestData
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponse
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequest
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequestData
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
@@ -547,35 +544,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             vcode_tag = "12",
         )
         return flow { emit(AddPostResponse(data_ = legacyPostRemoteDataSource.addPost(data, tbs))) }
-    }
-
-    override fun userProfileFlow(uid: Long): Flow<ProfileResponse> {
-        val selfUid = AccountUtil.getUid()?.toLongOrNull()
-        val isSelf = selfUid == uid
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.profileFlow(
-            buildProtobufRequestBody(
-                ProfileRequest(
-                    ProfileRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        friend_uid = uid.takeIf { !isSelf },
-                        friend_uid_portrait = "",
-                        has_plist = 1,
-                        is_from_usercenter = 1,
-                        is_guest = if (isSelf) 0 else 1,
-                        need_post_count = 1,
-                        page = 1,
-                        pn = 1,
-                        q_type = 0,
-                        rn = 20,
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth(),
-                        uid = selfUid,
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12
-            )
-        )
     }
 
     override fun pbPageFlow(

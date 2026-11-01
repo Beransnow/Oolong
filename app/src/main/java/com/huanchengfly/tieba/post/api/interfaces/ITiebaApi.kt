@@ -10,7 +10,6 @@ import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadList
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponse
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
@@ -432,15 +431,6 @@ interface ITiebaApi {
         subPostId: String? = null,
         replyUserId: String? = null
     ): Flow<AddPostResponse>
-
-    /**
-     * 用户信息（Flow）
-     *
-     * @param uid 用户 ID
-     */
-    fun userProfileFlow(
-        uid: Long
-    ): Flow<ProfileResponse>
 
     /**
      * 贴子页（Flow）

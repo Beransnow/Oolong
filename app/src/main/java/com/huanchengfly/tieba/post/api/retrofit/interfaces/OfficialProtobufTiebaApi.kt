@@ -13,7 +13,6 @@ import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadList
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
-import com.huanchengfly.tieba.post.api.models.protos.profile.ProfileResponse
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
@@ -55,11 +54,6 @@ interface OfficialProtobufTiebaApi {
     fun threadListFlow(
         @Body body: MyMultipartBody,
     ): Flow<ThreadListResponse>
-
-    @POST("/c/u/user/profile?cmd=303012&format=protobuf")
-    fun profileFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<ProfileResponse>
 
     @POST("/c/f/pb/page?cmd=302001&format=protobuf")
     fun pbPageFlow(
