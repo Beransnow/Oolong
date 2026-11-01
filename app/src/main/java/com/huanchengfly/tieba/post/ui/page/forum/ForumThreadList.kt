@@ -15,18 +15,13 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
@@ -41,8 +36,6 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -76,12 +69,8 @@ internal fun ForumThreadList(
         WindowWidthSizeClass.Expanded -> 0.5f
         else -> 1f
     }
-    val refreshing = list.refresh == LoadStatus.Loading && list.items.isNotEmpty()
-    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = { onEvent(ForumEvent.Refresh) })
     val items = list.items
-    Box(modifier = modifier
-        .fillMaxSize()
-        .pullRefresh(pullRefreshState)) {
+    Box(modifier = modifier.fillMaxSize()) {
         LoadMoreLayout(
             isLoading = list.append == LoadStatus.Loading,
             onLoadMore = { onEvent(ForumEvent.LoadMore) },
@@ -161,16 +150,6 @@ internal fun ForumThreadList(
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = refreshing,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
     }
 }
 

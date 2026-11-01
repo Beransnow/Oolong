@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -23,15 +22,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.ExperimentalMaterialApi
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapsingScrollBehavior
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.layout.layout
@@ -39,27 +42,17 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
 
 /** What the floating button does, as set in the settings. */
 enum class ForumFab { Refresh, BackToTop, Hidden }
@@ -68,6 +61,7 @@ enum class ForumFab { Refresh, BackToTop, Hidden }
  * The forum page: the header and tabs in the top bar, collapsing as the threads scroll, and one
  * list of threads per tab.
  */
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ForumScreen(
     state: ForumState,
@@ -93,39 +87,13 @@ fun ForumScreen(
     val listStates = remember { mutableMapOf<ForumTab, LazyListState>() }
     fun listStateOf(tab: ForumTab) = listStates.getOrPut(tab) { LazyListState() }
 
-    val density = LocalDensity.current
-    var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
-    var headerHeight by rememberSaveable { mutableFloatStateOf(with(density) { (Sizes.Large + 16.dp * 2).toPx() }) }
-    val headerShown by remember { derivedStateOf { heightOffset.absoluteValue < headerHeight } }
     // The header and tabs ride in the bar, so the lists scroll under all of them and the header
     // collapses by shrinking the bar
-    val currentTab by rememberUpdatedState(state.selectedTab)
-    val headerNestedScroll = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val list = listStateOf(currentTab)
-                val atTop = list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0
-                // Pulling down at the top of the list brings the header back before the pull
-                // can refresh the list
-                if (available.y < 0 || (available.y > 0 && atTop && heightOffset < 0f)) {
-                    val previous = heightOffset
-                    heightOffset = (heightOffset + available.y).coerceIn(-headerHeight, 0f)
-                    if (previous != heightOffset) return Offset(0f, heightOffset - previous)
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (available.y > 0f) {
-                    // The list may have consumed less than was offered before it scrolled
-                    val previous = heightOffset
-                    heightOffset = min(heightOffset + available.y, 0f)
-                    if (previous != heightOffset) return available.copy(x = 0f)
-                }
-                return Offset.Zero
-            }
-        }
-    }
+    val collapse = rememberCollapsingScrollBehavior()
+    val headerShown by remember { derivedStateOf { collapse.state.collapsedFraction < 1f } }
+    val currentList = state.list(state.selectedTab)
+    val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = { onEvent(ForumEvent.Refresh) })
 
     val accent = rememberForumAccent(forum.avatar)
     CompositionLocalProvider(LocalForumAccent provides accent) {
@@ -146,8 +114,9 @@ fun ForumScreen(
                         .clipToBounds()
                         .layout { measurable, constraints ->
                             val header = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-                            if (headerHeight != header.height.toFloat()) headerHeight = header.height.toFloat()
-                            val shown = (header.height + heightOffset).roundToInt().coerceIn(0, header.height)
+                            val limit = -header.height.toFloat()
+                            if (collapse.state.heightOffsetLimit != limit) collapse.state.heightOffsetLimit = limit
+                            val shown = (header.height + collapse.state.heightOffset).roundToInt().coerceIn(0, header.height)
                             layout(header.width, shown) { header.place(0, shown - header.height) }
                         }) {
                         Box {
@@ -196,7 +165,9 @@ fun ForumScreen(
             }
         },
     ) { contentPadding ->
-        Box(modifier = Modifier.nestedScroll(headerNestedScroll)) {
+        // Pull to refresh is outside the header, so a pull at the top opens the header before it refreshes
+        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+        Box(modifier = Modifier.nestedScroll(collapse.nestedScrollConnection)) {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
@@ -234,6 +205,16 @@ fun ForumScreen(
                     )
                 }
             }
+        }
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentPadding.calculateTopPadding()),
+            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
+            contentColor = ExtendedTheme.colors.primary,
+        )
         }
     }
     }
