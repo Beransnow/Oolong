@@ -134,7 +134,7 @@ fun SearchBox(
         Surface(
             color = backgroundColor,
             contentColor = contentColor,
-            shape = RoundedCornerShape(6.dp),
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
@@ -142,7 +142,7 @@ fun SearchBox(
             Row(
                 verticalAlignment = CenterVertically,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Search,
@@ -635,7 +635,7 @@ fun HomeScreen(
                     if (showHistoryForum || pinned.isNotEmpty()) {
                         item(key = "ForumHeader", span = { GridItemSpan(maxLineSpan) }) {
                             Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                                Header(text = stringResource(id = R.string.forum_list_title))
+                                Header(text = stringResource(id = R.string.forum_list_title), invert = true)
                             }
                         }
                     }
