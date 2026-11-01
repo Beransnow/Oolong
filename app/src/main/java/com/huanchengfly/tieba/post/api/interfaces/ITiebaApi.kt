@@ -12,35 +12,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ITiebaApi {
 
-
-
-
-    /**
-     * 查看图片
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴 ID
-     * @param seeLz 是否只看楼主
-     * @param picId 图片 ID
-     * @param picIndex 图片索引
-     * @param objType 原页面类型（pb - 贴页面 frs - 吧页面 index - 首页推荐）
-     * @param prev 是否向前加载
-     */
-    fun picPageFlow(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        seeLz: Boolean,
-        picId: String,
-        picIndex: String,
-        objType: String,
-        prev: Boolean,
-        postId: Long? = null,
-    ): Flow<PicPageBean>
-
-
-
     /**
      * 吧签到
      *
@@ -55,17 +26,6 @@ interface ITiebaApi {
         forumName: String,
         tbs: String
     ): Flow<SignResultBean>
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * 获取举报贴子/回贴页面 URL
@@ -114,9 +74,6 @@ interface ITiebaApi {
         forumIds: String,
         tbs: String
     ): Flow<MSignBean>
-
-
-
 
     /**
      * 全部关注的吧
@@ -213,9 +170,6 @@ interface ITiebaApi {
         mark: Int = 0,
         lastPostId: Long? = null,
     ): Flow<PbPageResponse>
-
-
-
 
     /**
      * 获得当前用户信息（需登录）

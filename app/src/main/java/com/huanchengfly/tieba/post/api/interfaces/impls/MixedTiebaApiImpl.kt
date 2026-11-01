@@ -23,7 +23,6 @@ import com.huanchengfly.tieba.post.api.models.InitNickNameBean
 import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
-import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
@@ -53,50 +52,11 @@ import kotlinx.coroutines.flow.onEach
 
 object MixedTiebaApiImpl : ITiebaApi {
 
-
-
-
-    override fun picPageFlow(
-        forumId: String,
-        forumName: String,
-        threadId: String,
-        seeLz: Boolean,
-        picId: String,
-        picIndex: String,
-        objType: String,
-        prev: Boolean,
-        postId: Long?,
-    ): Flow<PicPageBean> = RetrofitTiebaApi.OFFICIAL_TIEBA_API.picPageFlow(
-        forumId,
-        forumName,
-        threadId,
-        picId,
-        picIndex,
-        objType.ifEmpty { "other" },
-        prev = if (prev) 10 else 0,
-        next = if (prev) 0 else 10,
-        notSeeLz = if (seeLz) 0 else 1,
-        postId = postId?.takeIf { it != 0L }?.toString(),
-    )
-
-
-
     override fun signFlow(forumId: String, forumName: String, tbs: String): Flow<SignResultBean> =
         flow {
             val response = legacySignRemoteDataSource.sign(forumId.toLong(), forumName, tbs)
             emit(response.toSignResultBean())
         }
-
-
-
-
-
-
-
-
-
-
-
 
     override fun checkReportPostAsync(postId: String): Deferred<ApiResult<CheckReportBean>> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.checkReportAsync(
@@ -132,9 +92,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             .map { legacySignRemoteDataSource.mSign(it, tbs) }
         emit(results.toMSignBean())
     }
-
-
-
 
     override fun allForumGuideFlow(): Flow<List<ForumGuideBean.LikeForum>> = flow {
         val forums = mutableListOf<ForumGuideBean.LikeForum>()
@@ -367,9 +324,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             )
         )
     }
-
-
-
 
     override fun getUserInfoFlow(): Flow<GetUserInfoResponse> {
         return getUserInfoFlow(AccountUtil.getUid()!!.toLong(), null, null)

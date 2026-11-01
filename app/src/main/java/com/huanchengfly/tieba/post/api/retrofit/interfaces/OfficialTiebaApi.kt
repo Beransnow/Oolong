@@ -9,7 +9,6 @@ import com.huanchengfly.tieba.post.api.getScreenDensity
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.models.*
-import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.InstallState
@@ -20,27 +19,6 @@ import kotlinx.coroutines.flow.Flow
 import retrofit2.http.*
 
 interface OfficialTiebaApi {
-    @POST("/c/f/pb/picpage")
-    @FormUrlEncoded
-    fun picPageFlow(
-        @Field("forum_id") forumId: String,
-        @Field("kw") forumName: String,
-        @Field("tid") threadId: String,
-        @Field("pic_id") picId: String,
-        @Field("pic_index") picIndex: String,
-        @Field("obj_type") objType: String,
-        @Field("prev") prev: Int,
-        @Field("next") next: Int,
-        @Field("not_see_lz") notSeeLz: Int,
-        @Field("post_id") postId: String? = null,
-        @Field("page_name") pageName: String = "PB",
-        @Field("user_id") userId: String? = AccountUtil.getUid(),
-        @Field("scr_h") scrH: String = getScreenHeight().toString(),
-        @Field("scr_w") scrW: String = getScreenWidth().toString(),
-        @Field("q_type") qType: Int = 2,
-        @Field("_os_version") osVersion: String = Build.VERSION.RELEASE,
-        @Field("applist") appList: String = "",
-    ): Flow<PicPageBean>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
