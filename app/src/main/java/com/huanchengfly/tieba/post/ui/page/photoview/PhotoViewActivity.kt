@@ -26,7 +26,6 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.panpf.sketch.compose.rememberAsyncImageState
 import com.github.panpf.sketch.request.LoadState
 import com.github.panpf.zoomimage.SketchZoomAsyncImage
@@ -47,10 +47,10 @@ import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.download
+import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.roundToInt
 
 @Composable
@@ -102,6 +102,7 @@ private fun ViewPhoto(
     }
 }
 
+@AndroidEntryPoint
 class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
     private val viewModel: PhotoViewViewModel by viewModels()
 
@@ -110,22 +111,19 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun Content(data: PhotoViewData) {
-        LazyLoad(loaded = viewModel.initialized) {
-            viewModel.send(PhotoViewUiIntent.Init(data))
-            viewModel.initialized = true
-        }
-        val uiState by viewModel.uiState.collectAsState()
-        val items by remember { derivedStateOf { uiState.data } }
-        val initialIndex by remember { derivedStateOf { uiState.initialIndex } }
-        val totalAmount by remember { derivedStateOf { uiState.totalAmount } }
-        val hasPrev by remember { derivedStateOf { uiState.hasPrev } }
-        val hasNext by remember { derivedStateOf { uiState.hasNext } }
-        val loadPicPageData by remember { derivedStateOf { uiState.loadPicPageData } }
-        val loaded by remember { derivedStateOf { uiState.data.isNotEmpty() } }
+        LaunchedEffect(Unit) { viewModel.start(data) }
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        val items = state.pictures
+        val initialIndex = state.currentIndex
+        val totalAmount = state.totalAmount
+        val hasPrev = state.hasPrevious
+        val hasNext = state.hasNext
+        val loadPicPageData = state.source
+        val loaded = items.isNotEmpty()
 
         Surface(color = Color.Black) {
             if (loaded) {
-                val pageCount by remember { derivedStateOf { items.size } }
+                val pageCount = items.size
 
                 val pagerState = rememberPagerState(initialPage = initialIndex) { pageCount }
 
@@ -137,21 +135,9 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
                     loadPicPageData?.let {
                         val item = items[pagerState.currentPage]
                         if (pagerState.currentPage == 0 && hasPrev) {
-                            viewModel.send(
-                                PhotoViewUiIntent.LoadPrev(
-                                    item.picId,
-                                    item.overallIndex,
-                                    it
-                                )
-                            )
+                            viewModel.loadPrevious(item)
                         } else if (pagerState.currentPage == pageCount - 1 && hasNext) {
-                            viewModel.send(
-                                PhotoViewUiIntent.LoadMore(
-                                    item.picId,
-                                    item.overallIndex,
-                                    it
-                                )
-                            )
+                            viewModel.loadMore(item)
                         }
                     }
                 }
