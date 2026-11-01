@@ -304,6 +304,13 @@ class MainActivityV2 : BaseComposeActivity() {
         launch {
             ClientUtils.setActiveTimestamp()
         }
+        // Once per activity: called from Content, these would add a listener on every recomposition
+        onGlobalEvent<GlobalEvent.StartSelectImages> {
+            pickMediasLauncher.launch(PickMediasRequest(it.id, it.maxCount))
+        }
+        onGlobalEvent<GlobalEvent.StartActivityForResult> {
+            mLaunchActivityForResultLauncher.launch(LaunchActivityRequest(it.requesterId, it.intent))
+        }
         intent?.let { checkIntent(it) }
     }
 
@@ -430,19 +437,6 @@ class MainActivityV2 : BaseComposeActivity() {
             if (appPreferences.autoSign && !isIgnoringBatteryOptimizations() && !appPreferences.ignoreBatteryOptimizationsDialog) {
                 okSignAlertDialogState.show()
             }
-        }
-        onGlobalEvent<GlobalEvent.StartSelectImages> {
-            pickMediasLauncher.launch(
-                PickMediasRequest(it.id, it.maxCount)
-            )
-        }
-        onGlobalEvent<GlobalEvent.StartActivityForResult> {
-            mLaunchActivityForResultLauncher.launch(
-                LaunchActivityRequest(
-                    it.requesterId,
-                    it.intent
-                )
-            )
         }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
