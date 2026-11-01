@@ -234,7 +234,6 @@ object NetworkIdentityModule {
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface LegacyNetworkEntryPoint {
-    fun commonParams(): CommonParams
     fun signRemoteDataSource(): SignRemoteDataSource
     fun accountRemoteDataSource(): AccountRemoteDataSource
     fun threadRemoteDataSource(): ThreadRemoteDataSource
@@ -248,8 +247,6 @@ private val legacyEntryPoint: LegacyNetworkEntryPoint by lazy {
 }
 
 /** For the legacy API singletons, which can't be injected. */
-internal val legacyCommonParams: CommonParams get() = legacyEntryPoint.commonParams()
-
 internal val legacySignRemoteDataSource: SignRemoteDataSource
     get() = legacyEntryPoint.signRemoteDataSource()
 
