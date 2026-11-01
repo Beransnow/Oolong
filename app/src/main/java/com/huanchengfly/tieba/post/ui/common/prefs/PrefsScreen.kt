@@ -14,7 +14,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
-import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 
 lateinit var LocalPrefsDataStore: ProvidableCompositionLocal<DataStore<Preferences>>
 
@@ -43,7 +42,7 @@ fun PrefsScreen(
         Container {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
-                contentPadding = contentPadding.plus(PaddingValues(top = 12.dp)),
+                contentPadding = contentPadding,
             ) {
                 items(prefsScope.prefsItems.size) { index ->
                     prefsScope.getPrefsItem(index)()
