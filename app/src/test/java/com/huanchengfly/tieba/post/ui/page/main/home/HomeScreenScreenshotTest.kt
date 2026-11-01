@@ -4,6 +4,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
 import com.huanchengfly.tieba.post.testing.captureScreenshotPaused
+import androidx.test.core.app.ApplicationProvider
+import com.airbnb.lottie.LottieCompositionFactory
+import com.huanchengfly.tieba.post.R
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +41,9 @@ class HomeScreenScreenshotTest {
 
     @Test
     fun guest() {
+        // The animation loads off the main thread, so whether it is drawn in time would be a race;
+        // with it cached, it is there at once
+        LottieCompositionFactory.fromRawResSync(ApplicationProvider.getApplicationContext(), R.raw.lottie_astronaut)
         composeRule.captureScreenshotPaused { HomeScreen(state = HomePreviewData.guest, onEvent = {}, canOpenExplore = true) }
     }
 
