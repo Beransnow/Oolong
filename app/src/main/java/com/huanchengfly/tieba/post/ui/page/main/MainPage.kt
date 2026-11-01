@@ -35,13 +35,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
@@ -109,21 +109,19 @@ private fun NavigationWrapper(
 @Composable
 fun MainPage(
     navigator: DestinationsNavigator,
-    viewModel: MainViewModel = pageViewModel<MainUiIntent, MainViewModel>(emptyList()),
+    viewModel: MainViewModel = hiltViewModel(),
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
     val windowHeightSizeClass by rememberUpdatedState(newValue = windowSizeClass.heightSizeClass)
     val windowWidthSizeClass by rememberUpdatedState(newValue = windowSizeClass.widthSizeClass)
 
-    val messageCount by viewModel.uiState.collectPartialAsState(
-        prop1 = MainUiState::messageCount,
-        initial = 0
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val messageCount = state.messageCount
 
     val notificationCountFlow = LocalNotificationCountFlow.current
     LaunchedEffect(null) {
         notificationCountFlow.collect {
-            viewModel.send(MainUiIntent.NewMessage.Receive(it))
+            viewModel.setMessageCount(it)
         }
     }
 
@@ -182,7 +180,7 @@ fun MainPage(
                     badge = messageCount > 0,
                     badgeText = "$messageCount",
                     onClick = {
-                        viewModel.send(MainUiIntent.NewMessage.Clear)
+                        viewModel.clearMessages()
                     },
                     content = {
                         NotificationsPage()
