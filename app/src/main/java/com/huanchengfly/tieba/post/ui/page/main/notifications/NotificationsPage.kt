@@ -15,12 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
-import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -48,10 +48,10 @@ fun NotificationsPage(
 ) {
     val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
         stringResource(id = R.string.title_reply_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.ReplyMe, contentPadding = it)
+            NotificationsListPage(type = NotificationType.ReplyMe, contentPadding = it)
         },
         stringResource(id = R.string.title_at_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.AtMe, contentPadding = it)
+            NotificationsListPage(type = NotificationType.AtMe, contentPadding = it)
         }
     )
     val pagerState = rememberPagerState(
@@ -120,10 +120,10 @@ fun NotificationsPage(
     val navigator = LocalNavigator.current
     val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
         stringResource(id = R.string.title_reply_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.ReplyMe, contentPadding = it)
+            NotificationsListPage(type = NotificationType.ReplyMe, contentPadding = it)
         },
         stringResource(id = R.string.title_at_me) to @Composable {
-            NotificationsListPage(type = NotificationsType.AtMe, contentPadding = it)
+            NotificationsListPage(type = NotificationType.AtMe, contentPadding = it)
         }
     )
     val pagerState = rememberPagerState(

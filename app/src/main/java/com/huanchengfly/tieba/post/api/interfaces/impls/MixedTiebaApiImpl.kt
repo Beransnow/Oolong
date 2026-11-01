@@ -31,7 +31,6 @@ import com.huanchengfly.tieba.post.api.models.InitNickNameBean
 import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
-import com.huanchengfly.tieba.post.api.models.MessageListBean
 import com.huanchengfly.tieba.post.api.models.NewCollectDataBean
 import com.huanchengfly.tieba.post.api.models.PersonalizedBean
 import com.huanchengfly.tieba.post.api.models.PicPageBean
@@ -267,11 +266,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             ).toJson()
         )
 
-
-    override fun replyMeFlow(page: Int): Flow<MessageListBean> =
-        RetrofitTiebaApi.NEW_TIEBA_API.replyMeFlow(page)
-
-    override fun atMeFlow(page: Int): Flow<MessageListBean> = RetrofitTiebaApi.NEW_TIEBA_API.atMeFlow(page)
 
     override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
         RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())

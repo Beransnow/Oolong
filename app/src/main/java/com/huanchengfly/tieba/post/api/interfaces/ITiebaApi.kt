@@ -236,30 +236,6 @@ interface ITiebaApi {
     ): Flow<CommonResponse>
 
     /**
-     * 回复我的消息列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     * @return Flow
-     */
-    fun replyMeFlow(
-        page: Int = 1
-    ): Flow<MessageListBean>
-
-    /**
-     * 提到我的消息列表
-     *
-     * **需登录**
-     *
-     * @param page 分页页码（从 1 开始）
-     * @return Flow
-     */
-    fun atMeFlow(
-        page: Int = 1
-    ): Flow<MessageListBean>
-
-    /**
      * 推荐“不感兴趣”
      *
      * **需登录**

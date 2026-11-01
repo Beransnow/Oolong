@@ -17,6 +17,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,9 +26,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
-import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.model.Notification
+import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -39,7 +44,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
@@ -47,56 +51,69 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
-import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NotificationsListPage(
-    type: NotificationsType,
+    type: NotificationType,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    viewModel: NotificationsListViewModel = when (type) {
-        NotificationsType.ReplyMe -> pageViewModel<NotificationsListUiIntent, ReplyMeListViewModel>()
-        NotificationsType.AtMe -> pageViewModel<NotificationsListUiIntent, AtMeListViewModel>()
-    }
+    viewModel: NotificationsViewModel = hiltViewModel(),
 ) {
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(NotificationsListUiIntent.Refresh)
-        viewModel.initialized = true
-    }
-    val context = LocalContext.current
+    val listType = type
+    LaunchedEffect(listType) { viewModel.open(listType) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val navigator = LocalNavigator.current
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::isRefreshing,
-        initial = false
+    NotificationList(
+        type = listType,
+        list = state.list(listType),
+        contentPadding = contentPadding,
+        onRefresh = { viewModel.refresh(listType) },
+        onLoadMore = { viewModel.loadMore(listType) },
+        onOpen = { notification ->
+            if (notification.inPost) {
+                navigator.navigate(
+                    SubPostsPageDestination(threadId = notification.threadId, subPostId = notification.postId, loadFromSubPost = true)
+                )
+            } else {
+                navigator.navigate(ThreadPageDestination(threadId = notification.threadId, postId = notification.postId))
+            }
+        },
+        onOpenQuote = { notification ->
+            val quotePostId = notification.quotePostId
+            if (notification.inPost && quotePostId != null) {
+                // The quoted id may be a post or a reply inside one, so let pb/floor resolve it as a reply
+                navigator.navigate(
+                    SubPostsPageDestination(threadId = notification.threadId, subPostId = quotePostId, loadFromSubPost = true)
+                )
+            } else {
+                navigator.navigate(ThreadPageDestination(threadId = notification.threadId))
+            }
+        },
+        onOpenUser = { navigator.navigate(UserProfilePageDestination(it)) },
     )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::isLoadingMore,
-        initial = false
-    )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::hasMore,
-        initial = true
-    )
-    val data by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::data,
-        initial = persistentListOf()
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = NotificationsListUiState::currentPage,
-        initial = 1
-    )
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = { viewModel.send(NotificationsListUiIntent.Refresh) }
-    )
+}
+
+/** One list of notifications, which pulls down to refresh and loads more at its end. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun NotificationList(
+    type: NotificationType,
+    list: PagerState<NotificationItem>,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onOpen: (Notification) -> Unit,
+    onOpenQuote: (Notification) -> Unit,
+    onOpenUser: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+) {
+    val refreshing = list.refresh == LoadStatus.Loading
+    val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
-    Box(
-        modifier = Modifier.pullRefresh(pullRefreshState)
-    ) {
+    Box(modifier = modifier.pullRefresh(pullRefreshState)) {
         LoadMoreLayout(
-            isLoading = isLoadingMore,
-            onLoadMore = { viewModel.send(NotificationsListUiIntent.LoadMore(currentPage + 1)) },
-            loadEnd = !hasMore,
+            isLoading = list.append == LoadStatus.Loading,
+            onLoadMore = onLoadMore,
+            loadEnd = !list.hasMore,
             lazyListState = lazyListState,
         ) {
             MyLazyColumn(
@@ -104,121 +121,16 @@ fun NotificationsListPage(
                 state = lazyListState,
             ) {
                 items(
-                    items = data,
-                    key = { "${it.info.postId}_${it.info.replyer?.id}_${it.info.time}" },
-                ) { (info, blocked) ->
+                    items = list.items,
+                    key = { (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
+                ) { (notification, blocked) ->
                     Container {
                         BlockableContent(
                             blocked = blocked,
-                            blockedTip = {
-                                BlockTip {
-                                    Text(
-                                        text = stringResource(id = R.string.tip_blocked_message)
-                                    )
-                                }
-                            },
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                            blockedTip = { BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) } },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .clickable {
-                                        if (info.isFloor == "1") {
-                                            navigator.navigate(
-                                                SubPostsPageDestination(
-                                                    threadId = info.threadId!!.toLong(),
-                                                    subPostId = info.postId!!.toLong(),
-                                                    loadFromSubPost = true
-                                                )
-                                            )
-                                        } else {
-                                            navigator.navigate(
-                                                ThreadPageDestination(
-                                                    threadId = info.threadId!!.toLong(),
-                                                    postId = info.postId!!.toLong()
-                                                )
-                                            )
-                                        }
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                if (info.replyer != null) {
-                                    UserHeader(
-                                        avatar = {
-                                            Avatar(
-                                                data = StringUtil.getAvatarUrl(info.replyer.portrait),
-                                                size = Sizes.Small,
-                                                contentDescription = null
-                                            )
-                                        },
-                                        name = {
-                                            Text(
-                                                text = info.replyer.nameShow ?: info.replyer.name
-                                                ?: ""
-                                            )
-                                        },
-                                        onClick = {
-                                            navigator.navigate(UserProfilePageDestination(info.replyer.id!!.toLong()))
-                                        },
-                                        desc = {
-                                            Text(
-                                                text = DateTimeUtils.getRelativeTimeString(
-                                                    LocalContext.current,
-                                                    info.time!!
-                                                )
-                                            )
-                                        },
-                                    ) {}
-                                }
-                                EmoticonText(text = info.content ?: "")
-                                val quoteText = if (type == NotificationsType.ReplyMe) {
-                                    if ("1" == info.isFloor) {
-                                        info.quoteContent
-                                    } else {
-                                        stringResource(
-                                            id = R.string.text_message_list_item_reply_my_thread,
-                                            info.title ?: ""
-                                        )
-                                    }
-                                } else {
-                                    info.title
-                                }
-                                if (quoteText != null) {
-                                    EmoticonText(
-                                        text = quoteText,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .clickable {
-                                                if ("1" == info.isFloor && info.quotePid != null) {
-                                                    // quote_pid may point to either the floor or a sub-post,
-                                                    // so let pb/floor resolve it as a sub-post id
-                                                    navigator.navigate(
-                                                        SubPostsPageDestination(
-                                                            threadId = info.threadId!!.toLong(),
-                                                            subPostId = info.quotePid.toLong(),
-                                                            loadFromSubPost = true,
-                                                        )
-                                                    )
-                                                } else {
-                                                    navigator.navigate(
-                                                        ThreadPageDestination(
-                                                            threadId = info.threadId!!.toLong(),
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                            .background(
-                                                ExtendedTheme.colors.chip,
-                                                RoundedCornerShape(6.dp)
-                                            )
-                                            .padding(8.dp),
-                                        color = ExtendedTheme.colors.onChip,
-                                        fontSize = 12.sp,
-                                    )
-                                }
-                            }
+                            NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
                         }
                     }
                 }
@@ -226,7 +138,7 @@ fun NotificationsListPage(
         }
 
         PullRefreshIndicator(
-            refreshing = isRefreshing,
+            refreshing = refreshing,
             state = pullRefreshState,
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -234,5 +146,52 @@ fun NotificationsListPage(
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
             contentColor = ExtendedTheme.colors.primary,
         )
+    }
+}
+
+@Composable
+private fun NotificationItemContent(
+    type: NotificationType,
+    notification: Notification,
+    onOpen: (Notification) -> Unit,
+    onOpenQuote: (Notification) -> Unit,
+    onOpenUser: (Long) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .clickable { onOpen(notification) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val author = notification.author
+        if (author != null) {
+            UserHeader(
+                avatar = {
+                    Avatar(data = StringUtil.getAvatarUrl(author.portrait), size = Sizes.Small, contentDescription = null)
+                },
+                name = { Text(text = author.displayName) },
+                onClick = { onOpenUser(author.id) },
+                desc = { Text(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, notification.time)) },
+            ) {}
+        }
+        EmoticonText(text = notification.content)
+        val quoteText = when {
+            type == NotificationType.AtMe -> notification.threadTitle
+            notification.inPost -> notification.quoteContent
+            else -> stringResource(id = R.string.text_message_list_item_reply_my_thread, notification.threadTitle)
+        }
+        if (quoteText != null) {
+            EmoticonText(
+                text = quoteText,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onOpenQuote(notification) }
+                    .background(ExtendedTheme.colors.chip, RoundedCornerShape(6.dp))
+                    .padding(8.dp),
+                color = ExtendedTheme.colors.onChip,
+                fontSize = 12.sp,
+            )
+        }
     }
 }

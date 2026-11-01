@@ -27,7 +27,6 @@ import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.SortAndSignInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.StParamInterceptor
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.AppHybridTiebaApi
-import com.huanchengfly.tieba.post.api.retrofit.interfaces.NewTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialProtobufTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.OfficialTiebaApi
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.SofireApi
@@ -75,11 +74,6 @@ object RetrofitTiebaApi {
         )
     private val gsonConverterFactory = GsonConverterFactory.create()
     private val sortAndSignInterceptor = SortAndSignInterceptor("tiebaclient!!!")
-
-    /** Notification lists, sent through the message task form stack. */
-    val NEW_TIEBA_API: NewTiebaApi by lazy {
-        createFormApi<NewTiebaApi>(TiebaProfile.MESSAGE_FORM_12_52)
-    }
 
     /** Data requests of the in-app search page, sent as the web view sends them. */
     val HYBRID_TIEBA_API: AppHybridTiebaApi by lazy {
