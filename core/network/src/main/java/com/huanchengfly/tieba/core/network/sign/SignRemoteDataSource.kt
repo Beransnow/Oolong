@@ -43,6 +43,13 @@ class SignRemoteDataSource(
         return service.mSign(signedFormBody(params, withSig = true))
     }
 
+    /** The limits of one-click sign-in for the user. */
+    suspend fun forumList(): ForumListResponse {
+        val session = checkNotNull(commonParams.session()) { "Not logged in" }
+        val params = commonParams.form(profile) + listOf("user_id" to session.uid)
+        return service.forumList(signedFormBody(params, withSig = false))
+    }
+
     companion object {
         const val MAX_MSIGN_FORUMS = 50
     }

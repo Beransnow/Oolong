@@ -10,6 +10,9 @@ import com.huanchengfly.tieba.core.network.fakeSession
 import com.huanchengfly.tieba.core.network.form.FormSignature
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
+import com.huanchengfly.tieba.core.network.testing.assertSigned
+import com.huanchengfly.tieba.core.network.testing.form
+import com.huanchengfly.tieba.core.network.testing.value
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -61,6 +64,21 @@ class SignRemoteDataSourceTest {
             val (name, value) = it.split('=', limit = 2)
             URLDecoder.decode(name, "UTF-8") to URLDecoder.decode(value, "UTF-8")
         }
+    }
+
+    @Test
+    fun `asks for the one-click sign-in limits`() = runTest {
+        enqueue("""{"error_code":"0","level":"7","msign_step_num":"200"}""")
+
+        val response = dataSource.forumList()
+
+        val request = server.takeRequest()
+        assertEquals("/c/f/forum/getforumlist", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("12345", form.value("user_id"))
+        assertEquals("7", response.level)
+        assertEquals("200", response.msignStepNum)
     }
 
     @Test

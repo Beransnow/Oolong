@@ -244,6 +244,18 @@ class ThreadRemoteDataSourceTest {
     }
 
     @Test
+    fun `asks where to report a post`() = runTest {
+        server.enqueue("""{"error_code":"0","errno":0,"errmsg":"","data":{"url":"https://example.com/report"}}""")
+
+        val url = dataSource.reportUrl(77)
+
+        val form = server.takeRequest().form()
+        assertEquals("1", form.value("category"))
+        assertEquals("77", form.value("pid"))
+        assertEquals("https://example.com/report", url)
+    }
+
+    @Test
     fun `lists a page of the thread store`() = runTest {
         server.enqueue(
             """{"error_code":"0","error":{"errno":"0","errmsg":""},"store_thread":[{"thread_id":"9","title":"t","count":"2","post_no":"30","author":{"lz_uid":"7","name_show":"n"}}]}"""

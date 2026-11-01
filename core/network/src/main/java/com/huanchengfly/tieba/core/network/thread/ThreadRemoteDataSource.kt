@@ -195,6 +195,14 @@ class ThreadRemoteDataSource(
         return formService.picPage(signedFormBody(params, withSig = false))
     }
 
+    /** The address of the page for reporting the post [postId]. */
+    suspend fun reportUrl(postId: Long): String {
+        val params = commonParams.form(formProfile) + listOf("category" to "1", "pid" to postId.toString())
+        val response = formService.checkReport(signedFormBody(params, withSig = false))
+        if (response.errno != 0) throw TiebaServerException(response.errno, response.errmsg, response)
+        return response.data.url
+    }
+
     /** A page (from 0) of the threads the user stored, newest first. */
     suspend fun threadStore(page: Int): ThreadStoreResponse {
         val session = checkNotNull(commonParams.session()) { "Not logged in" }

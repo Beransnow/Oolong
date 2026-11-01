@@ -25,6 +25,9 @@ interface ThreadService {
     @POST("c/f/pb/picpage")
     suspend fun picPage(@Body body: RequestBody): PicPageResponse
 
+    @POST("c/f/ueg/checkjubao")
+    suspend fun checkReport(@Body body: RequestBody): CheckReportResponse
+
     @POST("c/f/post/threadstore")
     suspend fun threadStore(@Body body: RequestBody): ThreadStoreResponse
 
@@ -94,4 +97,15 @@ data class PicPageResponse(
         @SerialName("big_cdn_src") val bigCdnSrc: String = "",
         @SerialName("original_src") val originalSrc: String = "",
     )
+}
+
+/** Where to report a post: a web page the server prepares. */
+@Serializable
+data class CheckReportResponse(
+    val errno: Int = 0,
+    val errmsg: String = "",
+    val data: Data = Data(),
+) {
+    @Serializable
+    data class Data(val url: String = "")
 }

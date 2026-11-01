@@ -12,7 +12,19 @@ interface SignService {
 
     @POST("c/c/forum/msign")
     suspend fun mSign(@Body body: RequestBody): MSignResponse
+
+    @POST("c/f/forum/getforumlist")
+    suspend fun forumList(@Body body: RequestBody): ForumListResponse
 }
+
+/** Who may sign in to several forums at once, and to how many. */
+@Serializable
+data class ForumListResponse(
+    /** The lowest forum level one-click sign-in covers. */
+    val level: String = "0",
+    /** How many forums one-click sign-in covers. */
+    @SerialName("msign_step_num") val msignStepNum: String = "0",
+)
 
 @Serializable
 data class SignResponse(
