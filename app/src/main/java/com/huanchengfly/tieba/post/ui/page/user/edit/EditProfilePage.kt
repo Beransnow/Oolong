@@ -87,6 +87,7 @@ fun EditProfilePage(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val storagePermissionTip = stringResource(id = R.string.tip_permission_storage)
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -114,7 +115,7 @@ fun EditProfilePage(
                         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> listOf(PermissionUtils.READ_EXTERNAL_STORAGE)
                         else -> listOf(PermissionUtils.READ_MEDIA_IMAGES)
                     }
-                    description = context.getString(R.string.tip_permission_storage)
+                    description = storagePermissionTip
                     onGranted = { pickPortrait() }
                     onDenied = { context.toastShort(R.string.toast_no_permission_upload_portrait) }
                 }
