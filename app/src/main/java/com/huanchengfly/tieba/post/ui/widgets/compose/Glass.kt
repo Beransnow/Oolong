@@ -87,8 +87,8 @@ private fun currentGlassTier(): GlassTier {
 val LocalGlassSource = staticCompositionLocalOf<HazeState?> { null }
 
 /**
- * Background for a bar pinned to the top edge. Blur and tint are strongest at the top and fade
- * out over the last [fade] of its height, ending at its bottom edge without a hard line.
+ * Background for a bar pinned to the top edge. Blur and tint fade out over the last [fade] of its
+ * height, ending at its bottom edge without a hard line.
  */
 @Composable
 fun Modifier.topBarGlass(fade: Dp): Modifier {
@@ -116,8 +116,16 @@ fun Modifier.topBarGlass(fade: Dp): Modifier {
             backgroundColor(color)
             blurRadius(24.dp)
             noiseFactor(0f)
+            // Full blur down to the fade, so rows near the bottom of a tall bar stay readable
             progressive(
-                HazeProgressive.verticalGradient(startIntensity = 1f, endIntensity = 0f)
+                HazeProgressive.verticalGradient(
+                    easing = { t ->
+                        if (solidFraction >= 1f) 0f
+                        else ((t - solidFraction) / (1f - solidFraction)).coerceIn(0f, 1f)
+                    },
+                    startIntensity = 1f,
+                    endIntensity = 0f,
+                )
             )
             colorEffects(
                 listOf(
