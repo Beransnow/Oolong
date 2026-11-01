@@ -101,7 +101,7 @@ class ReplyComposerScreenshotTest {
                     .fillMaxWidth()
                     .then(if (fullScreen) Modifier.height(600.dp) else Modifier)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(ExtendedTheme.colors.windowBackground),
+                    .background(ExtendedTheme.colors.sheet),
             )
         }
     }

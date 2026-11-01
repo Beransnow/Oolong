@@ -66,31 +66,7 @@ data class ExtendedColors(
     /** A chip that stands out, as the thread store mark. */
     val invertChip: Color = Color.Unspecified,
     val onInvertChip: Color = Color.Unspecified,
-) {
-    @Deprecated("Renamed", ReplaceWith("emphasis"))
-    val primary: Color get() = emphasis
-
-    @Deprecated("Same as background", ReplaceWith("background"))
-    val topBar: Color get() = background
-
-    @Deprecated("Renamed", ReplaceWith("topBarContent"))
-    val onTopBar: Color get() = topBarContent
-
-    @Deprecated("Renamed", ReplaceWith("topBarContentSecondary"))
-    val onTopBarSecondary: Color get() = topBarContentSecondary
-
-    @Deprecated("Renamed", ReplaceWith("searchField"))
-    val topBarSurface: Color get() = searchField
-
-    @Deprecated("Renamed", ReplaceWith("onSearchField"))
-    val onTopBarSurface: Color get() = onSearchField
-
-    @Deprecated("Renamed", ReplaceWith("inset"))
-    val floorCard: Color get() = inset
-
-    @Deprecated("Renamed", ReplaceWith("sheet"))
-    val windowBackground: Color get() = sheet
-}
+)
 
 val LocalExtendedColors = staticCompositionLocalOf {
     ExtendedColors(
