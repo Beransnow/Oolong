@@ -28,12 +28,11 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.NavigationRail
-import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -66,8 +65,6 @@ import androidx.compose.ui.util.lerp as lerpFloat
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
-import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
-import com.huanchengfly.tieba.post.ui.widgets.compose.AccountNavIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.glassLens
 import com.huanchengfly.tieba.post.ui.widgets.compose.lensTarget
@@ -76,75 +73,116 @@ import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 
+/**
+ * The main navigation on wider windows: the floating pill stood upright beside the panes. It
+ * stays while pages are open, highlighting the tab they were opened from; choosing a tab goes
+ * back to the main page on that tab, and choosing the shown one again refreshes it. Labels go
+ * where the window is too short for them.
+ */
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun NavigationRail(
     currentPosition: Int,
-    onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
+    onSelect: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
-    navigationContentPosition: MainNavigationContentPosition
+    showLabels: Boolean,
+    modifier: Modifier = Modifier,
+    themeColors: ExtendedColors = ExtendedTheme.colors,
 ) {
-    NavigationRail(
-        backgroundColor = ExtendedTheme.colors.bottomBar,
-        contentColor = ExtendedTheme.colors.unselected,
-        modifier = Modifier
+    val itemWidth = if (showLabels) NavItemWidth else NavItemCollapsedWidth
+    val itemHeight = if (showLabels) NavItemHeight else NavItemCollapsedWidth
+    val indicator = remember { Animatable(currentPosition.toFloat()) }
+    LaunchedEffect(currentPosition) { indicator.animateTo(currentPosition.toFloat(), IndicatorSpring) }
+    Box(
+        modifier = modifier
             .fillMaxHeight()
             .windowInsetsPadding(
                 WindowInsets.systemBars.union(WindowInsets.displayCutout)
                     .only(WindowInsetsSides.Vertical + WindowInsetsSides.Start)
-            ),
-        elevation = 0.dp,
-        header = {
-            AccountNavIcon(spacer = false)
-        }
+            )
+            .padding(horizontal = NavPillMargin),
+        contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier.fillMaxHeight(),
-            verticalArrangement = if (navigationContentPosition == MainNavigationContentPosition.TOP) Arrangement.Top else Arrangement.Center
+        Box(
+            modifier = Modifier
+                .floatingGlass(NavPillShape)
+                .padding(NavPillPadding),
         ) {
-            navigationItems.forEachIndexed { index, navigationItem ->
-                NavigationRailItem(
-                    selected = index == currentPosition,
-                    onClick = {
-                        if (index == currentPosition) {
-                            onReselected(index)
-                        } else {
-                            onChangePosition(index)
-                        }
-                        // As on the floating bar, so opening notifications clears their badge here too
-                        navigationItem.onClick?.invoke()
-                    },
-                    icon = {
-                        Box {
-                            Icon(
-                                painter = rememberAnimatedVectorPainter(
-                                    animatedImageVector = navigationItem.icon(),
-                                    atEnd = index == currentPosition
-                                ),
-                                contentDescription = navigationItem.title(index == currentPosition),
-                                modifier = Modifier.size(16.dp),
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(0, (indicator.value * itemHeight.toPx()).roundToInt()) }
+                    .size(width = itemWidth, height = itemHeight)
+                    .background(MaterialTheme.colors.secondary.copy(alpha = 0.12f), NavPillShape)
+            )
+            Column {
+                navigationItems.fastForEachIndexed { index, navigationItem ->
+                    val selected = index == currentPosition
+                    val title = navigationItem.title(selected)
+                    val contentColor =
+                        if (selected) MaterialTheme.colors.secondary else themeColors.textSecondary
+                    Column(
+                        modifier = Modifier
+                            .size(width = itemWidth, height = itemHeight)
+                            .clip(NavPillShape)
+                            .selectable(
+                                selected = selected,
+                                role = Role.Tab,
+                                onClick = { onSelect(index) },
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        NavItemIcon(navigationItem, selected, title, contentColor)
+                        if (showLabels) {
+                            Text(
+                                text = title,
+                                color = contentColor,
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                                maxLines = 1,
                             )
-                            if (navigationItem.badge) {
-                                Text(
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 10.sp,
-                                    color = White,
-                                    text = navigationItem.badgeText ?: "",
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .align(Alignment.TopEnd)
-                                        .background(
-                                            color = MaterialTheme.colors.secondary,
-                                            shape = CircleShape
-                                        ),
-                                )
-                            }
                         }
                     }
-                )
+                }
             }
+        }
+    }
+}
+
+/** An item's icon, animating to its selected form, with the item's badge on its corner. */
+@OptIn(ExperimentalAnimationGraphicsApi::class)
+@Composable
+private fun NavItemIcon(
+    navigationItem: NavigationItem,
+    selected: Boolean,
+    title: String,
+    tint: Color,
+) {
+    Box {
+        Icon(
+            painter = rememberAnimatedVectorPainter(
+                animatedImageVector = navigationItem.icon(),
+                atEnd = selected
+            ),
+            contentDescription = title,
+            tint = tint,
+            modifier = Modifier.size(24.dp),
+        )
+        if (navigationItem.badge) {
+            Text(
+                textAlign = TextAlign.Center,
+                fontSize = 10.sp,
+                color = White,
+                text = navigationItem.badgeText ?: "",
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .align(Alignment.TopEnd)
+                    .background(
+                        color = MaterialTheme.colors.secondary,
+                        shape = CircleShape
+                    ),
+            )
         }
     }
 }
@@ -303,33 +341,7 @@ fun FloatingNavBar(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
-                            Box {
-                                Icon(
-                                    painter = rememberAnimatedVectorPainter(
-                                        animatedImageVector = navigationItem.icon(),
-                                        atEnd = selected
-                                    ),
-                                    contentDescription = title,
-                                    tint = contentColor,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                                if (navigationItem.badge) {
-                                    Text(
-                                        textAlign = TextAlign.Center,
-                                        fontSize = 10.sp,
-                                        color = White,
-                                        text = navigationItem.badgeText ?: "",
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .align(Alignment.TopEnd)
-                                            .background(
-                                                color = MaterialTheme.colors.secondary,
-                                                shape = CircleShape
-                                            ),
-                                    )
-                                }
-                            }
+                            NavItemIcon(navigationItem, selected, title, contentColor)
                             if (fraction < 1f) {
                                 Text(
                                     text = title,
@@ -384,5 +396,4 @@ data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constr
     val badge: Boolean = false,
     val badgeText: String? = null,
     val onClick: (() -> Unit)? = null,
-    val content: @Composable () -> Unit = {},
 )

@@ -6,10 +6,10 @@ import androidx.navigation3.runtime.get
 import androidx.navigation3.runtime.metadata
 
 /**
- * Where a page goes when the window has room for two: lists on the left, what they open on
- * the right. Only one pane shows for now; scenes read this to lay out more.
+ * Where a page goes when the window has room for two panes: lists on the left, what they open
+ * on the right, and a few pages, such as logging in, over the whole window.
  */
-enum class PaneRole { List, Detail }
+enum class PaneRole { List, Detail, Full }
 
 object PaneRoleKey : NavMetadataKey<PaneRole>
 

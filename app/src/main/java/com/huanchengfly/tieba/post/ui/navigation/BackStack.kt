@@ -44,11 +44,36 @@ val Key.presentation: Presentation
         else -> Presentation.Page
     }
 
-/** Navigates by changing [backStack]. */
+/**
+ * Navigates by changing [backStack]. Pages get the navigator from [forPage], which acts for the
+ * page wherever it shows: with two panes the page on the left is not the top of the stack.
+ */
 class BackStackNavigator(private val backStack: NavBackStack<NavKey>) : Navigator {
-    override fun navigate(key: Key) {
-        // A page opened from a sheet takes the sheet's place, so back leads past it
+    override fun navigate(key: Key) = navigate(key, from = null)
+
+    override fun navigateUp() {
+        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    }
+
+    /** The navigator for [page]: what it opens goes above it, and leaving closes it. */
+    fun forPage(page: Page): Navigator = object : Navigator {
+        override fun navigate(key: Key) = navigate(key, from = page)
+
+        override fun navigateUp() = close(page)
+    }
+
+    private fun navigate(key: Key, from: Page?) {
         if (key.presentation == Presentation.Page) {
+            // A list opens pages in place of what it opened before, so back leaves the list in
+            // one step instead of retracing every thread read from it. With one pane the list is
+            // on top and nothing is above it
+            if (from != null && from.key.paneRole == PaneRole.List && key.paneRole == PaneRole.Detail) {
+                val index = backStack.indexOf(from)
+                if (index >= 0) {
+                    while (backStack.lastIndex > index) backStack.removeAt(backStack.lastIndex)
+                }
+            }
+            // A page opened from a sheet takes the sheet's place, so back leads past it
             while (backStack.size > 1 && backStack.last().key.presentation == Presentation.Sheet) {
                 backStack.removeAt(backStack.lastIndex)
             }
@@ -56,7 +81,14 @@ class BackStackNavigator(private val backStack: NavBackStack<NavKey>) : Navigato
         backStack.add(Page(key))
     }
 
-    override fun navigateUp() {
-        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    /** Removes [page], and for a list also the pages opened beside it, which go with it. */
+    private fun close(page: Page) {
+        val index = backStack.indexOf(page)
+        if (index <= 0) return
+        var end = index + 1
+        if (page.key.paneRole == PaneRole.List) {
+            while (end < backStack.size && backStack[end].key.paneRole != PaneRole.List) end++
+        }
+        repeat(end - index) { backStack.removeAt(index) }
     }
 }

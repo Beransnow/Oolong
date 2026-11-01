@@ -7,6 +7,8 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -78,9 +80,10 @@ object PageTransitions {
     private fun underPageOffset(fullOffset: Int, overlap: Boolean): Int =
         if (overlap) (fullOffset * UnderPageOffset).roundToInt() else fullOffset
 
-    fun <T : Any> transitionSpec(
+    /** Opening a page, for scenes or for the content of one pane. */
+    fun <S> transitionSpec(
         overlap: State<Boolean>,
-    ): AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
+    ): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
         slideIntoContainer(
             AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = spec<IntOffset>(),
@@ -92,9 +95,9 @@ object PageTransitions {
         )
     }
 
-    fun <T : Any> popTransitionSpec(
+    fun <S> popTransitionSpec(
         overlap: State<Boolean>,
-    ): AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
+    ): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
         slideIntoContainer(
             AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = spec<IntOffset>(),
@@ -105,6 +108,12 @@ object PageTransitions {
             targetOffset = { it }
         )
     }
+
+    /** The same pages laid out again for a new window size: a quick cross-fade, nothing slides. */
+    fun relayout(): ContentTransform =
+        fadeIn(tween(RelayoutMillis)) togetherWith fadeOut(tween(RelayoutMillis))
+
+    private const val RelayoutMillis = 200
 
     /**
      * Gives a page an opaque background, so the page underneath doesn't show

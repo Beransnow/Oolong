@@ -33,17 +33,3 @@ fun isSeparating(foldFeature: FoldingFeature?): Boolean {
     contract { returns(true) implies (foldFeature != null) }
     return foldFeature?.state == FoldingFeature.State.FLAT && foldFeature.isSeparating
 }
-
-/**
- * Different type of navigation supported by app depending on device size and state.
- */
-enum class MainNavigationType {
-    BOTTOM_NAVIGATION, NAVIGATION_RAIL
-}
-
-/**
- * Different position of navigation content inside Navigation Rail, Navigation Drawer depending on device size and state.
- */
-enum class MainNavigationContentPosition {
-    TOP, CENTER
-}

@@ -1,5 +1,41 @@
 package com.huanchengfly.tieba.post.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.navigation3.scene.Scene
+import com.huanchengfly.tieba.post.LocalNotificationCountFlow
+import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
+import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainTabs
+import com.huanchengfly.tieba.post.ui.page.main.LocalNavigationRailShown
+import com.huanchengfly.tieba.post.ui.page.main.MainTabs
+import com.huanchengfly.tieba.post.ui.page.main.NavigationRail
+import com.huanchengfly.tieba.post.ui.page.main.rememberMainTabItems
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -99,12 +135,13 @@ private fun KeyContent(key: Key) {
     }
 }
 
-/** Where [key] goes when two panes fit; null for pages that show over others. */
-private val Key.paneRole: PaneRole?
+/** Where [this] goes when two panes fit; null for pages that show over others. */
+internal val Key.paneRole: PaneRole?
     get() = when (this) {
         MainKey, is ForumKey, SearchKey, HistoryKey, ThreadStoreKey, HotTopicListKey,
-        is ForumSearchPostKey, SettingsKey -> PaneRole.List
+        is ForumSearchPostKey, SettingsKey, is NotificationsKey -> PaneRole.List
 
+        LoginKey -> PaneRole.Full
         is ReplyKey, is SubPostsSheetKey, is CopyTextKey -> null
         else -> PaneRole.Detail
     }
@@ -116,8 +153,9 @@ private fun Key.metadata(): Map<String, Any> = when (presentation) {
 }
 
 /**
- * Shows [backStack]. Scenes are tried in order: overlays first, then any added before the
- * single pane, which takes whatever is left.
+ * Shows [backStack], with the navigation rail beside it on windows wider than a phone. Scenes
+ * are tried in order: overlays first, then any added before the panes, two panes where they
+ * fit, and the single pane, which takes whatever is left.
  */
 @Composable
 fun AppNavDisplay(
@@ -125,6 +163,29 @@ fun AppNavDisplay(
     modifier: Modifier = Modifier,
     sceneStrategies: List<SceneStrategy<NavKey>> = emptyList(),
 ) {
+    val windowSizeClass = LocalWindowSizeClass.current
+    // Two panes need the width for both and the height for their bars; a phone held sideways
+    // is wide enough but too short, and keeps one pane
+    val twoPane = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded &&
+        windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact
+    val showRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact &&
+        backStack.last().key.paneRole != PaneRole.Full
+
+    val tabs = rememberSaveable(saver = MainTabs.Saver) { MainTabs() }
+    val notificationCountFlow = LocalNotificationCountFlow.current
+    LaunchedEffect(notificationCountFlow) {
+        notificationCountFlow.collect { tabs.messageCount = it }
+    }
+
+    val listDetailState = rememberListDetailState()
+    val strategies = remember(twoPane, sceneStrategies, listDetailState) {
+        listOf(DialogSceneStrategy<NavKey>(), BottomSheetSceneStrategy<NavKey>()) +
+            sceneStrategies +
+            listOfNotNull(if (twoPane) listDetailState.strategy else null) +
+            FramedSinglePaneSceneStrategy()
+    }
+
+    val navigator = remember(backStack) { BackStackNavigator(backStack) }
     val overlap = PageTransitions.rememberOverlap()
     val ids = backStack.map { (it as Page).id }
     val previousIds = remember { mutableStateOf(ids) }
@@ -133,30 +194,126 @@ fun AppNavDisplay(
         previousIds.value = ids
         ids.size < previous.size && previous.subList(0, ids.size) == ids
     }
-    CompositionLocalProvider(LocalIsPop provides isPop) {
-        NavDisplay(
-            backStack = backStack,
-            modifier = modifier,
-            onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            sceneStrategies = listOf(DialogSceneStrategy<NavKey>(), BottomSheetSceneStrategy<NavKey>()) +
-                sceneStrategies + FramedSinglePaneSceneStrategy(),
-            transitionSpec = PageTransitions.transitionSpec(overlap),
-            popTransitionSpec = PageTransitions.popTransitionSpec(overlap),
-            entryProvider = entryProvider {
-                entry<Page>(
-                    clazzContentKey = { it.id },
-                    metadata = { it.key.metadata() },
-                ) { page ->
-                    val isTop = backStack.lastOrNull() == page
-                    CompositionLocalProvider(LocalIsTopEntry provides isTop) {
-                        KeyContent(page.key)
+    // The window changing between one pane and two lays the same pages out again; that is not
+    // a page opening, so it does not slide
+    val previousTwoPane = remember { mutableStateOf(twoPane) }
+    val relayout = remember(ids, twoPane) {
+        val changed = previousTwoPane.value != twoPane
+        previousTwoPane.value = twoPane
+        changed
+    }
+    CompositionLocalProvider(
+        LocalMainTabs provides tabs,
+        LocalNavigationRailShown provides showRail,
+        LocalIsPop provides isPop,
+    ) {
+        Row(modifier = modifier.fillMaxSize()) {
+            AnimatedVisibility(
+                visible = showRail,
+                enter = expandHorizontally(),
+                exit = shrinkHorizontally(),
+            ) {
+                MainRail(backStack, tabs, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+            }
+            // NavDisplay lays out no container of its own: sheets and dialogs are emitted beside
+            // the pages, so they need a box here, not the row, to cover them
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (showRail) {
+                            Modifier.consumeWindowInsets(
+                                WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
+                            )
+                        } else Modifier
+                    ),
+            ) {
+                NavDisplay(
+                    backStack = backStack,
+                    modifier = Modifier.fillMaxSize(),
+                    onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    sceneStrategies = strategies,
+                    transitionSpec = {
+                        if (relayout) PageTransitions.relayout() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                    },
+                    popTransitionSpec = {
+                        if (relayout) PageTransitions.relayout() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                    },
+                    entryProvider = entryProvider {
+                        entry<Page>(
+                            clazzContentKey = { it.id },
+                            metadata = { it.key.metadata() },
+                        ) { page ->
+                            val isTop = backStack.lastOrNull() == page
+                            val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
+                            CompositionLocalProvider(
+                                LocalIsTopEntry provides isTop,
+                                LocalNavigator provides pageNavigator,
+                            ) {
+                                KeyContent(page.key)
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** The pane layout, its list width kept across launches once the divider has been moved. */
+@Composable
+private fun rememberListDetailState(): ListDetailStateHolder {
+    val dataStore = LocalContext.current.dataStore
+    val coroutineScope = rememberCoroutineScope()
+    val holder = remember(dataStore) {
+        val state = ListDetailState()
+        ListDetailStateHolder(
+            state = state,
+            strategy = ListDetailSceneStrategy(state) { width ->
+                coroutineScope.launch {
+                    dataStore.edit {
+                        if (width == null) it.remove(ListPaneWidthKey) else it[ListPaneWidthKey] = width.value
                     }
                 }
             },
         )
     }
+    LaunchedEffect(holder) {
+        dataStore.data.first()[ListPaneWidthKey]?.let { holder.state.listWidth = it.dp }
+    }
+    return holder
+}
+
+private class ListDetailStateHolder(val state: ListDetailState, val strategy: ListDetailSceneStrategy<NavKey>)
+
+private val ListPaneWidthKey = floatPreferencesKey("list_pane_width")
+
+/**
+ * The rail beside the panes. Choosing a tab closes every open page and shows the main page on
+ * that tab; choosing the tab already shown, with nothing open, refreshes it.
+ */
+@Composable
+private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, showLabels: Boolean) {
+    val coroutineScope = rememberCoroutineScope()
+    val items = rememberMainTabItems(tabs)
+    val selectedIndex = items.indexOfFirst { it.id == tabs.selected }.coerceAtLeast(0)
+    NavigationRail(
+        currentPosition = selectedIndex,
+        onSelect = { index ->
+            val item = items[index]
+            if (backStack.size == 1 && index == selectedIndex) {
+                coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(item.id))
+            } else {
+                while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+                tabs.selected = item.id
+            }
+            item.onClick?.invoke()
+        },
+        navigationItems = items,
+        showLabels = showLabels,
+    )
 }
