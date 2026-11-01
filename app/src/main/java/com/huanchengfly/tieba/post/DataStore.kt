@@ -46,6 +46,20 @@ private val dataStoreInstance by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) 
                     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
                         return currentData[stringPreferencesKey("dark_theme")] == "dark"
                     }
+                },
+                // The forum page's button no longer offers posting, which only ever hid the button
+                object : DataMigration<Preferences> {
+                    override suspend fun cleanUp() {}
+
+                    override suspend fun migrate(currentData: Preferences): Preferences {
+                        return currentData.toMutablePreferences().apply {
+                            set(stringPreferencesKey("forumFabFunction"), "hide")
+                        }.toPreferences()
+                    }
+
+                    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+                        return currentData[stringPreferencesKey("forumFabFunction")] == "post"
+                    }
                 }
             )
         }

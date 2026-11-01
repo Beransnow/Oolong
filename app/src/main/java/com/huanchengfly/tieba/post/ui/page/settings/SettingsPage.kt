@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.HabitSettingsPageDestina
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.MoreSettingsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.OKSignSettingsPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.PostSettingsPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -128,23 +129,6 @@ fun SettingsPage(
                 }
                 prefsItem {
                     TextPref(
-                        title = stringResource(id = R.string.title_block_settings),
-                        summary = stringResource(id = R.string.summary_block_settings),
-                        leadingIcon = {
-                            LeadingIcon {
-                                AvatarIcon(
-                                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_block),
-                                    size = Sizes.Small,
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                        darkenOnDisable = false,
-                        onClick = { navigator.navigate(BlockSettingsPageDestination) }
-                    )
-                }
-                prefsItem {
-                    TextPref(
                         title = stringResource(id = R.string.title_settings_custom),
                         summary = stringResource(id = R.string.summary_settings_custom),
                         leadingIcon = {
@@ -175,6 +159,40 @@ fun SettingsPage(
                         },
                         darkenOnDisable = false,
                         onClick = { navigator.navigate(HabitSettingsPageDestination) }
+                    )
+                }
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_settings_post),
+                        summary = stringResource(id = R.string.summary_settings_post),
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = ImageVector.vectorResource(id = R.drawable.ic_round_create),
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        darkenOnDisable = false,
+                        onClick = { navigator.navigate(PostSettingsPageDestination) }
+                    )
+                }
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_block_settings),
+                        summary = stringResource(id = R.string.summary_block_settings),
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_block),
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        darkenOnDisable = false,
+                        onClick = { navigator.navigate(BlockSettingsPageDestination) }
                     )
                 }
                 prefsItem {

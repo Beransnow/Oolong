@@ -82,7 +82,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         defaultValue = "0"
     )
 
-    var darkTheme by DataStoreDelegates.string(key = "dark_theme", defaultValue = "grey_dark")
 
     var doNotUsePhotoPicker by DataStoreDelegates.boolean(defaultValue = false)
 
@@ -95,19 +94,17 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var fontScale by DataStoreDelegates.float(defaultValue = 1.0f)
 
-    var forumFabFunction by DataStoreDelegates.string(defaultValue = "post")
+    var forumFabFunction by DataStoreDelegates.string(defaultValue = "hide")
 
     var hideBlockedContent by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideExplore by DataStoreDelegates.boolean(defaultValue = false)
 
-    var hideForumIntroAndStat by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideMedia by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideReply by DataStoreDelegates.boolean(defaultValue = false)
 
-    var homePageScroll by DataStoreDelegates.boolean(defaultValue = false)
 
     var homePageShowHistoryForum by DataStoreDelegates.boolean(defaultValue = true)
 
@@ -120,7 +117,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var imeHeight by DataStoreDelegates.int(defaultValue = 800)
 
-    var liftUpBottomBar by DataStoreDelegates.boolean(defaultValue = true)
 
     var listItemsBackgroundIntermixed by DataStoreDelegates.boolean(defaultValue = true)
 
@@ -128,7 +124,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var littleTail by DataStoreDelegates.string(key = "little_tail")
 
-    var loadPictureWhenScroll by DataStoreDelegates.boolean(defaultValue = true)
 
     var oldTheme by DataStoreDelegates.string(key = "old_theme")
 
@@ -153,21 +148,14 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var signDay by DataStoreDelegates.int(defaultValue = -1, key = "sign_day")
 
-    var showBlockTip by DataStoreDelegates.boolean(defaultValue = true)
 
     var showBothUsernameAndNickname by DataStoreDelegates.boolean(
         defaultValue = false,
         key = "show_both_username_and_nickname"
     )
 
-    var showExperimentalFeatures by DataStoreDelegates.boolean(defaultValue = false)
 
-    var showShortcutInThread by DataStoreDelegates.boolean(defaultValue = true)
 
-    var showTopForumInNormalList by DataStoreDelegates.boolean(
-        defaultValue = true,
-        key = "show_top_forum_in_normal_list"
-    )
 
     var theme by DataStoreDelegates.string(defaultValue = ThemeUtil.THEME_DEFAULT)
 

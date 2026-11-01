@@ -4,19 +4,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun GroupHeader(
     title: String,
-    color: Color = MaterialTheme.colors.primary
+    // Grey, like the app's other labels: the accent is kept for states such as switches
+    color: Color = ExtendedTheme.colors.textSecondary
 ) {
     Box(
         Modifier

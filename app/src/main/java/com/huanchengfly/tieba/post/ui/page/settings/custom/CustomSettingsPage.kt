@@ -11,10 +11,8 @@ import androidx.compose.material.icons.outlined.BlurOff
 import androidx.compose.material.icons.outlined.Brightness2
 import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ColorLens
-import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FontDownload
-import androidx.compose.material.icons.outlined.Upcoming
-import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,6 +35,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -52,6 +51,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentListOf
 
+/** Appearance: the theme, night mode, text size and the app's icon, and the glass effects. */
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Destination
 @Composable
@@ -59,6 +59,10 @@ fun CustomSettingsPage(
     navigator: DestinationsNavigator
 ) {
     val context = LocalContext.current
+    val themeGroup = stringResource(id = R.string.settings_group_theme)
+    val nightGroup = stringResource(id = R.string.settings_group_night)
+    val textAndIconGroup = stringResource(id = R.string.settings_group_text_and_icon)
+    val effectsGroup = stringResource(id = R.string.settings_group_effects)
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -76,220 +80,197 @@ fun CustomSettingsPage(
             modifier = Modifier.fillMaxSize(),
             contentPadding = paddingValues,
         ) {
-            prefsItem {
-                TextPref(
-                    title = stringResource(id = R.string.title_custom_font_size),
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.FontDownload,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    onClick = {
-                        context.goToActivity<AppFontSizeActivity>()
-                    }
-                )
-            }
-            prefsItem {
-                val darkThemeValues = stringArrayResource(id = R.array.dark_theme_values)
-                val darkThemeNames = stringArrayResource(id = R.array.dark_theme_names)
-                ListPref(
-                    key = "dark_theme",
-                    title = stringResource(id = R.string.settings_night_mode),
-                    defaultValue = ThemeUtil.THEME_AMOLED_DARK,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.Brightness2,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    entries = darkThemeValues.associateWith { value ->
-                        darkThemeNames[darkThemeValues.indexOf(
-                            value
-                        )]
-                    },
-                    useSelectedAsSummary = true,
-                )
-            }
-            prefsItem {
-                ListPref(
-                    key = "app_icon",
-                    title = stringResource(id = R.string.settings_app_icon),
-                    defaultValue = LauncherIcons.DEFAULT_ICON,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.Apps,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    entries = mapOf(
-                        LauncherIcons.NEW_ICON to "新图标",
-                        LauncherIcons.NEW_ICON_INVERT to "新图标（反色）",
-                        LauncherIcons.OLD_ICON to "旧图标",
-                    ),
-                    icons = mapOf(
-                        LauncherIcons.NEW_ICON to {
-                            Image(
-                                painter = rememberDrawablePainter(
-                                    drawable = LocalContext.current.getDrawable(
-                                        R.drawable.ic_launcher_new_round
-                                    )
-                                ),
-                                contentDescription = "新图标",
-                                modifier = Modifier.size(Sizes.Medium)
-                            )
-                        },
-                        LauncherIcons.NEW_ICON_INVERT to {
-                            Image(
-                                painter = rememberDrawablePainter(
-                                    drawable = LocalContext.current.getDrawable(
-                                        R.drawable.ic_launcher_new_invert_round
-                                    )
-                                ),
-                                contentDescription = "新图标（反色）",
-                                modifier = Modifier.size(Sizes.Medium)
-                            )
-                        },
-                        LauncherIcons.OLD_ICON to {
-                            Image(
-                                painter = rememberDrawablePainter(
-                                    drawable = LocalContext.current.getDrawable(
-                                        R.drawable.ic_launcher_round
-                                    )
-                                ),
-                                contentDescription = "旧图标",
-                                modifier = Modifier.size(Sizes.Medium)
-                            )
-                        },
-                    ),
-                    onValueChange = { AppIconUtil.setIcon(icon = it) },
-                    useSelectedAsSummary = true,
-                )
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            prefsGroup(themeGroup) {
                 prefsItem {
-                    val supportThemedIcons = remember {
-                        persistentListOf(
-                            LauncherIcons.NEW_ICON,
-//                            LauncherIcons.NEW_ICON_INVERT,
-                        )
-                    }
-                    val currentLauncherIcon by rememberPreferenceAsState(
-                        key = stringPreferencesKey("app_icon"),
-                        defaultValue = LauncherIcons.NEW_ICON
-                    )
-                    val isCurrentSupportThemedIcon by remember {
-                        derivedStateOf {
-                            supportThemedIcons.contains(currentLauncherIcon)
-                        }
-                    }
-                    SwitchPref(
-                        key = "useThemedIcon",
-                        title = stringResource(id = R.string.title_settings_use_themed_icon),
-                        defaultChecked = false,
-                        enabled = isCurrentSupportThemedIcon,
+                    TextPref(
+                        title = stringResource(id = R.string.title_theme),
+                        summary = stringResource(id = R.string.summary_settings_theme),
                         leadingIcon = {
                             LeadingIcon {
                                 AvatarIcon(
-                                    icon = Icons.Outlined.ColorLens,
+                                    icon = Icons.Outlined.Palette,
                                     size = Sizes.Small,
                                     contentDescription = null,
                                 )
                             }
                         },
-                        onCheckedChange = {
-                            AppIconUtil.setIcon(isThemed = it)
-                        },
-                        summary = stringResource(id = R.string.tip_settings_use_themed_icon_summary_not_supported).takeUnless { isCurrentSupportThemedIcon },
+                        onClick = { navigator.navigate(AppThemePageDestination) }
                     )
                 }
             }
-            prefsItem {
-                SwitchPref(
-                    key = "follow_system_night",
-                    title = stringResource(id = R.string.title_settings_follow_system_night),
-                    defaultChecked = true,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.BrightnessAuto,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = ReduceTransparencyKey.name,
-                    title = stringResource(id = R.string.title_settings_reduce_transparency),
-                    summary = stringResource(id = R.string.summary_settings_reduce_transparency),
-                    defaultChecked = false,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.BlurOff,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = "listSingle",
-                    title = stringResource(id = R.string.settings_forum_single),
-                    defaultChecked = false,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.ViewAgenda,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = "hideExplore",
-                    title = stringResource(id = R.string.title_hide_explore),
-                    defaultChecked = false,
-                ) {
-                    LeadingIcon {
-                        AvatarIcon(
-                            icon = Icons.Outlined.Explore,
-                            size = Sizes.Small,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-            prefsItem {
-                SwitchPref(
-                    key = "liftUpBottomBar",
-                    title = stringResource(id = R.string.title_lift_up_bottom_bar),
-                    defaultChecked = true,
-                    leadingIcon = {
+            prefsGroup(nightGroup) {
+                prefsItem {
+                    SwitchPref(
+                        key = "follow_system_night",
+                        title = stringResource(id = R.string.title_settings_follow_system_night),
+                        defaultChecked = true,
+                    ) {
                         LeadingIcon {
                             AvatarIcon(
-                                icon = Icons.Outlined.Upcoming,
+                                icon = Icons.Outlined.BrightnessAuto,
                                 size = Sizes.Small,
                                 contentDescription = null,
                             )
                         }
-                    },
-                    summary = stringResource(id = R.string.summary_lift_up_bottom_bar),
-                )
+                    }
+                }
+                prefsItem {
+                    val darkThemeValues = stringArrayResource(id = R.array.dark_theme_values)
+                    val darkThemeNames = stringArrayResource(id = R.array.dark_theme_names)
+                    ListPref(
+                        key = "dark_theme",
+                        title = stringResource(id = R.string.settings_night_mode),
+                        defaultValue = ThemeUtil.THEME_AMOLED_DARK,
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = Icons.Outlined.Brightness2,
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        entries = darkThemeValues.associateWith { value ->
+                            darkThemeNames[darkThemeValues.indexOf(
+                                value
+                            )]
+                        },
+                        useSelectedAsSummary = true,
+                    )
+                }
+            }
+            prefsGroup(textAndIconGroup) {
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_custom_font_size),
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = Icons.Outlined.FontDownload,
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        onClick = {
+                            context.goToActivity<AppFontSizeActivity>()
+                        }
+                    )
+                }
+                prefsItem {
+                    ListPref(
+                        key = "app_icon",
+                        title = stringResource(id = R.string.settings_app_icon),
+                        defaultValue = LauncherIcons.DEFAULT_ICON,
+                        leadingIcon = {
+                            LeadingIcon {
+                                AvatarIcon(
+                                    icon = Icons.Outlined.Apps,
+                                    size = Sizes.Small,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        entries = mapOf(
+                            LauncherIcons.NEW_ICON to "新图标",
+                            LauncherIcons.NEW_ICON_INVERT to "新图标（反色）",
+                            LauncherIcons.OLD_ICON to "旧图标",
+                        ),
+                        icons = mapOf(
+                            LauncherIcons.NEW_ICON to {
+                                Image(
+                                    painter = rememberDrawablePainter(
+                                        drawable = LocalContext.current.getDrawable(
+                                            R.drawable.ic_launcher_new_round
+                                        )
+                                    ),
+                                    contentDescription = "新图标",
+                                    modifier = Modifier.size(Sizes.Medium)
+                                )
+                            },
+                            LauncherIcons.NEW_ICON_INVERT to {
+                                Image(
+                                    painter = rememberDrawablePainter(
+                                        drawable = LocalContext.current.getDrawable(
+                                            R.drawable.ic_launcher_new_invert_round
+                                        )
+                                    ),
+                                    contentDescription = "新图标（反色）",
+                                    modifier = Modifier.size(Sizes.Medium)
+                                )
+                            },
+                            LauncherIcons.OLD_ICON to {
+                                Image(
+                                    painter = rememberDrawablePainter(
+                                        drawable = LocalContext.current.getDrawable(
+                                            R.drawable.ic_launcher_round
+                                        )
+                                    ),
+                                    contentDescription = "旧图标",
+                                    modifier = Modifier.size(Sizes.Medium)
+                                )
+                            },
+                        ),
+                        onValueChange = { AppIconUtil.setIcon(icon = it) },
+                        useSelectedAsSummary = true,
+                    )
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    prefsItem {
+                        val supportThemedIcons = remember {
+                            persistentListOf(
+                                LauncherIcons.NEW_ICON,
+    //                            LauncherIcons.NEW_ICON_INVERT,
+                            )
+                        }
+                        val currentLauncherIcon by rememberPreferenceAsState(
+                            key = stringPreferencesKey("app_icon"),
+                            defaultValue = LauncherIcons.NEW_ICON
+                        )
+                        val isCurrentSupportThemedIcon by remember {
+                            derivedStateOf {
+                                supportThemedIcons.contains(currentLauncherIcon)
+                            }
+                        }
+                        SwitchPref(
+                            key = "useThemedIcon",
+                            title = stringResource(id = R.string.title_settings_use_themed_icon),
+                            defaultChecked = false,
+                            enabled = isCurrentSupportThemedIcon,
+                            leadingIcon = {
+                                LeadingIcon {
+                                    AvatarIcon(
+                                        icon = Icons.Outlined.ColorLens,
+                                        size = Sizes.Small,
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                            onCheckedChange = {
+                                AppIconUtil.setIcon(isThemed = it)
+                            },
+                            summary = stringResource(id = R.string.tip_settings_use_themed_icon_summary_not_supported).takeUnless { isCurrentSupportThemedIcon },
+                        )
+                    }
+                }
+            }
+            prefsGroup(effectsGroup) {
+                prefsItem {
+                    SwitchPref(
+                        key = ReduceTransparencyKey.name,
+                        title = stringResource(id = R.string.title_settings_reduce_transparency),
+                        summary = stringResource(id = R.string.summary_settings_reduce_transparency),
+                        defaultChecked = false,
+                    ) {
+                        LeadingIcon {
+                            AvatarIcon(
+                                icon = Icons.Outlined.BlurOff,
+                                size = Sizes.Small,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

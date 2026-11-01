@@ -7,16 +7,15 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.OfflineBolt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,14 +23,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.dependNot
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -41,7 +38,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
-import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -169,25 +165,6 @@ fun MoreSettingsPage(
                         }
                     },
                     summary = stringResource(id = R.string.tip_cache, cacheSize)
-                )
-            }
-            prefsItem {
-                TextPref(
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Outlined.Info,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    enabled = true,
-                    title = stringResource(id = R.string.title_about),
-                    onClick = {
-                        navigator.navigate(AboutPageDestination)
-                    },
-                    summary = stringResource(id = R.string.tip_about, BuildConfig.VERSION_NAME)
                 )
             }
         }
