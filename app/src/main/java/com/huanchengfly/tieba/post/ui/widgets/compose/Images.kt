@@ -1,32 +1,22 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
@@ -34,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
@@ -41,24 +32,17 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.toSize
-import androidx.compose.ui.util.lerp
 import coil3.compose.AsyncImage
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.photoview.LocalPhotoViewer
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.NetworkUtil
@@ -85,146 +69,6 @@ fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
         (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(
             context
         ))
-}
-
-@Composable
-private fun PreviewImage(
-    imageUri: String,
-    show: Boolean,
-    layoutSizeProvider: () -> IntSize,
-    layoutOffsetProvider: () -> Offset,
-    imageAspectRatioProvider: () -> Float,
-    originImageUri: String? = null,
-) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-
-    var showFullScreenLayout by remember { mutableStateOf(false) }
-    var showPreview by remember { mutableStateOf(false) }
-
-    LaunchedEffect(show) {
-        if (show) {
-            showFullScreenLayout = true
-            showPreview = true
-        } else {
-            showPreview = false
-        }
-    }
-
-    val windowWidthSizeClass = LocalWindowSizeClass.current.widthSizeClass
-    val widthFraction = remember(windowWidthSizeClass) {
-        when (windowWidthSizeClass) {
-            WindowWidthSizeClass.Compact -> 0.8f
-            WindowWidthSizeClass.Medium -> 0.6f
-            else -> 0.4f
-        }
-    }
-    val imageAspectRatio = imageAspectRatioProvider()
-    val previewImageWidthPx = remember(widthFraction) {
-        App.ScreenInfo.EXACT_SCREEN_WIDTH * widthFraction
-    }
-    val previewImageHeightPx = remember(imageAspectRatio, previewImageWidthPx) {
-        previewImageWidthPx * imageAspectRatio
-    }
-    val previewImageWidthDp = remember(previewImageWidthPx, density) {
-        with(density) { previewImageWidthPx.toDp() }
-    }
-    val previewImageHeightDp = remember(previewImageHeightPx, density) {
-        with(density) { previewImageHeightPx.toDp() }
-    }
-
-    val screenWidth = App.ScreenInfo.EXACT_SCREEN_WIDTH
-    val screenCenterX = screenWidth / 2
-    val screenHeight = App.ScreenInfo.EXACT_SCREEN_HEIGHT
-    val screenCenterY = screenHeight / 2
-    val statusBarHeight = WindowInsets.statusBars.getTop(density)
-
-    if (showFullScreenLayout) {
-        val animProgress = remember { Animatable(0f) }
-
-        LaunchedEffect(showPreview) {
-            animProgress.animateTo(
-                if (showPreview) 1f else 0f,
-                animationSpec = spring(
-                    stiffness = Spring.StiffnessMedium,
-                )
-            )
-            if (!showPreview) {
-                showFullScreenLayout = false
-            }
-        }
-
-        FullScreen {
-            val (layoutWidthPx, layoutHeightPx) = layoutSizeProvider()
-            val layoutWidthDp = remember(layoutWidthPx, density) {
-                with(density) { layoutWidthPx.toDp() }
-            }
-            val layoutHeightDp = remember(layoutHeightPx, density) {
-                with(density) { layoutHeightPx.toDp() }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(
-                            lerp(layoutWidthDp, previewImageWidthDp, animProgress.value)
-                        )
-                        .height(
-                            lerp(layoutHeightDp, previewImageHeightDp, animProgress.value)
-                        )
-                        .absoluteOffset {
-                            val layoutOffset = layoutOffsetProvider()
-                            val currentLayoutWidthPx = lerp(
-                                layoutWidthPx.toFloat(),
-                                previewImageWidthPx,
-                                animProgress.value
-                            )
-                            val currentLayoutHeightPx = lerp(
-                                layoutHeightPx.toFloat(),
-                                previewImageHeightPx,
-                                animProgress.value
-                            )
-                            IntOffset(
-                                lerp(
-                                    layoutOffset.x - (screenCenterX - currentLayoutWidthPx / 2),
-                                    0f,
-                                    animProgress.value
-                                ).toInt(),
-                                lerp(
-                                    layoutOffset.y - (screenCenterY - currentLayoutHeightPx / 2 + statusBarHeight / 2),
-                                    0f,
-                                    animProgress.value
-                                ).toInt()
-                            )
-                        }
-                        .clip(RoundedCornerShape(6.dp))
-                ) {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    // Over the picture already shown, which stays visible until the original arrives
-                    if (originImageUri != null && animProgress.value >= 1f) {
-                        AsyncImage(
-                            model = originImageUri,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -262,37 +106,37 @@ fun NetworkImage(
     var imageAspectRatio by remember { mutableFloatStateOf(0f) }
     var memoryCacheKey by remember { mutableStateOf<MemoryCache.Key?>(null) }
 
-    var isLongPressing by remember { mutableStateOf(false) }
-
     // The viewer opens out of this picture and closes back into it
     val viewer = LocalPhotoViewer.current
     val picId = photoViewData?.picItems?.getOrNull(photoViewData.index)?.picId
     if (viewer != null && picId != null) {
         DisposableEffect(viewer, picId) { onDispose { viewer.place(picId, null) } }
     }
-
-    if (enablePreview) {
-        PreviewImage(
-            imageUri = imageUri,
-            show = isLongPressing,
-            layoutSizeProvider = { layoutSize },
-            layoutOffsetProvider = { layoutOffset },
-            imageAspectRatioProvider = { imageAspectRatio },
-            originImageUri = photoViewData?.data?.originUrl
-        )
-    }
+    val haptic = LocalHapticFeedback.current
+    // Held up by a long press, the picture follows this finger until it lifts
+    var peeking by remember { mutableStateOf(false) }
+    var boxOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(
         modifier = Modifier
-            .pointerInput(enableClick) {
+            .pointerInput(enableClick, photoViewData, viewer, enablePreview) {
                 if (enableClick) {
                     detectTapGestures(
-                        onLongPress = {
-                            isLongPressing = true
-                        },
-                        onPress = {
-                            tryAwaitRelease()
-                            isLongPressing = false
+                        onLongPress = if (enablePreview && viewer != null && photoViewData != null) {
+                            {
+                                if (shouldLoad) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    peeking = true
+                                    viewer.peek(
+                                        data = photoViewData,
+                                        from = Rect(layoutOffset, layoutSize.toSize()),
+                                        thumbnail = memoryCacheKey,
+                                        aspect = imageAspectRatio,
+                                    )
+                                }
+                            }
+                        } else {
+                            null
                         },
                         onTap = {
                             if (!shouldLoad) {
@@ -305,15 +149,27 @@ fun NetworkImage(
                                     aspect = imageAspectRatio,
                                 )
                             }
-                        }
+                        },
                     )
                 }
             }
-            .pointerInput(Unit) {
-                detectDragGesturesAfterLongPress { change, dragAmount ->
-                    Log.i("NetworkImage", "dragAmount: $dragAmount")
+            .pointerInput(viewer) {
+                if (viewer == null) return@pointerInput
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull() ?: break
+                        val position = boxOffset + change.position
+                        if (!change.pressed) {
+                            if (peeking) viewer.liftFinger(position)
+                            peeking = false
+                            break
+                        }
+                        if (peeking) viewer.moveFinger(position)
+                    }
                 }
             }
+            .onGloballyPositioned { boxOffset = it.positionInWindow() }
             .then(modifier)
     ) {
         AsyncImage(

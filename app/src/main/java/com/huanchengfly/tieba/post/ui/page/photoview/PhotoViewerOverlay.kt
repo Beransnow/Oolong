@@ -49,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -157,6 +158,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         LaunchedEffect(Unit) {
             progress.animateTo(1f, spring(dampingRatio = 0.86f, stiffness = 420f))
             phase = Phase.Open
+        }
+        // Opened from a picture held up, the page stays blurred until the black covers it
+        LaunchedEffect(Unit) {
+            val blurred = viewer.backdrop
+            if (blurred > 0f) snapshotFlow { progress.value }.collect { viewer.backdrop = blurred * (1f - it.coerceIn(0f, 1f)) }
         }
         LaunchedEffect(state.currentIndex, pictures.isNotEmpty()) {
             if (pictures.isNotEmpty() && pagerState.currentPage != state.currentIndex) {
@@ -490,10 +496,10 @@ private suspend fun release(from: Offset, to: Offset, onFrame: (Offset) -> Unit)
     }
 }
 
-private fun request(context: Context, url: String, placeholder: MemoryCache.Key?) =
+internal fun request(context: Context, url: String, placeholder: MemoryCache.Key?) =
     ImageRequest.Builder(context).data(url).placeholderMemoryCacheKey(placeholder).build()
 
-private fun share(context: Context, url: String) {
+internal fun share(context: Context, url: String) {
     context.toastShort(R.string.toast_preparing_share_pic)
     ImageUtil.download(context, url, true) { uri: Uri ->
         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -541,7 +547,7 @@ private fun Rect.dragged(offset: Offset, scale: Float, container: Size): Rect {
 private fun Rect.scaledAround(scale: Float): Rect =
     Rect(center - Offset(width * scale / 2, height * scale / 2), Size(width * scale, height * scale))
 
-private fun Modifier.offsetTo(rect: Rect): Modifier = this
+internal fun Modifier.offsetTo(rect: Rect): Modifier = this
     .layout { measurable, _ ->
         val width = rect.width.roundToInt().coerceAtLeast(0)
         val height = rect.height.roundToInt().coerceAtLeast(0)

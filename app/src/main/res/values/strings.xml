@@ -172,6 +172,7 @@
     <string name="summary_copy_bduss">请勿泄露，否则可能会导致您的账号被盗用</string>
 
     <string name="title_share_pic">分享图片</string>
+    <string name="photo_open_whole">查看大图</string>
     <string name="tip_permission_storage_download">用于下载文件</string>
     <string name="title_show_both_username_and_nickname">同时显示用户名和昵称</string>
     <string name="title_dialog_clip_board_tieba_url">是否要打开剪贴板中的链接</string>
