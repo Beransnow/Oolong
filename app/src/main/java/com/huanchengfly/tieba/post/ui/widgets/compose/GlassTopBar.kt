@@ -41,9 +41,6 @@ import kotlin.math.roundToInt
 
 private val TopBarHeight = 56.dp
 
-/** How far above its bottom edge an opaque top bar fades out, when there is no blur. */
-private val TopBarFade = 16.dp
-
 /**
  * The bottom edge of a top bar's rows, without its pinned rows. [GlassScaffold] pads its content
  * down to this line, so pinned rows float over the content and can come and go without moving it.
@@ -80,7 +77,7 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
-            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass(TopBarFade))
+            Box(modifier = Modifier.layoutId(TopBarLayer.Background).topBarGlass())
             Column(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Foreground)
@@ -158,12 +155,10 @@ fun GlassStatusBar(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsTopHeight(WindowInsets.statusBars)
-            .topBarGlass(StatusBarFade)
+            .topBarGlass()
     )
 }
 
-/** [TopBarFade] for the much shorter glass behind the status bar alone. */
-private val StatusBarFade = 8.dp
 
 /** Single-line title text for [GlassTopBar]. */
 @Composable
