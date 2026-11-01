@@ -93,13 +93,18 @@ fun ForumScreen(
     val headerShown by remember { derivedStateOf { heightOffset.absoluteValue < headerHeight } }
     // The header and tabs ride in the bar, so the lists scroll under all of them and the header
     // collapses by shrinking the bar
+    val currentTab by rememberUpdatedState(state.selectedTab)
     val headerNestedScroll = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < 0) {
+                val list = listStateOf(currentTab)
+                val atTop = list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0
+                // Pulling down at the top of the list brings the header back before the pull
+                // can refresh the list
+                if (available.y < 0 || (available.y > 0 && atTop && heightOffset < 0f)) {
                     val previous = heightOffset
-                    heightOffset = max(heightOffset + available.y, -headerHeight)
-                    if (previous != heightOffset) return available.copy(x = 0f)
+                    heightOffset = (heightOffset + available.y).coerceIn(-headerHeight, 0f)
+                    if (previous != heightOffset) return Offset(0f, heightOffset - previous)
                 }
                 return Offset.Zero
             }
