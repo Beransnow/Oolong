@@ -108,6 +108,10 @@ import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
+import androidx.compose.runtime.collectAsState
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import com.huanchengfly.tieba.post.dataStore
+import kotlinx.coroutines.flow.map
 
 @Preview("SearchBoxPreview")
 @Composable
@@ -495,17 +499,18 @@ fun HomePage(
         Text(text = stringResource(id = R.string.title_dialog_unfollow_forum, unfollowForum?.name.orEmpty()))
     }
 
-    var listSingle by remember { mutableStateOf(context.appPreferences.listSingle) }
+    // Followed from the store, so changes made in the settings show on returning here
+    val listSingle by remember { context.dataStore.data.map { it[booleanPreferencesKey("listSingle")] ?: false } }
+        .collectAsState(initial = context.appPreferences.listSingle)
+    val showHistory by remember { context.dataStore.data.map { it[booleanPreferencesKey("homePageShowHistoryForum")] ?: true } }
+        .collectAsState(initial = context.appPreferences.homePageShowHistoryForum)
     HomeScreen(
         state = state,
         listSingle = listSingle,
-        showHistory = context.appPreferences.homePageShowHistoryForum,
+        showHistory = showHistory,
         canOpenExplore = canOpenExplore,
         onOpenExplore = onOpenExplore,
-        onToggleListSingle = {
-            context.appPreferences.listSingle = !listSingle
-            listSingle = !listSingle
-        },
+        onToggleListSingle = { context.appPreferences.listSingle = !listSingle },
         onEvent = { event ->
             when (event) {
                 HomeEvent.Refresh -> viewModel.refresh()

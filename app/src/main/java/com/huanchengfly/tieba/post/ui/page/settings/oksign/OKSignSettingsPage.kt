@@ -48,6 +48,13 @@ import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.huanchengfly.tieba.post.utils.TiebaUtil
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Destination
@@ -69,6 +76,14 @@ fun OKSignSettingsPage(
     ) { paddingValues ->
         val context = LocalContext.current
         val dataStore = context.dataStore
+        // Reschedule the daily sign-in as soon as it is turned on or off or its time changes
+        LaunchedEffect(dataStore) {
+            dataStore.data
+                .map { it[booleanPreferencesKey("auto_sign")] to it[stringPreferencesKey("auto_sign_time")] }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { TiebaUtil.initAutoSign(context) }
+        }
         val snackbarHostState = LocalSnackbarHostState.current
         PrefsScreen(
             dataStore = dataStore,
