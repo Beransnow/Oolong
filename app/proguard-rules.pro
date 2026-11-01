@@ -118,8 +118,6 @@
 -keep class com.huanchengfly.tieba.post.models.** { *; }
 -keep class !com.huanchengfly.tieba.post.api.models.protos.**, com.huanchengfly.tieba.post.api.models.** { *; }
 
--keep public class com.huanchengfly.tieba.post.utils.TiebaLiteJavaScript { *; }
-
 -keep class * implements com.google.gson.JsonDeserializer {
     *;
 }
