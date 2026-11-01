@@ -19,15 +19,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadState
-import com.huanchengfly.tieba.post.arch.hiltViewModel
 import com.huanchengfly.tieba.post.model.ForumRuleAuthor
 import com.huanchengfly.tieba.post.model.ForumRuleDetail
 import com.huanchengfly.tieba.post.model.ForumRuleItem
 import com.huanchengfly.tieba.post.ui.common.TextContentRender
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.navigation.ForumRuleDetailKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
@@ -43,12 +44,12 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.persistentListOf
 
-@Destination
+@Destination(navArgsDelegate = ForumRuleDetailKey::class)
 @Composable
 fun ForumRuleDetailPage(
-    @Suppress("UNUSED_PARAMETER") forumId: Long, // Navigation argument, read by the ViewModel
+    key: ForumRuleDetailKey,
     navigator: Navigator = LocalNavigator.current,
-    viewModel: ForumRuleDetailViewModel = hiltViewModel(),
+    viewModel: ForumRuleDetailViewModel = hiltViewModel<ForumRuleDetailViewModel, ForumRuleDetailViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.ruleDetail.state.collectAsStateWithLifecycle()
 

@@ -1,12 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page.forum.detail
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumIntro
 import com.huanchengfly.tieba.post.repository.ForumRepository
+import com.huanchengfly.tieba.post.ui.navigation.ForumDetailKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -15,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @Immutable
 data class ForumDetailState(
@@ -24,12 +26,12 @@ data class ForumDetailState(
 )
 
 /** A forum's info page. */
-@HiltViewModel
-class ForumDetailViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = ForumDetailViewModel.Factory::class)
+class ForumDetailViewModel @AssistedInject constructor(
+    @Assisted key: ForumDetailKey,
     private val repository: ForumRepository,
 ) : ViewModel() {
-    private val forumId: Long = checkNotNull(savedState["forumId"])
+    private val forumId: Long = key.forumId
     private val _state = MutableStateFlow(ForumDetailState())
     val state: StateFlow<ForumDetailState> = _state.asStateFlow()
     private var loadJob: Job? = null
@@ -51,5 +53,10 @@ class ForumDetailViewModel @Inject constructor(
                 _state.update { it.copy(load = LoadStatus.Error(e)) }
             }
         }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(key: ForumDetailKey): ForumDetailViewModel
     }
 }

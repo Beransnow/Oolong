@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
@@ -23,7 +22,10 @@ import com.huanchengfly.tieba.post.repository.ThreadPreview
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -47,7 +49,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /** A reply and whether the block rules hide it, or some of the replies shown inside it. */
 @Immutable
@@ -84,17 +85,15 @@ sealed interface ThreadEffect {
 }
 
 @OptIn(FlowPreview::class)
-@HiltViewModel
-class ThreadViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = ThreadViewModel.Factory::class)
+class ThreadViewModel @AssistedInject constructor(
+    @Assisted private val args: ThreadKey,
     private val repository: ThreadRepository,
     blockRuleSource: BlockRuleSource,
     private val history: ThreadHistory,
     private val messages: MessageController,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : ViewModel() {
-    private val args = ThreadPageDestination.argsFrom(savedState)
-
     private val query = MutableStateFlow(
         ThreadQuery(
             threadId = args.threadId,
@@ -114,7 +113,7 @@ class ThreadViewModel @Inject constructor(
         val immersive: Boolean = false,
     )
 
-    private val preview = args.threadInfo?.let(repository::preview)
+    private val preview = ThreadPreviewCache.take(args.threadId)?.let(repository::preview)
 
     private val effects = Channel<ThreadEffect>(Channel.BUFFERED)
     val effect: Flow<ThreadEffect> = effects.receiveAsFlow()
@@ -385,6 +384,11 @@ class ThreadViewModel @Inject constructor(
 
     private fun updatePost(postId: Long, transform: (Post) -> Post) {
         posts.update { items -> items.map { if (it.id == postId) transform(it) else it } }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(args: ThreadKey): ThreadViewModel
     }
 
     private companion object {

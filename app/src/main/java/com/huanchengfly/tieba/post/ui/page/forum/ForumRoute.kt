@@ -21,6 +21,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.thread.navigateToThread
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -65,9 +66,7 @@ fun ForumRoute(
             is ForumEvent.SetGoodClass -> viewModel.setGoodClass(event.classId)
             ForumEvent.Refresh -> viewModel.refresh()
             ForumEvent.LoadMore -> viewModel.loadMore()
-            is ForumEvent.OpenThread -> navigator.navigate(
-                ThreadKey(event.thread.threadId, forumId = event.thread.forumId, threadInfo = event.thread)
-            )
+            is ForumEvent.OpenThread -> navigator.navigateToThread(event.thread)
             is ForumEvent.OpenReplies -> navigator.navigate(
                 ThreadKey(event.thread.threadId, forumId = event.thread.forumId, scrollToReply = true)
             )

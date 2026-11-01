@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
@@ -17,8 +16,12 @@ import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.repository.UserRepository
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.user.post.PostListItemData
 import com.huanchengfly.tieba.post.ui.page.user.post.toItemData
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +33,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
 /** The lists a profile shows, each in its own tab. */
 enum class UserTab { Threads, Posts, Forums }
@@ -53,14 +55,14 @@ data class UserProfileState(
 )
 
 /** A user's profile, and their threads, replies and forums, each loaded the first time its tab shows. */
-@HiltViewModel
-class UserProfileViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = UserProfileViewModel.Factory::class)
+class UserProfileViewModel @AssistedInject constructor(
+    @Assisted key: UserProfileKey,
     private val repository: UserRepository,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
 ) : ViewModel() {
-    private val uid: Long = checkNotNull(savedState["uid"])
+    private val uid: Long = key.uid
 
     private val profile = MutableStateFlow(ProfileState())
     private val actions = Actions(viewModelScope)
@@ -190,6 +192,11 @@ class UserProfileViewModel @Inject constructor(
         return pager(initialKey = 1, itemKey = { forum: LikedForum -> forum.id }) { page ->
             repository.likedForums(uid, page)
         }.also { forumPager.value = it }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(key: UserProfileKey): UserProfileViewModel
     }
 }
 

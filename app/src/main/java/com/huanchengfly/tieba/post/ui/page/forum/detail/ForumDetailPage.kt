@@ -36,6 +36,7 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumIntro
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.navigation.ForumDetailKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -52,12 +53,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination
+@Destination(navArgsDelegate = ForumDetailKey::class)
 @Composable
 fun ForumDetailPage(
-    forumId: Long,
+    key: ForumDetailKey,
     navigator: Navigator = LocalNavigator.current,
-    viewModel: ForumDetailViewModel = hiltViewModel(),
+    viewModel: ForumDetailViewModel = hiltViewModel<ForumDetailViewModel, ForumDetailViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ForumDetailScreen(state = state, onBack = { navigator.navigateUp() }, onReload = viewModel::refresh)

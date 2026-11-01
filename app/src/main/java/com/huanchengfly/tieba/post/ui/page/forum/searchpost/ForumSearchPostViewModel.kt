@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
@@ -15,6 +14,10 @@ import com.huanchengfly.tieba.post.model.ForumSearchOrder
 import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.repository.SearchRepository
+import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -29,7 +32,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @Immutable
 data class ForumSearchPostState(
@@ -44,14 +46,14 @@ data class ForumSearchPostState(
 )
 
 /** Searching one forum's threads and replies. */
-@HiltViewModel
-class ForumSearchPostViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = ForumSearchPostViewModel.Factory::class)
+class ForumSearchPostViewModel @AssistedInject constructor(
+    @Assisted key: ForumSearchPostKey,
     private val repository: SearchRepository,
     private val messages: MessageController,
 ) : ViewModel() {
-    private val forumName: String = checkNotNull(savedState["forumName"])
-    private val forumId: Long = checkNotNull(savedState["forumId"])
+    private val forumName: String = key.forumName
+    private val forumId: Long = key.forumId
 
     private val actions = Actions(viewModelScope)
     private val local = MutableStateFlow(Local())
@@ -122,5 +124,10 @@ class ForumSearchPostViewModel @Inject constructor(
         pager.value = pager(initialKey = 1, itemKey = { post: SearchedPost -> "${post.threadId}_${post.postId}_${post.subPostId}" }) { page ->
             repository.threadsInForum(keyword, forumName, forumId, order, onlyThreads, page)
         }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(key: ForumSearchPostKey): ForumSearchPostViewModel
     }
 }

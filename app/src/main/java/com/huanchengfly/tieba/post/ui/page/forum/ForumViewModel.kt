@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
@@ -22,11 +21,15 @@ import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
-import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.repository.ForumCursor
 import com.huanchengfly.tieba.post.repository.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.ForumSortStore
+import com.huanchengfly.tieba.post.repository.blocks
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -44,7 +47,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /** A thread in a forum's list, and whether the block rules hide it. */
 @Immutable
@@ -75,9 +77,9 @@ data class ForumState(
  * A forum's page: the forum, and a list of threads for each of its tabs, each loaded the first
  * time its tab is shown.
  */
-@HiltViewModel
-class ForumViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = ForumViewModel.Factory::class)
+class ForumViewModel @AssistedInject constructor(
+    @Assisted key: ForumKey,
     private val repository: ForumRepository,
     blockRuleSource: BlockRuleSource,
     private val history: ForumHistory,
@@ -85,7 +87,7 @@ class ForumViewModel @Inject constructor(
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
 ) : ViewModel() {
-    private val forumName: String = checkNotNull(savedState["forumName"])
+    private val forumName: String = key.forumName
 
     private val forum = MutableStateFlow<ForumDetail?>(null)
     private var tbs: String? = null
@@ -241,6 +243,11 @@ class ForumViewModel @Inject constructor(
         val items = threads.map { ForumThreadItem(it.wrapImmutable(), blocked = rules.blocks(it)) }.toImmutableList()
         blocked[tab] = Triple(threads, rules, items)
         return items
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(key: ForumKey): ForumViewModel
     }
 }
 

@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
-import androidx.lifecycle.SavedStateHandle
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
@@ -15,9 +14,14 @@ import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -27,10 +31,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import com.huanchengfly.tieba.post.api.models.protos.Agree as ProtoAgree
 import com.huanchengfly.tieba.post.api.models.protos.Page as ProtoPage
 import com.huanchengfly.tieba.post.api.models.protos.Post as ProtoPost
@@ -70,15 +70,7 @@ class SubPostsViewModelTest {
 
     private fun TestScope.createViewModel(postId: Long = 77, subPostId: Long = 0, loadFromSubPost: Boolean = false) =
         SubPostsViewModel(
-            savedState = SavedStateHandle(
-                mapOf(
-                    "threadId" to 9_000L,
-                    "forumId" to 0L,
-                    "postId" to postId,
-                    "subPostId" to subPostId,
-                    "loadFromSubPost" to loadFromSubPost,
-                )
-            ),
+            key = SubPostsKey(threadId = 9_000L, postId = postId, subPostId = subPostId, loadFromSubPost = loadFromSubPost),
             repository = ThreadRepository(remote, agreeRemote, { _, _ -> }, mainDispatcherRule.dispatcher),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules

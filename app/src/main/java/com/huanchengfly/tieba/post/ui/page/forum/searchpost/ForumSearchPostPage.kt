@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -203,13 +204,12 @@ private fun SearchHistoryList(
     }
 }
 
-@Destination
+@Destination(navArgsDelegate = ForumSearchPostKey::class)
 @Composable
 fun ForumSearchPostPage(
-    forumName: String,
-    forumId: Long,
+    key: ForumSearchPostKey,
     navigator: Navigator = LocalNavigator.current,
-    viewModel: ForumSearchPostViewModel = hiltViewModel(),
+    viewModel: ForumSearchPostViewModel = hiltViewModel<ForumSearchPostViewModel, ForumSearchPostViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ProvideNavigator(navigator = navigator) {

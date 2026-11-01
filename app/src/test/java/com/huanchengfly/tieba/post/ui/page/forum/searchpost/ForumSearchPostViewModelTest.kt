@@ -1,21 +1,21 @@
 package com.huanchengfly.tieba.post.ui.page.forum.searchpost
 
-import androidx.lifecycle.SavedStateHandle
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.model.ForumSearchOrder
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ForumSearchPostViewModelTest {
     @get:Rule
@@ -27,7 +27,7 @@ class ForumSearchPostViewModelTest {
     }
 
     private fun createViewModel() = ForumSearchPostViewModel(
-        SavedStateHandle(mapOf("forumName" to "测试", "forumId" to 52L)),
+        ForumSearchPostKey(forumName = "测试", forumId = 52L),
         repository,
         mockk<MessageController>(relaxed = true),
     )

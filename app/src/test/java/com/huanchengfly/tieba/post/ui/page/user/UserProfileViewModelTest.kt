@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
-import androidx.lifecycle.SavedStateHandle
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Agree
@@ -13,18 +12,19 @@ import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.repository.UserPostsPage
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 
 class UserProfileViewModelTest {
     @get:Rule
@@ -35,7 +35,7 @@ class UserProfileViewModelTest {
     private val user = UserProfile(id = 7, name = "n", nameShow = "", portrait = "p")
 
     private fun createViewModel(uid: Long = 7) = UserProfileViewModel(
-        savedState = SavedStateHandle(mapOf("uid" to uid)),
+        key = UserProfileKey(uid),
         repository = repository,
         messages = object : MessageController {
             override fun show(message: Int, vararg args: Any) {

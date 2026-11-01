@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelStore
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.Anti
@@ -18,20 +18,10 @@ import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import androidx.lifecycle.ViewModelStore
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +29,16 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import com.huanchengfly.tieba.post.api.models.protos.Agree as ProtoAgree
 import com.huanchengfly.tieba.post.api.models.protos.Page as ProtoPage
 import com.huanchengfly.tieba.post.api.models.protos.Post as ProtoPost
@@ -88,17 +88,9 @@ class ThreadViewModelTest {
         appScope: CoroutineScope = backgroundScope,
     ): ThreadViewModel {
         val dispatcher = mainDispatcherRule.dispatcher
+        threadInfo?.let(ThreadPreviewCache::put)
         return ThreadViewModel(
-            savedState = SavedStateHandle(
-                mapOf(
-                    "threadId" to 9_000L,
-                    "postId" to postId,
-                    "seeLz" to false,
-                    "sortType" to sortType,
-                    "from" to "",
-                    "scrollToReply" to false,
-                ) + listOfNotNull(threadInfo?.let { "threadInfo" to it })
-            ),
+            args = ThreadKey(threadId = 9_000L, postId = postId, sortType = sortType),
             repository = ThreadRepository(remote, agreeRemote, { _, _ -> }, dispatcher),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
@@ -349,9 +341,15 @@ class ThreadViewModelTest {
             gate.await()
             data(listOf(post(2)))
         }
-        val passed = ThreadInfo(title = "列表里的标题", author = lz, firstPostContent = listOf(PbContent(type = 0, text = "摘要")))
+        val passed = ThreadInfo(
+            threadId = 9_000,
+            title = "列表里的标题",
+            author = lz,
+            firstPostContent = listOf(PbContent(type = 0, text = "摘要")),
+        )
         val viewModel = createViewModel(threadInfo = passed)
         runCurrent()
+        assertNull(ThreadPreviewCache.take(9_000), "the page takes the thread it was handed")
 
         assertEquals("列表里的标题", viewModel.state.value.preview?.title)
         assertEquals(10L, viewModel.state.value.preview?.author?.id)

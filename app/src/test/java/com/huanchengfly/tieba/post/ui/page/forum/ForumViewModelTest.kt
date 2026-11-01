@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
-import androidx.lifecycle.SavedStateHandle
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
@@ -27,19 +26,20 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ForumSortStore
 import com.huanchengfly.tieba.post.repository.forumRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class ForumViewModelTest {
     @get:Rule
@@ -80,7 +80,7 @@ class ForumViewModelTest {
     }
 
     private fun TestScope.createViewModel(storedSort: Int = ForumSort.REPLY_TIME) = ForumViewModel(
-        savedState = SavedStateHandle(mapOf("forumName" to "吧名")),
+        key = ForumKey("吧名"),
         repository = forumRepository(remote, likeRemote, signRemote, agreeRemote = agreeRemote),
         blockRuleSource = object : BlockRuleSource {
             override val rules = blockRules

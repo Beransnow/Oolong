@@ -1,9 +1,7 @@
 package com.huanchengfly.tieba.post.ui.navigation
 
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageExtra
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 /** A page the app can show, with what it needs to open. Kept small, as it is saved with the back stack. */
 @Serializable
@@ -21,7 +19,6 @@ data class ThreadKey(
     val sortType: Int = 0,
     val from: String = "",
     val extra: ThreadPageExtra? = null,
-    @Transient val threadInfo: ThreadInfo? = null,
     val scrollToReply: Boolean = false,
 ) : Key
 
@@ -42,7 +39,9 @@ data class SubPostsSheetKey(
     val postId: Long = 0L,
     val subPostId: Long = 0L,
     val loadFromSubPost: Boolean = false,
-) : Key
+) : Key {
+    fun asPage() = SubPostsKey(threadId, forumId, postId, subPostId, loadFromSubPost)
+}
 
 @Serializable
 data class ReplyKey(

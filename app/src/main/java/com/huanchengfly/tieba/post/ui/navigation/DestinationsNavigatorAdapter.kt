@@ -52,7 +52,6 @@ fun Key.toDirection(): Direction = when (this) {
         sortType = sortType,
         from = from,
         extra = extra,
-        threadInfo = threadInfo,
         scrollToReply = scrollToReply,
     )
     is SubPostsKey -> SubPostsPageDestination(threadId, forumId, postId, subPostId, loadFromSubPost)

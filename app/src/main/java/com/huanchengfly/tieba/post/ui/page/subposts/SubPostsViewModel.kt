@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
@@ -19,6 +18,10 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.FloorCursor
 import com.huanchengfly.tieba.post.repository.FloorPage
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -31,7 +34,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
 /** A reply inside the post and whether the block rules hide it. */
 @Immutable
@@ -62,20 +64,20 @@ sealed interface SubPostsEffect {
  * The replies inside one post. Opened from a reply (`loadFromSubPost`), the post and forum ids
  * passed in may not be the post's; the ones the first page returns are used from then on.
  */
-@HiltViewModel
-class SubPostsViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+@HiltViewModel(assistedFactory = SubPostsViewModel.Factory::class)
+class SubPostsViewModel @AssistedInject constructor(
+    @Assisted key: SubPostsKey,
     private val repository: ThreadRepository,
     blockRuleSource: BlockRuleSource,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
 ) : ViewModel() {
-    private val threadId: Long = checkNotNull(savedState["threadId"])
-    private val subPostId: Long = savedState["subPostId"] ?: 0L
-    private val loadFromSubPost: Boolean = savedState["loadFromSubPost"] ?: false
+    private val threadId: Long = key.threadId
+    private val subPostId: Long = key.subPostId
+    private val loadFromSubPost: Boolean = key.loadFromSubPost
 
-    private var postId: Long = savedState["postId"] ?: 0L
-    private var forumId: Long = savedState["forumId"] ?: 0L
+    private var postId: Long = key.postId
+    private var forumId: Long = key.forumId
 
     private val floor = MutableStateFlow<FloorPage?>(null)
     private val effects = Channel<SubPostsEffect>(Channel.BUFFERED)
@@ -194,5 +196,10 @@ class SubPostsViewModel @Inject constructor(
 
     private fun updateSubPost(subPostId: Long, transform: (SubPost) -> SubPost) {
         subPosts.update { items -> items.map { if (it.id == subPostId) transform(it) else it } }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(key: SubPostsKey): SubPostsViewModel
     }
 }

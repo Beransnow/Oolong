@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.thread.navigateToThread
 
 /** What tapping the parts of a thread card does, the same in every explore feed. */
 @Immutable
@@ -29,7 +30,7 @@ fun rememberFeedThreadEvents(onAgree: (ThreadInfo) -> Unit): FeedThreadEvents {
     val navigator = LocalNavigator.current
     return remember(navigator, onAgree) {
         FeedThreadEvents(
-            onOpen = { navigator.navigate(ThreadKey(it.threadId, it.forumId, threadInfo = it)) },
+            onOpen = { navigator.navigateToThread(it) },
             onOpenReplies = { navigator.navigate(ThreadKey(it.threadId, it.forumId, scrollToReply = true)) },
             onAgree = onAgree,
             onOpenForum = { navigator.navigate(ForumKey(it.name)) },

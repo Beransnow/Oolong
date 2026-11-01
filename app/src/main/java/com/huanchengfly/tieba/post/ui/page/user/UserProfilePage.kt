@@ -85,6 +85,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.navigation.EditProfileKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
@@ -119,13 +120,12 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@Destination
-@Suppress("UNUSED_PARAMETER") // Navigation argument, read by the view model
+@Destination(navArgsDelegate = UserProfileKey::class)
 @Composable
 fun UserProfilePage(
-    uid: Long,
+    key: UserProfileKey,
     navigator: Navigator = LocalNavigator.current,
-    viewModel: UserProfileViewModel = hiltViewModel(),
+    viewModel: UserProfileViewModel = hiltViewModel<UserProfileViewModel, UserProfileViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ProvideNavigator(navigator = navigator) {

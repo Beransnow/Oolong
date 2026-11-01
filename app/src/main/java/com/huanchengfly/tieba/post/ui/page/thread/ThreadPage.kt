@@ -2,8 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
@@ -38,24 +38,16 @@ object ThreadSortType {
 }
 
 @Destination(
+    navArgsDelegate = ThreadKey::class,
     deepLinks = [
         DeepLink(uriPattern = "tblite://thread/{threadId}"),
     ]
 )
-@Suppress("UNUSED_PARAMETER") // Navigation arguments, read by the view model
 @Composable
 fun ThreadPage(
-    threadId: Long,
+    key: ThreadKey,
     navigator: Navigator = LocalNavigator.current,
-    forumId: Long? = null,
-    postId: Long = 0,
-    seeLz: Boolean = false,
-    sortType: Int = 0,
-    from: String = "",
-    extra: ThreadPageExtra? = null,
-    threadInfo: ThreadInfo? = null,
-    scrollToReply: Boolean = false,
-    viewModel: ThreadViewModel = hiltViewModel(),
+    viewModel: ThreadViewModel = hiltViewModel<ThreadViewModel, ThreadViewModel.Factory> { it.create(key) },
 ) {
-    ThreadRoute(navigator = navigator, from = from, extra = extra, viewModel = viewModel)
+    ThreadRoute(navigator = navigator, from = key.from, extra = key.extra, viewModel = viewModel)
 }
