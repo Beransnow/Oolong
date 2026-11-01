@@ -27,11 +27,9 @@ import com.huanchengfly.tieba.post.api.models.InitNickNameBean
 import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
-import com.huanchengfly.tieba.post.api.models.NewCollectDataBean
 import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.models.SignResultBean
 import com.huanchengfly.tieba.post.api.models.Sync
-import com.huanchengfly.tieba.post.api.models.ThreadStoreBean
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageRequest
@@ -59,7 +57,6 @@ import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
-import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
@@ -169,36 +166,9 @@ object MixedTiebaApiImpl : ITiebaApi {
             )
 
 
-    override fun threadStoreFlow(page: Int, pageSize: Int): Flow<ThreadStoreBean> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.threadStoreFlow(
-            pageSize,
-            pageSize * page
-        )
 
-    override fun removeStoreFlow(
-        threadId: Long,
-        forumId: Long,
-        tbs: String?
-    ): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.removeStoreFlow(
-            threadId.toString(),
-            forumId.toString(),
-            tbs ?: AccountUtil.getLoginInfo()!!.tbs
-        )
 
-    override fun removeStoreFlow(threadId: String): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.removeStoreFlow(threadId)
 
-    override fun addStoreFlow(threadId: Long, postId: Long): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.addStoreFlow(
-            listOf(
-                NewCollectDataBean(
-                    threadId.toString(),
-                    postId.toString(),
-                    status = 1
-                )
-            ).toJson()
-        )
 
 
 

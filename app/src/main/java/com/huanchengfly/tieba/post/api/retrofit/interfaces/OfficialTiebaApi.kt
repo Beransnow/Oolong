@@ -115,17 +115,6 @@ interface OfficialTiebaApi {
         @Field("stoken") stoken: String? = AccountUtil.getSToken(),
     ): Flow<CommonResponse>
 
-    @POST("/c/f/post/threadstore")
-    @FormUrlEncoded
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    fun threadStoreFlow(
-        @Field("rn") pageSize: Int,
-        @Field("offset") offset: Int,
-        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
-        @Field("user_id") user_id: String? = AccountUtil.getUid(),
-    ): Flow<ThreadStoreBean>
 
     /**
      * Sync sends the IMEI, Android ID and MAC under Base64-encoded aliases
@@ -201,28 +190,7 @@ interface OfficialTiebaApi {
         @Field("stoken") sToken: String? = AccountUtil.getSToken(),
     ): Flow<AddPostBean>
 
-    @POST("/c/c/post/rmstore")
-    @FormUrlEncoded
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    fun removeStoreFlow(
-        @Field("tid") threadId: String,
-        @Field("fid") forumId: String = "null",
-        @Field("tbs") tbs: String = AccountUtil.getLoginInfo()!!.tbs,
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-        @Field("user_id") user_id: String? = AccountUtil.getUid(),
-    ): Flow<CommonResponse>
 
-    @POST("/c/c/post/addstore")
-    @FormUrlEncoded
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    fun addStoreFlow(
-        @Field("data") data: String,
-        @Field("stoken") stoken: String = AccountUtil.getSToken()!!,
-    ): Flow<CommonResponse>
 
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/f/ueg/checkjubao")
