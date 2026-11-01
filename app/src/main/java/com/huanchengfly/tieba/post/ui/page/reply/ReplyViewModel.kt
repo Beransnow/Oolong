@@ -16,7 +16,6 @@ import com.huanchengfly.tieba.post.repository.PostRepository
 import com.huanchengfly.tieba.post.repository.PostedReply
 import com.huanchengfly.tieba.post.repository.ReplyTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class ReplyPanelType {
     NONE,

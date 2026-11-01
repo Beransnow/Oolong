@@ -7,4 +7,3 @@ import com.huanchengfly.tieba.post.utils.ColorUtils
 fun Color.darken(i: Float = 0.1F): Color {
     return Color(ColorUtils.getDarkerColor(toArgb(), i))
 }
-

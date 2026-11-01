@@ -94,7 +94,7 @@ fun StateScreen(
     ) else Modifier
     Box(
         modifier = modifier
-                then clickableModifier,
+            then clickableModifier,
         contentAlignment = Alignment.Center
     ) {
         if (!isEmpty) {

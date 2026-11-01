@@ -1,8 +1,8 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.core.network.search.SearchForumsResponse
 import com.huanchengfly.tieba.core.network.search.SearchRemoteDataSource
 import com.huanchengfly.tieba.core.network.search.SearchSort
-import com.huanchengfly.tieba.core.network.search.SearchForumsResponse
 import com.huanchengfly.tieba.core.network.search.SearchThreadsResponse
 import com.huanchengfly.tieba.core.network.search.SearchUsersResponse
 import com.huanchengfly.tieba.post.arch.IoDispatcher

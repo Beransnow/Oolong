@@ -62,8 +62,8 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
 
     private fun isTiebaDomain(host: String?): Boolean {
         return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
-                host.equals("tieba.baidu.com", ignoreCase = true) ||
-                host.equals("tiebac.baidu.com", ignoreCase = true))
+            host.equals("tieba.baidu.com", ignoreCase = true) ||
+            host.equals("tiebac.baidu.com", ignoreCase = true))
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}

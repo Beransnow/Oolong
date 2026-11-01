@@ -21,8 +21,8 @@ import kotlinx.coroutines.flow.merge
 object QuickPreviewUtil {
     private fun isTiebaUrl(host: String?): Boolean {
         return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
-                host.equals("tieba.baidu.com", ignoreCase = true) ||
-                host.equals("tiebac.baidu.com", ignoreCase = true))
+            host.equals("tieba.baidu.com", ignoreCase = true) ||
+            host.equals("tiebac.baidu.com", ignoreCase = true))
     }
 
     @JvmStatic
@@ -37,7 +37,7 @@ object QuickPreviewUtil {
             "/mo/q/m",
             ignoreCase = true
         )) &&
-                kw != null || word != null
+            kw != null || word != null
     }
 
     @JvmStatic
@@ -51,7 +51,7 @@ object QuickPreviewUtil {
             "/mo/q/m",
             ignoreCase = true
         )) &&
-                kz != null || path!!.startsWith("/p/")
+            kz != null || path!!.startsWith("/p/")
     }
 
     @JvmStatic

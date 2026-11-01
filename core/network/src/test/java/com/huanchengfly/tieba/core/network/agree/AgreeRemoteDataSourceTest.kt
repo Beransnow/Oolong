@@ -72,7 +72,7 @@ class AgreeRemoteDataSourceTest {
     private companion object {
         // A real response, numbers as strings and empty objects as arrays
         const val SUCCESS = """{"error_code":"0","error_msg":"\u6210\u529f","info":[],"error":{"errno":"0",""" +
-                """"errmsg":"success","usermsg":null},"data":{"agree":{"score":"0","is_first_agree":"0"},""" +
-                """"toast":"","contri_info":[]},"toast":"","server_time":"636447","time":1793466020,"ctime":0}"""
+            """"errmsg":"success","usermsg":null},"data":{"agree":{"score":"0","is_first_agree":"0"},""" +
+            """"toast":"","contri_info":[]},"toast":"","server_time":"636447","time":1793466020,"ctime":0}"""
     }
 }

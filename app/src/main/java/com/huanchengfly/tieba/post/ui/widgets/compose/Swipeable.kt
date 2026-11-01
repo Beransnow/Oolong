@@ -35,7 +35,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sign
 
-
 /**
  * State of the [swipeable] modifier.
  *

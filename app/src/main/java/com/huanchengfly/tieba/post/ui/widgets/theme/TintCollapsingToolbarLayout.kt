@@ -9,7 +9,9 @@ import com.huanchengfly.tieba.post.ui.common.theme.interfaces.Tintable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
 
 class TintCollapsingToolbarLayout @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
 ) : CollapsingToolbarLayout(context, attrs, defStyleAttr), Tintable {
     private var textColorResId: Int
 
@@ -46,6 +48,4 @@ class TintCollapsingToolbarLayout @JvmOverloads constructor(
             }
         }
     }
-
-
 }

@@ -151,7 +151,7 @@ fun NotificationsTab(
                         backgroundColor = Color.Transparent,
                         contentColor = ExtendedTheme.colors.onTopBar,
                     ) {
-                        pages.forEachIndexed { index, pair -> 
+                        pages.forEachIndexed { index, pair ->
                             Tab(
                                 text = { Text(text = pair.first) },
                                 selected = pagerState.currentPage == index,

@@ -15,6 +15,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
@@ -23,7 +24,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference that shows a list of entries in a Dialog where a single entry can be selected at one time.
@@ -57,7 +57,7 @@ fun ListPref(
     textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null,
-    entries: Map<String, String> = emptyMap(), //TODO: Change to List?
+    entries: Map<String, String> = emptyMap(), // TODO: Change to List?
     icons: Map<String, @Composable () -> Unit> = emptyMap(),
 ) {
     val dialogState = rememberDialogState()

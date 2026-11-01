@@ -15,4 +15,3 @@ fun <T> Flow<T>.collectIn(
 ): Job = lifecycleOwner.lifecycleScope.launch {
     flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect(action)
 }
-

@@ -73,14 +73,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.LoadStatus
-import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.model.UserProfile
-import com.huanchengfly.tieba.post.models.database.Block
-import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.navigation.EditProfileKey
@@ -110,13 +104,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun UserProfilePage(
@@ -484,7 +478,7 @@ private fun UserProfileContentNormal(
 
                     CompositionLocalProvider(
                         LocalChromePadding provides
-                                PaddingValues(bottom = paddingValues.calculateBottomPadding())
+                            PaddingValues(bottom = paddingValues.calculateBottomPadding())
                     ) {
                         LazyLoadHorizontalPager(
                             state = pagerState,
@@ -617,7 +611,7 @@ private fun UserProfileContentExpanded(
 
                         CompositionLocalProvider(
                             LocalChromePadding provides
-                                    PaddingValues(bottom = paddingValues.calculateBottomPadding())
+                                PaddingValues(bottom = paddingValues.calculateBottomPadding())
                         ) {
                             LazyLoadHorizontalPager(
                                 state = pagerState,

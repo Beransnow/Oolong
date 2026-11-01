@@ -116,7 +116,6 @@ fun wrapRipple(rippleColor: Int, drawable: Drawable): Drawable {
     return RippleDrawable(ColorStateList.valueOf(rippleColor), drawable, drawable)
 }
 
-
 @JvmOverloads
 fun getIntermixedColorBackground(
     context: Context,
@@ -250,7 +249,7 @@ val Context.powerManager: PowerManager
 fun Context.requestIgnoreBatteryOptimizations() {
     if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-        intent.data = Uri.parse("package:${packageName}")
+        intent.data = Uri.parse("package:$packageName")
         startActivity(intent)
     }
 }

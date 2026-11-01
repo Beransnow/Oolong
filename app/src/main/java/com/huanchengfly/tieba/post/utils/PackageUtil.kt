@@ -8,4 +8,3 @@ val Context.applicationMetaData: Bundle
     get() {
         return packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
     }
-

@@ -316,7 +316,6 @@ open class AccompanistWebChromeClient : WebChromeClient() {
     }
 }
 
-
 sealed class WebContent {
     data class Url(
         val url: String,
@@ -630,7 +629,6 @@ fun rememberWebViewNavigator(
  * A wrapper class to hold errors from the WebView.
  */
 @Immutable
-
 data class WebViewError(
     /**
      * The request the error came from.
@@ -731,7 +729,6 @@ fun rememberSaveableWebViewState(): WebViewState =
     rememberSaveable(saver = WebStateSaver) {
         WebViewState(WebContent.NavigatorOnly)
     }
-
 
 val WebStateSaver: Saver<WebViewState, Any> = run {
     val pageTitleKey = "pagetitle"

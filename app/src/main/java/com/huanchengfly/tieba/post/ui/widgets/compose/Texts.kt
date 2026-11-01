@@ -359,13 +359,13 @@ fun buildChipInlineContent(
     val heightPx = textSize.height
     val heightSp = heightPx.pxToSpFloat().sp
     val textHeightPx = textStyle.fontSize.value.spToPxFloat() -
-            padding.calculateTopPadding().value.dpToPxFloat() -
-            padding.calculateBottomPadding().value.dpToPxFloat()
+        padding.calculateTopPadding().value.dpToPxFloat() -
+        padding.calculateBottomPadding().value.dpToPxFloat()
     val fontSize = textHeightPx.pxToSpFloat().sp
     val textWidthPx = textSize.width
     val widthPx = textWidthPx +
-            padding.calculateStartPadding(LocalLayoutDirection.current).value.dpToPxFloat() +
-            padding.calculateEndPadding(LocalLayoutDirection.current).value.dpToPxFloat()
+        padding.calculateStartPadding(LocalLayoutDirection.current).value.dpToPxFloat() +
+        padding.calculateEndPadding(LocalLayoutDirection.current).value.dpToPxFloat()
     val widthSp = widthPx.pxToSpFloat().sp
     return InlineTextContent(
         placeholder = Placeholder(

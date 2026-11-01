@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -119,7 +118,7 @@ fun SearchBoxPreview() {
     SearchBox(
         backgroundColor = Color(0xFFF8F8F8),
         contentColor = Color(0xFFBFBFBF),
-        onClick =  {}
+        onClick = {}
     )
 }
 

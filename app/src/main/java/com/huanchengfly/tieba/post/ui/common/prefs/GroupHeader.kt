@@ -6,10 +6,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /** A group's title: small grey text over its settings, lined up with their text. */
 @Composable

@@ -81,7 +81,7 @@ class ImagePickerActivity : BaseComposeActivity() {
     private fun currentAccess(): PickerAccess = when {
         isGranted(readPermission) -> PickerAccess.All
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
-                isGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) -> PickerAccess.Selected
+            isGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) -> PickerAccess.Selected
 
         else -> PickerAccess.Denied
     }

@@ -39,6 +39,10 @@ import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
 import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -47,10 +51,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 object ImageUtil {
     /**
@@ -87,7 +87,7 @@ object ImageUtil {
         return false
     }
 
-    //判断是否为GIF文件
+    // 判断是否为GIF文件
     private fun isGifFile(inputStream: InputStream?): Boolean {
         if (inputStream == null) return false
         val bytes = ByteArray(4)
@@ -119,11 +119,11 @@ object ImageUtil {
     ): File {
         val baos = ByteArrayOutputStream()
         var quality = initialQuality
-        bitmap.compress(CompressFormat.JPEG, quality, baos) //质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
-        while (baos.toByteArray().size / 1024 > maxSizeKb && quality > 0) {  //循环判断如果压缩后图片是否大于设置的最大值,大于继续压缩
-            baos.reset() //重置baos即清空baos
-            quality -= 5 //每次都减少5
-            bitmap.compress(CompressFormat.JPEG, quality, baos) //这里压缩options%，把压缩后的数据存放到baos中
+        bitmap.compress(CompressFormat.JPEG, quality, baos) // 质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
+        while (baos.toByteArray().size / 1024 > maxSizeKb && quality > 0) { // 循环判断如果压缩后图片是否大于设置的最大值,大于继续压缩
+            baos.reset() // 重置baos即清空baos
+            quality -= 5 // 每次都减少5
+            bitmap.compress(CompressFormat.JPEG, quality, baos) // 这里压缩options%，把压缩后的数据存放到baos中
         }
         try {
             val fos = FileOutputStream(output)
@@ -232,7 +232,7 @@ object ImageUtil {
         val cMatrix = ColorMatrix()
         cMatrix.set(
             floatArrayOf(
-                1f, 0f, 0f, 0f, brightness.toFloat(), 0f, 1f, 0f, 0f, brightness.toFloat(),  // 改变亮度
+                1f, 0f, 0f, 0f, brightness.toFloat(), 0f, 1f, 0f, 0f, brightness.toFloat(), // 改变亮度
                 0f, 0f, 1f, 0f, brightness.toFloat(), 0f, 0f, 0f, 1f, 0f
             )
         )
@@ -487,10 +487,10 @@ object ImageUtil {
         }
         val radius = getRadiusDp(imageView.context).toFloat()
         val fromNetwork = skipNetworkCheck ||
-                type == LOAD_TYPE_AVATAR ||
-                imageLoadSettings == SETTINGS_ALL_ORIGIN ||
-                imageLoadSettings == SETTINGS_SMART_ORIGIN ||
-                (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(imageView.context))
+            type == LOAD_TYPE_AVATAR ||
+            imageLoadSettings == SETTINGS_ALL_ORIGIN ||
+            imageLoadSettings == SETTINGS_SMART_ORIGIN ||
+            (imageLoadSettings == SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(imageView.context))
         imageView.setTag(R.id.image_load_tag, fromNetwork)
         imageView.load(url) {
             if (!fromNetwork) {
@@ -600,7 +600,6 @@ object ImageUtil {
 
     @IntDef(SETTINGS_SMART_ORIGIN, SETTINGS_SMART_LOAD, SETTINGS_ALL_ORIGIN, SETTINGS_ALL_NO)
     annotation class ImageLoadSettings
-
 }
 
 fun ImageUtil.download(

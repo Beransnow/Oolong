@@ -13,7 +13,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog
 import com.huanchengfly.tieba.post.toastShort
 
-
 object PermissionUtils {
     const val READ_CALENDAR = "android.permission.READ_CALENDAR"
     const val WRITE_CALENDAR = "android.permission.WRITE_CALENDAR"

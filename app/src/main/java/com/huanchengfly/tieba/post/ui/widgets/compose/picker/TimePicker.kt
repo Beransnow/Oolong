@@ -51,7 +51,6 @@ fun TimePicker(
         )
     )
 ) {
-
     val pickerTime by remember {
         mutableStateOf(
             PickerTime.parse(
@@ -213,7 +212,8 @@ fun AmPmPicker(
 }
 
 enum class TimesOfDay(val string: String) {
-    AM("AM"), PM("PM")
+    AM("AM"),
+    PM("PM")
 }
 
 @Stable

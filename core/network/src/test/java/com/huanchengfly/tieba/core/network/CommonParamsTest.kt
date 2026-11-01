@@ -124,7 +124,7 @@ class CommonParamsTest {
             "c3_aid" to FakeDevice.c3Aid,
             "cuid_gid" to "",
             "cookie" to "ka=open;need_cookie_decrypt=0;TBBRAND=Pixel 9;DNARBBT=;CUID=${FakeDevice.cuid};" +
-                    "BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;BAIDUZID=zid-value;BAIDUCUID=$cuidBase64",
+                "BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;BAIDUZID=zid-value;BAIDUCUID=$cuidBase64",
             "x_bd_data_type" to "protobuf",
         )
         assertEquals(expected, commonParams().headers(TiebaProfile.PROTO_12_52))
@@ -143,8 +143,8 @@ class CommonParamsTest {
         val expected = listOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 16; Pixel 9; wv) tieba/12.52.1.0",
             "cookie" to "BDUSS=bduss-value;STOKEN=stoken-value;BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;" +
-                    "CUID=${FakeDevice.cuid};BAIDUZID=zid-value;BAIDUCUID=$cuidBase64;TBBRAND=Pixel 9;DNARBBT=;" +
-                    "ka=open;need_cookie_decrypt=0",
+                "CUID=${FakeDevice.cuid};BAIDUZID=zid-value;BAIDUCUID=$cuidBase64;TBBRAND=Pixel 9;DNARBBT=;" +
+                "ka=open;need_cookie_decrypt=0",
         )
         assertEquals(expected, commonParams().headers(TiebaProfile.WEB_12_52))
     }
@@ -155,8 +155,8 @@ class CommonParamsTest {
 
         assertEquals(
             "BAIDUID=0123456789ABCDEF0123456789ABCDEF:FG=1;CUID=${FakeDevice.cuid};BAIDUCUID=" +
-                    java.util.Base64.getEncoder().encodeToString(FakeDevice.cuid.toByteArray()) +
-                    ";TBBRAND=Pixel 9;DNARBBT=;ka=open;need_cookie_decrypt=0",
+                java.util.Base64.getEncoder().encodeToString(FakeDevice.cuid.toByteArray()) +
+                ";TBBRAND=Pixel 9;DNARBBT=;ka=open;need_cookie_decrypt=0",
             cookie,
         )
     }

@@ -11,8 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
-import kotlinx.coroutines.launch
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import kotlinx.coroutines.launch
 
 /**
  * Simple preference with a trailing [Checkbox]
@@ -40,7 +40,6 @@ fun CheckBoxPref(
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null
 ) {
-
     val selectionKey = booleanPreferencesKey(key)
     val scope = rememberCoroutineScope()
 

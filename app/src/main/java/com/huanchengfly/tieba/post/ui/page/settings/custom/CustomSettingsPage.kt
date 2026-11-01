@@ -40,8 +40,8 @@ import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlin.math.roundToInt
 import kotlinx.collections.immutable.persistentListOf
+import kotlin.math.roundToInt
 
 /** The theme in use, by the name the theme page gives it. */
 @Composable
@@ -184,7 +184,7 @@ fun CustomSettingsPage(
                         val supportThemedIcons = remember {
                             persistentListOf(
                                 LauncherIcons.NEW_ICON,
-    //                            LauncherIcons.NEW_ICON_INVERT,
+                                //                            LauncherIcons.NEW_ICON_INVERT,
                             )
                         }
                         val currentLauncherIcon by rememberPreferenceAsState(

@@ -14,11 +14,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.roundToDP
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
-//todo add decimal places as param?
+// todo add decimal places as param?
 
 /**
  * Preference which shows a slider just below the [title]
@@ -51,7 +51,6 @@ fun SliderPref(
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null,
 ) {
-
     val selectionKey = floatPreferencesKey(key)
     val scope = rememberCoroutineScope()
 
@@ -88,7 +87,6 @@ fun SliderPref(
     Column(
         verticalArrangement = Arrangement.Center,
     ) {
-
         TextPref(
             title = title,
             modifier = modifier,
@@ -125,8 +123,5 @@ fun SliderPref(
                 )
             }
         }
-
     }
-
-
 }

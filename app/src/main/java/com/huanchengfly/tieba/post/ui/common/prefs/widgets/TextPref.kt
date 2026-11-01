@@ -11,7 +11,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsListItem
 import com.huanchengfly.tieba.post.ui.common.prefs.ifNotNullThen
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
-//TODO add single line title?
+// TODO add single line title?
 
 /**
  * Simple Text with title and summary.

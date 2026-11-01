@@ -28,9 +28,9 @@ object DeviceUtils {
         val totalMemory = getTotalMemory().takeIf { it > 0 } ?: 3.5425532f
         val totalSDCardSize = getTotalSDCardSize().takeIf { it >= 0 } ?: 51.957294f
         return round(totalMemory) * 0.0572301f +
-                roundUpRom(totalSDCardSize) * 4.1613E-4f +
-                (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
-                0.0231852f
+            roundUpRom(totalSDCardSize) * 4.1613E-4f +
+            (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
+            0.0231852f
     }
 
     /**
@@ -44,9 +44,9 @@ object DeviceUtils {
         val totalMemory = getTotalMemory().takeIf { it > 0 } ?: 3.5425532f
         val totalSDCardSize = getTotalSDCardSize().takeIf { it >= 0 } ?: 51.957294f
         val score = round(totalMemory) * 0.0572301f +
-                roundUpRom(totalSDCardSize) * 4.1613E-4f +
-                (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
-                0.0231852f
+            roundUpRom(totalSDCardSize) * 4.1613E-4f +
+            (round(cpuCores) * cpuAverageFrequency) * 0.01155649f +
+            0.0231852f
         return score.coerceIn(0f, 1f)
     }
 

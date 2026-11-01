@@ -50,7 +50,6 @@ class TintTextView @JvmOverloads constructor(
         }
     }
 
-
     override fun tint() {
         applyTintColor()
     }

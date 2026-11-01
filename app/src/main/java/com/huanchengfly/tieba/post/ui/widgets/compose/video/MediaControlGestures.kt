@@ -51,16 +51,14 @@ fun MediaControlGestures(
     val draggingProgress by controller.collect { draggingProgress }
 
     if (controlsEnabled && !controlsVisible && gesturesEnabled) {
-        Box(
-            modifier = modifier
-                .draggingProgressOverlay(draggingProgress)
-                .quickSeekAnimation(quickSeekDirection) {
-                    controller.setQuickSeekAction(QuickSeekAction.none())
-                }) {
+        Box(modifier = modifier
+            .draggingProgressOverlay(draggingProgress)
+            .quickSeekAnimation(quickSeekDirection) {
+                controller.setQuickSeekAction(QuickSeekAction.none())
+            }) {
             GestureBox()
         }
     }
-
 }
 
 @Composable
@@ -275,12 +273,12 @@ data class DraggingProgress(
 ) : Parcelable {
     val progressText: String
         get() = "${getDurationString(finalTime.toLong(), false)} " +
-                "[${if (diffTime < 0) "-" else "+"}${
-                    getDurationString(
-                        abs(diffTime.toLong()),
-                        false
-                    )
-                }]"
+            "[${if (diffTime < 0) "-" else "+"}${
+                getDurationString(
+                    abs(diffTime.toLong()),
+                    false
+                )
+            }]"
 }
 
 enum class QuickSeekDirection {

@@ -590,9 +590,9 @@ private class SplineBasedFloatDecayAnimationSpec(density: Density) :
     fun flingDistance(velocity: Float): Float {
         val l = getSplineDeceleration(velocity)
         return (
-                PlatformFlingScrollFriction * magicPhysicalCoefficient
-                        * exp(DecelerationRate / DecelMinusOne * l)
-                ).toFloat() * sign(velocity)
+            PlatformFlingScrollFriction * magicPhysicalCoefficient
+                * exp(DecelerationRate / DecelMinusOne * l)
+            ).toFloat() * sign(velocity)
     }
 
     override fun getTargetValue(initialValue: Float, initialVelocity: Float): Float =
@@ -608,7 +608,7 @@ private class SplineBasedFloatDecayAnimationSpec(density: Density) :
         val splinePos = if (duration > 0) playTimeNanos / duration.toFloat() else 1f
         val distance = flingDistance(initialVelocity)
         return initialValue + distance *
-                AndroidFlingSpline.flingPosition(splinePos).distanceCoefficient
+            AndroidFlingSpline.flingPosition(splinePos).distanceCoefficient
     }
 
     @Suppress("MethodNameUnits")
@@ -627,7 +627,7 @@ private class SplineBasedFloatDecayAnimationSpec(density: Density) :
         val splinePos = if (duration > 0L) playTimeNanos / duration.toFloat() else 1f
         val distance = flingDistance(initialVelocity)
         return AndroidFlingSpline.flingPosition(splinePos).velocityCoefficient *
-                distance / duration * 1_000_000_000.0f
+            distance / duration * 1_000_000_000.0f
     }
 }
 

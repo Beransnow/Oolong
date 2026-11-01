@@ -27,7 +27,12 @@ data class ReplyTarget(
 )
 
 /** A reply the server took. */
-data class PostedReply(val threadId: Long, val postId: Long, /** The experience it earned, may be empty. */ val expInc: String)
+data class PostedReply(
+    val threadId: Long,
+    val postId: Long,
+    /** The experience it earned, may be empty. */
+    val expInc: String
+)
 
 /** The display name of the account that posts, sent along with each post. */
 fun interface PosterName {

@@ -31,7 +31,6 @@ class UserPostBean : BaseBean() {
 
         @SerializedName("has_agree")
         val hasAgree: String? = null
-
     }
 
     class PostBean {

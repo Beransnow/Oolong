@@ -14,8 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
-import kotlinx.coroutines.launch
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import kotlinx.coroutines.launch
 
 /**
  * Preference that shows a list of entries in a DropDown
@@ -48,7 +48,6 @@ fun DropDownPref(
     leadingIcon: @Composable (() -> Unit)? = null,
     entries: Map<String, String> = mapOf()
 ) {
-
     var expanded by rememberSaveable { mutableStateOf(false) }
     val selectionKey = stringPreferencesKey(key)
     val scope = rememberCoroutineScope()

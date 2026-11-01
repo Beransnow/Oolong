@@ -8,9 +8,9 @@ import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.StringUtil
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /** The browsing history of threads, which remembers where in a thread the user was. */
 fun interface ThreadHistory {

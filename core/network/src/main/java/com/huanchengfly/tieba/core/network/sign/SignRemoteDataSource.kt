@@ -20,7 +20,7 @@ class SignRemoteDataSource(
     suspend fun sign(forumId: Long, forumName: String, tbs: String? = null): SignResponse {
         val common = commonParams.form(profile, includeTbs = tbs == null)
         val params = common +
-                listOfNotNull("fid" to forumId.toString(), "kw" to forumName, tbs?.let { "tbs" to it })
+            listOfNotNull("fid" to forumId.toString(), "kw" to forumName, tbs?.let { "tbs" to it })
         // sig is on by default and only turned off by the android_enc_sig_new switch from sync
         return service.sign(signedFormBody(params, withSig = true))
     }

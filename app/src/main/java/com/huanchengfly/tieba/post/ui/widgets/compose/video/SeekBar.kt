@@ -201,7 +201,6 @@ fun SeekBar(
                             }
                         )
                     ) {
-
                         Indicator(
                             modifier = Modifier
                                 .size(animatedIndicatorSize)

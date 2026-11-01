@@ -239,7 +239,6 @@ private open class DefaultTextFieldColors(
     @Composable
     override fun cursorColor(): State<Color> =
         rememberUpdatedState(newValue = cursorColor)
-
 }
 
 @Immutable

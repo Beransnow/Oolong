@@ -62,7 +62,7 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         isActivityRunning = false
     }
 
-    //禁止app字体大小跟随系统字体大小调节
+    // 禁止app字体大小跟随系统字体大小调节
     override fun getResources(): Resources {
         val fontScale = appPreferences.fontScale
         val resources = super.getResources()

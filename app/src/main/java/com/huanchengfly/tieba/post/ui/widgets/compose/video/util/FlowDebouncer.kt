@@ -21,5 +21,4 @@ class FlowDebouncer<T>(timeoutMillis: Long) : Flow<T> {
     override suspend fun collect(collector: FlowCollector<T>) {
         flow.collect(collector)
     }
-
 }

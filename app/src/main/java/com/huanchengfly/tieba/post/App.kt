@@ -40,7 +40,6 @@ import com.huanchengfly.tieba.post.utils.packageInfo
 import dagger.hilt.android.HiltAndroidApp
 import kotlin.concurrent.thread
 
-
 @HiltAndroidApp
 class App : Application(), SingletonImageLoader.Factory {
     private val mActivityList: MutableList<Activity> = mutableListOf()
@@ -49,7 +48,7 @@ class App : Application(), SingletonImageLoader.Factory {
     private fun setWebViewPath(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val processName = getProcessName(context)
-            if (applicationContext.packageName != processName) { //判断不等于默认进程名称
+            if (applicationContext.packageName != processName) { // 判断不等于默认进程名称
                 WebView.setDataDirectorySuffix(processName!!)
             }
         }
@@ -84,13 +83,13 @@ class App : Application(), SingletonImageLoader.Factory {
         }
     }
 
-    //解决魅族 Flyme 系统夜间模式强制反色
+    // 解决魅族 Flyme 系统夜间模式强制反色
     @Keep
     fun mzNightModeUseOf(): Int = 2
 
-    //禁止app字体大小跟随系统字体大小调节
+    // 禁止app字体大小跟随系统字体大小调节
     override fun getResources(): Resources {
-        //INSTANCE = this
+        // INSTANCE = this
         val fontScale = appPreferences.fontScale
         val resources = super.getResources()
         if (resources.configuration.fontScale != fontScale) {
@@ -107,7 +106,7 @@ class App : Application(), SingletonImageLoader.Factory {
     fun addActivity(activity: Activity) {
         // 判断当前集合中不存在该Activity
         if (!mActivityList.contains(activity)) {
-            mActivityList.add(activity) //把当前Activity添加到集合中
+            mActivityList.add(activity) // 把当前Activity添加到集合中
         }
     }
 
@@ -116,10 +115,10 @@ class App : Application(), SingletonImageLoader.Factory {
      */
     @JvmOverloads
     fun removeActivity(activity: Activity, finish: Boolean = false) {
-        //判断当前集合中存在该Activity
+        // 判断当前集合中存在该Activity
         if (mActivityList.contains(activity)) {
-            mActivityList.remove(activity) //从集合中移除
-            if (finish) activity.finish() //销毁当前Activity
+            mActivityList.remove(activity) // 从集合中移除
+            if (finish) activity.finish() // 销毁当前Activity
         }
     }
 
@@ -127,7 +126,7 @@ class App : Application(), SingletonImageLoader.Factory {
      * 销毁所有的Activity
      */
     fun removeAllActivity() {
-        //通过循环，把集合中的所有Activity销毁
+        // 通过循环，把集合中的所有Activity销毁
         for (activity in mActivityList) {
             activity.finish()
         }

@@ -21,11 +21,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.TimePickerDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference which shows a TextField in a Dialog
@@ -66,13 +66,12 @@ fun TimePickerPerf(
     val datastore = LocalPrefsDataStore.current
     val prefs by remember { datastore.data }.collectAsState(initial = null)
 
-    //value should only change when save button is clicked
+    // value should only change when save button is clicked
     var value by remember { mutableStateOf(datastore.getString(key, defaultValue)) }
-    //value of the TextField which changes every time the text is modified
+    // value of the TextField which changes every time the text is modified
     var timeVal by remember { mutableStateOf(value) }
 
     var dialogSize by remember { mutableStateOf(Size.Zero) }
-
 
     LaunchedEffect(datastore.data) {
         datastore.data.collectLatest { pref ->
@@ -110,7 +109,7 @@ fun TimePickerPerf(
     )
 
     if (dialogState.show) {
-        //reset
+        // reset
         LaunchedEffect(null) {
             timeVal = value
         }

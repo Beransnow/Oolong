@@ -11,7 +11,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dpToPx
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 
-
 class RequestPermissionTipDialog(context: Context, permission: PermissionUtils.PermissionData) :
     AlertDialog(context, R.style.Dialog_RequestPermissionTip) {
     val title: TextView

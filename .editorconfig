@@ -1,0 +1,31 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+max_line_length = off
+ktlint_code_style = intellij_idea
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Existing code mixes both; leave trailing commas as written
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled
+# Rewrap or restructure code without making it clearer
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
+ktlint_standard_multiline-if-else = disabled
+# Naming is for the package tidy-up, not the formatter
+ktlint_standard_property-naming = disabled
+ktlint_standard_filename = disabled
+ktlint_standard_mixed-condition-operators = disabled
+ktlint_standard_wrapping = disabled
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_backing-property-naming = disabled
+ktlint_standard_annotation = disabled

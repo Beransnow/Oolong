@@ -7,12 +7,11 @@ import com.huanchengfly.tieba.post.api.retrofit.converter.gson.GsonConverterFact
 import com.huanchengfly.tieba.post.api.retrofit.converter.kotlinx.serialization.asConverterFactory
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
 import com.huanchengfly.tieba.post.api.retrofit.interfaces.SofireApi
-import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-
+import java.util.concurrent.TimeUnit
 
 /** The Retrofit client of Sofire, which issues the device token; Tieba requests go through TiebaNetwork. */
 object RetrofitTiebaApi {

@@ -84,13 +84,13 @@ import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import com.huanchengfly.tieba.post.utils.isTiebaHost
 import com.huanchengfly.tieba.post.utils.parseCookie
 import com.huanchengfly.tieba.post.utils.toTiebaKey
-import java.lang.ref.WeakReference
-import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
+import java.util.UUID
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -274,15 +274,15 @@ fun WebViewPage(
 
 fun isTiebaHost(host: String): Boolean {
     return host == "wapp.baidu.com" ||
-            host.contains("tieba.baidu.com") ||
-            host == "tiebac.baidu.com"
+        host.contains("tieba.baidu.com") ||
+        host == "tiebac.baidu.com"
 }
 
 fun isInternalHost(host: String): Boolean {
     return isTiebaHost(host) ||
-            host.contains("wappass.baidu.com") ||
-            host.contains("ufosdk.baidu.com") ||
-            host.contains("m.help.baidu.com")
+        host.contains("wappass.baidu.com") ||
+        host.contains("ufosdk.baidu.com") ||
+        host.contains("m.help.baidu.com")
 }
 
 open class MyWebViewClient(
@@ -304,9 +304,9 @@ open class MyWebViewClient(
         val isHttp = scheme.startsWith("http")
         val isTieba = isTiebaHost(host)
         val isInternal = isTieba ||
-                host.contains("wappass.baidu.com") ||
-                host.contains("ufosdk.baidu.com") ||
-                host.contains("m.help.baidu.com")
+            host.contains("wappass.baidu.com") ||
+            host.contains("ufosdk.baidu.com") ||
+            host.contains("m.help.baidu.com")
         return when {
             isHttp && isTieba -> {
                 newUri.toTiebaKey()?.let { direction ->
@@ -396,7 +396,7 @@ open class MyWebViewClient(
             context,
             PermissionBean(
                 PermissionDialog.CustomPermission.PERMISSION_START_APP,
-                "${host}_${scheme}",
+                "${host}_$scheme",
                 context.getString(R.string.title_start_app_permission, host, appName),
                 R.drawable.ic_round_exit_to_app
             )
@@ -597,5 +597,4 @@ class MyWebChromeClient(
 
 @Composable
 fun MyWebView() {
-
 }

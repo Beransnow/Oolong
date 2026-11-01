@@ -8,6 +8,7 @@ import okhttp3.RequestBody
  * The multipart body of a protobuf request: optional form fields, then the encoded message as a
  * file named `data`.
  */
+@Suppress("ktlint:standard:function-naming")
 fun ProtobufBody(
     message: Message<*, *>,
     fields: List<Pair<String, String>> = emptyList(),

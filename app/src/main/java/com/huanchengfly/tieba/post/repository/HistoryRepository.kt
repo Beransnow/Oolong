@@ -5,12 +5,12 @@ import com.huanchengfly.tieba.post.database.HistoryDao
 import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.models.ThreadHistoryInfoBean
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
 /** The threads and forums the user visited, most recent first. */
 class HistoryRepository @Inject constructor(

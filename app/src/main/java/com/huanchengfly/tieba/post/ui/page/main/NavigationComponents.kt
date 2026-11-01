@@ -61,17 +61,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
-import androidx.compose.ui.util.lerp as lerpFloat
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.glassLens
 import com.huanchengfly.tieba.post.ui.widgets.compose.lensTarget
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import androidx.compose.ui.util.lerp as lerpFloat
 
 /**
  * The main navigation on wider windows: the floating pill stood upright beside the panes. It

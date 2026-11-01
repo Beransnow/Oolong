@@ -26,9 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -41,9 +41,9 @@ import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.page.reply.ChromeSurface
 import com.huanchengfly.tieba.post.ui.page.reply.Content
 import com.huanchengfly.tieba.post.ui.page.reply.Panel
+import com.huanchengfly.tieba.post.ui.page.reply.ReplyCapsuleContent
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyChrome
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeBarHeight
-import com.huanchengfly.tieba.post.ui.page.reply.ReplyCapsuleContent
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyChromeState
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyComposer
 import com.huanchengfly.tieba.post.ui.page.reply.panelShown

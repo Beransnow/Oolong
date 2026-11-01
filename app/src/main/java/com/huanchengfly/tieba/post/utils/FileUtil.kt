@@ -55,7 +55,7 @@ object FileUtil {
      */
     fun getFilePath(context: Context, dir: String): String {
         var directoryPath = ""
-        //判断SD卡是否可用
+        // 判断SD卡是否可用
         directoryPath = if (Environment.MEDIA_MOUNTED == Environment.getExternalStorageState()) {
             context.getExternalFilesDir(dir)!!.absolutePath
         } else {
@@ -272,7 +272,7 @@ object FileUtil {
         return false
     }
 
-    //修改文件扩展名
+    // 修改文件扩展名
     fun changeFileExtension(fileName: String, newExtension: String): String {
         if (TextUtils.isEmpty(fileName)) {
             return fileName

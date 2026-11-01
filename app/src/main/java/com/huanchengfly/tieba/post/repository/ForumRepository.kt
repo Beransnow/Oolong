@@ -21,11 +21,11 @@ import com.huanchengfly.tieba.post.model.ForumRuleItem
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Whether the user hides threads with videos from thread lists. */
 fun interface VideoThreadFilter {

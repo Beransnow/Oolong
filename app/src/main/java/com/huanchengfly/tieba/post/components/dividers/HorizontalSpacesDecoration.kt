@@ -17,8 +17,10 @@ class HorizontalSpacesDecoration @JvmOverloads constructor(
     constructor(space: Int, spaceOnEdge: Boolean) : this(space, space, space, space, spaceOnEdge)
 
     override fun getItemOffsets(
-        outRect: Rect, view: View,
-        parent: RecyclerView, state: RecyclerView.State
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State
     ) {
         val position = parent.getChildAdapterPosition(view)
         val adapter = parent.adapter ?: return

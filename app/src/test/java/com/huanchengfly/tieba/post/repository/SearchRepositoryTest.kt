@@ -31,7 +31,10 @@ class SearchRepositoryTest {
             exactMatch = SearchForumsResponse.Forum(forumId = 52, forumName = "测试", forumNameShow = "", slogan = "标语"),
             fuzzyMatch = JsonArray(
                 listOf(
-                    buildJsonObject { put("forum_id", 1); put("forum_name", "a") },
+                    buildJsonObject {
+                        put("forum_id", 1)
+                        put("forum_name", "a")
+                    },
                     buildJsonObject { put("forum_id", 2) },
                 )
             ),

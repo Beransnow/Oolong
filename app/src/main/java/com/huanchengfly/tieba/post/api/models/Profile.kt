@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api.models
 
-
 import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 

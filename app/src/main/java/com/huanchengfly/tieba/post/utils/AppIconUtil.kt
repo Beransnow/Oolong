@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import com.huanchengfly.tieba.post.App
 import kotlinx.collections.immutable.persistentListOf
 
-
 object LauncherIcons {
     const val NEW_ICON = "com.huanchengfly.tieba.post.MainActivityV2"
     const val NEW_ICON_THEMED = "com.huanchengfly.tieba.post.MainActivityIconThemed"

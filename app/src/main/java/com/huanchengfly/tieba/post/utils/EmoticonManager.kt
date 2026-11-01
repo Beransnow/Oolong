@@ -31,12 +31,12 @@ import com.huanchengfly.tieba.post.models.EmoticonCache
 import com.huanchengfly.tieba.post.pxToDp
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.toJson
-import java.io.File
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.lang.ref.WeakReference
 
 @Composable
 fun calcLineHeightPx(style: TextStyle): Int {

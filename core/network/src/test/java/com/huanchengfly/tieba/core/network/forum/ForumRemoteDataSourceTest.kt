@@ -27,16 +27,16 @@ import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDeta
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponseData
-import kotlin.random.Random
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okio.Buffer
 import org.junit.After
 import org.junit.Before
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.AdParam as FrsAdParam
 
 class ForumRemoteDataSourceTest {

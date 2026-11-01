@@ -37,7 +37,6 @@ import com.huanchengfly.tieba.post.utils.launchUrl
 fun AboutPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
-
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {

@@ -1,29 +1,30 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
+import android.graphics.Typeface
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
@@ -35,23 +36,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.background
-import android.graphics.Typeface
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
@@ -61,36 +66,25 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarRowHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitleStart
-import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.fade
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.util.lerp
-import kotlin.math.roundToInt
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * The forum's front: its avatar and name over its slogan, how many follow it and post in it, the
@@ -297,12 +291,16 @@ private val ButtonHeight = 38.dp
 private val NameFontSize = 24.sp
 private val DockedAvatarSize = 28.dp
 private val DockedNameGap = 10.dp
+
 /** The bar title's size. */
 private val DockedNameFontSize = 20.sp
+
 /** Search and the menu, and the row's padding after them. */
 private val ForumBarActionsWidth = 48.dp * 2 + 4.dp
+
 /** How far below the bar's edge the details start to fade. */
 private val DetailsFade = 32.dp
+
 /** How far into docking the slogan has faded out. */
 private const val SloganFadeEnd = 0.4f
 
@@ -445,14 +443,23 @@ internal fun ForumTopBar(
 
 @Composable
 internal fun ForumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean, dismiss: () -> Unit) {
-    DropdownMenuItem(onClick = { onEvent(ForumEvent.Share); dismiss() }) {
+    DropdownMenuItem(onClick = {
+        onEvent(ForumEvent.Share)
+        dismiss()
+    }) {
         Text(text = stringResource(id = R.string.title_share))
     }
-    DropdownMenuItem(onClick = { onEvent(ForumEvent.SendToDesktop); dismiss() }) {
+    DropdownMenuItem(onClick = {
+        onEvent(ForumEvent.SendToDesktop)
+        dismiss()
+    }) {
         Text(text = stringResource(id = R.string.title_send_to_desktop))
     }
     if (liked) {
-        DropdownMenuItem(onClick = { onEvent(ForumEvent.Unfollow); dismiss() }) {
+        DropdownMenuItem(onClick = {
+            onEvent(ForumEvent.Unfollow)
+            dismiss()
+        }) {
             Text(text = stringResource(id = R.string.title_unfollow))
         }
     }

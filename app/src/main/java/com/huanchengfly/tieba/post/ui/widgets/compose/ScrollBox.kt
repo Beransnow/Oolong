@@ -23,6 +23,7 @@ import kotlin.math.roundToInt
 
 private const val TAG = "UniversalScrollBox"
 
+@Suppress("ktlint:standard:function-naming")
 private fun TwoFloats(width: Float, height: Float) = androidx.compose.ui.geometry.Size(width = width, height = height)
 
 /**
@@ -42,7 +43,7 @@ fun UniversalScrollBox(
         var sizeRatio by remember { mutableStateOf(TwoFloats(width = 0F, height = 0F)) } // 内外大小比
         var barSize by remember { mutableStateOf(TwoFloats(width = 0F, height = 0F)) } // 水平滚动条宽度、垂直滚动条高度，$\frac{滚动条宽度}{可见内容宽度} = \frac{可见内容宽度}{内容总宽度}$
         var dragOffset by remember { mutableStateOf(TwoFloats(width = 0F, height = 0F)) } // 滚动条在水平、垂直方向拖动的距离
-        /**
+        /*
          * 水平滚动条会遮挡垂直方向内容，因此，当水平滚动条存在时，需要设置垂直方向 padding，垂直滚动条同理。
          * 当 content 变化，导致首次出现滚动条时，padding 随之发生变化，绘制时 outerSize 变化，从而可能使得另一个滚动条因此出现，继续导致 padding 变化，outerSize 变化，滚动条宽度变化。
          * 但是这几次变化之后， padding 不会再改变，因而滚动条不会继续变化，变化终止。虽然第一次变化的时候，可以预测后续变化，但是懒得计算了。
@@ -54,7 +55,8 @@ fun UniversalScrollBox(
                 .align(Alignment.TopStart)
                 .wrapContentSize(unbounded = false),
             content = content
-        ) { measurables, constraints -> // 外层 modifier 使用 unbounded false，可以通过 constraints.maxWidth maxHeight 算出外层的最大大小，注意这个 Size 是 padding 之后的
+        ) { measurables, constraints ->
+            // 外层 modifier 使用 unbounded false，可以通过 constraints.maxWidth maxHeight 算出外层的最大大小，注意这个 Size 是 padding 之后的
             outerSize = IntSize(width = constraints.maxWidth, height = constraints.maxHeight)
             Log.d(TAG, "outerSize $outerSize")
             val placeables = measurables.map { measurable ->
@@ -121,7 +123,6 @@ fun UniversalScrollBox(
                                 width = widthOffset,
                                 height = dragOffset.height
                             )
-
                         }, orientation = Orientation.Horizontal)
                 )
             }
@@ -152,7 +153,6 @@ fun UniversalScrollBox(
                                 width = dragOffset.width,
                                 height = heightOffset
                             )
-
                         }, orientation = Orientation.Vertical)
                 )
             }

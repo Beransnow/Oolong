@@ -8,11 +8,11 @@ import com.huanchengfly.tieba.post.database.TopForumDao
 import com.huanchengfly.tieba.post.database.TopForumEntity
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 /** What the home page lists: the forums the user follows, pins and visited lately. */
 class HomeRepository @Inject constructor(

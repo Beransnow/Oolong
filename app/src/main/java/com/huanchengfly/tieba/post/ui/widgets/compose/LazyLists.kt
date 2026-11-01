@@ -84,6 +84,7 @@ fun MyLazyVerticalGrid(
         content = content
     )
 }
+
 /**
  * A sticky header that pins below the list's top content padding instead of at the top edge of
  * the list, so it is not hidden behind a [GlassScaffold] top bar.

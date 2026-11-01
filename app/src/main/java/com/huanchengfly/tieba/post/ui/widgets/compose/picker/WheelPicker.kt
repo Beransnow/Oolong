@@ -62,7 +62,6 @@ fun <T> WheelPicker(
         val needScrollTop = -listState.firstVisibleItemScrollOffset + itemHeightInPixels / 2
 
         if (abs(listState.firstVisibleItemScrollOffset - itemHeightInPixels / 2) > 1) {
-
             LaunchedEffect(key1 = listState) {
                 scope.launch {
                     listState.animateScrollBy(needScrollTop.toFloat())

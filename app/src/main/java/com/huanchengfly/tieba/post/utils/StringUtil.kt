@@ -106,7 +106,7 @@ object StringUtil {
             if (showBoth && !nickname.isNullOrBlank() && username != nickname && username.isNotBlank()) {
                 append(nickname)
                 withStyle(SpanStyle(color = color)) {
-                    append("(${username})")
+                    append("($username)")
                 }
             } else {
                 append(nickname ?: username)

@@ -7,13 +7,13 @@ import com.huanchengfly.tieba.post.database.BlockDao
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Whether the user's block rules hide something by [author] saying [content]. */
 fun interface BlockRules {

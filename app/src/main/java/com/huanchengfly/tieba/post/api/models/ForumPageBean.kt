@@ -136,7 +136,6 @@ class ForumPageBean : ErrorBean() {
 
         @SerializedName("forbid_info")
         val forbidInfo: String? = null
-
     }
 
     class UserBean : BaseBean() {
@@ -148,7 +147,6 @@ class ForumPageBean : ErrorBean() {
 
         @JsonAdapter(PortraitAdapter::class)
         var portrait: String? = null
-
     }
 
     class PageBean : BaseBean() {
@@ -173,7 +171,6 @@ class ForumPageBean : ErrorBean() {
 
         @SerializedName("cur_good_id")
         var curGoodId: String? = null
-
     }
 
     class ThreadBean : BaseBean() {
@@ -432,6 +429,5 @@ class ForumPageBean : ErrorBean() {
             this.videoUrl = videoUrl
             return this
         }
-
     }
 }

@@ -16,15 +16,14 @@ import com.huanchengfly.tieba.post.getInt
 import com.huanchengfly.tieba.post.getLong
 import com.huanchengfly.tieba.post.getString
 import com.huanchengfly.tieba.post.utils.ThemeUtil.TRANSLUCENT_THEME_LIGHT
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 open class AppPreferencesUtils private constructor(ctx: Context) {
     companion object {
@@ -82,7 +81,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         defaultValue = "0"
     )
 
-
     var doNotUsePhotoPicker by DataStoreDelegates.boolean(defaultValue = false)
 
     var useDynamicColorTheme by DataStoreDelegates.boolean(defaultValue = false)
@@ -100,11 +98,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var hideExplore by DataStoreDelegates.boolean(defaultValue = false)
 
-
     var hideMedia by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideReply by DataStoreDelegates.boolean(defaultValue = false)
-
 
     var homePageShowHistoryForum by DataStoreDelegates.boolean(defaultValue = true)
 
@@ -117,13 +113,11 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var imeHeight by DataStoreDelegates.int(defaultValue = 800)
 
-
     var listItemsBackgroundIntermixed by DataStoreDelegates.boolean(defaultValue = true)
 
     var listSingle by DataStoreDelegates.boolean(defaultValue = false)
 
     var littleTail by DataStoreDelegates.string(key = "little_tail")
-
 
     var oldTheme by DataStoreDelegates.string(key = "old_theme")
 
@@ -148,14 +142,10 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var signDay by DataStoreDelegates.int(defaultValue = -1, key = "sign_day")
 
-
     var showBothUsernameAndNickname by DataStoreDelegates.boolean(
         defaultValue = false,
         key = "show_both_username_and_nickname"
     )
-
-
-
 
     var theme by DataStoreDelegates.string(defaultValue = ThemeUtil.THEME_DEFAULT)
 

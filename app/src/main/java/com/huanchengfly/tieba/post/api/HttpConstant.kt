@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api
 
-
 object Method {
     const val GET = "GET"
     const val POST = "POST"
@@ -56,7 +55,6 @@ object Header {
     const val CLIENT_LOG_ID = "client_logid"
     const val X_BD_DATA_TYPE = "x_bd_data_type"
 }
-
 
 object Param {
     const val ACTIVE_TIMESTAMP = "active_timestamp"

@@ -10,8 +10,8 @@ import retrofit2.http.Query
 import retrofit2.http.Url
 
 interface SofireApi {
+    //    @FormUrlEncoded
     @POST
-//    @FormUrlEncoded
     fun post(
         @Url url: String,
         @Query("skey") skey: String,

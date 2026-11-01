@@ -68,8 +68,8 @@ import com.huanchengfly.tieba.post.utils.PickMediasContract
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.yalantis.ucrop.UCrop
-import java.io.File
 import kotlinx.collections.immutable.persistentListOf
+import java.io.File
 
 @Composable
 fun EditProfilePage(
@@ -215,8 +215,8 @@ fun EditProfileCard(
     nickName: String,
     sex: Int,
     intro: String,
-    //birthdayShowStatus: Boolean,
-    //birthdayTime: Long,
+    // birthdayShowStatus: Boolean,
+    // birthdayTime: Long,
     loading: Boolean,
     onNickNameChange: ((String) -> Unit)? = null,
     onIntroChange: ((String) -> Unit)? = null,

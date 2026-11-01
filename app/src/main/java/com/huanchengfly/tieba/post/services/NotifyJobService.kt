@@ -17,8 +17,8 @@ import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import kotlinx.coroutines.CancellationException
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch

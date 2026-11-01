@@ -9,13 +9,13 @@ import com.huanchengfly.tieba.core.network.account.SyncInfo
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.api.legacyAccountRemoteDataSource
 import com.huanchengfly.tieba.post.dataStore
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 
 object ClientUtils {
     private const val CLIENT_ID = "client_id"

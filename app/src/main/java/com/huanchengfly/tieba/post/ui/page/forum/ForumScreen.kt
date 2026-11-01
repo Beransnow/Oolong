@@ -1,24 +1,29 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -28,23 +33,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material.ExperimentalMaterialApi
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapsingScrollBehavior
-import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.background
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberCollapsingScrollBehavior
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.DefaultErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.coroutines.launch
@@ -91,109 +90,109 @@ fun ForumScreen(
 
     val accent = rememberForumAccent(forum.avatar)
     CompositionLocalProvider(LocalForumAccent provides accent) {
-    GlassScaffold(
-        scaffoldState = scaffoldState,
-        backgroundColor = Color.Transparent,
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            ForumTopBar(
-                onEvent = onEvent,
-                menuContent = { ForumMenu(onEvent, liked = forum.liked, dismiss = { dismiss() }) },
-                content = {
-                    ForumHeader(
-                        forum = forum,
-                        loggedIn = state.loggedIn,
-                        onEvent = onEvent,
-                        collapse = collapse.state,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    ForumTabRow(
-                        tabs = tabs,
-                        pagerState = pagerState,
-                        sortType = state.sortType,
-                        onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
-                        onEvent = onEvent,
-                        modifier = Modifier.align(Alignment.Start),
-                    )
-                },
-            )
-        },
-        floatingActionButton = {
-            if (fab != ForumFab.Hidden) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .shadow(elevation = 8.dp, shape = CircleShape)
-                        .background(forumAccentOrPrimary(), CircleShape)
-                        .clickable {
-                            coroutineScope.launch {
-                                listStates[state.selectedTab]?.animateScrollToItem(0)
-                                if (fab == ForumFab.Refresh) onEvent(ForumEvent.Refresh)
-                            }
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        tint = onForumAccent(),
-                        imageVector = if (fab == ForumFab.Refresh) Icons.Rounded.Refresh else Icons.Rounded.VerticalAlignTop,
-                        contentDescription = null
-                    )
+        GlassScaffold(
+            scaffoldState = scaffoldState,
+            backgroundColor = Color.Transparent,
+            modifier = modifier.fillMaxSize(),
+            topBar = {
+                ForumTopBar(
+                    onEvent = onEvent,
+                    menuContent = { ForumMenu(onEvent, liked = forum.liked, dismiss = { dismiss() }) },
+                    content = {
+                        ForumHeader(
+                            forum = forum,
+                            loggedIn = state.loggedIn,
+                            onEvent = onEvent,
+                            collapse = collapse.state,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        ForumTabRow(
+                            tabs = tabs,
+                            pagerState = pagerState,
+                            sortType = state.sortType,
+                            onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
+                            onEvent = onEvent,
+                            modifier = Modifier.align(Alignment.Start),
+                        )
+                    },
+                )
+            },
+            floatingActionButton = {
+                if (fab != ForumFab.Hidden) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .shadow(elevation = 8.dp, shape = CircleShape)
+                            .background(forumAccentOrPrimary(), CircleShape)
+                            .clickable {
+                                coroutineScope.launch {
+                                    listStates[state.selectedTab]?.animateScrollToItem(0)
+                                    if (fab == ForumFab.Refresh) onEvent(ForumEvent.Refresh)
+                                }
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            tint = onForumAccent(),
+                            imageVector = if (fab == ForumFab.Refresh) Icons.Rounded.Refresh else Icons.Rounded.VerticalAlignTop,
+                            contentDescription = null
+                        )
+                    }
                 }
-            }
-        },
-    ) { contentPadding ->
-        // Pull to refresh is outside the header, so a pull at the top opens the header before it refreshes
-        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-        Box(modifier = Modifier.nestedScroll(collapse.nestedScrollConnection)) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                key = { tabs[it].toString() },
-                verticalAlignment = Alignment.Top,
-            ) { page ->
-                val tab = tabs[page]
-                val list = state.list(tab)
-                StateScreen(
-                    isEmpty = list.items.isEmpty(),
-                    isError = list.refresh is LoadStatus.Error,
-                    isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
-                    onReload = { onEvent(ForumEvent.Refresh) },
-                    modifier = Modifier.fillMaxSize(),
-                    loadingScreen = {
-                        Column(modifier = Modifier
-                            .fillMaxSize()
-                            .padding(contentPadding)) {
-                            repeat(4) { FeedCardPlaceholder() }
+            },
+        ) { contentPadding ->
+            // Pull to refresh is outside the header, so a pull at the top opens the header before it refreshes
+            Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+                Box(modifier = Modifier.nestedScroll(collapse.nestedScrollConnection)) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        key = { tabs[it].toString() },
+                        verticalAlignment = Alignment.Top,
+                    ) { page ->
+                        val tab = tabs[page]
+                        val list = state.list(tab)
+                        StateScreen(
+                            isEmpty = list.items.isEmpty(),
+                            isError = list.refresh is LoadStatus.Error,
+                            isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+                            onReload = { onEvent(ForumEvent.Refresh) },
+                            modifier = Modifier.fillMaxSize(),
+                            loadingScreen = {
+                                Column(modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(contentPadding)) {
+                                    repeat(4) { FeedCardPlaceholder() }
+                                }
+                            },
+                            errorScreen = {
+                                Box(modifier = Modifier.padding(contentPadding)) { DefaultErrorScreen(this@StateScreen) }
+                            },
+                        ) {
+                            ForumThreadList(
+                                tab = tab,
+                                list = list,
+                                onEvent = onEvent,
+                                listState = listStates.getValue(tab),
+                                contentPadding = contentPadding,
+                                ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
+                                goodClasses = forum.goodClasses.takeIf { tab == ForumTab.Good },
+                                goodClassId = state.goodClassId,
+                            )
                         }
-                    },
-                    errorScreen = {
-                        Box(modifier = Modifier.padding(contentPadding)) { DefaultErrorScreen(this@StateScreen) }
-                    },
-                ) {
-                    ForumThreadList(
-                        tab = tab,
-                        list = list,
-                        onEvent = onEvent,
-                        listState = listStates.getValue(tab),
-                        contentPadding = contentPadding,
-                        ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
-                        goodClasses = forum.goodClasses.takeIf { tab == ForumTab.Good },
-                        goodClassId = state.goodClassId,
-                    )
+                    }
                 }
+                PullRefreshIndicator(
+                    refreshing = refreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = contentPadding.calculateTopPadding()),
+                    backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
+                    contentColor = ExtendedTheme.colors.primary,
+                )
             }
         }
-        PullRefreshIndicator(
-            refreshing = refreshing,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
-        )
-        }
-    }
     }
 }
 

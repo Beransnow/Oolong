@@ -11,12 +11,12 @@ import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.ForumRuleDetailKey
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 
 class ForumRuleDetailViewModelTest {
     @get:Rule

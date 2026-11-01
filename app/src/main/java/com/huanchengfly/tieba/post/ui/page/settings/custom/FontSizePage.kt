@@ -52,8 +52,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.utils.appPreferences
-import kotlin.math.roundToInt
 import kotlinx.collections.immutable.persistentListOf
+import kotlin.math.roundToInt
 
 /** The app's text scale, from 80% to 130% in steps of 5%. */
 object FontScale {

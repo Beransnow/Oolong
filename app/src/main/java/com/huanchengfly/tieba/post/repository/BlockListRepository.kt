@@ -5,11 +5,11 @@ import com.huanchengfly.tieba.post.database.BlockDao
 import com.huanchengfly.tieba.post.database.BlockEntity
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toJson
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 /** The user's block and allow rules, as the settings list them. */
 class BlockListRepository @Inject constructor(

@@ -12,9 +12,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import kotlinx.coroutines.launch
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 @ExperimentalMaterialApi
 @Composable
@@ -23,7 +23,7 @@ fun SwitchPref(
     title: String,
     modifier: Modifier = Modifier,
     summary: @Composable (value: Boolean) -> String? = { null },
-    defaultChecked: Boolean = false,  // only used if it doesn't already exist in the datastore
+    defaultChecked: Boolean = false, // only used if it doesn't already exist in the datastore
     onCheckedChange: ((Boolean) -> Unit)? = null,
     textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
@@ -95,13 +95,12 @@ fun SwitchPref(
     summary: String? = null,
     summaryOn: String? = null,
     summaryOff: String? = null,
-    defaultChecked: Boolean = false,  // only used if it doesn't already exist in the datastore
+    defaultChecked: Boolean = false, // only used if it doesn't already exist in the datastore
     onCheckedChange: ((Boolean) -> Unit)? = null,
     textColor: Color = ExtendedTheme.colors.text,
     enabled: Boolean = true,
     leadingIcon: @Composable (() -> Unit)? = null
 ) {
-
     val selectionKey = booleanPreferencesKey(key)
     val scope = rememberCoroutineScope()
 

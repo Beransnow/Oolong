@@ -18,10 +18,6 @@ import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -31,6 +27,10 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import com.huanchengfly.tieba.post.api.models.protos.Agree as ProtoAgree
 import com.huanchengfly.tieba.post.api.models.protos.Page as ProtoPage
 import com.huanchengfly.tieba.post.api.models.protos.Post as ProtoPost

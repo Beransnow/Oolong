@@ -36,7 +36,6 @@ class ResponseCallAdapter<T>(
     override fun responseType() = responseType
 }
 
-
 class BodyCallAdapter<T>(private val responseType: Type) : CallAdapter<T, Flow<T>> {
     override fun adapt(call: Call<T>): Flow<T> {
         return flow {

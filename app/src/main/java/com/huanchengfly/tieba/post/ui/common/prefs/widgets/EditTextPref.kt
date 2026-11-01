@@ -25,11 +25,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.ifNotNullThen
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 /**
  * Preference which shows a TextField in a Dialog
@@ -72,9 +72,9 @@ fun EditTextPref(
     val datastore = LocalPrefsDataStore.current
     val prefs by remember { datastore.data }.collectAsState(initial = null)
 
-    //value should only change when save button is clicked
+    // value should only change when save button is clicked
     var value by remember { mutableStateOf(defaultValue) }
-    //value of the TextField which changes every time the text is modified
+    // value of the TextField which changes every time the text is modified
     var textVal by remember { mutableStateOf(value) }
 
     var dialogSize by remember { mutableStateOf(Size.Zero) }
@@ -121,7 +121,7 @@ fun EditTextPref(
     )
 
     if (dialogState.show) {
-        //reset
+        // reset
         LaunchedEffect(null) {
             textVal = value
         }
@@ -213,7 +213,6 @@ fun EditTextPref(
 
 @Composable
 fun DialogHeader(dialogTitle: String?, dialogMessage: String?) {
-
     Column(modifier = Modifier.padding(16.dp)) {
         dialogTitle.ifNotNullThen {
             Text(

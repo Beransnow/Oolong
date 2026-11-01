@@ -3,8 +3,8 @@ package com.huanchengfly.tieba.core.network.message
 import com.huanchengfly.tieba.core.network.CommonParams
 import com.huanchengfly.tieba.core.network.TiebaNetwork
 import com.huanchengfly.tieba.core.network.TiebaProfile
-import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.form.signedFormBody
+import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 
 class MessageRemoteDataSource(
     network: TiebaNetwork,

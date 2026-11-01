@@ -67,7 +67,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
-
 /**
  * Class holding onto state needed for [ScrollableTabRow]
  */
@@ -126,7 +125,6 @@ private class ScrollableTabData(
     }
 }
 
-
 /**
  * [AnimationSpec] used when scrolling to a tab that is not fully visible.
  */
@@ -142,8 +140,7 @@ fun TabRow(
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colors.primarySurface,
     contentColor: Color = contentColorFor(backgroundColor),
-    indicator: @Composable @UiComposable
-        (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
+    indicator: @Composable @UiComposable (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
         TabRowDefaults.Indicator(
             Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex])
         )
@@ -243,8 +240,7 @@ fun ScrollableTabRow(
     backgroundColor: Color = MaterialTheme.colors.primarySurface,
     contentColor: Color = contentColorFor(backgroundColor),
     edgePadding: Dp = TabRowDefaults.ScrollableTabRowPadding,
-    indicator: @Composable @UiComposable
-        (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
+    indicator: @Composable @UiComposable (tabPositions: List<TabPosition>) -> Unit = @Composable { tabPositions ->
         TabRowDefaults.Indicator(
             Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex])
         )

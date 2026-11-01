@@ -76,12 +76,12 @@ fun rememberImagePlaceholder(): Painter {
 fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
     val imageLoadSettings =
         context.appPreferences.imageLoadType?.toIntOrNull() ?: ImageUtil.SETTINGS_SMART_ORIGIN
-    return skipNetworkCheck
-            || imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN
-            || imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN
-            || (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(
-        context
-    ))
+    return skipNetworkCheck ||
+        imageLoadSettings == ImageUtil.SETTINGS_SMART_ORIGIN ||
+        imageLoadSettings == ImageUtil.SETTINGS_ALL_ORIGIN ||
+        (imageLoadSettings == ImageUtil.SETTINGS_SMART_LOAD && NetworkUtil.isWifiConnected(
+            context
+        ))
 }
 
 @Composable

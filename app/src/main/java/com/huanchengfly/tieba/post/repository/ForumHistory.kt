@@ -8,10 +8,10 @@ import com.huanchengfly.tieba.post.database.HistoryEntity
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.models.ForumHistoryExtra
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
 /** The browsing history of forums. */
 fun interface ForumHistory {

@@ -12,9 +12,6 @@ import com.huanchengfly.tieba.post.utils.InstallState
 import com.huanchengfly.tieba.post.utils.SofireUtils
 import com.huanchengfly.tieba.post.utils.bdussCookie
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,6 +23,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** What pages may do with the accounts. */
 interface AccountActions {

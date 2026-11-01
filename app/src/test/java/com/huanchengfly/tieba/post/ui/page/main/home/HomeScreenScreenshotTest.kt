@@ -1,12 +1,12 @@
 package com.huanchengfly.tieba.post.ui.page.main.home
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.huanchengfly.tieba.post.testing.LegacyAppRule
-import com.huanchengfly.tieba.post.testing.captureScreenshot
-import com.huanchengfly.tieba.post.testing.captureScreenshotPaused
 import androidx.test.core.app.ApplicationProvider
 import com.airbnb.lottie.LottieCompositionFactory
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.testing.LegacyAppRule
+import com.huanchengfly.tieba.post.testing.captureScreenshot
+import com.huanchengfly.tieba.post.testing.captureScreenshotPaused
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

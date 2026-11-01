@@ -12,15 +12,15 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.repository.AccountRepository
-import java.lang.ref.WeakReference
-import java.util.concurrent.ThreadLocalRandom
-import kotlin.properties.Delegates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.properties.Delegates
 
 abstract class IOKSigner(
     context: Context,
@@ -45,7 +45,6 @@ abstract class IOKSigner(
         }
     }
 }
-
 
 class SingleAccountSigner(
     context: Context,

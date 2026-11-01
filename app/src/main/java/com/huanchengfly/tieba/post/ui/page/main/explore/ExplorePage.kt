@@ -48,7 +48,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
-
 @Immutable
 data class ExplorePageItem(
     val id: String,

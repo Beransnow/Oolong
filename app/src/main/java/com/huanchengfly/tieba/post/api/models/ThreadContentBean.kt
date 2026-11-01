@@ -44,7 +44,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("first_post_id")
         val firstPostId: String? = null
-
     }
 
     class AgreeBean {
@@ -59,7 +58,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("has_agree")
         val hasAgree: String? = null
-
     }
 
     class ThreadBean {
@@ -91,7 +89,6 @@ class ThreadContentBean : BaseBean() {
         @SerializedName("thread_id")
         val threadId: String? = null
         val agree: AgreeBean? = null
-
     }
 
     class UserInfoBean {
@@ -121,7 +118,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("ip_address")
         val ipAddress: String? = null
-
     }
 
     class ForumInfoBean : BaseBean() {
@@ -143,7 +139,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("is_brand_forum")
         val isBrandForum: String? = null
-
     }
 
     class PageInfoBean {
@@ -160,7 +155,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("has_prev")
         val hasPrev: String? = null
-
     }
 
     class OriginThreadInfo {
@@ -190,7 +184,6 @@ class ThreadContentBean : BaseBean() {
         @SerializedName("sub_post_list")
         @JsonAdapter(SubPostListAdapter::class)
         val subPostList: SubPostListBean? = null
-
     }
 
     class SubPostListBean {
@@ -198,7 +191,6 @@ class ThreadContentBean : BaseBean() {
 
         @SerializedName("sub_post_list")
         val subPostList: MutableList<PostListItemBean>? = null
-
     }
 
     class ContentBean {
@@ -238,6 +230,5 @@ class ThreadContentBean : BaseBean() {
             this.text = text
             return this
         }
-
     }
 }

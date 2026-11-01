@@ -101,7 +101,7 @@ private class FullScreenLayout(
             height = WindowManager.LayoutParams.MATCH_PARENT
             format = PixelFormat.TRANSLUCENT
             flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
                 blurBehindRadius = 64

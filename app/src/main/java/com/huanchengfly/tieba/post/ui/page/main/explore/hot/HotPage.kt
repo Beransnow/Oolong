@@ -399,7 +399,6 @@ private fun ThreadListTab(
     )
 }
 
-
 @Composable
 private fun ChipHeader(
     text: String,
