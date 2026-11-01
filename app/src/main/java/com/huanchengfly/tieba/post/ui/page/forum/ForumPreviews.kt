@@ -34,6 +34,7 @@ internal object ForumPreviewData {
         levelUpScore = 500,
         signedIn = true,
         signedDays = 12,
+        todaySignCount = 3_456,
         ruleTitle = "测试吧吧规",
         goodClasses = persistentListOf(GoodClass(0, "全部"), GoodClass(3, "攻略"), GoodClass(4, "资讯")),
         tabs = (ForumTab.Fixed + listOf(ForumTab.Custom(99, "吧友互助", 15), ForumTab.Custom(98, "前瞻消息", 15)))

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +28,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
@@ -91,7 +94,7 @@ import kotlin.math.min
 
 /**
  * The forum's front: its avatar and name over its slogan, how many follow it and post in it, the
- * viewer's level in its colour, and a full-width button to follow or sign in, next to the rules.
+ * viewer's title and level in its colour, and a full-width button to follow or sign in.
  *
  * It collapses with [collapse], following the finger: the avatar and name rise into the top bar's
  * row and stay there as its title, the slogan fades, and the rest slides up under the bar, fading
@@ -212,7 +215,12 @@ internal fun ForumHeader(
     }
 }
 
-/** Below the forum's name: its figures, the viewer's level, and the buttons. */
+/**
+ * Below the forum's name: its figures and the viewer's level, then a full-width button to follow
+ * or sign in. A visitor also sees how many signed in today; once the viewer has signed in, the
+ * button turns tonal and stays where it was, so the header keeps its shape. The rules are the
+ * first item of the latest threads, not a button here.
+ */
 @Composable
 private fun ForumHeaderDetails(
     forum: ForumDetail,
@@ -227,56 +235,47 @@ private fun ForumHeaderDetails(
             ForumStat(forum.memberCount.getShortNumString(), stringResource(id = R.string.forum_stat_members))
             Spacer(modifier = Modifier.width(24.dp))
             ForumStat(forum.threadCount.getShortNumString(), stringResource(id = R.string.forum_stat_threads))
+            if (!forum.liked) {
+                Spacer(modifier = Modifier.width(24.dp))
+                ForumStat(forum.todaySignCount.getShortNumString(), stringResource(id = R.string.forum_stat_signed_today))
+            }
             Spacer(modifier = Modifier.weight(1f))
             AnimatedVisibility(visible = forum.liked) {
                 ForumLevel(forum, accent)
             }
         }
-        if (loggedIn || forum.ruleTitle != null) {
-            Spacer(modifier = Modifier.height(18.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (loggedIn) {
-                    val canAct = !forum.liked || !forum.signedIn
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clip(CircleShape)
-                            .background(accent)
-                            .clickable(enabled = canAct) { onEvent(ForumEvent.FollowOrSignIn) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = when {
-                                !forum.liked -> stringResource(id = R.string.button_follow)
-                                forum.signedIn -> stringResource(id = R.string.button_signed_in, forum.signedDays)
-                                else -> stringResource(id = R.string.button_sign_in)
-                            },
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = onForumAccent(),
-                        )
-                    }
+        if (loggedIn) {
+            Spacer(modifier = Modifier.height(SectionGap))
+            val done = forum.liked && forum.signedIn
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ButtonHeight)
+                    .clip(CircleShape)
+                    .background(if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent)
+                    .clickable(enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (done) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
-                if (forum.ruleTitle != null) {
-                    Box(
-                        modifier = Modifier
-                            .then(if (loggedIn) Modifier else Modifier.weight(1f))
-                            .height(40.dp)
-                            .clip(CircleShape)
-                            .background(ExtendedTheme.colors.chip)
-                            .clickable { onEvent(ForumEvent.OpenRule) }
-                            .padding(horizontal = 20.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.desc_forum_rule),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = ExtendedTheme.colors.text,
-                        )
-                    }
-                }
+                Text(
+                    text = when {
+                        !forum.liked -> stringResource(id = R.string.button_follow)
+                        done -> stringResource(id = R.string.button_signed_in, forum.signedDays)
+                        else -> stringResource(id = R.string.button_sign_in)
+                    },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (done) accent else onForumAccent(),
+                )
             }
         }
     }
@@ -292,7 +291,9 @@ private class TopCutShape(private val cut: Float) : Shape {
 
 private val HeaderPadding = 16.dp
 private val NameGap = 14.dp
-private val DetailsGap = 18.dp
+private val DetailsGap = 14.dp
+private val SectionGap = 14.dp
+private val ButtonHeight = 38.dp
 private val NameFontSize = 24.sp
 private val DockedAvatarSize = 28.dp
 private val DockedNameGap = 10.dp
@@ -313,19 +314,40 @@ private fun ForumStat(value: String, label: String) {
     }
 }
 
-/** The viewer's level in the forum, in the forum's colour, with progress to the next one. */
+/**
+ * The viewer's title and level in the forum, in the forum's colour, on one baseline, with the
+ * progress to the next level under both.
+ */
 @Composable
 private fun ForumLevel(forum: ForumDetail, accent: Color, modifier: Modifier = Modifier) {
     val numerals = rememberNumerals()
-    Column(modifier = modifier, horizontalAlignment = Alignment.End) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(text = "LV", fontFamily = numerals, fontSize = 14.sp, color = accent)
-            Text(text = "${forum.level}", fontFamily = numerals, fontSize = 30.sp, lineHeight = 30.sp, color = accent)
+    Column(modifier = modifier.width(IntrinsicSize.Max), horizontalAlignment = Alignment.End) {
+        Row {
+            if (forum.levelName.isNotBlank()) {
+                Text(
+                    text = forum.levelName,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = accent,
+                    modifier = Modifier.alignByBaseline(),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(text = "LV", fontFamily = numerals, fontSize = 14.sp, color = accent, modifier = Modifier.alignByBaseline())
+            Text(
+                text = "${forum.level}",
+                fontFamily = numerals,
+                fontSize = 30.sp,
+                lineHeight = 30.sp,
+                color = accent,
+                modifier = Modifier.alignByBaseline(),
+            )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Box(
             modifier = Modifier
-                .width(88.dp)
+                .fillMaxWidth()
+                .widthIn(min = 88.dp)
                 .height(4.dp)
                 .clip(CircleShape)
                 .background(accent.copy(alpha = 0.2f))
