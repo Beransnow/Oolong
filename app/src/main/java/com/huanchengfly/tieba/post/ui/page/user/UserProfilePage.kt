@@ -69,16 +69,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -95,7 +95,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
@@ -105,110 +104,91 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
 
 @Destination
+@Suppress("UNUSED_PARAMETER") // Navigation argument, read by the view model
 @Composable
 fun UserProfilePage(
     uid: Long,
     navigator: DestinationsNavigator,
-    viewModel: LegacyUserProfileViewModel = pageViewModel(),
+    viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
-    val account = LocalAccount.current
-
-    val isSelf = remember(account, uid) {
-        account?.uid == uid.toString()
-    }
-
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(UserProfileUiIntent.Refresh(uid))
-        viewModel.initialized = true
-    }
-
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::isRefreshing,
-        initial = true
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::error,
-        initial = null
-    )
-    val user by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::user,
-        initial = null
-    )
-    val disableButton by viewModel.uiState.collectPartialAsState(
-        prop1 = UserProfileUiState::disableButton,
-        initial = false
-    )
-
-    val isError by remember {
-        derivedStateOf { error != null }
-    }
-    val isEmpty by remember {
-        derivedStateOf { user == null }
-    }
-
+    val state by viewModel.state.collectAsStateWithLifecycle()
     ProvideNavigator(navigator = navigator) {
         StateScreen(
             modifier = Modifier.fillMaxSize(),
-            isEmpty = isEmpty,
-            isError = isError,
-            isLoading = isRefreshing,
-            onReload = { viewModel.send(UserProfileUiIntent.Refresh(uid)) },
-            errorScreen = { ErrorScreen(error = error.getOrNull()) }
+            isEmpty = state.profile == null,
+            isError = state.load is LoadStatus.Error,
+            isLoading = state.load == LoadStatus.Loading,
+            onReload = viewModel::refreshProfile,
+            errorScreen = { ErrorScreen(error = (state.load as? LoadStatus.Error)?.error) }
         ) {
-            user?.let {
+            state.profile?.let {
                 UserProfileContent(
                     user = it,
-                    showActionBtn = account != null,
-                    disableButton = disableButton,
-                    isSelf = isSelf,
+                    showActionBtn = state.loggedIn,
+                    disableButton = state.following,
+                    isSelf = state.isSelf,
                     onBack = { navigator.navigateUp() },
-                    onFollow = {
-                        viewModel.send(
-                            UserProfileUiIntent.Follow(
-                                it.get { portrait },
-                                account!!.tbs,
-                            )
-                        )
-                    },
-                    onUnfollow = {
-                        viewModel.send(
-                            UserProfileUiIntent.Unfollow(
-                                it.get { portrait },
-                                account!!.tbs,
-                            )
-                        )
-                    }
+                    onFollow = viewModel::toggleFollow,
+                    onUnfollow = viewModel::toggleFollow,
+                    onRefresh = viewModel::refreshAll,
+                    listContent = { tab, expanded -> UserProfileList(state, tab, expanded, viewModel) },
                 )
             }
         }
     }
 }
 
+/** One of the profile's lists, opened the first time it shows. */
+@Composable
+private fun UserProfileList(state: UserProfileState, tab: UserTab, expanded: Boolean, viewModel: UserProfileViewModel) {
+    LaunchedEffect(tab) { viewModel.open(tab) }
+    when (tab) {
+        UserTab.Forums -> UserLikeForumPage(
+            list = state.forums,
+            onRefresh = { viewModel.refresh(tab) },
+            onLoadMore = { viewModel.loadMore(tab) },
+            fluid = expanded,
+            enablePullRefresh = expanded,
+        )
+
+        else -> UserPostPage(
+            list = if (tab == UserTab.Threads) state.threads else state.posts,
+            hidden = state.postsHidden,
+            onRefresh = { viewModel.refresh(tab) },
+            onLoadMore = { viewModel.loadMore(tab) },
+            onAgree = { viewModel.agree(tab, it.thread_id, it.post_id) },
+            fluid = expanded,
+            enablePullRefresh = expanded,
+        )
+    }
+}
+
 @Composable
 private fun UserProfileContent(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
+    onRefresh: () -> Unit,
+    listContent: @Composable (UserTab, Boolean) -> Unit,
 ) {
     when (LocalWindowSizeClass.current.widthSizeClass) {
         WindowWidthSizeClass.Expanded -> {
@@ -219,7 +199,8 @@ private fun UserProfileContent(
                 isSelf = isSelf,
                 onBack = onBack,
                 onFollow = onFollow,
-                onUnfollow = onUnfollow
+                onUnfollow = onUnfollow,
+                listContent = listContent,
             )
         }
 
@@ -231,7 +212,9 @@ private fun UserProfileContent(
                 isSelf = isSelf,
                 onBack = onBack,
                 onFollow = onFollow,
-                onUnfollow = onUnfollow
+                onUnfollow = onUnfollow,
+                onRefresh = onRefresh,
+                listContent = listContent,
             )
         }
     }
@@ -239,7 +222,7 @@ private fun UserProfileContent(
 
 @Composable
 private fun UserProfileToolbar(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     isSelf: Boolean,
     showTitle: Boolean,
     onBack: () -> Unit,
@@ -269,8 +252,8 @@ private fun UserProfileToolbar(
                                     Block(
                                         category = Block.CATEGORY_BLACK_LIST,
                                         type = Block.TYPE_USER,
-                                        username = it.get { name },
-                                        uid = it.get { id }.toString()
+                                        username = it.name,
+                                        uid = it.id.toString()
                                     )
                                 ) {
                                     if (it) context.toastShort(R.string.toast_add_success)
@@ -285,8 +268,8 @@ private fun UserProfileToolbar(
                                     Block(
                                         category = Block.CATEGORY_WHITE_LIST,
                                         type = Block.TYPE_USER,
-                                        username = it.get { name },
-                                        uid = it.get { id }.toString()
+                                        username = it.name,
+                                        uid = it.id.toString()
                                     )
                                 ) {
                                     if (it) context.toastShort(R.string.toast_add_success)
@@ -316,17 +299,18 @@ private fun UserProfileToolbar(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileContentNormal(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
+    onRefresh: () -> Unit,
+    listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
@@ -366,7 +350,7 @@ private fun UserProfileContentNormal(
         PullToRefreshLayout(
             refreshing = isFakeRefreshing,
             onRefresh = {
-                coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(key = "user_profile"))
+                onRefresh()
                 isFakeRefreshing = true
             }
         ) {
@@ -418,50 +402,36 @@ private fun UserProfileContentNormal(
                         listOfNotNull(
                             UserProfilePageData(
                                 id = "threads",
+                                tab = UserTab.Threads,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_threads_tab,
-                                        it.get { thread_num }.getShortNumString()
+                                        it.threadCount.getShortNumString()
                                     )
                                 },
-                                content = { user, fluid ->
-                                    UserPostPage(
-                                        uid = user.get { id },
-                                        isThread = true,
-                                        fluid = fluid,
-                                    )
-                                }
+                                content = { tab, fluid -> listContent(tab, fluid) }
                             ),
                             UserProfilePageData(
                                 id = "posts",
+                                tab = UserTab.Posts,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_posts_tab,
-                                        it.get { post_num }.getShortNumString()
+                                        it.postCount.getShortNumString()
                                     )
                                 },
-                                content = { user, fluid ->
-                                    UserPostPage(
-                                        uid = user.get { id },
-                                        isThread = false,
-                                        fluid = fluid,
-                                    )
-                                }
+                                content = { tab, fluid -> listContent(tab, fluid) }
                             ).takeIf { isSelf },
                             UserProfilePageData(
                                 id = "concern_forums",
+                                tab = UserTab.Forums,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_concern_forums_tab,
-                                        it.get { my_like_num }.toString()
+                                        it.forumCount.toString()
                                     )
                                 },
-                                content = { user, fluid ->
-                                    UserLikeForumPage(
-                                        uid = user.get { id },
-                                        fluid = fluid,
-                                    )
-                                }
+                                content = { tab, fluid -> listContent(tab, fluid) }
                             ),
                         ).toImmutableList()
                     }
@@ -503,7 +473,7 @@ private fun UserProfileContentNormal(
                                     }
                                     if (isSelf) {
                                         context.goToActivity<EditProfileActivity>()
-                                    } else if (user.get { has_concerned } == 0) {
+                                    } else if (!user.followed) {
                                         onFollow()
                                     } else {
                                         onUnfollow()
@@ -512,7 +482,7 @@ private fun UserProfileContentNormal(
                                 onCopyIdClick = {
                                     TiebaUtil.copyText(
                                         context,
-                                        user.get { id }.toString()
+                                        user.id.toString()
                                     )
                                 }
                             )
@@ -535,7 +505,7 @@ private fun UserProfileContentNormal(
                             key = { pages[it].id },
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            pages[it].content(user, false)
+                            pages[it].content(pages[it].tab, false)
                         }
                     }
                 }
@@ -547,13 +517,14 @@ private fun UserProfileContentNormal(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileContentExpanded(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
+    listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -584,53 +555,36 @@ private fun UserProfileContentExpanded(
                         listOfNotNull(
                             UserProfilePageData(
                                 id = "threads",
+                                tab = UserTab.Threads,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_threads_tab,
-                                        it.get { thread_num }.getShortNumString()
+                                        it.threadCount.getShortNumString()
                                     )
                                 },
-                                content = { user, expanded ->
-                                    UserPostPage(
-                                        uid = user.get { id },
-                                        isThread = true,
-                                        fluid = expanded,
-                                        enablePullRefresh = expanded,
-                                    )
-                                }
+                                content = { tab, expanded -> listContent(tab, expanded) }
                             ),
                             UserProfilePageData(
                                 id = "posts",
+                                tab = UserTab.Posts,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_posts_tab,
-                                        it.get { post_num }.getShortNumString()
+                                        it.postCount.getShortNumString()
                                     )
                                 },
-                                content = { user, expanded ->
-                                    UserPostPage(
-                                        uid = user.get { id },
-                                        isThread = false,
-                                        fluid = expanded,
-                                        enablePullRefresh = expanded,
-                                    )
-                                }
+                                content = { tab, expanded -> listContent(tab, expanded) }
                             ).takeIf { isSelf },
                             UserProfilePageData(
                                 id = "concern_forums",
+                                tab = UserTab.Forums,
                                 title = {
                                     stringResource(
                                         id = R.string.title_profile_concern_forums_tab,
-                                        it.get { my_like_num }.toString()
+                                        it.forumCount.toString()
                                     )
                                 },
-                                content = { user, expanded ->
-                                    UserLikeForumPage(
-                                        uid = user.get { id },
-                                        fluid = expanded,
-                                        enablePullRefresh = expanded,
-                                    )
-                                }
+                                content = { tab, expanded -> listContent(tab, expanded) }
                             ),
                         ).toImmutableList()
                     }
@@ -649,7 +603,7 @@ private fun UserProfileContentExpanded(
                             }
                             if (isSelf) {
                                 context.goToActivity<EditProfileActivity>()
-                            } else if (user.get { has_concerned } == 0) {
+                            } else if (!user.followed) {
                                 onFollow()
                             } else {
                                 onUnfollow()
@@ -658,7 +612,7 @@ private fun UserProfileContentExpanded(
                         onCopyIdClick = {
                             TiebaUtil.copyText(
                                 context,
-                                user.get { id }.toString()
+                                user.id.toString()
                             )
                         }
                     )
@@ -681,7 +635,7 @@ private fun UserProfileContentExpanded(
                                 key = { pages[it].id },
                                 modifier = Modifier.weight(1f)
                             ) {
-                                pages[it].content(user, true)
+                                pages[it].content(pages[it].tab, true)
                             }
                         }
                     }
@@ -694,14 +648,15 @@ private fun UserProfileContentExpanded(
 @Immutable
 data class UserProfilePageData(
     val id: String,
-    val title: @Composable (ImmutableHolder<User>) -> String,
-    val content: @Composable (ImmutableHolder<User>, Boolean) -> Unit,
+    val tab: UserTab,
+    val title: @Composable (UserProfile) -> String,
+    val content: @Composable (UserTab, Boolean) -> Unit,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserProfileTabRow(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     pages: ImmutableList<UserProfilePageData>,
     pagerState: PagerState,
     modifier: Modifier = Modifier,
@@ -754,13 +709,13 @@ private fun UserProfileTabRow(
 
 @Composable
 private fun ToolbarUserTitle(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     modifier: Modifier = Modifier,
 ) {
     UserHeader(
         avatar = {
             Avatar(
-                data = StringUtil.getAvatarUrl(user.get { portrait }),
+                data = StringUtil.getAvatarUrl(user.portrait),
                 size = Sizes.Small,
                 contentDescription = null
             )
@@ -769,8 +724,8 @@ private fun ToolbarUserTitle(
             Text(
                 text = StringUtil.getUsernameAnnotatedString(
                     LocalContext.current,
-                    user.get { name },
-                    user.get { nameShow },
+                    user.name,
+                    user.displayName,
                     LocalContentColor.current
                 )
             )
@@ -782,7 +737,7 @@ private fun ToolbarUserTitle(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun UserProfileDetail(
-    user: ImmutableHolder<User>,
+    user: UserProfile,
     modifier: Modifier = Modifier,
     showBtn: Boolean = true,
     isSelf: Boolean = false,
@@ -798,7 +753,7 @@ private fun UserProfileDetail(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Avatar(
-                data = StringUtil.getBigAvatarUrl(user.get { portrait }),
+                data = StringUtil.getBigAvatarUrl(user.portrait),
                 size = 96.dp,
                 contentDescription = null,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -807,12 +762,12 @@ private fun UserProfileDetail(
             if (showBtn) {
                 Button(
                     onClick = onBtnClick,
-                    colors = if (user.get { has_concerned } == 0 || isSelf) {
+                    colors = if (!user.followed || isSelf) {
                         ButtonDefaults.buttonColors()
                     } else {
                         ButtonDefaults.outlinedButtonColors()
                     },
-                    border = if (user.get { has_concerned } == 0 || isSelf) {
+                    border = if (!user.followed || isSelf) {
                         null
                     } else {
                         ButtonDefaults.outlinedBorder
@@ -825,7 +780,7 @@ private fun UserProfileDetail(
                         if (isSelf) {
                             Icon(imageVector = Icons.Rounded.Edit, contentDescription = null)
                             Text(text = stringResource(id = R.string.menu_edit_info))
-                        } else if (user.get { has_concerned } == 0) {
+                        } else if (!user.followed) {
                             Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
                             Text(text = stringResource(id = R.string.button_follow))
                         } else {
@@ -838,8 +793,8 @@ private fun UserProfileDetail(
         Text(
             text = StringUtil.getUsernameAnnotatedString(
                 LocalContext.current,
-                user.get { name },
-                user.get { nameShow },
+                user.name,
+                user.displayName,
                 LocalContentColor.current
             ),
             style = MaterialTheme.typography.h6,
@@ -862,7 +817,7 @@ private fun UserProfileDetail(
                         color = ExtendedTheme.colors.textSecondary
                     )
                     Text(
-                        text = user.get { concern_num }.getShortNumString(),
+                        text = user.followCount.getShortNumString(),
                         color = ExtendedTheme.colors.text,
                         fontWeight = FontWeight.Bold
                     )
@@ -877,7 +832,7 @@ private fun UserProfileDetail(
                         color = ExtendedTheme.colors.textSecondary
                     )
                     Text(
-                        text = user.get { fans_num }.getShortNumString(),
+                        text = user.fanCount.getShortNumString(),
                         color = ExtendedTheme.colors.text,
                         fontWeight = FontWeight.Bold
                     )
@@ -892,7 +847,7 @@ private fun UserProfileDetail(
                         color = ExtendedTheme.colors.textSecondary
                     )
                     Text(
-                        text = user.get { total_agree_num }.getShortNumString(),
+                        text = user.agreeCount.getShortNumString(),
                         color = ExtendedTheme.colors.text,
                         fontWeight = FontWeight.Bold
                     )
@@ -900,13 +855,14 @@ private fun UserProfileDetail(
             }
         }
         Text(
-            text = user.get { intro }.takeIf { it.isNotEmpty() }
+            text = user.intro.takeIf { it.isNotEmpty() }
                 ?: stringResource(id = R.string.tip_no_intro),
             style = MaterialTheme.typography.body2,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        user.getNullableImmutable { bazhu_grade }?.let {
+        val verifiedText = user.bazhuTitle ?: user.godField?.let { stringResource(id = R.string.text_god_verify, it) }
+        if (verifiedText != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -918,32 +874,13 @@ private fun UserProfileDetail(
                     tint = ExtendedTheme.colors.primary,
                 )
                 Text(
-                    text = it.get { desc },
+                    text = verifiedText,
                     style = MaterialTheme.typography.body2,
                     color = ExtendedTheme.colors.primary,
                 )
             }
-        } ?: user.getNullableImmutable { new_god_data }
-            ?.takeIf { it.get { status } != 0 }
-            ?.let {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Verified,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = ExtendedTheme.colors.primary,
-                    )
-                    Text(
-                        text = stringResource(id = R.string.text_god_verify, it.get { field_name }),
-                        style = MaterialTheme.typography.body2,
-                        color = ExtendedTheme.colors.primary,
-                    )
-                }
-            }
-        val sexEmoji = when (user.get { sex }) {
+        }
+        val sexEmoji = when (user.sex) {
             1 -> "♂"
             2 -> "♀"
             else -> "?"
@@ -956,7 +893,7 @@ private fun UserProfileDetail(
             Chip(
                 text = stringResource(
                     id = R.string.text_profile_user_id,
-                    user.get { tieba_uid }.toString()
+                    user.tiebaUid
                 ),
                 appendIcon = {
                     Icon(
@@ -966,18 +903,18 @@ private fun UserProfileDetail(
                 },
                 onClick = onCopyIdClick
             )
-            if (user.get { ip_address }.isNotEmpty()) {
+            if (user.ipLocation.isNotEmpty()) {
                 Chip(
                     text = stringResource(
                         id = R.string.text_profile_ip_location,
-                        user.get { ip_address }
+                        user.ipLocation
                     ),
                 )
             }
             Chip(
                 text = stringResource(
                     id = R.string.text_profile_tb_age,
-                    user.get { tb_age }
+                    user.tbAge
                 )
             )
         }

@@ -39,11 +39,9 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.arch.GlobalEvent
-import com.huanchengfly.tieba.post.arch.collectPartialAsState
+import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.getOrNull
-import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -57,7 +55,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
@@ -66,74 +63,30 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserPostPage(
-    uid: Long,
-    isThread: Boolean = true,
+    list: PagerState<PostListItemData>,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onAgree: (PostInfoList) -> Unit,
+    hidden: Boolean = false,
     fluid: Boolean = false,
     enablePullRefresh: Boolean = false,
-    viewModel: UserPostViewModel = pageViewModel(key = if (isThread) "user_thread_$uid" else "user_post_$uid"),
 ) {
     val navigator = LocalNavigator.current
-
-    LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(UserPostUiIntent.Refresh(uid, isThread))
-        viewModel.initialized = true
-    }
-
-    val isRefreshing by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::isRefreshing,
-        initial = true
-    )
-    val isLoadingMore by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::isLoadingMore,
-        initial = false
-    )
-    val error by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::error,
-        initial = null
-    )
-    val currentPage by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::currentPage,
-        initial = 1
-    )
-    val hasMore by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::hasMore,
-        initial = false
-    )
-    val posts by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::posts,
-        initial = persistentListOf()
-    )
-    val hidePost by viewModel.uiState.collectPartialAsState(
-        prop1 = UserPostUiState::hidePost,
-        initial = false
-    )
-
-    val isEmpty by remember {
-        derivedStateOf { posts.isEmpty() }
-    }
-    val isError by remember {
-        derivedStateOf { error != null }
-    }
-
-    onGlobalEvent<GlobalEvent.Refresh>(
-        filter = { it.key == "user_profile" }
-    ) {
-        viewModel.send(UserPostUiIntent.Refresh(uid, isThread))
-    }
+    val posts = list.items
+    val isRefreshing = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle
+    val error = (list.refresh as? LoadStatus.Error)?.error
+    val hidePost = hidden
 
     StateScreen(
         modifier = Modifier.fillMaxSize(),
-        isEmpty = isEmpty,
-        isError = isError,
+        isEmpty = posts.isEmpty(),
+        isError = error != null,
         isLoading = isRefreshing,
-        onReload = {
-            viewModel.send(UserPostUiIntent.Refresh(uid, isThread))
-        },
+        onReload = onRefresh,
         loadingScreen = {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -146,7 +99,7 @@ fun UserPostPage(
                 }
             }
         },
-        errorScreen = { ErrorScreen(error = error.getOrNull()) },
+        errorScreen = { ErrorScreen(error = error) },
         emptyScreen = {
             Box(
                 modifier = Modifier
@@ -206,8 +159,8 @@ fun UserPostPage(
         },
     ) {
         val pullRefreshState = rememberPullRefreshState(
-            refreshing = isRefreshing,
-            onRefresh = ::reload
+            refreshing = list.refresh == LoadStatus.Loading,
+            onRefresh = onRefresh
         )
 
         val lazyListState = rememberLazyListState()
@@ -217,11 +170,9 @@ fun UserPostPage(
 
         Box(modifier = pullRefreshModifier) {
             LoadMoreLayout(
-                isLoading = isLoadingMore,
-                onLoadMore = {
-                    viewModel.send(UserPostUiIntent.LoadMore(uid, isThread, currentPage))
-                },
-                loadEnd = !hasMore,
+                isLoading = list.append == LoadStatus.Loading,
+                onLoadMore = onLoadMore,
+                loadEnd = !list.hasMore,
                 lazyListState = lazyListState
             ) {
                 UserPostList(
@@ -251,16 +202,7 @@ fun UserPostPage(
                             }
                         }
                     },
-                    onAgreeItem = {
-                        viewModel.send(
-                            UserPostUiIntent.Agree(
-                                it.forum_id,
-                                it.thread_id,
-                                it.post_id,
-                                it.agree?.hasAgree ?: 0
-                            )
-                        )
-                    },
+                    onAgreeItem = onAgree,
                     onClickReply = {
                         navigator.navigate(
                             ThreadPageDestination(
@@ -283,7 +225,7 @@ fun UserPostPage(
             }
 
             PullRefreshIndicator(
-                refreshing = isRefreshing,
+                refreshing = list.refresh == LoadStatus.Loading,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
