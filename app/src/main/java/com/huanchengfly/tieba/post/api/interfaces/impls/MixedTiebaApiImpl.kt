@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.api.interfaces.impls
 
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
 import com.huanchengfly.tieba.core.network.sign.MSignResponse
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
@@ -14,13 +13,10 @@ import com.huanchengfly.tieba.post.api.buildProtobufRequestBody
 import com.huanchengfly.tieba.post.api.getScreenHeight
 import com.huanchengfly.tieba.post.api.getScreenWidth
 import com.huanchengfly.tieba.post.api.interfaces.ITiebaApi
-import com.huanchengfly.tieba.post.api.legacyAgreeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyPostRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
-import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
-import com.huanchengfly.tieba.post.api.models.CommonResponse
 import com.huanchengfly.tieba.post.api.models.ForumGuideBean
 import com.huanchengfly.tieba.post.api.models.GetForumListBean
 import com.huanchengfly.tieba.post.api.models.InitNickNameBean
@@ -41,9 +37,6 @@ import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDeta
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequest
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequest
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequestData
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
@@ -65,14 +58,6 @@ object MixedTiebaApiImpl : ITiebaApi {
 
 
 
-    override fun opAgreeFlow(
-        target: AgreeTarget,
-        forumId: Long?,
-        undo: Boolean,
-    ): Flow<AgreeBean> = flow {
-        legacyAgreeRemoteDataSource.opAgree(target, forumId, undo)
-        emit(AgreeBean())
-    }
 
     override fun picPageFlow(
         forumId: String,
@@ -97,24 +82,7 @@ object MixedTiebaApiImpl : ITiebaApi {
         postId = postId?.takeIf { it != 0L }?.toString(),
     )
 
-    override fun unlikeForumFlow(
-        forumId: String,
-        forumName: String,
-        tbs: String
-    ): Flow<CommonResponse> = flow {
-        legacyLikeRemoteDataSource.unfavolike(forumId.toLong(), forumName, tbs)
-        emit(CommonResponse())
-    }
 
-    override fun likeForumFlow(
-        forumId: String,
-        forumName: String,
-        tbs: String,
-        hasHead: Boolean,
-    ): Flow<LikeForumResultBean> = flow {
-        val response = legacyLikeRemoteDataSource.like(forumId.toLong(), forumName, hasHead, tbs)
-        emit(response.toLikeForumResultBean())
-    }
 
     override fun signFlow(forumId: String, forumName: String, tbs: String): Flow<SignResultBean> =
         flow {
@@ -122,45 +90,7 @@ object MixedTiebaApiImpl : ITiebaApi {
             emit(response.toSignResultBean())
         }
 
-    override fun delThreadFlow(
-        forumId: Long,
-        forumName: String,
-        threadId: Long,
-        tbs: String?,
-        delMyThread: Boolean,
-        isHide: Boolean,
-    ): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API
-            .delThreadFlow(
-                forumId,
-                forumName,
-                threadId,
-                tbs,
-                deleteMyThread = if (delMyThread) 1 else 0,
-                isFrsMask = if (isHide) 1 else 0
-            )
 
-    override fun delPostFlow(
-        forumId: Long,
-        forumName: String,
-        threadId: Long,
-        postId: Long,
-        tbs: String?,
-        isFloor: Boolean,
-        delMyPost: Boolean
-    ): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API
-            .delPostFlow(
-                forumId,
-                forumName,
-                threadId,
-                postId,
-                isFloor = if (isFloor) 1 else 0,
-                src = if (isFloor) 3 else 1,
-                isVipDel = if (delMyPost) 0 else 1,
-                deleteMyPost = if (delMyPost) 1 else 0,
-                tbs = tbs
-            )
 
 
 
@@ -441,35 +371,6 @@ object MixedTiebaApiImpl : ITiebaApi {
         )
     }
 
-    override fun pbFloorFlow(
-        threadId: Long,
-        postId: Long,
-        forumId: Long,
-        page: Int,
-        subPostId: Long
-    ): Flow<PbFloorResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V22_API.pbFloorFlow(
-            buildProtobufRequestBody(
-                PbFloorRequest(
-                    PbFloorRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V22),
-                        forum_id = forumId,
-                        kz = threadId,
-                        pid = postId,
-                        pn = page,
-                        spid = subPostId,
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth(),
-                        is_comm_reverse = 0,
-                        ori_ugc_type = 0
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V22,
-                needSToken = false
-            )
-        )
-    }
 
 
     override fun getForumDetailFlow(forumId: Long): Flow<GetForumDetailResponse> {

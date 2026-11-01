@@ -1,12 +1,10 @@
 package com.huanchengfly.tieba.post.api.interfaces
 
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
@@ -17,20 +15,6 @@ interface ITiebaApi {
 
 
 
-    /**
-     * 给贴子/回复点赞/取消点赞
-     *
-     * **需登录**
-     *
-     * @param target 主题贴、楼层或楼中楼
-     * @param forumId 所在吧 ID
-     * @param undo 是否取消点赞
-     */
-    fun opAgreeFlow(
-        target: AgreeTarget,
-        forumId: Long?,
-        undo: Boolean,
-    ): Flow<AgreeBean>
 
     /**
      * 查看图片
@@ -56,37 +40,7 @@ interface ITiebaApi {
         postId: Long? = null,
     ): Flow<PicPageBean>
 
-    /**
-     * 取关一个吧
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param tbs tbs（长）
-     */
-    fun unlikeForumFlow(
-        forumId: String,
-        forumName: String,
-        tbs: String
-    ): Flow<CommonResponse>
 
-    /**
-     * 关注一个吧
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param tbs tbs（长）
-     * @param hasHead 吧页是否有明星或活动头图
-     */
-    fun likeForumFlow(
-        forumId: String,
-        forumName: String,
-        tbs: String,
-        hasHead: Boolean,
-    ): Flow<LikeForumResultBean>
 
     /**
      * 吧签到
@@ -103,48 +57,7 @@ interface ITiebaApi {
         tbs: String
     ): Flow<SignResultBean>
 
-    /**
-     * 删除/隐藏贴子
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param tbs tbs
-     * @param delMyThread 是否为自己的贴子
-     * @param isHide 是否为隐藏贴子
-     */
-    fun delThreadFlow(
-        forumId: Long,
-        forumName: String,
-        threadId: Long,
-        tbs: String?,
-        delMyThread: Boolean,
-        isHide: Boolean
-    ): Flow<CommonResponse>
 
-    /**
-     * 删除贴子中的回复
-     *
-     * **需登录**
-     *
-     * @param forumId 吧 ID
-     * @param forumName 吧名
-     * @param threadId 贴子 ID
-     * @param postId 回复 ID
-     * @param isFloor 是否为楼中楼回复
-     * @param delMyPost 是否为当前登录用户回复
-     */
-    fun delPostFlow(
-        forumId: Long,
-        forumName: String,
-        threadId: Long,
-        postId: Long,
-        tbs: String?,
-        isFloor: Boolean = false,
-        delMyPost: Boolean = true
-    ): Flow<CommonResponse>
 
 
 
@@ -302,22 +215,6 @@ interface ITiebaApi {
         lastPostId: Long? = null,
     ): Flow<PbPageResponse>
 
-    /**
-     * 楼中楼页面
-     *
-     * @param forumId 吧 ID
-     * @param threadId 贴 ID
-     * @param page 分页页码
-     * @param postId 回复 ID
-     * @param subPostId 楼中楼回复 ID
-     */
-    fun pbFloorFlow(
-        threadId: Long,
-        postId: Long,
-        forumId: Long = 0L,
-        page: Int = 1,
-        subPostId: Long = 0L,
-    ): Flow<PbFloorResponse>
 
 
     /**

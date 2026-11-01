@@ -42,7 +42,6 @@ interface OfficialTiebaApi {
         @Field("applist") appList: String = "",
     ): Flow<PicPageBean>
 
-
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
         "${Header.NO_COMMON_PARAMS}: BDUSS"
@@ -78,43 +77,6 @@ interface OfficialTiebaApi {
         @Field("channel_uid") channelUid: String = "",
         @Field("send_tb") sendTb: String = "0",
     ): Flow<LoginBean>
-
-    @POST("/c/u/user/profile")
-    @FormUrlEncoded
-    fun profileFlow(
-        @Field("stoken") sToken: String = AccountUtil.getSToken()!!,
-        @Field("tbs") tbs: String = AccountUtil.getLoginInfo()!!.tbs,
-        @Field("uid") userId: String? = AccountUtil.getUid(),
-        @Field("is_from_usercenter") isFromUserCenter: String = "1",
-        @Field("need_post_count") needPostCount: String = "1",
-        @Field("page") page: String = "1",
-        @Field("pn") pn: String = "1",
-    ): Flow<Profile>
-
-
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    @POST("/c/c/forum/sign")
-    @FormUrlEncoded
-    fun signFlow(
-        @Field("fid") forumId: String,
-        @Field("kw") forumName: String,
-        @Field("tbs") tbs: String,
-    ): Flow<SignResultBean>
-
-    @POST("/c/c/forum/unfavolike")
-    @FormUrlEncoded
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    fun unfavolike(
-        @Field("fid") forumId: String,
-        @Field("kw") forumName: String,
-        @Field("tbs") tbs: String,
-        @Field("stoken") stoken: String? = AccountUtil.getSToken(),
-    ): Flow<CommonResponse>
-
 
     /**
      * Sync sends the IMEI, Android ID and MAC under Base64-encoded aliases
@@ -154,44 +116,6 @@ interface OfficialTiebaApi {
         @Field("cam") macAlias: String = base64NoWrap("02:00:00:00:00:00"),
     ): Flow<Sync>
 
-    @Headers(
-        "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
-    )
-    @POST("/c/c/post/add")
-    @FormUrlEncoded
-    fun addPostFlow(
-        @Field("content") content: String,
-        @Field("fid") forumId: String,
-        @Field("kw") forumName: String,
-        @Field("tbs") tbs: String,
-        @Field("tid") threadId: String,
-        @Field("quote_id") quoteId: String? = null,
-        @Field("repostid") repostId: String? = null,
-        @Field("reply_uid") replyUserId: String = "null",
-        @Field("name_show") nameShow: String? = AccountUtil.getLoginInfo()?.nameShow,
-        @Field("anonymous") anonymous: String = "1",
-        @Field("authsid") authsid: String = "null",
-        @Field("barrage_time") barrage_time: String = "0",
-        @Field("can_no_forum") can_no_forum: String = "0",
-        @Field("entrance_type") entrance_type: String = "0",
-        @Field("from_fourm_id") from_fourm_id: String = "null",
-        @Field("is_ad") is_ad: String = "0",
-        @Field("is_addition") is_addition: String? = null,
-        @Field("is_barrage") is_barrage: String? = "0",
-        @Field("is_feedback") is_feedback: String = "0",
-        @Field("is_giftpost") is_giftpost: String? = null,
-        @Field("is_twzhibo_thread") is_twzhibo_thread: String? = null,
-        @Field("new_vcode") new_vcode: String = "1",
-        @Field("post_from") post_from: String = "3",
-        @Field("takephoto_num") takephoto_num: String = "0",
-        @Field("v_fid") v_fid: String = "",
-        @Field("v_fname") v_fname: String = "",
-        @Field("vcode_tag") vcode_tag: String = "12",
-        @Field("stoken") sToken: String? = AccountUtil.getSToken(),
-    ): Flow<AddPostBean>
-
-
-
     @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
     @POST("/c/f/ueg/checkjubao")
     @FormUrlEncoded
@@ -202,34 +126,6 @@ interface OfficialTiebaApi {
             ?.sToken,
     ): Deferred<ApiResult<CheckReportBean>>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/bawu/delthread")
-    @FormUrlEncoded
-    fun delThreadFlow(
-        @Field("fid") forumId: Long,
-        @Field("word") forumName: String,
-        @Field("z") threadId: Long,
-        @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
-        @Field("src") src: Int = 1,
-        @Field("is_vipdel") isVipDel: Int = 0,
-        @Field("delete_my_thread") deleteMyThread: Int = 1,
-        @Field("is_frs_mask") isFrsMask: Int = 0,
-    ): Flow<CommonResponse>
-
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/bawu/delpost")
-    @FormUrlEncoded
-    fun delPostFlow(
-        @Field("fid") forumId: Long,
-        @Field("word") forumName: String,
-        @Field("z") threadId: Long,
-        @Field("pid") postId: Long,
-        @Field("isfloor") isFloor: Int,
-        @Field("src") src: Int,
-        @Field("is_vipdel") isVipDel: Int,
-        @Field("delete_my_post") deleteMyPost: Int,
-        @Field("tbs") tbs: String? = AccountUtil.getLoginInfo()?.tbs,
-    ): Flow<CommonResponse>
 }
 
 internal fun base64NoWrap(text: String): String =

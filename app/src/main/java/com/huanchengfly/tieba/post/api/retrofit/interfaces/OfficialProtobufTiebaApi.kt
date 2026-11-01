@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.api.retrofit.interfaces
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
@@ -33,10 +32,6 @@ interface OfficialProtobufTiebaApi {
         @Body body: MyMultipartBody,
     ): Flow<PbPageResponse>
 
-    @POST("/c/f/pb/floor?cmd=302002&format=protobuf")
-    fun pbFloorFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<PbFloorResponse>
 
 
     @POST("/c/f/forum/getforumdetail?cmd=303021&format=protobuf")

@@ -10,18 +10,18 @@ import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.explore.ExploreRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
-import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
-import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
-import com.huanchengfly.tieba.core.network.search.SearchRemoteDataSource
-import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
-import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
-import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
-import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.DeviceIdentity
 import com.huanchengfly.tieba.core.network.identity.InstallIdentity
 import com.huanchengfly.tieba.core.network.identity.NetworkType
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
+import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
+import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
+import com.huanchengfly.tieba.core.network.search.SearchRemoteDataSource
+import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
+import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
+import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
+import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.api.retrofit.interceptors.RequestRecorder
@@ -227,7 +227,6 @@ object NetworkIdentityModule {
 interface LegacyNetworkEntryPoint {
     fun commonParams(): CommonParams
     fun signRemoteDataSource(): SignRemoteDataSource
-    fun agreeRemoteDataSource(): AgreeRemoteDataSource
     fun likeRemoteDataSource(): LikeRemoteDataSource
     fun messageRemoteDataSource(): MessageRemoteDataSource
     fun postRemoteDataSource(): PostRemoteDataSource
@@ -243,9 +242,6 @@ internal val legacyCommonParams: CommonParams get() = legacyEntryPoint.commonPar
 
 internal val legacySignRemoteDataSource: SignRemoteDataSource
     get() = legacyEntryPoint.signRemoteDataSource()
-
-internal val legacyAgreeRemoteDataSource: AgreeRemoteDataSource
-    get() = legacyEntryPoint.agreeRemoteDataSource()
 
 internal val legacyLikeRemoteDataSource: LikeRemoteDataSource
     get() = legacyEntryPoint.likeRemoteDataSource()
