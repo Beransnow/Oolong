@@ -91,7 +91,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
-import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -112,11 +111,7 @@ data class SearchPageItem(
     val onSelectedSortTypeChange: (Int) -> Unit = {},
 )
 
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://search")
-    ]
-)
+@Destination
 @Composable
 fun SearchPage(
     navigator: Navigator = LocalNavigator.current,

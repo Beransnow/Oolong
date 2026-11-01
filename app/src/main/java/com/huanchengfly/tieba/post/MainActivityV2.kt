@@ -77,6 +77,7 @@ import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Key
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
+import com.huanchengfly.tieba.post.ui.navigation.toDeepLinkKey
 import com.huanchengfly.tieba.post.ui.navigation.toDirection
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.NavGraphs
@@ -138,7 +139,7 @@ val LocalNavController =
     staticCompositionLocalOf<NavHostController> { throw IllegalStateException("not allowed here!") }
 val LocalDestination = compositionLocalOf<DestinationSpec<*>?> { null }
 
-// Link schemes handled by checkIntent instead of the navigation deep links
+// Tieba links from outside the app, opened natively when they have a counterpart
 private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com.baidu.tieba")
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -229,21 +230,22 @@ class MainActivityV2 : BaseComposeActivity() {
         }
     }
 
-    private fun checkIntent(intent: Intent): Boolean {
-        val uri = intent.data ?: return false
-        val scheme = uri.scheme?.lowercase()
-        if (scheme !in EXTERNAL_LINK_SCHEMES) return false
-        val direction = uri.toTiebaKey()
-            ?: if (scheme == "http" || scheme == "https") WebViewKey(uri.toString()) else null
-        direction?.let { navigate(it) }
-        return true
+    /** Opens the page [intent] links to, over the pages already open. */
+    private fun checkIntent(intent: Intent) {
+        val uri = intent.data ?: return
+        val key = when (val scheme = uri.scheme?.lowercase()) {
+            "tblite" -> uri.toDeepLinkKey()
+            in EXTERNAL_LINK_SCHEMES -> uri.toTiebaKey()
+                ?: if (scheme == "http" || scheme == "https") WebViewKey(uri.toString()) else null
+
+            else -> null
+        }
+        key?.let { navigate(it) }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (!checkIntent(intent)) {
-            myNavController?.handleDeepLink(intent)
-        }
+        checkIntent(intent)
     }
 
     private fun fetchAccount() {
@@ -315,7 +317,8 @@ class MainActivityV2 : BaseComposeActivity() {
         onGlobalEvent<GlobalEvent.StartActivityForResult> {
             mLaunchActivityForResultLauncher.launch(LaunchActivityRequest(it.requesterId, it.intent))
         }
-        intent?.let { checkIntent(it) }
+        // A recreated activity restores its pages, the linked one among them
+        if (savedInstanceState == null) intent?.let { checkIntent(it) }
     }
 
     override fun onCreateContent(systemUiController: SystemUiController) {

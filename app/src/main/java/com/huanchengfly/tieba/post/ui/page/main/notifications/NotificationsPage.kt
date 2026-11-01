@@ -31,16 +31,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
-import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
-@Destination(
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://notifications/{initialTab}")
-    ]
-)
+@Destination
 @Composable
 fun NotificationsPage(
     navigator: Navigator = LocalNavigator.current,

@@ -5,15 +5,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 
-@Destination(
-    navArgsDelegate = ForumKey::class,
-    deepLinks = [
-        DeepLink(uriPattern = "tblite://forum/{forumName}")
-    ]
-)
+@Destination(navArgsDelegate = ForumKey::class)
 @Composable
 fun ForumPage(
     key: ForumKey,
