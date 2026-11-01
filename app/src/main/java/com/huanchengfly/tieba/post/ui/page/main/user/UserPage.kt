@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -61,11 +59,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassStatusBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
@@ -73,6 +69,8 @@ import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
@@ -84,12 +82,10 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
             statNum = 0,
             statText = stringResource(id = R.string.text_stat_follow)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
         StatCardItem(
             statNum = 0,
             statText = stringResource(id = R.string.text_stat_fans)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
         StatCardItem(
             statNum = 0,
             statText = stringResource(id = R.string.title_stat_posts_num)
@@ -113,12 +109,10 @@ private fun StatCard(
             statNum = concernNum,
             statText = stringResource(id = R.string.text_stat_follow)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
         StatCardItem(
             statNum = fansNum,
             statText = stringResource(id = R.string.text_stat_fans)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
         StatCardItem(
             statNum = postNum,
             statText = stringResource(id = R.string.title_stat_posts_num)
@@ -144,7 +138,8 @@ private fun InfoCard(
         ) {
             Text(
                 text = userName,
-                fontSize = 20.sp,
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
                 modifier = Modifier
@@ -175,21 +170,30 @@ private fun InfoCard(
     }
 }
 
+/**
+ * A figure over its label, both from the left, as in a forum's header: the first figure lines up
+ * with the name above and the menu icons below.
+ */
 @Composable
-private fun RowScope.StatCardItem(
+private fun StatCardItem(
     statNum: Int,
     statText: String
 ) {
     Column(
-        modifier = Modifier.weight(1f),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(end = 32.dp),
+        horizontalAlignment = Alignment.Start,
     ) {
         Text(
             text = "$statNum",
-            fontSize = 20.sp,
+            fontSize = 28.sp,
+            lineHeight = 28.sp,
             fontFamily = FontFamily(Typeface.createFromAsset(LocalContext.current.assets, "bebas.ttf")),
+            color = ExtendedTheme.colors.text,
+            style = LocalTextStyle.current.copy(
+                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+            ),
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = statText,
             fontSize = 12.sp,
@@ -231,17 +235,30 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserPage(
     viewModel: UserViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
-    val navigator = LocalNavigator.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
     val account = LocalAccount.current
     LaunchedEffect(account?.uid) { viewModel.refresh() }
+    UserScreen(account = account, isLoading = state.isLoading, onRefresh = viewModel::refresh)
+}
+
+/** The "me" tab: who is logged in with their figures, then the menus, or a prompt to log in. */
+private val StatsPadding = Modifier
+    .fillMaxWidth()
+    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp)
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun UserScreen(
+    account: Account?,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+) {
+    val context = LocalContext.current
+    val navigator = LocalNavigator.current
 
     val switchToNightDialogState = rememberDialogState()
     ConfirmDialog(
@@ -264,7 +281,7 @@ fun UserPage(
     ) { contentPaddings ->
         val pullRefreshState = rememberPullRefreshState(
             refreshing = isLoading,
-            onRefresh = viewModel::refresh)
+            onRefresh = onRefresh)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -288,14 +305,7 @@ fun UserPage(
                         userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
                         avatar = StringUtil.getAvatarUrl(account.portrait),
                     )
-                    StatCard(
-                        account = account,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(vertical = 18.dp)
-                    )
+                    StatCard(account = account, modifier = StatsPadding)
                 } else if (isLoading) {
                     InfoCard(
                         modifier = Modifier
@@ -303,13 +313,7 @@ fun UserPage(
                             .padding(top = 8.dp),
                         isPlaceholder = true,
                     )
-                    StatCardPlaceholder(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(vertical = 18.dp)
-                    )
+                    StatCardPlaceholder(modifier = StatsPadding)
                 } else {
                     LoginTipCard(
                         modifier = Modifier
@@ -319,6 +323,7 @@ fun UserPage(
                 }
                 if (account != null) {
                     ListMenuItem(
+                        iconColor = ExtendedTheme.colors.text,
                         icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
                         text = stringResource(id = R.string.title_my_collect),
                         onClick = {
@@ -327,6 +332,7 @@ fun UserPage(
                     )
                 }
                 ListMenuItem(
+                    iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
                     text = stringResource(id = R.string.title_history),
                     onClick = {
@@ -334,6 +340,7 @@ fun UserPage(
                     }
                 )
                 ListMenuItem(
+                    iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
                     text = stringResource(id = R.string.title_theme),
                     onClick = {
@@ -359,6 +366,7 @@ fun UserPage(
                 }
                 if (account != null) {
                     ListMenuItem(
+                        iconColor = ExtendedTheme.colors.text,
                         icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
                         text = stringResource(id = R.string.my_info_service_center),
                         onClick = {
@@ -370,15 +378,16 @@ fun UserPage(
                         },
                     )
                 }
-                VerticalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
-                )
+                // The two groups of menus are set apart by space alone
+                Spacer(modifier = Modifier.height(16.dp))
                 ListMenuItem(
+                    iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
                     text = stringResource(id = R.string.my_info_settings),
                     onClick = { navigator.navigate(SettingsPageDestination) },
                 )
                 ListMenuItem(
+                    iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
                     text = stringResource(id = R.string.my_info_about),
                     onClick = { navigator.navigate(AboutPageDestination) },
