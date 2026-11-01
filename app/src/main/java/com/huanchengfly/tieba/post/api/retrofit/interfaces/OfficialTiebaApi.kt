@@ -2,9 +2,7 @@ package com.huanchengfly.tieba.post.api.retrofit.interfaces
 
 import android.os.Build
 import android.util.Base64
-import com.huanchengfly.tieba.core.network.form.FormParamsInterceptor
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.App.ScreenInfo
 import com.huanchengfly.tieba.post.api.Header
 import com.huanchengfly.tieba.post.api.Param
 import com.huanchengfly.tieba.post.api.getScreenDensity
@@ -44,14 +42,6 @@ interface OfficialTiebaApi {
         @Field("applist") appList: String = "",
     ): Flow<PicPageBean>
 
-    @Headers("${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}")
-    @POST("/c/c/excellent/submitDislike")
-    @FormUrlEncoded
-    fun submitDislikeFlow(
-        @Field("dislike") dislike: String,
-        @Field("dislike_from") dislike_from: String = "homepage",
-        @Field("stoken") stoken: String? = AccountUtil.getSToken()
-    ): Flow<CommonResponse>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",
@@ -101,27 +91,6 @@ interface OfficialTiebaApi {
         @Field("pn") pn: String = "1",
     ): Flow<Profile>
 
-    @POST("/c/f/excellent/personalized")
-    @FormUrlEncoded
-    fun personalizedFlow(
-        @Field("load_type") load_type: Int,
-        @Field("pn") page: Int = 1,
-        @Field("cuid_gid") cuid_gid: String = "",
-        @Field("need_tags") need_tags: Int = 0,
-        @Field("page_thread_count") page_thread_count: Int = 15,
-        @Field("pre_ad_thread_count") pre_ad_thread_count: Int = 0,
-        @Field("sug_count") sug_count: Int = 0,
-        @Field("tag_code") tag_code: Int = 0,
-        @Field("q_type") q_type: Int = 1,
-        @Field("need_forumlist") need_forumlist: Int = 0,
-        @Field("new_net_type") new_net_type: Int = 1,
-        @Field("new_install") new_install: Int = 0,
-        @Field("request_time") request_time: Long = System.currentTimeMillis(),
-        @Field("invoke_source") invoke_source: String = "",
-        @Field("scr_dip") scr_dip: String = ScreenInfo.DENSITY.toString(),
-        @Field("scr_h") scr_h: String = getScreenHeight().toString(),
-        @Field("scr_w") scr_w: String = getScreenWidth().toString()
-    ): Flow<PersonalizedBean>
 
     @Headers(
         "${Header.FORCE_LOGIN}: ${Header.FORCE_LOGIN_TRUE}",

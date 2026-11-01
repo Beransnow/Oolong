@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.api.interfaces.impls
 
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
-import android.text.TextUtils
 import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
 import com.huanchengfly.tieba.core.network.sign.MSignResponse
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
@@ -20,7 +19,6 @@ import com.huanchengfly.tieba.post.api.legacyAgreeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyLikeRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacyPostRemoteDataSource
 import com.huanchengfly.tieba.post.api.legacySignRemoteDataSource
-import com.huanchengfly.tieba.post.api.legacyUploadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.AgreeBean
 import com.huanchengfly.tieba.post.api.models.CheckReportBean
 import com.huanchengfly.tieba.post.api.models.CommonResponse
@@ -31,7 +29,6 @@ import com.huanchengfly.tieba.post.api.models.LikeForumResultBean
 import com.huanchengfly.tieba.post.api.models.LoginBean
 import com.huanchengfly.tieba.post.api.models.MSignBean
 import com.huanchengfly.tieba.post.api.models.NewCollectDataBean
-import com.huanchengfly.tieba.post.api.models.PersonalizedBean
 import com.huanchengfly.tieba.post.api.models.PicPageBean
 import com.huanchengfly.tieba.post.api.models.SearchForumBean
 import com.huanchengfly.tieba.post.api.models.SearchThreadBean
@@ -50,18 +47,12 @@ import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDeta
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequest
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoRequestData
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListRequest
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListRequestData
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorRequestData
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequest
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageRequestData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedRequest
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedRequestData
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequest
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugRequestData
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
@@ -72,60 +63,21 @@ import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRespon
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListRequest
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListRequestData
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeRequest
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeRequestData
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
-import com.huanchengfly.tieba.post.models.DislikeBean
 import com.huanchengfly.tieba.post.toJson
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.InstallState
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
-import okio.ByteString.Companion.toByteString
-import java.io.File
 
 object MixedTiebaApiImpl : ITiebaApi {
 
-    override fun personalizedFlow(loadType: Int, page: Int): Flow<PersonalizedBean> {
-        return RetrofitTiebaApi.OFFICIAL_TIEBA_API.personalizedFlow(loadType, page)
-    }
 
-    override fun personalizedProtoFlow(loadType: Int, page: Int): Flow<PersonalizedResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.personalizedFlow(
-            buildProtobufRequestBody(
-                data = PersonalizedRequest(
-                    PersonalizedRequestData(
-                        app_pos = buildAppPosInfo(),
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        load_type = loadType,
-                        pn = page,
-                        need_tags = 0,
-                        page_thread_count = 11,
-                        pre_ad_thread_count = 0,
-                        sug_count = 0,
-                        tag_code = 0,
-                        q_type = 1,
-                        need_forumlist = 0,
-                        new_net_type = 1,
-                        new_install = 0,
-                        request_times = 0,
-                        invoke_source = "",
-                        scr_dip = App.ScreenInfo.DENSITY.toDouble(),
-                        scr_h = getScreenHeight(),
-                        scr_w = getScreenWidth()
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12
-            )
-        )
-    }
 
     override fun opAgreeFlow(
         target: AgreeTarget,
@@ -258,8 +210,6 @@ object MixedTiebaApiImpl : ITiebaApi {
             ).toJson()
         )
 
-    override fun submitDislikeFlow(dislikeBean: DislikeBean): Flow<CommonResponse> =
-        RetrofitTiebaApi.OFFICIAL_TIEBA_API.submitDislikeFlow(listOf(dislikeBean).toJson())
 
     override fun searchForumFlow(keyword: String): Flow<SearchForumBean> =
         RetrofitTiebaApi.HYBRID_TIEBA_API.searchForumFlow(keyword)
@@ -330,41 +280,7 @@ object MixedTiebaApiImpl : ITiebaApi {
         emit(results.toMSignBean())
     }
 
-    override fun userLikeFlow(
-        pageTag: String,
-        lastRequestUnix: Long,
-        loadType: Int
-    ): Flow<UserLikeResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.userLikeFlow(
-            buildProtobufRequestBody(
-                UserLikeRequest(
-                    UserLikeRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        pageTag = pageTag,
-                        lastRequestUnix = lastRequestUnix,
-                        followType = 1,
-                        loadType = loadType
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-            )
-        )
-    }
 
-    override fun hotThreadListFlow(tabCode: String): Flow<HotThreadListResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.hotThreadListFlow(
-            buildProtobufRequestBody(
-                HotThreadListRequest(
-                    HotThreadListRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        tabCode = tabCode,
-                        tabId = "1"
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-            )
-        )
-    }
 
     override fun topicListFlow(): Flow<TopicListResponse> {
         return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.topicListFlow(

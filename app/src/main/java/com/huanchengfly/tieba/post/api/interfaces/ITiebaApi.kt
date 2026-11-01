@@ -6,43 +6,18 @@ import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.getForumDetail.GetForumDetailResponse
 import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResponse
-import com.huanchengfly.tieba.post.api.models.protos.hotThreadList.HotThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
-import com.huanchengfly.tieba.post.api.models.protos.personalized.PersonalizedResponse
 import com.huanchengfly.tieba.post.api.models.protos.searchSug.SearchSugResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
 import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
-import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
-import com.huanchengfly.tieba.post.models.DislikeBean
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
-import java.io.File
 
 interface ITiebaApi {
 
-    /**
-     * 个性推荐（每页 15 贴）
-     *
-     * @param loadType 加载类型（1 - 下拉刷新 2 - 加载更多）
-     * @param page 分页页码
-     */
-    fun personalizedFlow(
-        loadType: Int,
-        page: Int = 1
-    ): Flow<PersonalizedBean>
 
-    /**
-     * 个性推荐（每页 15 贴）
-     *
-     * @param loadType 加载类型（1 - 下拉刷新 2 - 加载更多）
-     * @param page 分页页码
-     */
-    fun personalizedProtoFlow(
-        loadType: Int,
-        page: Int = 1
-    ): Flow<PersonalizedResponse>
 
     /**
      * 给贴子/回复点赞/取消点赞
@@ -233,17 +208,6 @@ interface ITiebaApi {
         postId: Long
     ): Flow<CommonResponse>
 
-    /**
-     * 推荐“不感兴趣”
-     *
-     * **需登录**
-     *
-     * @param dislikeBean “不感兴趣”信息 [com.huanchengfly.tieba.post.models.DislikeBean]
-     * @param stoken stoken
-     */
-    fun submitDislikeFlow(
-        dislikeBean: DislikeBean
-    ): Flow<CommonResponse>
 
     /**
      * 搜索吧
@@ -336,27 +300,7 @@ interface ITiebaApi {
         tbs: String
     ): Flow<MSignBean>
 
-    /**
-     * 关注动态
-     *
-     * @param pageTag 页码
-     * @param lastRequestUnix 上次请求的时间戳（10位）
-     * @param loadType 加载类型（1 = 下拉刷新，2 = 加载更多）
-     */
-    fun userLikeFlow(
-        pageTag: String,
-        lastRequestUnix: Long,
-        loadType: Int
-    ): Flow<UserLikeResponse>
 
-    /**
-     * 首页热榜
-     *
-     * @param tabCode Tab
-     */
-    fun hotThreadListFlow(
-        tabCode: String
-    ): Flow<HotThreadListResponse>
 
     /**
      * 话题榜
