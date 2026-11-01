@@ -55,4 +55,4 @@ sealed interface ForumTab {
 }
 
 /** How the latest threads are ordered. */
-enum class ForumSort { Smart, ReplyTime, PostTime }
+enum class ForumSort { ReplyTime, PostTime }

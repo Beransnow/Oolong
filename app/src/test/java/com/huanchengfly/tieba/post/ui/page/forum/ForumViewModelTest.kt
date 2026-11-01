@@ -147,12 +147,12 @@ class ForumViewModelTest {
         val viewModel = createViewModel()
         runCurrent()
 
-        viewModel.setSort(ForumSort.Smart)
+        viewModel.setSort(ForumSort.PostTime)
         runCurrent()
 
         assertEquals(listOf(5L), viewModel.state.value.list(ForumTab.Latest).items.map { it.thread.get { id } })
-        assertEquals(ForumSort.Smart, sorts["吧名"])
-        coVerify { remote.page("吧名", 1, 1, 1, false, 0) }
+        assertEquals(ForumSort.PostTime, sorts["吧名"])
+        coVerify { remote.page("吧名", 1, 1, 3, false, 0) }
     }
 
     @Test

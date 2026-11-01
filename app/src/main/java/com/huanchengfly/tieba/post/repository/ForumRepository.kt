@@ -190,7 +190,6 @@ private fun ForumTab.sortType(sort: ForumSort): Int = when (this) {
     ForumTab.Good -> -1
     ForumTab.Hot -> 4
     else -> when (sort) {
-        ForumSort.Smart -> 1
         ForumSort.ReplyTime -> 2
         ForumSort.PostTime -> 3
     }

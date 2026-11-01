@@ -135,7 +135,7 @@ class ForumRepositoryTest {
     fun `hot and good threads are asked for as such`() = runTest {
         coEvery { remote.page(any(), any(), any(), any(), any(), any()) } returns frsPage(hasMore = false)
 
-        repository.threads("吧名", 0, ForumTab.Hot, ForumCursor.FrsPage(1), sort = ForumSort.Smart)
+        repository.threads("吧名", 0, ForumTab.Hot, ForumCursor.FrsPage(1), sort = ForumSort.PostTime)
         repository.threads("吧名", 0, ForumTab.Good, ForumCursor.FrsPage(1), goodClassId = 3)
 
         coVerify { remote.page("吧名", 1, 1, 4, false, 0) }

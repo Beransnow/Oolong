@@ -19,7 +19,7 @@ interface ForumSortStore {
 
 /**
  * Keeps each forum's order in the preferences the old forum page used, where 0 is reply time and
- * 1 post time, the two values the settings page offers too; smart order is stored as 2.
+ * 1 post time, the two values the settings page offers too.
  */
 class DataStoreForumSortStore @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -29,7 +29,6 @@ class DataStoreForumSortStore @Inject constructor(
         val stored = context.dataStore.data.first()[key(forumName)] ?: default
         return when (stored) {
             1 -> ForumSort.PostTime
-            2 -> ForumSort.Smart
             else -> ForumSort.ReplyTime
         }
     }
@@ -38,7 +37,6 @@ class DataStoreForumSortStore @Inject constructor(
         val stored = when (sort) {
             ForumSort.ReplyTime -> 0
             ForumSort.PostTime -> 1
-            ForumSort.Smart -> 2
         }
         context.dataStore.edit { it[key(forumName)] = stored }
     }
