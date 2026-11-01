@@ -47,8 +47,10 @@ import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFromStoreExtra
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
@@ -69,7 +71,6 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getUsernameAnnotatedString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
@@ -80,7 +81,7 @@ private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSiz
 )
 @Composable
 fun ThreadStorePage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: ThreadStoreViewModel = hiltViewModel(),
 ) {
     val list by viewModel.state.collectAsStateWithLifecycle()
@@ -91,10 +92,10 @@ fun ThreadStorePage(
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
         onRemove = viewModel::remove,
-        onOpenUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+        onOpenUser = { navigator.navigate(UserProfileKey(it.id)) },
         onOpen = { thread ->
             navigator.navigate(
-                ThreadPageDestination(
+                ThreadKey(
                     threadId = thread.threadId,
                     postId = thread.markPostId,
                     seeLz = context.appPreferences.collectThreadSeeLz,

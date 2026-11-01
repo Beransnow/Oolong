@@ -17,9 +17,10 @@ import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.SearchKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -32,7 +33,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun NotificationsPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     initialTab: Int = 0,
 ) {
     val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
@@ -141,7 +141,7 @@ fun NotificationsPage(
                         icon = Icons.Rounded.Search,
                         contentDescription = stringResource(id = R.string.title_search)
                     ) {
-                        navigator.navigate(SearchPageDestination)
+                        navigator.navigate(SearchKey)
                     }
                 },
                 content = {

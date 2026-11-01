@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -47,14 +49,14 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.AboutKey
+import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
+import com.huanchengfly.tieba.post.ui.navigation.HistoryKey
+import com.huanchengfly.tieba.post.ui.navigation.SettingsKey
+import com.huanchengfly.tieba.post.ui.navigation.ThreadStoreKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.HistoryPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SettingsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadStorePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -69,8 +71,6 @@ import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.ui.text.style.LineHeightStyle
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
@@ -298,7 +298,7 @@ fun UserScreen(
                         modifier = Modifier
                             .padding(top = 8.dp)
                             .clickable {
-                                navigator.navigate(UserProfilePageDestination(account.uid.toLong()))
+                                navigator.navigate(UserProfileKey(account.uid.toLong()))
                             }
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                         userName = account.nameShow ?: account.name,
@@ -327,7 +327,7 @@ fun UserScreen(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
                         text = stringResource(id = R.string.title_my_collect),
                         onClick = {
-                            navigator.navigate(ThreadStorePageDestination)
+                            navigator.navigate(ThreadStoreKey)
                         }
                     )
                 }
@@ -336,7 +336,7 @@ fun UserScreen(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
                     text = stringResource(id = R.string.title_history),
                     onClick = {
-                        navigator.navigate(HistoryPageDestination)
+                        navigator.navigate(HistoryKey)
                     }
                 )
                 ListMenuItem(
@@ -344,7 +344,7 @@ fun UserScreen(
                     icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
                     text = stringResource(id = R.string.title_theme),
                     onClick = {
-                        navigator.navigate(AppThemePageDestination)
+                        navigator.navigate(AppThemeKey)
                     }
                 ) {
                     Text(
@@ -371,7 +371,7 @@ fun UserScreen(
                         text = stringResource(id = R.string.my_info_service_center),
                         onClick = {
                             navigator.navigate(
-                                WebViewPageDestination(
+                                WebViewKey(
                                     initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
                                 )
                             )
@@ -384,13 +384,13 @@ fun UserScreen(
                     iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
                     text = stringResource(id = R.string.my_info_settings),
-                    onClick = { navigator.navigate(SettingsPageDestination) },
+                    onClick = { navigator.navigate(SettingsKey) },
                 )
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
                     icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
                     text = stringResource(id = R.string.my_info_about),
-                    onClick = { navigator.navigate(AboutPageDestination) },
+                    onClick = { navigator.navigate(AboutKey) },
                 )
             }
 

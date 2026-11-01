@@ -43,6 +43,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,10 +62,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.airbnb.lottie.compose.LottieAnimation
@@ -76,14 +78,15 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.LoginKey
+import com.huanchengfly.tieba.post.ui.navigation.SearchKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -108,9 +111,6 @@ import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
-import androidx.compose.runtime.collectAsState
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.huanchengfly.tieba.post.dataStore
 import kotlinx.coroutines.flow.map
 
 @Preview("SearchBoxPreview")
@@ -514,10 +514,10 @@ fun HomePage(
         onEvent = { event ->
             when (event) {
                 HomeEvent.Refresh -> viewModel.refresh()
-                HomeEvent.Search -> navigator.navigate(SearchPageDestination)
+                HomeEvent.Search -> navigator.navigate(SearchKey)
                 HomeEvent.OneKeySign -> TiebaUtil.startSign(context)
                 HomeEvent.ToggleHistory -> viewModel.toggleHistory()
-                is HomeEvent.OpenForum -> navigator.navigate(ForumPageDestination(event.name))
+                is HomeEvent.OpenForum -> navigator.navigate(ForumKey(event.name))
                 is HomeEvent.Pin -> viewModel.pin(event.forum)
                 is HomeEvent.Unpin -> viewModel.unpin(event.forum)
                 is HomeEvent.Unfollow -> {
@@ -827,7 +827,7 @@ fun EmptyScreen(
             if (!loggedIn) {
                 Button(
                     onClick = {
-                        navigator.navigate(LoginPageDestination)
+                        navigator.navigate(LoginKey)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

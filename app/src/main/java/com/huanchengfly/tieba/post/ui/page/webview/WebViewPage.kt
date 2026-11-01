@@ -57,6 +57,8 @@ import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
 import com.huanchengfly.tieba.post.models.PermissionBean
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -77,23 +79,22 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
 import com.huanchengfly.tieba.post.utils.isTiebaHost
-import com.huanchengfly.tieba.post.utils.toTiebaDirection
+import com.huanchengfly.tieba.post.utils.toTiebaKey
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.lang.ref.WeakReference
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
-import java.util.UUID
 
 @SuppressLint("SetJavaScriptEnabled")
 @Destination
 @Composable
 fun WebViewPage(
     initialUrl: String,
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -282,7 +283,7 @@ fun isInternalHost(host: String): Boolean {
 }
 
 open class MyWebViewClient(
-    protected val nativeNavigator: DestinationsNavigator? = null,
+    protected val nativeNavigator: Navigator? = null,
 ) : AccompanistWebViewClient() {
     val context: Context
         get() = state.webView?.context ?: App.INSTANCE
@@ -303,7 +304,7 @@ open class MyWebViewClient(
                 host.contains("m.help.baidu.com")
         return when {
             isHttp && isTieba -> {
-                newUri.toTiebaDirection()?.let { direction ->
+                newUri.toTiebaKey()?.let { direction ->
                     nativeNavigator?.navigate(direction)
                     true
                 } ?: false

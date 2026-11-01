@@ -16,17 +16,17 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.CopyTextDialogPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyArgs
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyDialog
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPreferences
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 /**
@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun SubPostsRoute(
-    navigator: DestinationsNavigator,
+    navigator: Navigator,
     isSheet: Boolean,
     viewModel: SubPostsViewModel = hiltViewModel(),
 ) {
@@ -90,7 +90,7 @@ fun SubPostsRoute(
             SubPostsEvent.LoadMore -> viewModel.loadMore()
             SubPostsEvent.LoadPrevious -> viewModel.loadPrevious()
             SubPostsEvent.OpenThread -> navigator.navigate(
-                ThreadPageDestination(
+                ThreadKey(
                     threadId = state.threadId,
                     forumId = state.forum?.id,
                     postId = state.post?.id ?: 0L,
@@ -99,10 +99,10 @@ fun SubPostsRoute(
 
             SubPostsEvent.AgreePost -> viewModel.agreePost()
             is SubPostsEvent.AgreeSubPost -> viewModel.agreeSubPost(event.subPostId)
-            is SubPostsEvent.OpenUser -> navigator.navigate(UserProfilePageDestination(event.userId))
+            is SubPostsEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is SubPostsEvent.Reply -> reply(event.subPost?.id, event.subPost?.author ?: event.post.author)
             SubPostsEvent.ReplyToPost -> reply()
-            is SubPostsEvent.Copy -> navigator.navigate(CopyTextDialogPageDestination(event.text))
+            is SubPostsEvent.Copy -> navigator.navigate(CopyTextKey(event.text))
             is SubPostsEvent.Report -> coroutineScope.launch {
                 TiebaUtil.reportPost(context, navigator, event.postId.toString())
             }

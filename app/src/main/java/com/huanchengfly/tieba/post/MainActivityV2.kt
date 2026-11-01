@@ -8,7 +8,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -73,8 +72,14 @@ import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.DestinationsNavigatorAdapter
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.Key
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
+import com.huanchengfly.tieba.post.ui.navigation.toDirection
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.NavGraphs
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
@@ -102,10 +107,9 @@ import com.huanchengfly.tieba.post.utils.newIntentFilter
 import com.huanchengfly.tieba.post.utils.registerPickMediasLauncher
 import com.huanchengfly.tieba.post.utils.requestIgnoreBatteryOptimizations
 import com.huanchengfly.tieba.post.utils.requestPermission
-import com.huanchengfly.tieba.post.utils.toTiebaDirection
+import com.huanchengfly.tieba.post.utils.toTiebaKey
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.spec.DestinationSpec
-import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
@@ -196,7 +200,7 @@ class MainActivityV2 : BaseComposeActivity() {
             )
     }
 
-    private var direction: Direction? = null
+    private var direction: Key? = null
     private var waitingNavCollectorToNavigate = AtomicBoolean(false)
     private var myNavController: NavHostController? = null
         set(value) {
@@ -207,7 +211,7 @@ class MainActivityV2 : BaseComposeActivity() {
                         .take(1)
                         .collect {
                             if (waitingNavCollectorToNavigate.get() && direction != null) {
-                                value.toDestinationsNavigator().navigate(direction!!)
+                                value.toDestinationsNavigator().navigate(direction!!.toDirection())
                                 waitingNavCollectorToNavigate.set(false)
                                 direction = null
                             }
@@ -216,12 +220,12 @@ class MainActivityV2 : BaseComposeActivity() {
             }
         }
 
-    private fun navigate(direction: Direction) {
+    private fun navigate(direction: Key) {
         if (myNavController == null) {
             waitingNavCollectorToNavigate.set(true)
             this.direction = direction
         } else {
-            myNavController?.toDestinationsNavigator()?.navigate(direction)
+            myNavController?.toDestinationsNavigator()?.navigate(direction.toDirection())
         }
     }
 
@@ -229,8 +233,8 @@ class MainActivityV2 : BaseComposeActivity() {
         val uri = intent.data ?: return false
         val scheme = uri.scheme?.lowercase()
         if (scheme !in EXTERNAL_LINK_SCHEMES) return false
-        val direction = uri.toTiebaDirection()
-            ?: if (scheme == "http" || scheme == "https") WebViewPageDestination(uri.toString()) else null
+        val direction = uri.toTiebaKey()
+            ?: if (scheme == "http" || scheme == "https") WebViewKey(uri.toString()) else null
         direction?.let { navigate(it) }
         return true
     }
@@ -323,11 +327,11 @@ class MainActivityV2 : BaseComposeActivity() {
     private fun openClipBoardLink(link: ClipBoardLink) {
         when (link) {
             is ClipBoardThreadLink -> {
-                myNavController?.navigate(Uri.parse("tblite://thread/${link.threadId}"))
+                link.threadId.toLongOrNull()?.let { navigate(ThreadKey(it)) }
             }
 
             is ClipBoardForumLink -> {
-                myNavController?.navigate(Uri.parse("tblite://forum/${link.forumName}"))
+                navigate(ForumKey(link.forumName))
             }
 
             else -> {
@@ -450,6 +454,9 @@ class MainActivityV2 : BaseComposeActivity() {
                 CompositionLocalProvider(
                     LocalNavController provides navController,
                     LocalDestination provides currentDestination,
+                    LocalNavigator provides remember(navController) {
+                        DestinationsNavigatorAdapter(navController.toDestinationsNavigator())
+                    },
                 ) {
                     ModalBottomSheetLayout(
                         bottomSheetNavigator = navigator,

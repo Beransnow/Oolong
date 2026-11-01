@@ -23,11 +23,14 @@ import com.huanchengfly.tieba.post.activities.AppFontSizeActivity
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
+import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -37,12 +40,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.collections.immutable.persistentListOf
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.utils.appPreferences
+import com.ramcosta.composedestinations.annotation.Destination
 import kotlin.math.roundToInt
+import kotlinx.collections.immutable.persistentListOf
 
 /** The theme in use, by the name the theme page gives it. */
 @Composable
@@ -63,7 +64,7 @@ private fun currentThemeName(): String {
 @Destination
 @Composable
 fun CustomSettingsPage(
-    navigator: DestinationsNavigator
+    navigator: Navigator = LocalNavigator.current
 ) {
     val context = LocalContext.current
     val themeGroup = stringResource(id = R.string.settings_group_theme)
@@ -91,7 +92,7 @@ fun CustomSettingsPage(
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_theme),
-                        onClick = { navigator.navigate(AppThemePageDestination) },
+                        onClick = { navigator.navigate(AppThemeKey) },
                         trailingContent = { PrefsLinkValue(text = currentThemeName()) },
                     )
                 }

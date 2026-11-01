@@ -13,19 +13,20 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
-import com.huanchengfly.tieba.post.ui.page.destinations.BlockListPageDestination
+import com.huanchengfly.tieba.post.ui.navigation.BlockListKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @OptIn(ExperimentalMaterialApi::class)
 @Destination
 @Composable
 fun BlockSettingsPage(
-    navigator: DestinationsNavigator
+    navigator: Navigator = LocalNavigator.current
 ) {
     val context = LocalContext.current
     GlassScaffold(
@@ -48,7 +49,7 @@ fun BlockSettingsPage(
             prefsItem {
                 TextPref(
                     title = stringResource(id = R.string.title_block_list),
-                    onClick = { navigator.navigate(BlockListPageDestination) }
+                    onClick = { navigator.navigate(BlockListKey) }
                 )
             }
             prefsItem {

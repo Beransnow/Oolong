@@ -17,8 +17,8 @@ import com.huanchengfly.tieba.post.pendingIntentFlagMutable
 import com.huanchengfly.tieba.post.receivers.AutoSignAlarm
 import com.huanchengfly.tieba.post.services.OKSignService
 import com.huanchengfly.tieba.post.toastShort
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import java.util.Calendar
 
 object TiebaUtil {
@@ -116,13 +116,13 @@ object TiebaUtil {
 
     suspend fun reportPost(
         context: Context,
-        navigator: DestinationsNavigator,
+        navigator: Navigator,
         postId: String,
     ) {
         val dialog = LoadingDialog(context).apply { show() }
         val url = runCatching { legacyThreadRemoteDataSource.reportUrl(postId.toLong()) }
         dialog.dismiss()
-        url.onSuccess { navigator.navigate(WebViewPageDestination(it)) }
+        url.onSuccess { navigator.navigate(WebViewKey(it)) }
             .onFailure { context.toastShort(R.string.toast_load_failed) }
     }
 }

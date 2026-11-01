@@ -3,9 +3,10 @@ package com.huanchengfly.tieba.post.ui.page.thread
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.serialization.Serializable
 
 object ThreadPageFrom {
@@ -45,7 +46,7 @@ object ThreadSortType {
 @Composable
 fun ThreadPage(
     threadId: Long,
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     forumId: Long? = null,
     postId: Long = 0,
     seeLz: Boolean = false,

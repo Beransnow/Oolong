@@ -2,15 +2,16 @@ package com.huanchengfly.tieba.post.ui.page.subposts
 
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 
 @Suppress("UNUSED_PARAMETER") // Navigation arguments, read by the view model
 @Destination
 @Composable
 fun SubPostsPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     threadId: Long,
     forumId: Long = 0L,
     postId: Long = 0L,
@@ -25,7 +26,7 @@ fun SubPostsPage(
 @Destination(style = DestinationStyleBottomSheet::class)
 @Composable
 fun SubPostsSheetPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     threadId: Long,
     forumId: Long = 0L,
     postId: Long = 0L,

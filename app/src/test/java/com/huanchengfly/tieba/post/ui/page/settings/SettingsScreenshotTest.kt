@@ -3,15 +3,15 @@ package com.huanchengfly.tieba.post.ui.page.settings
 import androidx.compose.runtime.CompositionLocalProvider
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
-import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.testing.captureScreenshot
+import com.huanchengfly.tieba.post.ui.navigation.NoOpNavigator
 import com.huanchengfly.tieba.post.ui.page.settings.account.AccountManagePage
 import com.huanchengfly.tieba.post.ui.page.settings.custom.CustomSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.habit.HabitSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.more.MoreSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.oksign.OKSignSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.post.PostSettingsPage
-import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,37 +28,37 @@ class SettingsScreenshotTest {
 
     @Test
     fun hub() {
-        captureScreenshot { SettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { SettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun appearance() {
-        captureScreenshot { CustomSettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { CustomSettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun browsing() {
-        captureScreenshot { HabitSettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { HabitSettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun posting() {
-        captureScreenshot { PostSettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { PostSettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun other() {
-        captureScreenshot { MoreSettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { MoreSettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun signIn() {
-        captureScreenshot { OKSignSettingsPage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { OKSignSettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
     fun account() {
-        captureScreenshot { AccountManagePage(navigator = EmptyDestinationsNavigator) }
+        captureScreenshot { AccountManagePage(navigator = NoOpNavigator) }
     }
 
     @Test
@@ -70,7 +70,7 @@ class SettingsScreenshotTest {
                 AccountUtil.LocalAccount provides current,
                 AccountUtil.AllAccounts provides listOf(current, other),
             ) {
-                AccountManagePage(navigator = EmptyDestinationsNavigator)
+                AccountManagePage(navigator = NoOpNavigator)
             }
         }
     }

@@ -25,8 +25,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.history.list.HistoryListContent
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFrom
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -37,7 +39,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 @Destination(
@@ -47,7 +48,7 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun HistoryPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -59,9 +60,9 @@ fun HistoryPage(
         onDelete = viewModel::delete,
         onOpen = { entry ->
             when (entry) {
-                is HistoryEntry.Forum -> navigator.navigate(ForumPageDestination(entry.name))
+                is HistoryEntry.Forum -> navigator.navigate(ForumKey(entry.name))
                 is HistoryEntry.Thread -> navigator.navigate(
-                    ThreadPageDestination(
+                    ThreadKey(
                         entry.threadId,
                         postId = entry.postId,
                         seeLz = entry.seeLz,

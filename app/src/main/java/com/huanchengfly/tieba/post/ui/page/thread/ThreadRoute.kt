@@ -28,18 +28,19 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ReplyKey
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsSheetKey
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.CopyTextDialogPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsSheetPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.TiebaUtil
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 /**
@@ -49,7 +50,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ThreadRoute(
-    navigator: DestinationsNavigator,
+    navigator: Navigator,
     from: String,
     extra: ThreadPageExtra?,
     viewModel: ThreadViewModel = hiltViewModel(),
@@ -136,12 +137,12 @@ fun ThreadRoute(
             ThreadEvent.OpenMenu -> Unit
             ThreadEvent.AgreeThread -> viewModel.agreeThread()
             is ThreadEvent.AgreePost -> viewModel.agreePost(event.postId)
-            ThreadEvent.OpenForum -> thread?.let { navigator.navigate(ForumPageDestination(it.forum.name)) }
-            is ThreadEvent.OpenUser -> navigator.navigate(UserProfilePageDestination(event.userId))
+            ThreadEvent.OpenForum -> thread?.let { navigator.navigate(ForumKey(it.forum.name)) }
+            is ThreadEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is ThreadEvent.Reply -> if (thread != null) {
                 val replyTo = event.subPost?.author ?: event.post?.author
                 navigator.navigate(
-                    ReplyPageDestination(
+                    ReplyKey(
                         forumId = thread.forum.id,
                         forumName = thread.forum.name,
                         threadId = thread.id,
@@ -156,7 +157,7 @@ fun ThreadRoute(
 
             is ThreadEvent.OpenSubPosts -> if (thread != null) {
                 navigator.navigate(
-                    SubPostsSheetPageDestination(
+                    SubPostsSheetKey(
                         forumId = thread.forum.id,
                         threadId = thread.id,
                         postId = event.post.id,
@@ -167,9 +168,9 @@ fun ThreadRoute(
             }
 
             is ThreadEvent.OpenOriginThread ->
-                navigator.navigate(ThreadPageDestination(threadId = event.threadId, forumId = event.forumId))
+                navigator.navigate(ThreadKey(threadId = event.threadId, forumId = event.forumId))
 
-            is ThreadEvent.Copy -> navigator.navigate(CopyTextDialogPageDestination(event.text))
+            is ThreadEvent.Copy -> navigator.navigate(CopyTextKey(event.text))
             is ThreadEvent.Report -> coroutineScope.launch {
                 TiebaUtil.reportPost(context, navigator, event.postId.toString())
             }

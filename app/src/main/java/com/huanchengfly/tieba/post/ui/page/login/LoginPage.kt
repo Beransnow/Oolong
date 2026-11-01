@@ -40,6 +40,8 @@ import androidx.core.net.toUri
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
 import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
@@ -58,7 +60,6 @@ import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.parseCookie
 import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -76,7 +77,7 @@ const val LOGIN_URL =
 @Destination
 @Composable
 fun LoginPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -236,7 +237,7 @@ fun LoginPage(
 }
 
 class LoginWebViewClient(
-    nativeNavigator: DestinationsNavigator? = null,
+    nativeNavigator: Navigator? = null,
     val coroutineScope: CoroutineScope,
     val snackbarHostState: SnackbarHostState,
 ) : MyWebViewClient(nativeNavigator) {

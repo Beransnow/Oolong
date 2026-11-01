@@ -14,18 +14,18 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.ForumDetail
+import com.huanchengfly.tieba.post.ui.navigation.ForumDetailKey
+import com.huanchengfly.tieba.post.ui.navigation.ForumRuleDetailKey
+import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumDetailPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumRuleDetailPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.requestPinShortcut
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 
 /**
@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun ForumRoute(
-    navigator: DestinationsNavigator,
+    navigator: Navigator,
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -51,9 +51,9 @@ fun ForumRoute(
         val forum = state.forum
         when (event) {
             ForumEvent.Back -> navigator.navigateUp()
-            ForumEvent.Search -> forum?.let { navigator.navigate(ForumSearchPostPageDestination(it.name, it.id)) }
-            ForumEvent.OpenDetail -> forum?.let { navigator.navigate(ForumDetailPageDestination(forumId = it.id)) }
-            ForumEvent.OpenRule -> forum?.let { navigator.navigate(ForumRuleDetailPageDestination(it.id)) }
+            ForumEvent.Search -> forum?.let { navigator.navigate(ForumSearchPostKey(it.name, it.id)) }
+            ForumEvent.OpenDetail -> forum?.let { navigator.navigate(ForumDetailKey(forumId = it.id)) }
+            ForumEvent.OpenRule -> forum?.let { navigator.navigate(ForumRuleDetailKey(it.id)) }
             ForumEvent.Share -> shareForum(context, state.forumName)
             ForumEvent.SendToDesktop -> forum?.let {
                 coroutineScope.launch { sendToDesktop(context, it, scaffoldState.snackbarHostState::showSnackbar) }
@@ -66,15 +66,15 @@ fun ForumRoute(
             ForumEvent.Refresh -> viewModel.refresh()
             ForumEvent.LoadMore -> viewModel.loadMore()
             is ForumEvent.OpenThread -> navigator.navigate(
-                ThreadPageDestination(event.thread.threadId, forumId = event.thread.forumId, threadInfo = event.thread)
+                ThreadKey(event.thread.threadId, forumId = event.thread.forumId, threadInfo = event.thread)
             )
             is ForumEvent.OpenReplies -> navigator.navigate(
-                ThreadPageDestination(event.thread.threadId, forumId = event.thread.forumId, scrollToReply = true)
+                ThreadKey(event.thread.threadId, forumId = event.thread.forumId, scrollToReply = true)
             )
             is ForumEvent.OpenOriginThread -> navigator.navigate(
-                ThreadPageDestination(threadId = event.origin.tid.toLong(), forumId = event.origin.fid)
+                ThreadKey(threadId = event.origin.tid.toLong(), forumId = event.origin.fid)
             )
-            is ForumEvent.OpenUser -> navigator.navigate(UserProfilePageDestination(event.userId))
+            is ForumEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is ForumEvent.Agree -> viewModel.agree(event.tab, event.threadId)
         }
     }

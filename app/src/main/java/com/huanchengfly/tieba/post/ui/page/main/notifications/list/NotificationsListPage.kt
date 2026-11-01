@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -23,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -34,25 +37,22 @@ import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.MetaText
 import com.huanchengfly.tieba.post.ui.widgets.compose.AuthorName
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.foundation.lazy.itemsIndexed
+import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
+import com.huanchengfly.tieba.post.ui.widgets.compose.MetaText
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -76,10 +76,10 @@ fun NotificationsListPage(
         onOpen = { notification ->
             if (notification.inPost) {
                 navigator.navigate(
-                    SubPostsPageDestination(threadId = notification.threadId, subPostId = notification.postId, loadFromSubPost = true)
+                    SubPostsKey(threadId = notification.threadId, subPostId = notification.postId, loadFromSubPost = true)
                 )
             } else {
-                navigator.navigate(ThreadPageDestination(threadId = notification.threadId, postId = notification.postId))
+                navigator.navigate(ThreadKey(threadId = notification.threadId, postId = notification.postId))
             }
         },
         onOpenQuote = { notification ->
@@ -87,13 +87,13 @@ fun NotificationsListPage(
             if (notification.inPost && quotePostId != null) {
                 // The quoted id may be a post or a reply inside one, so let pb/floor resolve it as a reply
                 navigator.navigate(
-                    SubPostsPageDestination(threadId = notification.threadId, subPostId = quotePostId, loadFromSubPost = true)
+                    SubPostsKey(threadId = notification.threadId, subPostId = quotePostId, loadFromSubPost = true)
                 )
             } else {
-                navigator.navigate(ThreadPageDestination(threadId = notification.threadId))
+                navigator.navigate(ThreadKey(threadId = notification.threadId))
             }
         },
-        onOpenUser = { navigator.navigate(UserProfilePageDestination(it)) },
+        onOpenUser = { navigator.navigate(UserProfileKey(it)) },
     )
 }
 

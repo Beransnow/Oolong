@@ -10,8 +10,8 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.navigation.NoOpNavigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 
 /**
  * Renders [content] in the app theme and compares it with the stored screenshot named after the
@@ -35,7 +35,7 @@ fun ComposeContentTestRule.captureScreenshotPaused(content: @Composable () -> Un
 /** The app theme and what pages expect around them, as in the app. */
 @Composable
 fun ScreenshotFrame(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalNavigator provides EmptyDestinationsNavigator) {
+    CompositionLocalProvider(LocalNavigator provides NoOpNavigator) {
         TiebaLiteTheme {
             Box(Modifier.background(MaterialTheme.colors.background)) {
                 content()

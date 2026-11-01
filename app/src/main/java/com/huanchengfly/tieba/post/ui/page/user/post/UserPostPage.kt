@@ -44,11 +44,11 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -181,11 +181,11 @@ fun UserPostPage(
                     lazyListState = lazyListState,
                     onClickItem = { threadId, postId, isSubPost ->
                         if (postId == null) {
-                            navigator.navigate(ThreadPageDestination(threadId))
+                            navigator.navigate(ThreadKey(threadId))
                         } else {
                             if (isSubPost) {
                                 navigator.navigate(
-                                    SubPostsPageDestination(
+                                    SubPostsKey(
                                         threadId = threadId,
                                         subPostId = postId,
                                         loadFromSubPost = true
@@ -193,7 +193,7 @@ fun UserPostPage(
                                 )
                             } else {
                                 navigator.navigate(
-                                    ThreadPageDestination(
+                                    ThreadKey(
                                         threadId,
                                         postId = postId,
                                         scrollToReply = true
@@ -205,7 +205,7 @@ fun UserPostPage(
                     onAgreeItem = onAgree,
                     onClickReply = {
                         navigator.navigate(
-                            ThreadPageDestination(
+                            ThreadKey(
                                 it.thread_id,
                                 it.forum_id,
                                 scrollToReply = true
@@ -213,13 +213,13 @@ fun UserPostPage(
                         )
                     },
                     onClickUser = {
-                        navigator.navigate(UserProfilePageDestination(it))
+                        navigator.navigate(UserProfileKey(it))
                     },
                     onClickForum = {
-                        navigator.navigate(ForumPageDestination(it))
+                        navigator.navigate(ForumKey(it))
                     },
                     onClickOriginThread = {
-                        navigator.navigate(ThreadPageDestination(it))
+                        navigator.navigate(ThreadKey(it))
                     },
                 )
             }

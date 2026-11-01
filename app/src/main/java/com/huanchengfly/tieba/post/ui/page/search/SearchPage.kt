@@ -70,11 +70,13 @@ import com.huanchengfly.tieba.post.model.SearchOrder
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.search.forum.SearchForumList
 import com.huanchengfly.tieba.post.ui.page.search.thread.SearchThreadResults
 import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserList
@@ -91,7 +93,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -118,7 +119,7 @@ data class SearchPageItem(
 )
 @Composable
 fun SearchPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -155,9 +156,9 @@ fun SearchPage(
             onSetOrder = viewModel::setOrder,
             onForget = viewModel::forget,
             onClearHistory = viewModel::clearHistory,
-            onOpenForum = { navigator.navigate(ForumPageDestination(it)) },
-            onOpenUser = { navigator.navigate(UserProfilePageDestination(it)) },
-            onOpenThread = { navigator.navigate(ThreadPageDestination(threadId = it.threadId)) },
+            onOpenForum = { navigator.navigate(ForumKey(it)) },
+            onOpenUser = { navigator.navigate(UserProfileKey(it)) },
+            onOpenThread = { navigator.navigate(ThreadKey(threadId = it.threadId)) },
         )
     }
 }

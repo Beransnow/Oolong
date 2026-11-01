@@ -83,9 +83,10 @@ import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.navigation.EditProfileKey
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.EditProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.user.likeforum.UserLikeForumPage
 import com.huanchengfly.tieba.post.ui.page.user.post.UserPostPage
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -110,7 +111,6 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -124,7 +124,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun UserProfilePage(
     uid: Long,
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -474,7 +474,7 @@ private fun UserProfileContentNormal(
                                         return@UserProfileDetail
                                     }
                                     if (isSelf) {
-                                        navigator.navigate(EditProfilePageDestination)
+                                        navigator.navigate(EditProfileKey)
                                     } else if (!user.followed) {
                                         onFollow()
                                     } else {
@@ -605,7 +605,7 @@ private fun UserProfileContentExpanded(
                                 return@UserProfileDetail
                             }
                             if (isSelf) {
-                                navigator.navigate(EditProfilePageDestination)
+                                navigator.navigate(EditProfileKey)
                             } else if (!user.followed) {
                                 onFollow()
                             } else {

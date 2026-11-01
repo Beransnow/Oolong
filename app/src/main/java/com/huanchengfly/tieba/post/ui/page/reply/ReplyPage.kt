@@ -93,6 +93,8 @@ import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.toMD5
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.EMOJI
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyPanelType.IMAGE
@@ -115,7 +117,6 @@ import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.hideKeyboard
 import com.huanchengfly.tieba.post.utils.showKeyboard
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DestinationStyleBottomSheet
 import java.util.UUID
 import kotlin.math.max
@@ -667,7 +668,7 @@ internal fun ReplyPageContent(
 @Destination(style = DestinationStyleBottomSheet::class)
 @Composable
 fun ReplyPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     forumId: Long,
     forumName: String,
     threadId: Long,

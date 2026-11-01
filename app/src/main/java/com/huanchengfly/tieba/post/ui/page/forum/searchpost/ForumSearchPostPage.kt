@@ -69,10 +69,12 @@ import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -87,7 +89,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -207,7 +208,7 @@ private fun SearchHistoryList(
 fun ForumSearchPostPage(
     forumName: String,
     forumId: Long,
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: ForumSearchPostViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -225,19 +226,19 @@ fun ForumSearchPostPage(
             onOpen = { post ->
                 when {
                     post.quoted != null -> navigator.navigate(
-                        SubPostsPageDestination(threadId = post.threadId, subPostId = post.subPostId, loadFromSubPost = true)
+                        SubPostsKey(threadId = post.threadId, subPostId = post.subPostId, loadFromSubPost = true)
                     )
 
                     post.thread != null -> navigator.navigate(
-                        ThreadPageDestination(threadId = post.threadId, postId = post.postId, scrollToReply = true)
+                        ThreadKey(threadId = post.threadId, postId = post.postId, scrollToReply = true)
                     )
 
-                    else -> navigator.navigate(ThreadPageDestination(threadId = post.threadId))
+                    else -> navigator.navigate(ThreadKey(threadId = post.threadId))
                 }
             },
-            onOpenUser = { author -> author.id.takeIf { it != 0L }?.let { navigator.navigate(UserProfilePageDestination(it)) } },
-            onOpenQuoted = { navigator.navigate(ThreadPageDestination(threadId = it.threadId, postId = it.postId, scrollToReply = true)) },
-            onOpenThread = { navigator.navigate(ThreadPageDestination(threadId = it.threadId, scrollToReply = true)) },
+            onOpenUser = { author -> author.id.takeIf { it != 0L }?.let { navigator.navigate(UserProfileKey(it)) } },
+            onOpenQuoted = { navigator.navigate(ThreadKey(threadId = it.threadId, postId = it.postId, scrollToReply = true)) },
+            onOpenThread = { navigator.navigate(ThreadKey(threadId = it.threadId, scrollToReply = true)) },
         )
     }
 }

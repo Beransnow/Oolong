@@ -2,9 +2,10 @@ package com.huanchengfly.tieba.post.ui.page.forum
 
 import androidx.compose.runtime.Composable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination(
     deepLinks = [
@@ -15,7 +16,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 @Composable
 fun ForumPage(
     forumName: String,
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     ForumRoute(navigator = navigator, viewModel = viewModel)

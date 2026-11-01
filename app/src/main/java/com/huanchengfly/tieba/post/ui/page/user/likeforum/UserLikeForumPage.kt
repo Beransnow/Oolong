@@ -29,8 +29,8 @@ import com.huanchengfly.tieba.post.arch.getOrNull
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -80,7 +80,7 @@ fun UserLikeForumPage(
                 UserLikeForumList(
                     data = forums,
                     fluid = fluid,
-                    onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
+                    onClickForum = { navigator.navigate(ForumKey(it.name)) },
                     lazyListState = lazyListState
                 )
             }

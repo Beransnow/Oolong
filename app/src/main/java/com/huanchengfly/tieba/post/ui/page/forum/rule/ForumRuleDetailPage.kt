@@ -28,6 +28,8 @@ import com.huanchengfly.tieba.post.model.ForumRuleDetail
 import com.huanchengfly.tieba.post.model.ForumRuleItem
 import com.huanchengfly.tieba.post.ui.common.TextContentRender
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -39,14 +41,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.LoadStateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.collections.immutable.persistentListOf
 
 @Destination
 @Composable
 fun ForumRuleDetailPage(
     @Suppress("UNUSED_PARAMETER") forumId: Long, // Navigation argument, read by the ViewModel
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
     viewModel: ForumRuleDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.ruleDetail.state.collectAsStateWithLifecycle()

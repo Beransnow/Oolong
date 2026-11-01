@@ -55,8 +55,8 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
+import com.huanchengfly.tieba.post.ui.navigation.LoginKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -127,7 +127,7 @@ fun AccountNavIcon(
                 )
                 DropdownMenuItem(
                     onClick = {
-                        navigator.navigate(LoginPageDestination)
+                        navigator.navigate(LoginKey)
                     }
                 ) {
                     Icon(

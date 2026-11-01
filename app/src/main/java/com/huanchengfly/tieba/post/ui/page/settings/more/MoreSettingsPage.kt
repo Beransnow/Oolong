@@ -1,58 +1,59 @@
 package com.huanchengfly.tieba.post.ui.page.settings.more
 
 import android.content.Intent
+import android.content.pm.verify.domain.DomainVerificationManager
+import android.content.pm.verify.domain.DomainVerificationUserState
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.height
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
-import androidx.compose.material.Text
-import androidx.compose.runtime.collectAsState
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import kotlinx.coroutines.flow.map
-import android.content.pm.verify.domain.DomainVerificationManager
-import android.content.pm.verify.domain.DomainVerificationUserState
-import androidx.annotation.RequiresApi
-import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
 @Destination
 @Composable
 fun MoreSettingsPage(
-    navigator: DestinationsNavigator,
+    navigator: Navigator = LocalNavigator.current,
 ) {
     val coroutineScope = rememberCoroutineScope()
     GlassScaffold(

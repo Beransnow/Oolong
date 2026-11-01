@@ -40,8 +40,8 @@ import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.VideoPlayer
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayer
@@ -145,7 +145,7 @@ private fun PostVideo(video: PostContent.Video) {
         AsyncImage(
             model = video.coverUrl,
             contentDescription = stringResource(id = R.string.desc_video),
-            modifier = modifier.clickable { navigator.navigate(WebViewPageDestination(video.webUrl)) },
+            modifier = modifier.clickable { navigator.navigate(WebViewKey(video.webUrl)) },
             contentScale = ContentScale.Crop,
         )
     }

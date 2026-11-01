@@ -30,8 +30,8 @@ import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.SearchKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotPage
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedPage
@@ -157,7 +157,7 @@ fun ExplorePage() {
                         icon = Icons.Rounded.Search,
                         contentDescription = stringResource(id = R.string.title_search)
                     ) {
-                        navigator.navigate(SearchPageDestination)
+                        navigator.navigate(SearchKey)
                     }
                 },
             ) {

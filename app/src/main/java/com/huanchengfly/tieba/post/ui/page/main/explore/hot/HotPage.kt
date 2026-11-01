@@ -53,8 +53,8 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Yellow
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
+import com.huanchengfly.tieba.post.ui.navigation.HotTopicListKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.destinations.HotTopicListPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
@@ -84,7 +84,7 @@ fun HotPage(
         events = rememberFeedThreadEvents(onAgree = viewModel::agree),
         onRefresh = viewModel::refresh,
         onSelectCategory = viewModel::selectCategory,
-        onOpenTopics = { navigator.navigate(HotTopicListPageDestination) },
+        onOpenTopics = { navigator.navigate(HotTopicListKey) },
         contentPadding = contentPadding,
     )
 }

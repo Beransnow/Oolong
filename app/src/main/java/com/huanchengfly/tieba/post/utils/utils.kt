@@ -27,10 +27,10 @@ import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
-import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.utils.Util.createSnackbar
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @JvmOverloads
 fun getItemBackgroundDrawable(
@@ -144,7 +144,7 @@ fun getIntermixedColorBackground(
 
 fun launchUrl(
     context: Context,
-    navigator: DestinationsNavigator,
+    navigator: Navigator,
     url: String,
 ) {
     val uri = Uri.parse(url)
@@ -183,7 +183,7 @@ fun launchUrl(
             val threadId = path.substring(3).toLongOrNull()
             if (threadId != null) {
                 navigator.navigate(
-                    ThreadPageDestination(threadId)
+                    ThreadKey(threadId)
                 )
             }
             return
@@ -194,7 +194,7 @@ fun launchUrl(
             ) || host.contains("m.help.baidu.com")
         if (isTiebaLink || context.appPreferences.useWebView) {
             navigator.navigate(
-                WebViewPageDestination(url)
+                WebViewKey(url)
             )
         } else {
             if (context.appPreferences.useCustomTabs) {
