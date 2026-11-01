@@ -125,7 +125,7 @@ import kotlin.math.min
 fun UserProfilePage(
     uid: Long,
     navigator: DestinationsNavigator,
-    viewModel: UserProfileViewModel = pageViewModel(),
+    viewModel: LegacyUserProfileViewModel = pageViewModel(),
 ) {
     val account = LocalAccount.current
 

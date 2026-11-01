@@ -301,34 +301,4 @@ data class UserPostUiState(
     val hidePost: Boolean = false,
 ) : UiState
 
-private fun List<PostInfoList>.toData(): ImmutableList<PostListItemData> {
-    return map { postInfo ->
-        PostListItemData(
-            data = postInfo.wrapImmutable(),
-            contents = postInfo.content.map {
-                PostContentData(
-                    contentText = it.post_content.abstractText,
-                    createTime = it.create_time,
-                    postId = it.post_id,
-                    isSubPost = (it.post_type == 1L),
-                )
-            }.toImmutableList()
-        )
-    }.toImmutableList()
-}
-
-@Immutable
-data class PostListItemData(
-    val data: ImmutableHolder<PostInfoList>,
-//    val blocked: Boolean,
-    val isThread: Boolean = data.get { is_thread } == 1,
-    val contents: ImmutableList<PostContentData> = persistentListOf(),
-)
-
-@Immutable
-data class PostContentData(
-    val contentText: String,
-    val createTime: Long,
-    val postId: Long,
-    val isSubPost: Boolean,
-)
+private fun List<PostInfoList>.toData(): ImmutableList<PostListItemData> = map { it.toItemData() }.toImmutableList()
