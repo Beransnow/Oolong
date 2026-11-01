@@ -51,9 +51,6 @@ import com.huanchengfly.tieba.post.api.models.protos.threadList.AdParam
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequest
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListRequestData
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListRequest
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListRequestData
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import com.huanchengfly.tieba.post.api.retrofit.RetrofitTiebaApi
 import com.huanchengfly.tieba.post.api.urlEncode
@@ -211,22 +208,6 @@ object MixedTiebaApiImpl : ITiebaApi {
 
 
 
-    override fun topicListFlow(): Flow<TopicListResponse> {
-        return RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_V12_API.topicListFlow(
-            buildProtobufRequestBody(
-                TopicListRequest(
-                    TopicListRequestData(
-                        common = buildCommonRequest(clientVersion = ClientVersion.TIEBA_V12),
-                        call_from = "newbang",
-                        list_type = "all",
-                        need_tab_list = "0",
-                        fid = 0L
-                    )
-                ),
-                clientVersion = ClientVersion.TIEBA_V12,
-            )
-        )
-    }
 
     override fun allForumGuideFlow(): Flow<List<ForumGuideBean.LikeForum>> = flow {
         val forums = mutableListOf<ForumGuideBean.LikeForum>()

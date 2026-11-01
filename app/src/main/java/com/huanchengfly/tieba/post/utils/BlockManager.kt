@@ -32,14 +32,11 @@ object BlockManager {
     /** Changes whenever a rule is added or removed, so that what was filtered can be filtered again. */
     val version: StateFlow<Int> = _version.asStateFlow()
 
-    val blackList: List<Block>
+    private val blackList: List<Block>
         get() = blockList.filter { it.category == Block.CATEGORY_BLACK_LIST }
 
-    val whiteList: List<Block>
+    private val whiteList: List<Block>
         get() = blockList.filter { it.category == Block.CATEGORY_WHITE_LIST }
-
-    /** Saves the rule and returns it with its id. The rules in use follow shortly after. */
-    suspend fun addBlock(block: Block): Block = block.copy(id = dao.insert(block.toEntity()))
 
     /** Saves the rule in the background, then calls [callback] on the main thread with whether it was. */
     fun addBlockAsync(
@@ -51,8 +48,6 @@ object BlockManager {
             withContext(Dispatchers.Main) { callback?.invoke(saved) }
         }
     }
-
-    suspend fun removeBlock(id: Long) = dao.delete(id)
 
     /** Starts following the saved rules. */
     fun init() {

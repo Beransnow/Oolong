@@ -9,7 +9,6 @@ import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResp
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.retrofit.ApiResult
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
@@ -206,10 +205,6 @@ interface ITiebaApi {
 
 
 
-    /**
-     * 话题榜
-     */
-    fun topicListFlow(): Flow<TopicListResponse>
 
     /**
      * 全部关注的吧

@@ -6,7 +6,6 @@ import com.huanchengfly.tieba.post.api.models.protos.getUserInfo.GetUserInfoResp
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponse
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponse
 import com.huanchengfly.tieba.post.api.models.protos.threadList.ThreadListResponse
-import com.huanchengfly.tieba.post.api.models.protos.topicList.TopicListResponse
 import com.huanchengfly.tieba.post.api.retrofit.body.MyMultipartBody
 import kotlinx.coroutines.flow.Flow
 import retrofit2.http.Body
@@ -17,10 +16,6 @@ interface OfficialProtobufTiebaApi {
 
 
 
-    @POST("/c/f/recommend/topicList?cmd=309289")
-    fun topicListFlow(
-        @Body body: MyMultipartBody,
-    ): Flow<TopicListResponse>
 
     @POST("/c/f/frs/page?cmd=301001")
     fun frsPageFlow(
