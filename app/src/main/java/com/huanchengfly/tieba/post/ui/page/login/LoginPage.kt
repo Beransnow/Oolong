@@ -46,7 +46,6 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
-import com.huanchengfly.tieba.post.ui.page.webview.isInternalHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -59,6 +58,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.ClientUtils
+import com.huanchengfly.tieba.post.utils.isInternalHost
 import com.huanchengfly.tieba.post.utils.parseCookie
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay

@@ -80,11 +80,7 @@ fun launchUrl(
             }
             return
         }
-        val isTiebaLink =
-            host.contains("tieba.baidu.com") || host.contains("wappass.baidu.com") || host.contains(
-                "ufosdk.baidu.com"
-            ) || host.contains("m.help.baidu.com")
-        if (isTiebaLink || context.appPreferences.useWebView) {
+        if (isInternalHost(host) || context.appPreferences.useWebView) {
             navigator.navigate(
                 WebViewKey(url)
             )

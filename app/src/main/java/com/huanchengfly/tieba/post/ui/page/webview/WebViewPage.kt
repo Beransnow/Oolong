@@ -82,6 +82,7 @@ import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.bdussCookie
 import com.huanchengfly.tieba.post.utils.compose.launchActivityForResult
+import com.huanchengfly.tieba.post.utils.isInternalHost
 import com.huanchengfly.tieba.post.utils.isTiebaHost
 import com.huanchengfly.tieba.post.utils.parseCookie
 import com.huanchengfly.tieba.post.utils.toTiebaKey
@@ -273,19 +274,6 @@ fun WebViewPage(
     }
 }
 
-fun isTiebaHost(host: String): Boolean {
-    return host == "wapp.baidu.com" ||
-        host.contains("tieba.baidu.com") ||
-        host == "tiebac.baidu.com"
-}
-
-fun isInternalHost(host: String): Boolean {
-    return isTiebaHost(host) ||
-        host.contains("wappass.baidu.com") ||
-        host.contains("ufosdk.baidu.com") ||
-        host.contains("m.help.baidu.com")
-}
-
 open class MyWebViewClient(
     protected val nativeNavigator: Navigator? = null,
     /** The account whose login the pages get. */
@@ -304,10 +292,7 @@ open class MyWebViewClient(
         val path = newUri.path?.lowercase() ?: return false
         val isHttp = scheme.startsWith("http")
         val isTieba = isTiebaHost(host)
-        val isInternal = isTieba ||
-            host.contains("wappass.baidu.com") ||
-            host.contains("ufosdk.baidu.com") ||
-            host.contains("m.help.baidu.com")
+        val isInternal = isInternalHost(host)
         return when {
             isHttp && isTieba -> {
                 newUri.toTiebaKey()?.let { direction ->

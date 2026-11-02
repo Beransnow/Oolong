@@ -5,8 +5,16 @@ import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Key
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 
+/** Whether [host] is Tieba's: matched whole, so that a look-alike such as `tieba.baidu.com.example.com` is not. */
 fun isTiebaHost(host: String): Boolean =
-    host == "wapp.baidu.com" || host.contains("tieba.baidu.com") || host == "tiebac.baidu.com"
+    host == "wapp.baidu.com" || host.isHostOf("tieba.baidu.com") || host == "tiebac.baidu.com"
+
+/** Tieba's hosts and Baidu's login and help pages: opened in the app, with its login. */
+fun isInternalHost(host: String): Boolean =
+    isTiebaHost(host) || host.isHostOf("wappass.baidu.com") || host.isHostOf("ufosdk.baidu.com") || host.isHostOf("m.help.baidu.com")
+
+/** Whether this host is [domain] or one under it. */
+private fun String.isHostOf(domain: String): Boolean = equals(domain, ignoreCase = true) || endsWith(".$domain", ignoreCase = true)
 
 /**
  * Maps a Tieba web URL or a Tieba app link to the native page showing the same content, or
