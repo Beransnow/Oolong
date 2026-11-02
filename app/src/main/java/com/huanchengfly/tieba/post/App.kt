@@ -26,6 +26,7 @@ import com.github.gzuliyujiang.oaid.DeviceID
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.components.images.newAppImageLoader
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ThemeSwitcher
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
@@ -646,9 +647,12 @@ class App : Application(), SingletonImageLoader.Factory {
 
         override fun getColorByAttr(context: Context, attrId: Int): Int {
             return when (attrId) {
-                R.attr.colorPrimary, R.attr.colorNewPrimary, R.attr.colorAccent -> {
-                    getColorByAttr(context, attrId, ThemeUtil.getCurrentTheme(checkDynamic = true))
-                }
+                // The theme colour as the pages draw it, which the theme's name alone no longer says
+                R.attr.colorPrimary, R.attr.colorAccent ->
+                    if (isInitialized) currentColors(context).accent.toArgb() else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
+
+                R.attr.colorNewPrimary ->
+                    if (isInitialized) currentColors(context).emphasis.toArgb() else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
 
                 else -> getColorByAttr(context, attrId, ThemeUtil.getCurrentTheme())
             }
