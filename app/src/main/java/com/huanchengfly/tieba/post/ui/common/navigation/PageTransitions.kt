@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.common.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
@@ -34,6 +33,7 @@ import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlin.math.roundToInt
 
@@ -48,8 +48,6 @@ val LocalIsPop = compositionLocalOf { false }
  * pages are transparent over a shared wallpaper.
  */
 object PageTransitions {
-    private const val DurationMillis = 400
-
     /** How far the page underneath moves, as a fraction of the container width. */
     private const val UnderPageOffset = 0.3f
 
@@ -64,9 +62,8 @@ object PageTransitions {
     private val ShadowWidth = 12.dp
     private const val ShadowAlpha = 0.12f
 
-    private val Easing = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
-
-    private fun <T> spec(): FiniteAnimationSpec<T> = tween(DurationMillis, easing = Easing)
+    /** A spring, so a transition interrupted halfway carries on from where it is. */
+    private fun <T> spec(): FiniteAnimationSpec<T> = Motion.settle()
 
     /** Whether pages overlap as they slide, which follows the theme. */
     @Composable
