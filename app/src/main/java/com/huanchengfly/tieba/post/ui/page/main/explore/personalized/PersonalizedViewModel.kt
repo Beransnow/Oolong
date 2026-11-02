@@ -24,11 +24,16 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.mapItems
 import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +42,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** A recommended thread, whether the block rules hide it, and why the user may not want it. */
@@ -61,6 +67,11 @@ data class PersonalizedState(
     /** The threads the user said they don't want, which the list hides. */
     val disliked: ImmutableSet<Long> = persistentSetOf(),
     /**
+     * Threads just disliked, which can still be taken back: each shows a row in its place saying
+     * what the server will do, by thread id, or null when the server says nothing.
+     */
+    val undoable: ImmutableMap<Long, String?> = persistentMapOf(),
+    /**
      * How many threads at the top the last refresh put in front of those already read, which the
      * list marks; 0 when the list was empty before.
      */
@@ -82,8 +93,11 @@ class PersonalizedViewModel @Inject constructor(
     private val pager = MutableStateFlow<Pager<Int, RecommendedThread>?>(null)
     private val local = MutableStateFlow(Local())
 
+    private val pendingDislikes = mutableMapOf<Long, Job>()
+
     private data class Local(
         val disliked: Set<Long> = emptySet(),
+        val undoable: Map<Long, String?> = emptyMap(),
         val newCount: Int = 0,
         val lastRefresh: FeedRefresh? = null,
     )
@@ -97,6 +111,7 @@ class PersonalizedViewModel @Inject constructor(
         PersonalizedState(
             list = list.mapItems { RecommendedItem(rules.feedThread(it.thread), it.dislikeOptions) },
             disliked = local.disliked.toImmutableSet(),
+            undoable = local.undoable.toImmutableMap(),
             newCount = local.newCount,
             lastRefresh = local.lastRefresh,
         )
@@ -123,12 +138,26 @@ class PersonalizedViewModel @Inject constructor(
         }
     }
 
-    /** Hides [thread] and tells the server why the user doesn't want it; it stays hidden if that fails. */
+    /**
+     * Puts a row that can take it back in place of [thread], then after a while hides it and tells
+     * the server why the user doesn't want it; it stays hidden if that fails.
+     */
     fun dislike(thread: ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) {
-        local.update { it.copy(disliked = it.disliked + thread.threadId) }
-        actions.launch("dislike-${thread.threadId}") {
+        val threadId = thread.threadId
+        if (threadId in pendingDislikes || threadId in local.value.disliked) return
+        local.update { it.copy(undoable = it.undoable + (threadId to reasons.firstNotNullOfOrNull { r -> r.toast })) }
+        pendingDislikes[threadId] = viewModelScope.launch {
+            delay(UNDO_WINDOW)
+            pendingDislikes.remove(threadId)
+            local.update { it.copy(undoable = it.undoable - threadId, disliked = it.disliked + threadId) }
             runCatching { repository.dislike(thread, reasons, clickTime) }
         }
+    }
+
+    /** Takes back disliking thread [threadId] while its row still shows, before the server hears of it. */
+    fun undoDislike(threadId: Long) {
+        pendingDislikes.remove(threadId)?.cancel() ?: return
+        local.update { it.copy(undoable = it.undoable - threadId) }
     }
 
     private fun Pager<Int, RecommendedThread>.setAgreed(threadId: Long, agree: Boolean) = update { items ->
@@ -161,5 +190,10 @@ class PersonalizedViewModel @Inject constructor(
                 lastRefresh = FeedRefresh(count, (it.lastRefresh?.id ?: 0) + 1),
             )
         }
+    }
+
+    private companion object {
+        /** How long a disliked thread can be taken back. */
+        const val UNDO_WINDOW = 5_000L
     }
 }

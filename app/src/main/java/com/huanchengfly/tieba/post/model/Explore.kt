@@ -22,10 +22,7 @@ data class DislikeOption(
     val schema: String? = null,
     /** What to tell the user once disliked, when the server says. */
     val toast: String? = null,
-) {
-    /** Whether the option is long enough to take a whole row of the menu. */
-    val wide: Boolean get() = id == 7
-}
+)
 
 /** A topic on the hot topics ranking. */
 @Immutable

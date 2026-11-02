@@ -1,12 +1,15 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +70,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,6 +89,7 @@ fun PersonalizedPage(
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
         onDislike = viewModel::dislike,
+        onUndoDislike = viewModel::undoDislike,
         contentPadding = contentPadding,
     )
 }
@@ -101,6 +106,7 @@ fun PersonalizedScreen(
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
+    onUndoDislike: (threadId: Long) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val list = state.list
@@ -146,8 +152,10 @@ fun PersonalizedScreen(
                     items = list.items,
                     newCount = state.newCount,
                     disliked = state.disliked,
+                    undoable = state.undoable,
                     events = events,
                     onDislike = onDislike,
+                    onUndoDislike = onUndoDislike,
                     onRefresh = onRefresh,
                 )
             }
@@ -203,8 +211,10 @@ private fun FeedList(
     items: ImmutableList<RecommendedItem>,
     newCount: Int,
     disliked: ImmutableSet<Long>,
+    undoable: ImmutableMap<Long, String?>,
     events: FeedThreadEvents,
     onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
+    onUndoDislike: (threadId: Long) -> Unit,
     onRefresh: () -> Unit,
 ) {
     MyLazyColumn(
@@ -227,7 +237,8 @@ private fun FeedList(
             }
         ) { index, (feed, dislikeOptions) ->
             val (item, blocked) = feed
-            val isHidden = item.get { threadId } in disliked
+            val threadId = item.get { threadId }
+            val isHidden = threadId in disliked
             val isRefreshPosition = index + 1 == newCount
             val showDivider = !isHidden && !isRefreshPosition && index < items.size - 1
             Container {
@@ -237,32 +248,42 @@ private fun FeedList(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column {
-                        BlockableContent(
-                            blocked = blocked,
-                            blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 16.dp)
-                        ) {
-                            Column {
-                                FeedCard(
-                                    item = item,
-                                    onClick = events.onOpen,
-                                    onClickReply = events.onOpenReplies,
-                                    onAgree = events.onAgree,
-                                    onClickForum = events.onOpenForum,
-                                    onClickUser = events.onOpenUser,
-                                    onClickOriginThread = events.onOpenOrigin,
+                        AnimatedContent(
+                            targetState = threadId in undoable,
+                            transitionSpec = { fadeIn() togetherWith fadeOut() using SizeTransform(clip = true) },
+                            label = "dislike",
+                        ) { undo ->
+                            if (undo) {
+                                UndoDislikeRow(text = undoable[threadId], onUndo = { onUndoDislike(threadId) })
+                            } else {
+                                BlockableContent(
+                                    blocked = blocked,
+                                    blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
                                 ) {
-                                    if (dislikeOptions.isNotEmpty()) {
-                                        Dislike(
-                                            options = dislikeOptions,
-                                            onDislike = { clickTime, reasons -> onDislike(item.get(), reasons, clickTime) }
-                                        )
+                                    Column {
+                                        FeedCard(
+                                            item = item,
+                                            onClick = events.onOpen,
+                                            onClickReply = events.onOpenReplies,
+                                            onAgree = events.onAgree,
+                                            onClickForum = events.onOpenForum,
+                                            onClickUser = events.onOpenUser,
+                                            onClickOriginThread = events.onOpenOrigin,
+                                        ) {
+                                            FeedMenu(
+                                                threadId = threadId,
+                                                title = item.get { title },
+                                                options = dislikeOptions,
+                                                onDislike = { clickTime, reasons -> onDislike(item.get(), reasons, clickTime) },
+                                            )
+                                        }
+                                        if (showDivider) {
+                                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                        }
                                     }
-                                }
-                                if (showDivider) {
-                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                             }
                         }
@@ -296,6 +317,38 @@ private fun RefreshTip(
         Text(
             text = stringResource(id = R.string.tip_refresh),
             style = MaterialTheme.typography.subtitle1
+        )
+    }
+}
+
+/** In place of a thread just disliked: what happens next, and a way to take it back. */
+@Composable
+private fun UndoDislikeRow(text: String?, onUndo: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(ExtendedTheme.colors.chip)
+            .padding(start = 16.dp, end = 4.dp),
+    ) {
+        Text(
+            text = text ?: stringResource(id = R.string.tip_disliked),
+            color = ExtendedTheme.colors.textSecondary,
+            style = MaterialTheme.typography.body2,
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 14.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.button_undo),
+            color = ExtendedTheme.colors.emphasis,
+            style = MaterialTheme.typography.subtitle2,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onUndo)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         )
     }
 }

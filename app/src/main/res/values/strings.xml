@@ -143,8 +143,7 @@
     <string name="settings_collect_thread_see_lz">打开时只看楼主</string>
     <string name="settings_collect_thread_desc_sort">打开时倒序浏览</string>
     <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
-    <string name="button_submit_dislike">不感兴趣</string>
-    <string name="title_dislike">不喜欢推荐用户的理由</string>
+    <string name="tip_disliked">将减少此类推荐</string>
     <string name="tip_refresh">上次阅读到此处，点击刷新</string>
     <string name="button_finish">完成</string>
     <string name="title_custom_theme">设置自定义主题</string>

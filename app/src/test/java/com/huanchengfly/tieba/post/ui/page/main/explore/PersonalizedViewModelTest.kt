@@ -14,6 +14,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -75,8 +76,30 @@ class PersonalizedViewModelTest {
 
         viewModel.dislike(thread(2).thread, emptyList(), clickTime = 5)
         runCurrent()
+        assertEquals(setOf(2L), viewModel.state.value.undoable.keys)
+        coVerify(exactly = 0) { repository.dislike(any(), any(), any()) }
+        advanceUntilIdle()
 
         assertEquals(setOf(2L), viewModel.state.value.disliked)
+        assertEquals(emptySet(), viewModel.state.value.undoable.keys)
+        coVerify { repository.dislike(any(), any(), 5) }
+    }
+
+    @Test
+    fun `a dislike taken back in time never reaches the server`() = runTest {
+        coEvery { repository.recommended(true, 1) } returns listOf(thread(1), thread(2))
+        val viewModel = createViewModel()
+        viewModel.open()
+        runCurrent()
+
+        viewModel.dislike(thread(2).thread, emptyList(), clickTime = 5)
+        runCurrent()
+        viewModel.undoDislike(2)
+        advanceUntilIdle()
+
+        assertEquals(emptySet(), viewModel.state.value.disliked)
+        assertEquals(emptySet(), viewModel.state.value.undoable.keys)
+        coVerify(exactly = 0) { repository.dislike(any(), any(), any()) }
     }
 
     @Test
