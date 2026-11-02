@@ -160,7 +160,7 @@ private fun Pattern.cleaned(): Pattern = when (this) {
 }
 
 /** Levels a row can be set to. */
-val LevelRange = 1..18
+val LevelRange = 2..18
 
 const val DefaultLevel = 3
 const val DefaultLength = 5

@@ -79,6 +79,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
+import com.huanchengfly.tieba.post.ui.widgets.compose.Stepper
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 
@@ -442,36 +443,14 @@ private fun Slash() {
 }
 
 @Composable
-private fun LevelStepper(level: Int, onChange: (Int) -> Unit) {
-    val colors = ExtendedTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        StepButton(Symbols.Remove, stringResource(id = R.string.rule_level_down), enabled = level > LevelRange.first) { onChange(level - 1) }
-        Text(
-            text = stringResource(id = R.string.rule_level, level),
-            style = TextStyles.bodyCompact.copy(fontFeatureSettings = "tnum"),
-            color = colors.text,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(52.dp),
-        )
-        StepButton(Symbols.Add, stringResource(id = R.string.rule_level_up), enabled = level < LevelRange.last) { onChange(level + 1) }
-    }
-}
-
-@Composable
-private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
-    val colors = ExtendedTheme.colors
-    Icon(
-        icon,
-        contentDescription = label,
-        tint = if (enabled) colors.text else colors.textDisabled,
-        modifier = Modifier
-            .size(32.dp)
-            .clip(Corners.full)
-            .background(colors.background)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(7.dp),
-    )
-}
+private fun LevelStepper(level: Int, onChange: (Int) -> Unit) = Stepper(
+    value = level,
+    range = LevelRange,
+    text = stringResource(id = R.string.rule_level, level),
+    down = stringResource(id = R.string.rule_level_down),
+    up = stringResource(id = R.string.rule_level_up),
+    onChange = onChange,
+)
 
 @Composable
 private fun LengthInput(length: Int, onChange: (Int) -> Unit) {

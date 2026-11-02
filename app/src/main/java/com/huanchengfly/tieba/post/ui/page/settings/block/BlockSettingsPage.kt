@@ -15,19 +15,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.putBoolean
+import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.repository.DefaultLowLevel
 import com.huanchengfly.tieba.post.repository.HideBlockedContentKey
 import com.huanchengfly.tieba.post.repository.LowLevelEnabledKey
 import com.huanchengfly.tieba.post.repository.LowLevelKey
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.DropDownPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.navigation.BlockListKey
@@ -39,6 +40,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.SegmentedControl
+import com.huanchengfly.tieba.post.ui.widgets.compose.Stepper
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.collections.immutable.persistentListOf
 
@@ -56,6 +58,7 @@ fun BlockSettingsPage(
     val activeRules by viewModel.activeRules.collectAsStateWithLifecycle()
     val lowLevel by context.dataStore.collectPreferenceAsState(booleanPreferencesKey(LowLevelEnabledKey), false)
     val hideBlocked by context.dataStore.collectPreferenceAsState(booleanPreferencesKey(HideBlockedContentKey), false)
+    val lowLevelBelow by context.dataStore.collectPreferenceAsState(stringPreferencesKey(LowLevelKey), DefaultLowLevel.toString())
     val foldLabel = stringResource(id = R.string.settings_blocked_fold)
     val hideLabel = stringResource(id = R.string.settings_blocked_hide)
     val spoilerDialog = rememberDialogState()
@@ -87,7 +90,6 @@ fun BlockSettingsPage(
         val commonGroup = stringResource(id = R.string.settings_block_common)
         val blockedGroup = stringResource(id = R.string.settings_blocked_content)
         val rulesGroup = stringResource(id = R.string.settings_block_rules_group)
-        val levels = (2..10).associate { it.toString() to stringResource(id = R.string.rule_level, it) }
         PrefsScreen(
             dataStore = context.dataStore,
             dividerThickness = 0.dp,
@@ -103,12 +105,20 @@ fun BlockSettingsPage(
                 }
                 if (lowLevel) {
                     prefsItem {
-                        DropDownPref(
-                            key = LowLevelKey,
+                        val level = lowLevelBelow.toIntOrNull() ?: DefaultLowLevel
+                        TextPref(
                             title = stringResource(id = R.string.settings_block_low_level_below),
-                            defaultValue = DefaultLowLevel.toString(),
-                            useSelectedAsSummary = true,
-                            entries = levels,
+                            enabled = true,
+                            trailingContent = {
+                                Stepper(
+                                    value = level,
+                                    range = LevelRange,
+                                    text = stringResource(id = R.string.rule_level, level),
+                                    down = stringResource(id = R.string.rule_level_down),
+                                    up = stringResource(id = R.string.rule_level_up),
+                                    onChange = { context.dataStore.putString(LowLevelKey, it.toString()) },
+                                )
+                            },
                         )
                     }
                 }
