@@ -81,6 +81,7 @@ import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -416,6 +417,7 @@ class MainActivityV2 : BaseComposeActivity() {
                 CompositionLocalProvider(LocalNavigator provides navigator) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         AppNavDisplay(backStack = backStack)
+                        AppDialogHost()
                     }
                 }
 

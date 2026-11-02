@@ -12,13 +12,13 @@ import android.os.PersistableBundle
 import androidx.core.content.ContextCompat
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.legacyThreadRemoteDataSource
-import com.huanchengfly.tieba.post.components.dialogs.LoadingDialog
 import com.huanchengfly.tieba.post.pendingIntentFlagMutable
 import com.huanchengfly.tieba.post.receivers.AutoSignAlarm
 import com.huanchengfly.tieba.post.services.OKSignService
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogs
 import java.util.Calendar
 
 object TiebaUtil {
@@ -119,9 +119,7 @@ object TiebaUtil {
         navigator: Navigator,
         postId: String,
     ) {
-        val dialog = LoadingDialog(context).apply { show() }
-        val url = runCatching { legacyThreadRemoteDataSource.reportUrl(postId.toLong()) }
-        dialog.dismiss()
+        val url = AppDialogs.withLoading { runCatching { legacyThreadRemoteDataSource.reportUrl(postId.toLong()) } }
         url.onSuccess { navigator.navigate(WebViewKey(it)) }
             .onFailure { context.toastShort(R.string.toast_load_failed) }
     }

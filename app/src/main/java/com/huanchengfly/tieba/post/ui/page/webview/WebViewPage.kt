@@ -56,8 +56,6 @@ import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
-import com.huanchengfly.tieba.post.components.dialogs.PermissionDialog
-import com.huanchengfly.tieba.post.models.PermissionBean
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -66,6 +64,8 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogs
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
-import com.huanchengfly.tieba.post.utils.DialogUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -381,17 +380,14 @@ open class MyWebViewClient(
             context.getString(R.string.name_multi_app)
         }
         val scheme = intent.scheme ?: ""
-        PermissionDialog(
+        AppDialogs.ask(
             context,
-            PermissionBean(
-                PermissionDialog.CustomPermission.PERMISSION_START_APP,
-                "${host}_$scheme",
-                context.getString(R.string.title_start_app_permission, host, appName),
-                R.drawable.ic_round_exit_to_app
-            )
+            AppDialog.Permission(
+                key = permissionKey("${host}_$scheme", PERMISSION_START_APP),
+                title = context.getString(R.string.title_start_app_permission, host, appName),
+                icon = R.drawable.ic_round_exit_to_app,
+            ) { granted, _ -> if (granted) context.startActivity(intent) }
         )
-            .setOnGrantedCallback { context.startActivity(intent) }
-            .show()
     }
 
     private fun launchThirdPartyApp(
@@ -467,21 +463,20 @@ class MyWebChromeClient(
         callback: GeolocationPermissions.Callback?,
     ) {
         if (origin == null || callback == null) return
-        PermissionDialog(
+        AppDialogs.ask(
             context,
-            PermissionBean(
-                PermissionDialog.CustomPermission.PERMISSION_LOCATION,
-                origin,
-                context.getString(
+            AppDialog.Permission(
+                key = permissionKey(origin, PERMISSION_LOCATION),
+                title = context.getString(
                     R.string.title_ask_permission,
                     origin,
                     context.getString(R.string.common_permission_location)
                 ),
-                R.drawable.ic_round_location_on
-            )
-        )
-            .setOnGrantedCallback { isForever: Boolean ->
-                PermissionUtils.askPermission(
+                icon = R.drawable.ic_round_location_on,
+            ) { granted, isForever ->
+                if (!granted) {
+                    callback.invoke(origin, false, false)
+                } else PermissionUtils.askPermission(
                     context,
                     PermissionData(
                         listOf(
@@ -502,14 +497,7 @@ class MyWebChromeClient(
                     callback.invoke(origin, false, false)
                 }
             }
-            .setOnDeniedCallback {
-                callback.invoke(
-                    origin,
-                    false,
-                    false
-                )
-            }
-            .show()
+        )
     }
 
     override fun onShowFileChooser(
@@ -530,14 +518,7 @@ class MyWebChromeClient(
         message: String?,
         result: JsResult?,
     ): Boolean {
-        DialogUtil.build(view?.context ?: context)
-            .setMessage(message)
-            .setPositiveButton(R.string.button_sure_default) { _, _ ->
-                result?.confirm()
-            }
-            .setCancelable(false)
-            .create()
-            .show()
+        AppDialogs.show(AppDialog.Message(message = message.orEmpty(), onConfirm = { result?.confirm() }))
         return true
     }
 
@@ -551,34 +532,24 @@ class MyWebChromeClient(
         if ("ClipboardGuardCopyRequest".equals(message, ignoreCase = true)) {
             val uri = Uri.parse(url)
             if (uri != null && uri.host != null) {
-                PermissionDialog(
+                AppDialogs.ask(
                     context,
-                    PermissionBean(
-                        PermissionDialog.CustomPermission.PERMISSION_CLIPBOARD_COPY,
-                        uri.host,
-                        context.getString(
-                            R.string.title_ask_permission_clipboard_copy,
-                            uri.host
-                        ),
-                        R.drawable.ic_round_file_copy
-                    )
+                    AppDialog.Permission(
+                        key = permissionKey(uri.host!!, PERMISSION_CLIPBOARD_COPY),
+                        title = context.getString(R.string.title_ask_permission_clipboard_copy, uri.host),
+                        icon = R.drawable.ic_round_file_copy,
+                    ) { granted, _ -> if (granted) result.confirm() else result.cancel() }
                 )
-                    .setOnGrantedCallback { result.confirm() }
-                    .setOnDeniedCallback { result.cancel() }
-                    .show()
             }
         } else {
-            DialogUtil.build(view.context)
-                .setTitle("Confirm")
-                .setMessage(message)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    result.confirm()
-                }
-                .setNegativeButton(android.R.string.cancel) { _, _ ->
-                    result.cancel()
-                }
-                .create()
-                .show()
+            AppDialogs.show(
+                AppDialog.Message(
+                    message = message.orEmpty(),
+                    onConfirm = { result.confirm() },
+                    cancel = context.getString(R.string.button_cancel),
+                    onCancel = { result.cancel() },
+                )
+            )
         }
         return true
     }
@@ -587,3 +558,10 @@ class MyWebChromeClient(
 @Composable
 fun MyWebView() {
 }
+
+/** The key a site's answer is kept under: what it asked about, and for whom. */
+private fun permissionKey(data: String, permission: Int) = "${data}_$permission"
+
+private const val PERMISSION_LOCATION = 0
+private const val PERMISSION_START_APP = 1
+private const val PERMISSION_CLIPBOARD_COPY = 2

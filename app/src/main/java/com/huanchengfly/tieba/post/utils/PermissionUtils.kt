@@ -10,8 +10,9 @@ import com.hjq.permissions.OnPermissionInterceptor
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.components.dialogs.RequestPermissionTipDialog
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogs
 
 object PermissionUtils {
     const val READ_CALENDAR = "android.permission.READ_CALENDAR"
@@ -381,7 +382,7 @@ class ShowPermissionTipInterceptor(val permissions: List<String>, val descriptio
 
     private var mRequestFlag = false
 
-    private var tipDialog: RequestPermissionTipDialog? = null
+    private var tip: AppDialog.PermissionTip? = null
 
     override fun launchPermissionRequest(
         activity: Activity,
@@ -397,11 +398,11 @@ class ShowPermissionTipInterceptor(val permissions: List<String>, val descriptio
             if (activity.isFinishing || activity.isDestroyed) {
                 return@postDelayed
             }
-            tipDialog = RequestPermissionTipDialog(
-                activity,
-                PermissionUtils.PermissionData(permissions, description)
-            ).apply { show() }
-            tipDialog?.show()
+            val name = PermissionUtils.transformText(activity, permissions).first()
+            tip = AppDialog.PermissionTip(
+                title = activity.getString(R.string.title_request_permission_tip_dialog, name),
+                message = activity.getString(R.string.message_request_permission_tip_dialog, description),
+            ).also { AppDialogs.show(it) }
         }, 300)
     }
 
@@ -412,7 +413,8 @@ class ShowPermissionTipInterceptor(val permissions: List<String>, val descriptio
         callback: OnPermissionCallback?
     ) {
         mRequestFlag = false
-        runCatching { tipDialog?.dismiss() }
+        tip?.let { AppDialogs.dismiss(it) }
+        tip = null
     }
 }
 

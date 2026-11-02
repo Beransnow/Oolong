@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.activities
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.app.Activity
-import android.app.Dialog
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -20,7 +19,6 @@ import android.widget.TextView
 import androidx.annotation.CallSuper
 import androidx.annotation.ColorInt
 import androidx.annotation.Keep
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.gyf.immersionbar.ImmersionBar
 import com.huanchengfly.tieba.post.App
@@ -30,7 +28,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ExtraRefreshable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayback
 import com.huanchengfly.tieba.post.utils.AppPreferencesUtils
-import com.huanchengfly.tieba.post.utils.DialogUtil
 import com.huanchengfly.tieba.post.utils.HandleBackUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.CoroutineScope
@@ -68,24 +65,6 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
             resources.updateConfiguration(configuration, resources.displayMetrics)
         }
         return resources
-    }
-
-    protected fun showDialog(dialog: Dialog): Boolean {
-        if (isActivityRunning) {
-            dialog.show()
-            return true
-        }
-        return false
-    }
-
-    fun showDialog(builder: AlertDialog.Builder.() -> Unit): AlertDialog {
-        val dialog = DialogUtil.build(this)
-            .apply(builder)
-            .create()
-        if (isActivityRunning) {
-            dialog.show()
-        }
-        return dialog
     }
 
     override fun onStop() {
