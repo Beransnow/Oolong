@@ -1,0 +1,200 @@
+package com.huanchengfly.tieba.post.ui.common.theme.compose
+
+import android.content.Context
+import androidx.compose.ui.graphics.Color
+import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
+
+private val TiebaBlue = Color(0xFF4477E0)
+private val NightBlue = Color(0xFF5588D7)
+
+/** What every light theme shares; they differ only in their accent and emphasis. */
+private fun light(theme: String, accent: Color, emphasis: Color = accent) = ExtendedColors(
+    theme = theme,
+    isNightMode = false,
+    accent = accent,
+    onAccent = Color.White,
+    emphasis = emphasis,
+    background = Color.White,
+    sheet = Color.White,
+    card = Color.White,
+    inset = Color(0xFFF8F8F8),
+    chip = Color(0xFFF8F8F8),
+    onChip = Color(0xFF808080),
+    divider = Color(0xFFF5F5F5),
+    text = Color(0xDE000000),
+    textSecondary = Color(0x99000000),
+    textDisabled = Color(0xFF696969),
+    topBarContent = Color.Black,
+    topBarContentSecondary = Color(0xDD545967),
+    searchField = Color(0xFFF8F8F8),
+    onSearchField = Color(0xFFBFBFBF),
+    refreshIndicator = Color.White,
+    menu = Color.White,
+    invertChip = emphasis,
+    onInvertChip = Color.White,
+)
+
+/** A night theme by its surfaces; they share the accent, emphasis and text. */
+private fun night(
+    theme: String,
+    background: Color,
+    card: Color,
+    inset: Color,
+    chip: Color,
+    onChip: Color,
+    divider: Color,
+    searchField: Color,
+    onSearchField: Color,
+    refreshIndicator: Color,
+) = ExtendedColors(
+    theme = theme,
+    isNightMode = true,
+    accent = TiebaBlue,
+    onAccent = background,
+    emphasis = NightBlue,
+    background = background,
+    sheet = background,
+    card = card,
+    inset = inset,
+    chip = chip,
+    onChip = onChip,
+    divider = divider,
+    text = Color(0xDEEEEEEE),
+    textSecondary = Color(0x99EEEEEE),
+    textDisabled = Color(0xCC808080),
+    topBarContent = Color(0xFFEEEEEE),
+    topBarContentSecondary = Color(0xCCEEEEEE),
+    searchField = searchField,
+    onSearchField = onSearchField,
+    refreshIndicator = refreshIndicator,
+    menu = card,
+    invertChip = NightBlue.copy(alpha = 0.3f),
+    onInvertChip = NightBlue,
+)
+
+private val BlueDark = night(
+    ThemeUtil.THEME_BLUE_DARK,
+    background = Color(0xFF17212B),
+    card = Color(0xFF202B37),
+    inset = Color(0xFF242F3D),
+    chip = Color(0xFF242F3D),
+    onChip = Color(0xFF68737E),
+    divider = Color(0xFF242F3D),
+    searchField = Color(0xFF242F3D),
+    onSearchField = Color(0xFF626C79),
+    refreshIndicator = Color(0xFF202B37),
+)
+
+private val GreyDark = night(
+    ThemeUtil.THEME_GREY_DARK,
+    background = Color(0xFF202020),
+    card = Color(0xFF2A2A2A),
+    inset = Color(0xFF1E1E1E),
+    chip = Color(0xFF323232),
+    onChip = Color(0xFF808080),
+    divider = Color(0xFF1E1E1E),
+    searchField = Color(0xFF2C2C2C),
+    onSearchField = Color(0xFF5C5C5C),
+    refreshIndicator = Color(0xFF252525),
+)
+
+private val AmoledDark = night(
+    ThemeUtil.THEME_AMOLED_DARK,
+    background = Color.Black,
+    card = Color(0xFF101010),
+    inset = Color(0xFF1E1E1E),
+    chip = Color(0xFF1E1E1E),
+    onChip = Color(0xFF808080),
+    divider = Color(0xFF1E1E1E),
+    searchField = Color(0xFF1E1E1E),
+    onSearchField = Color(0xFF5C5C5C),
+    refreshIndicator = Color(0xFF1C1C1C),
+)
+
+/**
+ * The translucent theme with light text over a dark wallpaper. The page itself is clear; what
+ * must stay opaque, as sheets, menus and spinners, takes [ExtendedColors.sheet].
+ */
+private fun translucentLight(accent: Color) = ExtendedColors(
+    theme = ThemeUtil.THEME_TRANSLUCENT_LIGHT,
+    isNightMode = false,
+    accent = accent,
+    onAccent = Color.White,
+    emphasis = accent,
+    background = Color.Transparent,
+    sheet = Color(0xFF202020),
+    card = Color(0x10FFFFFF),
+    inset = Color(0x15FFFFFF),
+    chip = Color(0x18F8F8F8),
+    onChip = Color(0xFF808080),
+    divider = Color(0x10FFFFFF),
+    text = Color(0xDEFFFFFF),
+    textSecondary = Color(0x99FFFFFF),
+    textDisabled = Color(0x61FFFFFF),
+    topBarContent = Color(0xDFFFFFFF),
+    topBarContentSecondary = Color(0x8AFFFFFF),
+    searchField = Color(0x10FFFFFF),
+    onSearchField = Color(0xFFBFBFBF),
+    refreshIndicator = Color(0xFF202020),
+    menu = Color(0xFF202020),
+    invertChip = accent,
+    onInvertChip = Color.White,
+)
+
+/** The translucent theme with dark text over a light wallpaper. */
+private fun translucentDark(accent: Color) = ExtendedColors(
+    theme = ThemeUtil.THEME_TRANSLUCENT_DARK,
+    isNightMode = false,
+    accent = accent,
+    onAccent = Color(0xFF212121),
+    emphasis = accent,
+    background = Color.Transparent,
+    sheet = Color(0xFFF8F8F8),
+    card = Color(0x20000000),
+    inset = Color(0x2A000000),
+    chip = Color(0x2A323232),
+    onChip = Color(0xFF808080),
+    divider = Color(0x15000000),
+    text = Color(0xDE000000),
+    textSecondary = Color(0x99000000),
+    textDisabled = Color(0x80000000),
+    topBarContent = Color.Black,
+    topBarContentSecondary = Color(0xB3000000),
+    searchField = Color(0x20000000),
+    onSearchField = Color(0xFF5C5C5C),
+    refreshIndicator = Color(0xFFF8F8F8),
+    menu = Color(0xFFF8F8F8),
+    invertChip = accent,
+    onInvertChip = Color(0xFF212121),
+)
+
+/**
+ * The colours of [theme], a theme name as [ThemeUtil] gives it, with the translucent theme named
+ * by its variant. [picked] is the colour the user picked for the custom or translucent theme;
+ * other themes ignore it.
+ */
+fun themeColors(theme: String, picked: Color? = null): ExtendedColors = when (theme) {
+    ThemeUtil.THEME_BLACK -> light(theme, accent = Color.Black)
+    ThemeUtil.THEME_BLUE -> light(theme, accent = TiebaBlue)
+    ThemeUtil.THEME_PURPLE -> light(theme, accent = Color(0xFF512DA8))
+    ThemeUtil.THEME_PINK -> light(theme, accent = Color(0xFFFF9A9E))
+    ThemeUtil.THEME_RED -> light(theme, accent = Color(0xFFC51100))
+    ThemeUtil.THEME_CUSTOM -> light(theme, accent = picked ?: TiebaBlue)
+    ThemeUtil.THEME_BLUE_DARK -> BlueDark
+    ThemeUtil.THEME_GREY_DARK -> GreyDark
+    ThemeUtil.THEME_AMOLED_DARK -> AmoledDark
+    ThemeUtil.THEME_TRANSLUCENT_LIGHT -> translucentLight(picked ?: TiebaBlue)
+    ThemeUtil.THEME_TRANSLUCENT_DARK -> translucentDark(picked ?: TiebaBlue)
+    else -> light(ThemeUtil.THEME_DEFAULT, accent = TiebaBlue, emphasis = Color.Black)
+}
+
+/** The colour the user picked for [theme], if it is the custom or translucent theme. */
+fun pickedColor(context: Context, theme: String): Color? {
+    val saved = when {
+        theme == ThemeUtil.THEME_CUSTOM -> context.appPreferences.customPrimaryColor
+        ThemeUtil.isTranslucentTheme(theme) -> context.appPreferences.translucentPrimaryColor
+        else -> null
+    }
+    return saved?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
+}

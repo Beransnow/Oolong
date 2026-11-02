@@ -3,7 +3,6 @@ package com.huanchengfly.tieba.post.ui.common.theme.compose
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.material.Colors
-import androidx.compose.material.ContentAlpha
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
@@ -17,8 +16,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.compose.darken
@@ -215,48 +212,6 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
     )
 }
 
-/**
- * The colours of [theme]. [nowTheme] is the variant to draw, which for the translucent theme
- * normally comes from the saved settings; previews pass another.
- */
-@Composable
-internal fun getThemeColorForTheme(theme: String, nowTheme: String = ThemeUtil.getCurrentTheme(theme)): ExtendedColors {
-    val context = LocalContext.current
-    fun color(attr: Int) = Color(App.ThemeDelegate.getColorByAttr(context, attr, nowTheme))
-    val textColor = color(R.attr.colorText)
-    val emphasis = color(R.attr.colorNewPrimary)
-    val card = color(R.attr.colorCard)
-    val sheet = color(R.attr.colorWindowBackground)
-    val translucent = ThemeUtil.isTranslucentTheme(nowTheme)
-    val night = ThemeUtil.isNightMode(nowTheme)
-    return ExtendedColors(
-        theme = nowTheme,
-        isNightMode = night,
-        accent = color(R.attr.colorAccent),
-        onAccent = color(R.attr.colorOnAccent),
-        emphasis = emphasis,
-        background = color(R.attr.colorBackground),
-        sheet = sheet,
-        card = card,
-        inset = color(R.attr.colorFloorCard),
-        chip = color(R.attr.colorChip),
-        onChip = color(R.attr.colorOnChip),
-        divider = color(R.attr.colorDivider),
-        text = textColor.copy(alpha = ContentAlpha.high),
-        textSecondary = textColor.copy(alpha = ContentAlpha.medium),
-        textDisabled = color(R.attr.color_text_disabled),
-        topBarContent = color(R.attr.colorToolbarItem),
-        topBarContentSecondary = color(R.attr.colorToolbarItemSecondary),
-        searchField = color(R.attr.colorToolbarSurface),
-        onSearchField = color(R.attr.colorOnToolbarSurface),
-        // Over a wallpaper the spinners and menus need an opaque surface
-        refreshIndicator = if (translucent) sheet else color(R.attr.colorIndicator),
-        menu = if (translucent) sheet else card,
-        invertChip = if (night) emphasis.copy(alpha = 0.3f) else emphasis,
-        onInvertChip = if (night) emphasis else color(R.attr.colorOnAccent),
-    )
-}
-
 @Composable
 fun TiebaLiteTheme(
     content: @Composable () -> Unit
@@ -277,7 +232,8 @@ fun TiebaLiteTheme(
     val useDynamicTheme = isDynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val extendedColors = if (!useDynamicTheme || ThemeUtil.isTranslucentTheme(theme)) {
-        getThemeColorForTheme(theme)
+        val nowTheme = ThemeUtil.getCurrentTheme(theme)
+        themeColors(nowTheme, pickedColor(context, nowTheme))
     } else {
         getDynamicColor(theme, dynamicTonalPalette(context))
     }

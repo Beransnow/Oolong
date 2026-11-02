@@ -82,7 +82,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
-import com.huanchengfly.tieba.post.ui.common.theme.compose.getThemeColorForTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.themeColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCardOptions
@@ -241,9 +241,7 @@ private fun WallpaperPreview(source: File, version: Int, wallpaper: TranslucentW
 /** The translucent theme's colours for [wallpaper], whatever theme the app uses now. */
 @Composable
 private fun PreviewColors(wallpaper: TranslucentWallpaper, content: @Composable () -> Unit) {
-    val colors = getThemeColorForTheme(ThemeUtil.THEME_TRANSLUCENT, wallpaper.variant).let { colors ->
-        wallpaper.accent?.let { colors.copy(emphasis = Color(it), invertChip = Color(it)) } ?: colors
-    }
+    val colors = themeColors(wallpaper.variant, wallpaper.accent?.let { Color(it) })
     CompositionLocalProvider(LocalExtendedColors provides colors, content = content)
 }
 

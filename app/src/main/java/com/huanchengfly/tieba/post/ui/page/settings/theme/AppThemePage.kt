@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings.theme
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
@@ -63,11 +64,12 @@ import coil3.compose.AsyncImage
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pickedColor
+import com.huanchengfly.tieba.post.ui.common.theme.compose.themeColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.TranslucentThemeKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -100,13 +102,7 @@ fun AppThemePage(
     val customPrimaryColorDialogState = rememberDialogState()
     var customPrimaryColor by remember {
         mutableStateOf(
-            Color(
-                App.ThemeDelegate.getColorByAttr(
-                    context,
-                    R.attr.colorPrimary,
-                    ThemeUtil.THEME_CUSTOM
-                )
-            )
+            savedCustomColor(context)
         )
     }
 
@@ -125,13 +121,7 @@ fun AppThemePage(
             DialogNegativeButton(
                 text = stringResource(id = R.string.button_cancel),
                 onClick = {
-                    customPrimaryColor = Color(
-                        App.ThemeDelegate.getColorByAttr(
-                            context,
-                            R.attr.colorPrimary,
-                            ThemeUtil.THEME_CUSTOM
-                        )
-                    )
+                    customPrimaryColor = savedCustomColor(context)
                 }
             )
         }
@@ -399,51 +389,7 @@ fun AppThemePage(
                     key = { _, item -> item }
                 ) { index, item ->
                     val name = themeNames[index]
-                    val backgroundColor = remember {
-                        Color(
-                            App.ThemeDelegate.getColorByAttr(
-                                context,
-                                R.attr.colorBackground,
-                                item
-                            )
-                        )
-                    }
-                    val primaryColor = remember {
-                        Color(
-                            App.ThemeDelegate.getColorByAttr(
-                                context,
-                                R.attr.colorNewPrimary,
-                                item
-                            )
-                        )
-                    }
-                    val accentColor = remember {
-                        Color(
-                            App.ThemeDelegate.getColorByAttr(
-                                context,
-                                R.attr.colorAccent,
-                                item
-                            )
-                        )
-                    }
-                    val onAccentColor = remember {
-                        Color(
-                            App.ThemeDelegate.getColorByAttr(
-                                context,
-                                R.attr.colorOnAccent,
-                                item
-                            )
-                        )
-                    }
-                    val onBackgroundColor = remember {
-                        Color(
-                            App.ThemeDelegate.getColorByAttr(
-                                context,
-                                R.attr.colorText,
-                                item
-                            )
-                        )
-                    }
+                    val colors = remember { themeColors(item, pickedColor(context, item)) }
                     if (index == 0) {
                         Spacer(modifier = Modifier.size(16.dp))
                     }
@@ -451,9 +397,9 @@ fun AppThemePage(
                         ThemeItem(
                             themeName = name,
                             themeValue = item,
-                            primaryColor = backgroundColor,
-                            accentColor = backgroundColor,
-                            contentColor = onBackgroundColor,
+                            primaryColor = colors.background,
+                            accentColor = colors.background,
+                            contentColor = colors.text.copy(alpha = 1f),
                             selected = !isDynamicTheme && currentTheme == item,
                             onClick = {
                                 ThemeUtil.switchTheme(item)
@@ -464,9 +410,9 @@ fun AppThemePage(
                         ThemeItem(
                             themeName = name,
                             themeValue = item,
-                            primaryColor = primaryColor,
-                            accentColor = accentColor,
-                            contentColor = onAccentColor,
+                            primaryColor = colors.emphasis,
+                            accentColor = colors.accent,
+                            contentColor = colors.onAccent,
                             selected = !isDynamicTheme && currentTheme == item,
                             onClick = {
                                 ThemeUtil.switchTheme(item)
@@ -537,3 +483,7 @@ private fun ThemeItem(
         }
     }
 }
+
+/** The custom theme's colour as saved, or its default. */
+private fun savedCustomColor(context: Context): Color =
+    themeColors(ThemeUtil.THEME_CUSTOM, pickedColor(context, ThemeUtil.THEME_CUSTOM)).accent
