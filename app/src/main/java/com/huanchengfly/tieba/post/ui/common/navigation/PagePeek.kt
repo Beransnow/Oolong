@@ -61,6 +61,10 @@ class PagePeek {
     var edge by mutableIntStateOf(NavigationEvent.EDGE_LEFT)
         private set
 
+    /** Whether back went ahead, so the page on top slides out from the peek. */
+    var committed by mutableStateOf(false)
+        internal set
+
     /** How far the page on top has slid out once back goes ahead, 0 to 1; recorded by its frame. */
     var exit by mutableFloatStateOf(0f)
         internal set
@@ -73,12 +77,14 @@ class PagePeek {
     internal fun start(top: Any, under: Any, swipeEdge: Int) {
         topKey = top
         underKey = under
+        committed = false
         edge = if (swipeEdge == NavigationEvent.EDGE_RIGHT) NavigationEvent.EDGE_RIGHT else NavigationEvent.EDGE_LEFT
         amount = 0f
         exit = 0f
     }
 
     internal fun reset() {
+        committed = false
         topKey = null
         underKey = null
         amount = 0f
@@ -229,6 +235,7 @@ private class PeekBackHandler(
         onArrived = {}
         settling = false
         dragging = false
+        if (peek.isPeeking) peek.committed = true
         // Pops through NavDisplay's handler, which plays the predictive pop if a peek started it
         input.backCompleted()
     }
@@ -240,8 +247,9 @@ private class PeekBackHandler(
         settling = true
         moveTo(0f) {
             settling = false
+            // The page's frame ends the peek once the navigation has it back at rest: until then the
+            // page still counts as going away, and would set off
             input.backCancelled()
-            peek.reset()
         }
     }
 

@@ -294,19 +294,30 @@ fun AppNavDisplay(
                             transitionSpec = {
                                 when {
                                     relayout -> PageTransitions.crossFade()
-                                    isDeeper(initialState, targetState) == false -> PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                                    else -> PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                                    else -> PageTransitions.framedSlide(initialState, targetState)
+                                        ?: if (isDeeper(initialState, targetState) == false) {
+                                            PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                                        } else {
+                                            PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                                        }
                                 }
                             },
                             popTransitionSpec = {
                                 when {
                                     relayout -> PageTransitions.crossFade()
-                                    isDeeper(initialState, targetState) == true -> PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
-                                    else -> PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                                    else -> PageTransitions.framedSlide(initialState, targetState)
+                                        ?: if (isDeeper(initialState, targetState) == true) {
+                                            PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                                        } else {
+                                            PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                                        }
                                 }
                             },
                             // Only a peek starts one, see rememberPagePeekBack
-                            predictivePopTransitionSpec = { PageTransitions.peekPopTransitionSpec<Scene<NavKey>>()() },
+                            predictivePopTransitionSpec = {
+                                PageTransitions.framedSlide(initialState, targetState)
+                                    ?: PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                            },
                         )
                     }
                 }
