@@ -4,6 +4,7 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.database.BlockDao
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
@@ -25,6 +26,10 @@ fun BlockRules.blocks(thread: ThreadInfo): Boolean {
     val author = User(id = thread.authorId, name = thread.author?.name.orEmpty(), nameShow = "", portrait = "")
     return blocks(author, thread.title) || blocks(author, thread.abstractText)
 }
+
+/** Whether the rules hide [thread], by its author or by what its title or abstract says. */
+fun BlockRules.blocks(thread: ThreadSummary): Boolean =
+    blocks(thread.author, thread.title) || blocks(thread.author, thread.abstract)
 
 /**
  * Rules from the user's lists. Content is hidden when a block keyword rule matches it and no
