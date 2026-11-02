@@ -94,7 +94,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
-import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
@@ -502,7 +501,6 @@ fun HomeScreen(
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_main)) },
-                navigationIcon = accountNavIconIfCompact(),
                 actions = {
                     ActionItem(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),

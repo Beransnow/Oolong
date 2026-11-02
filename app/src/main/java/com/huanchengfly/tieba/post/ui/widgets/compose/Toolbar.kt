@@ -2,7 +2,6 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,11 +17,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -34,87 +30,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
-import com.huanchengfly.tieba.post.ui.common.LocalAccount
-import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
-import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
-import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
-import com.huanchengfly.tieba.post.ui.navigation.LoginKey
-import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.utils.StringUtil
-
-@Composable
-fun accountNavIconIfCompact(): (@Composable () -> Unit)? =
-    if (LocalWindowSizeClass.current.widthSizeClass == Compact) (@Composable { AccountNavIcon() })
-    else null
-
-@Composable
-fun AccountNavIcon(
-    onClick: (() -> Unit)? = null,
-    spacer: Boolean = true,
-    size: Dp = Sizes.Small
-) {
-    val navigator = LocalNavigator.current
-    val currentAccount = LocalAccount.current
-    val allAccounts = LocalAllAccounts.current
-    val accounts = LocalAccountActions.current
-    if (spacer) Spacer(modifier = Modifier.width(12.dp))
-    if (currentAccount == null) {
-        Image(
-            painter = rememberDrawablePainter(
-                drawable = ContextCompat.getDrawable(
-                    LocalContext.current,
-                    R.drawable.ic_launcher_new_round
-                )
-            ),
-            contentDescription = null,
-            modifier = Modifier
-                .clip(CircleShape)
-                .size(size)
-        )
-    } else {
-        val newAccount = stringResource(id = R.string.title_new_account)
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .longPressMenu(
-                    items = {
-                        allAccounts.map { account ->
-                            ContextMenuItem(
-                                icon = null,
-                                label = account.nameShow ?: account.name,
-                                leading = { Avatar(data = StringUtil.getAvatarUrl(account.portrait), size = 28.dp, contentDescription = null) },
-                                selected = account.id == currentAccount.id,
-                            ) { accounts.switchTo(account.id) }
-                        } + ContextMenuItem(Symbols.Add, newAccount, startsGroup = true) { navigator.navigate(LoginKey) }
-                    },
-                    onClick = onClick,
-                ),
-        ) {
-            Avatar(
-                data = StringUtil.getAvatarUrl(currentAccount.portrait),
-                size = size,
-                contentDescription = stringResource(id = R.string.title_switch_account_long_press)
-            )
-        }
-    }
-}
 
 @Composable
 fun ActionItem(

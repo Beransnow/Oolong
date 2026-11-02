@@ -29,7 +29,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -128,7 +127,6 @@ fun NotificationsTab(
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
-                navigationIcon = accountNavIconIfCompact(),
                 actions = {
                     ActionItem(
                         icon = Symbols.Search,

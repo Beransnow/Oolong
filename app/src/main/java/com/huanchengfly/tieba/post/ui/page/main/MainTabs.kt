@@ -14,9 +14,21 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.repository.AccountActions
+import com.huanchengfly.tieba.post.ui.common.LocalAccount
+import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
+import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
+import com.huanchengfly.tieba.post.ui.navigation.LoginKey
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
+import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -57,6 +69,12 @@ fun rememberMainTabItems(tabs: MainTabs): ImmutableList<NavigationItem> {
         defaultValue = LocalContext.current.appPreferences.hideExplore
     )
     val messageCount = tabs.messageCount
+    val navigator = LocalNavigator.current
+    val account = LocalAccount.current
+    val allAccounts = LocalAllAccounts.current
+    val accounts = LocalAccountActions.current
+    val newAccount = stringResource(id = R.string.title_new_account)
+    val switchAccount = stringResource(id = R.string.title_switch_account)
     return listOfNotNull(
         NavigationItem(
             id = MainTabs.HOME,
@@ -81,6 +99,27 @@ fun rememberMainTabItems(tabs: MainTabs): ImmutableList<NavigationItem> {
             id = MainTabs.USER,
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_person) },
             title = { stringResource(id = R.string.title_user) },
+            avatar = account?.let { StringUtil.getAvatarUrl(it.portrait) },
+            menu = account?.let { current -> accountMenu(current, allAccounts, accounts, newAccount) { navigator.navigate(LoginKey) } },
+            menuLabel = switchAccount,
         ),
     ).toImmutableList()
+}
+
+/** The accounts to switch to, [current] checked, then adding another. */
+private fun accountMenu(
+    current: Account,
+    all: List<Account>,
+    actions: AccountActions,
+    newAccount: String,
+    onNewAccount: () -> Unit,
+): () -> List<ContextMenuItem> = {
+    all.map { account ->
+        ContextMenuItem(
+            icon = null,
+            label = account.nameShow ?: account.name,
+            leading = { Avatar(data = StringUtil.getAvatarUrl(account.portrait), size = 28.dp, contentDescription = null) },
+            selected = account.id == current.id,
+        ) { actions.switchTo(account.id) }
+    } + ContextMenuItem(Symbols.Add, newAccount, startsGroup = true, onClick = onNewAccount)
 }

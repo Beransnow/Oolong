@@ -2,11 +2,13 @@ package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -45,12 +47,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -63,9 +74,13 @@ import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
+import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
 import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.glassLens
 import com.huanchengfly.tieba.post.ui.widgets.compose.lensTarget
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -119,14 +134,26 @@ fun NavigationRail(
                     val title = navigationItem.title(selected)
                     val contentColor =
                         if (selected) ExtendedTheme.colors.emphasis else themeColors.textSecondary
+                    val menu = navigationItem.menu
                     Column(
                         modifier = Modifier
                             .size(width = itemWidth, height = itemHeight)
                             .clip(NavPillShape)
-                            .selectable(
-                                selected = selected,
-                                role = Role.Tab,
-                                onClick = { onSelect(index) },
+                            .then(
+                                if (menu == null) {
+                                    Modifier.selectable(
+                                        selected = selected,
+                                        role = Role.Tab,
+                                        onClick = { onSelect(index) },
+                                    )
+                                } else {
+                                    Modifier
+                                        .semantics {
+                                            role = Role.Tab
+                                            this.selected = selected
+                                        }
+                                        .longPressMenu(items = menu, onClick = { onSelect(index) })
+                                }
                             ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
@@ -158,15 +185,28 @@ private fun NavItemIcon(
     tint: Color,
 ) {
     Box {
-        Icon(
-            painter = rememberAnimatedVectorPainter(
-                animatedImageVector = navigationItem.icon(),
-                atEnd = selected
-            ),
-            contentDescription = title,
-            tint = tint,
-            modifier = Modifier.size(24.dp),
-        )
+        if (navigationItem.avatar != null) {
+            // Ringed in the selected colour when chosen, as the icons are tinted
+            val ring by animateDpAsState(if (selected) AvatarRing else 0.dp, label = "ring")
+            Avatar(
+                data = navigationItem.avatar,
+                contentDescription = title,
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(ring, tint, CircleShape)
+                    .padding(ring * 2),
+            )
+        } else {
+            Icon(
+                painter = rememberAnimatedVectorPainter(
+                    animatedImageVector = navigationItem.icon(),
+                    atEnd = selected
+                ),
+                contentDescription = title,
+                tint = tint,
+                modifier = Modifier.size(24.dp),
+            )
+        }
         if (navigationItem.badge) {
             Text(
                 textAlign = TextAlign.Center,
@@ -186,6 +226,8 @@ private fun NavItemIcon(
     }
 }
 
+private val AvatarRing = 1.5.dp
+
 private val NavPillShape = RoundedCornerShape(percent = 50)
 private val NavPillPadding = 6.dp
 private val NavItemWidth = 68.dp
@@ -204,7 +246,9 @@ val FloatingNavBarHeight = NavItemHeight + NavPillPadding * 2 + NavPillMargin
  *
  * The selection indicator slides between items. While the pill is pressed the indicator lifts
  * off as a clear glass lens, larger than the pill, that magnifies the item under it; dragging
- * moves the lens with the finger and releasing selects the item it ends on.
+ * moves the lens with the finger and releasing selects the item it ends on. Held still on an item
+ * with a menu, the lens settles back and the menu opens under the finger, which can slide onto
+ * an item of it and lift to pick it.
  *
  * The bar always measures at its expanded height so content padding does not change while it
  * collapses.
@@ -226,6 +270,11 @@ fun FloatingNavBar(
     LaunchedEffect(currentPosition) {
         if (!indicatorDragged) indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
     }
+    val menus = LocalContextMenus.current
+    val haptic = LocalHapticFeedback.current
+    val items by rememberUpdatedState(navigationItems)
+    var pill by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val itemBounds = remember { mutableMapOf<Int, Rect>() }
     val select by rememberUpdatedState { index: Int ->
         if (index == currentPosition) {
             onReselected(index)
@@ -258,7 +307,8 @@ fun FloatingNavBar(
                     .lensTarget()
                     .floatingGlass(NavPillShape)
                     .padding(NavPillPadding)
-                    .pointerInput(navigationItems.size, itemWidthPx) {
+                    .onGloballyPositioned { pill = it }
+                    .pointerInput(navigationItems.size, itemWidthPx, menus) {
                         val last = navigationItems.size - 1
                         fun positionAt(x: Float) = (x / itemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
                         awaitEachGesture {
@@ -273,12 +323,16 @@ fun FloatingNavBar(
                             var dragging = false
                             var lastX = down.position.x
                             var released = false
-                            while (true) {
-                                val change = awaitPointerEvent().changes
-                                    .firstOrNull { it.id == down.id } ?: break
+                            var lost = false
+                            fun follow(event: PointerEvent) {
+                                val change = event.changes.firstOrNull { it.id == down.id }
+                                if (change == null) {
+                                    lost = true
+                                    return
+                                }
                                 if (!change.pressed) {
                                     released = true
-                                    break
+                                    return
                                 }
                                 lastX = change.position.x
                                 if (!dragging &&
@@ -292,6 +346,34 @@ fun FloatingNavBar(
                                     coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
                                 }
                             }
+                            val menu = items[(down.position.x / itemWidthPx).toInt().coerceIn(0, last)].menu
+                            // Until the finger moves off or lifts, a menu waits for the press to last
+                            val held = menu != null && menus != null &&
+                                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    while (!dragging && !released && !lost) follow(awaitPointerEvent())
+                                } == null
+                            if (held && menu != null && menus != null) {
+                                coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                coroutineScope.launch {
+                                    indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
+                                }
+                                val coordinates = pill ?: return@awaitEachGesture
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
+                                while (true) {
+                                    val change = awaitPointerEvent().changes
+                                        .firstOrNull { it.id == down.id } ?: break
+                                    change.consume()
+                                    val position = coordinates.localToWindow(change.position)
+                                    if (!change.pressed) {
+                                        menus.liftFinger(position)
+                                        break
+                                    }
+                                    menus.moveFinger(position)
+                                }
+                                return@awaitEachGesture
+                            }
+                            while (!released && !lost) follow(awaitPointerEvent())
                             coroutineScope.launch { press.animateTo(0f, PressSpring) }
                             indicatorDragged = false
                             if (released) {
@@ -329,12 +411,21 @@ fun FloatingNavBar(
                         Column(
                             modifier = Modifier
                                 .size(width = itemWidth, height = itemHeight)
+                                .onGloballyPositioned { itemBounds[index] = it.boundsInWindow() }
                                 .semantics(mergeDescendants = true) {
                                     role = Role.Tab
                                     this.selected = selected
                                     onClick(label = title) {
                                         select(index)
                                         true
+                                    }
+                                    val menu = navigationItem.menu
+                                    if (menu != null && menus != null) {
+                                        onLongClick(label = navigationItem.menuLabel) {
+                                            val bounds = itemBounds[index] ?: return@onLongClick false
+                                            menus.show(menu(), anchor = bounds)
+                                            true
+                                        }
                                     }
                                 },
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -395,4 +486,9 @@ data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constr
     val badge: Boolean = false,
     val badgeText: String? = null,
     val onClick: (() -> Unit)? = null,
+    /** Shown in place of the icon, such as the signed-in account's avatar. */
+    val avatar: String? = null,
+    /** What a long press on it offers, labelled [menuLabel] for accessibility; null for nothing. */
+    val menu: (() -> List<ContextMenuItem>)? = null,
+    val menuLabel: String? = null,
 )
