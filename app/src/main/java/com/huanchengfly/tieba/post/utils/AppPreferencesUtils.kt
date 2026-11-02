@@ -83,13 +83,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var doNotUsePhotoPicker by DataStoreDelegates.boolean(defaultValue = false)
 
-    var useDynamicColorTheme by DataStoreDelegates.boolean(defaultValue = false)
-
-    var followSystemNight by DataStoreDelegates.boolean(
-        defaultValue = true,
-        key = "follow_system_night"
-    )
-
     var fontScale by DataStoreDelegates.float(defaultValue = 1.0f)
 
     var forumFabFunction by DataStoreDelegates.string(defaultValue = "hide")

@@ -7,13 +7,14 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
+import com.huanchengfly.tieba.post.utils.Appearance
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -40,30 +41,34 @@ class PaletteSnapshotTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     /**
-     * A theme as the user sets it up: its name, the translucent text setting, dynamic colour and
-     * the colour picked for the custom or translucent theme.
+     * A theme as the user sets it up: the theme choices, the translucent text setting and the
+     * colour picked for the custom or translucent theme.
      */
     private data class Setup(
         val name: String,
-        val theme: String,
+        val settings: ThemeSettings,
         val darkText: Boolean = false,
-        val dynamic: Boolean = false,
         val accent: String? = null,
     )
 
-    private val setups = listOf(
-        "tieba", "black", "blue", "purple", "pink", "red", "custom",
-        "blue_dark", "grey_dark", "amoled_dark",
-    ).map { Setup(it, it) } + listOf(
-        Setup("translucent_light", ThemeUtil.THEME_TRANSLUCENT, darkText = false),
-        Setup("translucent_dark", ThemeUtil.THEME_TRANSLUCENT, darkText = true),
-        Setup("custom_picked", ThemeUtil.THEME_CUSTOM, accent = PICKED),
-        Setup("translucent_light_picked", ThemeUtil.THEME_TRANSLUCENT, darkText = false, accent = PICKED),
-        Setup("translucent_dark_picked", ThemeUtil.THEME_TRANSLUCENT, darkText = true, accent = PICKED),
-        Setup("dynamic_light", ThemeUtil.THEME_DEFAULT, dynamic = true),
-        Setup("dynamic_dark", ThemeUtil.THEME_BLUE_DARK, dynamic = true),
-        Setup("dynamic_amoled", ThemeUtil.THEME_AMOLED_DARK, dynamic = true),
-    )
+    private fun light(accent: String) = ThemeSettings(appearance = Appearance.Light, accent = accent)
+    private fun dark(theme: String, accent: String = ThemeUtil.THEME_DEFAULT) =
+        ThemeSettings(appearance = Appearance.Dark, accent = accent, darkTheme = theme)
+    private val wallpaper = ThemeSettings(appearance = Appearance.Light, wallpaper = true)
+    private val dynamic = ThemeSettings.ACCENT_DYNAMIC
+
+    private val setups = listOf("tieba", "black", "blue", "purple", "pink", "red", "custom").map { Setup(it, light(it)) } +
+        listOf("blue_dark", "grey_dark", "amoled_dark").map { Setup(it, dark(it)) } +
+        listOf(
+            Setup("translucent_light", wallpaper, darkText = false),
+            Setup("translucent_dark", wallpaper, darkText = true),
+            Setup("custom_picked", light(ThemeUtil.THEME_CUSTOM), accent = PICKED),
+            Setup("translucent_light_picked", wallpaper, darkText = false, accent = PICKED),
+            Setup("translucent_dark_picked", wallpaper, darkText = true, accent = PICKED),
+            Setup("dynamic_light", light(dynamic)),
+            Setup("dynamic_dark", dark(ThemeUtil.THEME_BLUE_DARK, dynamic)),
+            Setup("dynamic_amoled", dark(ThemeUtil.THEME_AMOLED_DARK, dynamic)),
+        )
 
     @Test
     fun `no theme's colours change`() {
@@ -81,17 +86,15 @@ class PaletteSnapshotTest {
                 context.dataStore.edit {
                     it[intPreferencesKey("translucent_background_theme")] =
                         if (next.darkText) ThemeUtil.TRANSLUCENT_THEME_DARK else ThemeUtil.TRANSLUCENT_THEME_LIGHT
-                    it[booleanPreferencesKey("useDynamicColorTheme")] = next.dynamic
                     for (key in listOf("custom_primary_color", ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)) {
                         if (next.accent != null) it[stringPreferencesKey(key)] = next.accent else it.remove(stringPreferencesKey(key))
                     }
                 }
             }
-            // Through another theme first: the two translucent setups share one theme name, and the
-            // theme only recomposes when that name changes
-            composeRule.runOnIdle { ThemeUtil.themeState.value = if (next.theme == "tieba") "black" else "tieba" }
+            // Through another theme first, so that every setup is drawn afresh
+            composeRule.runOnIdle { ThemeUtil.updateSettings { light(if (next.name == "tieba") "black" else "tieba") } }
             composeRule.waitForIdle()
-            composeRule.runOnIdle { ThemeUtil.themeState.value = next.theme }
+            composeRule.runOnIdle { ThemeUtil.updateSettings { next.settings } }
             composeRule.waitForIdle()
             val (colors, material) = checkNotNull(latest)
             captured[next.name] = describe(next.name, colors, material)

@@ -174,8 +174,6 @@ suspend fun Context.applyWallpaper(source: File, wallpaper: TranslucentWallpaper
     }
     val old = TranslucentWallpaper.save(this, wallpaper, file.absolutePath)
     if (old != null && old != file.absolutePath) File(old).delete()
-    ThemeUtil.switchTheme(ThemeUtil.THEME_TRANSLUCENT, recordOldTheme = !ThemeUtil.isTranslucentTheme())
-    // Picking it, like picking any theme, leaves dynamic colour
-    ThemeUtil.setUseDynamicTheme(false)
+    ThemeUtil.selectWallpaper()
     return true
 }

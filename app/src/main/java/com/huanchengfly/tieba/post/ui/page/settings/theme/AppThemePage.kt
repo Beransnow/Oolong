@@ -58,7 +58,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import coil3.compose.AsyncImage
 import com.godaddy.android.colorpicker.HsvColor
@@ -94,11 +93,7 @@ fun AppThemePage(
     val context = LocalContext.current
     val themeValues = stringArrayResource(id = R.array.theme_values)
     val themeNames = stringArrayResource(id = R.array.themeNames)
-    val currentTheme by remember { ThemeUtil.themeState }
-    val isDynamicTheme by rememberPreferenceAsState(
-        key = booleanPreferencesKey("useDynamicColorTheme"),
-        defaultValue = false
-    )
+    val settings by remember { ThemeUtil.settingsState }
     val customPrimaryColorDialogState = rememberDialogState()
     var customPrimaryColor by remember {
         mutableStateOf(
@@ -114,8 +109,7 @@ fun AppThemePage(
                 text = stringResource(id = R.string.button_finish),
                 onClick = {
                     context.appPreferences.customPrimaryColor = customPrimaryColor.toHexString()
-                    ThemeUtil.setUseDynamicTheme(false)
-                    ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
+                    ThemeUtil.selectLightTheme(ThemeUtil.THEME_CUSTOM)
                 }
             )
             DialogNegativeButton(
@@ -257,7 +251,7 @@ fun AppThemePage(
                                     )
                                 )
                                 .clickable {
-                                    ThemeUtil.switchToDynamicTheme()
+                                    ThemeUtil.selectDynamicColor()
                                 }
                                 .padding(all = 16.dp)
                         ) {
@@ -266,7 +260,7 @@ fun AppThemePage(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 Icon(
-                                    imageVector = if (isDynamicTheme) {
+                                    imageVector = if (settings.isDynamic) {
                                         Icons.Rounded.Check
                                     } else {
                                         Icons.Rounded.Colorize
@@ -312,7 +306,7 @@ fun AppThemePage(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
                                     Icon(
-                                        imageVector = if (!isDynamicTheme && currentTheme == ThemeUtil.THEME_CUSTOM) {
+                                        imageVector = if (settings.isLightTheme(ThemeUtil.THEME_CUSTOM)) {
                                             Icons.Rounded.Check
                                         } else {
                                             Icons.Rounded.ColorLens
@@ -361,10 +355,7 @@ fun AppThemePage(
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     ) {
                                         Icon(
-                                            imageVector = if (ThemeUtil.isTranslucentTheme(
-                                                    currentTheme
-                                                )
-                                            ) {
+                                            imageVector = if (settings.wallpaper) {
                                                 Icons.Rounded.Check
                                             } else {
                                                 Icons.Rounded.PhotoSizeSelectActual
@@ -400,11 +391,8 @@ fun AppThemePage(
                             primaryColor = colors.background,
                             accentColor = colors.background,
                             contentColor = colors.text.copy(alpha = 1f),
-                            selected = !isDynamicTheme && currentTheme == item,
-                            onClick = {
-                                ThemeUtil.switchTheme(item)
-                                ThemeUtil.setUseDynamicTheme(false)
-                            }
+                            selected = settings.darkTheme == item,
+                            onClick = { ThemeUtil.selectDarkTheme(item) }
                         )
                     } else {
                         ThemeItem(
@@ -413,11 +401,8 @@ fun AppThemePage(
                             primaryColor = colors.emphasis,
                             accentColor = colors.accent,
                             contentColor = colors.onAccent,
-                            selected = !isDynamicTheme && currentTheme == item,
-                            onClick = {
-                                ThemeUtil.switchTheme(item)
-                                ThemeUtil.setUseDynamicTheme(false)
-                            }
+                            selected = settings.isLightTheme(item),
+                            onClick = { ThemeUtil.selectLightTheme(item) }
                         )
                     }
                 }

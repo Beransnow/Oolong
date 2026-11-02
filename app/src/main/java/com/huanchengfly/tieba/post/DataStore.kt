@@ -16,6 +16,7 @@ import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.preference.PreferenceDataStore
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -60,7 +61,21 @@ private val dataStoreInstance by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) 
                     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
                         return currentData[stringPreferencesKey("forumFabFunction")] == "post"
                     }
-                }
+                },
+                // The theme was one name, rewritten on every switch between light and dark
+                object : DataMigration<Preferences> {
+                    override suspend fun cleanUp() {}
+
+                    override suspend fun migrate(currentData: Preferences): Preferences {
+                        return currentData.toMutablePreferences().apply {
+                            ThemeSettings.migrate(currentData).writeTo(this)
+                        }.toPreferences()
+                    }
+
+                    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+                        return ThemeSettings.needsMigration(currentData)
+                    }
+                },
             )
         }
     )

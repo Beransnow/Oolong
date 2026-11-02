@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import coil3.size.Scale
 import com.google.android.material.appbar.AppBarLayout
@@ -35,16 +36,26 @@ import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.putString
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.widgets.theme.TintSwipeRefreshLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.Locale
 
 object ThemeUtil {
-    val themeState: MutableState<String> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+    /** The theme choices; change them through [updateSettings]. */
+    val settingsState: MutableState<ThemeSettings> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
         mutableStateOf(
-            if (App.isInitialized) dataStore.getString(KEY_THEME, THEME_DEFAULT)
-            else THEME_DEFAULT
+            if (App.isInitialized) runBlocking { ThemeSettings.from(dataStore.data.first()) }
+            else ThemeSettings()
         )
+    }
+
+    /** The name of the theme drawn now, worked out from [settingsState]; see [refresh]. */
+    val themeState: MutableState<String> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
+        mutableStateOf(settingsState.value.themeName(isSystemDark()))
     }
 
     const val TAG = "ThemeUtil"
@@ -56,7 +67,6 @@ object ThemeUtil {
     const val KEY_SWITCH_REASON = "switch_reason"
     const val KEY_TRANSLUCENT_PRIMARY_COLOR = "translucent_primary_color"
     const val KEY_TRANSLUCENT_THEME_BACKGROUND_PATH = "translucent_theme_background_path"
-    const val KEY_USE_DYNAMIC_COLOR_THEME = "useDynamicColorTheme"
 
     const val THEME_TRANSLUCENT = "translucent"
     const val THEME_TRANSLUCENT_LIGHT = "translucent_light"
@@ -90,80 +100,52 @@ object ThemeUtil {
         return ThemeUtils.getColorByAttr(context, R.attr.colorTextSecondary)
     }
 
-    fun switchToNightMode(context: Activity) {
-        switchToNightMode(context, true)
+    private fun isSystemDark(): Boolean = App.isInitialized && App.isSystemNight
+
+    /** Works out the theme drawn now again, as after the system turns dark or light. */
+    fun refresh() {
+        val name = settingsState.value.themeName(isSystemDark())
+        if (themeState.value != name) themeState.value = name
     }
 
-    private fun refreshUI(activity: Activity?) {
-        if (activity is BaseActivity) {
-            activity.refreshUIIfNeed()
-            return
-        }
-        ThemeUtils.refreshUI(activity)
-    }
-
-    private fun getOldTheme(): String {
-        val oldTheme =
-            dataStore.getString(KEY_OLD_THEME, THEME_DEFAULT).takeUnless { isNightMode(it) }
-
-        return oldTheme ?: THEME_DEFAULT
-    }
-
-    fun switchTheme(newTheme: String, recordOldTheme: Boolean = true) {
-        if (recordOldTheme) {
-            val oldTheme = getRawTheme()
-            if (!isNightMode(oldTheme)) {
-                dataStore.putString(KEY_OLD_THEME, oldTheme)
-            }
-        }
-        dataStore.putString(KEY_THEME, newTheme)
-        themeState.value = newTheme
-    }
-
-    fun switchDynamicTheme() {
-        val currentUseDynamicTheme = dataStore.getBoolean(KEY_USE_DYNAMIC_THEME, false)
-        dataStore.putBoolean(KEY_USE_DYNAMIC_THEME, !currentUseDynamicTheme)
-    }
-
-    fun setUseDynamicTheme(useDynamicTheme: Boolean) {
-        dataStore.putBoolean(KEY_USE_DYNAMIC_THEME, useDynamicTheme)
-    }
-
-    /**
-     * Turns dynamic colour on. It colours the ordinary themes, so leaves the translucent theme for
-     * the theme used before it.
-     */
-    fun switchToDynamicTheme() {
-        if (isTranslucentTheme()) switchTheme(getOldTheme(), recordOldTheme = false)
-        setUseDynamicTheme(true)
-    }
-
-    fun isUsingDynamicTheme(): Boolean {
-        return context.appPreferences.useDynamicColorTheme
-    }
-
-    fun switchNightMode() {
-        if (isNightMode()) {
-            switchTheme(getOldTheme(), recordOldTheme = false)
-        } else {
-            switchTheme(dataStore.getString(KEY_DARK_THEME, THEME_AMOLED_DARK))
+    /** Changes the theme choices and saves them. */
+    fun updateSettings(transform: (ThemeSettings) -> ThemeSettings) {
+        val settings = transform(settingsState.value)
+        if (settings == settingsState.value) return
+        settingsState.value = settings
+        refresh()
+        MainScope().launch(Dispatchers.IO) {
+            dataStore.edit { settings.writeTo(it) }
         }
     }
 
-    fun switchToNightMode(context: Activity, recreate: Boolean) {
-        switchTheme(dataStore.getString(KEY_DARK_THEME, THEME_AMOLED_DARK))
-        if (recreate) {
-            refreshUI(context)
-        }
+    /** Uses the light theme [name]. Picked while fixed to dark, it shows straight away. */
+    fun selectLightTheme(name: String) = updateSettings {
+        it.copy(accent = name, wallpaper = false).showing(dark = false)
     }
 
-    @JvmOverloads
-    fun switchFromNightMode(context: Activity, recreate: Boolean = true) {
-        switchTheme(getOldTheme(), recordOldTheme = false)
-        if (recreate) {
-            refreshUI(context)
-        }
+    /** Uses the dark theme [name]. Picked while fixed to light, it shows straight away. */
+    fun selectDarkTheme(name: String) = updateSettings { it.copy(darkTheme = name).showing(dark = true) }
+
+    /** Colours the light and dark themes from the system wallpaper. */
+    fun selectDynamicColor() = updateSettings { it.copy(accent = ThemeSettings.ACCENT_DYNAMIC, wallpaper = false) }
+
+    /** Shows the picked wallpaper behind the pages, which takes no dynamic colour. */
+    fun selectWallpaper() = updateSettings {
+        it.copy(wallpaper = true, accent = if (it.isDynamic) THEME_DEFAULT else it.accent).showing(dark = false)
     }
+
+    /** Switches between light and dark, no longer following the system. */
+    fun toggleDark() = updateSettings {
+        it.copy(appearance = if (it.isDark(isSystemDark())) Appearance.Light else Appearance.Dark)
+    }
+
+    fun setFollowSystem(follow: Boolean) = updateSettings {
+        if (follow) it.copy(appearance = Appearance.System) else it.fixed(isSystemDark())
+    }
+
+    private fun ThemeSettings.showing(dark: Boolean): ThemeSettings =
+        if (appearance == Appearance.System) this else copy(appearance = if (dark) Appearance.Dark else Appearance.Light)
 
     @JvmStatic
     fun setChipThemeByLevel(level: String?, parent: View, vararg textViews: TextView) {
@@ -261,7 +243,7 @@ object ThemeUtil {
             } else {
                 THEME_TRANSLUCENT_LIGHT
             }
-        } else if (checkDynamic && isUsingDynamicTheme() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        } else if (checkDynamic && settingsState.value.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             nowTheme = "${nowTheme}_dynamic"
         }
         return nowTheme
@@ -407,6 +389,7 @@ object ThemeUtil {
             THEME_TRANSLUCENT_DARK,
             THEME_CUSTOM,
             THEME_DEFAULT,
+            THEME_BLUE,
             THEME_BLACK,
             THEME_PURPLE,
             THEME_PINK,

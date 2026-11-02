@@ -15,11 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.compose.darken
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -222,11 +220,8 @@ fun TiebaLiteTheme(
 ) {
     val context = LocalContext.current
     val theme by remember { ThemeUtil.themeState }
-    val isDynamicTheme by rememberPreferenceAsState(
-        key = booleanPreferencesKey("useDynamicColorTheme"),
-        defaultValue = false
-    )
-    val useDynamicTheme = isDynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val settings by remember { ThemeUtil.settingsState }
+    val useDynamicTheme = settings.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     // The translucent theme's text colour and the picked colours are settings of their own:
     // changing them leaves the theme name as it was

@@ -106,6 +106,8 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
         if (isNeedFixBg) fixBackground()
         getDeviceDensity()
         INSTANCE.addActivity(this)
+        // The system may have turned dark or light since: that recreates the activity
+        ThemeUtil.refresh()
         if (isNeedSetTheme) ThemeUtil.setTheme(this)
         oldTheme = ThemeUtil.getRawTheme()
         if (isNeedImmersionBar) {
@@ -143,13 +145,7 @@ abstract class BaseActivity : AppCompatActivity(), ExtraRefreshable, CoroutineSc
     override fun onResume() {
         super.onResume()
         isActivityRunning = true
-        if (appPreferences.followSystemNight) {
-            if (App.isSystemNight && !ThemeUtil.isNightMode()) {
-                ThemeUtil.switchToNightMode(this, false)
-            } else if (!App.isSystemNight && ThemeUtil.isNightMode()) {
-                ThemeUtil.switchFromNightMode(this, false)
-            }
-        }
+        ThemeUtil.refresh()
         refreshUIIfNeed()
     }
 

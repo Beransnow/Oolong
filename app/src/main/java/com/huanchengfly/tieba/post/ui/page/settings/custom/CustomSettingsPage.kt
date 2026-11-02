@@ -50,7 +50,7 @@ private fun currentThemeName(): String {
     val values = stringArrayResource(id = R.array.theme_values)
     val names = stringArrayResource(id = R.array.themeNames)
     return when {
-        ThemeUtil.isUsingDynamicTheme() -> stringResource(id = R.string.title_dynamic_theme)
+        ThemeUtil.settingsState.value.isDynamic -> stringResource(id = R.string.title_dynamic_theme)
         theme == ThemeUtil.THEME_CUSTOM -> stringResource(id = R.string.title_custom_color)
         theme.startsWith(ThemeUtil.THEME_TRANSLUCENT) -> stringResource(id = R.string.title_theme_translucent)
         else -> names.getOrNull(values.indexOf(theme)).orEmpty()
@@ -100,6 +100,7 @@ fun CustomSettingsPage(
                         key = "follow_system_night",
                         title = stringResource(id = R.string.title_settings_follow_system_night),
                         defaultChecked = true,
+                        onCheckedChange = { ThemeUtil.setFollowSystem(it) },
                     )
                 }
                 prefsItem {
@@ -115,6 +116,7 @@ fun CustomSettingsPage(
                             )]
                         },
                         useSelectedAsSummary = true,
+                        onValueChange = { ThemeUtil.updateSettings { settings -> settings.copy(darkTheme = it) } },
                     )
                 }
             }
