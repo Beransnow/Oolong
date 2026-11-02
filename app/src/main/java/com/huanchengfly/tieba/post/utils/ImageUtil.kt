@@ -38,7 +38,6 @@ import com.huanchengfly.tieba.post.components.images.downloadImage
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.utils.PermissionUtils.PermissionData
 import com.huanchengfly.tieba.post.utils.PermissionUtils.askPermission
-import com.huanchengfly.tieba.post.utils.ThemeUtil.isNightMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -451,7 +450,7 @@ object ImageUtil {
     fun getPlaceHolder(context: Context, radius: Int): Drawable {
         val drawable = GradientDrawable()
         val colorResId =
-            if (isNightMode()) R.color.color_place_holder_night else R.color.color_place_holder
+            if (ThemeUtil.isDark()) R.color.color_place_holder_night else R.color.color_place_holder
         val color = ContextCompat.getColor(context, colorResId)
         drawable.setColor(color)
         drawable.cornerRadius =
@@ -462,7 +461,7 @@ object ImageUtil {
     fun getPlaceHolder(context: Context, radius: Float): Drawable {
         val drawable = GradientDrawable()
         val colorResId =
-            if (isNightMode()) R.color.color_place_holder_night else R.color.color_place_holder
+            if (ThemeUtil.isDark()) R.color.color_place_holder_night else R.color.color_place_holder
         val color = ContextCompat.getColor(context, colorResId)
         drawable.setColor(color)
         drawable.cornerRadius = radius.dpToPxFloat()
@@ -480,7 +479,7 @@ object ImageUtil {
         if (!Util.canLoadImage(imageView.context)) {
             return
         }
-        if (isNightMode()) {
+        if (ThemeUtil.isDark()) {
             changeBrightness(imageView, -35)
         } else {
             imageView.clearColorFilter()

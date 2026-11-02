@@ -109,7 +109,6 @@ fun getColorPalette(extendedColors: ExtendedColors): Colors {
     }
 }
 
-@Composable
 private fun getDynamicColor(
     theme: String,
     tonalPalette: TonalPalette,
@@ -126,7 +125,6 @@ private fun getDynamicColor(
     }
 }
 
-@Composable
 private fun getLightDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     val emphasis = tonalPalette.primary40
     return ExtendedColors(
@@ -156,7 +154,6 @@ private fun getLightDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     )
 }
 
-@Composable
 private fun getDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     val emphasis = tonalPalette.primary80
     return ExtendedColors(
@@ -186,7 +183,6 @@ private fun getDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     )
 }
 
-@Composable
 private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
     val emphasis = tonalPalette.primary80
     return ExtendedColors(
@@ -223,29 +219,35 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
 @Composable
 fun colorsOf(settings: ThemeSettings, dark: Boolean, picks: Any? = null): ExtendedColors {
     val context = LocalContext.current
+    return remember(settings, dark, picks) { colorsFor(context, settings, dark) }
+}
+
+/** The colours [settings] give when the app is [dark] or light, outside of Compose too. */
+fun colorsFor(context: Context, settings: ThemeSettings, dark: Boolean): ExtendedColors {
     val theme = settings.themeNameWhen(dark)
     if (settings.isMonet && !ThemeUtil.isTranslucentTheme(theme)) {
-        val palette = remember(settings, picks) {
-            if (settings.usesSystemPalette && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                dynamicTonalPalette(context)
-            } else {
-                monetPalette(colorOf(context, settings), settings.monetStyle)
-            }
+        val palette = if (settings.usesSystemPalette && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            dynamicTonalPalette(context)
+        } else {
+            monetPalette(colorOf(context, settings), settings.monetStyle)
         }
         return getDynamicColor(theme, palette)
     }
-    return remember(settings, theme, picks) {
-        // The system's colour is drawn as a custom one
-        val nowTheme = if (settings.isSystemColor && !dark) ThemeUtil.THEME_CUSTOM else ThemeUtil.getCurrentTheme(theme)
-        themeColors(
-            nowTheme,
-            // The wallpaper takes the theme colour
-            if (settings.isSystemColor || ThemeUtil.isTranslucentTheme(nowTheme)) colorOf(context, settings) else pickedColor(context, nowTheme),
-            plain = settings.style == ColorStyle.Plain,
-            darkAccent = darkAccentOf(context, settings),
-        )
-    }
+    // The system's colour is drawn as a custom one
+    val nowTheme = if (settings.isSystemColor && !dark) ThemeUtil.THEME_CUSTOM else ThemeUtil.getCurrentTheme(theme)
+    val colors = themeColors(
+        nowTheme,
+        // The wallpaper takes the theme colour
+        if (settings.isSystemColor || ThemeUtil.isTranslucentTheme(nowTheme)) colorOf(context, settings) else pickedColor(context, nowTheme),
+        plain = settings.style == ColorStyle.Plain,
+        darkAccent = darkAccentOf(context, settings),
+    )
+    // The wallpaper at night has its light text colours, but it is night all the same
+    return if (dark && !colors.isNightMode) colors.copy(isNightMode = true) else colors
 }
+
+/** The colours drawn now, for what is drawn outside of Compose. */
+fun currentColors(context: Context): ExtendedColors = colorsFor(context, ThemeUtil.settingsState.value, ThemeUtil.isDark())
 
 /** The colour picked in [settings]: a light theme's, the custom one or the system's. */
 fun colorOf(context: Context, settings: ThemeSettings): Color =

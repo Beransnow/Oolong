@@ -233,7 +233,7 @@ object ThemeUtil {
     }
 
     fun isNavigationBarFontDark(): Boolean {
-        return !isNightMode()
+        return !isDark()
     }
 
     fun setTheme(context: Activity) {

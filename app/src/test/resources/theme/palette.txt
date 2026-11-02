@@ -865,4 +865,4 @@ translucent_night m.onBackground         DEFFFFFF
 translucent_night m.surface              10FFFFFF
 translucent_night m.onSurface            FFFFFFFF
 translucent_night m.primarySurface       10FFFFFF
-translucent_night isNightMode false isLight false
+translucent_night isNightMode true isLight false
