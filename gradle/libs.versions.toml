@@ -19,7 +19,7 @@ kotlinx-coroutines = "1.11.0"
 roborazzi = "1.77.0"
 ktlint = "1.8.0"
 ktlintGradle = "14.2.0"
-haze = "2.0.1"
+haze = "2.1.0"
 room = "2.8.5"
 
 [libraries]
