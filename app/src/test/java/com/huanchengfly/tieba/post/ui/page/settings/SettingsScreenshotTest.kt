@@ -23,7 +23,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class SettingsScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()
@@ -34,7 +34,19 @@ class SettingsScreenshotTest {
     }
 
     @Test
+    @Config(qualifiers = "+en")
+    fun hubEnglish() {
+        captureScreenshot { SettingsPage(navigator = NoOpNavigator) }
+    }
+
+    @Test
     fun appearance() {
+        captureScreenshot { CustomSettingsPage(navigator = NoOpNavigator) }
+    }
+
+    @Test
+    @Config(qualifiers = "+en")
+    fun appearanceEnglish() {
         captureScreenshot { CustomSettingsPage(navigator = NoOpNavigator) }
     }
 
@@ -55,6 +67,12 @@ class SettingsScreenshotTest {
 
     @Test
     fun other() {
+        captureScreenshot { MoreSettingsPage(navigator = NoOpNavigator) }
+    }
+
+    @Test
+    @Config(qualifiers = "+en")
+    fun otherEnglish() {
         captureScreenshot { MoreSettingsPage(navigator = NoOpNavigator) }
     }
 

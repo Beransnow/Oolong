@@ -17,7 +17,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h200dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h200dp-xxhdpi")
 class VoicePlayerScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()

@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 /** The composer's inside in the states it shows, on a plain card standing in for its glass. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class ReplyComposerScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()

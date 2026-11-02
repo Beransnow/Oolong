@@ -15,7 +15,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class BlockRuleScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()
@@ -42,6 +42,29 @@ class BlockRuleScreenshotTest {
 
     @Test
     fun editedRegex() = screen(
+        BlockRuleState(
+            draft = BlockRule(
+                id = 5,
+                condition = Condition.AllOf(
+                    listOf(
+                        Condition.Forum("星穹铁道"),
+                        Condition.Not(Condition.Text(Pattern.Regex("互关|互粉"), BlockRule.TextField.Title)),
+                        Condition.LevelBelow(3),
+                        Condition.Only(ContentKind.Emoticon),
+                    ),
+                ),
+                action = BlockRule.Action.Hide,
+                scope = BlockRule.Scope.Feeds,
+                expiresAt = 7 * DayMillis,
+            ),
+            isNew = false,
+            now = 0,
+        ),
+    )
+
+    @Test
+    @Config(qualifiers = "+en")
+    fun editedRegexEnglish() = screen(
         BlockRuleState(
             draft = BlockRule(
                 id = 5,

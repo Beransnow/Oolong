@@ -11,7 +11,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class ThreadStoreScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()

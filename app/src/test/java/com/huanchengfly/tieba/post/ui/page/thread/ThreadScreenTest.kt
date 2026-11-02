@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class ThreadScreenTest {
     @get:Rule
     val legacyApp = LegacyAppRule()

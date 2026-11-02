@@ -37,35 +37,35 @@ class ListDetailScreenshotTest {
 
     /** A tablet held sideways: the list on the left, the page it opened on the right. */
     @Test
-    @Config(qualifiers = "w1280dp-h800dp-mdpi")
+    @Config(qualifiers = "+w1280dp-h800dp-mdpi")
     fun tablet() {
         captureScreenshot { Shell(listOf(Fake.Home, Fake.Thread), twoPane = true) }
     }
 
     /** Nothing open yet: the right pane is empty. */
     @Test
-    @Config(qualifiers = "w1280dp-h800dp-mdpi")
+    @Config(qualifiers = "+w1280dp-h800dp-mdpi")
     fun tabletEmpty() {
         captureScreenshot { Shell(listOf(Fake.Home), twoPane = true) }
     }
 
     /** A forum opened from a thread takes the left pane; the thread stays on the right. */
     @Test
-    @Config(qualifiers = "w1280dp-h800dp-mdpi")
+    @Config(qualifiers = "+w1280dp-h800dp-mdpi")
     fun tabletListOverPage() {
         captureScreenshot { Shell(listOf(Fake.Home, Fake.Thread, Fake.Forum), twoPane = true) }
     }
 
     /** An unfolded foldable, just wide enough for two panes: the list narrows to leave the page room. */
     @Test
-    @Config(qualifiers = "w880dp-h840dp-xhdpi")
+    @Config(qualifiers = "+w880dp-h840dp-xhdpi")
     fun foldable() {
         captureScreenshot { Shell(listOf(Fake.Home, Fake.Thread), twoPane = true) }
     }
 
     /** A phone held sideways: wide but short, so one pane and a rail without labels. */
     @Test
-    @Config(qualifiers = "w851dp-h393dp-xxhdpi")
+    @Config(qualifiers = "+w851dp-h393dp-xxhdpi")
     fun phoneLandscape() {
         captureScreenshot { Shell(listOf(Fake.Home, Fake.Thread), twoPane = false, showLabels = false) }
     }

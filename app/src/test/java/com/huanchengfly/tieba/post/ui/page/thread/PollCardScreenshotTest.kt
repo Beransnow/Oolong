@@ -20,7 +20,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h900dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h900dp-xxhdpi")
 class PollCardScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()

@@ -13,7 +13,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class ThreadScreenScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()
@@ -23,6 +23,12 @@ class ThreadScreenScreenshotTest {
 
     @Test
     fun loaded() {
+        captureScreenshot { ThreadScreen(state = ThreadPreviewData.loaded, onEvent = {}) }
+    }
+
+    @Test
+    @Config(qualifiers = "+en")
+    fun loadedEnglish() {
         captureScreenshot { ThreadScreen(state = ThreadPreviewData.loaded, onEvent = {}) }
     }
 

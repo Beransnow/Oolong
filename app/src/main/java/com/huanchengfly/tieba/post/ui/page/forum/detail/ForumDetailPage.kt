@@ -139,7 +139,7 @@ private fun ForumDetailContent(
         ) {
             StatCardItem(
                 statNum = forumInfo.memberCount,
-                statText = stringResource(id = R.string.text_stat_follow)
+                statText = stringResource(id = R.string.forum_stat_members)
             )
             HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
             StatCardItem(

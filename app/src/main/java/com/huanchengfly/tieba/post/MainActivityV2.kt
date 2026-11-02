@@ -135,6 +135,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Locale
 import javax.inject.Inject
 
 val LocalNotificationCountFlow =
@@ -286,6 +287,9 @@ class MainActivityV2 : AppCompatActivity() {
         val iconDone = Process.getStartUptimeMillis() + SPLASH_ICON_MILLIS
         installSplashScreen().setKeepOnScreenCondition { SystemClock.uptimeMillis() < iconDone }
         super.onCreate(savedInstanceState)
+        // Formatting that reads the default locale, such as counts, follows the app's language,
+        // which before Android 13 only reaches the activity's configuration
+        resources.configuration.locales[0]?.let { Locale.setDefault(it) }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent { AppContent(this, accountRepository) { Content() } }
         // The condition is only checked when a frame is drawn

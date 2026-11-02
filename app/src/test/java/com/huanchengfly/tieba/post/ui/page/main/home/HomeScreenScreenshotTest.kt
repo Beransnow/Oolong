@@ -16,7 +16,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w393dp-h851dp-xxhdpi")
+@Config(qualifiers = "+w393dp-h851dp-xxhdpi")
 class HomeScreenScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()
@@ -26,6 +26,12 @@ class HomeScreenScreenshotTest {
 
     @Test
     fun grid() {
+        captureScreenshot { HomeScreen(state = HomePreviewData.loaded, onEvent = {}) }
+    }
+
+    @Test
+    @Config(qualifiers = "+en")
+    fun gridEnglish() {
         captureScreenshot { HomeScreen(state = HomePreviewData.loaded, onEvent = {}) }
     }
 

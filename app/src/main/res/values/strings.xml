@@ -207,7 +207,7 @@
     <string name="title_search_order_old">旧帖在前</string>
     <string name="title_search_order_relevant">相关度</string>
     <string name="title_search_filter_all">全部</string>
-    <string name="desc_user_avatar">用户 %1</string>
+    <string name="desc_user_avatar">头像</string>
     <string name="my_info_about">关于</string>
     <string name="relative_date_just_now">刚刚</string>
     <plurals name="relative_date_minutes">

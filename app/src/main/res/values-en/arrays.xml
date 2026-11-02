@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="dark_theme_names">
+        <item>Midnight blue</item>
+        <item>Deep gray</item>
+        <item>Pure black</item>
+    </string-array>
+
+    <string-array name="accent_names">
+        <item>Ocean</item>
+        <item>Ink</item>
+        <item>Blossom</item>
+        <item>Vermilion</item>
+        <item>Bamboo</item>
+        <item>Violet</item>
+    </string-array>
+</resources>
