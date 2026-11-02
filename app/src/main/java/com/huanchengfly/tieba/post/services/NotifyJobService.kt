@@ -12,11 +12,12 @@ import android.content.Intent.ACTION_VIEW
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import com.huanchengfly.tieba.core.network.message.MessageRemoteDataSource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.MainScope
@@ -160,7 +161,7 @@ class NotifyJobService : JobService() {
                     pendingIntentFlagImmutable()
                 )
             )
-            .setColor(ThemeUtils.getColorByAttr(this, R.attr.colorPrimary))
+            .setColor(currentColors(this).accent.toArgb())
             .build()
         notificationManager!!.notify(id, notification)
     }

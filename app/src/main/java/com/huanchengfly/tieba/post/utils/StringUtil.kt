@@ -10,6 +10,7 @@ import android.text.style.ForegroundColorSpan
 import android.widget.TextView
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
@@ -17,9 +18,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
 import com.huanchengfly.tieba.post.App
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonDrawable
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
 import java.util.regex.Pattern
@@ -86,7 +86,7 @@ object StringUtil {
             val builder = SpannableStringBuilder(nickname)
             builder.append(
                 "($username)",
-                ForegroundColorSpan(ThemeUtils.getColorByAttr(context, R.attr.color_text_disabled)),
+                ForegroundColorSpan(currentColors(context).textDisabled.toArgb()),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             return builder
@@ -127,7 +127,7 @@ object StringUtil {
             withAnnotation(tag = "user", annotation = userId) {
                 withStyle(
                     SpanStyle(
-                        color = Color(ThemeUtils.getColorByAttr(context, R.attr.colorNewPrimary))
+                        color = currentColors(context).emphasis
                     )
                 ) {
                     append("@")

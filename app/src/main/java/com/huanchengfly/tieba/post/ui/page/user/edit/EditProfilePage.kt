@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -51,7 +52,6 @@ import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -111,6 +111,7 @@ private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
             it.data?.let(UCrop::getError)?.printStackTrace()
         }
     }
+    val colors = ExtendedTheme.colors
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val source = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
         val intent = UCrop.of(source, Uri.fromFile(cropped))
@@ -118,10 +119,10 @@ private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
             .withOptions(UCrop.Options().apply {
                 setShowCropFrame(true)
                 setShowCropGrid(true)
-                setToolbarColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
-                setToolbarWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorTextOnPrimary))
-                setActiveControlsWidgetColor(ThemeUtils.getColorByAttr(context, R.attr.colorAccent))
-                setLogoColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
+                setToolbarColor(colors.accent.toArgb())
+                setToolbarWidgetColor(colors.onAccent.toArgb())
+                setActiveControlsWidgetColor(colors.accent.toArgb())
+                setLogoColor(colors.accent.toArgb())
                 setCompressionFormat(Bitmap.CompressFormat.JPEG)
             })
             .getIntent(context)

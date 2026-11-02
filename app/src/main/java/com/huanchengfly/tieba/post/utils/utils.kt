@@ -14,6 +14,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -22,8 +23,8 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ColorStateListUtils
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
@@ -210,12 +211,7 @@ fun launchUrl(
                     .setShowTitle(true)
                     .setDefaultColorSchemeParams(
                         CustomTabColorSchemeParams.Builder()
-                            .setToolbarColor(
-                                ThemeUtils.getColorByAttr(
-                                    context,
-                                    R.attr.colorToolbar
-                                )
-                            )
+                            .setToolbarColor(currentColors(context).sheet.toArgb())
                             .build()
                     )
                 try {

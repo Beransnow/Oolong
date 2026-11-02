@@ -42,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,7 +61,7 @@ import com.huanchengfly.tieba.post.models.PermissionBean
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebChromeClient
@@ -325,23 +327,10 @@ open class MyWebViewClient(
                                 .setShowTitle(true)
                                 .setDefaultColorSchemeParams(
                                     CustomTabColorSchemeParams.Builder()
-                                        .setToolbarColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorToolbar
-                                            )
-                                        )
-                                        .setNavigationBarColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorNavBar
-                                            )
-                                        )
+                                        .setToolbarColor(currentColors(context).sheet.toArgb())
+                                        .setNavigationBarColor(currentColors(context).sheet.toArgb())
                                         .setNavigationBarDividerColor(
-                                            ThemeUtils.getColorByAttr(
-                                                context,
-                                                R.attr.colorDivider
-                                            )
+                                            currentColors(context).run { divider.compositeOver(sheet) }.toArgb()
                                         )
                                         .build()
                                 )

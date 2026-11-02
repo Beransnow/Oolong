@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -20,7 +21,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.SignDataBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
 import com.huanchengfly.tieba.post.repository.AccountRepository
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.utils.ProgressListener
 import com.huanchengfly.tieba.post.utils.SingleAccountSigner
 import com.huanchengfly.tieba.post.utils.extension.addFlag
@@ -121,7 +122,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             .setSmallIcon(R.drawable.ic_oksign)
             .setAutoCancel(true)
             .setStyle(NotificationCompat.BigTextStyle())
-            .setColor(ThemeUtils.getColorByAttr(this, R.attr.colorPrimary))
+            .setColor(currentColors(this).accent.toArgb())
     }
 
     private fun updateNotification(title: String, text: String, intent: Intent?) {

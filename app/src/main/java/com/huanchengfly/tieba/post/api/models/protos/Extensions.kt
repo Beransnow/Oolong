@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.api.models.protos
 
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -14,7 +13,7 @@ import com.huanchengfly.tieba.post.ui.common.PicContentRender
 import com.huanchengfly.tieba.post.ui.common.TextContentRender.Companion.appendText
 import com.huanchengfly.tieba.post.ui.common.VideoContentRender
 import com.huanchengfly.tieba.post.ui.common.VoiceContentRender
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
@@ -187,12 +186,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         withAnnotation(tag = "url", annotation = it.link) {
                             withStyle(
                                 SpanStyle(
-                                    color = Color(
-                                        ThemeUtils.getColorByAttr(
-                                            App.INSTANCE,
-                                            R.attr.colorAccent
-                                        )
-                                    )
+                                    color = currentColors(App.INSTANCE).accent
                                 )
                             ) {
                                 append(it.text)
@@ -232,12 +226,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                         withAnnotation(tag = "user", annotation = "${it.uid}") {
                             withStyle(
                                 SpanStyle(
-                                    color = Color(
-                                        ThemeUtils.getColorByAttr(
-                                            App.INSTANCE,
-                                            R.attr.colorAccent
-                                        )
-                                    )
+                                    color = currentColors(App.INSTANCE).accent
                                 )
                             ) {
                                 append(it.text)
@@ -266,12 +255,7 @@ val List<PbContent>.renders: ImmutableList<PbContentRender>
                             withAnnotation(tag = "url", annotation = it.text) {
                                 withStyle(
                                     SpanStyle(
-                                        color = Color(
-                                            ThemeUtils.getColorByAttr(
-                                                App.INSTANCE,
-                                                R.attr.colorAccent
-                                            )
-                                        )
+                                        color = currentColors(App.INSTANCE).accent
                                     )
                                 ) {
                                     append(App.INSTANCE.getString(R.string.tag_video))
