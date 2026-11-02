@@ -17,11 +17,14 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 
 /** Threads and replies a search found, which pull down to search again and load more at their end. */
 @OptIn(ExperimentalMaterialApi::class)
@@ -35,6 +38,7 @@ fun SearchThreadResults(
     onOpenUser: (SearchAuthor) -> Unit,
     onOpenForum: (forumName: String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    blocks: ImmutableMap<String, BlockVerdict> = persistentMapOf(),
 ) {
     val refreshing = list.refresh == LoadStatus.Loading
     val error = (list.refresh as? LoadStatus.Error)?.error
@@ -67,6 +71,7 @@ fun SearchThreadResults(
                     onItemForumClick = onOpenForum,
                     searchKeyword = keyword,
                     contentPadding = contentPadding,
+                    blockOf = { blocks[it.key] },
                 )
             }
 

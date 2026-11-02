@@ -16,11 +16,19 @@ import com.huanchengfly.tieba.post.model.SearchOrder
 import com.huanchengfly.tieba.post.model.SearchedForum
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.model.SearchedUser
+import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.repository.BlockPlace
+import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.BlockVerdict
+import com.huanchengfly.tieba.post.repository.Blockable
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -59,6 +67,8 @@ data class SearchState(
     val suggestions: ImmutableList<String> = persistentListOf(),
     val forums: MatchesState<SearchedForum> = MatchesState(),
     val threads: PagerState<SearchedPost> = PagerState(refresh = LoadStatus.Loading),
+    /** How the block rules block found threads, by [SearchedPost.key]. */
+    val threadBlocks: ImmutableMap<String, BlockVerdict> = persistentMapOf(),
     val users: MatchesState<SearchedUser> = MatchesState(),
     val order: SearchOrder = SearchOrder.Newest,
 )
@@ -72,6 +82,7 @@ data class SearchState(
 class SearchViewModel @Inject constructor(
     private val repository: SearchRepository,
     private val messages: MessageController,
+    blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
     private val input = MutableStateFlow("")
@@ -94,13 +105,19 @@ class SearchViewModel @Inject constructor(
         repository.history,
         suggestions,
         threadPager.flatMapLatest { it?.state ?: flowOf(PagerState(refresh = LoadStatus.Loading)) },
-    ) { local, history, suggestions, threads ->
+        blockRuleSource.rules,
+    ) { local, history, suggestions, threads, rules ->
         SearchState(
             keyword = local.keyword,
             history = history.toImmutableList(),
             suggestions = suggestions.toImmutableList(),
             forums = local.forums,
             threads = threads,
+            threadBlocks = threads.items.mapNotNull { post ->
+                val author = User(post.author.id, post.author.name, post.author.nameShow, post.author.portrait)
+                rules.check(Blockable(author, post.content, BlockPlace.Feeds, title = post.title, forum = post.forumName))
+                    ?.let { post.key to it }
+            }.toMap().toImmutableMap(),
             users = local.users,
             order = local.order,
         )
@@ -169,7 +186,7 @@ class SearchViewModel @Inject constructor(
         when (tab) {
             SearchTab.Threads -> {
                 val order = local.value.order
-                threadPager.value = pager(initialKey = 1, itemKey = { post: SearchedPost -> "${post.threadId}_${post.postId}_${post.subPostId}" }) { page ->
+                threadPager.value = pager(initialKey = 1, itemKey = SearchedPost::key) { page ->
                     repository.threads(keyword, order, page)
                 }
             }

@@ -212,6 +212,7 @@ fun SearchScreen(
                     onOpenUser = { author -> author.id.takeIf { it != 0L }?.let(onOpenUser) },
                     onOpenForum = onOpenForum,
                     contentPadding = padding,
+                    blocks = state.threadBlocks,
                 )
             },
             supportSort = true,

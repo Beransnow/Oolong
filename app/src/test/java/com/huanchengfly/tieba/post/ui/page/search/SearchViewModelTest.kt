@@ -8,6 +8,8 @@ import com.huanchengfly.tieba.post.model.SearchMatches
 import com.huanchengfly.tieba.post.model.SearchOrder
 import com.huanchengfly.tieba.post.model.SearchedForum
 import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.SearchRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import io.mockk.coEvery
@@ -15,6 +17,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -39,7 +42,9 @@ class SearchViewModelTest {
         forumName = "", forumAvatar = "", replyCount = 0, agreeCount = 0, shareCount = 0,
     )
 
-    private fun createViewModel() = SearchViewModel(repository, mockk<MessageController>(relaxed = true))
+    private fun createViewModel() = SearchViewModel(repository, mockk<MessageController>(relaxed = true), object : BlockRuleSource {
+        override val rules = MutableStateFlow(BlockRules { null })
+    })
 
     @Test
     fun `each tab loads once per keyword, when it is first shown`() = runTest {

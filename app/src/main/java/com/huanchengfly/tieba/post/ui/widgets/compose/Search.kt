@@ -55,6 +55,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.QuotedPost
 import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
@@ -166,6 +167,7 @@ fun SearchThreadList(
     hideForum: Boolean = false,
     searchKeyword: String? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    blockOf: (SearchedPost) -> BlockVerdict? = { null },
     header: LazyListScope.() -> Unit = {},
 ) {
     MyLazyColumn(
@@ -178,16 +180,18 @@ fun SearchThreadList(
             if (index > 0) {
                 VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             }
-            SearchThreadItem(
-                item = item,
-                onClick = onItemClick,
-                onUserClick = onItemUserClick,
-                onForumClick = onItemForumClick,
-                onQuotePostClick = onQuotePostClick,
-                onMainPostClick = onMainPostClick,
-                hideForum = hideForum,
-                searchKeyword = searchKeyword
-            )
+            BlockableContent(block = blockOf(item), modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                SearchThreadItem(
+                    item = item,
+                    onClick = onItemClick,
+                    onUserClick = onItemUserClick,
+                    onForumClick = onItemForumClick,
+                    onQuotePostClick = onQuotePostClick,
+                    onMainPostClick = onMainPostClick,
+                    hideForum = hideForum,
+                    searchKeyword = searchKeyword
+                )
+            }
         }
     }
 }
