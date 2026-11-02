@@ -3,8 +3,10 @@ package com.huanchengfly.tieba.post.repository
 import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
+import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
+import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.SharedThread
@@ -12,13 +14,11 @@ import com.huanchengfly.tieba.post.model.ThreadImage
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.ThreadVideo
 import com.huanchengfly.tieba.post.model.User
-import kotlinx.collections.immutable.toImmutableList
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserReplies
 import com.huanchengfly.tieba.post.model.UserReply
 import com.huanchengfly.tieba.post.model.UserThread
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * A thread as a list returned it. Feeds name the forum only in its forum info and forums only by
@@ -141,4 +141,3 @@ fun PostInfoList.toUserPost(emoticons: EmoticonRegistry): UserPost {
         ),
     )
 }
-

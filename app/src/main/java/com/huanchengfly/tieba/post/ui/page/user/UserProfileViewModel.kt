@@ -12,11 +12,14 @@ import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.LikedForum
+import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserProfile
+import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -30,9 +33,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import com.huanchengfly.tieba.post.model.UserPost
-import com.huanchengfly.tieba.post.model.UserThread
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 
 /** The lists a profile shows, each in its own tab. */
 enum class UserTab { Threads, Posts, Forums }

@@ -82,6 +82,7 @@ import com.huanchengfly.tieba.post.model.SharedThread
 import com.huanchengfly.tieba.post.model.ThreadImage
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.ThreadVideo
+import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -107,7 +108,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.max
 import kotlin.math.min
-import com.huanchengfly.tieba.post.model.User
 
 private val ThreadImage.url: String
     get() = ImageUtil.getUrl(App.INSTANCE, true, original, large, animated, small)

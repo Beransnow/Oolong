@@ -38,6 +38,10 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.UserPost
+import com.huanchengfly.tieba.post.model.UserReplies
+import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
@@ -58,10 +62,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.ImmutableList
-import com.huanchengfly.tieba.post.model.ThreadSummary
-import com.huanchengfly.tieba.post.model.UserPost
-import com.huanchengfly.tieba.post.model.UserThread
-import com.huanchengfly.tieba.post.model.UserReplies
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable

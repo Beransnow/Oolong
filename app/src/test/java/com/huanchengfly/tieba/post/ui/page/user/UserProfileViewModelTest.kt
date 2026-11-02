@@ -9,8 +9,10 @@ import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
+import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.repository.UserPostsPage
 import com.huanchengfly.tieba.post.repository.UserRepository
+import com.huanchengfly.tieba.post.repository.toUserPost
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import io.mockk.coEvery
@@ -25,8 +27,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.huanchengfly.tieba.post.repository.toUserPost
-import com.huanchengfly.tieba.post.model.UserThread
 
 class UserProfileViewModelTest {
     @get:Rule

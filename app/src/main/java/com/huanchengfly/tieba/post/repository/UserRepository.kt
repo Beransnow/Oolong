@@ -9,14 +9,14 @@ import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.model.LikedForum
+import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserProfile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
 import java.io.File
 import javax.inject.Inject
-import com.huanchengfly.tieba.post.model.ThreadSummary
-import com.huanchengfly.tieba.post.model.UserPost
 
 /** A page of what a user posted, and whether they hide their posts from others. */
 data class UserPostsPage(val posts: Page<Int, UserPost>, val hidden: Boolean = false)
