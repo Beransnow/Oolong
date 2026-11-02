@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
+import android.content.Context
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.size
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ButtonSwell
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
@@ -52,8 +54,6 @@ fun FeedMenu(
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val menus = LocalContextMenus.current
-    val share = stringResource(id = R.string.title_share)
-    val copyLink = stringResource(id = R.string.title_copy_link)
     var bounds by remember { mutableStateOf(Rect.Zero) }
     var menuId by remember { mutableStateOf<Long?>(null) }
     // The menu holds the icon while it shows, and gives it back swollen
@@ -69,32 +69,10 @@ fun FeedMenu(
     IconButton(
         onClick = {
             menus ?: return@IconButton
-            val clickTime = System.currentTimeMillis()
-            val url = "https://tieba.baidu.com/p/$threadId"
-            val dislikes = options.map { option ->
-                val schema = option.schema
-                ContextMenuItem(
-                    icon = when {
-                        // Options that lead somewhere, such as reporting the thread, aren't reasons
-                        schema != null -> Icons.Rounded.Flag
-                        option.id == BlockForumOption -> Icons.Rounded.Block
-                        else -> Icons.Rounded.VisibilityOff
-                    },
-                    label = option.text.trim(),
-                ) {
-                    if (schema != null) {
-                        launchUrl(context, navigator, schema)
-                    } else {
-                        onDislike(clickTime, persistentListOf(option))
-                    }
-                }
+            val dislikes = dislikeMenuItems(context, navigator, options, onDislike)
+            val items = dislikes + shareMenuItems(context, threadId, title).mapIndexed { i, item ->
+                if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
             }
-            val items = dislikes + listOf(
-                ContextMenuItem(Icons.Rounded.Share, share, startsGroup = true) {
-                    TiebaUtil.shareText(context, url, title.takeIf(String::isNotBlank))
-                },
-                ContextMenuItem(Icons.Rounded.Link, copyLink) { TiebaUtil.copyText(context, url) },
-            )
             menuId = menus.show(items, anchor = bounds, icon = Icons.Rounded.MoreHoriz)
         },
         modifier = Modifier
@@ -112,6 +90,47 @@ fun FeedMenu(
             },
         )
     }
+}
+
+/**
+ * The server's options for not wanting a thread, each done in one tap: those that lead somewhere,
+ * such as reporting it, open it instead.
+ */
+fun dislikeMenuItems(
+    context: Context,
+    navigator: Navigator,
+    options: List<DislikeOption>,
+    onDislike: (clickTime: Long, reasons: ImmutableList<DislikeOption>) -> Unit,
+): List<ContextMenuItem> {
+    val clickTime = System.currentTimeMillis()
+    return options.map { option ->
+        val schema = option.schema
+        ContextMenuItem(
+            icon = when {
+                schema != null -> Icons.Rounded.Flag
+                option.id == BlockForumOption -> Icons.Rounded.Block
+                else -> Icons.Rounded.VisibilityOff
+            },
+            label = option.text.trim(),
+        ) {
+            if (schema != null) {
+                launchUrl(context, navigator, schema)
+            } else {
+                onDislike(clickTime, persistentListOf(option))
+            }
+        }
+    }
+}
+
+/** Sharing thread [threadId], titled [title], or copying its link. */
+fun shareMenuItems(context: Context, threadId: Long, title: String): List<ContextMenuItem> {
+    val url = "https://tieba.baidu.com/p/$threadId"
+    return listOf(
+        ContextMenuItem(Icons.Rounded.Share, context.getString(R.string.title_share)) {
+            TiebaUtil.shareText(context, url, title.takeIf(String::isNotBlank))
+        },
+        ContextMenuItem(Icons.Rounded.Link, context.getString(R.string.title_copy_link)) { TiebaUtil.copyText(context, url) },
+    )
 }
 
 /** The option that keeps the thread's forum out of the recommendations. */

@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -79,6 +80,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ShadowSpot
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.addSmoothRect
 import com.huanchengfly.tieba.post.ui.common.theme.compose.glassEdge
+import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
@@ -100,6 +102,19 @@ class ContextMenuItem(
     /** Whether a rule parts it from the items before it. */
     val startsGroup: Boolean = false,
     val onClick: () -> Unit,
+) {
+    fun copy(startsGroup: Boolean = this.startsGroup) = ContextMenuItem(icon, label, startsGroup, onClick)
+}
+
+/**
+ * A larger look at what was long-pressed, shown above its menu: [content] grows out of [from],
+ * the pressed thing's bounds in the window, and tapping it runs [onClick].
+ */
+@Immutable
+class ContextMenuPreview(
+    val from: Rect,
+    val onClick: () -> Unit,
+    val content: @Composable () -> Unit,
 )
 
 @Immutable
@@ -109,6 +124,7 @@ internal class ContextMenuRequest(
     val anchor: Rect,
     /** The button's icon, which the menu swallows as it opens and gives back as it closes. */
     val icon: ImageVector?,
+    val preview: ContextMenuPreview?,
     val id: Long,
 )
 
@@ -134,13 +150,19 @@ class ContextMenus internal constructor() {
     /**
      * Offers [items], growing out of [anchor] in the window: a button, whose [icon] the menu takes
      * in while it shows, or an empty rect where a long press landed. After a long press the finger
-     * stays in charge until it lifts: report it with [moveFinger] and [liftFinger].
+     * stays in charge until it lifts: report it with [moveFinger] and [liftFinger]. With a
+     * [preview], the menu sits under it instead, on the side of the press.
      *
      * @return the menu's id, for [isShowing]
      */
-    fun show(items: List<ContextMenuItem>, anchor: Rect, icon: ImageVector? = null): Long {
+    fun show(
+        items: List<ContextMenuItem>,
+        anchor: Rect,
+        icon: ImageVector? = null,
+        preview: ContextMenuPreview? = null,
+    ): Long {
         finger = null
-        request = ContextMenuRequest(items, anchor, icon, ++shown)
+        request = ContextMenuRequest(items, anchor, icon, preview, ++shown)
         return shown
     }
 
@@ -202,14 +224,21 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     val colors = ExtendedTheme.colors
 
     val fromButton = !request.anchor.isEmpty
+    val preview = request.preview
     // Out of a button, the button first swells in place, then sets off towards the menu's place
     // as a drop and grows into the menu on the way, its size trailing its position. Out of a
     // press there is nothing to carry: the menu simply grows from where the finger is.
     val swell = remember { Animatable(0f) }
     val move = remember { Animatable(0f) }
     val grow = remember { Animatable(0f) }
+    // A preview grows out of what was pressed, and its menu follows a moment later
+    val lift = remember { Animatable(0f) }
     var closing by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        if (preview != null) {
+            launch { lift.animateTo(1f, Motion.morph(Motion.ProgressThreshold)) }
+            delay(PreviewLead)
+        }
         if (fromButton) {
             swell.animateTo(1f, Motion.press(Motion.ProgressThreshold))
             launch { move.animateTo(1f, MoveSpring) }
@@ -229,7 +258,9 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 move.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 shrink.join()
             } else {
+                val sink = launch { lift.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
                 grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                sink.join()
             }
             menus.closed(request.id)
         }
@@ -255,16 +286,32 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     LaunchedEffect(hovered) {
         if (hovered != null) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
+    // A finger that lifts where it pressed only lets go of the menu; one that slid there picks
+    val slop = LocalViewConfiguration.current.touchSlop
+    var fingerStart by remember { mutableStateOf<Offset?>(null) }
+    LaunchedEffect(menus.finger) {
+        if (fingerStart == null) fingerStart = menus.finger
+    }
     val liftsBefore = remember { menus.lift?.first }
     LaunchedEffect(menus.lift) {
         val (count, lifted) = menus.lift ?: return@LaunchedEffect
         if (count == liftsBefore) return@LaunchedEffect
-        itemAt(lifted)?.let(run)
+        val start = fingerStart ?: return@LaunchedEffect
+        if ((lifted - start).getDistance() > slop) itemAt(lifted)?.let(run)
     }
 
     BackHandler(enabled = !closing) { dismiss() }
 
-    // Menus take no scrim; a tap anywhere else only closes them
+    // Menus take no scrim. A preview is content over content, so behind it the page blurs and
+    // dims as it rises, the way a lifted card stands apart. A tap anywhere else only closes them.
+    if (preview != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = lift.value.coerceIn(0f, 1f) }
+                .previewBackdrop(backdrop),
+        )
+    }
     Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { dismiss() } })
 
     val insets = WindowInsets.safeDrawing
@@ -365,9 +412,43 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     }
                 }
             }
+            // The preview, at its final size and place, carried by the pressed thing's bounds
+            Box(
+                modifier = Modifier.graphicsLayer {
+                    val final = geometry.preview
+                    val now = geometry.previewNow
+                    val scale = if (final.width > 0f) now.width / final.width else 1f
+                    scaleX = scale
+                    scaleY = scale
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    translationX = now.left - final.left
+                    translationY = now.top - final.top
+                    val corner = Radius.lg.toPx() * lift.value.coerceIn(0f, 1f) / scale
+                    shape = PreviewClip(now.height / scale, corner)
+                    clip = true
+                    shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * lift.value.coerceIn(0f, 1f)
+                    ambientShadowColor = ShadowAmbient
+                    spotShadowColor = ShadowSpot
+                },
+            ) {
+                if (preview != null) {
+                    Box(modifier = Modifier.background(colors.card)) {
+                        preview.content()
+                        // Over the content, so a tap anywhere on it opens what it shows
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(enabled = !closing) {
+                                    preview.onClick()
+                                    dismiss()
+                                },
+                        )
+                    }
+                }
+            }
         },
     ) { measurables, constraints ->
-        val (glassMeasurable, iconMeasurable, itemsMeasurable) = measurables
+        val (glassMeasurable, iconMeasurable, itemsMeasurable, previewMeasurable) = measurables
         val items = itemsMeasurable.measure(Constraints())
         val size = Size(items.width.toFloat(), items.height.toFloat())
         val gap = FingerGap.toPx()
@@ -376,19 +457,55 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         val bottom = constraints.maxHeight - insets.getBottom(this) - margin
         // A button's menu covers it, from the side it sits on; a press's sits beside the finger
         val fromRight = anchor.center.x > constraints.maxWidth / 2
-        val left = when {
-            !fromButton -> anchor.center.x - size.width / 2
-            fromRight -> anchor.right - size.width
-            else -> anchor.left
-        }.coerceIn(margin, (constraints.maxWidth - size.width - margin).coerceAtLeast(margin))
-        val below = (if (fromButton) anchor.top else anchor.center.y + gap) + size.height <= bottom
-        val y = when {
-            below && fromButton -> anchor.top
-            below -> anchor.center.y + gap
-            fromButton -> anchor.bottom - size.height
-            else -> anchor.center.y - gap - size.height
-        }.coerceAtLeast(top)
-        val bounds = Rect(Offset(left, y), size)
+        val bounds: Rect
+        val previewPlaceable = if (preview != null) {
+            // The preview stays where the pressed thing was as far as it can, with the menu under it
+            val menuGap = PreviewGap.toPx()
+            val width = min(constraints.maxWidth - 2 * margin, PreviewMaxWidth.toPx())
+            val maxHeight = min((bottom - top) * PreviewMaxHeight, bottom - top - menuGap - size.height)
+            val placeable = previewMeasurable.measure(
+                Constraints(
+                    minWidth = width.roundToInt(),
+                    maxWidth = width.roundToInt(),
+                    maxHeight = maxHeight.roundToInt().coerceAtLeast(0),
+                ),
+            )
+            val total = placeable.height + menuGap + size.height
+            val previewTop = preview.from.translate(-origin).top.coerceIn(top, (bottom - total).coerceAtLeast(top))
+            val previewLeft = (constraints.maxWidth - width) / 2
+            geometry.preview = Rect(Offset(previewLeft, previewTop), Size(width, placeable.height.toFloat()))
+            val l = lift.value
+            val from = preview.from.translate(-origin)
+            geometry.previewNow = Rect(
+                lerp(from.left, geometry.preview.left, l),
+                lerp(from.top, geometry.preview.top, l),
+                lerp(from.right, geometry.preview.right, l),
+                lerp(from.bottom, geometry.preview.bottom, l),
+            )
+            bounds = Rect(
+                Offset(
+                    if (fromRight) geometry.preview.right - size.width else geometry.preview.left,
+                    geometry.preview.bottom + menuGap,
+                ),
+                size,
+            )
+            placeable
+        } else {
+            val left = when {
+                !fromButton -> anchor.center.x - size.width / 2
+                fromRight -> anchor.right - size.width
+                else -> anchor.left
+            }.coerceIn(margin, (constraints.maxWidth - size.width - margin).coerceAtLeast(margin))
+            val below = (if (fromButton) anchor.top else anchor.center.y + gap) + size.height <= bottom
+            val y = when {
+                below && fromButton -> anchor.top
+                below -> anchor.center.y + gap
+                fromButton -> anchor.bottom - size.height
+                else -> anchor.center.y - gap - size.height
+            }.coerceAtLeast(top)
+            bounds = Rect(Offset(left, y), size)
+            previewMeasurable.measure(Constraints.fixed(0, 0))
+        }
         val g = grow.value
         geometry.bounds = bounds
         if (fromButton) {
@@ -401,10 +518,11 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             // Round while small, like a drop, easing into the menu's corners
             geometry.corner = min(geometry.glass.minDimension / 2, lerp(startSize / 2, Radius.lg.toPx(), g.coerceIn(0f, 1f)))
         } else {
-            // Grows evenly out of the point of the menu nearest the finger
+            // Grows evenly out of the point of the menu nearest the finger, or under a preview
+            // out of its top edge
             val pivot = Offset(
                 anchor.center.x.coerceIn(bounds.left, bounds.right),
-                anchor.center.y.coerceIn(bounds.top, bounds.bottom),
+                if (preview != null) bounds.top else anchor.center.y.coerceIn(bounds.top, bounds.bottom),
             )
             geometry.glass = Rect(
                 lerp(pivot.x, bounds.left, g),
@@ -425,6 +543,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 (anchor.center.y - icon.height / 2f).roundToInt(),
             )
             items.place(bounds.left.roundToInt(), bounds.top.roundToInt())
+            previewPlaceable.place(geometry.preview.left.roundToInt(), geometry.preview.top.roundToInt())
         }
     }
 }
@@ -451,10 +570,42 @@ private fun Modifier.menuGlass(backdrop: HazeState): Modifier {
     return hazeBlur(input = HazeInput.Sources(backdrop), style = style)
 }
 
+/** Behind a preview: the page blurred and dimmed; dimmed only where glass is off or unsupported. */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+private fun Modifier.previewBackdrop(backdrop: HazeState): Modifier {
+    val colors = ExtendedTheme.colors
+    val dim = Color.Black.copy(alpha = if (colors.isNightMode) PreviewDimNight else PreviewDim)
+    val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
+    val tier = LocalGlassTier.current ?: if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    if (tier == GlassTier.Solid) return background(colors.scrim)
+    val style = remember(colors.background, dim) {
+        HazeBlurStyle {
+            backgroundColor(colors.background)
+            blurRadius(PreviewBackdropBlur)
+            noiseFactor(0f)
+            colorEffects(listOf(HazeColorEffect.tint(dim)))
+        }
+    }
+    return hazeBlur(input = HazeInput.Sources(backdrop), style = style)
+}
+
 private class MenuGeometry {
     var bounds = Rect.Zero
     var glass = Rect.Zero
     var corner = 0f
+
+    /** Where a preview ends up, and where it is now. */
+    var preview = Rect.Zero
+    var previewNow = Rect.Zero
+}
+
+/** The top [height] of a preview scaled by its growing, rounded by [corner]; the rest is cut off. */
+private class PreviewClip(private val height: Float, private val corner: Float) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Generic(
+            Path().apply { addSmoothRect(size.width, min(height, size.height), corner, SmoothCornerShape.DefaultSmoothing) },
+        )
 }
 
 /** The glass, as seen from the items scaled by [scale] at its top left corner, so they show only within it. */
@@ -482,6 +633,19 @@ private const val GrowDelay = 40L
 /** How much a button swells as its menu opens, and lands back from as it closes. */
 internal const val ButtonSwell = 1.1f
 
+/** How long a preview grows before its menu starts to. */
+private const val PreviewLead = 60L
+
+/** A preview's widest, on large screens. */
+private val PreviewMaxWidth = 420.dp
+
+/** A preview's tallest, as a share of the room on screen; more of it is cut off. */
+private const val PreviewMaxHeight = 0.6f
+
+private val PreviewGap = 12.dp
+private val PreviewBackdropBlur = 20.dp
+private const val PreviewDim = 0.12f
+private const val PreviewDimNight = 0.3f
 private val ButtonRadius = 20.dp
 private val FingerGap = 20.dp
 private val Margin = 12.dp

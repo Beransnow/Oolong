@@ -109,6 +109,7 @@ fun ConcernScreen(
                                         onClickForum = events.onOpenForum,
                                         onClickUser = events.onOpenUser,
                                         onClickOriginThread = events.onOpenOrigin,
+                                        onLongPress = events.onPeek,
                                     )
                                     if (index < list.items.size - 1) {
                                         VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))

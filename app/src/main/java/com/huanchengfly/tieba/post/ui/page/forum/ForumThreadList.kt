@@ -37,6 +37,7 @@ import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.page.main.explore.rememberThreadPeeker
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -70,6 +71,7 @@ internal fun ForumThreadList(
         else -> 1f
     }
     val items = list.items
+    val peeker = rememberThreadPeeker()
     Box(modifier = modifier.fillMaxSize()) {
         LoadMoreLayout(
             isLoading = list.append == LoadStatus.Loading,
@@ -143,6 +145,7 @@ internal fun ForumThreadList(
                                     onClickOriginThread = { onEvent(ForumEvent.OpenOriginThread(it)) },
                                     onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
                                     showForum = false,
+                                    onLongPress = peeker?.let { { thread, from, at -> it.peek(thread, from, at) } },
                                 )
                             }
                         }

@@ -3,6 +3,8 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
@@ -22,13 +24,16 @@ class FeedThreadEvents(
     val onOpenForum: (SimpleForum) -> Unit = {},
     val onOpenUser: (User) -> Unit = {},
     val onOpenOrigin: (OriginThreadInfo) -> Unit = {},
+    /** Long-pressing a card, at its bounds and the press in the window; null where it does nothing. */
+    val onPeek: ((ThreadInfo, from: Rect, at: Offset) -> Unit)? = null,
 )
 
 /** Opens what a thread card's parts lead to; liking is up to the feed. */
 @Composable
 fun rememberFeedThreadEvents(onAgree: (ThreadInfo) -> Unit): FeedThreadEvents {
     val navigator = LocalNavigator.current
-    return remember(navigator, onAgree) {
+    val peeker = rememberThreadPeeker()
+    return remember(navigator, onAgree, peeker) {
         FeedThreadEvents(
             onOpen = { navigator.navigateToThread(it) },
             onOpenReplies = { navigator.navigate(ThreadKey(it.threadId, it.forumId, scrollToReply = true)) },
@@ -36,6 +41,7 @@ fun rememberFeedThreadEvents(onAgree: (ThreadInfo) -> Unit): FeedThreadEvents {
             onOpenForum = { navigator.navigate(ForumKey(it.name)) },
             onOpenUser = { navigator.navigate(UserProfileKey(it.id)) },
             onOpenOrigin = { navigator.navigate(ThreadKey(threadId = it.tid.toLong(), forumId = it.fid)) },
+            onPeek = peeker?.let { { thread, from, at -> it.peek(thread, from, at) } },
         )
     }
 }

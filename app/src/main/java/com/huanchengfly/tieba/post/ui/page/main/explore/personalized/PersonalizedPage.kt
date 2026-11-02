@@ -60,6 +60,7 @@ import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
+import com.huanchengfly.tieba.post.ui.page.main.explore.rememberThreadPeeker
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
@@ -217,6 +218,7 @@ private fun FeedList(
     onUndoDislike: (threadId: Long) -> Unit,
     onRefresh: () -> Unit,
 ) {
+    val peeker = rememberThreadPeeker()
     MyLazyColumn(
         state = state,
         contentPadding = contentPadding,
@@ -272,6 +274,13 @@ private fun FeedList(
                                             onClickForum = events.onOpenForum,
                                             onClickUser = events.onOpenUser,
                                             onClickOriginThread = events.onOpenOrigin,
+                                            onLongPress = peeker?.let { peeker ->
+                                                { thread, from, at ->
+                                                    peeker.peek(thread, from, at, dislikeOptions) { clickTime, reasons ->
+                                                        onDislike(thread, reasons, clickTime)
+                                                    }
+                                                }
+                                            },
                                         ) {
                                             FeedMenu(
                                                 threadId = threadId,

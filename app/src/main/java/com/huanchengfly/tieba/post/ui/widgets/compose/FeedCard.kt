@@ -5,6 +5,9 @@ import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,14 +44,22 @@ import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -61,6 +72,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.App
@@ -212,8 +224,13 @@ fun Card(
     action: @Composable (ColumnScope.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    onLongClick: (() -> Unit)? = null,
 ) {
-    val cardModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    val cardModifier = when {
+        onLongClick != null -> Modifier.combinedClickable(onClick = { onClick?.invoke() }, onLongClick = onLongClick)
+        onClick != null -> Modifier.clickable(onClick = onClick)
+        else -> Modifier
+    }
 
     val paddingModifier = if (action != null) Modifier.padding(top = 16.dp)
     else Modifier.padding(vertical = 16.dp)
@@ -794,8 +811,37 @@ fun FeedCard(
     onClickOriginThread: (OriginThreadInfo) -> Unit = {},
     /** Whether to show the thread's forum, which a forum's own list leaves out. */
     showForum: Boolean = true,
+    /** Long-pressing the card, at its bounds and the press in the window. */
+    onLongPress: ((ThreadInfo, from: Rect, at: Offset) -> Unit)? = null,
     dislikeAction: @Composable () -> Unit = {},
 ) {
+    // A long press opens the card's menu, which the pressing finger can then slide onto and lift
+    val menus = LocalContextMenus.current
+    var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var pressAt by remember { mutableStateOf(Offset.Zero) }
+    var peeking by remember { mutableStateOf(false) }
+    val pressTracking = if (onLongPress == null) {
+        Modifier
+    } else {
+        Modifier
+            .onGloballyPositioned { coordinates = it }
+            .pointerInput(menus) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    pressAt = coordinates?.localToWindow(down.position) ?: Offset.Zero
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull() ?: break
+                        val position = coordinates?.localToWindow(change.position) ?: break
+                        if (!change.pressed) {
+                            if (peeking) menus?.liftFinger(position)
+                            peeking = false
+                            break
+                        }
+                        if (peeking) menus?.moveFinger(position)
+                    }
+                }
+            }
+    }
     Card(
         header = {
             val author = remember(item) { item.getNullableImmutable { author } }
@@ -855,7 +901,15 @@ fun FeedCard(
             }
         },
         onClick = { onClick(item.get()) },
-        modifier = modifier,
+        onLongClick = onLongPress?.let { peek ->
+            {
+                coordinates?.let {
+                    peeking = true
+                    peek(item.get(), Rect(it.positionInWindow(), it.size.toSize()), pressAt)
+                }
+            }
+        },
+        modifier = modifier.then(pressTracking),
     )
 }
 

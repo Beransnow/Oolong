@@ -288,6 +288,7 @@ fun HotScreen(
                                     onClickForum = events.onOpenForum,
                                     onClickUser = events.onOpenUser,
                                     onClickOriginThread = events.onOpenOrigin,
+                                    onLongPress = events.onPeek,
                                 ) {
                                     HotRank(index = index, hotNum = item.get { hotNum })
                                 }
