@@ -273,6 +273,8 @@ fun FloatingNavBar(
     val menus = LocalContextMenus.current
     val haptic = LocalHapticFeedback.current
     val items by rememberUpdatedState(navigationItems)
+    // The gesture outlives recompositions, so it reads the shown tab through this
+    val shown by rememberUpdatedState(currentPosition)
     var pill by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val itemBounds = remember { mutableMapOf<Int, Rect>() }
     val select by rememberUpdatedState { index: Int ->
@@ -355,7 +357,7 @@ fun FloatingNavBar(
                             if (held && menu != null && menus != null) {
                                 coroutineScope.launch { press.animateTo(0f, PressSpring) }
                                 coroutineScope.launch {
-                                    indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
+                                    indicator.animateTo(shown.toFloat(), IndicatorSpring)
                                 }
                                 val coordinates = pill ?: return@awaitEachGesture
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -388,7 +390,7 @@ fun FloatingNavBar(
                                 select(target)
                             } else {
                                 coroutineScope.launch {
-                                    indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
+                                    indicator.animateTo(shown.toFloat(), IndicatorSpring)
                                 }
                             }
                         }
