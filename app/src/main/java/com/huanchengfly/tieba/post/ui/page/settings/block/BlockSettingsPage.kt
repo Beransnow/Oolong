@@ -76,6 +76,9 @@ fun BlockSettingsPage(
             )
         },
     ) { paddingValues ->
+        val commonGroup = stringResource(id = R.string.settings_block_common)
+        val blockedGroup = stringResource(id = R.string.settings_blocked_content)
+        val rulesGroup = stringResource(id = R.string.settings_block_rules_group)
         val levels = (2..10).associate { it.toString() to stringResource(id = R.string.rule_level, it) }
         PrefsScreen(
             dataStore = context.dataStore,
@@ -83,7 +86,7 @@ fun BlockSettingsPage(
             modifier = Modifier.fillMaxSize(),
             contentPadding = paddingValues,
         ) {
-            prefsGroup(context.getString(R.string.settings_block_common)) {
+            prefsGroup(commonGroup) {
                 prefsItem {
                     SwitchPref(key = "blockVideo", title = stringResource(id = R.string.settings_block_video))
                 }
@@ -109,13 +112,13 @@ fun BlockSettingsPage(
                     )
                 }
             }
-            prefsGroup(context.getString(R.string.settings_blocked_content)) {
+            prefsGroup(blockedGroup) {
                 prefsItem {
                     SwitchPref(key = HideBlockedContentKey, title = stringResource(id = R.string.settings_hide_blocked_content))
                 }
             }
             prefsFooter { stringResource(id = R.string.settings_blocked_content_note) }
-            prefsGroup(context.getString(R.string.settings_block_rules_group)) {
+            prefsGroup(rulesGroup) {
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_block_rules),

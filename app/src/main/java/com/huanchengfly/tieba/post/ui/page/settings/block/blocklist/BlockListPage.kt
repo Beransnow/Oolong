@@ -108,7 +108,9 @@ fun BlockListScreen(
     onDelete: (List<BlockRule>) -> Unit,
     onRestore: (List<BlockRule>) -> Unit,
 ) {
-    val context = LocalContext.current
+    val deletedOne = stringResource(id = R.string.toast_rule_deleted)
+    val deletedMany = stringResource(id = R.string.toast_rules_deleted)
+    val undo = stringResource(id = R.string.button_undo)
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
     var filter by rememberSaveable { mutableStateOf(RuleFilter.All) }
@@ -119,12 +121,8 @@ fun BlockListScreen(
     fun delete(rules: List<BlockRule>) {
         onDelete(rules)
         scope.launch {
-            val message = if (rules.size == 1) {
-                context.getString(R.string.toast_rule_deleted)
-            } else {
-                context.getString(R.string.toast_rules_deleted, rules.size)
-            }
-            val result = scaffoldState.snackbarHostState.showSnackbar(message, context.getString(R.string.button_undo))
+            val message = if (rules.size == 1) deletedOne else deletedMany.format(rules.size)
+            val result = scaffoldState.snackbarHostState.showSnackbar(message, undo)
             if (result == SnackbarResult.ActionPerformed) onRestore(rules)
         }
     }
@@ -182,7 +180,8 @@ fun BlockListScreen(
                         state = dismissState,
                         directions = setOf(DismissDirection.EndToStart),
                         background = {
-                            Box(
+                            // Only while swiping, or it shows at the rounded corners
+                            if (dismissState.dismissDirection != null) Box(
                                 contentAlignment = Alignment.CenterEnd,
                                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.error)
                                     .padding(horizontal = 20.dp),
