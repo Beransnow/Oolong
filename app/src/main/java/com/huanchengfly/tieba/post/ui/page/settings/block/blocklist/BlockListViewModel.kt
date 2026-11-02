@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.tests
 import com.huanchengfly.tieba.post.repository.BlockListRepository
+import com.huanchengfly.tieba.post.ui.page.settings.block.typedValue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -32,24 +35,29 @@ data class BlockListState(
     val stale: List<BlockRule> get() = rules.filter { it.isStale(now) }
 }
 
-fun BlockRule.matches(filter: RuleFilter): Boolean = when (filter) {
-    RuleFilter.All -> true
-    RuleFilter.User -> match is BlockRule.Match.User
-    RuleFilter.Keyword -> match is BlockRule.Match.Keyword
-    RuleFilter.Forum -> match is BlockRule.Match.Forum
-    RuleFilter.Other -> match is BlockRule.Match.Level
-}
+/** Whether any of the rule's tests is of the kind [filter] picks. */
+fun BlockRule.matches(filter: RuleFilter): Boolean = filter == RuleFilter.All || condition.tests.any { it.kind == filter }
 
-/** Whether [query] is in what the rule matches. */
+private val Condition.kind: RuleFilter
+    get() = when (this) {
+        is Condition.User, is Condition.AuthorName -> RuleFilter.User
+        is Condition.Text -> RuleFilter.Keyword
+        is Condition.Forum, is Condition.ForumName -> RuleFilter.Forum
+        else -> RuleFilter.Other
+    }
+
+/** Whether [query] is in what any of the rule's tests looks for. */
 fun BlockRule.matches(query: String): Boolean {
     if (query.isBlank()) return true
-    val text = when (val match = match) {
-        is BlockRule.Match.User -> match.name
-        is BlockRule.Match.Keyword -> match.words.joinToString(" ")
-        is BlockRule.Match.Forum -> match.name
-        is BlockRule.Match.Level -> ""
+    return condition.tests.any { test ->
+        val text = when (test) {
+            is Condition.User -> test.name + " " + test.displayName
+            is Condition.Forum -> test.name
+            is Condition.Ip -> test.region
+            else -> test.typedValue
+        }
+        text.contains(query.trim(), ignoreCase = true)
     }
-    return text.contains(query.trim(), ignoreCase = true) || inForum?.contains(query.trim(), ignoreCase = true) == true
 }
 
 private fun BlockRule.isStale(now: Long) = createdAt > 0 && action != BlockRule.Action.Allow &&

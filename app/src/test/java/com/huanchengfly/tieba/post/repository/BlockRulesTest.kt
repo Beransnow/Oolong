@@ -1,7 +1,9 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.model.BlockRule
-import com.huanchengfly.tieba.post.model.BlockRule.Match
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.model.User
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,9 +21,16 @@ class BlockRulesTest {
         place: BlockPlace = BlockPlace.Thread,
         title: String = "",
         forum: String? = "吧名",
-    ) = Blockable(author, content, place, title, forum)
+        kinds: Set<ContentKind> = emptySet(),
+        byThreadAuthor: Boolean = false,
+    ) = Blockable(author, content, place, title, forum, kinds, byThreadAuthor = byThreadAuthor)
 
-    private fun keyword(vararg words: String, regex: Boolean = false) = BlockRule(match = Match.Keyword(words.toList(), regex))
+    private fun keyword(vararg words: String, regex: Boolean = false) =
+        rule(Condition.Text(if (regex) Pattern.Regex(words.single()) else Pattern.Words(words.toList())))
+
+    private fun rule(condition: Condition) = BlockRule(condition = condition)
+
+    private fun BlockRules.matches(item: Blockable) = check(item) != null
 
     @Test
     fun `a keyword rule blocks content containing all of its keywords`() {
@@ -52,7 +61,7 @@ class BlockRulesTest {
     @Test
     fun `an exception shows content whatever else matches`() {
         val rules = blockRulesOf(
-            listOf(keyword("广告"), BlockRule(match = Match.User(7, "someone"), action = BlockRule.Action.Allow)),
+            listOf(keyword("广告"), BlockRule(condition = Condition.User(7, "someone"), action = BlockRule.Action.Allow)),
         )
 
         assertFalse(rules.blocks(someone, "广告"))
@@ -61,14 +70,14 @@ class BlockRulesTest {
 
     @Test
     fun `a user rule matches by id or by name, never a missing id or a blank name`() {
-        assertTrue(blockRulesOf(listOf(BlockRule(match = Match.User(7, "")))).blocks(someone, ""))
-        assertTrue(blockRulesOf(listOf(BlockRule(match = Match.User(0, "someone")))).blocks(someone, ""))
-        assertFalse(blockRulesOf(listOf(BlockRule(match = Match.User(0, "")))).blocks(nameless, "内容"))
+        assertTrue(blockRulesOf(listOf(rule(Condition.User(7, "")))).blocks(someone, ""))
+        assertTrue(blockRulesOf(listOf(rule(Condition.User(0, "someone")))).blocks(someone, ""))
+        assertFalse(blockRulesOf(listOf(rule(Condition.User(0, "")))).blocks(nameless, "内容"))
     }
 
     @Test
     fun `a forum rule matches its forum with or without 吧, except in the forum itself`() {
-        val rules = blockRulesOf(listOf(BlockRule(match = Match.Forum("抽卡吧"))))
+        val rules = blockRulesOf(listOf(rule(Condition.Forum("抽卡吧"))))
 
         assertTrue(rules.check(item(forum = "抽卡")) != null)
         assertNull(rules.check(item(forum = "抽卡", place = BlockPlace.Forum)))
@@ -85,14 +94,96 @@ class BlockRulesTest {
     }
 
     @Test
-    fun `conditions narrow a rule to a forum and to titles`() {
-        val inForum = blockRulesOf(listOf(keyword("原神").copy(inForum = "星穹铁道")))
-        assertTrue(inForum.check(item("原神", forum = "星穹铁道吧")) != null)
-        assertNull(inForum.check(item("原神", forum = "原神")))
+    fun `a forum joined with other tests applies inside the forum too`() {
+        val rules = blockRulesOf(listOf(rule(Condition.AllOf(listOf(Condition.Forum("原神"), Condition.Text(Pattern.Words(listOf("剧透"))))))))
 
-        val titleOnly = blockRulesOf(listOf(keyword("剧透").copy(titleOnly = true)))
-        assertTrue(titleOnly.check(item("正文", title = "剧透预警")) != null)
-        assertNull(titleOnly.check(item("剧透", title = "标题")))
+        assertTrue(rules.matches(item("剧透", forum = "原神吧", place = BlockPlace.Forum)))
+        assertFalse(rules.matches(item("剧透", forum = "星穹铁道")))
+        assertFalse(rules.matches(item("正文", forum = "原神")))
+    }
+
+    @Test
+    fun `text is looked for in the title, the body or either`() {
+        fun text(field: BlockRule.TextField) = blockRulesOf(listOf(rule(Condition.Text(Pattern.Words(listOf("剧透")), field))))
+
+        assertTrue(text(BlockRule.TextField.Title).matches(item("正文", title = "剧透预警")))
+        assertFalse(text(BlockRule.TextField.Title).matches(item("剧透", title = "标题")))
+        assertTrue(text(BlockRule.TextField.Body).matches(item("剧透", title = "标题")))
+        assertFalse(text(BlockRule.TextField.Body).matches(item("正文", title = "剧透")))
+        assertTrue(text(BlockRule.TextField.Both).matches(item("正文", title = "剧透")))
+    }
+
+    @Test
+    fun `tests join by and, by or, and turn around`() {
+        val ad = Condition.Text(Pattern.Words(listOf("广告")))
+        val low = Condition.LevelBelow(3)
+        val newbie = someone.copy(level = 1)
+
+        val both = blockRulesOf(listOf(rule(Condition.AllOf(listOf(ad, low)))))
+        assertTrue(both.matches(item("广告", author = newbie)))
+        assertFalse(both.matches(item("广告")))
+
+        val either = blockRulesOf(listOf(rule(Condition.AnyOf(listOf(ad, low)))))
+        assertTrue(either.matches(item("广告")))
+        assertTrue(either.matches(item("正文", author = newbie)))
+        assertFalse(either.matches(item("正文")))
+
+        val notOp = blockRulesOf(listOf(rule(Condition.AllOf(listOf(ad, Condition.Not(Condition.ThreadAuthor))))))
+        assertTrue(notOp.matches(item("广告")))
+        assertFalse(notOp.matches(item("广告", byThreadAuthor = true)))
+    }
+
+    @Test
+    fun `a rule with nothing to test, or a test that can't be judged, matches nothing`() {
+        assertFalse(blockRulesOf(listOf(rule(Condition.AllOf(emptyList())))).matches(item("正文")))
+        assertFalse(blockRulesOf(listOf(rule(Condition.AnyOf(emptyList())))).matches(item("正文")))
+        assertFalse(blockRulesOf(listOf(rule(Condition.Not(Condition.Text(Pattern.Regex("(")))))).matches(item("正文")))
+        assertFalse(blockRulesOf(listOf(rule(Condition.Not(Condition.Text(Pattern.Words(listOf(" "))))))).matches(item("正文")))
+    }
+
+    @Test
+    fun `names of authors and forums are matched by words or patterns`() {
+        val author = blockRulesOf(listOf(rule(Condition.AuthorName(Pattern.Words(listOf("抽奖"))))))
+        assertTrue(author.matches(item(author = someone.copy(nameShow = "每日抽奖机器人"))))
+        assertFalse(author.matches(item()))
+
+        val forum = blockRulesOf(listOf(rule(Condition.ForumName(Pattern.Regex("^原神")))))
+        assertTrue(forum.matches(item(forum = "原神内鬼")))
+        assertFalse(forum.matches(item(forum = "玩原神")))
+        assertFalse(forum.matches(item(forum = null)))
+    }
+
+    @Test
+    fun `a user named without an id may be either of their names`() {
+        val rules = blockRulesOf(listOf(rule(Condition.User(0, "某人"))))
+
+        assertTrue(rules.matches(item(author = someone.copy(nameShow = "某人"))))
+        assertFalse(blockRulesOf(listOf(rule(Condition.User(8, "某人")))).matches(item(author = someone.copy(nameShow = "某人"))))
+    }
+
+    @Test
+    fun `where the author posted from is matched as shown`() {
+        val rules = blockRulesOf(listOf(rule(Condition.Ip("广东"))))
+
+        assertTrue(rules.matches(item(author = someone.copy(ipLocation = "广东"))))
+        assertFalse(rules.matches(item(author = someone.copy(ipLocation = "广西"))))
+        assertFalse(rules.matches(item()))
+    }
+
+    @Test
+    fun `what content holds, holds only, and how long its words are`() {
+        val links = blockRulesOf(listOf(rule(Condition.Has(ContentKind.Link))))
+        assertTrue(links.matches(item("看这里", kinds = setOf(ContentKind.Link, ContentKind.Image))))
+        assertFalse(links.matches(item("看这里")))
+
+        val emoticons = blockRulesOf(listOf(rule(Condition.Only(ContentKind.Emoticon))))
+        assertTrue(emoticons.matches(item("！！ 。", kinds = setOf(ContentKind.Emoticon))))
+        assertFalse(emoticons.matches(item("哈", kinds = setOf(ContentKind.Emoticon))))
+        assertFalse(emoticons.matches(item("", kinds = setOf(ContentKind.Emoticon, ContentKind.Image))))
+
+        val short = blockRulesOf(listOf(rule(Condition.ShorterThan(3))))
+        assertTrue(short.matches(item("顶！！")))
+        assertFalse(short.matches(item("顶一下吧")))
     }
 
     @Test

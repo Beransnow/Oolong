@@ -1,7 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block
 
 import com.huanchengfly.tieba.post.model.BlockRule
-import com.huanchengfly.tieba.post.model.BlockRule.Match
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
 import org.junit.Rule
@@ -19,12 +21,23 @@ class BlockRuleScreenshotTest {
     val legacyApp = LegacyAppRule()
 
     private fun screen(state: BlockRuleState) = captureScreenshot {
-        BlockRuleScreen(state = state, onBack = {}, onEdit = {}, onKind = {}, onExpiry = {}, onSave = {}, onDelete = {})
+        BlockRuleScreen(
+            state = state,
+            onBack = {},
+            onEdit = {},
+            onJoin = {},
+            onTest = { _, _ -> },
+            onAddTest = {},
+            onRemoveTest = {},
+            onExpiry = {},
+            onSave = {},
+            onDelete = {},
+        )
     }
 
     @Test
     fun newKeyword() = screen(
-        BlockRuleState(draft = BlockRule(match = Match.Keyword(listOf("剧透"))), isNew = true, now = 0),
+        BlockRuleState(draft = BlockRule(condition = Condition.Text(Pattern.Words(listOf("剧透")))), isNew = true, now = 0),
     )
 
     @Test
@@ -32,11 +45,16 @@ class BlockRuleScreenshotTest {
         BlockRuleState(
             draft = BlockRule(
                 id = 5,
-                match = Match.Keyword(listOf("互关|互粉"), regex = true),
+                condition = Condition.AllOf(
+                    listOf(
+                        Condition.Forum("星穹铁道"),
+                        Condition.Not(Condition.Text(Pattern.Regex("互关|互粉"), BlockRule.TextField.Title)),
+                        Condition.LevelBelow(3),
+                        Condition.Only(ContentKind.Emoticon),
+                    ),
+                ),
                 action = BlockRule.Action.Hide,
                 scope = BlockRule.Scope.Feeds,
-                inForum = "星穹铁道",
-                titleOnly = true,
                 expiresAt = 7 * DayMillis,
             ),
             isNew = false,

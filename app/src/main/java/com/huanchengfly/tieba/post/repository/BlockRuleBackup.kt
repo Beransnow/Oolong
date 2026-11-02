@@ -1,7 +1,8 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.model.BlockRule
-import com.huanchengfly.tieba.post.model.BlockRule.Match
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -16,18 +17,30 @@ object BlockRuleBackup {
         prettyPrint = true
     }
 
-    fun encode(rules: List<BlockRule>): String = json.encodeToString(Backup.serializer(), Backup(rules = rules.map { it.toEntry() }))
+    fun encode(rules: List<BlockRule>): String = json.encodeToString(Backup.serializer(), Backup(version = Version, rules = rules.map { it.toEntry() }))
 
     /** The rules in [text]; entries that make no sense are left out. Throws if [text] is not a backup. */
     fun decode(text: String): List<BlockRule> =
         json.decodeFromString(Backup.serializer(), text).rules.mapNotNull { it.toRule() }
 
+    /** Files from before conditions say no version. */
     @Serializable
     private data class Backup(val version: Int = 1, val rules: List<Entry>)
 
+    private const val Version = 2
+
+    /**
+     * A rule: its [condition], or, in files from version 1, a [type] of match with its values and
+     * the conditions there were then.
+     */
     @Serializable
     private data class Entry(
-        val type: String,
+        val condition: Condition? = null,
+        val scope: String = "All",
+        val action: String = "Default",
+        val expiresAt: Long? = null,
+        val enabled: Boolean = true,
+        val type: String? = null,
         val words: List<String> = emptyList(),
         val regex: Boolean = false,
         val uid: Long = 0,
@@ -36,47 +49,39 @@ object BlockRuleBackup {
         val level: Int = 0,
         val inForum: String? = null,
         val titleOnly: Boolean = false,
-        val scope: String = "All",
-        val action: String = "Default",
-        val expiresAt: Long? = null,
-        val enabled: Boolean = true,
     )
 
-    private fun BlockRule.toEntry(): Entry {
-        val base = Entry(
-            type = "",
-            inForum = inForum,
-            titleOnly = titleOnly,
-            scope = scope.name,
-            action = action.name,
-            expiresAt = expiresAt,
-            enabled = enabled,
-        )
-        return when (val match = match) {
-            is Match.Keyword -> base.copy(type = "keyword", words = match.words, regex = match.regex)
-            is Match.User -> base.copy(type = "user", uid = match.uid, name = match.name, displayName = match.displayName)
-            is Match.Forum -> base.copy(type = "forum", name = match.name)
-            is Match.Level -> base.copy(type = "level", level = match.level)
-        }
-    }
+    private fun BlockRule.toEntry() = Entry(
+        condition = condition,
+        scope = scope.name,
+        action = action.name,
+        expiresAt = expiresAt,
+        enabled = enabled,
+    )
 
-    private fun Entry.toRule(): BlockRule? {
+    private fun Entry.toRule(): BlockRule? = BlockRule(
+        condition = condition ?: legacyCondition() ?: return null,
+        scope = BlockRule.Scope.entries.firstOrNull { it.name == scope } ?: BlockRule.Scope.All,
+        action = BlockRule.Action.entries.firstOrNull { it.name == action } ?: BlockRule.Action.Default,
+        expiresAt = expiresAt,
+        enabled = enabled,
+    )
+
+    private fun Entry.legacyCondition(): Condition? {
         val match = when (type) {
-            "keyword" -> Match.Keyword(words, regex).takeIf { words.any { it.isNotBlank() } }
-            "user" -> Match.User(uid, name, displayName).takeIf { uid != 0L || name.isNotBlank() }
-            "forum" -> Match.Forum(name).takeIf { name.isNotBlank() }
-            "level" -> Match.Level(level).takeIf { level > 0 }
+            "keyword" -> words.takeIf { it.any(String::isNotBlank) }?.let {
+                Condition.Text(
+                    pattern = if (regex) Pattern.Regex(it.first()) else Pattern.Words(it),
+                    field = if (titleOnly) BlockRule.TextField.Title else BlockRule.TextField.Both,
+                )
+            }
+            "user" -> Condition.User(uid, name, displayName).takeIf { uid != 0L || name.isNotBlank() }
+            "forum" -> Condition.Forum(name).takeIf { name.isNotBlank() }
+            "level" -> Condition.LevelBelow(level).takeIf { level > 0 }
             else -> null
         } ?: return null
-        return BlockRule(
-            match = match,
-            inForum = inForum,
-            titleOnly = titleOnly,
-            scope = BlockRule.Scope.entries.firstOrNull { it.name == scope } ?: BlockRule.Scope.All,
-            action = BlockRule.Action.entries.firstOrNull { it.name == action } ?: BlockRule.Action.Default,
-            expiresAt = expiresAt,
-            enabled = enabled,
-        )
+        val forum = inForum?.takeIf { it.isNotBlank() } ?: return match
+        return Condition.AllOf(listOf(Condition.Forum(forum), match))
     }
 }
 

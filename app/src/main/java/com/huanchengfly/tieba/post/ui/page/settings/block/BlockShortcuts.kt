@@ -80,9 +80,9 @@ class BlockShortcuts @Inject constructor(
     }
 
     fun blockUser(uid: Long, name: String, displayName: String = "") =
-        block(BlockRule(match = BlockRule.Match.User(uid, name, displayName.takeIf { it != name }.orEmpty())))
+        block(BlockRule(condition = BlockRule.Condition.User(uid, name, displayName.takeIf { it != name }.orEmpty())))
 
-    fun blockForum(name: String) = block(BlockRule(match = BlockRule.Match.Forum(name.removeSuffix("吧"))))
+    fun blockForum(name: String) = block(BlockRule(condition = BlockRule.Condition.Forum(name.removeSuffix("吧"))))
 
     /** Asks for keywords, starting from [text], and blocks them. */
     fun askKeywords(text: String) {
@@ -139,7 +139,7 @@ fun BlockShortcutsHost(shortcuts: BlockShortcuts) {
             confirmText = stringResource(id = R.string.button_block),
             onConfirm = { text ->
                 val words = text.split(' ', '　').filter { it.isNotBlank() }
-                if (words.isNotEmpty()) shortcuts.block(BlockRule(match = BlockRule.Match.Keyword(words)))
+                if (words.isNotEmpty()) shortcuts.block(BlockRule(condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(words))))
                 shortcuts.keywordPrompt = null
             },
             onCancel = { shortcuts.keywordPrompt = null },

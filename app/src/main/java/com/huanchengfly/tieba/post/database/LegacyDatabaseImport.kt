@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.huanchengfly.tieba.post.model.BlockRule
 import java.io.File
 
 /**
@@ -84,13 +85,16 @@ class LegacyDatabaseImport(
             }
         }
         copy(legacy, db, "block", "block_rules", "id", replace = false) { row ->
+            val condition = legacyCondition(
+                type = (row.long("type") ?: 0L).toInt(),
+                keywords = row.string("keywords"),
+                username = row.string("username"),
+                uid = row.string("uid"),
+            )
             ContentValues().apply {
                 put("id", row.long("id"))
-                put("category", row.long("category") ?: 0L)
-                put("type", row.long("type") ?: 0L)
-                put("keywords", row.string("keywords"))
-                put("username", row.string("username"))
-                put("uid", row.string("uid"))
+                put("condition", condition.toJson())
+                put("action", if (row.long("category") == LegacyAllowList.toLong()) BlockRule.Action.Allow.ordinal else 0)
             }
         }
         copy(legacy, db, "draft", "drafts", "id", replace = true) { row ->

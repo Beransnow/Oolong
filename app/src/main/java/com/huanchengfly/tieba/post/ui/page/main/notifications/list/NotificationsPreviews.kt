@@ -29,7 +29,7 @@ internal object NotificationsPreviewData {
             ),
             NotificationItem(
                 Notification(threadId = 3, postId = 31, inPost = false, threadTitle = "", content = "广告", author = User(3, "c", "", "")),
-                block = BlockVerdict(BlockRule(match = BlockRule.Match.Keyword(listOf("广告"))), hidden = false),
+                block = BlockVerdict(BlockRule(condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(listOf("广告")))), hidden = false),
             ),
         ),
     )

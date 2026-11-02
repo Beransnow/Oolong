@@ -7,10 +7,16 @@ import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.database.BlockDao
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.BlockRule.TextField
+import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.model.flat
+import com.huanchengfly.tieba.post.model.tests
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -27,9 +33,6 @@ import javax.inject.Singleton
 
 /** Where content is shown, for rules that apply only in some places. */
 enum class BlockPlace { Feeds, Forum, Thread, Messages }
-
-/** What content holds besides plain words. */
-enum class ContentKind { Link, Image, Video, Voice, Mention, Emoticon }
 
 /** What block rules look at: who wrote it, what it says, what else it holds, and where. */
 data class Blockable(
@@ -119,7 +122,7 @@ fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? {
 
 /** Rules that fold whatever [predicate] picks, for previews and tests. */
 fun blockRulesMatching(predicate: (Blockable) -> Boolean): BlockRules {
-    val rule = BlockRule(match = BlockRule.Match.Keyword(emptyList()))
+    val rule = BlockRule(condition = Condition.AllOf(emptyList()))
     return BlockRules { item -> if (predicate(item)) BlockVerdict(rule, hidden = false) else null }
 }
 
@@ -142,11 +145,13 @@ fun blockRulesOf(
     onHit: (BlockRule, Blockable) -> Unit = { _, _ -> },
 ): BlockRules {
     val active = rules.filter { it.isActive(now) } +
-        listOfNotNull(options.lowLevel?.let { BlockRule(id = LowLevelRuleId, match = BlockRule.Match.Level(it)) })
+        listOfNotNull(options.lowLevel?.let { BlockRule(id = LowLevelRuleId, condition = Condition.LevelBelow(it)) })
     val (exceptions, blocks) = active.map(::CompiledRule).partition { it.rule.action == BlockRule.Action.Allow }
     return BlockRules { item ->
-        if (exceptions.any { it.matches(item) }) return@BlockRules null
-        val rule = blocks.firstOrNull { it.matches(item) }?.rule ?: return@BlockRules null
+        // Whatever rules look at is worked out once for all of them
+        val subject = Subject(item)
+        if (exceptions.any { it.matches(subject) }) return@BlockRules null
+        val rule = blocks.firstOrNull { it.matches(subject) }?.rule ?: return@BlockRules null
         onHit(rule, item)
         val hidden = when (rule.action) {
             BlockRule.Action.Hide -> true
@@ -160,44 +165,99 @@ fun blockRulesOf(
 /** The id of the rule the low level setting stands for, which is not stored. */
 const val LowLevelRuleId = -1L
 
+/** An item with what tests compare, each worked out when first needed. */
+private class Subject(val item: Blockable) {
+    private val normalized = arrayOfNulls<String>(TextField.entries.size)
+    val names by lazy(LazyThreadSafetyMode.NONE) {
+        listOf(item.author.name, item.author.nameShow).filter { it.isNotBlank() }.distinct()
+    }
+
+    fun text(field: TextField): String = when (field) {
+        TextField.Both -> item.title + "\n" + item.content
+        TextField.Title -> item.title
+        TextField.Body -> item.content
+    }
+
+    /** [text] as keywords are matched against it. */
+    fun words(field: TextField): String =
+        normalized[field.ordinal] ?: normalizeForMatching(text(field)).also { normalized[field.ordinal] = it }
+}
+
+private typealias Test = (Subject) -> Boolean
+
 private class CompiledRule(val rule: BlockRule) {
-    private val inForum = rule.inForum?.let(::forumKey)
-    private val test: (Blockable) -> Boolean = when (val match = rule.match) {
-        is BlockRule.Match.User -> { item ->
-            // A missing id (0) or blank name must never match, otherwise one rule saved without a
-            // name would block every user whose name the server left empty
-            (match.uid != 0L && match.uid == item.author.id) ||
-                (match.name.isNotBlank() && match.name == item.author.name)
-        }
+    // A test that can't be judged, such as a broken pattern, leaves the whole rule doing nothing:
+    // turned around, it would otherwise match everything
+    private val test: Test = compile(rule.condition) ?: { false }
 
-        // Opening the forum itself shows its threads
-        is BlockRule.Match.Forum -> { item ->
-            item.place != BlockPlace.Forum && item.forum != null && forumKey(item.forum) == forumKey(match.name)
+    // A rule only about forums blocks their threads elsewhere; opening the forum itself shows them
+    private val forumOnly = rule.condition.tests.let { tests -> tests.isNotEmpty() && tests.all { it is Condition.Forum } } &&
+        rule.condition.flat()?.tests?.none { it.negated } == true
+
+    fun matches(subject: Subject): Boolean {
+        val place = subject.item.place
+        if (!rule.scope.covers(place)) return false
+        if (forumOnly && place == BlockPlace.Forum) return false
+        return test(subject)
+    }
+}
+
+/** [condition] as a test, or null when it can't be judged. */
+private fun compile(condition: Condition): Test? = when (condition) {
+    is Condition.AllOf -> condition.conditions.map { compile(it) ?: return null }
+        .takeIf { it.isNotEmpty() }?.let { tests -> { subject -> tests.all { it(subject) } } }
+    is Condition.AnyOf -> condition.conditions.map { compile(it) ?: return null }
+        .takeIf { it.isNotEmpty() }?.let { tests -> { subject -> tests.any { it(subject) } } }
+    is Condition.Not -> compile(condition.condition)?.let { test -> { subject -> !test(subject) } }
+
+    is Condition.Text -> when (val pattern = condition.pattern) {
+        is Pattern.Regex -> regexOf(pattern)?.let { regex -> { subject -> regex.containsMatchIn(subject.text(condition.field)) } }
+        is Pattern.Words -> wordsOf(pattern)?.let { words ->
+            { subject ->
+                val text = subject.words(condition.field)
+                words.all { it in text }
+            }
         }
-        is BlockRule.Match.Level -> { item -> item.author.level in 1 until match.level }
-        is BlockRule.Match.Keyword -> keywordTest(match)
     }
 
-    private fun keywordTest(match: BlockRule.Match.Keyword): (Blockable) -> Boolean {
-        fun text(item: Blockable) = if (rule.titleOnly) item.title else item.title + "\n" + item.content
-        if (match.regex) {
-            val regex = match.words.firstOrNull()?.takeIf { it.isNotEmpty() }
-                ?.let { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
-                ?: return { false }
-            return { item -> regex.containsMatchIn(text(item)) }
-        }
-        val words = match.words.map(::normalizeForMatching).filter { it.isNotEmpty() }
-        if (words.isEmpty()) return { false }
-        return { item ->
-            val text = normalizeForMatching(text(item))
-            words.all { it in text }
+    // A missing id (0) or blank name must never match, otherwise one rule saved without a name
+    // would block every user whose name the server left empty
+    is Condition.User -> if (condition.uid == 0L && condition.name.isBlank()) {
+        null
+    } else {
+        { subject ->
+            val author = subject.item.author
+            (condition.uid != 0L && condition.uid == author.id) ||
+                // A name typed in, without an id, may be either name the user is shown by
+                (condition.name.isNotBlank() && (condition.name == author.name || (condition.uid == 0L && condition.name == author.nameShow)))
         }
     }
+    is Condition.AuthorName -> namePattern(condition.pattern)?.let { test -> { subject -> subject.names.any(test) } }
+    is Condition.LevelBelow -> condition.level.takeIf { it > 0 }?.let { level -> { subject -> subject.item.author.level in 1 until level } }
+    Condition.ThreadAuthor -> { subject -> subject.item.byThreadAuthor }
+    is Condition.Ip -> condition.region.trim().takeIf { it.isNotEmpty() }?.let { region ->
+        { subject -> subject.item.author.ipLocation.trim().equals(region, ignoreCase = true) }
+    }
+    is Condition.Forum -> forumKey(condition.name).takeIf { it.isNotEmpty() }?.let { key ->
+        { subject -> subject.item.forum?.let(::forumKey) == key }
+    }
+    is Condition.ForumName -> namePattern(condition.pattern)?.let { test -> { subject -> subject.item.forum?.let(test) == true } }
+    is Condition.Has -> { subject -> condition.kind in subject.item.kinds }
+    is Condition.Only -> { subject -> subject.item.kinds == setOf(condition.kind) && subject.item.length == 0 }
+    is Condition.ShorterThan -> condition.length.takeIf { it > 0 }?.let { length -> { subject -> subject.item.length < length } }
+}
 
-    fun matches(item: Blockable): Boolean {
-        if (!rule.scope.covers(item.place)) return false
-        if (inForum != null && (item.forum == null || forumKey(item.forum) != inForum)) return false
-        return test(item)
+private fun regexOf(pattern: Pattern.Regex): Regex? =
+    pattern.pattern.takeIf { it.isNotEmpty() }?.let { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
+
+private fun wordsOf(pattern: Pattern.Words): List<String>? =
+    pattern.words.map(::normalizeForMatching).filter { it.isNotEmpty() }.takeIf { it.isNotEmpty() }
+
+/** A test of a name against [pattern]. */
+private fun namePattern(pattern: Pattern): ((String) -> Boolean)? = when (pattern) {
+    is Pattern.Regex -> regexOf(pattern)?.let { regex -> { name -> regex.containsMatchIn(name) } }
+    is Pattern.Words -> wordsOf(pattern)?.let { words ->
+        { name -> normalizeForMatching(name).let { normalized -> words.all { it in normalized } } }
     }
 }
 

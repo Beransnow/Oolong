@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.User

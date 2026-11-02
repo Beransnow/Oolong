@@ -27,9 +27,12 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.ShortText
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.rememberDismissState
 import androidx.compose.runtime.Composable
@@ -58,6 +61,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.tests
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
@@ -355,9 +359,11 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
 }
 
 private val BlockRule.icon: ImageVector
-    get() = when (match) {
-        is BlockRule.Match.User -> Icons.Rounded.Person
-        is BlockRule.Match.Keyword -> Icons.Rounded.TextFields
-        is BlockRule.Match.Forum -> Icons.Rounded.Forum
-        is BlockRule.Match.Level -> Icons.Rounded.BarChart
+    get() = when (val test = condition.tests.singleOrNull()) {
+        null -> Icons.Rounded.Layers
+        is BlockRule.Condition.User, is BlockRule.Condition.AuthorName -> Icons.Rounded.Person
+        is BlockRule.Condition.Text -> Icons.Rounded.TextFields
+        is BlockRule.Condition.Forum, is BlockRule.Condition.ForumName -> Icons.Rounded.Forum
+        is BlockRule.Condition.LevelBelow -> Icons.Rounded.BarChart
+        else -> if (test is BlockRule.Condition.ShorterThan) Icons.Rounded.ShortText else Icons.Rounded.Category
     }

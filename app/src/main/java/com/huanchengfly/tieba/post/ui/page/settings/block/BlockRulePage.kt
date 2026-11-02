@@ -2,11 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.settings.block
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -26,14 +24,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.ShortText
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.Title
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.UnfoldLess
@@ -54,6 +58,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -66,16 +71,22 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
-import com.huanchengfly.tieba.post.model.BlockRule.Match
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.ContentKind
+import com.huanchengfly.tieba.post.model.FlatCondition
+import com.huanchengfly.tieba.post.model.flat
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
@@ -91,10 +102,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
-import com.huanchengfly.tieba.post.ui.widgets.compose.SegmentedControl
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun BlockRulePage(
@@ -108,7 +117,10 @@ fun BlockRulePage(
         state = state,
         onBack = navigator::navigateUp,
         onEdit = viewModel::edit,
-        onKind = viewModel::setKind,
+        onJoin = viewModel::setJoin,
+        onTest = viewModel::setTest,
+        onAddTest = viewModel::addTest,
+        onRemoveTest = viewModel::removeTest,
         onExpiry = viewModel::setExpiry,
         onSave = viewModel::save,
         onDelete = viewModel::delete,
@@ -116,15 +128,18 @@ fun BlockRulePage(
 }
 
 /**
- * A rule: what it blocks, then the rule as one sentence whose underlined parts open their choices
- * in a menu, the conditions that narrow it, and whether it is on.
+ * A rule: the rule as one sentence whose underlined parts open their choices in a menu, its tests
+ * one per row, and whether it is on.
  */
 @Composable
 fun BlockRuleScreen(
     state: BlockRuleState,
     onBack: () -> Unit,
     onEdit: ((BlockRule) -> BlockRule) -> Unit,
-    onKind: (Match) -> Unit,
+    onJoin: (Boolean) -> Unit,
+    onTest: (Int, FlatCondition.Test) -> Unit,
+    onAddTest: (ConditionField) -> Unit,
+    onRemoveTest: (Int) -> Unit,
     onExpiry: (Int?) -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
@@ -159,12 +174,21 @@ fun BlockRuleScreen(
                 .padding(padding)
                 .padding(bottom = Spacing.xxl),
         ) {
-            if (state.isNew) KindSelector(draft.match, onKind)
-            GroupTitle(stringResource(id = if (draft.match is Match.Level) R.string.rule_kind_level else R.string.rule_field_what))
-            MatchField(draft.match, onChange = { match -> onEdit { it.copy(match = match) } })
             GroupTitle(stringResource(id = R.string.rule_field_rule))
-            SentenceCard(draft, state.now, onEdit, onExpiry)
-            Conditions(draft, onEdit)
+            SentenceCard(draft, state.now, onEdit, onJoin, onExpiry)
+            val conditions = state.conditions
+            if (conditions == null) {
+                Text(
+                    text = stringResource(id = R.string.rule_nested),
+                    style = TextStyles.footnote,
+                    color = colors.textSecondary,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = Spacing.xs),
+                )
+            } else {
+                GroupTitle(stringResource(id = R.string.rule_field_conditions))
+                ConditionList(conditions, onTest, onRemoveTest)
+                AddCondition(onAddTest)
+            }
             Spacer(modifier = Modifier.height(Spacing.xl))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -212,127 +236,384 @@ private fun GroupTitle(text: String) {
     )
 }
 
+/** The tests in one group, a row each: what it looks at, how it judges, the value, and removing it. */
 @Composable
-private fun KindSelector(match: Match, onKind: (Match) -> Unit) {
-    val kinds = listOf(
-        R.string.rule_kind_keyword to Match.Keyword(emptyList()),
-        R.string.rule_kind_user to Match.User(0, ""),
-        R.string.rule_kind_forum to Match.Forum(""),
-        R.string.rule_kind_level to Match.Level(3),
-    )
-    val labels = kinds.map { stringResource(id = it.first) }
-    SegmentedControl(
-        options = persistentListOf(*labels.toTypedArray()),
-        selected = kinds.indexOfFirst { it.second::class == match::class },
-        onSelect = { onKind(kinds[it].second) },
-        modifier = Modifier.padding(horizontal = Spacing.md).padding(top = Spacing.sm).fillMaxWidth(),
-    )
+private fun ConditionList(conditions: FlatCondition, onTest: (Int, FlatCondition.Test) -> Unit, onRemove: (Int) -> Unit) {
+    if (conditions.tests.isEmpty()) return
+    val colors = ExtendedTheme.colors
+    Column(
+        modifier = Modifier
+            .padding(horizontal = Spacing.md)
+            .fillMaxWidth()
+            .clip(Corners.md)
+            .background(colors.chip),
+    ) {
+        conditions.tests.forEachIndexed { index, test ->
+            if (index > 0) Box(modifier = Modifier.padding(start = Spacing.sm).fillMaxWidth().height(1.dp).background(colors.divider))
+            ConditionRow(test, onChange = { onTest(index, it) }, onRemove = { onRemove(index) })
+        }
+    }
 }
 
 @Composable
-private fun MatchField(match: Match, onChange: (Match) -> Unit) {
+private fun ConditionRow(test: FlatCondition.Test, onChange: (FlatCondition.Test) -> Unit, onRemove: () -> Unit) {
     val colors = ExtendedTheme.colors
     val menus = LocalContextMenus.current
-    var bounds by remember { mutableStateOf(Rect.Zero) }
-    val levelLabels = LevelChoices.associateWith { stringResource(id = R.string.rule_level, it) }
+    val condition = test.condition
+    val field = condition.field
+    val op = condition.op
+    val fieldItems = fieldMenuItems(selected = field) { chosen ->
+        if (chosen != field) onChange(FlatCondition.Test(conditionOf(chosen)))
+    }
+    val opLabels = field.ops.associateWith { opName(it, negated = false) to opName(it, negated = true) }
+    val kindLabels = ContentKinds.associateWith { kindName(it) }
     Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(horizontal = Spacing.md)
-                .fillMaxWidth()
-                .heightIn(min = 52.dp)
-                .clip(Corners.md)
-                .background(colors.chip)
-                .onGloballyPositioned { bounds = it.boundsInWindow() }
-                .then(
-                    if (match is Match.Level && menus != null) {
-                        Modifier.clickable {
-                            menus.show(
-                                items = levelLabels.map { (level, label) ->
-                                    ContextMenuItem(if (level == match.level) Icons.Rounded.Check else Icons.Rounded.BarChart, label) {
-                                        onChange(Match.Level(level))
-                                    }
-                                },
-                                anchor = bounds,
-                            )
-                        }
-                    } else {
-                        Modifier
-                    },
-                )
-                .padding(start = Spacing.md, end = Spacing.xs),
-        ) {
-            when (match) {
-                // The settings rows' way of choosing a value: the value, and ⇕ for its menu
-                is Match.Level -> {
-                    Text(text = stringResource(id = R.string.settings_block_low_level_below), style = TextStyles.bodyCompact, color = colors.text, modifier = Modifier.weight(1f))
-                    Text(text = stringResource(id = R.string.rule_level, match.level), style = TextStyles.bodyCompact, color = colors.textSecondary)
-                    Icon(Icons.Rounded.UnfoldMore, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.padding(start = 2.dp, end = Spacing.xs).size(18.dp))
-                }
-
-                is Match.Keyword -> {
-                    // The words as typed, so spaces stay while typing
-                    var text by remember(match.regex) { mutableStateOf(match.words.joinToString(" ")) }
-                    TextInput(
-                        value = text,
-                        hint = stringResource(id = if (match.regex) R.string.rule_hint_regex else R.string.rule_hint_keyword),
-                        monospace = match.regex,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        text = it
-                        onChange(match.copy(words = if (match.regex) listOf(it) else it.split(' ', '　')))
-                    }
-                    val current = text
-                    // A tag: the inverted colours when on
-                    Text(
-                        text = stringResource(id = R.string.rule_regex),
-                        style = TextStyles.footnote,
-                        fontWeight = FontWeight.Medium,
-                        color = if (match.regex) colors.onInvertChip else colors.onChip,
-                        modifier = Modifier
-                            .clip(Corners.full)
-                            .background(if (match.regex) colors.invertChip else colors.inset)
-                            .clickable {
-                                onChange(
-                                    if (match.regex) {
-                                        Match.Keyword(current.split(' ', '　'), regex = false)
-                                    } else {
-                                        Match.Keyword(listOf(current), regex = true)
-                                    },
-                                )
+        ConditionRowLayout(
+            valueFills = op.typed || field == ConditionField.Length,
+            field = {
+                Pick(text = fieldName(field)) { anchor -> menus?.show(items = fieldItems, anchor = anchor) }
+            },
+            op = {
+                Pick(text = opName(op, test.negated), color = if (test.negated) MaterialTheme.colors.error else colors.text) { anchor ->
+                    menus?.show(
+                        items = field.ops.flatMapIndexed { group, choice ->
+                            val (yes, no) = opLabels.getValue(choice)
+                            listOf(false to yes, true to no).mapIndexed { i, (negated, label) ->
+                                ContextMenuItem(
+                                    icon = null,
+                                    label = label,
+                                    startsGroup = group > 0 && i == 0,
+                                    selected = choice == op && negated == test.negated,
+                                ) { onChange(FlatCondition.Test(condition.withOp(choice), negated)) }
                             }
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        },
+                        anchor = anchor,
                     )
                 }
+            },
+            value = when {
+                op.typed -> {
+                    {
+                        ValueInput(
+                            value = condition.typedValue,
+                            hint = stringResource(id = hintOf(condition)),
+                            regex = op == ConditionOp.Matches,
+                        ) { onChange(test.copy(condition = condition.withTypedValue(it))) }
+                    }
+                }
 
-                is Match.User -> TextInput(
-                    value = match.name,
-                    hint = stringResource(id = R.string.rule_hint_user),
-                    modifier = Modifier.weight(1f),
-                ) { onChange(Match.User(uid = 0, name = it)) }
+                condition is Condition.LevelBelow -> {
+                    { LevelStepper(condition.level) { onChange(test.copy(condition = Condition.LevelBelow(it))) } }
+                }
 
-                is Match.Forum -> TextInput(
-                    value = match.name,
-                    hint = stringResource(id = R.string.rule_hint_forum),
-                    modifier = Modifier.weight(1f),
-                ) { onChange(Match.Forum(it)) }
-            }
+                condition is Condition.ShorterThan -> {
+                    { LengthInput(condition.length) { onChange(test.copy(condition = Condition.ShorterThan(it))) } }
+                }
+
+                condition is Condition.Has || condition is Condition.Only -> {
+                    {
+                        val kind = (condition as? Condition.Has)?.kind ?: (condition as Condition.Only).kind
+                        Pick(text = kindLabels.getValue(kind)) { anchor ->
+                            menus?.show(
+                                items = kindLabels.map { (choice, label) ->
+                                    ContextMenuItem(icon = null, label = label, selected = choice == kind) {
+                                        onChange(test.copy(condition = if (condition is Condition.Has) Condition.Has(choice) else Condition.Only(choice)))
+                                    }
+                                },
+                                anchor = anchor,
+                            )
+                        }
+                    }
+                }
+
+                else -> null
+            },
+            remove = {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = stringResource(id = R.string.rule_condition_remove),
+                    tint = colors.textSecondary,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(Corners.full)
+                        .clickable(onClick = onRemove)
+                        .padding(8.dp),
+                )
+            },
+        )
+        val note = when {
+            condition is Condition.Text && !condition.pattern.isValid -> R.string.rule_regex_invalid
+            condition is Condition.AuthorName && !condition.pattern.isValid -> R.string.rule_regex_invalid
+            condition is Condition.ForumName && !condition.pattern.isValid -> R.string.rule_regex_invalid
+            condition is Condition.ShorterThan -> R.string.rule_note_length
+            condition is Condition.Has && condition.kind == ContentKind.Emoticon -> R.string.rule_note_emoticon
+            condition is Condition.Only && condition.kind == ContentKind.Emoticon -> R.string.rule_note_emoticon
+            condition is Condition.Only -> R.string.rule_note_only
+            else -> null
         }
-        if (match is Match.Keyword && match.regex && match.words.firstOrNull().orEmpty().isNotEmpty() &&
-            runCatching { Regex(match.words.first()) }.isFailure
-        ) {
+        if (note != null) {
             Text(
-                text = stringResource(id = R.string.rule_regex_invalid),
+                text = stringResource(id = note),
                 style = TextStyles.footnote,
-                color = MaterialTheme.colors.error,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 6.dp),
+                color = if (note == R.string.rule_regex_invalid) MaterialTheme.colors.error else colors.textSecondary,
+                modifier = Modifier.padding(start = Spacing.sm, end = Spacing.sm, bottom = Spacing.xs),
             )
         }
     }
 }
 
-private val LevelChoices = (2..10).toList()
+/**
+ * A condition row: [field] and [op] first, [remove] at the end, and the [value] between them. A
+ * value that [valueFills] the room left takes a line of its own when that room is too narrow.
+ */
+@Composable
+private fun ConditionRowLayout(
+    valueFills: Boolean,
+    field: @Composable () -> Unit,
+    op: @Composable () -> Unit,
+    value: (@Composable () -> Unit)?,
+    remove: @Composable () -> Unit,
+) {
+    Layout(
+        contents = listOf(field, op, value ?: {}, remove),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .padding(start = Spacing.xxs, end = Spacing.xxs, top = 6.dp, bottom = 6.dp),
+    ) { (fields, ops, values, removes), constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val gap = Spacing.xxs.roundToPx()
+        val fieldPlaceable = fields.first().measure(loose)
+        val opPlaceable = ops.first().measure(loose)
+        val removePlaceable = removes.first().measure(loose)
+        val width = constraints.maxWidth
+        val left = fieldPlaceable.width + opPlaceable.width + gap
+        val room = width - left - removePlaceable.width - gap * 2
+        val valueMeasurable = values.firstOrNull()
+        val inline = valueMeasurable == null ||
+            if (valueFills) room >= MinValueWidth.roundToPx() else valueMeasurable.maxIntrinsicWidth(loose.maxHeight) <= room
+        val valuePlaceable = valueMeasurable?.measure(
+            when {
+                !inline -> Constraints.fixedWidth(width - Spacing.xs.roundToPx())
+                valueFills -> Constraints.fixedWidth(room.coerceAtLeast(0))
+                else -> loose.copy(maxWidth = room.coerceAtLeast(0))
+            },
+        )
+        val firstLine = maxOf(fieldPlaceable.height, opPlaceable.height, removePlaceable.height, if (inline) valuePlaceable?.height ?: 0 else 0)
+        val height = maxOf(
+            if (inline) firstLine else firstLine + gap + (valuePlaceable?.height ?: 0),
+            constraints.minHeight,
+        )
+        val lineTop = if (inline) (height - firstLine) / 2 else 0
+        layout(width, height) {
+            fun center(p: androidx.compose.ui.layout.Placeable) = lineTop + (firstLine - p.height) / 2
+            fieldPlaceable.place(0, center(fieldPlaceable))
+            opPlaceable.place(fieldPlaceable.width + gap, center(opPlaceable))
+            removePlaceable.place(width - removePlaceable.width, center(removePlaceable))
+            valuePlaceable?.let {
+                if (inline) {
+                    // Values that don't fill the room sit at its end, next to removing the row
+                    val x = if (valueFills) left + gap else width - removePlaceable.width - gap - it.width
+                    it.place(x, center(it))
+                } else {
+                    it.place(Spacing.xs.roundToPx(), firstLine + gap)
+                }
+            }
+        }
+    }
+}
+
+private val MinValueWidth = 140.dp
+
+/** A choice shown as its value with ⇕, opening its menu from where it is. */
+@Composable
+private fun Pick(text: String, color: Color = ExtendedTheme.colors.text, onClick: (anchor: Rect) -> Unit) {
+    val colors = ExtendedTheme.colors
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clip(Corners.xs)
+            .onGloballyPositioned { bounds = it.boundsInWindow() }
+            .clickable { onClick(bounds) }
+            .padding(horizontal = Spacing.xs),
+    ) {
+        Text(text = text, style = TextStyles.bodyCompact, color = color, maxLines = 1)
+        Icon(Icons.Rounded.UnfoldMore, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.padding(start = 2.dp).size(16.dp))
+    }
+}
+
+/** A value typed in, on the page's own colour; a pattern sits between slashes. */
+@Composable
+private fun ValueInput(value: String, hint: String, regex: Boolean, onChange: (String) -> Unit) {
+    val colors = ExtendedTheme.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clip(Corners.xs)
+            .background(colors.background)
+            .padding(horizontal = 10.dp),
+    ) {
+        if (regex) Slash()
+        TextInput(value = value, hint = hint, monospace = regex, modifier = Modifier.weight(1f), onChange = onChange)
+        if (regex) Slash()
+    }
+}
+
+@Composable
+private fun Slash() {
+    Text(text = "/", style = TextStyles.bodyCompact.copy(fontFamily = FontFamily.Monospace), color = ExtendedTheme.colors.textDisabled)
+}
+
+@Composable
+private fun LevelStepper(level: Int, onChange: (Int) -> Unit) {
+    val colors = ExtendedTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StepButton(Icons.Rounded.Remove, stringResource(id = R.string.rule_level_down), enabled = level > LevelRange.first) { onChange(level - 1) }
+        Text(
+            text = stringResource(id = R.string.rule_level, level),
+            style = TextStyles.bodyCompact.copy(fontFeatureSettings = "tnum"),
+            color = colors.text,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(52.dp),
+        )
+        StepButton(Icons.Rounded.Add, stringResource(id = R.string.rule_level_up), enabled = level < LevelRange.last) { onChange(level + 1) }
+    }
+}
+
+@Composable
+private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = ExtendedTheme.colors
+    Icon(
+        icon,
+        contentDescription = label,
+        tint = if (enabled) colors.text else colors.textDisabled,
+        modifier = Modifier
+            .size(32.dp)
+            .clip(Corners.full)
+            .background(colors.background)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(7.dp),
+    )
+}
+
+@Composable
+private fun LengthInput(length: Int, onChange: (Int) -> Unit) {
+    val colors = ExtendedTheme.colors
+    // The number as typed, so it can be cleared before typing another
+    var text by remember { mutableStateOf(length.toString()) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clip(Corners.xs)
+            .background(colors.background)
+            .padding(horizontal = 10.dp),
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            BasicTextField(
+                value = text,
+                onValueChange = { typed ->
+                    val digits = typed.filter(Char::isDigit).take(4)
+                    text = digits
+                    digits.toIntOrNull()?.takeIf { it > 0 }?.let(onChange)
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = TextStyles.bodyCompact.copy(color = colors.text, fontFeatureSettings = "tnum"),
+                cursorBrush = SolidColor(colors.accent),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Text(text = stringResource(id = R.string.rule_length_unit), style = TextStyles.bodyCompact, color = colors.textSecondary)
+    }
+}
+
+/** Adding a test, from a menu of what it can look at. */
+@Composable
+private fun AddCondition(onAdd: (ConditionField) -> Unit) {
+    val colors = ExtendedTheme.colors
+    val menus = LocalContextMenus.current
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    val items = fieldMenuItems(selected = null, onPick = onAdd)
+    // A secondary button
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = Spacing.md)
+            .padding(top = Spacing.sm)
+            .heightIn(min = 36.dp)
+            .clip(Corners.full)
+            .background(colors.chip)
+            .onGloballyPositioned { bounds = it.boundsInWindow() }
+            .clickable { menus?.show(items = items, anchor = bounds, icon = Icons.Rounded.Add) }
+            .padding(start = Spacing.sm, end = Spacing.md),
+    ) {
+        Icon(Icons.Rounded.Add, contentDescription = null, tint = colors.text, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(Spacing.xxs))
+        Text(text = stringResource(id = R.string.rule_add_condition), style = TextStyles.label, color = colors.text)
+    }
+}
+
+@Composable
+private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -> Unit): List<ContextMenuItem> =
+    ConditionField.entries.map { field ->
+        ContextMenuItem(icon = field.icon, label = fieldName(field), selected = field == selected) { onPick(field) }
+    }
+
+@Composable
+private fun fieldName(field: ConditionField): String = stringResource(
+    when (field) {
+        ConditionField.TitleOrBody -> R.string.rule_field_title_or_body
+        ConditionField.Title -> R.string.rule_field_title
+        ConditionField.Body -> R.string.rule_field_body
+        ConditionField.Author -> R.string.rule_field_author
+        ConditionField.Level -> R.string.rule_field_level
+        ConditionField.ThreadAuthor -> R.string.rule_field_thread_author
+        ConditionField.Ip -> R.string.rule_field_ip
+        ConditionField.Forum -> R.string.rule_field_forum
+        ConditionField.Content -> R.string.rule_field_content
+        ConditionField.Length -> R.string.rule_field_length
+    },
+)
+
+private val ConditionField.icon: ImageVector
+    get() = when (this) {
+        ConditionField.TitleOrBody -> Icons.Rounded.TextFields
+        ConditionField.Title -> Icons.Rounded.Title
+        ConditionField.Body -> Icons.Rounded.Article
+        ConditionField.Author -> Icons.Rounded.Person
+        ConditionField.Level -> Icons.Rounded.BarChart
+        ConditionField.ThreadAuthor -> Icons.Rounded.Badge
+        ConditionField.Ip -> Icons.Rounded.Place
+        ConditionField.Forum -> Icons.Rounded.Forum
+        ConditionField.Content -> Icons.Rounded.Category
+        ConditionField.Length -> Icons.Rounded.ShortText
+    }
+
+@Composable
+private fun opName(op: ConditionOp, negated: Boolean): String = stringResource(
+    when (op) {
+        ConditionOp.Contains -> if (negated) R.string.rule_op_not_contains else R.string.rule_op_contains
+        ConditionOp.Matches -> if (negated) R.string.rule_op_not_matches else R.string.rule_op_matches
+        ConditionOp.Is -> if (negated) R.string.rule_op_is_not else R.string.rule_op_is
+        ConditionOp.Below -> if (negated) R.string.rule_op_not_below else R.string.rule_op_below
+        ConditionOp.IsThreadAuthor -> if (negated) R.string.rule_op_not_thread_author else R.string.rule_op_thread_author
+        ConditionOp.Has -> if (negated) R.string.rule_op_has_not else R.string.rule_op_has
+        ConditionOp.Only -> if (negated) R.string.rule_op_not_only else R.string.rule_op_only
+    },
+)
+
+private fun hintOf(condition: Condition): Int = when {
+    condition.op == ConditionOp.Matches -> R.string.rule_hint_regex
+    condition is Condition.User -> R.string.rule_hint_user
+    condition is Condition.AuthorName || condition is Condition.ForumName -> R.string.rule_hint_name
+    condition is Condition.Forum -> R.string.rule_hint_forum
+    condition is Condition.Ip -> R.string.rule_hint_ip
+    else -> R.string.rule_hint_keyword
+}
 
 @Composable
 private fun TextInput(
@@ -343,8 +624,8 @@ private fun TextInput(
     onChange: (String) -> Unit,
 ) {
     val colors = ExtendedTheme.colors
-    val style = TextStyles.body.copy(color = colors.text, fontFamily = if (monospace) FontFamily.Monospace else null)
-    Box(modifier = modifier.padding(vertical = 13.dp)) {
+    val style = TextStyles.bodyCompact.copy(color = colors.text, fontFamily = if (monospace) FontFamily.Monospace else null)
+    Box(modifier = modifier.padding(vertical = 7.dp)) {
         if (value.isEmpty()) Text(text = hint, style = style.copy(color = colors.textSecondary))
         BasicTextField(
             value = value,
@@ -357,9 +638,15 @@ private fun TextInput(
     }
 }
 
-/** The rule as one sentence; its scope, action and expiry open their choices where they are. */
+/** The rule as one sentence; its scope, action, joining and expiry open their choices where they are. */
 @Composable
-private fun SentenceCard(rule: BlockRule, now: Long, onEdit: ((BlockRule) -> BlockRule) -> Unit, onExpiry: (Int?) -> Unit) {
+private fun SentenceCard(
+    rule: BlockRule,
+    now: Long,
+    onEdit: ((BlockRule) -> BlockRule) -> Unit,
+    onJoin: (Boolean) -> Unit,
+    onExpiry: (Int?) -> Unit,
+) {
     val colors = ExtendedTheme.colors
     val menus = LocalContextMenus.current
     val runs = ruleSentence(rule, now, full = true)
@@ -369,6 +656,8 @@ private fun SentenceCard(rule: BlockRule, now: Long, onEdit: ((BlockRule) -> Blo
     val actions = BlockRule.Action.entries.associateWith {
         if (it == BlockRule.Action.Default) stringResource(id = R.string.rule_action_default_hint) else actionName(it)
     }
+    val joins = listOf(true to stringResource(id = R.string.rule_all), false to stringResource(id = R.string.rule_any))
+    val all = rule.condition.flat()?.all ?: true
     val expiries = listOf(
         null to stringResource(id = R.string.rule_forever),
         7 to stringResource(id = R.string.rule_expiry_7),
@@ -383,16 +672,20 @@ private fun SentenceCard(rule: BlockRule, now: Long, onEdit: ((BlockRule) -> Blo
         val anchor = box.translate(at)
         val items = when (part) {
             RulePart.Scope -> scopes.map { (scope, label) ->
-                ContextMenuItem(if (rule.scope == scope) Icons.Rounded.Check else scope.icon, label) { onEdit { it.copy(scope = scope) } }
+                ContextMenuItem(scope.icon, label, selected = rule.scope == scope) { onEdit { it.copy(scope = scope) } }
             }
 
             RulePart.Action -> actions.map { (action, label) ->
-                ContextMenuItem(if (rule.action == action) Icons.Rounded.Check else action.icon, label) { onEdit { it.copy(action = action) } }
+                ContextMenuItem(action.icon, label, selected = rule.action == action) { onEdit { it.copy(action = action) } }
             }
 
             RulePart.Expiry -> expiries.map { (days, label) ->
                 val chosen = days == null && rule.expiresAt == null
-                ContextMenuItem(if (chosen) Icons.Rounded.Check else expiryIcon(days), label) { onExpiry(days) }
+                ContextMenuItem(expiryIcon(days), label, selected = chosen) { onExpiry(days) }
+            }
+
+            RulePart.Join -> joins.map { (join, label) ->
+                ContextMenuItem(icon = null, label = label, selected = join == all) { onJoin(join) }
             }
 
             RulePart.Value -> return
@@ -457,109 +750,4 @@ private fun expiryIcon(days: Int?): ImageVector = when (days) {
     null -> Icons.Rounded.AllInclusive
     7 -> Icons.Rounded.Event
     else -> Icons.Rounded.CalendarMonth
-}
-
-/** The "and" conditions, each a capsule that can be taken off, and adding another from a menu. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun Conditions(rule: BlockRule, onEdit: ((BlockRule) -> BlockRule) -> Unit) {
-    val colors = ExtendedTheme.colors
-    val menus = LocalContextMenus.current
-    // A condition being typed, kept even while still empty
-    var forumShown by remember { mutableStateOf(rule.inForum != null) }
-    var addBounds by remember { mutableStateOf(Rect.Zero) }
-    val canForum = !forumShown && rule.inForum == null && rule.match !is Match.Forum
-    val canTitle = rule.match is Match.Keyword && !rule.titleOnly
-    val inForumLabel = stringResource(id = R.string.rule_condition_in_forum)
-    val titleOnlyLabel = stringResource(id = R.string.rule_condition_title_only)
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = Modifier.padding(horizontal = Spacing.md).padding(top = Spacing.sm),
-    ) {
-        if (forumShown || rule.inForum != null) {
-            Condition(onRemove = {
-                forumShown = false
-                onEdit { it.copy(inForum = null) }
-            }) {
-                Text(text = inForumLabel, style = TextStyles.label, color = colors.text)
-                Spacer(modifier = Modifier.width(Spacing.xs))
-                Box(
-                    modifier = Modifier
-                        .width(96.dp)
-                        .clip(Corners.xs)
-                        .background(colors.inset)
-                        .padding(horizontal = Spacing.xs, vertical = 3.dp),
-                ) {
-                    if (rule.inForum.isNullOrEmpty()) {
-                        Text(text = stringResource(id = R.string.rule_condition_forum_hint), style = TextStyles.label, color = colors.textSecondary)
-                    }
-                    BasicTextField(
-                        value = rule.inForum.orEmpty(),
-                        onValueChange = { name -> onEdit { it.copy(inForum = name) } },
-                        singleLine = true,
-                        textStyle = TextStyles.label.copy(color = colors.text),
-                        cursorBrush = SolidColor(colors.accent),
-                    )
-                }
-            }
-        }
-        if (rule.titleOnly) {
-            Condition(onRemove = { onEdit { it.copy(titleOnly = false) } }) {
-                Text(text = titleOnlyLabel, style = TextStyles.label, color = colors.text)
-            }
-        }
-        if ((canForum || canTitle) && menus != null) {
-            // A secondary button: it opens the conditions that can still be added
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .heightIn(min = 36.dp)
-                    .clip(Corners.full)
-                    .background(colors.chip)
-                    .onGloballyPositioned { addBounds = it.boundsInWindow() }
-                    .clickable {
-                        menus.show(
-                            items = listOfNotNull(
-                                ContextMenuItem(Icons.Rounded.Forum, inForumLabel) { forumShown = true }.takeIf { canForum },
-                                ContextMenuItem(Icons.Rounded.Title, titleOnlyLabel) { onEdit { it.copy(titleOnly = true) } }.takeIf { canTitle },
-                            ),
-                            anchor = addBounds,
-                            icon = Icons.Rounded.Add,
-                        )
-                    }
-                    .padding(start = Spacing.sm, end = Spacing.md),
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = null, tint = colors.text, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(Spacing.xxs))
-                Text(text = stringResource(id = R.string.rule_add_condition), style = TextStyles.label, color = colors.text)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Condition(onRemove: () -> Unit, content: @Composable () -> Unit) {
-    val colors = ExtendedTheme.colors
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .heightIn(min = 36.dp)
-            .clip(Corners.full)
-            .background(colors.chip)
-            .padding(start = Spacing.md, end = Spacing.xxs),
-    ) {
-        content()
-        Icon(
-            Icons.Rounded.Close,
-            contentDescription = stringResource(id = R.string.rule_condition_remove),
-            tint = colors.textSecondary,
-            modifier = Modifier
-                .padding(start = Spacing.xxs)
-                .size(28.dp)
-                .clip(Corners.full)
-                .clickable(onClick = onRemove)
-                .padding(6.dp),
-        )
-    }
 }

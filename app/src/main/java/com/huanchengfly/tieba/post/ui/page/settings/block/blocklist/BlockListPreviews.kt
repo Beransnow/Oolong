@@ -3,7 +3,9 @@ package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.huanchengfly.tieba.post.model.BlockRule
-import com.huanchengfly.tieba.post.model.BlockRule.Match
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import kotlinx.collections.immutable.persistentListOf
 
@@ -14,14 +16,26 @@ internal object BlockListPreviewData {
 
     val loaded = BlockListState(
         rules = persistentListOf(
-            BlockRule(id = 8, match = Match.Keyword(listOf("剧透")), expiresAt = Now + 6 * Day, hits = 41, lastHitAt = Now - 2 * 60 * 60 * 1000, createdAt = Now - Day),
-            BlockRule(id = 7, match = Match.User(7, "每日抽奖机器人"), hits = 128, lastHitAt = Now - 60 * 1000, createdAt = Now - 30 * Day),
-            BlockRule(id = 6, match = Match.Forum("抽卡"), scope = BlockRule.Scope.Feeds, hits = 37, lastHitAt = Now - Day, createdAt = Now - 40 * Day),
-            BlockRule(id = 5, match = Match.Keyword(listOf("互关|互粉"), regex = true), action = BlockRule.Action.Hide, hits = 9, lastHitAt = Now - 3 * Day, createdAt = Now - 50 * Day),
-            BlockRule(id = 4, match = Match.Keyword(listOf("原神")), inForum = "崩坏3", scope = BlockRule.Scope.Thread, createdAt = Now - 5 * Day),
-            BlockRule(id = 3, match = Match.User(9, "老朋友小周"), action = BlockRule.Action.Allow, hits = 3, lastHitAt = Now - 7 * Day, createdAt = Now - 60 * Day),
-            BlockRule(id = 2, match = Match.Keyword(listOf("618", "好价")), enabled = false, createdAt = Now - 140 * Day),
-            BlockRule(id = 1, match = Match.Keyword(listOf("双十一预售")), createdAt = Now - 96 * Day),
+            BlockRule(id = 8, condition = Condition.Text(Pattern.Words(listOf("剧透"))), expiresAt = Now + 6 * Day, hits = 41, lastHitAt = Now - 2 * 60 * 60 * 1000, createdAt = Now - Day),
+            BlockRule(id = 7, condition = Condition.User(7, "每日抽奖机器人"), hits = 128, lastHitAt = Now - 60 * 1000, createdAt = Now - 30 * Day),
+            BlockRule(id = 6, condition = Condition.Forum("抽卡"), scope = BlockRule.Scope.Feeds, hits = 37, lastHitAt = Now - Day, createdAt = Now - 40 * Day),
+            BlockRule(id = 5, condition = Condition.Text(Pattern.Regex("互关|互粉")), action = BlockRule.Action.Hide, hits = 9, lastHitAt = Now - 3 * Day, createdAt = Now - 50 * Day),
+            BlockRule(
+                id = 4,
+                condition = Condition.AllOf(listOf(Condition.Forum("崩坏3"), Condition.Text(Pattern.Words(listOf("原神"))), Condition.Not(Condition.ThreadAuthor))),
+                scope = BlockRule.Scope.Thread,
+                createdAt = Now - 5 * Day,
+            ),
+            BlockRule(
+                id = 9,
+                condition = Condition.AnyOf(listOf(Condition.Only(ContentKind.Emoticon), Condition.ShorterThan(3))),
+                hits = 211,
+                lastHitAt = Now - 60 * 1000,
+                createdAt = Now - 2 * Day,
+            ),
+            BlockRule(id = 3, condition = Condition.User(9, "老朋友小周"), action = BlockRule.Action.Allow, hits = 3, lastHitAt = Now - 7 * Day, createdAt = Now - 60 * Day),
+            BlockRule(id = 2, condition = Condition.Text(Pattern.Words(listOf("618", "好价"))), enabled = false, createdAt = Now - 140 * Day),
+            BlockRule(id = 1, condition = Condition.Text(Pattern.Words(listOf("双十一预售"))), createdAt = Now - 96 * Day),
         ),
         loading = false,
         now = Now,

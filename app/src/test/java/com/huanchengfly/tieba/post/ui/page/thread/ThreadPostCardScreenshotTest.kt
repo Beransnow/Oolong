@@ -105,7 +105,7 @@ class ThreadPostCardScreenshotTest {
     fun blocked() {
         val post = post(floor = 5, author = replier, content = listOf(text(TextSpan.Plain("被屏蔽的回复"))))
         captureScreenshot {
-            ThreadPostCard(PostItem(post, block = BlockVerdict(BlockRule(match = BlockRule.Match.User(0, replier.name)), hidden = false)), options.copy(threadAuthorId = 0), onEvent = {})
+            ThreadPostCard(PostItem(post, block = BlockVerdict(BlockRule(condition = BlockRule.Condition.User(0, replier.name)), hidden = false)), options.copy(threadAuthorId = 0), onEvent = {})
         }
     }
 }

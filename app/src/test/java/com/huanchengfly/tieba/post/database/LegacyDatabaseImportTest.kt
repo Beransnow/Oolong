@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.huanchengfly.tieba.post.model.BlockRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -76,7 +77,10 @@ class LegacyDatabaseImportTest {
             HistoryEntity(5, type = 1, data = "9000", title = "帖子", timestamp = 100, count = 2, extras = "{}", avatar = "a", username = "u"),
             db.historyDao().page(type = 1, limit = 10, offset = 0).single(),
         )
-        assertEquals(BlockEntity(7, category = 10, type = 0, keywords = "[\"广告\"]"), db.blockDao().all().first().single())
+        assertEquals(
+            BlockEntity(7, condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(listOf("广告"))).toJson()),
+            db.blockDao().all().first().single(),
+        )
         assertEquals("草稿", db.draftDao().content("h"))
         assertEquals(listOf("52"), db.topForumDao().forumIds())
         assertEquals(listOf("关键词"), db.searchHistoryDao().all().map { it.content })

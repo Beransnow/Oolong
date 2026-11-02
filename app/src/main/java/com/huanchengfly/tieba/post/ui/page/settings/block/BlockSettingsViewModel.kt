@@ -42,7 +42,7 @@ class BlockSettingsViewModel @Inject constructor(
         actions.launch("spoiler") {
             repository.add(
                 BlockRule(
-                    match = BlockRule.Match.Keyword(words),
+                    condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(words)),
                     expiresAt = System.currentTimeMillis() + SpoilerDays * DayMillis,
                 ),
             )

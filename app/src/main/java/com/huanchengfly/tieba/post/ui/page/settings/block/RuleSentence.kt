@@ -4,16 +4,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.BlockRule.TextField
+import com.huanchengfly.tieba.post.model.ContentKind
+import com.huanchengfly.tieba.post.model.flat
 
 /** A part of a rule's sentence that the editor lets the user change. */
-enum class RulePart { Scope, Action, Value, Expiry }
+enum class RulePart { Scope, Action, Join, Value, Expiry }
 
 /** A run of a rule's sentence: plain words, or a [part] of the rule, marked when left at its [isDefault]. */
 data class SentenceRun(val text: String, val part: RulePart? = null, val isDefault: Boolean = false)
 
 /**
- * [rule] as one sentence, such as "在 推荐和热榜 屏蔽 「抽卡吧」 的帖子 · 7 天后失效". With [full], parts
- * left at their defaults are spelled out too, for the editor; otherwise they are left out.
+ * [rule] as one sentence, such as "在 推荐和热榜 屏蔽 「抽卡吧」里 且 含有「剧透」 的内容 · 7 天后失效".
+ * With [full], for the editor, parts left at their defaults are spelled out too, and tests that
+ * the editor lists one by one are summed up as "满足以下全部条件"; otherwise defaults are left out.
  */
 @Composable
 fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<SentenceRun> = buildList {
@@ -25,32 +31,14 @@ fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<Senten
     }
     add(SentenceRun(actionName(rule.action), RulePart.Action, rule.action == BlockRule.Action.Default))
     add(SentenceRun(" "))
-    rule.inForum?.takeIf { it.isNotBlank() }?.let { add(SentenceRun(stringResource(R.string.rule_in_forum, it.removeSuffix("吧")))) }
-    when (val match = rule.match) {
-        is BlockRule.Match.User -> {
-            add(SentenceRun(stringResource(R.string.rule_user)))
-            add(SentenceRun(match.shownName, RulePart.Value))
-            add(SentenceRun(stringResource(R.string.rule_whose_content)))
-        }
-
-        is BlockRule.Match.Forum -> {
-            add(SentenceRun(stringResource(R.string.rule_forum, match.name.removeSuffix("吧")), RulePart.Value))
-            add(SentenceRun(stringResource(R.string.rule_whose_threads)))
-        }
-
-        is BlockRule.Match.Level -> {
-            add(SentenceRun(stringResource(R.string.rule_level_below)))
-            add(SentenceRun(stringResource(R.string.rule_level, match.level), RulePart.Value))
-            add(SentenceRun(stringResource(R.string.rule_whose_users)))
-        }
-
-        is BlockRule.Match.Keyword -> {
-            if (rule.titleOnly) add(SentenceRun(stringResource(R.string.rule_title)))
-            add(SentenceRun(stringResource(if (match.regex) R.string.rule_matching else R.string.rule_containing)))
-            val words = match.words.joinToString(" ")
-            add(SentenceRun(if (match.regex) "/$words/" else "「$words」", RulePart.Value))
-            add(SentenceRun(stringResource(R.string.rule_whose_content)))
-        }
+    val flat = rule.condition.flat()
+    if (full && flat != null && flat.tests.size > 1) {
+        add(SentenceRun(stringResource(R.string.rule_meeting)))
+        add(SentenceRun(stringResource(if (flat.all) R.string.rule_all else R.string.rule_any), RulePart.Join, flat.all))
+        add(SentenceRun(stringResource(R.string.rule_conditions)))
+    } else {
+        addAll(conditionSentence(rule.condition))
+        add(SentenceRun(stringResource(R.string.rule_whose_content)))
     }
     val expiresAt = rule.expiresAt
     if (full || expiresAt != null) {
@@ -63,6 +51,103 @@ fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<Senten
         add(SentenceRun(text, RulePart.Expiry, expiresAt == null))
     }
 }
+
+/** [condition] in words: its tests joined by 且 or 或, those joined deeper in brackets. */
+@Composable
+fun conditionSentence(condition: Condition, nested: Boolean = false): List<SentenceRun> = buildList {
+    when (condition) {
+        is Condition.AllOf, is Condition.AnyOf -> {
+            val parts = if (condition is Condition.AllOf) condition.conditions else (condition as Condition.AnyOf).conditions
+            val join = stringResource(if (condition is Condition.AllOf) R.string.rule_and else R.string.rule_or)
+            if (nested && parts.size > 1) add(SentenceRun("（"))
+            parts.forEachIndexed { index, part ->
+                if (index > 0) add(SentenceRun(join))
+                addAll(conditionSentence(part, nested = true))
+            }
+            if (nested && parts.size > 1) add(SentenceRun("）"))
+        }
+
+        is Condition.Not -> if (condition.condition is Condition.AllOf || condition.condition is Condition.AnyOf) {
+            add(SentenceRun(stringResource(R.string.rule_not)))
+            addAll(conditionSentence(condition.condition, nested = true))
+        } else {
+            addAll(testSentence(condition.condition, negated = true))
+        }
+
+        else -> addAll(testSentence(condition, negated = false))
+    }
+}
+
+/** One test in words, its value marked, such as "标题不含有「剧透」". */
+@Composable
+fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
+    fun value(text: String) = SentenceRun(text, RulePart.Value)
+    fun plain(text: String) = SentenceRun(text)
+
+    @Composable
+    fun pattern(subject: String, pattern: Pattern): List<SentenceRun> = when (pattern) {
+        is Pattern.Words -> listOf(
+            plain(subject + stringResource(if (negated) R.string.rule_not_containing else R.string.rule_containing)),
+            value("「${pattern.words.joinToString(" ")}」"),
+        )
+        is Pattern.Regex -> listOf(
+            plain(subject + stringResource(if (negated) R.string.rule_not_matching else R.string.rule_matching)),
+            value("/${pattern.pattern}/"),
+        )
+    }
+    return when (test) {
+        is Condition.Text -> pattern(
+            when (test.field) {
+                TextField.Both -> ""
+                TextField.Title -> stringResource(R.string.rule_title)
+                TextField.Body -> stringResource(R.string.rule_body)
+            },
+            test.pattern,
+        )
+
+        is Condition.User -> if (negated) {
+            listOf(plain(stringResource(R.string.rule_author_is_not)), value("「${test.shownName}」"))
+        } else {
+            listOf(plain(stringResource(R.string.rule_user)), value(test.shownName))
+        }
+
+        is Condition.AuthorName -> pattern(stringResource(R.string.rule_author_name), test.pattern)
+        is Condition.LevelBelow -> listOf(
+            plain(stringResource(if (negated) R.string.rule_level_not_below else R.string.rule_level_below)),
+            value(stringResource(R.string.rule_level, test.level)),
+        )
+
+        Condition.ThreadAuthor -> listOf(plain(stringResource(if (negated) R.string.rule_not_thread_author else R.string.rule_thread_author)))
+        is Condition.Ip -> listOf(plain(stringResource(if (negated) R.string.rule_ip_is_not else R.string.rule_ip_is)), value("「${test.region}」"))
+        is Condition.Forum -> if (negated) {
+            listOf(plain(stringResource(R.string.rule_not_in)), value(stringResource(R.string.rule_forum, test.name.removeSuffix("吧"))))
+        } else {
+            listOf(value(stringResource(R.string.rule_forum, test.name.removeSuffix("吧"))), plain(stringResource(R.string.rule_inside)))
+        }
+
+        is Condition.ForumName -> pattern(stringResource(R.string.rule_forum_name), test.pattern)
+        is Condition.Has -> listOf(plain(stringResource(if (negated) R.string.rule_has_not else R.string.rule_has)), value(kindName(test.kind)))
+        is Condition.Only -> listOf(plain(stringResource(if (negated) R.string.rule_not_only else R.string.rule_only)), value(kindName(test.kind)))
+        is Condition.ShorterThan -> listOf(
+            plain(stringResource(if (negated) R.string.rule_length_not_below else R.string.rule_length_below)),
+            value(stringResource(R.string.rule_length, test.length)),
+        )
+
+        is Condition.AllOf, is Condition.AnyOf, is Condition.Not -> conditionSentence(test, nested = true)
+    }
+}
+
+@Composable
+fun kindName(kind: ContentKind): String = stringResource(
+    when (kind) {
+        ContentKind.Link -> R.string.rule_kind_link
+        ContentKind.Image -> R.string.rule_kind_image
+        ContentKind.Video -> R.string.rule_kind_video
+        ContentKind.Voice -> R.string.rule_kind_voice
+        ContentKind.Mention -> R.string.rule_kind_mention
+        ContentKind.Emoticon -> R.string.rule_kind_emoticon
+    },
+)
 
 @Composable
 fun scopeName(scope: BlockRule.Scope): String = stringResource(

@@ -22,10 +22,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.BlockRule.Condition
+import com.huanchengfly.tieba.post.model.BlockRule.Pattern
+import com.huanchengfly.tieba.post.model.flat
 import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
+import com.huanchengfly.tieba.post.ui.page.settings.block.conditionSentence
+import com.huanchengfly.tieba.post.ui.page.settings.block.testSentence
 
 /**
  * One line in place of blocked content: [label], then why, and a way to show it.
@@ -65,14 +70,23 @@ fun BlockTip(
 
 /** Why [rule] blocks something, as a tip says it. */
 @Composable
-fun blockReason(rule: BlockRule): String = when (val match = rule.match) {
-    is BlockRule.Match.User -> stringResource(id = R.string.block_reason_user, match.shownName)
-    is BlockRule.Match.Forum -> stringResource(id = R.string.block_reason_forum, match.name.removeSuffix("吧"))
-    is BlockRule.Match.Level -> stringResource(id = R.string.block_reason_level, match.level)
-    is BlockRule.Match.Keyword -> stringResource(
-        id = if (match.regex) R.string.block_reason_regex else R.string.block_reason_keyword,
-        match.words.joinToString(" "),
-    )
+fun blockReason(rule: BlockRule): String {
+    // A rule joining several tests is named by the first that says what it looks for
+    val condition = rule.condition
+    val test = condition.flat()?.tests?.let { tests -> tests.firstOrNull { !it.negated } ?: tests.firstOrNull() }
+        ?: return conditionSentence(condition).joinToString("") { it.text }
+    val single = test.condition
+    return when {
+        test.negated -> testSentence(single, negated = true).joinToString("") { it.text }
+        single is Condition.User -> stringResource(id = R.string.block_reason_user, single.shownName)
+        single is Condition.Forum -> stringResource(id = R.string.block_reason_forum, single.name.removeSuffix("吧"))
+        single is Condition.LevelBelow -> stringResource(id = R.string.block_reason_level, single.level)
+        single is Condition.Text && single.pattern is Pattern.Words ->
+            stringResource(id = R.string.block_reason_keyword, (single.pattern as Pattern.Words).words.joinToString(" "))
+        single is Condition.Text && single.pattern is Pattern.Regex ->
+            stringResource(id = R.string.block_reason_regex, (single.pattern as Pattern.Regex).pattern)
+        else -> testSentence(single, negated = false).joinToString("") { it.text }
+    }
 }
 
 /**
