@@ -315,7 +315,7 @@ fun ForumSearchPostScreen(
                                         .clip(RoundedCornerShape(100))
                                         .clickable(
                                             interactionSource = remember { MutableInteractionSource() },
-                                            indication = PressFeedback.Scale,
+                                            indication = PressFeedback.Overlay,
                                             role = Role.Button,
                                             onClick = onBack
                                         ),

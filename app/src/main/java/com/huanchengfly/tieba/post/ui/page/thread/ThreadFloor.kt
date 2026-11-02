@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,8 @@ import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -547,12 +550,14 @@ fun FirstPostContent(
 @Composable
 private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick: () -> Unit) {
     val color = if (active) ExtendedTheme.colors.accent else ExtendedTheme.colors.text
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
+            .pressScale(interactionSource)
             .height(36.dp)
             .clip(CircleShape)
             .background(ExtendedTheme.colors.chip)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, onClick = onClick)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),

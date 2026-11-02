@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +29,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
+import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.utils.launchUrl
 
 @Composable
@@ -76,12 +75,6 @@ fun AboutPage(
                 val context = LocalContext.current
                 TextButton(
                     shape = RoundedCornerShape(100),
-                    colors = ButtonDefaults.textButtonColors(
-                        backgroundColor = ExtendedTheme.colors.text.copy(
-                            alpha = 0.1f
-                        ),
-                        contentColor = ExtendedTheme.colors.text
-                    ),
                     onClick = {
                         launchUrl(context, navigator, "https://github.com/HuanCheng65/TiebaLite")
                     },

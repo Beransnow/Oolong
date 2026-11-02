@@ -280,7 +280,7 @@ private fun FullScreenButton() {
             .padding(8.dp)
             .clip(CircleShape)
             .clickable(
-                indication = PressFeedback.Scale,
+                indication = PressFeedback.Overlay,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
                 videoPlayerController.toggleFullScreen()

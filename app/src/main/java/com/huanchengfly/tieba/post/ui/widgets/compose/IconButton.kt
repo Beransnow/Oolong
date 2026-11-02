@@ -9,12 +9,14 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Dimens
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
 
 /**
  * A 48dp round button around an icon, with the app's press feedback instead of Material's
@@ -28,16 +30,18 @@ fun IconButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit,
 ) {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
     Box(
         modifier = modifier
+            .pressScale(source)
             .size(Dimens.MinTouchTarget)
             .clip(CircleShape)
             .clickable(
                 onClick = onClick,
                 enabled = enabled,
                 role = Role.Button,
-                interactionSource = interactionSource,
-                indication = PressFeedback.Scale,
+                interactionSource = source,
+                indication = PressFeedback.Overlay,
             ),
         contentAlignment = Alignment.Center,
     ) {

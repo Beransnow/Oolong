@@ -442,7 +442,7 @@ fun SearchBox(
                             .clip(RoundedCornerShape(100))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = PressFeedback.Scale,
+                                indication = PressFeedback.Overlay,
                                 role = Role.Button
                             ) { onKeywordChange("") },
                         contentAlignment = Alignment.Center,
@@ -460,7 +460,7 @@ fun SearchBox(
                         .clip(RoundedCornerShape(100))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = PressFeedback.Scale,
+                            indication = PressFeedback.Overlay,
                             role = Role.Button
                         ) { onKeywordSubmit(keyword) },
                     contentAlignment = Alignment.Center,

@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
 
 @Composable
 fun Button(
@@ -52,12 +53,13 @@ fun Button(
     CompositionLocalProvider(LocalContentColor provides contentColor.copy(alpha = 1f)) {
         Surface(
             modifier = Modifier
+                .pressScale(interactionSource)
                 .clip(shape)
                 .clickable(
                     onClick = onClick,
                     enabled = enabled,
                     interactionSource = interactionSource,
-                    indication = PressFeedback.Scale
+                    indication = PressFeedback.Overlay
                 )
                 .then(modifier),
             shape = shape,
