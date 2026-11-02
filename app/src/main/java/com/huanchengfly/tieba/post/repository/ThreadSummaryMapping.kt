@@ -13,6 +13,12 @@ import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.ThreadVideo
 import com.huanchengfly.tieba.post.model.User
 import kotlinx.collections.immutable.toImmutableList
+import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
+import com.huanchengfly.tieba.post.api.models.protos.abstractText
+import com.huanchengfly.tieba.post.model.UserPost
+import com.huanchengfly.tieba.post.model.UserReplies
+import com.huanchengfly.tieba.post.model.UserReply
+import com.huanchengfly.tieba.post.model.UserThread
 
 /**
  * A thread as a list returned it. Feeds name the forum only in its forum info and forums only by
@@ -96,3 +102,43 @@ internal fun OriginThreadInfo.toSharedThread(emoticons: EmoticonRegistry) = Shar
 private val TextAbstractTypes = setOf(0, 40)
 private const val EmoticonAbstractType = 2
 private val Spaces = Regex(" {2,}")
+
+/** A thread or replies on a user's profile, as their posts list returned them. */
+fun PostInfoList.toUserPost(emoticons: EmoticonRegistry): UserPost {
+    val author = User(id = user_id, name = user_name, nameShow = name_show, portrait = user_portrait)
+    if (is_thread != 1) {
+        return UserReplies(
+            threadId = thread_id,
+            postId = post_id,
+            threadTitle = title,
+            author = author,
+            replies = content.map {
+                UserReply(
+                    text = it.post_content.abstractText,
+                    time = it.create_time,
+                    postId = it.post_id,
+                    isSubPost = it.post_type == 1L,
+                )
+            }.toImmutableList(),
+        )
+    }
+    return UserThread(
+        ThreadSummary(
+            id = thread_id,
+            forum = ForumSummary(id = forum_id, name = forum_name, avatar = ""),
+            title = title.takeIf { is_ntitle != 1 }.orEmpty(),
+            author = author,
+            createTime = create_time.toLong(),
+            listTime = create_time.toLong(),
+            abstract = rich_abstract.abstractText(emoticons),
+            firstPostId = post_id,
+            images = media.map { it.toThreadImage() }.toImmutableList(),
+            video = video_info?.toThreadVideo(),
+            shared = origin_thread_info?.takeIf { is_share_thread == 1 }?.toSharedThread(emoticons),
+            replyCount = reply_num,
+            shareCount = share_num.toLong(),
+            agree = Agree(count = agree_num.toLong(), agreed = agree?.hasAgree == 1),
+        ),
+    )
+}
+

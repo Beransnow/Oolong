@@ -38,7 +38,7 @@ internal object ExplorePreviewData {
         agreeNum = id.toInt(),
         agree = Agree(agreeNum = id, hasAgree = if (id == 2L) 1 else 0),
         _abstract = listOf(Abstract(type = 0, text = "第 $id 个帖子的摘要")),
-        forumInfo = SimpleForum(id = 50 + id, name = forum),
+        forumInfo = SimpleForum(id = 50 + id, name = forum, avatar = "forum.png"),
         hotNum = hotNum,
     )
 

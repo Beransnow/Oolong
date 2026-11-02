@@ -73,19 +73,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
-import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
-import com.huanchengfly.tieba.post.api.models.protos.renders
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.SharedThread
@@ -93,8 +84,6 @@ import com.huanchengfly.tieba.post.model.ThreadImage
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.ThreadVideo
 import com.huanchengfly.tieba.post.models.PhotoViewData
-import com.huanchengfly.tieba.post.repository.toThreadImage
-import com.huanchengfly.tieba.post.repository.toThreadVideo
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
@@ -117,51 +106,12 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
-import com.huanchengfly.tieba.post.model.User as ModelUser
+import com.huanchengfly.tieba.post.model.User
 
 private val ThreadImage.url: String
     get() = ImageUtil.getUrl(App.INSTANCE, true, original, large, animated, small)
-
-@Composable
-private fun UserHeader(
-    userProvider: () -> ImmutableHolder<User>,
-    timeProvider: () -> Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
-) {
-    val context = LocalContext.current
-    val user = remember(userProvider) { userProvider() }
-    val time = remember(timeProvider) { timeProvider() }
-    UserHeader(
-        avatar = {
-            Avatar(
-                data = user.get { StringUtil.getAvatarUrl(portrait) },
-                size = Sizes.Small,
-                contentDescription = null
-            )
-        },
-        name = {
-            AuthorName(
-                text = StringUtil.getUsernameAnnotatedString(
-                    context = LocalContext.current,
-                    username = user.get { name },
-                    nickname = user.get { nameShow },
-                    color = LocalContentColor.current
-                )
-            )
-        },
-        onClick = onClick,
-        desc = {
-            MetaText(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
-        },
-        content = content,
-        modifier = modifier
-    )
-}
 
 /** An author's name in a card: medium weight, between the title and the time. */
 @Composable
@@ -640,63 +590,6 @@ private val SinglePhotoMaxHeight = 220.dp
 private const val TallPhotoWidthFraction = 0.6f
 
 @Composable
-private fun ThreadMedia(
-    item: ImmutableHolder<ThreadInfo>,
-    modifier: Modifier = Modifier,
-) {
-    ThreadMedia(
-        forumId = item.get { forumId },
-        // Feed lists leave forumName empty and only fill in forumInfo
-        forumName = item.get { forumName.ifEmpty { forumInfo?.name.orEmpty() } },
-        threadId = item.get { threadId },
-        medias = item.get { media }.map { it.toThreadImage() }.toImmutableList(),
-        videoInfo = item.get { videoInfo }?.toThreadVideo(),
-        modifier = modifier,
-    )
-}
-
-@Composable
-fun OriginThreadCard(
-    originThreadInfo: ImmutableHolder<OriginThreadInfo>,
-    modifier: Modifier = Modifier,
-) {
-    val contentRenders = remember(originThreadInfo) { originThreadInfo.get { content.renders } }
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column {
-            contentRenders.fastForEach {
-                it.Render()
-            }
-        }
-        ThreadMedia(
-            forumId = originThreadInfo.get { fid },
-            forumName = originThreadInfo.get { fname },
-            threadId = originThreadInfo.get { tid.toLong() },
-            medias = originThreadInfo.get { media }.map { it.toThreadImage() }.toImmutableList(),
-            videoInfo = originThreadInfo.get { video_info }?.toThreadVideo()
-        )
-    }
-}
-
-@Composable
-private fun ThreadForumInfo(
-    item: ImmutableHolder<ThreadInfo>,
-    onClick: (SimpleForum) -> Unit,
-) {
-    val hasForumInfo = remember(item) { item.isNotNull { forumInfo } }
-    if (hasForumInfo) {
-        val forumInfo = remember(item) { item.getImmutable { forumInfo!! } }
-        ThreadForumInfo(
-            forumName = forumInfo.get { name },
-            forumAvatar = forumInfo.get { avatar },
-            onClick = { onClick(forumInfo.get()) }
-        )
-    }
-}
-
-@Composable
 private fun ThreadForumInfo(
     forumName: String,
     forumAvatar: String?,
@@ -795,120 +688,6 @@ fun ThreadShareBtn(
     )
 }
 
-@Composable
-fun FeedCard(
-    item: ImmutableHolder<ThreadInfo>,
-    onClick: (ThreadInfo) -> Unit,
-    onAgree: (ThreadInfo) -> Unit,
-    modifier: Modifier = Modifier,
-    onClickReply: (ThreadInfo) -> Unit = {},
-    onClickUser: (User) -> Unit = {},
-    onClickForum: (SimpleForum) -> Unit = {},
-    onClickOriginThread: (OriginThreadInfo) -> Unit = {},
-    /** Whether to show the thread's forum, which a forum's own list leaves out. */
-    showForum: Boolean = true,
-    /** Long-pressing the card, at its bounds and the press in the window. */
-    onLongPress: ((ThreadInfo, from: Rect, at: Offset) -> Unit)? = null,
-    dislikeAction: @Composable () -> Unit = {},
-) {
-    // A long press opens the card's menu, which the pressing finger can then slide onto and lift
-    val menus = LocalContextMenus.current
-    var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var pressAt by remember { mutableStateOf(Offset.Zero) }
-    var peeking by remember { mutableStateOf(false) }
-    val pressTracking = if (onLongPress == null) {
-        Modifier
-    } else {
-        Modifier
-            .onGloballyPositioned { coordinates = it }
-            .pointerInput(menus) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    pressAt = coordinates?.localToWindow(down.position) ?: Offset.Zero
-                    while (true) {
-                        val change = awaitPointerEvent().changes.firstOrNull() ?: break
-                        val position = coordinates?.localToWindow(change.position) ?: break
-                        if (!change.pressed) {
-                            if (peeking) menus?.liftFinger(position)
-                            peeking = false
-                            break
-                        }
-                        if (peeking) menus?.moveFinger(position)
-                    }
-                }
-            }
-    }
-    Card(
-        header = {
-            val author = remember(item) { item.getNullableImmutable { author } }
-            author?.let {
-                UserHeader(
-                    userProvider = { it },
-                    timeProvider = { item.get { lastTimeInt } },
-                    onClick = {
-                        onClickUser(it.get())
-                    },
-                ) { dislikeAction() }
-            }
-        },
-        content = {
-            ThreadContent(
-                title = item.get { title },
-                abstractText = item.get { abstractText },
-                tabName = item.get { tabName },
-                showTitle = item.get { isNoTitle != 1 && title.isNotBlank() },
-                showAbstract = item.get { abstractText.isNotBlank() },
-                isGood = item.get { isGood == 1 },
-            )
-
-            ThreadMedia(
-                item = item,
-            )
-
-            item.getNullableImmutable { origin_thread_info }
-                .takeIf { item.get { is_share_thread } == 1 }?.let {
-                    OriginThreadCard(
-                        originThreadInfo = it,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.inset)
-                            .clickable {
-                                onClickOriginThread(it.get())
-                            }
-                            .padding(16.dp)
-                    )
-                }
-        },
-        action = {
-            FeedCardActions(forum = { if (showForum) ThreadForumInfo(item = item, onClick = onClickForum) }) {
-                ThreadShareBtn(
-                    shareNum = item.get { shareNum },
-                    onClick = {},
-                )
-                ThreadReplyBtn(
-                    replyNum = item.get { replyNum },
-                    onClick = { onClickReply(item.get()) },
-                )
-                ThreadAgreeBtn(
-                    hasAgree = item.get { agree?.hasAgree == 1 },
-                    agreeNum = item.get { agreeNum },
-                    onClick = { onAgree(item.get()) },
-                )
-            }
-        },
-        onClick = { onClick(item.get()) },
-        onLongClick = onLongPress?.let { peek ->
-            {
-                coordinates?.let {
-                    peeking = true
-                    peek(item.get(), Rect(it.positionInWindow(), it.size.toSize()), pressAt)
-                }
-            }
-        },
-        modifier = modifier.then(pressTracking),
-    )
-}
-
 /**
  * A thread in a list: its author and when, its title and abstract, its pictures or video, the
  * thread it shares, then its forum, shares, replies and likes.
@@ -920,7 +699,7 @@ fun FeedCard(
     onAgree: (ThreadSummary) -> Unit,
     modifier: Modifier = Modifier,
     onClickReply: (ThreadSummary) -> Unit = {},
-    onClickUser: (ModelUser) -> Unit = {},
+    onClickUser: (User) -> Unit = {},
     onClickForum: (ForumSummary) -> Unit = {},
     onClickShared: (SharedThread) -> Unit = {},
     /** Whether to show the thread's forum, which a forum's own list leaves out. */
@@ -1002,7 +781,7 @@ fun FeedCard(
                     if (showForum) {
                         ThreadForumInfo(
                             forumName = thread.forum.name,
-                            forumAvatar = thread.forum.avatar,
+                            forumAvatar = thread.forum.avatar.ifEmpty { null },
                             onClick = { onClickForum(thread.forum) },
                         )
                     }
@@ -1055,89 +834,6 @@ fun SharedThreadCard(
             videoInfo = shared.video,
         )
     }
-}
-
-@Composable
-fun FeedCard(
-    item: ImmutableHolder<PostInfoList>,
-    onClick: (PostInfoList) -> Unit,
-    onAgree: (PostInfoList) -> Unit,
-    modifier: Modifier = Modifier,
-    onClickReply: (PostInfoList) -> Unit = {},
-    onClickUser: (id: Long) -> Unit = {},
-    onClickForum: (name: String) -> Unit = {},
-    onClickOriginThread: (OriginThreadInfo) -> Unit = {},
-) {
-    Card(
-        header = {
-            UserHeader(
-                nameProvider = { item.get { user_name } },
-                nameShowProvider = { item.get { name_show } },
-                portraitProvider = { item.get { user_portrait } },
-                timeProvider = { item.get { create_time } },
-                onClick = {
-                    onClickUser(item.get { user_id })
-                },
-            )
-        },
-        content = {
-            ThreadContent(
-                title = item.get { title },
-                abstractText = item.get { abstractText },
-                showTitle = item.get { is_ntitle != 1 && title.isNotBlank() },
-                showAbstract = item.get { abstractText.isNotBlank() },
-            )
-
-            ThreadMedia(
-                forumId = item.get { forum_id },
-                forumName = item.get { forum_name },
-                threadId = item.get { thread_id },
-                medias = item.get { media }.map { it.toThreadImage() }.toImmutableList(),
-                videoInfo = item.get { video_info }?.toThreadVideo()
-            )
-
-            item.getNullableImmutable { origin_thread_info }
-                .takeIf { item.get { is_share_thread } == 1 }?.let {
-                    OriginThreadCard(
-                        originThreadInfo = it,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.inset)
-                            .clickable {
-                                onClickOriginThread(it.get())
-                            }
-                            .padding(16.dp)
-                    )
-                }
-        },
-        action = {
-            FeedCardActions(
-                forum = {
-                    ThreadForumInfo(
-                        forumName = item.get { forum_name },
-                        forumAvatar = null,
-                        onClick = { onClickForum(item.get { forum_name }) }
-                    )
-                }
-            ) {
-                ThreadShareBtn(
-                    shareNum = item.get { share_num }.toLong(),
-                    onClick = {},
-                )
-                ThreadReplyBtn(
-                    replyNum = item.get { reply_num },
-                    onClick = { onClickReply(item.get()) },
-                )
-                ThreadAgreeBtn(
-                    hasAgree = item.get { agree?.hasAgree == 1 },
-                    agreeNum = item.get { agree_num },
-                    onClick = { onAgree(item.get()) },
-                )
-            }
-        },
-        onClick = { onClick(item.get()) },
-        modifier = modifier,
-    )
 }
 
 /**
@@ -1271,15 +967,18 @@ fun VideoPlayer(
 @Composable
 fun FeedCardPreview() {
     FeedCard(
-        item = wrapImmutable(
-            ThreadInfo(
-                title = "预览",
-                author = User(),
-                lastTimeInt = (System.currentTimeMillis() / 1000).toInt()
-            )
+        thread = ThreadSummary(
+            id = 1,
+            forum = ForumSummary(id = 1, name = "", avatar = ""),
+            title = "预览",
+            author = User(id = 1, name = "", nameShow = "", portrait = ""),
+            createTime = System.currentTimeMillis() / 1000,
+            listTime = System.currentTimeMillis() / 1000,
+            abstract = "",
+            firstPostId = 1,
         ),
         onClick = {},
         onAgree = {},
-        modifier = Modifier.background(ExtendedTheme.colors.card)
+        modifier = Modifier.background(ExtendedTheme.colors.card),
     )
 }

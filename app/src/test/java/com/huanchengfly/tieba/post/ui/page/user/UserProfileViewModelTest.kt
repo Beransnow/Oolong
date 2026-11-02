@@ -25,6 +25,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import com.huanchengfly.tieba.post.repository.toUserPost
+import com.huanchengfly.tieba.post.model.UserThread
 
 class UserProfileViewModelTest {
     @get:Rule
@@ -49,7 +51,7 @@ class UserProfileViewModelTest {
     @Test
     fun `loads the profile and only the lists that are opened`() = runTest {
         coEvery { repository.profile(7) } returns user
-        coEvery { repository.posts(7, true, 1) } returns UserPostsPage(Page(listOf(PostInfoList(thread_id = 1, post_id = 2))), hidden = true)
+        coEvery { repository.posts(7, true, 1) } returns UserPostsPage(Page(listOf(PostInfoList(thread_id = 1, post_id = 2, is_thread = 1).toUserPost { _, _ -> })), hidden = true)
         coEvery { repository.likedForums(7, 1) } returns Page(listOf(LikedForum(52, "吧", "", 1, "")))
 
         val viewModel = createViewModel()
@@ -62,7 +64,7 @@ class UserProfileViewModelTest {
         assertEquals(user, state.profile)
         assertEquals(false, state.isSelf)
         assertTrue(state.loggedIn)
-        assertEquals(listOf(1L), state.threads.items.map { it.data.get { thread_id } })
+        assertEquals(listOf(1L), state.threads.items.map { (it as UserThread).thread.id })
         assertTrue(state.postsHidden)
         assertEquals(listOf(52L), state.forums.items.map { it.id })
         coVerify(exactly = 0) { repository.posts(7, false, any()) }
@@ -105,7 +107,7 @@ class UserProfileViewModelTest {
     fun `agreeing with a thread updates it in its list`() = runTest {
         coEvery { repository.profile(7) } returns user
         coEvery { repository.posts(7, true, 1) } returns
-            UserPostsPage(Page(listOf(PostInfoList(thread_id = 1, post_id = 2, agree = Agree(hasAgree = 0)))))
+            UserPostsPage(Page(listOf(PostInfoList(thread_id = 1, post_id = 2, is_thread = 1, agree = Agree(hasAgree = 0)).toUserPost { _, _ -> })))
         val viewModel = createViewModel()
         viewModel.open(UserTab.Threads)
         runCurrent()
@@ -113,7 +115,7 @@ class UserProfileViewModelTest {
         viewModel.agree(UserTab.Threads, threadId = 1, postId = 2)
         runCurrent()
 
-        assertEquals(1, viewModel.state.value.threads.items.single().data.get { agree?.hasAgree })
+        assertEquals(true, (viewModel.state.value.threads.items.single() as UserThread).thread.agree.agreed)
         coVerify { repository.agreeThread(any(), true) }
     }
 

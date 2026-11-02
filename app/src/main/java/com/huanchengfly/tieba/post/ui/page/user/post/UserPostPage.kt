@@ -36,7 +36,6 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -59,14 +58,18 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.ImmutableList
+import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.UserPost
+import com.huanchengfly.tieba.post.model.UserThread
+import com.huanchengfly.tieba.post.model.UserReplies
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserPostPage(
-    list: PagerState<PostListItemData>,
+    list: PagerState<UserPost>,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
-    onAgree: (PostInfoList) -> Unit,
+    onAgree: (ThreadSummary) -> Unit,
     hidden: Boolean = false,
     fluid: Boolean = false,
     enablePullRefresh: Boolean = false,
@@ -202,8 +205,8 @@ fun UserPostPage(
                     onClickReply = {
                         navigator.navigate(
                             ThreadKey(
-                                it.thread_id,
-                                it.forum_id,
+                                it.id,
+                                it.forum.id,
                                 scrollToReply = true
                             )
                         )
@@ -233,12 +236,12 @@ fun UserPostPage(
 
 @Composable
 private fun UserPostList(
-    data: ImmutableList<PostListItemData>,
+    data: ImmutableList<UserPost>,
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
     onClickItem: (threadId: Long, postId: Long?, isSubPost: Boolean) -> Unit = { _, _, _ -> },
-    onAgreeItem: (PostInfoList) -> Unit = {},
-    onClickReply: (PostInfoList) -> Unit = {},
+    onAgreeItem: (ThreadSummary) -> Unit = {},
+    onClickReply: (ThreadSummary) -> Unit = {},
     onClickUser: (id: Long) -> Unit = {},
     onClickForum: (name: String) -> Unit = {},
     onClickOriginThread: (threadId: Long) -> Unit = {},
@@ -246,9 +249,7 @@ private fun UserPostList(
     MyLazyColumn(state = lazyListState, contentPadding = LocalChromePadding.current) {
         items(
             items = data,
-            key = {
-                "${it.data.get { thread_id }}_${it.data.get { post_id }}"
-            }
+            key = { it.key }
         ) { itemData ->
             Container(fluid = fluid) {
                 UserPostItem(
@@ -267,50 +268,63 @@ private fun UserPostList(
 
 @Composable
 fun UserPostItem(
-    post: PostListItemData,
-    onAgree: (PostInfoList) -> Unit,
+    post: UserPost,
+    onAgree: (ThreadSummary) -> Unit,
     modifier: Modifier = Modifier,
     onClick: (threadId: Long, postId: Long?, isSubPost: Boolean) -> Unit = { _, _, _ -> },
-    onClickReply: (PostInfoList) -> Unit = {},
+    onClickReply: (ThreadSummary) -> Unit = {},
     onClickUser: (id: Long) -> Unit = {},
     onClickForum: (name: String) -> Unit = {},
     onClickOriginThread: (threadId: Long) -> Unit = {},
 ) {
-    val item = post.data
-    if (post.isThread) {
-        FeedCard(
-            item = item,
-            onClick = { onClick(it.thread_id, null, false) },
+    when (post) {
+        is UserThread -> FeedCard(
+            thread = post.thread,
+            onClick = { onClick(it.id, null, false) },
             onAgree = onAgree,
             modifier = modifier,
             onClickReply = onClickReply,
-            onClickUser = onClickUser,
-            onClickForum = onClickForum,
-            onClickOriginThread = { onClickOriginThread(it.tid.toLong()) },
+            onClickUser = { onClickUser(it.id) },
+            onClickForum = { onClickForum(it.name) },
+            onClickShared = { onClickOriginThread(it.id) },
         )
-    } else {
+
+        is UserReplies -> UserRepliesItem(post, onClick, onClickUser, onClickOriginThread, modifier)
+    }
+}
+
+/** The user's replies in a thread, each opening where it is, over the thread's title. */
+@Composable
+private fun UserRepliesItem(
+    post: UserReplies,
+    onClick: (threadId: Long, postId: Long?, isSubPost: Boolean) -> Unit,
+    onClickUser: (id: Long) -> Unit,
+    onClickOriginThread: (threadId: Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    run {
         Card(
             header = {
                 UserHeader(
-                    nameProvider = { item.get { user_name } },
-                    nameShowProvider = { item.get { name_show } },
-                    portraitProvider = { item.get { user_portrait } },
+                    nameProvider = { post.author.name },
+                    nameShowProvider = { post.author.nameShow },
+                    portraitProvider = { post.author.portrait },
                     onClick = {
-                        onClickUser(item.get { user_id })
+                        onClickUser(post.author.id)
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             },
             content = {
                 Column {
-                    post.contents.fastForEach {
+                    post.replies.fastForEach {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     onClick(
-                                        item.get { thread_id },
+                                        post.threadId,
                                         it.postId,
                                         it.isSubPost
                                     )
@@ -318,7 +332,7 @@ fun UserPostItem(
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = it.contentText,
+                                text = it.text,
                                 style = MaterialTheme.typography.body1,
                                 color = ExtendedTheme.colors.text,
                             )
@@ -326,7 +340,7 @@ fun UserPostItem(
                             Text(
                                 text = DateTimeUtils.getRelativeTimeString(
                                     LocalContext.current,
-                                    it.createTime
+                                    it.time
                                 ),
                                 style = MaterialTheme.typography.caption,
                                 color = ExtendedTheme.colors.textSecondary,
@@ -336,14 +350,14 @@ fun UserPostItem(
                 }
 
                 Text(
-                    text = item.get { title },
+                    text = post.threadTitle,
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(6.dp))
                         .background(ExtendedTheme.colors.inset)
                         .clickable {
-                            onClickOriginThread(item.get { thread_id })
+                            onClickOriginThread(post.threadId)
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.body2,

@@ -164,7 +164,7 @@ private fun UserProfileList(state: UserProfileState, tab: UserTab, expanded: Boo
             hidden = state.postsHidden,
             onRefresh = { viewModel.refresh(tab) },
             onLoadMore = { viewModel.loadMore(tab) },
-            onAgree = { viewModel.agree(tab, it.thread_id, it.post_id) },
+            onAgree = { viewModel.agree(tab, it.id, it.firstPostId) },
             fluid = expanded,
             enablePullRefresh = expanded,
         )

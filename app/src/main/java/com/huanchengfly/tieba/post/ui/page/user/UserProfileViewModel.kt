@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
@@ -19,13 +17,10 @@ import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
-import com.huanchengfly.tieba.post.ui.page.user.post.PostListItemData
-import com.huanchengfly.tieba.post.ui.page.user.post.toItemData
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,6 +30,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import com.huanchengfly.tieba.post.model.UserPost
+import com.huanchengfly.tieba.post.model.UserThread
+import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 
 /** The lists a profile shows, each in its own tab. */
 enum class UserTab { Threads, Posts, Forums }
@@ -49,8 +47,8 @@ data class UserProfileState(
     val following: Boolean = false,
     val isSelf: Boolean = false,
     val loggedIn: Boolean = false,
-    val threads: PagerState<PostListItemData> = PagerState(),
-    val posts: PagerState<PostListItemData> = PagerState(),
+    val threads: PagerState<UserPost> = PagerState(),
+    val posts: PagerState<UserPost> = PagerState(),
     val forums: PagerState<LikedForum> = PagerState(),
     /** Whether the user hides their threads and replies from others. */
     val postsHidden: Boolean = false,
@@ -77,7 +75,7 @@ class UserProfileViewModel @AssistedInject constructor(
         val postsHidden: Boolean = false,
     )
 
-    private val postPagers = MutableStateFlow<Map<UserTab, Pager<Int, PostInfoList>>>(emptyMap())
+    private val postPagers = MutableStateFlow<Map<UserTab, Pager<Int, UserPost>>>(emptyMap())
     private val forumPager = MutableStateFlow<Pager<Int, LikedForum>?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -170,28 +168,34 @@ class UserProfileViewModel @AssistedInject constructor(
 
     fun agree(tab: UserTab, threadId: Long, postId: Long) {
         val pager = postPagers.value[tab] ?: return
-        val post = pager.state.value.items.firstOrNull { it.thread_id == threadId && it.post_id == postId } ?: return
-        val agree = post.agree?.hasAgree != 1
+        val thread = pager.state.value.items
+            .firstNotNullOfOrNull { (it as? UserThread)?.thread?.takeIf { t -> t.id == threadId && t.firstPostId == postId } }
+            ?: return
+        val agree = !thread.agree.agreed
         actions.launch("agree-$threadId-$postId") {
             setAgreed(pager, threadId, postId, agree)
-            runCatching { repository.agreeThread(post, agree) }.onFailure {
+            runCatching { repository.agreeThread(thread, agree) }.onFailure {
                 setAgreed(pager, threadId, postId, !agree)
                 messages.showError(R.string.toast_agree_failed, it)
             }
         }
     }
 
-    private fun setAgreed(pager: Pager<Int, PostInfoList>, threadId: Long, postId: Long, agree: Boolean) {
+    private fun setAgreed(pager: Pager<Int, UserPost>, threadId: Long, postId: Long, agree: Boolean) {
         pager.update { items ->
             items.map { post ->
-                if (post.thread_id == threadId && post.post_id == postId) post.updateAgreeStatus(if (agree) 1 else 0) else post
+                if (post is UserThread && post.thread.id == threadId && post.thread.firstPostId == postId) {
+                    UserThread(post.thread.withAgreed(agree))
+                } else {
+                    post
+                }
             }
         }
     }
 
-    private fun postsOf(tab: UserTab): Pager<Int, PostInfoList> {
+    private fun postsOf(tab: UserTab): Pager<Int, UserPost> {
         postPagers.value[tab]?.let { return it }
-        val pager = pager(initialKey = 1, itemKey = { post: PostInfoList -> "${post.thread_id}_${post.post_id}" }) { page ->
+        val pager = pager(initialKey = 1, itemKey = { post: UserPost -> post.key }) { page ->
             val result = repository.posts(uid, threads = tab == UserTab.Threads, page = page)
             if (page == 1) profile.update { it.copy(postsHidden = result.hidden) }
             result.posts
@@ -213,8 +217,8 @@ class UserProfileViewModel @AssistedInject constructor(
     }
 }
 
-private fun PagerState<PostInfoList>.toItems() = PagerState(
-    items = items.map { it.toItemData() }.toImmutableList(),
+private fun PagerState<UserPost>.toItems() = PagerState(
+    items = items,
     refresh = refresh,
     append = append,
     hasMore = hasMore,

@@ -5,7 +5,6 @@ import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
-import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
@@ -16,9 +15,11 @@ import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
 import java.io.File
 import javax.inject.Inject
+import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.UserPost
 
 /** A page of what a user posted, and whether they hide their posts from others. */
-data class UserPostsPage(val posts: Page<Int, PostInfoList>, val hidden: Boolean = false)
+data class UserPostsPage(val posts: Page<Int, UserPost>, val hidden: Boolean = false)
 
 /** A user's profile, what they posted and the forums they follow, and following them. */
 class UserRepository @Inject constructor(
@@ -26,6 +27,7 @@ class UserRepository @Inject constructor(
     private val agreeRemote: AgreeRemoteDataSource,
     private val uploadRemote: UploadRemoteDataSource,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val emoticons: EmoticonRegistry,
 ) {
     suspend fun profile(uid: Long): UserProfile = withContext(io) {
         checkNotNull(remote.profile(uid).user).toUserProfile()
@@ -35,7 +37,7 @@ class UserRepository @Inject constructor(
     suspend fun posts(uid: Long, threads: Boolean, page: Int): UserPostsPage = withContext(io) {
         val data = remote.posts(uid, page, threads)
         UserPostsPage(
-            posts = Page(data.post_list, next = (page + 1).takeIf { data.post_list.isNotEmpty() }),
+            posts = Page(data.post_list.map { it.toUserPost(emoticons) }, next = (page + 1).takeIf { data.post_list.isNotEmpty() }),
             hidden = data.hide_post == 1,
         )
     }
@@ -78,8 +80,8 @@ class UserRepository @Inject constructor(
 
     suspend fun uploadPortrait(picture: File): String? = uploadPortrait(withContext(io) { picture.readBytes() })
 
-    suspend fun agreeThread(post: PostInfoList, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(post.thread_id, post.post_id), post.forum_id, undo = !agree)
+    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 }
 

@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
 class UserRepositoryTest {
     private val remote = mockk<UserRemoteDataSource>()
     private val uploadRemote = mockk<UploadRemoteDataSource>()
-    private val repository = UserRepository(remote, mockk<AgreeRemoteDataSource>(relaxed = true), uploadRemote, Dispatchers.Unconfined)
+    private val repository = UserRepository(remote, mockk<AgreeRemoteDataSource>(relaxed = true), uploadRemote, Dispatchers.Unconfined, { _, _ -> })
 
     @Test
     fun `maps the profile`() = runTest {
