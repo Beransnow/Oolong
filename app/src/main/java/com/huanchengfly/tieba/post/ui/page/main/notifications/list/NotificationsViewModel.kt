@@ -8,9 +8,11 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
+import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
+import com.huanchengfly.tieba.post.repository.BlockVerdict
+import com.huanchengfly.tieba.post.repository.Blockable
 import com.huanchengfly.tieba.post.repository.NotificationRepository
-import com.huanchengfly.tieba.post.repository.blocks
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -28,9 +30,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-/** A notification, and whether the block rules hide it. */
+/** A notification, and how the block rules block it, if they do. */
 @Immutable
-data class NotificationItem(val notification: Notification, val blocked: Boolean = false)
+data class NotificationItem(val notification: Notification, val block: BlockVerdict? = null) {
+    val blocked: Boolean get() = block != null
+}
 
 @Immutable
 data class NotificationsState(
@@ -58,7 +62,7 @@ class NotificationsViewModel @Inject constructor(
             lists.mapValues { (_, list) ->
                 PagerState(
                     items = list.items.map { item ->
-                        NotificationItem(item, blocked = item.author?.let { rules.blocks(it, item.content) } ?: false)
+                        NotificationItem(item, item.author?.let { rules.check(Blockable(it, item.content, BlockPlace.Messages)) })
                     }.toImmutableList(),
                     refresh = list.refresh,
                     append = list.append,

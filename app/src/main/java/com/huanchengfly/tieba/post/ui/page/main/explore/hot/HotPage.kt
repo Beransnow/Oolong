@@ -276,8 +276,7 @@ fun HotScreen(
                     ) { index, (item, blocked) ->
                         Container {
                             BlockableContent(
-                                blocked = blocked,
-                                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                block = blocked,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                             ) {
                                 FeedCard(

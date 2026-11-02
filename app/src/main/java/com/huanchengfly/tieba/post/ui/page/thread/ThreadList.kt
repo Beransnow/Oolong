@@ -235,7 +235,7 @@ private fun FirstPost(
                     onEvent = onEvent,
                 )
             } else ThreadPostCard(
-                item = PostItem(post, blocked = false, blockedSubPosts = persistentSetOf()),
+                item = PostItem(post),
                 options = options,
                 // Replying to the first floor replies to the thread; it shows no replies inside it to reply to
                 onEvent = { event -> if (event is ThreadEvent.Reply) onEvent(ThreadEvent.Reply(null)) else onEvent(event) },

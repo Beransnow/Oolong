@@ -15,13 +15,15 @@ import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
+import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.repository.ForumCursor
 import com.huanchengfly.tieba.post.repository.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.ForumSortStore
-import com.huanchengfly.tieba.post.repository.blocks
+import com.huanchengfly.tieba.post.repository.check
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.assisted.Assisted
@@ -45,9 +47,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** A thread in a forum's list, and whether the block rules hide it. */
+/** A thread in a forum's list, and how the block rules block it, if they do. */
 @Immutable
-data class ForumThreadItem(val thread: ThreadSummary, val blocked: Boolean = false)
+data class ForumThreadItem(val thread: ThreadSummary, val block: BlockVerdict? = null) {
+    val blocked: Boolean get() = block != null
+}
 
 @Immutable
 data class ForumState(
@@ -237,7 +241,7 @@ class ForumViewModel @AssistedInject constructor(
 
     private fun items(tab: ForumTab, threads: List<ThreadSummary>, rules: BlockRules): ImmutableList<ForumThreadItem> {
         blocked[tab]?.takeIf { it.first === threads && it.second === rules }?.let { return it.third }
-        val items = threads.map { ForumThreadItem(it, blocked = rules.blocks(it)) }.toImmutableList()
+        val items = threads.map { ForumThreadItem(it, rules.check(it, BlockPlace.Forum)) }.toImmutableList()
         blocked[tab] = Triple(threads, rules, items)
         return items
     }

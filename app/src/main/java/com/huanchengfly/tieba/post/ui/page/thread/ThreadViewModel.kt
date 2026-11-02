@@ -12,26 +12,32 @@ import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
 import com.huanchengfly.tieba.post.model.plainText
+import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
+import com.huanchengfly.tieba.post.repository.BlockVerdict
+import com.huanchengfly.tieba.post.repository.Blockable
 import com.huanchengfly.tieba.post.repository.ThreadCursor
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadPage
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
-import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -42,6 +48,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -51,13 +58,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** A reply and whether the block rules hide it, or some of the replies shown inside it. */
+/** A reply and how the block rules block it, or some of the replies shown inside it, by their ids. */
 @Immutable
 data class PostItem(
     val post: Post,
-    val blocked: Boolean = false,
-    val blockedSubPosts: ImmutableSet<Long> = persistentSetOf(),
-)
+    val block: BlockVerdict? = null,
+    val subPostBlocks: ImmutableMap<Long, BlockVerdict> = persistentMapOf(),
+) {
+    val blocked: Boolean get() = block != null
+}
 
 @Immutable
 data class ThreadState(
@@ -151,14 +160,17 @@ class ThreadViewModel @AssistedInject constructor(
     }
 
     /** Block flags for the last list and rules seen, which most state changes leave as they are. */
-    private var blocked: Triple<List<Post>, BlockRules, ImmutableList<PostItem>>? = null
+    private var blocked: Pair<Triple<List<Post>, BlockRules, String?>, ImmutableList<PostItem>>? = null
 
     private val items: Flow<PagerState<PostItem>> = combine(
         posts.state,
         blockRuleSource.rules,
-    ) { state, rules ->
-        val cached = blocked?.takeIf { it.first === state.items && it.second === rules }
-        val items = cached?.third ?: state.items.withBlocked(rules).also { blocked = Triple(state.items, rules, it) }
+        // Rules for one forum need to know the thread's
+        meta.map { it.page?.thread?.forum?.name }.distinctUntilChanged(),
+    ) { state, rules, forum ->
+        val key = Triple(state.items, rules, forum)
+        val cached = blocked?.takeIf { (k, _) -> k.first === state.items && k.second === rules && k.third == forum }
+        val items = cached?.second ?: state.items.withBlocked(rules, forum).also { blocked = key to it }
         PagerState(
             items = items,
             refresh = state.refresh,
@@ -418,13 +430,14 @@ class ThreadViewModel @AssistedInject constructor(
     }
 }
 
-private fun List<Post>.withBlocked(rules: BlockRules): ImmutableList<PostItem> = map { post ->
+private fun List<Post>.withBlocked(rules: BlockRules, forum: String?): ImmutableList<PostItem> = map { post ->
+    fun check(author: User, content: String) = rules.check(Blockable(author, content, BlockPlace.Thread, forum = forum))
     PostItem(
         post = post,
-        blocked = rules.blocks(post.author, post.content.plainText),
-        blockedSubPosts = post.subPosts
-            .filter { rules.blocks(it.author, it.content.plainText) }
-            .map { it.id }
-            .toImmutableSet(),
+        block = check(post.author, post.content.plainText),
+        subPostBlocks = post.subPosts
+            .mapNotNull { subPost -> check(subPost.author, subPost.content.plainText)?.let { subPost.id to it } }
+            .toMap()
+            .toImmutableMap(),
     )
 }.toImmutableList()

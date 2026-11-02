@@ -259,8 +259,7 @@ private fun FeedList(
                                 UndoDislikeRow(text = undoable[threadId], onUndo = { onUndoDislike(threadId) })
                             } else {
                                 BlockableContent(
-                                    blocked = blocked,
-                                    blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                    block = blocked,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp, horizontal = 16.dp)

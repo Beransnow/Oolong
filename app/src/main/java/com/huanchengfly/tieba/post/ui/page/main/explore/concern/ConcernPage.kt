@@ -96,8 +96,7 @@ fun ConcernScreen(
                     itemsIndexed(items = list.items, key = { _, item -> item.thread.id }) { index, item ->
                         Container {
                             BlockableContent(
-                                blocked = item.blocked,
-                                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+                                block = item.block,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                             ) {
                                 Column {

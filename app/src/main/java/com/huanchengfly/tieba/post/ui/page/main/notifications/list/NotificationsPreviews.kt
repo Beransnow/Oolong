@@ -3,9 +3,11 @@ package com.huanchengfly.tieba.post.ui.page.main.notifications.list
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.huanchengfly.tieba.post.arch.PagerState
+import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import kotlinx.collections.immutable.persistentListOf
 
@@ -27,7 +29,7 @@ internal object NotificationsPreviewData {
             ),
             NotificationItem(
                 Notification(threadId = 3, postId = 31, inPost = false, threadTitle = "", content = "广告", author = User(3, "c", "", "")),
-                blocked = true,
+                block = BlockVerdict(BlockRule(match = BlockRule.Match.Keyword(listOf("广告"))), hidden = false),
             ),
         ),
     )

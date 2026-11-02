@@ -123,15 +123,15 @@ fun ThreadFloor(
     var floorHeight by remember { mutableIntStateOf(0) }
     var badgeHeight by remember { mutableIntStateOf(0) }
     BlockableContent(
-        blocked = item.blocked,
-        blockedTip = {
-            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                BlockTip {
-                    Text(text = stringResource(id = R.string.tip_blocked_post, post.floor))
-                }
-            }
+        block = item.block,
+        tip = { reason, onShow ->
+            BlockTip(
+                reason = reason,
+                onShow = onShow,
+                label = stringResource(id = R.string.block_tip_floor, post.floor),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         },
-        hideBlockedContent = options.hideBlocked,
         modifier = modifier.fillMaxWidth(),
     ) {
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { floorHeight = it.height }) {
@@ -288,13 +288,9 @@ private fun FloorSubPosts(
     Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
         post.subPosts.forEach { subPost ->
             BlockableContent(
-                blocked = subPost.id in item.blockedSubPosts,
-                blockedTip = {
-                    Text(
-                        text = stringResource(id = R.string.tip_blocked_sub_post),
-                        style = MaterialTheme.typography.body2.copy(color = ExtendedTheme.colors.textDisabled, fontSize = 13.sp),
-                        modifier = Modifier.padding(start = Gutter, bottom = 10.dp),
-                    )
+                block = item.subPostBlocks[subPost.id],
+                tip = { reason, onShow ->
+                    BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(start = Gutter, end = 16.dp, bottom = 4.dp))
                 },
             ) {
                 SubPostBranch(rule = rule) {

@@ -131,8 +131,7 @@ fun NotificationList(
                     Container {
                         Column {
                             BlockableContent(
-                                blocked = blocked,
-                                blockedTip = { BlockTip { Text(text = stringResource(id = R.string.tip_blocked_message)) } },
+                                block = blocked,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                             ) {
                                 NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)

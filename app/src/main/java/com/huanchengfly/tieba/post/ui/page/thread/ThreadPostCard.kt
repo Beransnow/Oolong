@@ -81,13 +81,11 @@ fun ThreadPostCard(
     val indent = Modifier.padding(start = if (indented) Sizes.Small + 8.dp else 0.dp)
     val menuState = rememberMenuState()
     BlockableContent(
-        blocked = item.blocked,
-        blockedTip = {
-            BlockTip {
-                Text(text = stringResource(id = R.string.tip_blocked_post, post.floor))
-            }
+        block = item.block,
+        tip = { reason, onShow ->
+            BlockTip(reason = reason, onShow = onShow, label = stringResource(id = R.string.block_tip_floor, post.floor))
         },
-        hideBlockedContent = options.hideBlocked || options.immersive,
+        hideAll = options.immersive,
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp)
@@ -205,16 +203,10 @@ private fun SubPosts(
     ) {
         post.subPosts.forEach { subPost ->
             BlockableContent(
-                blocked = subPost.id in item.blockedSubPosts,
-                blockedTip = {
-                    Text(
-                        text = stringResource(id = R.string.tip_blocked_sub_post),
-                        style = MaterialTheme.typography.body2.copy(
-                            color = ExtendedTheme.colors.textDisabled,
-                            fontSize = 13.sp
-                        ),
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
+                block = item.subPostBlocks[subPost.id],
+                hideAll = options.immersive,
+                tip = { reason, onShow ->
+                    BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(horizontal = 12.dp))
                 },
             ) {
                 SubPostItem(

@@ -67,10 +67,11 @@ class BlockRulesTest {
     }
 
     @Test
-    fun `a forum rule matches its forum with or without 吧`() {
+    fun `a forum rule matches its forum with or without 吧, except in the forum itself`() {
         val rules = blockRulesOf(listOf(BlockRule(match = Match.Forum("抽卡吧"))))
 
         assertTrue(rules.check(item(forum = "抽卡")) != null)
+        assertNull(rules.check(item(forum = "抽卡", place = BlockPlace.Forum)))
         assertNull(rules.check(item(forum = "原神")))
         assertNull(rules.check(item(forum = null)))
     }

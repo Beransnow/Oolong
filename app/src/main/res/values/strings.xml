@@ -424,6 +424,15 @@
     <string name="single_chinese_char" translatable="false">国</string>
     <string name="open_all_sub_posts">查看全部 %d 条回复</string>
     <string name="message_store_thread_update">贴子更新到了第 %d 楼</string>
+    <string name="block_tip">%1$s · %2$s</string>
+    <string name="block_tip_label">已屏蔽</string>
+    <string name="block_tip_floor">%1$d 楼已屏蔽</string>
+    <string name="block_tip_show">显示</string>
+    <string name="block_reason_user">用户「%1$s」</string>
+    <string name="block_reason_forum">「%1$s吧」</string>
+    <string name="block_reason_level">等级低于 %1$d 级</string>
+    <string name="block_reason_keyword">关键词「%1$s」</string>
+    <string name="block_reason_regex">正则「%1$s」</string>
     <string name="tip_blocked_post">由于你的屏蔽设置，第 %d 楼已被屏蔽</string>
     <string name="tip_blocked_sub_post">由于你的屏蔽设置，该回复已被屏蔽</string>
     <string name="settings_block_video">不看视频贴</string>

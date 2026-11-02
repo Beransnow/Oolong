@@ -2,11 +2,13 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.BawuType
+import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
 import kotlinx.collections.immutable.persistentListOf
@@ -103,7 +105,7 @@ class ThreadPostCardScreenshotTest {
     fun blocked() {
         val post = post(floor = 5, author = replier, content = listOf(text(TextSpan.Plain("被屏蔽的回复"))))
         captureScreenshot {
-            ThreadPostCard(PostItem(post, blocked = true, blockedSubPosts = persistentSetOf()), options.copy(threadAuthorId = 0), onEvent = {})
+            ThreadPostCard(PostItem(post, block = BlockVerdict(BlockRule(match = BlockRule.Match.User(0, replier.name)), hidden = false)), options.copy(threadAuthorId = 0), onEvent = {})
         }
     }
 }

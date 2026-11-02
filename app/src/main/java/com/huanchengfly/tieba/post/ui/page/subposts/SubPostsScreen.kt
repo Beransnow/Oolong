@@ -257,7 +257,7 @@ private fun SubPostsContent(
             item(key = "Post") {
                 // The floor as the thread shows it, its replies listed below instead of inside it
                 ThreadFloor(
-                    item = PostItem(post.copy(subPosts = persistentListOf()), blocked = state.postBlocked),
+                    item = PostItem(post.copy(subPosts = persistentListOf()), block = state.postBlock),
                     options = PostCardOptions(threadAuthorId = state.threadAuthorId, hideBlocked = preferences.hideBlocked, hideReply = preferences.hideReply),
                     onEvent = postEvents,
                     listState = listState,

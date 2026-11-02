@@ -12,13 +12,16 @@ import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
+import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.plainText
+import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
+import com.huanchengfly.tieba.post.repository.BlockVerdict
+import com.huanchengfly.tieba.post.repository.Blockable
 import com.huanchengfly.tieba.post.repository.FloorCursor
 import com.huanchengfly.tieba.post.repository.FloorPage
 import com.huanchengfly.tieba.post.repository.ThreadRepository
-import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -36,15 +39,17 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
-/** A reply inside the post and whether the block rules hide it. */
+/** A reply inside the post and how the block rules block it, if they do. */
 @Immutable
-data class SubPostItem(val subPost: SubPost, val blocked: Boolean = false)
+data class SubPostItem(val subPost: SubPost, val block: BlockVerdict? = null) {
+    val blocked: Boolean get() = block != null
+}
 
 @Immutable
 data class SubPostsState(
     val threadId: Long,
     val post: Post? = null,
-    val postBlocked: Boolean = false,
+    val postBlock: BlockVerdict? = null,
     val threadAuthorId: Long = 0,
     val forum: ForumSummary? = null,
     val subPosts: PagerState<SubPostItem> = PagerState(),
@@ -108,14 +113,16 @@ class SubPostsViewModel @AssistedInject constructor(
     private var blocked: Triple<List<SubPost>, BlockRules, ImmutableList<SubPostItem>>? = null
 
     val state: StateFlow<SubPostsState> = combine(floor, subPosts.state, blockRuleSource.rules) { floor, pager, rules ->
+        val forumName = floor?.forum?.name
+        fun check(author: User, content: String) = rules.check(Blockable(author, content, BlockPlace.Thread, forum = forumName))
         val cached = blocked?.takeIf { it.first === pager.items && it.second === rules }
         val items = cached?.third
-            ?: pager.items.map { SubPostItem(it, rules.blocks(it.author, it.content.plainText)) }.toImmutableList()
+            ?: pager.items.map { SubPostItem(it, check(it.author, it.content.plainText)) }.toImmutableList()
                 .also { blocked = Triple(pager.items, rules, it) }
         SubPostsState(
             threadId = threadId,
             post = floor?.post,
-            postBlocked = floor?.post?.let { rules.blocks(it.author, it.content.plainText) } ?: false,
+            postBlock = floor?.post?.let { check(it.author, it.content.plainText) },
             threadAuthorId = floor?.threadAuthorId ?: 0L,
             forum = floor?.forum,
             subPosts = PagerState(

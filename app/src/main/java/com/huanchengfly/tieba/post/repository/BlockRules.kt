@@ -49,9 +49,9 @@ fun interface BlockRules {
 fun BlockRules.blocks(author: User, content: String): Boolean =
     check(Blockable(author, content, BlockPlace.Thread)) != null
 
-/** Whether the rules block [thread] in a list, by its author, its forum or what its title or abstract says. */
-fun BlockRules.blocks(thread: ThreadSummary, place: BlockPlace = BlockPlace.Feeds): Boolean =
-    check(Blockable(thread.author, thread.abstract, place, title = thread.title, forum = thread.forum.name)) != null
+/** How the rules block [thread] in a list at [place], by its author, its forum or what its title or abstract says. */
+fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? =
+    check(Blockable(thread.author, thread.abstract, place, title = thread.title, forum = thread.forum.name))
 
 /** Rules that fold whatever [predicate] picks, for previews and tests. */
 fun blockRulesMatching(predicate: (Blockable) -> Boolean): BlockRules {
@@ -106,7 +106,10 @@ private class CompiledRule(val rule: BlockRule) {
                 (match.name.isNotBlank() && match.name == item.author.name)
         }
 
-        is BlockRule.Match.Forum -> { item -> item.forum != null && forumKey(item.forum) == forumKey(match.name) }
+        // Opening the forum itself shows its threads
+        is BlockRule.Match.Forum -> { item ->
+            item.place != BlockPlace.Forum && item.forum != null && forumKey(item.forum) == forumKey(match.name)
+        }
         is BlockRule.Match.Level -> { item -> item.author.level in 1 until match.level }
         is BlockRule.Match.Keyword -> keywordTest(match)
     }

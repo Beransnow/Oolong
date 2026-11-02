@@ -72,8 +72,7 @@ internal fun SubPostReply(
 ) {
     val subPost = item.subPost
     BlockableContent(
-        blocked = item.blocked,
-        blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_sub_post)) }) },
+        block = item.block,
         modifier = Modifier.fillMaxWidth().floorIndent(),
     ) {
         // BlockableContent only lays out its tip with the modifier, so the reply takes its own
