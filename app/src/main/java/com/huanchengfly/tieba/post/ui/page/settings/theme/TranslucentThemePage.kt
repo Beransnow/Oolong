@@ -33,6 +33,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentColor
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
@@ -82,6 +84,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.getColorPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.themeColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -242,7 +245,11 @@ private fun WallpaperPreview(source: File, version: Int, wallpaper: TranslucentW
 @Composable
 private fun PreviewColors(wallpaper: TranslucentWallpaper, content: @Composable () -> Unit) {
     val colors = themeColors(wallpaper.variant, wallpaper.accent?.let { Color(it) })
-    CompositionLocalProvider(LocalExtendedColors provides colors, content = content)
+    CompositionLocalProvider(LocalExtendedColors provides colors) {
+        MaterialTheme(colors = getColorPalette(colors)) {
+            CompositionLocalProvider(LocalContentColor provides colors.text, content = content)
+        }
+    }
 }
 
 /** A floor and a reply in it, to judge how well text reads on the wallpaper. */

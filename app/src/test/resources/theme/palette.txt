@@ -336,9 +336,9 @@ translucent_light m.onSecondary          FFFFFFFF
 translucent_light m.background           00000000
 translucent_light m.onBackground         DEFFFFFF
 translucent_light m.surface              10FFFFFF
-translucent_light m.onSurface            FF000000
-translucent_light m.primarySurface       FF4477E0
-translucent_light isNightMode false isLight true
+translucent_light m.onSurface            FFFFFFFF
+translucent_light m.primarySurface       10FFFFFF
+translucent_light isNightMode false isLight false
 translucent_dark accent                 FF4477E0
 translucent_dark background             00000000
 translucent_dark card                   20000000
@@ -429,9 +429,9 @@ translucent_light_picked m.onSecondary          FFFFFFFF
 translucent_light_picked m.background           00000000
 translucent_light_picked m.onBackground         DEFFFFFF
 translucent_light_picked m.surface              10FFFFFF
-translucent_light_picked m.onSurface            FF000000
-translucent_light_picked m.primarySurface       FF336699
-translucent_light_picked isNightMode false isLight true
+translucent_light_picked m.onSurface            FFFFFFFF
+translucent_light_picked m.primarySurface       10FFFFFF
+translucent_light_picked isNightMode false isLight false
 translucent_dark_picked accent                 FF336699
 translucent_dark_picked background             00000000
 translucent_dark_picked card                   20000000

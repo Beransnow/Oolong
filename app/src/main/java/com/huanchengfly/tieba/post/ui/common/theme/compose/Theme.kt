@@ -9,7 +9,6 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -72,11 +71,10 @@ val LocalExtendedColors = staticCompositionLocalOf {
     )
 }
 
+/** Material's colours for [extendedColors]: its dark ones at night and for light text over a wallpaper. */
 @SuppressLint("ConflictingOnColor")
-fun getColorPalette(
-    darkTheme: Boolean,
-    extendedColors: ExtendedColors
-): Colors {
+fun getColorPalette(extendedColors: ExtendedColors): Colors {
+    val darkTheme = extendedColors.isNightMode || extendedColors.theme == ThemeUtil.THEME_TRANSLUCENT_LIGHT
     // Crossed over: Material's primary is our accent, and its secondary our emphasis
     val primaryColor = extendedColors.accent
     val secondaryColor = extendedColors.emphasis
@@ -222,13 +220,6 @@ fun TiebaLiteTheme(
         key = booleanPreferencesKey("useDynamicColorTheme"),
         defaultValue = false
     )
-    val isDarkColorPalette by remember {
-        derivedStateOf {
-            ThemeUtil.isNightMode(theme) ||
-                (ThemeUtil.isTranslucentTheme(theme) && theme.contains("light"))
-        }
-    }
-
     val useDynamicTheme = isDynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val extendedColors = if (!useDynamicTheme || ThemeUtil.isTranslucentTheme(theme)) {
@@ -238,7 +229,7 @@ fun TiebaLiteTheme(
         getDynamicColor(theme, dynamicTonalPalette(context))
     }
 
-    val colors = getColorPalette(isDarkColorPalette, extendedColors)
+    val colors = getColorPalette(extendedColors)
 
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
         MaterialTheme(
