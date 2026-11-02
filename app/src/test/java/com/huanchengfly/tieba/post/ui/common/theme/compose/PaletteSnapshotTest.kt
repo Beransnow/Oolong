@@ -14,6 +14,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.utils.Appearance
+import com.huanchengfly.tieba.post.utils.ColorStyle
+import com.huanchengfly.tieba.post.utils.MonetStyle
 import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.runBlocking
@@ -56,7 +58,13 @@ class PaletteSnapshotTest {
         ThemeSettings(appearance = Appearance.Light, accent = accent, style = style)
     }
     private fun dark(theme: String, accent: String = ThemeUtil.THEME_DEFAULT) =
-        ThemeSettings(appearance = Appearance.Dark, accent = accent, darkTheme = theme)
+        ThemeSettings(appearance = Appearance.Dark, accent = accent, style = ThemeSettings.fromLightTheme(accent).second, darkTheme = theme)
+    private fun monet(accent: String, style: MonetStyle, dark: Boolean = false) = ThemeSettings(
+        appearance = if (dark) Appearance.Dark else Appearance.Light,
+        accent = accent,
+        style = ColorStyle.Monet,
+        monetStyle = style,
+    )
     private val wallpaper = ThemeSettings(appearance = Appearance.Light, wallpaper = true)
     private val dynamic = ThemeSettings.ACCENT_DYNAMIC
 
@@ -75,6 +83,11 @@ class PaletteSnapshotTest {
             Setup("black_dark", dark(ThemeUtil.THEME_GREY_DARK, "black")),
             Setup("purple_dark", dark(ThemeUtil.THEME_BLUE_DARK, "purple")),
             Setup("custom_picked_dark", dark(ThemeUtil.THEME_BLUE_DARK, ThemeUtil.THEME_CUSTOM), accent = PICKED),
+            Setup("tieba_monet", monet(ThemeUtil.THEME_DEFAULT, MonetStyle.TonalSpot)),
+            Setup("tieba_monet_dark", monet(ThemeUtil.THEME_DEFAULT, MonetStyle.TonalSpot, dark = true)),
+            Setup("pink_vibrant", monet("pink", MonetStyle.Vibrant)),
+            Setup("red_rainbow", monet("red", MonetStyle.Rainbow)),
+            Setup("dynamic_expressive", monet(dynamic, MonetStyle.Expressive)),
         )
 
     @Test

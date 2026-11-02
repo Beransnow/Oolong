@@ -128,15 +128,10 @@ object ThemeUtil {
 
     fun selectDarkTheme(name: String) = updateSettings { it.copy(darkTheme = name) }
 
-    /** Colours the light and dark themes from the system wallpaper. */
-    fun selectDynamicColor() = updateSettings { it.copy(accent = ThemeSettings.ACCENT_DYNAMIC, wallpaper = false) }
-
     /** Shows the picked wallpaper behind the pages while light, or stops showing it. */
-    fun setWallpaper(on: Boolean) = updateSettings {
-        if (!on) return@updateSettings it.copy(wallpaper = false)
-        // The wallpaper takes no dynamic colour
-        it.copy(wallpaper = true, accent = if (it.isDynamic) THEME_DEFAULT else it.accent)
-    }
+    fun setWallpaper(on: Boolean) = updateSettings { it.copy(wallpaper = on) }
+
+    fun selectMonetStyle(style: MonetStyle) = updateSettings { it.copy(monetStyle = style) }
 
     fun setAppearance(appearance: Appearance) = updateSettings { it.copy(appearance = appearance) }
 
@@ -241,7 +236,7 @@ object ThemeUtil {
             } else {
                 THEME_TRANSLUCENT_LIGHT
             }
-        } else if (checkDynamic && settingsState.value.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        } else if (checkDynamic && settingsState.value.usesSystemPalette && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             nowTheme = "${nowTheme}_dynamic"
         }
         return nowTheme

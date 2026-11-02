@@ -547,4 +547,22 @@
     <string name="title_background">背景</string>
     <string name="title_wallpaper">壁纸</string>
     <string name="title_wallpaper_settings">壁纸设置</string>
+    <string name="color_style_monet">莫奈</string>
+    <string name="color_style_monet_desc">由主题色生成配色，背景带同色调</string>
+    <string name="title_monet_style">莫奈样式</string>
+    <string name="monet_tonal_spot">色调点缀</string>
+    <string name="monet_tonal_spot_desc">系统默认，颜色柔和</string>
+    <string name="monet_vibrant">鲜明</string>
+    <string name="monet_vibrant_desc">饱和度最高</string>
+    <string name="monet_expressive">表现力</string>
+    <string name="monet_expressive_desc">色相偏离原色</string>
+    <string name="monet_neutral">柔和</string>
+    <string name="monet_neutral_desc">接近灰色</string>
+    <string name="monet_rainbow">彩虹</string>
+    <string name="monet_rainbow_desc">背景纯灰，只有主色</string>
+    <string name="monet_fruit_salad">水果沙拉</string>
+    <string name="monet_fruit_salad_desc">颜色最多</string>
+    <string name="monet_monochrome">单色</string>
+    <string name="monet_monochrome_desc">只有灰阶</string>
+    <string name="dark_background_default">默认</string>
 </resources>

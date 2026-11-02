@@ -78,10 +78,13 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorsOf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
+import com.huanchengfly.tieba.post.ui.common.theme.compose.monetPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pickedColor
 import com.huanchengfly.tieba.post.ui.common.theme.compose.rememberColorPicks
+import com.huanchengfly.tieba.post.ui.common.theme.compose.systemColor
 import com.huanchengfly.tieba.post.ui.common.theme.compose.themeColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.TranslucentThemeKey
@@ -99,6 +102,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.Appearance
 import com.huanchengfly.tieba.post.utils.ColorStyle
+import com.huanchengfly.tieba.post.utils.MonetStyle
 import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -149,7 +153,7 @@ fun AppThemePage(
                     dark = colorsOf(settings, dark = true, picks = picks),
                     wallpaper = wallpaper.takeIf { settings.wallpaper },
                 )
-                DarkBackgroundRow(settings.darkTheme)
+                DarkBackgroundRow(settings, monetDark = colorsOf(settings.copy(darkTheme = ThemeUtil.THEME_BLUE_DARK), dark = true, picks = picks).background)
             }
 
             GroupHeader(title = stringResource(id = R.string.title_theme_color))
@@ -159,8 +163,8 @@ fun AppThemePage(
                     customColor = pickedColor(context, ThemeUtil.THEME_CUSTOM),
                     onCustom = { customColorDialogState.show() },
                 )
-                // Dynamic colour makes its own colours throughout
-                if (!settings.isDynamic) ColorStyleRow(settings.style)
+                ColorStyleRow(settings.style)
+                if (settings.isMonet) MonetStyleRow(settings.monetStyle)
             }
 
             GroupHeader(title = stringResource(id = R.string.title_background))
@@ -336,24 +340,36 @@ private fun Bar(color: Color, width: Float, height: Dp) {
     Box(modifier = Modifier.fillMaxWidth(width).height(height).background(color, CircleShape))
 }
 
-/** The dark background, chosen in a menu; a dot shows each one's colour. */
+/**
+ * The dark background, chosen in a menu; a dot shows each one's colour. Monet makes its own dark
+ * grey, so there it is that or pure black.
+ */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun DarkBackgroundRow(selected: String) {
-    val values = stringArrayResource(id = R.array.dark_theme_values)
-    val names = stringArrayResource(id = R.array.dark_theme_names)
-    val name = names.getOrNull(values.indexOf(selected)).orEmpty()
+private fun DarkBackgroundRow(settings: ThemeSettings, monetDark: Color) {
+    val options = if (settings.isMonet) {
+        listOf(
+            Triple(ThemeUtil.THEME_BLUE_DARK, stringResource(id = R.string.dark_background_default), monetDark),
+            Triple(ThemeUtil.THEME_AMOLED_DARK, stringArrayResource(id = R.array.dark_theme_names).last(), Color.Black),
+        )
+    } else {
+        val values = stringArrayResource(id = R.array.dark_theme_values)
+        val names = stringArrayResource(id = R.array.dark_theme_names)
+        values.mapIndexed { index, value -> Triple(value, names[index], themeColors(value).background) }
+    }
+    val selected = options.firstOrNull { it.first == settings.darkTheme } ?: options.first()
     ClickMenu(
         menuContent = {
-            values.forEachIndexed { index, value ->
+            options.forEach { (value, name, color) ->
                 DropdownMenuItem(onClick = {
-                    ThemeUtil.selectDarkTheme(value)
+                    // Monet's own grey leaves the theme picked for the other styles as it was
+                    if (value != selected.first) ThemeUtil.selectDarkTheme(value)
                     dismiss()
                 }) {
-                    BackgroundDot(value)
+                    BackgroundDot(color)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = names[index], modifier = Modifier.weight(1f))
-                    if (value == selected) MenuCheck()
+                    Text(text = name, modifier = Modifier.weight(1f))
+                    if (value == selected.first) MenuCheck()
                 }
             }
         },
@@ -363,9 +379,9 @@ private fun DarkBackgroundRow(selected: String) {
             enabled = true,
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    BackgroundDot(selected)
+                    BackgroundDot(selected.third)
                     Spacer(modifier = Modifier.width(8.dp))
-                    PrefsChoiceValue(text = name)
+                    PrefsChoiceValue(text = selected.second)
                 }
             },
         )
@@ -373,11 +389,11 @@ private fun DarkBackgroundRow(selected: String) {
 }
 
 @Composable
-private fun BackgroundDot(darkTheme: String) {
+private fun BackgroundDot(color: Color) {
     Box(
         modifier = Modifier
             .size(16.dp)
-            .background(themeColors(darkTheme).background, CircleShape)
+            .background(color, CircleShape)
             .border(1.dp, ExtendedTheme.colors.divider, CircleShape),
     )
 }
@@ -388,34 +404,50 @@ private fun MenuCheck() {
     Icon(Icons.Rounded.Check, contentDescription = null, tint = ExtendedTheme.colors.text, modifier = Modifier.size(20.dp))
 }
 
-/** The colours, four to a row, each a round swatch in its colours as the page now uses them. */
+/**
+ * The colours, four to a row, each a round swatch in its colours as the page now uses them: a
+ * colour and how it is used, or under Monet the palette made from it, in four parts.
+ */
 @Composable
 private fun AccentGrid(settings: ThemeSettings, customColor: Color?, onCustom: () -> Unit) {
     val names = stringArrayResource(id = R.array.accent_names)
-    val plain = settings.style == ColorStyle.Plain
     val context = LocalContext.current
     val dark = ExtendedTheme.colors.isNightMode
-    fun colorsOf(accent: String, picked: Color? = null): ExtendedColors {
-        val light = themeColors(accent, picked, plain = plain)
-        if (!dark) return light
-        return themeColors(settings.darkTheme, darkAccent = light.accent.takeUnless { accent == ThemeUtil.THEME_DEFAULT })
+    val systemColor = remember { systemColor(context) }
+
+    /** The swatch of [accent], whose colour is [color]. */
+    fun fillOf(accent: String, color: Color): Pair<Brush, Color> {
+        if (settings.isMonet) {
+            val palette = if (accent == ThemeSettings.ACCENT_DYNAMIC && settings.monetStyle == MonetStyle.TonalSpot && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dynamicTonalPalette(context)
+            } else {
+                monetPalette(color, settings.monetStyle)
+            }
+            return palette.quarters(dark) to if (dark) palette.primary20 else Color.White
+        }
+        val light = themeColors(ThemeUtil.THEME_CUSTOM, color, plain = settings.style == ColorStyle.Plain)
+        val colors = if (dark) themeColors(settings.darkTheme, darkAccent = color.takeUnless { accent == ThemeUtil.THEME_DEFAULT }) else light
+        return Brush.radialGradient(listOf(colors.emphasis, colors.accent)) to colors.onEmphasis
     }
+
     val swatches = buildList<@Composable RowScope.() -> Unit> {
         ThemeSettings.ACCENTS.forEachIndexed { index, accent ->
             if (accent == ThemeUtil.THEME_CUSTOM) return@forEachIndexed
             add {
-                val colors = colorsOf(accent)
-                Swatch(names[index], settings.accent == accent, Brush.radialGradient(listOf(colors.emphasis, colors.accent)), colors.onEmphasis, { ThemeUtil.selectAccent(accent) })
+                val (fill, content) = remember(settings, dark) { fillOf(accent, themeColors(accent).accent) }
+                Swatch(names[index], settings.accent == accent, fill, content, { ThemeUtil.selectAccent(accent) })
             }
         }
         add {
             val selected = settings.accent == ThemeUtil.THEME_CUSTOM
-            val colors = colorsOf(ThemeUtil.THEME_CUSTOM, customColor)
+            val (fill, content) = remember(settings, dark, customColor) {
+                fillOf(ThemeUtil.THEME_CUSTOM, customColor ?: themeColors(ThemeUtil.THEME_CUSTOM).accent)
+            }
             Swatch(
                 name = stringResource(id = R.string.title_custom_color),
                 selected = selected,
-                fill = Brush.radialGradient(listOf(colors.emphasis, colors.accent)),
-                content = colors.onEmphasis,
+                fill = fill,
+                content = content,
                 // Picked for the first time, or picked again, it asks for the colour
                 onClick = { if (selected || customColor == null) onCustom() else ThemeUtil.selectAccent(ThemeUtil.THEME_CUSTOM) },
                 icon = { Icon(Icons.Rounded.ColorLens, contentDescription = null, modifier = Modifier.size(20.dp)) },
@@ -423,13 +455,13 @@ private fun AccentGrid(settings: ThemeSettings, customColor: Color?, onCustom: (
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             add {
-                val palette = remember { dynamicTonalPalette(context) }
+                val (fill, content) = remember(settings, dark) { fillOf(ThemeSettings.ACCENT_DYNAMIC, systemColor) }
                 Swatch(
                     name = stringResource(id = R.string.accent_system_wallpaper),
-                    selected = settings.isDynamic,
-                    fill = Brush.sweepGradient(listOf(palette.primary50, palette.secondary50, palette.tertiary50, palette.primary50)),
-                    content = Color.White,
-                    onClick = { ThemeUtil.selectDynamicColor() },
+                    selected = settings.isSystemColor,
+                    fill = fill,
+                    content = content,
+                    onClick = { ThemeUtil.selectAccent(ThemeSettings.ACCENT_DYNAMIC) },
                 )
             }
         }
@@ -442,6 +474,18 @@ private fun AccentGrid(settings: ThemeSettings, customColor: Color?, onCustom: (
             }
         }
     }
+}
+
+/** The palette in four parts, as the system shows its own: the three colours and the background. */
+private fun TonalPalette.quarters(dark: Boolean): Brush {
+    val parts = if (dark) {
+        listOf(primary80, secondary80, neutralVariant30, tertiary80)
+    } else {
+        listOf(primary40, secondary40, neutralVariant90, tertiary40)
+    }
+    return Brush.sweepGradient(
+        *parts.flatMapIndexed { index, color -> listOf(index / 4f to color, (index + 1) / 4f to color) }.toTypedArray(),
+    )
 }
 
 @Composable
@@ -490,19 +534,49 @@ private fun RowScope.Swatch(
     }
 }
 
-/** Plain or bright, chosen in a menu that says what each looks like. */
-@OptIn(ExperimentalMaterialApi::class)
+/** Plain, bright or Monet. */
 @Composable
 private fun ColorStyleRow(selected: ColorStyle) {
-    val options = listOf(
-        Triple(ColorStyle.Plain, stringResource(id = R.string.color_style_plain), stringResource(id = R.string.color_style_plain_desc)),
-        Triple(ColorStyle.Bright, stringResource(id = R.string.color_style_bright), stringResource(id = R.string.color_style_bright_desc)),
+    ChoiceRow(
+        title = stringResource(id = R.string.title_color_style),
+        selected = selected,
+        options = listOf(
+            Triple(ColorStyle.Plain, stringResource(id = R.string.color_style_plain), stringResource(id = R.string.color_style_plain_desc)),
+            Triple(ColorStyle.Bright, stringResource(id = R.string.color_style_bright), stringResource(id = R.string.color_style_bright_desc)),
+            Triple(ColorStyle.Monet, stringResource(id = R.string.color_style_monet), stringResource(id = R.string.color_style_monet_desc)),
+        ),
+        onSelect = { ThemeUtil.selectStyle(it) },
     )
+}
+
+/** How Monet makes its palette, in the styles the system offers. */
+@Composable
+private fun MonetStyleRow(selected: MonetStyle) {
+    ChoiceRow(
+        title = stringResource(id = R.string.title_monet_style),
+        selected = selected,
+        options = listOf(
+            Triple(MonetStyle.TonalSpot, stringResource(id = R.string.monet_tonal_spot), stringResource(id = R.string.monet_tonal_spot_desc)),
+            Triple(MonetStyle.Vibrant, stringResource(id = R.string.monet_vibrant), stringResource(id = R.string.monet_vibrant_desc)),
+            Triple(MonetStyle.Expressive, stringResource(id = R.string.monet_expressive), stringResource(id = R.string.monet_expressive_desc)),
+            Triple(MonetStyle.Neutral, stringResource(id = R.string.monet_neutral), stringResource(id = R.string.monet_neutral_desc)),
+            Triple(MonetStyle.Rainbow, stringResource(id = R.string.monet_rainbow), stringResource(id = R.string.monet_rainbow_desc)),
+            Triple(MonetStyle.FruitSalad, stringResource(id = R.string.monet_fruit_salad), stringResource(id = R.string.monet_fruit_salad_desc)),
+            Triple(MonetStyle.Monochrome, stringResource(id = R.string.monet_monochrome), stringResource(id = R.string.monet_monochrome_desc)),
+        ),
+        onSelect = { ThemeUtil.selectMonetStyle(it) },
+    )
+}
+
+/** A choice made in a menu that says what each option looks like. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun <T> ChoiceRow(title: String, selected: T, options: List<Triple<T, String, String>>, onSelect: (T) -> Unit) {
     ClickMenu(
         menuContent = {
-            options.forEach { (style, name, description) ->
+            options.forEach { (value, name, description) ->
                 DropdownMenuItem(onClick = {
-                    ThemeUtil.selectStyle(style)
+                    onSelect(value)
                     dismiss()
                 }) {
                     Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
@@ -515,13 +589,13 @@ private fun ColorStyleRow(selected: ColorStyle) {
                             color = ExtendedTheme.colors.textSecondary,
                         )
                     }
-                    if (style == selected) MenuCheck()
+                    if (value == selected) MenuCheck()
                 }
             }
         },
     ) {
         TextPref(
-            title = stringResource(id = R.string.title_color_style),
+            title = title,
             enabled = true,
             trailingContent = { PrefsChoiceValue(text = options.first { it.first == selected }.second) },
         )

@@ -225,28 +225,38 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
 fun colorsOf(settings: ThemeSettings, dark: Boolean, picks: Any? = null): ExtendedColors {
     val context = LocalContext.current
     val theme = settings.themeNameWhen(dark)
-    if (settings.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !ThemeUtil.isTranslucentTheme(theme)) {
-        return getDynamicColor(theme, dynamicTonalPalette(context))
+    if (settings.isMonet && !ThemeUtil.isTranslucentTheme(theme)) {
+        val palette = remember(settings, picks) {
+            if (settings.usesSystemPalette && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dynamicTonalPalette(context)
+            } else {
+                monetPalette(colorOf(context, settings), settings.monetStyle)
+            }
+        }
+        return getDynamicColor(theme, palette)
     }
     return remember(settings, theme, picks) {
-        val nowTheme = ThemeUtil.getCurrentTheme(theme)
+        // The system's colour is drawn as a custom one
+        val nowTheme = if (settings.isSystemColor && !dark) ThemeUtil.THEME_CUSTOM else ThemeUtil.getCurrentTheme(theme)
         themeColors(
             nowTheme,
-            pickedColor(context, nowTheme),
+            if (settings.isSystemColor) colorOf(context, settings) else pickedColor(context, nowTheme),
             plain = settings.style == ColorStyle.Plain,
             darkAccent = darkAccentOf(context, settings),
         )
     }
 }
 
+/** The colour picked in [settings]: a light theme's, the custom one or the system's. */
+fun colorOf(context: Context, settings: ThemeSettings): Color =
+    if (settings.isSystemColor) systemColor(context) else themeColors(settings.accent, pickedColor(context, settings.accent)).accent
+
 /**
  * The colour [settings] give the dark themes: the light theme's own, but none for the default
  * blue, whose dark themes have their own blue.
  */
-fun darkAccentOf(context: Context, settings: ThemeSettings): Color? {
-    if (settings.accent == ThemeUtil.THEME_DEFAULT || settings.isDynamic) return null
-    return themeColors(settings.accent, pickedColor(context, settings.accent)).accent
-}
+fun darkAccentOf(context: Context, settings: ThemeSettings): Color? =
+    colorOf(context, settings).takeUnless { settings.accent == ThemeUtil.THEME_DEFAULT }
 
 /** The translucent theme's text colour and the picked colours, which the colours depend on too. */
 @Composable

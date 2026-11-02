@@ -24,6 +24,25 @@ enum class ColorStyle(val value: String) {
 
     /** The colour throughout, for what is selected too. */
     Bright("bright"),
+
+    /** A whole palette made from the colour, in a [MonetStyle], the backgrounds tinted too. */
+    Monet("monet"),
+    ;
+
+    companion object {
+        fun of(value: String?) = entries.firstOrNull { it.value == value }
+    }
+}
+
+/** How [ColorStyle.Monet] makes its palette from the colour, as Material names the styles. */
+enum class MonetStyle(val value: String) {
+    TonalSpot("tonal_spot"),
+    Vibrant("vibrant"),
+    Expressive("expressive"),
+    Neutral("neutral"),
+    Rainbow("rainbow"),
+    FruitSalad("fruit_salad"),
+    Monochrome("monochrome"),
     ;
 
     companion object {
@@ -38,6 +57,7 @@ enum class ColorStyle(val value: String) {
  *
  * @param accent the colour: a light theme's name, [ThemeUtil.THEME_CUSTOM], or [ACCENT_DYNAMIC]
  * @param style how the light theme uses [accent]
+ * @param monetStyle how [ColorStyle.Monet] makes its palette
  * @param darkTheme the dark theme's name, used whenever the app is dark
  * @param wallpaper whether the page shows the picked wallpaper, while light
  */
@@ -45,10 +65,17 @@ data class ThemeSettings(
     val appearance: Appearance = Appearance.System,
     val accent: String = ThemeUtil.THEME_DEFAULT,
     val style: ColorStyle = ColorStyle.Plain,
+    val monetStyle: MonetStyle = MonetStyle.TonalSpot,
     val darkTheme: String = ThemeUtil.THEME_AMOLED_DARK,
     val wallpaper: Boolean = false,
 ) {
-    val isDynamic: Boolean get() = accent == ACCENT_DYNAMIC
+    /** Whether the colour is the system's, as the system takes it from its wallpaper. */
+    val isSystemColor: Boolean get() = accent == ACCENT_DYNAMIC
+
+    val isMonet: Boolean get() = style == ColorStyle.Monet
+
+    /** Whether the system's own palette is drawn, as the system makes it from its colour. */
+    val usesSystemPalette: Boolean get() = isSystemColor && isMonet && monetStyle == MonetStyle.TonalSpot
 
     fun isDark(systemDark: Boolean): Boolean = when (appearance) {
         Appearance.Light -> false
@@ -63,7 +90,7 @@ data class ThemeSettings(
     fun themeNameWhen(dark: Boolean): String = when {
         dark -> darkTheme
         wallpaper -> ThemeUtil.THEME_TRANSLUCENT
-        isDynamic -> ThemeUtil.THEME_DEFAULT
+        isSystemColor -> ThemeUtil.THEME_DEFAULT
         // The bright blue was a theme of its own before the style was
         accent == ThemeUtil.THEME_DEFAULT && style == ColorStyle.Bright -> ThemeUtil.THEME_BLUE
         else -> accent
@@ -73,6 +100,7 @@ data class ThemeSettings(
         prefs[AppearanceKey] = appearance.value
         prefs[AccentKey] = accent
         prefs[StyleKey] = style.value
+        prefs[MonetStyleKey] = monetStyle.value
         prefs[DarkThemeKey] = darkTheme
         prefs[BackgroundKey] = if (wallpaper) BACKGROUND_WALLPAPER else BACKGROUND_DEFAULT
     }
@@ -98,7 +126,9 @@ data class ThemeSettings(
         internal fun fromLightTheme(name: String?): Pair<String, ColorStyle> = when (name) {
             ThemeUtil.THEME_DEFAULT, ThemeUtil.THEME_BLACK -> name to ColorStyle.Plain
             ThemeUtil.THEME_BLUE -> ThemeUtil.THEME_DEFAULT to ColorStyle.Bright
-            in ACCENTS, ACCENT_DYNAMIC -> name!! to ColorStyle.Bright
+            // Dynamic colour was the system's palette
+            ACCENT_DYNAMIC -> name to ColorStyle.Monet
+            in ACCENTS -> name!! to ColorStyle.Bright
             else -> ThemeUtil.THEME_DEFAULT to ColorStyle.Plain
         }
         private val DARK_THEMES = listOf(ThemeUtil.THEME_BLUE_DARK, ThemeUtil.THEME_GREY_DARK, ThemeUtil.THEME_AMOLED_DARK)
@@ -117,6 +147,7 @@ data class ThemeSettings(
         internal val DarkThemeKey = stringPreferencesKey(ThemeUtil.KEY_DARK_THEME)
         internal val BackgroundKey = stringPreferencesKey("theme_background")
         internal val StyleKey = stringPreferencesKey("theme_color_style")
+        internal val MonetStyleKey = stringPreferencesKey("theme_monet_style")
 
         private val OldThemeKey = stringPreferencesKey(ThemeUtil.KEY_THEME)
         private val OldLightThemeKey = stringPreferencesKey(ThemeUtil.KEY_OLD_THEME)
@@ -130,6 +161,7 @@ data class ThemeSettings(
                 appearance = Appearance.of(prefs[AppearanceKey]) ?: defaults.appearance,
                 accent = accent,
                 style = ColorStyle.of(prefs[StyleKey]) ?: impliedStyle,
+                monetStyle = MonetStyle.of(prefs[MonetStyleKey]) ?: defaults.monetStyle,
                 darkTheme = darkOrNull(prefs[DarkThemeKey]) ?: defaults.darkTheme,
                 wallpaper = prefs[BackgroundKey] == BACKGROUND_WALLPAPER,
             )
@@ -151,14 +183,15 @@ data class ThemeSettings(
             val wallpaper = ThemeUtil.isTranslucentTheme(light)
             // The translucent theme kept the theme picked before it aside
             val (base, style) = fromLightTheme(if (wallpaper) aside else light)
+            val dynamic = prefs[OldDynamicKey] == true && !wallpaper
             return ThemeSettings(
                 appearance = when {
                     prefs[OldFollowSystemKey] ?: true -> Appearance.System
                     night -> Appearance.Dark
                     else -> Appearance.Light
                 },
-                accent = if (prefs[OldDynamicKey] == true && !wallpaper) ACCENT_DYNAMIC else base,
-                style = style,
+                accent = if (dynamic) ACCENT_DYNAMIC else base,
+                style = if (dynamic) ColorStyle.Monet else style,
                 darkTheme = (if (night) darkOrNull(theme) else null) ?: darkOrNull(prefs[DarkThemeKey]) ?: ThemeUtil.THEME_AMOLED_DARK,
                 wallpaper = wallpaper,
             )

@@ -50,7 +50,7 @@ private fun currentThemeName(): String {
     val settings by ThemeUtil.settingsState
     val names = stringArrayResource(id = R.array.accent_names)
     return when {
-        settings.isDynamic -> stringResource(id = R.string.accent_system_wallpaper)
+        settings.isSystemColor -> stringResource(id = R.string.accent_system_wallpaper)
         settings.accent == ThemeUtil.THEME_CUSTOM -> stringResource(id = R.string.title_custom_color)
         else -> names.getOrNull(ThemeSettings.ACCENTS.indexOf(settings.accent)).orEmpty()
     }

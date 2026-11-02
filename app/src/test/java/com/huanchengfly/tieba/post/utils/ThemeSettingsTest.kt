@@ -79,9 +79,11 @@ class ThemeSettingsTest {
 
     @Test
     fun `dynamic colour becomes the accent unless the wallpaper is in use`() {
-        assertEquals(ThemeSettings.ACCENT_DYNAMIC, ThemeSettings.migrate(old(theme = "blue", dynamic = true)).accent)
+        val dynamic = ThemeSettings.migrate(old(theme = "blue", dynamic = true))
+        assertEquals(ThemeSettings.ACCENT_DYNAMIC, dynamic.accent)
+        assertTrue(dynamic.usesSystemPalette)
         val wallpaper = ThemeSettings.migrate(old(theme = "translucent", aside = "black", dynamic = true))
-        assertFalse(wallpaper.isDynamic)
+        assertFalse(wallpaper.isSystemColor)
         assertEquals("black", wallpaper.accent)
     }
 
@@ -93,7 +95,7 @@ class ThemeSettingsTest {
 
     @Test
     fun `reads back what it writes`() {
-        val settings = ThemeSettings(Appearance.Dark, "custom", ColorStyle.Plain, "blue_dark", wallpaper = true)
+        val settings = ThemeSettings(Appearance.Dark, "custom", ColorStyle.Monet, MonetStyle.Vibrant, darkTheme = "blue_dark", wallpaper = true)
         val prefs = mutablePreferencesOf().also { settings.writeTo(it) }
         assertEquals(settings, ThemeSettings.from(prefs))
         assertFalse(ThemeSettings.needsMigration(prefs))
