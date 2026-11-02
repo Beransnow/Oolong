@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -52,6 +51,7 @@ import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -249,7 +249,7 @@ private fun FirstPost(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(SmoothCornerShape(6.dp))
                         .background(ExtendedTheme.colors.inset)
                         .clickable {
                             onEvent(ThreadEvent.OpenOriginThread(shared.id, shared.forumId))

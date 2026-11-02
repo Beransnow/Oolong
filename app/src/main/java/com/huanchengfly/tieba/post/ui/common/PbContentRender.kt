@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -139,7 +139,7 @@ data class PicContentRender(
             imageUri = picUrl,
             contentDescription = null,
             modifier = Modifier
-                .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+                .clip(SmoothCornerShape(context.appPreferences.radius.dp))
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(width * 1f / height),
             photoViewData = photoViewData,
@@ -187,7 +187,7 @@ data class VideoContentRender(
 
         if (picUrl.isNotBlank()) {
             val picModifier = Modifier
-                .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+                .clip(SmoothCornerShape(context.appPreferences.radius.dp))
                 .fillMaxWidth(widthFraction)
                 .aspectRatio(width * 1f / height)
 

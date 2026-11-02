@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -35,6 +34,7 @@ import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
@@ -203,7 +203,7 @@ private fun SubPosts(
         modifier = Modifier
             .fillMaxWidth()
             .then(indent)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(SmoothCornerShape(6.dp))
             .background(ExtendedTheme.colors.inset)
             .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)

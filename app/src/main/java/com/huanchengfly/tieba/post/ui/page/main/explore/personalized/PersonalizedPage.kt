@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -55,6 +54,7 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
@@ -189,10 +189,10 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
     Box(
         modifier = Modifier
             .padding(top = 72.dp)
-            .clip(RoundedCornerShape(100))
+            .clip(Corners.full)
             .background(
                 color = ExtendedTheme.colors.emphasis,
-                shape = RoundedCornerShape(100)
+                shape = Corners.full
             )
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .align(Alignment.TopCenter)
@@ -335,7 +335,7 @@ private fun UndoDislikeRow(text: String?, onUndo: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(Corners.md)
             .background(ExtendedTheme.colors.chip)
             .padding(start = 16.dp, end = 4.dp),
     ) {
@@ -352,7 +352,7 @@ private fun UndoDislikeRow(text: String?, onUndo: () -> Unit) {
             color = ExtendedTheme.colors.emphasis,
             style = MaterialTheme.typography.subtitle2,
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Corners.sm)
                 .clickable(onClick = onUndo)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         )

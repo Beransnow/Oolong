@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
@@ -61,8 +60,10 @@ import com.huanchengfly.tieba.post.model.QuotedPost
 import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
@@ -140,7 +141,7 @@ private fun SearchHistoryList(
                 Box(
                     modifier = Modifier
                         .padding(bottom = 8.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(Corners.full)
                         .combinedClickable(
                             onClick = { onSearchHistoryClick(searchHistory) },
                             onLongClick = { onDelete(searchHistory) }
@@ -309,7 +310,7 @@ fun ForumSearchPostScreen(
                             prependIcon = {
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(100))
+                                        .clip(Corners.full)
                                         .clickable(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = PressFeedback.Overlay,
@@ -325,7 +326,7 @@ fun ForumSearchPostScreen(
                                 }
                             },
                             focusRequester = focusRequester,
-                            shape = RoundedCornerShape(6.dp)
+                            shape = SmoothCornerShape(6.dp)
                         )
                     }
                 },

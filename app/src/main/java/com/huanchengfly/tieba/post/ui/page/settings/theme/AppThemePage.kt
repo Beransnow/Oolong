@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.DropdownMenuItem
@@ -71,8 +70,10 @@ import com.huanchengfly.tieba.post.ui.common.prefs.GroupHeader
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChevron
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorsOf
@@ -190,7 +191,7 @@ fun AppThemePage(
                                     model = wallpaper,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)),
+                                    modifier = Modifier.size(28.dp).clip(SmoothCornerShape(6.dp)),
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 PrefsChevron()
@@ -210,7 +211,7 @@ private fun ThemeGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(SmoothCornerShape(16.dp))
             .background(ExtendedTheme.colors.chip)
             .padding(vertical = 4.dp),
         content = content,
@@ -253,7 +254,7 @@ private fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick: 
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .weight(1f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(SmoothCornerShape(16.dp))
             .clickable(onClickLabel = name, onClick = onClick)
             .padding(bottom = 8.dp),
     ) {
@@ -261,10 +262,10 @@ private fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick: 
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(9f / 17f)
-                .border(2.dp, if (selected) colors.emphasis else Color.Transparent, RoundedCornerShape(16.dp))
+                .border(2.dp, if (selected) colors.emphasis else Color.Transparent, SmoothCornerShape(16.dp))
                 .padding(4.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, colors.divider, RoundedCornerShape(12.dp)),
+                .clip(Corners.md)
+                .border(1.dp, colors.divider, Corners.md),
         ) {
             preview()
             if (selected) SelectedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
@@ -310,7 +311,7 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
         repeat(2) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(colors.card).padding(6.dp),
+                modifier = Modifier.fillMaxWidth().clip(SmoothCornerShape(6.dp)).background(colors.card).padding(6.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(modifier = Modifier.size(8.dp).background(colors.emphasis, CircleShape))
@@ -496,7 +497,7 @@ private fun RowScope.Swatch(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .weight(1f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(Corners.md)
             .clickable(onClickLabel = name, onClick = onClick)
             .padding(vertical = 8.dp),
     ) {

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
@@ -53,8 +52,10 @@ import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.PbContentText
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -99,7 +100,7 @@ fun QuotePostCard(
             thread = thread,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
+                .clip(SmoothCornerShape(6.dp))
                 .background(ExtendedTheme.colors.card)
                 .clickable {
                     onThreadClick(thread)
@@ -266,7 +267,7 @@ fun SearchThreadItem(
                         onThreadClick = onMainPostClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(SmoothCornerShape(6.dp))
                             .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onQuotePostClick(quoted)
@@ -280,7 +281,7 @@ fun SearchThreadItem(
                         thread = thread,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(SmoothCornerShape(6.dp))
                             .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onMainPostClick(thread)
@@ -351,7 +352,7 @@ fun SearchMedia(
                     modifier = Modifier
                         .fillMaxWidth(mediaWidthFraction)
                         .aspectRatio(mediaAspectRatio)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(Corners.sm),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     showMedias.fastForEach { pic ->
@@ -440,7 +441,7 @@ fun SearchBox(
                 ) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(100))
+                            .clip(Corners.full)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = PressFeedback.Overlay,
@@ -458,7 +459,7 @@ fun SearchBox(
             AnimatedVisibility(visible = isKeywordNotEmpty) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100))
+                        .clip(Corners.full)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = PressFeedback.Overlay,

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CheckboxDefaults
 import androidx.compose.material.CircularProgressIndicator
@@ -50,7 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -234,7 +235,7 @@ private fun PermissionDialog(dialog: AppDialog.Permission) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(Corners.md)
                     .clickable { remember = !remember }
                     .padding(end = 8.dp),
             ) {
@@ -256,7 +257,7 @@ private fun LoadingDialog() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
+                .clip(SmoothCornerShape(20.dp))
                 .background(colors.sheet)
                 .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
@@ -276,8 +277,8 @@ private fun PermissionTipBanner(tip: AppDialog.PermissionTip) {
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(16.dp)
             .fillMaxWidth()
-            .shadow(12.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(12.dp, SmoothCornerShape(20.dp))
+            .clip(SmoothCornerShape(20.dp))
             .background(colors.sheet)
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {

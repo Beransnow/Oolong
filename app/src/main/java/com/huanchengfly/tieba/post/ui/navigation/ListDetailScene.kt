@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -55,6 +54,7 @@ import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowSizeClass
@@ -316,5 +316,5 @@ private fun Divider(modifier: Modifier) {
 private val PaneInsets: WindowInsets
     @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 private val DividerTouchWidth = 16.dp
-private val GripShape = RoundedCornerShape(percent = 50)
+private val GripShape = Corners.full
 private val DividerSpring = spring<Dp>(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)

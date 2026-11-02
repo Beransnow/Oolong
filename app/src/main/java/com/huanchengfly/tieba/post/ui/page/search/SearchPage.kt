@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ContentAlpha
@@ -62,8 +61,10 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchOrder
 import com.huanchengfly.tieba.post.model.SearchedPost
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
@@ -489,7 +490,7 @@ private fun SearchHistoryList(
                 Box(
                     modifier = Modifier
                         .padding(bottom = 8.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(Corners.full)
                         .combinedClickable(
                             onClick = { onSearchHistoryClick(searchHistory) },
                             onLongClick = { onDelete(searchHistory) }
@@ -569,7 +570,7 @@ private fun SearchTopBar(
         prependIcon = {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(100))
+                    .clip(Corners.full)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = PressFeedback.Overlay,
@@ -584,7 +585,7 @@ private fun SearchTopBar(
                 )
             }
         },
-        shape = RoundedCornerShape(6.dp)
+        shape = SmoothCornerShape(6.dp)
     )
 }
 

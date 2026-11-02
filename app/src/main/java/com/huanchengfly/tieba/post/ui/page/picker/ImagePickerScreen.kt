@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
@@ -47,7 +46,9 @@ import coil3.request.ImageRequest
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DeviceAlbum
 import com.huanchengfly.tieba.post.model.DeviceImage
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -162,7 +163,7 @@ private fun AlbumSwitcher(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(RoundedCornerShape(100))
+                .clip(Corners.full)
                 .clickMenu(
                     items = {
                         albums.mapIndexed { index, album ->
@@ -198,7 +199,7 @@ private fun AlbumCover(album: DeviceAlbum) {
         uri = album.cover,
         modifier = Modifier
             .size(40.dp)
-            .clip(RoundedCornerShape(6.dp)),
+            .clip(SmoothCornerShape(6.dp)),
     )
 }
 
@@ -292,7 +293,7 @@ private fun ImageCell(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(6.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.5f), Corners.xs)
                     .padding(horizontal = 4.dp, vertical = 1.dp),
             )
         }

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BawuType
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -45,7 +45,7 @@ fun PostAgreeBtn(
     )
     Button(
         onClick = onClick,
-        shape = RoundedCornerShape(4.dp),
+        shape = Corners.xs,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.background,

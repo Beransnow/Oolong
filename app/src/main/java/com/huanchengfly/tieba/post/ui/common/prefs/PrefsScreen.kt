@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
@@ -18,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 
@@ -61,12 +61,7 @@ fun PrefsScreen(
                     // in one grey block
                     val first = index == 0 || !items[index - 1].isSetting
                     val last = index == items.lastIndex || !items[index + 1].isSetting
-                    val shape = RoundedCornerShape(
-                        topStart = if (first) CardRadius else 0.dp,
-                        topEnd = if (first) CardRadius else 0.dp,
-                        bottomStart = if (last) CardRadius else 0.dp,
-                        bottomEnd = if (last) CardRadius else 0.dp,
-                    )
+                    val shape = SmoothCornerShape(CardRadius, top = first, bottom = last)
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)

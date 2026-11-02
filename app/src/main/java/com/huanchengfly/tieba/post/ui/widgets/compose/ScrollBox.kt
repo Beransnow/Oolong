@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.roundToInt
 
@@ -107,7 +107,7 @@ fun UniversalScrollBox(
                         .fillMaxHeight()
                         .offset { IntOffset(dragOffset.width.roundToInt(), 0) }
                         .width(barSize.width.dp)
-                        .clip(RoundedCornerShape(4.dp)) // 注意先 clip 再 background
+                        .clip(Corners.xs) // 注意先 clip 再 background
                         .background(scrollBarColor) // 注意先 offset 再 background
                         .draggable(state = rememberDraggableState {
                             var widthOffset = dragOffset.width
@@ -139,7 +139,7 @@ fun UniversalScrollBox(
                         .fillMaxWidth()
                         .offset { IntOffset(0, dragOffset.height.roundToInt()) }
                         .height(barSize.height.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(Corners.xs)
                         .background(scrollBarColor)
                         .draggable(state = rememberDraggableState {
                             var heightOffset = dragOffset.height

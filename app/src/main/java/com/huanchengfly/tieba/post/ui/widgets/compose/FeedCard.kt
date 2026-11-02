@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
@@ -80,7 +79,9 @@ import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
 import com.huanchengfly.tieba.post.ui.common.navigation.pageOrigin
 import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageOrigin
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -203,7 +204,7 @@ fun Badge(
     icon: ImageVector,
     text: String,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = Corners.full,
     backgroundColor: Color = Color.Black.copy(0.5f),
     contentColor: Color = Color.White,
 ) {
@@ -375,7 +376,7 @@ private fun MediaPlaceholder(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(SmoothCornerShape(6.dp))
             .background(ExtendedTheme.colors.chip)
             .clickable(
                 enabled = onClick != null
@@ -461,7 +462,7 @@ private fun ThreadMedia(
                             modifier = Modifier
                                 .fillMaxWidth(singleMediaFraction)
                                 .aspectRatio(aspectRatio)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(Corners.sm)
                         )
                     }
                 }
@@ -580,7 +581,7 @@ private fun SinglePhoto(
     }
 }
 
-private val MediaShape = RoundedCornerShape(8.dp)
+private val MediaShape = Corners.sm
 private val SinglePhotoMaxHeight = 220.dp
 private const val TallPhotoWidthFraction = 0.6f
 
@@ -765,7 +766,7 @@ fun FeedCard(
                 SharedThreadCard(
                     shared = shared,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(SmoothCornerShape(6.dp))
                         .background(ExtendedTheme.colors.inset)
                         .clickable { onClickShared(shared) }
                         .padding(16.dp)

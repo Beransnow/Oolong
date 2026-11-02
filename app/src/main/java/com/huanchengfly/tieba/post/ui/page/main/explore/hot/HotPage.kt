@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -45,6 +44,7 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
@@ -167,7 +167,7 @@ fun HotScreen(
                                             fontSize = 10.sp,
                                             color = White,
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
+                                                .clip(Corners.xs)
                                                 .background(RedA700)
                                                 .padding(vertical = 2.dp, horizontal = 4.dp)
                                         )
@@ -177,7 +177,7 @@ fun HotScreen(
                                             fontSize = 10.sp,
                                             color = White,
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
+                                                .clip(Corners.xs)
                                                 .background(OrangeA700)
                                                 .padding(vertical = 2.dp, horizontal = 4.dp)
                                         )
@@ -350,7 +350,7 @@ private fun ThreadListItemPlaceholder() {
                 color = ExtendedTheme.colors.background,
                 modifier = Modifier
                     .padding(top = 3.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(Corners.xs)
                     .wrapContentSize()
                     .placeholder(visible = true)
                     .padding(vertical = 1.dp, horizontal = 4.dp)
@@ -388,7 +388,7 @@ private fun ThreadListTab(
         maxLines = 1,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(100))
+            .clip(Corners.full)
             .background(backgroundColor)
             .clickable(onClick = onSelected)
             .padding(vertical = 4.dp),
@@ -409,7 +409,7 @@ private fun ChipHeader(
         fontWeight = FontWeight.Bold,
         text = text,
         modifier = Modifier
-            .clip(RoundedCornerShape(100))
+            .clip(Corners.full)
             .then(modifier)
             .background(color = if (invert) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip)
             .padding(horizontal = 16.dp, vertical = 4.dp)

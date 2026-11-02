@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -38,6 +37,7 @@ import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
@@ -115,7 +115,7 @@ private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?, r
         imageUri = url,
         contentDescription = null,
         modifier = Modifier
-            .clip(RoundedCornerShape(if (rounded) context.appPreferences.radius.dp else 0.dp))
+            .clip(SmoothCornerShape(if (rounded) context.appPreferences.radius.dp else 0.dp))
             .fillMaxWidth(mediaWidthFraction())
             .aspectRatio(image.aspectRatio),
         photoViewData = photoViewData,
@@ -129,7 +129,7 @@ private fun PostVideo(video: PostContent.Video) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val modifier = Modifier
-        .clip(RoundedCornerShape(context.appPreferences.radius.dp))
+        .clip(SmoothCornerShape(context.appPreferences.radius.dp))
         .fillMaxWidth(mediaWidthFraction())
         .aspectRatio(video.width * 1f / video.height)
     if (video.url.isNotBlank()) {

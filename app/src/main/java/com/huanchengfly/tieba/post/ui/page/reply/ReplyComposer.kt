@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -48,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -84,7 +84,7 @@ sealed interface ReplyComposerEvent {
 }
 
 private val ComposerIconSize = 22.dp
-private val ChipShape = RoundedCornerShape(percent = 50)
+private val ChipShape = Corners.full
 
 /**
  * The inside of the reply composer: whom it answers, the text, the pictures and what the reply
@@ -359,7 +359,7 @@ private fun NoticeRow(
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .fillMaxWidth()
             .heightIn(min = 36.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(Corners.lg)
             .background(colors.chip)
             .padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -518,7 +518,7 @@ private fun ColumnScope.PictureStrip(
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(Corners.sm)
                     .background(colors.chip)
             ) {
                 AsyncImage(
@@ -551,7 +551,7 @@ private fun ColumnScope.PictureStrip(
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(Corners.sm)
                         .background(colors.chip)
                         .clickable(role = Role.Button, onClick = onAdd),
                     contentAlignment = Alignment.Center,
@@ -589,7 +589,7 @@ fun EmoticonPanel(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(Corners.sm)
                     .clickable { onEmoticonClick(emoticon) }
                     .padding(8.dp),
             )

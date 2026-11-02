@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
@@ -51,6 +50,7 @@ import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
 import com.huanchengfly.tieba.post.ui.common.PbContentText
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.utils.EmoticonManager
@@ -390,7 +390,7 @@ fun buildChipInlineContent(
                     color = color,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(100))
+                        .clip(Corners.full)
                         .background(backgroundColor)
                         .padding(padding)
                 )

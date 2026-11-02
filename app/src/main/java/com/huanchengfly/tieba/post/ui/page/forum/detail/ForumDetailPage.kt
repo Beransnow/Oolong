@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -34,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.ForumIntro
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.navigation.ForumDetailKey
@@ -132,7 +132,7 @@ private fun ForumDetailContent(
         }
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Corners.sm)
                 .background(color = ExtendedTheme.colors.chip)
                 .padding(vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,

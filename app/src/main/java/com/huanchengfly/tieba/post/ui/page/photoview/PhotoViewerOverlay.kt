@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -92,6 +91,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.images.rememberImageDownloadProgress
 import com.huanchengfly.tieba.post.model.ThreadPicture
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -303,7 +303,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                         .offsetTo(rect)
                         .graphicsLayer {
                             alpha = if (near == null) p.coerceIn(0f, 1f) else 1f
-                            shape = RoundedCornerShape(corner.dp)
+                            shape = SmoothCornerShape(corner.dp)
                             clip = true
                         },
                 ) {

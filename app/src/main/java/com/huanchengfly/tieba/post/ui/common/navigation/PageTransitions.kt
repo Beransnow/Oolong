@@ -21,7 +21,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +59,7 @@ import androidx.navigationevent.NavigationEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -320,7 +320,7 @@ object PageTransitions {
                                 scaleY = scale
                                 val toward = if (peek.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
                                 translationX = toward * size.width * PeekShift * amount
-                                shape = RoundedCornerShape(PeekRadius * amount)
+                                shape = SmoothCornerShape(PeekRadius * amount)
                                 clip = true
                                 shadowElevation = PeekElevation.toPx() * amount
                             }

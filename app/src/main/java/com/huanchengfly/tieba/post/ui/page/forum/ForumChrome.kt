@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -56,6 +55,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -388,7 +388,7 @@ internal fun ForumHeaderPlaceholder(
         if (loggedIn) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(100))
+                    .clip(Corners.full)
                     .placeholder(visible = true, highlight = PlaceholderHighlight.fade())
                     .padding(horizontal = 18.dp, vertical = 6.dp)
             ) {

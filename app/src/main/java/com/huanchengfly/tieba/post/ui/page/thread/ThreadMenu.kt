@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -30,7 +29,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 
 /**
@@ -130,7 +131,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuToggle(
         modifier = Modifier
             .weight(1f)
             .height(64.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(SmoothCornerShape(14.dp))
             .background(background)
             .clickable(role = Role.Switch, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -153,7 +154,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuAction(
     Column(
         modifier = Modifier
             .weight(1f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(Corners.md)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,7 +187,7 @@ private fun MenuRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(SmoothCornerShape(10.dp))
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ButtonDefaults
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
@@ -73,7 +73,7 @@ fun DialogScope.DialogPositiveButton(
         },
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(100),
+        shape = Corners.full,
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.emphasis,
             contentColor = ExtendedTheme.colors.onEmphasis
@@ -98,7 +98,7 @@ fun DialogScope.DialogNegativeButton(
             onClick?.invoke()
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(100),
+        shape = Corners.full,
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.text.copy(
                 alpha = 0.1f

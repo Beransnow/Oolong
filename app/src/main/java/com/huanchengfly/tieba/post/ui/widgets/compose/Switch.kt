@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import dev.chrisbanes.haze.hazeSource
@@ -140,7 +141,7 @@ fun Switch(
             Box(
                 Modifier
                     .size(TrackWidth, TrackHeight)
-                    .clip(RoundedCornerShape(percent = 50))
+                    .clip(Corners.full)
                     .background(track)
             )
         }

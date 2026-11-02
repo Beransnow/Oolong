@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
@@ -41,6 +40,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.HotTopic
 import com.huanchengfly.tieba.post.model.RankedTopic
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
@@ -127,7 +127,7 @@ private fun TopicBody(
                     fontSize = 10.sp,
                     color = White,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(Corners.xs)
                         .background(RedA700)
                         .padding(vertical = 2.dp, horizontal = 4.dp)
                 )
@@ -137,7 +137,7 @@ private fun TopicBody(
                     fontSize = 10.sp,
                     color = White,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(Corners.xs)
                         .background(OrangeA700)
                         .padding(vertical = 2.dp, horizontal = 4.dp)
                 )

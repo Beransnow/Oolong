@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -35,6 +34,7 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -200,9 +200,9 @@ private fun NotificationItemContent(
                 text = quoteText,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(Corners.sm)
                     .clickable { onOpenQuote(notification) }
-                    .background(ExtendedTheme.colors.chip, RoundedCornerShape(8.dp))
+                    .background(ExtendedTheme.colors.chip, Corners.sm)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 color = ExtendedTheme.colors.textSecondary,
                 fontSize = 14.sp,

@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.repository.BlockListRepository
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles

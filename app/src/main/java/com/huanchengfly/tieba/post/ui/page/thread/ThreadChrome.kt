@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.ForumSummary
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -59,7 +59,7 @@ internal fun ThreadTopBar(
                 Row(
                     modifier = Modifier
                         .height(IntrinsicSize.Min)
-                        .clip(RoundedCornerShape(100))
+                        .clip(Corners.full)
                         .background(ExtendedTheme.colors.chip)
                         .clickable { onEvent(ThreadEvent.OpenForum) }
                         .padding(4.dp),
@@ -88,7 +88,7 @@ internal fun ThreadTopBar(
     )
 }
 
-private val CapsuleShape = RoundedCornerShape(percent = 50)
+private val CapsuleShape = Corners.full
 
 /** The actions capsule's content at rest: liking the thread, and the menu. */
 @Composable
@@ -176,7 +176,7 @@ internal fun LoadMorePill(
 ) {
     Surface(
         elevation = 8.dp,
-        shape = RoundedCornerShape(100),
+        shape = Corners.full,
         color = ExtendedTheme.colors.refreshIndicator,
         contentColor = ExtendedTheme.colors.text
     ) {

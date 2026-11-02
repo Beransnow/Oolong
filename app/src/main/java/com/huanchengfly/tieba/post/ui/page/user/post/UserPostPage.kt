@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
@@ -43,6 +42,7 @@ import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserReplies
 import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -354,7 +354,7 @@ private fun UserRepliesItem(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(SmoothCornerShape(6.dp))
                         .background(ExtendedTheme.colors.inset)
                         .clickable {
                             onClickOriginThread(post.threadId)

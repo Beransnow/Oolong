@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
@@ -29,6 +28,7 @@ import androidx.navigation3.scene.SceneStrategyScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
@@ -99,7 +99,7 @@ private class BottomSheetScene<T : Any>(
                 entry.Content()
             },
             sheetState = state,
-            sheetShape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
+            sheetShape = SmoothCornerShape(Radius.xl, bottom = false),
             sheetBackgroundColor = ExtendedTheme.colors.sheet,
             scrimColor = ExtendedTheme.colors.scrim,
             content = {},

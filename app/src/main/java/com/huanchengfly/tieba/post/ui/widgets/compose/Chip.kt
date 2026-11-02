@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +18,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
 @Composable
@@ -29,7 +29,7 @@ fun Chip(
     appendIcon: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     invertColor: Boolean = false,
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = Corners.full,
 ) {
     val color =
         if (invertColor) ExtendedTheme.colors.onInvertChip else ExtendedTheme.colors.onChip

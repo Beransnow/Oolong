@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -69,6 +68,7 @@ import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.navigation.PageMorphHost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.navigation.AppNavDisplay
 import com.huanchengfly.tieba.post.ui.navigation.BackStackNavigator
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
@@ -367,7 +367,7 @@ class MainActivityV2 : AppCompatActivity() {
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
                     border = BorderStroke(1.dp, ExtendedTheme.colors.divider),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = SmoothCornerShape(6.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

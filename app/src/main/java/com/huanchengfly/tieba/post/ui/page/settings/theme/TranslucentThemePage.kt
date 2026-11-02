@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
@@ -82,6 +81,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorOf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.getColorPalette
@@ -320,7 +320,7 @@ private fun BoxScope.SettingsPanel(modifier: Modifier = Modifier, content: @Comp
         modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 520.dp)
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .clip(SmoothCornerShape(24.dp, bottom = false))
             .background(ExtendedTheme.colors.sheet)
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -337,7 +337,7 @@ private fun SettingsBlock(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(SmoothCornerShape(16.dp))
             .background(ExtendedTheme.colors.chip)
             .padding(vertical = 4.dp),
         content = content,

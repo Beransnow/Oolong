@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
@@ -66,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
@@ -440,7 +440,7 @@ fun PagerTabIndicator(
                 .offset(x = animatedIndicatorOffset, y = (-8).dp)
                 .width(16.dp)
                 .height(3.dp)
-                .clip(RoundedCornerShape(100))
+                .clip(Corners.full)
                 .background(color = LocalContentColor.current)
         )
     }
@@ -463,7 +463,7 @@ fun TabIndicator(
                 .offset(x = animatedIndicatorOffset, y = (-8).dp)
                 .width(tabIndicatorWidth)
                 .height(3.dp)
-                .clip(RoundedCornerShape(100))
+                .clip(Corners.full)
                 .background(color = LocalContentColor.current)
         )
     }

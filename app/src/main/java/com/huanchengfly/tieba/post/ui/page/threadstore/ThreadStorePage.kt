@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.DropdownMenuItem
@@ -46,6 +45,7 @@ import com.huanchengfly.tieba.post.model.StoredThread
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -260,7 +260,7 @@ private fun StoreItem(
                                     .fillMaxSize()
                                     .background(
                                         color = ExtendedTheme.colors.chip,
-                                        shape = RoundedCornerShape(3.dp)
+                                        shape = SmoothCornerShape(3.dp)
                                     )
                                     .padding(vertical = 4.dp, horizontal = 12.dp)
                             ) {

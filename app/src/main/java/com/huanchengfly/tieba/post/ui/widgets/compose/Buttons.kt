@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ButtonElevation
@@ -28,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
@@ -39,7 +39,7 @@ fun Button(
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     elevation: ButtonElevation? = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = Corners.full,
     border: BorderStroke? = null,
     colors: ButtonColors = ButtonDefaults.buttonColors(
         backgroundColor = ExtendedTheme.colors.emphasis,
@@ -91,7 +91,7 @@ fun TextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    shape: Shape = RoundedCornerShape(100),
+    shape: Shape = Corners.full,
     border: BorderStroke? = null,
     color: Color = ExtendedTheme.colors.text,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
