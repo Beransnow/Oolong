@@ -447,6 +447,11 @@
     <string name="button_block">屏蔽</string>
     <string name="toast_blocked">已屏蔽%1$s</string>
     <string name="rule_in">"在 "</string>
+    <string name="rule_after_scope">" "</string>
+    <string name="rule_content_lead" />
+    <string name="rule_quoted">「%1$s」</string>
+    <string name="rule_group_open">（</string>
+    <string name="rule_group_close">）</string>
     <string name="rule_user">"用户 "</string>
     <string name="rule_whose_content">" 的内容"</string>
     <string name="rule_forum">「%1$s吧」</string>
@@ -465,8 +470,8 @@
     <string name="rule_not_thread_author">作者不是楼主</string>
     <string name="rule_ip_is">IP 属地是</string>
     <string name="rule_ip_is_not">IP 属地不是</string>
-    <string name="rule_not_in">不在</string>
-    <string name="rule_inside">里</string>
+    <string name="rule_in_forum">%1$s里</string>
+    <string name="rule_not_in_forum">不在%1$s</string>
     <string name="rule_forum_name">吧名</string>
     <string name="rule_has">内容包含</string>
     <string name="rule_has_not">内容不包含</string>

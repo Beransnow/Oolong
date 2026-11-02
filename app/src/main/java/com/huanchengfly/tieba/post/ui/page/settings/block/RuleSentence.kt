@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
@@ -28,14 +29,16 @@ fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<Senten
     if (full || !scopeDefault) {
         add(SentenceRun(stringResource(R.string.rule_in)))
         add(SentenceRun(scopeName(rule.scope), RulePart.Scope, scopeDefault))
-        add(SentenceRun(" "))
+        add(SentenceRun(stringResource(R.string.rule_after_scope)))
     }
-    add(SentenceRun(actionName(rule.action), RulePart.Action, rule.action == BlockRule.Action.Default))
+    val action = actionName(rule.action)
+    add(SentenceRun(if (isEmpty()) action else action.midSentence(), RulePart.Action, rule.action == BlockRule.Action.Default))
     add(SentenceRun(" "))
+    add(SentenceRun(stringResource(R.string.rule_content_lead)))
     val flat = rule.condition.flat()
     if (full && flat != null && flat.tests.size > 1) {
         add(SentenceRun(stringResource(R.string.rule_meeting)))
-        add(SentenceRun(stringResource(if (flat.all) R.string.rule_all else R.string.rule_any), RulePart.Join, flat.all))
+        add(SentenceRun(stringResource(if (flat.all) R.string.rule_all else R.string.rule_any).midSentence(), RulePart.Join, flat.all))
         add(SentenceRun(stringResource(R.string.rule_conditions)))
     } else {
         addAll(conditionSentence(rule.condition))
@@ -60,12 +63,12 @@ fun conditionSentence(condition: Condition, nested: Boolean = false): List<Sente
         is Condition.AllOf, is Condition.AnyOf -> {
             val parts = if (condition is Condition.AllOf) condition.conditions else (condition as Condition.AnyOf).conditions
             val join = stringResource(if (condition is Condition.AllOf) R.string.rule_and else R.string.rule_or)
-            if (nested && parts.size > 1) add(SentenceRun("（"))
+            if (nested && parts.size > 1) add(SentenceRun(stringResource(R.string.rule_group_open)))
             parts.forEachIndexed { index, part ->
                 if (index > 0) add(SentenceRun(join))
                 addAll(conditionSentence(part, nested = true))
             }
-            if (nested && parts.size > 1) add(SentenceRun("）"))
+            if (nested && parts.size > 1) add(SentenceRun(stringResource(R.string.rule_group_close)))
         }
 
         is Condition.Not -> if (condition.condition is Condition.AllOf || condition.condition is Condition.AnyOf) {
@@ -87,12 +90,20 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
     // A value not typed yet reads as an ellipsis between its marks
     fun typed(text: String) = text.ifBlank { "…" }
     fun plain(text: String) = SentenceRun(text)
+    val quote = stringResource(R.string.rule_quoted)
+    fun quoted(text: String) = value(quote.format(typed(text)))
+
+    // A template's words around its value, which alone is marked
+    fun around(template: String, text: String): List<SentenceRun> {
+        val at = template.indexOf("%1\$s")
+        return listOf(plain(template.take(at)), value(text), plain(template.drop(at + 4))).filter { it.text.isNotEmpty() }
+    }
 
     @Composable
     fun pattern(subject: String, pattern: Pattern): List<SentenceRun> = when (pattern) {
         is Pattern.Words -> listOf(
             plain(subject + stringResource(if (negated) R.string.rule_not_containing else R.string.rule_containing)),
-            value("「${typed(pattern.words.joinToString(" "))}」"),
+            quoted(pattern.words.joinToString(" ")),
         )
         is Pattern.Regex -> listOf(
             plain(subject + stringResource(if (negated) R.string.rule_not_matching else R.string.rule_matching)),
@@ -110,7 +121,7 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
         )
 
         is Condition.User -> if (negated) {
-            listOf(plain(stringResource(R.string.rule_author_is_not)), value("「${typed(test.shownName)}」"))
+            listOf(plain(stringResource(R.string.rule_author_is_not)), quoted(test.shownName))
         } else {
             listOf(plain(stringResource(R.string.rule_user)), value(typed(test.shownName)))
         }
@@ -122,16 +133,15 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
         )
 
         Condition.ThreadAuthor -> listOf(plain(stringResource(if (negated) R.string.rule_not_thread_author else R.string.rule_thread_author)))
-        is Condition.Ip -> listOf(plain(stringResource(if (negated) R.string.rule_ip_is_not else R.string.rule_ip_is)), value("「${typed(test.region)}」"))
-        is Condition.Forum -> if (negated) {
-            listOf(plain(stringResource(R.string.rule_not_in)), value(stringResource(R.string.rule_forum, typed(test.name.removeSuffix("吧")))))
-        } else {
-            listOf(value(stringResource(R.string.rule_forum, typed(test.name.removeSuffix("吧")))), plain(stringResource(R.string.rule_inside)))
-        }
+        is Condition.Ip -> listOf(plain(stringResource(if (negated) R.string.rule_ip_is_not else R.string.rule_ip_is)), quoted(test.region))
+        is Condition.Forum -> around(
+            stringResource(if (negated) R.string.rule_not_in_forum else R.string.rule_in_forum),
+            stringResource(R.string.rule_forum, typed(test.name.removeSuffix("吧"))),
+        )
 
         is Condition.ForumName -> pattern(stringResource(R.string.rule_forum_name), test.pattern)
-        is Condition.Has -> listOf(plain(stringResource(if (negated) R.string.rule_has_not else R.string.rule_has)), value(kindName(test.kind)))
-        is Condition.Only -> listOf(plain(stringResource(if (negated) R.string.rule_not_only else R.string.rule_only)), value(kindName(test.kind)))
+        is Condition.Has -> listOf(plain(stringResource(if (negated) R.string.rule_has_not else R.string.rule_has)), value(kindName(test.kind).midSentence()))
+        is Condition.Only -> listOf(plain(stringResource(if (negated) R.string.rule_not_only else R.string.rule_only)), value(kindName(test.kind).midSentence()))
         is Condition.ShorterThan -> listOf(
             plain(stringResource(if (negated) R.string.rule_length_not_below else R.string.rule_length_below)),
             value(pluralStringResource(R.plurals.rule_length, test.length, test.length)),
@@ -172,5 +182,16 @@ fun actionName(action: BlockRule.Action): String = stringResource(
         BlockRule.Action.Allow -> R.string.rule_action_allow
     },
 )
+
+/**
+ * A name that also heads a menu, lowered to run on inside a sentence in languages that capitalise
+ * only its start; acronyms such as "IP" stay as they are.
+ */
+@Composable
+private fun String.midSentence(): String {
+    val locale = LocalConfiguration.current.locales[0]
+    if (locale.language == "zh" || length < 2 || get(1).isUpperCase()) return this
+    return replaceFirstChar { it.lowercase(locale) }
+}
 
 const val DayMillis = 24 * 60 * 60 * 1000L
