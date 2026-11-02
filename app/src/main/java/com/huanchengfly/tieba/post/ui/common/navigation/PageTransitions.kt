@@ -5,10 +5,10 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -107,47 +107,82 @@ object PageTransitions {
     /** Opening a page, for scenes or for the content of one pane. */
     fun <S> transitionSpec(
         overlap: State<Boolean>,
+        animationSpec: FiniteAnimationSpec<IntOffset> = spec(),
     ): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
         slideIntoContainer(
             AnimatedContentTransitionScope.SlideDirection.Start,
-            animationSpec = spec<IntOffset>(),
+            animationSpec = animationSpec,
             initialOffset = { it }
         ) togetherWith slideOutOfContainer(
             AnimatedContentTransitionScope.SlideDirection.End,
-            animationSpec = spec<IntOffset>(),
+            animationSpec = animationSpec,
             targetOffset = { -underPageOffset(it, overlap.value) }
         )
     }
 
     fun <S> popTransitionSpec(
         overlap: State<Boolean>,
+        animationSpec: FiniteAnimationSpec<IntOffset> = spec(),
     ): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
         slideIntoContainer(
             AnimatedContentTransitionScope.SlideDirection.Start,
-            animationSpec = spec<IntOffset>(),
+            animationSpec = animationSpec,
             initialOffset = { -underPageOffset(it, overlap.value) }
         ) togetherWith slideOutOfContainer(
             AnimatedContentTransitionScope.SlideDirection.End,
-            animationSpec = spec<IntOffset>(),
+            animationSpec = animationSpec,
             targetOffset = { it }
         )
     }
 
     /**
-     * Between two pages framed alone, the pages slide themselves ([PageFrame]) and the
-     * navigation only keeps the page going away until it has slid out; null for other scenes.
-     *
-     * The navigation's own slides run on one seekable timeline, and back while a page comes in
-     * plays that timeline backwards, setting off from the spring's slow end: a page nearly in
-     * hung there before going. Sliding themselves, pages turn round from where they are, as fast
-     * as they were moving.
+     * For animations told by [PageDisplay]'s transitions: linear over one fixed length, so where
+     * they are follows the fraction the display drives, and the pace is the driving spring's.
+     * Every animation on those transitions must use it, or the fractions drift apart.
      */
-    fun framedSlide(from: Scene<*>, to: Scene<*>): ContentTransform? =
-        if (from is FramedSinglePaneScene<*> && to is FramedSinglePaneScene<*>) {
-            EnterTransition.None togetherWith ExitTransition.None
-        } else {
-            null
+    fun <T> seeked(): FiniteAnimationSpec<T> = tween(SeekMillis, easing = LinearEasing)
+
+    private const val SeekMillis = 1000
+
+    /** What drives [PageDisplay] through a step deeper or back. */
+    fun drive(): FiniteAnimationSpec<Float> = Motion.page(Motion.ProgressThreshold)
+
+    /** Nothing moves, for scenes that animate their own content, such as the panes side by side. */
+    fun none(): ContentTransform = EnterTransition.None togetherWith ExitTransition.None
+
+    /**
+     * How [PageDisplay] moves from one scene to another: a step deeper or back by how many pages are
+     * under each, sliding as [transitionSpec] and [popTransitionSpec] do; a quick cross-fade for
+     * the same pages laid out again ([relayout]); and, for a [peek], only the page on top sliding
+     * off, as the page underneath is already in place.
+     */
+    fun <T : Any> between(
+        from: Scene<T>,
+        to: Scene<T>,
+        overlap: State<Boolean>,
+        relayout: Boolean,
+        peek: Boolean,
+    ): PageTransition {
+        val fromDepth = from.previousEntries.size
+        val toDepth = to.previousEntries.size
+        return when {
+            relayout -> PageTransition(
+                { fadeIn(seeked()) togetherWith fadeOut(seeked()) },
+                drive = tween(CrossFadeMillis),
+                zIndex = 0f,
+            )
+            peek -> PageTransition(
+                {
+                    EnterTransition.None togetherWith
+                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, seeked(), targetOffset = { it })
+                },
+                drive = drive(),
+                zIndex = -1f,
+            )
+            toDepth < fromDepth -> PageTransition(popTransitionSpec(overlap, seeked()), drive(), zIndex = -1f)
+            else -> PageTransition(transitionSpec(overlap, seeked()), drive(), zIndex = 1f)
         }
+    }
 
     /** The page on top at the furthest peek: its scale, its shift toward the finger as a fraction of its width, and its corners. */
     private const val PeekScale = 0.9f
@@ -168,81 +203,39 @@ object PageTransitions {
     private const val CrossFadeMillis = 200
 
     /**
-     * Moves a page framed alone as pages come and go, with [Motion.page] from wherever it is, so
-     * back while a page is coming in turns it straight round. A page coming in starts off the end
-     * side when it goes deeper and from underneath when it comes back; one going away slides
-     * off the end side when it is left, or under when a deeper page covers it.
-     */
-    @Composable
-    private fun slide(key: Any, depth: Int, overlap: Boolean): Modifier {
-        val transition = LocalNavAnimatedContentScope.current.transition
-        val scenes = transition.parentTransition
-        val peek = LocalPagePeek.current
-        val under = if (overlap) -UnderPageOffset else -1f
-        val offset = remember {
-            val from = (scenes?.currentState as? FramedSinglePaneScene<*>)?.depth
-            val start = when {
-                // Shown from the first, or coming in under a peek, where it already rests
-                transition.currentState == EnterExitState.Visible || peek?.underKey == key -> 0f
-                // Coming in from a scene that doesn't frame its pages, which moves them itself
-                from == null -> 0f
-                depth >= from -> 1f
-                else -> under
-            }
-            Animatable(start, visibilityThreshold = Motion.ProgressThreshold)
-        }
-        val coming = transition.targetState == EnterExitState.Visible
-        val towards = (scenes?.targetState as? FramedSinglePaneScene<*>)?.depth
-        val framed = towards != null && scenes.currentState is FramedSinglePaneScene<*>
-        val target = when {
-            coming || !framed -> 0f
-            // Peeked past: stays put until let go
-            peek != null && peek.topKey == key && !peek.committed -> 0f
-            (towards ?: 0) >= depth -> under
-            else -> 1f
-        }
-        LaunchedEffect(target) { offset.animateTo(target, Motion.page()) }
-        // Keeps the page going away until it has slid out: the same spring, so it ends with the slide
-        transition.animateFloat(
-            transitionSpec = { Motion.page(Motion.ProgressThreshold) },
-            label = "PageSlide",
-        ) { if (it == EnterExitState.Visible) 1f else 0f }
-        val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
-        return Modifier.graphicsLayer {
-            translationX = offset.value * size.width * (if (ltr) 1f else -1f)
-        }
-    }
-
-    /**
      * Gives a page an opaque background, so the page underneath doesn't show
      * through while the two overlap, plus the dim and the edge shadow. Works on
      * whatever area the page is given, so a scene can frame each of its panes.
      *
-     * A page framed alone passes its content [key] and its [depth], how many pages are under
-     * it: it then slides itself ([framedSlide]) and can be peeked past ([PagePeek]).
+     * A page framed alone passes its content [key], so that it can be peeked past ([PagePeek]).
      */
     @Composable
-    fun PageFrame(key: Any? = null, depth: Int = 0, content: @Composable () -> Unit) {
-        val translucent = ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)
-        val slide = if (key != null) slide(key, depth, overlap = !translucent) else Modifier
-        if (translucent) {
-            Box(modifier = Modifier.fillMaxSize().then(slide)) { content() }
+    fun PageFrame(key: Any? = null, content: @Composable () -> Unit) {
+        if (ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)) {
+            content()
             return
         }
 
-        // Entering on a pop means coming back from underneath; leaving on a push means being covered
-        val isPop = LocalIsPop.current
         val underPageDim = if (ExtendedTheme.colors.isNightMode) UnderPageDimNight else UnderPageDim
         val transition = LocalNavAnimatedContentScope.current.transition
-        val dim = transition.animateFloat(
-            transitionSpec = { spec() },
-            label = "PageDim",
-        ) { state ->
-            when (state) {
-                EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
-                EnterExitState.Visible -> 0f
-                EnterExitState.PostExit -> if (isPop) 0f else underPageDim
+        // A pane of a wider scene dims as its own content changes. Not a page framed alone: it
+        // goes by where it is, and an animation of its own would throw out the fraction the
+        // display plays its transition by ([seeked])
+        val dim = if (key == null) {
+            // Entering on a pop means coming back from underneath; leaving on a push means being covered
+            val isPop = LocalIsPop.current
+            transition.animateFloat(
+                transitionSpec = { spec() },
+                label = "PageDim",
+            ) { state ->
+                when (state) {
+                    EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
+                    EnterExitState.Visible -> 0f
+                    EnterExitState.PostExit -> if (isPop) 0f else underPageDim
+                }
             }
+        } else {
+            null
         }
         // Where the page is, against the host that pages slide within
         val host = LocalPageHost.current
@@ -277,7 +270,6 @@ object PageTransitions {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .then(slide)
                 .onGloballyPositioned {
                     pageX.floatValue = it.positionInRoot().x
                     pageWidth.floatValue = it.size.width.toFloat()
@@ -350,7 +342,7 @@ object PageTransitions {
                         if (underneath) underPageDim * (distance / (width * UnderPageOffset)).coerceIn(0f, 1f) else 0f
                     } else if (moving) {
                         // A pane of a wider scene: its own animation, only while pages move
-                        dim.value
+                        dim?.value ?: 0f
                     } else {
                         0f
                     }
@@ -381,53 +373,17 @@ fun Modifier.pageHost(host: PageHost): Modifier = onGloballyPositioned {
     host.width = it.size.width.toFloat()
 }
 
-/**
- * Shows the top entry alone, in a [PageTransitions.PageFrame].
- *
- * Scenes are equal only to themselves ([FramedSinglePaneScene]), so which instance a page gets
- * decides how the navigation moves between them. The navigation calculates the scene on top
- * first and then those under it, on every change to the back stack. A page keeps its instance,
- * so a sheet opening over it changes nothing, and going back lands on the instance it was
- * shown under, which a peek is already headed for. But a page that was on top gets a new one
- * once something covers it: going back to it then, even while the cover is still coming in,
- * is a new move, not the opening played backwards.
- */
+/** Shows the top entry alone, in a [PageTransitions.PageFrame]. */
 class FramedSinglePaneSceneStrategy<T : Any> : SceneStrategy<T> {
-    private class Cached<T : Any>(val scene: FramedSinglePaneScene<T>, var onTop: Boolean)
-
-    private val scenes = mutableMapOf<List<Any>, Cached<T>>()
-    private var lastKeys: List<Any> = emptyList()
-
-    override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T> {
-        val keys = entries.map { it.contentKey }
-        // Under the scene calculated just before, rather than the top of a new back stack
-        val under = keys.size < lastKeys.size && lastKeys.subList(0, keys.size) == keys
-        lastKeys = keys
-        if (!under) scenes.keys.retainAll { it.size <= keys.size && keys.subList(0, it.size) == it }
-        val cached = scenes[keys]
-        val scene = if (cached == null || (under && cached.onTop)) {
-            FramedSinglePaneScene(entry = entries.last(), previousEntries = entries.dropLast(1))
-        } else {
-            cached.scene
-        }
-        scenes[keys] = Cached(scene, onTop = !under)
-        return scene
-    }
+    override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T> =
+        FramedSinglePaneScene(entry = entries.last(), previousEntries = entries.dropLast(1))
 }
 
-/**
- * Equal only to itself, not by its pages: the navigation reverses a transition in place when it
- * goes back to the scene it set off from, playing the opening backwards from its slow end.
- * [FramedSinglePaneSceneStrategy] hands out the instances so that it doesn't.
- */
-internal class FramedSinglePaneScene<T : Any>(
+internal data class FramedSinglePaneScene<T : Any>(
     val entry: NavEntry<T>,
     override val previousEntries: List<NavEntry<T>>,
 ) : Scene<T> {
     override val key: Any = entry.contentKey
     override val entries: List<NavEntry<T>> = listOf(entry)
-    val depth: Int get() = previousEntries.size
-    override val content: @Composable () -> Unit = {
-        PageTransitions.PageFrame(key = entry.contentKey, depth = depth) { entry.Content() }
-    }
+    override val content: @Composable () -> Unit = { PageTransitions.PageFrame(key = entry.contentKey) { entry.Content() } }
 }

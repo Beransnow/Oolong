@@ -34,12 +34,15 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Shows the top entry in a modal bottom sheet over the pages below, when it asks for one. */
-class BottomSheetSceneStrategy<T : Any> : SceneStrategy<T> {
+/**
+ * Shows the top entry in a modal bottom sheet over the pages below, when it asks for one. The sheet
+ * leaves through [onBack] when swiped down or dismissed.
+ */
+class BottomSheetSceneStrategy<T : Any>(private val onBack: () -> Unit) : SceneStrategy<T> {
     override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T>? {
         val entry = entries.last()
         if (BottomSheetKey !in entry.metadata) return null
-        return BottomSheetScene(entry = entry, previousEntries = entries.dropLast(1), onBack = onBack)
+        return BottomSheetScene(entry = entry, previousEntries = entries.dropLast(1), onBack = this@BottomSheetSceneStrategy.onBack)
     }
 
     companion object {

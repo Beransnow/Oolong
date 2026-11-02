@@ -33,11 +33,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.DialogSceneStrategy
-import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
-import androidx.navigation3.scene.rememberSceneState
-import androidx.navigation3.ui.NavDisplay
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
@@ -46,11 +42,13 @@ import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStr
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPagePeek
+import com.huanchengfly.tieba.post.ui.common.navigation.PageBackHandler
+import com.huanchengfly.tieba.post.ui.common.navigation.PageDisplay
 import com.huanchengfly.tieba.post.ui.common.navigation.PageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.PagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
 import com.huanchengfly.tieba.post.ui.common.navigation.pageHost
-import com.huanchengfly.tieba.post.ui.common.navigation.rememberPagePeekBack
+import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageScenes
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -189,8 +187,9 @@ fun AppNavDisplay(
     }
 
     val listDetailState = rememberListDetailState()
-    val strategies = remember(twoPane, sceneStrategies, listDetailState) {
-        listOf(DialogSceneStrategy<NavKey>(), BottomSheetSceneStrategy<NavKey>()) +
+    val onBack: () -> Unit = remember(backStack) { { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) } }
+    val strategies = remember(twoPane, sceneStrategies, listDetailState, onBack) {
+        listOf(DialogSceneStrategy<NavKey>(onBack), BottomSheetSceneStrategy<NavKey>(onBack)) +
             sceneStrategies +
             listOfNotNull(if (twoPane) listDetailState.strategy else null) +
             FramedSinglePaneSceneStrategy()
@@ -234,7 +233,7 @@ fun AppNavDisplay(
                 ) {
                     MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
                 }
-                // NavDisplay lays out no container of its own: sheets and dialogs are emitted beside
+                // The display lays out no container of its own: sheets and dialogs are emitted beside
                 // the pages, so they need a box here, not the row, to cover them
                 Box(
                     modifier = Modifier
@@ -249,7 +248,6 @@ fun AppNavDisplay(
                 ) {
                     val pageHost = remember { PageHost() }
                     val pagePeek = remember { PagePeek() }
-                    val onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) }
                     val entries = rememberDecoratedNavEntries(
                         backStack = backStack,
                         entryDecorators = listOf(
@@ -276,49 +274,21 @@ fun AppNavDisplay(
                             }
                         },
                     )
-                    val sceneState = rememberSceneState(entries, strategies, onBack = onBack)
-                    val navigationEventState = rememberPagePeekBack(sceneState, pagePeek, onBack)
+                    val scenes = rememberPageScenes(entries, strategies)
+                    PageBackHandler(scenes, pagePeek, onBack)
                     CompositionLocalProvider(
                         LocalPageHost provides pageHost,
                         LocalPagePeek provides pagePeek,
                     ) {
-                        NavDisplay(
-                            sceneState = sceneState,
-                            navigationEventState = navigationEventState,
+                        PageDisplay(
+                            scenes = scenes,
+                            peek = pagePeek,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pageHost(pageHost),
-                            // Deeper or back by the scenes themselves, not by how the back stack last changed: back
-                            // pressed while a page is still coming in leaves that same segment running, and it has
-                            // to keep the push's motion as it is reversed, or the page underneath runs off first
-                            transitionSpec = {
-                                when {
-                                    relayout -> PageTransitions.crossFade()
-                                    else -> PageTransitions.framedSlide(initialState, targetState)
-                                        ?: if (isDeeper(initialState, targetState) == false) {
-                                            PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                                        } else {
-                                            PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
-                                        }
-                                }
-                            },
-                            popTransitionSpec = {
-                                when {
-                                    relayout -> PageTransitions.crossFade()
-                                    else -> PageTransitions.framedSlide(initialState, targetState)
-                                        ?: if (isDeeper(initialState, targetState) == true) {
-                                            PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
-                                        } else {
-                                            PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                                        }
-                                }
-                            },
-                            // Only a peek starts one, see rememberPagePeekBack
-                            predictivePopTransitionSpec = {
-                                PageTransitions.framedSlide(initialState, targetState)
-                                    ?: PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                            },
-                        )
+                        ) { from, to, peek ->
+                            PageTransitions.between(from, to, overlap, relayout, peek)
+                        }
                     }
                 }
             }
@@ -384,11 +354,4 @@ private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, jump: Rail
         navigationItems = items,
         showLabels = showLabels,
     )
-}
-
-/** Whether [to] lies deeper in the back stack than [from], or null when they are as deep. */
-private fun isDeeper(from: Scene<NavKey>, to: Scene<NavKey>): Boolean? {
-    val fromDepth = from.previousEntries.size
-    val toDepth = to.previousEntries.size
-    return if (toDepth == fromDepth) null else toDepth > fromDepth
 }
