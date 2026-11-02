@@ -31,10 +31,12 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
+import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -43,9 +45,12 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStrategy
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageHost
+import com.huanchengfly.tieba.post.ui.common.navigation.LocalPagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageHost
+import com.huanchengfly.tieba.post.ui.common.navigation.PagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
 import com.huanchengfly.tieba.post.ui.common.navigation.pageHost
+import com.huanchengfly.tieba.post.ui.common.navigation.rememberPagePeekBack
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -241,18 +246,46 @@ fun AppNavDisplay(
                         ),
                 ) {
                     val pageHost = remember { PageHost() }
-                    CompositionLocalProvider(LocalPageHost provides pageHost) {
+                    val pagePeek = remember { PagePeek() }
+                    val onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) }
+                    val entries = rememberDecoratedNavEntries(
+                        backStack = backStack,
+                        entryDecorators = listOf(
+                            rememberSaveableStateHolderNavEntryDecorator(),
+                            rememberViewModelStoreNavEntryDecorator(),
+                        ),
+                        entryProvider = entryProvider {
+                            entry<Page>(
+                                clazzContentKey = { it.id },
+                                metadata = { it.key.metadata() },
+                            ) { page ->
+                                val isTop = backStack.lastOrNull() == page
+                                val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
+                                CompositionLocalProvider(
+                                    LocalIsTopEntry provides isTop,
+                                    LocalNavigator provides pageNavigator,
+                                ) {
+                                    if (page.key.readsAtWidth) {
+                                        ReadingWidth { KeyContent(page.key) }
+                                    } else {
+                                        KeyContent(page.key)
+                                    }
+                                }
+                            }
+                        },
+                    )
+                    val sceneState = rememberSceneState(entries, strategies, onBack = onBack)
+                    val navigationEventState = rememberPagePeekBack(sceneState, pagePeek, onBack)
+                    CompositionLocalProvider(
+                        LocalPageHost provides pageHost,
+                        LocalPagePeek provides pagePeek,
+                    ) {
                         NavDisplay(
-                            backStack = backStack,
+                            sceneState = sceneState,
+                            navigationEventState = navigationEventState,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pageHost(pageHost),
-                            onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
-                            entryDecorators = listOf(
-                                rememberSaveableStateHolderNavEntryDecorator(),
-                                rememberViewModelStoreNavEntryDecorator(),
-                            ),
-                            sceneStrategies = strategies,
                             // Deeper or back by the scenes themselves, not by how the back stack last changed: back
                             // pressed while a page is still coming in leaves that same segment running, and it has
                             // to keep the push's motion as it is reversed, or the page underneath runs off first
@@ -270,25 +303,8 @@ fun AppNavDisplay(
                                     else -> PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
                                 }
                             },
-                            entryProvider = entryProvider {
-                                entry<Page>(
-                                    clazzContentKey = { it.id },
-                                    metadata = { it.key.metadata() },
-                                ) { page ->
-                                    val isTop = backStack.lastOrNull() == page
-                                    val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
-                                    CompositionLocalProvider(
-                                        LocalIsTopEntry provides isTop,
-                                        LocalNavigator provides pageNavigator,
-                                    ) {
-                                        if (page.key.readsAtWidth) {
-                                            ReadingWidth { KeyContent(page.key) }
-                                        } else {
-                                            KeyContent(page.key)
-                                        }
-                                    }
-                                }
-                            },
+                            // Only a peek starts one, see rememberPagePeekBack
+                            predictivePopTransitionSpec = { PageTransitions.peekPopTransitionSpec<Scene<NavKey>>()() },
                         )
                     }
                 }

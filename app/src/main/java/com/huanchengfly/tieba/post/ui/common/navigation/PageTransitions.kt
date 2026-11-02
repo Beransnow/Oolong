@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.common.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
@@ -29,6 +32,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,8 +42,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -48,10 +54,14 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import androidx.navigationevent.NavigationEvent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.roundToInt
 
 /** Whether the latest change to the back stack removed pages, as opposed to adding them. */
@@ -124,6 +134,40 @@ object PageTransitions {
     }
 
     /**
+     * Going back after a peek ([PagePeek]): the page underneath is already in place, so only the
+     * page on top moves, sliding out from where the peek left it. A tween, as NavDisplay plays it
+     * by seeking.
+     */
+    fun <S> peekPopTransitionSpec(): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
+        EnterTransition.None togetherWith slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.End,
+            animationSpec = tween(PeekExitMillis, easing = PeekExitEasing),
+            targetOffset = { it }
+        )
+    }
+
+    private const val PeekExitMillis = 400
+
+    /**
+     * The curve of [Motion.page] setting off from rest, a critically damped spring with a response
+     * of 0.35s, over [PeekExitMillis]: the slide out keeps the pace of any other pop.
+     */
+    private val PeekExitEasing = Easing { fraction ->
+        val span = 2 * PI.toFloat() / 0.35f * PeekExitMillis / 1000f
+        val x = fraction * span
+        (1f - (1f + x) * exp(-x)) / (1f - (1f + span) * exp(-span))
+    }
+
+    /** The page on top at the furthest peek: its scale, its shift toward the finger as a fraction of its width, and its corners. */
+    private const val PeekScale = 0.9f
+    private const val PeekShift = 0.05f
+    private val PeekRadius = Radius.xl
+    private val PeekElevation = 16.dp
+
+    /** How much of the dim on the page underneath lifts at the furthest peek. */
+    private const val PeekDimRelief = 0.3f
+
+    /**
      * A quick cross-fade, for changes that are not a step deeper or back: one page swapped for
      * another at the same level, or the same pages laid out again for a new window size.
      */
@@ -136,9 +180,11 @@ object PageTransitions {
      * Gives a page an opaque background, so the page underneath doesn't show
      * through while the two overlap, plus the dim and the edge shadow. Works on
      * whatever area the page is given, so a scene can frame each of its panes.
+     *
+     * A page framed alone passes its content [key], so that it can be peeked past ([PagePeek]).
      */
     @Composable
-    fun PageFrame(content: @Composable () -> Unit) {
+    fun PageFrame(key: Any? = null, content: @Composable () -> Unit) {
         if (ThemeUtil.isTranslucentTheme(ExtendedTheme.colors.theme)) {
             content()
             return
@@ -162,13 +208,56 @@ object PageTransitions {
         val host = LocalPageHost.current
         val pageX = remember { mutableFloatStateOf(0f) }
         val pageWidth = remember { mutableFloatStateOf(0f) }
+        val peek = if (key != null) LocalPagePeek.current else null
+        if (peek != null) {
+            // Rests once the scenes are still and this page is the one shown
+            LaunchedEffect(peek, key) {
+                snapshotFlow {
+                    val scenes = transition.parentTransition
+                    val still = if (scenes != null) scenes.currentState == scenes.targetState else !transition.isRunning
+                    still && transition.targetState == EnterExitState.Visible
+                }.collect { resting ->
+                    if (resting) peek.restingKey = key else if (peek.restingKey == key) peek.restingKey = null
+                }
+            }
+            DisposableEffect(peek, key) {
+                onDispose {
+                    if (peek.restingKey == key) peek.restingKey = null
+                    if (peek.topKey == key) peek.reset()
+                }
+            }
+        }
+        val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned {
                     pageX.floatValue = it.positionInRoot().x
                     pageWidth.floatValue = it.size.width.toFloat()
+                    if (peek != null && peek.topKey == key && host != null && host.width > 0f) {
+                        val slid = (pageX.floatValue - host.left) * (if (ltr) 1f else -1f)
+                        peek.exit = (slid / host.width).coerceIn(0f, 1f)
+                    }
                 }
+                .then(
+                    if (peek != null) {
+                        Modifier.graphicsLayer {
+                            val amount = if (peek.topKey == key) peek.amount else 0f
+                            if (amount > 0f) {
+                                val scale = 1f - (1f - PeekScale) * amount
+                                scaleX = scale
+                                scaleY = scale
+                                val toward = if (peek.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
+                                translationX = toward * size.width * PeekShift * amount
+                                shape = RoundedCornerShape(PeekRadius * amount)
+                                clip = true
+                                shadowElevation = PeekElevation.toPx() * amount
+                            }
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
                 .drawWithContent {
                     // Whether pages are moving, by the scene transition: a page's own transition
                     // can be left mid-way, still running, when a push is interrupted by back
@@ -198,7 +287,11 @@ object PageTransitions {
                     }
                     drawContent()
                     val width = pageWidth.floatValue
-                    val alpha = if (host != null && width > 0f && abs(width - host.width) < 1f) {
+                    val alpha = if (peek != null && peek.underKey == key) {
+                        // Underneath a peek: lifting a little as the peek grows, and going as the
+                        // page on top slides out
+                        underPageDim * (1f - PeekDimRelief * peek.amount) * (1f - peek.exit)
+                    } else if (host != null && width > 0f && abs(width - host.width) < 1f) {
                         // The page underneath sits to the start side of where it rests, covered on
                         // a push and coming back on a pop, while the page on top comes and goes on
                         // the end side and is never dimmed. How dim follows how far it is from
@@ -247,11 +340,11 @@ class FramedSinglePaneSceneStrategy<T : Any> : SceneStrategy<T> {
         FramedSinglePaneScene(entry = entries.last(), previousEntries = entries.dropLast(1))
 }
 
-private data class FramedSinglePaneScene<T : Any>(
+internal data class FramedSinglePaneScene<T : Any>(
     val entry: NavEntry<T>,
     override val previousEntries: List<NavEntry<T>>,
 ) : Scene<T> {
     override val key: Any = entry.contentKey
     override val entries: List<NavEntry<T>> = listOf(entry)
-    override val content: @Composable () -> Unit = { PageTransitions.PageFrame { entry.Content() } }
+    override val content: @Composable () -> Unit = { PageTransitions.PageFrame(key = entry.contentKey) { entry.Content() } }
 }

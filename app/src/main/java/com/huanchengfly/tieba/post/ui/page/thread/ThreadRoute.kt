@@ -105,7 +105,9 @@ fun ThreadRoute(
 
     val storeMarkDialog = rememberDialogState()
     var storeMarkUpdate by remember { mutableStateOf<Post?>(null) }
-    MyBackHandler(enabled = chrome.surface == ChromeSurface.None) {
+    // Only a stored thread may ask about its store mark on leaving; any other leaves by the navigation's
+    // own back, so the gesture peeks
+    MyBackHandler(enabled = chrome.surface == ChromeSurface.None && state.thread?.isStored == true) {
         val update = viewModel.storeMarkUpdate()
         if (update != null) {
             storeMarkUpdate = update
