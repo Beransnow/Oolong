@@ -22,6 +22,7 @@ object DatabaseModule {
                     accountPrefs = context.getSharedPreferences("accountData", Context.MODE_PRIVATE),
                 )
             )
+            .addMigrations(MIGRATION_1_2)
             .build()
 
     @Provides
