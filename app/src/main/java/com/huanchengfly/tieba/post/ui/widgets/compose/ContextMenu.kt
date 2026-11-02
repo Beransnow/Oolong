@@ -52,6 +52,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -75,7 +76,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -615,8 +615,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             item = items[open],
             from = openRow.translate(geometry.bounds.topLeft),
             menu = geometry.bounds,
-            // Closing the menu takes them along
-            progress = { min(sub.value, grow.value) },
+            progress = { sub.value },
             backdrop = backdrop,
             onFold = ::foldChildren,
             onPick = { child ->
@@ -624,6 +623,18 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     child.onClick()
                     dismiss()
                 }
+            },
+            // Closing the menu carries them along with its items, into the same drop
+            modifier = Modifier.graphicsLayer {
+                val bounds = geometry.bounds
+                val glass = geometry.glass
+                val scale = if (bounds.width > 0f) glass.width / bounds.width else 1f
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0f)
+                translationX = glass.left - bounds.left * scale
+                translationY = glass.top - bounds.top * scale
+                alpha = ((grow.value - 0.2f) / 0.3f).coerceIn(0f, 1f)
             },
         )
     }
@@ -659,20 +670,23 @@ private fun Modifier.slideToPick(scroll: ScrollState, at: (Offset) -> Int?, onOv
     }
 }
 
-/** One item of a menu: its icon, label and detail, and a check when chosen or › when it opens more. */
+/**
+ * One item of a menu: its icon, label and detail, and a check when chosen or › when it opens
+ * more. [arrow] moves and turns the ›, for a head that grows out of its row.
+ */
 @Composable
 private fun MenuRow(
     item: ContextMenuItem,
     highlighted: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    trailing: ImageVector? = when {
+    arrow: (GraphicsLayerScope.() -> Unit)? = null,
+) {
+    val trailing = when {
         item.children != null -> Symbols.ChevronRight
         item.selected -> Symbols.Check
         else -> null
-    },
-    bold: Boolean = false,
-) {
+    }
     val colors = ExtendedTheme.colors
     Row(
         modifier = modifier
@@ -702,7 +716,6 @@ private fun MenuRow(
                 text = item.label,
                 color = colors.text,
                 fontSize = 15.sp,
-                fontWeight = if (bold) FontWeight.SemiBold else null,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -715,7 +728,9 @@ private fun MenuRow(
                 trailing,
                 contentDescription = null,
                 tint = if (item.selected && item.children == null) colors.text else colors.textSecondary,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .then(if (arrow != null) Modifier.graphicsLayer(arrow) else Modifier),
             )
         }
     }
@@ -735,6 +750,7 @@ private fun ChildMenu(
     backdrop: HazeState,
     onFold: () -> Unit,
     onPick: (ContextMenuItem) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = ExtendedTheme.colors
     val insets = WindowInsets.safeDrawing
@@ -755,7 +771,7 @@ private fun ChildMenu(
     var now by remember { mutableStateOf(Rect.Zero) }
     var corner by remember { mutableFloatStateOf(0f) }
     Layout(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         content = {
             Box(
                 modifier = Modifier
@@ -807,8 +823,12 @@ private fun ChildMenu(
                     item = item,
                     highlighted = pressedOn == 0,
                     onClick = onFold,
-                    trailing = Symbols.ExpandLess,
-                    bold = true,
+                    // The row's › stays where it was and turns down as the head widens
+                    arrow = {
+                        val p = progress()
+                        translationX = lerp(from.width - final.width, 0f, p)
+                        rotationZ = 90f * p
+                    },
                     modifier = Modifier.place(0),
                 )
                 // The rest comes out of a blur as the glass reaches it
