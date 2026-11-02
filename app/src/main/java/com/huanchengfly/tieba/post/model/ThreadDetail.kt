@@ -35,6 +35,7 @@ data class ThreadDetail(
     val summary: ThreadSummary,
     /** The post the thread store marks as read up to, or null when the thread isn't stored. */
     val storeMarkPostId: Long?,
+    val poll: Poll? = null,
 ) {
     val id: Long get() = summary.id
     val title: String get() = summary.title

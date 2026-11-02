@@ -2,9 +2,12 @@ package com.huanchengfly.tieba.post.ui.page.thread
 
 import androidx.lifecycle.ViewModelStore
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
+import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
+import com.huanchengfly.tieba.post.api.models.protos.PollInfo
+import com.huanchengfly.tieba.post.api.models.protos.PollOption
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
@@ -51,6 +54,7 @@ class ThreadViewModelTest {
 
     private val remote = mockk<ThreadRemoteDataSource>(relaxed = true)
     private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
+    private val postRemote = mockk<PostRemoteDataSource>(relaxed = true)
     private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
     private val saved = mutableListOf<Pair<ThreadDetail, Post?>>()
     private val shown = mutableListOf<Int>()
@@ -92,7 +96,7 @@ class ThreadViewModelTest {
         threadInfo?.let { ThreadPreviewCache.put(it.toThreadSummary { _, _ -> }) }
         return ThreadViewModel(
             args = ThreadKey(threadId = 9_000L, postId = postId, sortType = sortType),
-            repository = ThreadRepository(remote, agreeRemote, { _, _ -> }, dispatcher),
+            repository = ThreadRepository(remote, agreeRemote, postRemote, { _, _ -> }, dispatcher),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
             },
@@ -169,6 +173,32 @@ class ThreadViewModelTest {
         runCurrent()
         val rolledBack = viewModel.state.value.posts.items.single().post.agree
         assertEquals(5L to false, rolledBack.count to rolledBack.agreed)
+        assertEquals(1, shown.size)
+    }
+
+    @Test
+    fun `a vote shows at once and is rolled back when it fails`() = runTest {
+        val poll = PollInfo(options = listOf(PollOption(id = 1, num = 3, text = "甲"), PollOption(id = 2, num = 5, text = "乙")), total_num = 8)
+        respond(data(listOf(post(2))).let { it.copy(thread = it.thread!!.copy(poll_info = poll)) })
+        val response = CompletableDeferred<Unit>()
+        coEvery { postRemote.addPollPost(any(), any(), any()) } coAnswers {
+            response.await()
+            throw IOException("network")
+        }
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.vote(setOf(2))
+        runCurrent()
+        val voted = viewModel.state.value.thread?.poll!!
+        assertEquals(listOf(3L, 6L), voted.options.map { it.votes })
+        assertEquals(9L to setOf(2), voted.voters to voted.chosen)
+
+        response.complete(Unit)
+        runCurrent()
+        val rolledBack = viewModel.state.value.thread?.poll!!
+        assertEquals(listOf(3L, 5L), rolledBack.options.map { it.votes })
+        assertEquals(false, rolledBack.hasVoted)
         assertEquals(1, shown.size)
     }
 

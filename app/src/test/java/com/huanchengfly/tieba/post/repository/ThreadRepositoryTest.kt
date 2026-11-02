@@ -1,8 +1,11 @@
 package com.huanchengfly.tieba.post.repository
 
+import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
+import com.huanchengfly.tieba.post.api.models.protos.PollInfo
+import com.huanchengfly.tieba.post.api.models.protos.PollOption
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.SubPost
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList
@@ -30,7 +33,8 @@ import com.huanchengfly.tieba.post.api.models.protos.User as ProtoUser
 
 class ThreadRepositoryTest {
     private val remote = mockk<ThreadRemoteDataSource>()
-    private val repository = ThreadRepository(remote, mockk(), { _, _ -> }, Dispatchers.Unconfined)
+    private val postRemote = mockk<PostRemoteDataSource>(relaxed = true)
+    private val repository = ThreadRepository(remote, mockk(), postRemote, { _, _ -> }, Dispatchers.Unconfined)
 
     private val lz = ProtoUser(id = 10, name = "lz", nameShow = "楼主", portrait = "p10", level_id = 12)
     private val replier = ProtoUser(id = 20, name = "replier", nameShow = "", portrait = "p20", level_id = 3)
@@ -168,6 +172,18 @@ class ThreadRepositoryTest {
         assertEquals(20, post.author.id)
         assertEquals("replier", post.author.name)
         assertEquals(20, post.subPosts.single().author.id)
+    }
+
+    @Test
+    fun `a thread's poll comes with the page and votes go to the thread`() = runTest {
+        val poll = PollInfo(title = "选哪个", options = listOf(PollOption(id = 1, text = "甲"), PollOption(id = 2, text = "乙")))
+        respond(data(listOf(post(1, 1, lz)), thread = ThreadInfo(id = 9_000, author = lz, poll_info = poll)))
+
+        val thread = repository.page(ThreadQuery(9_000), ThreadCursor.Number(0)).thread
+        assertEquals("选哪个", thread.poll?.title)
+
+        repository.vote(thread, listOf(1, 2))
+        coVerify { postRemote.addPollPost(9_000, 52, listOf(1, 2)) }
     }
 
     @Test

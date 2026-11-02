@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.repository
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
+import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
@@ -125,6 +126,7 @@ data class FloorPage(
 class ThreadRepository @Inject constructor(
     private val remote: ThreadRemoteDataSource,
     private val agreeRemote: AgreeRemoteDataSource,
+    private val postRemote: PostRemoteDataSource,
     private val emoticons: EmoticonRegistry,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
@@ -180,6 +182,10 @@ class ThreadRepository @Inject constructor(
     suspend fun agreeThread(thread: ThreadDetail, agree: Boolean) = withContext(io) {
         agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
         Unit
+    }
+
+    suspend fun vote(thread: ThreadDetail, optionIds: Collection<Int>) = withContext(io) {
+        postRemote.addPollPost(thread.id, thread.forum.id, optionIds.toList())
     }
 
     suspend fun agreePost(thread: ThreadDetail, postId: Long, agree: Boolean) =
@@ -249,6 +255,7 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
                 )
             },
             storeMarkPostId = if (thread.collectStatus != 0) thread.collectMarkPid.toLongOrNull() ?: 0L else null,
+            poll = thread.poll_info?.toPoll(),
         ),
         firstPost = firstPost,
         posts = Page(

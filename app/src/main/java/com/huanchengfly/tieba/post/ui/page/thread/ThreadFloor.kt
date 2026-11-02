@@ -489,6 +489,14 @@ fun ThreadFirstPost(
                 photoViewData = photoViewData,
                 onOpenUser = { onEvent(ThreadEvent.OpenUser(it)) },
             )
+            thread?.poll?.let { poll ->
+                PollCard(
+                    poll = poll,
+                    canVote = state.viewer.isLoggedIn,
+                    onVote = { onEvent(ThreadEvent.Vote(it)) },
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp),
+                )
+            }
             if (thread != null) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(

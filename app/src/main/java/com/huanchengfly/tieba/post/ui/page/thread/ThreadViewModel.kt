@@ -266,6 +266,27 @@ class ThreadViewModel @AssistedInject constructor(
         }
     }
 
+    /** Votes for [optionIds] in the thread's poll, shown at once and rolled back if it fails. */
+    fun vote(optionIds: Set<Int>) = actions.launch("vote") {
+        val thread = meta.value.page?.thread ?: return@launch
+        val poll = thread.poll?.takeIf { !it.hasVoted && !it.closed && optionIds.isNotEmpty() } ?: return@launch
+        updateThread {
+            it.copy(
+                poll = poll.copy(
+                    options = poll.options.map { option -> if (option.id in optionIds) option.copy(votes = option.votes + 1) else option }
+                        .toImmutableList(),
+                    voters = poll.voters + 1,
+                    hasVoted = true,
+                    chosen = optionIds.toImmutableSet(),
+                ),
+            )
+        }
+        runCatching { repository.vote(thread, optionIds) }.onFailure { e ->
+            updateThread { it.copy(poll = poll) }
+            messages.showError(R.string.toast_vote_failed, e)
+        }
+    }
+
     fun agreePost(postId: Long) = actions.launch("agree-$postId") {
         val thread = meta.value.page?.thread ?: return@launch
         val post = posts.state.value.items.firstOrNull { it.id == postId } ?: return@launch

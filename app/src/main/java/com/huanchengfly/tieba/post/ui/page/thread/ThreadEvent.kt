@@ -18,6 +18,7 @@ sealed interface ThreadEvent {
     data object OpenMenu : ThreadEvent
     data object AgreeThread : ThreadEvent
     data class AgreePost(val postId: Long) : ThreadEvent
+    data class Vote(val optionIds: Set<Int>) : ThreadEvent
     data object OpenForum : ThreadEvent
     data class OpenUser(val userId: Long) : ThreadEvent
 
