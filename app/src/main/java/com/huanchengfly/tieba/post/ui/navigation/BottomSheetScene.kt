@@ -1,8 +1,11 @@
 package com.huanchengfly.tieba.post.ui.navigation
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
@@ -11,7 +14,9 @@ import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavMetadataKey
@@ -22,6 +27,9 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -58,7 +66,7 @@ private class BottomSheetScene<T : Any>(
     override val content: @Composable () -> Unit = {
         val state = rememberModalBottomSheetState(
             ModalBottomSheetValue.Hidden,
-            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            animationSpec = Motion.settle(),
             skipHalfExpanded = true,
         )
         LaunchedEffect(state) {
@@ -75,11 +83,22 @@ private class BottomSheetScene<T : Any>(
             hidden.complete(Unit)
         }
         ModalBottomSheetLayout(
-            sheetContent = { entry.Content() },
+            sheetContent = {
+                // The handle says the sheet can be dragged down to close
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 8.dp)
+                        .size(width = 36.dp, height = 5.dp)
+                        .clip(CircleShape)
+                        .background(ExtendedTheme.colors.text.copy(alpha = 0.18f))
+                )
+                entry.Content()
+            },
             sheetState = state,
-            sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+            sheetShape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
             sheetBackgroundColor = ExtendedTheme.colors.sheet,
-            scrimColor = Color.Black.copy(alpha = 0.32f),
+            scrimColor = ExtendedTheme.colors.scrim,
             content = {},
         )
     }
