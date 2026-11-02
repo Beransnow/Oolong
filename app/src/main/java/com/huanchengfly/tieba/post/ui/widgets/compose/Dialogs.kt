@@ -152,7 +152,6 @@ fun TimePickerDialog(
                     onValueChange?.invoke(it)
                 },
                 is24TimeFormat = is24TimeFormat,
-                modifier = Modifier.height(150.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
