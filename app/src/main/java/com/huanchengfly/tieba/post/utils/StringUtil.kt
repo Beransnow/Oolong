@@ -187,9 +187,14 @@ object StringUtil {
         return toLong().getShortNumeralString()
     }
 
-    /** A count in the numeral face, which has no Chinese: 1.2W from 10,000, whole W from 10,000,000. */
+    /**
+     * A count in the numeral face, which has no Chinese: in Chinese 1.2W from 10,000 and whole W
+     * from 10,000,000; otherwise 12.3K from 10,000 and 1.2M from 1,000,000.
+     */
     fun Long.getShortNumeralString(): String = when {
         this < 10_000 -> "$this"
+        Locale.getDefault().language != "zh" ->
+            if (this < 1_000_000) "${this / 100 / 10f}K" else "${this / 100_000 / 10f}M"
         this < 10_000_000 -> "${this / 1_000 / 10f}W"
         else -> "${this / 10_000}W"
     }

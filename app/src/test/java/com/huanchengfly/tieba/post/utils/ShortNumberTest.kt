@@ -26,4 +26,13 @@ class ShortNumberTest {
         assertEquals("999.9W", 9_999_999L.getShortNumeralString())
         assertEquals("1234W", 12_345_678L.getShortNumeralString())
     }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `the numeral face counts in K and M in English`() {
+        assertEquals("9999", 9_999L.getShortNumeralString())
+        assertEquals("12.3K", 12_345L.getShortNumeralString())
+        assertEquals("999.9K", 999_999L.getShortNumeralString())
+        assertEquals("12.3M", 12_345_678L.getShortNumeralString())
+    }
 }
