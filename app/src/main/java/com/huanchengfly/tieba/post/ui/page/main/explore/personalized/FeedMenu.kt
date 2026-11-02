@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
 import android.content.Context
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
@@ -13,7 +11,6 @@ import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +28,6 @@ import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.widgets.compose.ButtonSwell
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
@@ -56,15 +52,8 @@ fun FeedMenu(
     val menus = LocalContextMenus.current
     var bounds by remember { mutableStateOf(Rect.Zero) }
     var menuId by remember { mutableStateOf<Long?>(null) }
-    // The menu holds the icon while it shows, and gives it back swollen
+    // The menu holds the icon while it shows, and gives it back where it took it
     val open = menus?.isShowing(menuId) == true
-    val scale = remember { Animatable(1f) }
-    LaunchedEffect(open) {
-        if (!open && menuId != null) {
-            scale.snapTo(ButtonSwell)
-            scale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 600f))
-        }
-    }
 
     IconButton(
         onClick = {
@@ -83,11 +72,7 @@ fun FeedMenu(
             imageVector = Icons.Rounded.MoreHoriz,
             contentDescription = stringResource(id = R.string.btn_more),
             tint = ExtendedTheme.colors.textSecondary,
-            modifier = Modifier.graphicsLayer {
-                alpha = if (open) 0f else 1f
-                scaleX = scale.value
-                scaleY = scale.value
-            },
+            modifier = Modifier.graphicsLayer { alpha = if (open) 0f else 1f },
         )
     }
 }

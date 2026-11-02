@@ -225,10 +225,9 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
 
     val fromButton = !request.anchor.isEmpty
     val preview = request.preview
-    // Out of a button, the button first swells in place, then sets off towards the menu's place
-    // as a drop and grows into the menu on the way, its size trailing its position. Out of a
-    // press there is nothing to carry: the menu simply grows from where the finger is.
-    val swell = remember { Animatable(0f) }
+    // Out of a button, a drop the size of its icon sets off towards the menu's place and grows
+    // into the menu on the way, its size trailing its position. Out of a press there is nothing
+    // to carry: the menu simply grows from where the finger is.
     val move = remember { Animatable(0f) }
     val grow = remember { Animatable(0f) }
     // A preview grows out of what was pressed, and its menu follows a moment later
@@ -240,7 +239,6 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             delay(PreviewLead)
         }
         if (fromButton) {
-            swell.animateTo(1f, Motion.press(Motion.ProgressThreshold))
             launch { move.animateTo(1f, MoveSpring) }
             delay(GrowDelay)
         }
@@ -327,7 +325,10 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         val g = grow.value.coerceIn(0f, 1f)
                         shape = SmoothCornerShape((geometry.corner / density).dp)
                         clip = true
-                        shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * (0.3f + 0.7f * g)
+                        shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * g
+                        // A button has no backing of its own, so the drop condenses out of nothing
+                        // around its icon, and melts back into it
+                        alpha = if (fromButton) (g / DropFadeIn).coerceIn(0f, 1f) else 1f
                         ambientShadowColor = ShadowAmbient
                         spotShadowColor = ShadowSpot
                     }
@@ -351,10 +352,10 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                             // Rides in the middle of the drop, and melts into the items as it grows
                             translationX = glass.center.x - anchor.center.x
                             translationY = glass.center.y - anchor.center.y
-                            val scale = lerp(1f, ButtonSwell, swell.value) * lerp(1f, 1.8f, g)
+                            val scale = lerp(1f, 1.6f, g)
                             scaleX = scale
                             scaleY = scale
-                            val fade = ((g - 0.1f) / 0.3f).coerceIn(0f, 1f)
+                            val fade = ((g - 0.05f) / 0.3f).coerceIn(0f, 1f)
                             alpha = 1f - fade
                             val blur = IconBlur.toPx() * fade
                             renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
@@ -515,8 +516,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         val g = grow.value
         geometry.bounds = bounds
         if (fromButton) {
-            // Starts as the round backing a pressed button shows
-            val startSize = ButtonRadius.toPx() * 2 * lerp(1f, ButtonSwell, swell.value)
+            // Starts as a round drop around the button's icon
+            val startSize = anchor.minDimension
             val m = move.value
             val center = Offset(lerp(anchor.center.x, bounds.center.x, m), lerp(anchor.center.y, bounds.center.y, m))
             val half = Offset(lerp(startSize, bounds.width, g), lerp(startSize, bounds.height, g)) / 2f
@@ -636,8 +637,8 @@ private val ShrinkSpring = spring<Float>(dampingRatio = 1f, stiffness = 900f, vi
 /** How far growing trails moving, and moving home trails shrinking. */
 private const val GrowDelay = 40L
 
-/** How much a button swells as its menu opens, and lands back from as it closes. */
-internal const val ButtonSwell = 1.1f
+/** How far into growing a button's drop has fully condensed. */
+private const val DropFadeIn = 0.25f
 
 /** How long a preview grows before its menu starts to. */
 private const val PreviewLead = 60L
@@ -652,7 +653,6 @@ private val PreviewGap = 12.dp
 private val PreviewBackdropBlur = 20.dp
 private const val PreviewDim = 0.12f
 private const val PreviewDimNight = 0.3f
-private val ButtonRadius = 20.dp
 private val FingerGap = 20.dp
 private val Margin = 12.dp
 private val IconBlur = 20.dp
