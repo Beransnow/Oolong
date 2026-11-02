@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -107,12 +108,13 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val viewModel = hiltViewModel<ThreadPeekViewModel>()
     val context = LocalContext.current
     val navigator = LocalNavigator.current
-    return remember(menus, context, navigator, viewModel) {
+    val collect = stringResource(id = R.string.title_collect)
+    return remember(menus, context, navigator, viewModel, collect) {
         ThreadPeeker { thread, from, at, options, onDislike ->
             viewModel.load(thread)
             val preview = viewModel.preview(thread)
             val items = buildList {
-                add(ContextMenuItem(Icons.Rounded.StarBorder, context.getString(R.string.title_collect)) { viewModel.store(thread) })
+                add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
                 addAll(shareMenuItems(context, thread.threadId, thread.title))
                 dislikeMenuItems(context, navigator, options, onDislike).forEachIndexed { i, item ->
                     add(if (i == 0) item.copy(startsGroup = true) else item)
