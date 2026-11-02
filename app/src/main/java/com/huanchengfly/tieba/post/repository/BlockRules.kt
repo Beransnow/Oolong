@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import java.text.Normalizer
+import java.util.BitSet
 import java.util.IdentityHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -178,10 +179,13 @@ fun blockRulesOf(
     val active = rules.filter { it.isActive(now) } +
         listOfNotNull(options.lowLevel?.let { BlockRule(id = LowLevelRuleId, condition = Condition.LevelBelow(it)) })
     if (active.isEmpty()) return NoBlockRules
-    val (exceptions, blocks) = active.map(::CompiledRule).partition { it.rule.action == BlockRule.Action.Allow }
+    // Every rule's keywords are looked for together, in one pass over each text
+    val words = LinkedHashMap<String, Int>()
+    val (exceptions, blocks) = active.map { CompiledRule(it, words) }.partition { it.rule.action == BlockRule.Action.Allow }
+    val finder = WordFinder(words.keys.toList())
     return BlockRules { item ->
         // Whatever rules look at is worked out once for all of them
-        val subject = Subject(item)
+        val subject = Subject(item, finder)
         if (exceptions.any { it.matches(subject) }) return@BlockRules null
         val rule = blocks.firstOrNull { it.matches(subject) }?.rule ?: return@BlockRules null
         onHit(rule, item)
@@ -204,8 +208,9 @@ private object NoBlockRules : BlockRules {
 }
 
 /** An item with what tests compare, each worked out when first needed. */
-private class Subject(val item: Blockable) {
+private class Subject(val item: Blockable, private val finder: WordFinder) {
     private val normalized = arrayOfNulls<String>(TextField.entries.size)
+    private val found = arrayOfNulls<BitSet>(TextField.entries.size)
     private val both by lazy(LazyThreadSafetyMode.NONE) { item.title + "\n" + item.content }
     val names by lazy(LazyThreadSafetyMode.NONE) {
         listOf(item.author.name, item.author.nameShow).filter { it.isNotBlank() }.distinct()
@@ -221,6 +226,9 @@ private class Subject(val item: Blockable) {
     /** [text] as keywords are matched against it. */
     fun words(field: TextField): String =
         normalized[field.ordinal] ?: normalizeForMatching(text(field)).also { normalized[field.ordinal] = it }
+
+    /** The numbers of the rules' keywords that [field] contains. */
+    fun found(field: TextField): BitSet = found[field.ordinal] ?: finder.find(words(field)).also { found[field.ordinal] = it }
 }
 
 private typealias Test = (Subject) -> Boolean
@@ -237,10 +245,10 @@ private const val CostWords = 1
 /** Running a pattern over the text. */
 private const val CostPattern = 2
 
-private class CompiledRule(val rule: BlockRule) {
+private class CompiledRule(val rule: BlockRule, words: MutableMap<String, Int>) {
     // A test that can't be judged, such as a broken pattern, leaves the whole rule doing nothing:
     // turned around, it would otherwise match everything
-    private val test: Test = compile(rule.condition)?.test ?: { false }
+    private val test: Test = compile(rule.condition, words)?.test ?: { false }
 
     // A rule only about forums blocks their threads elsewhere; opening the forum itself shows them
     private val forumOnly = rule.condition.tests.let { tests -> tests.isNotEmpty() && tests.all { it is Condition.Forum } } &&
@@ -258,24 +266,25 @@ private class CompiledRule(val rule: BlockRule) {
  * [condition] as a test, or null when it can't be judged. Tests joined together run the cheap ones
  * first: which runs first changes nothing but how soon the answer is known.
  */
-private fun compile(condition: Condition): Compiled? = when (condition) {
-    is Condition.AllOf -> condition.conditions.map { compile(it) ?: return null }.sortedBy { it.cost }
+private fun compile(condition: Condition, words: MutableMap<String, Int>): Compiled? = when (condition) {
+    is Condition.AllOf -> condition.conditions.map { compile(it, words) ?: return null }.sortedBy { it.cost }
         .takeIf { it.isNotEmpty() }
         ?.let { parts -> Compiled({ subject -> parts.all { it.test(subject) } }, parts.maxOf { it.cost }) }
-    is Condition.AnyOf -> condition.conditions.map { compile(it) ?: return null }.sortedBy { it.cost }
+    is Condition.AnyOf -> condition.conditions.map { compile(it, words) ?: return null }.sortedBy { it.cost }
         .takeIf { it.isNotEmpty() }
         ?.let { parts -> Compiled({ subject -> parts.any { it.test(subject) } }, parts.maxOf { it.cost }) }
-    is Condition.Not -> compile(condition.condition)?.let { part -> Compiled({ subject -> !part.test(subject) }, part.cost) }
+    is Condition.Not -> compile(condition.condition, words)?.let { part -> Compiled({ subject -> !part.test(subject) }, part.cost) }
 
     is Condition.Text -> when (val pattern = condition.pattern) {
         is BlockRule.Pattern.Regex -> regexOf(pattern)?.let { regex ->
             Compiled({ subject -> regex.containsMatchIn(subject.text(condition.field)) }, CostPattern)
         }
-        is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { words ->
+        // By the numbers [WordFinder] gives its words
+        is BlockRule.Pattern.Words -> wordsOf(pattern)?.map { word -> words.getOrPut(word) { words.size } }?.let { ids ->
             Compiled(
                 { subject ->
-                    val text = subject.words(condition.field)
-                    words.all { it in text }
+                    val found = subject.found(condition.field)
+                    ids.all(found::get)
                 },
                 CostWords,
             )
@@ -298,8 +307,8 @@ private fun compile(condition: Condition): Compiled? = when (condition) {
         is BlockRule.Pattern.Regex -> regexOf(pattern)?.let { regex ->
             Compiled({ subject -> subject.names.any { regex.containsMatchIn(it) } }, CostPattern)
         }
-        is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { words ->
-            Compiled({ subject -> subject.normalizedNames.any { name -> words.all { it in name } } }, CostWords)
+        is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { wanted ->
+            Compiled({ subject -> subject.normalizedNames.any { name -> wanted.all { it in name } } }, CostWords)
         }
     }
     is Condition.LevelBelow -> condition.level.takeIf { it > 0 }?.let { level -> cheap { subject -> subject.item.author.level in 1 until level } }
