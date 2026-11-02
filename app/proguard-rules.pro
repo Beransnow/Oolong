@@ -140,6 +140,11 @@
 
 # Retrofit
 -dontwarn retrofit2.**
+# Retrofit reads what a suspend call returns from the generic signature of its Continuation.
+# When nothing reads a response, R8 deletes its class and rewrites that signature to Object,
+# which no converter takes, so the call fails; the services' response classes are kept.
+-keep,allowobfuscation,allowoptimization class com.huanchengfly.tieba.core.network.**.*Response
+-keep,allowobfuscation,allowoptimization class com.huanchengfly.tieba.post.api.models.protos.**Response
 
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
