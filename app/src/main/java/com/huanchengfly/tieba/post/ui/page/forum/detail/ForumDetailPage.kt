@@ -50,7 +50,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
+import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumeralString
 
 @Composable
 fun ForumDetailPage(
@@ -169,7 +169,7 @@ private fun RowScope.StatCardItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = statNum.getShortNumString(),
+            text = statNum.getShortNumeralString(),
             fontSize = 20.sp,
             fontFamily = FontFamily(
                 Typeface.createFromAsset(

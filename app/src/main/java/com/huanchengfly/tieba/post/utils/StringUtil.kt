@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.utils
 
 import android.content.Context
+import android.icu.text.CompactDecimalFormat
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -22,6 +23,7 @@ import com.huanchengfly.tieba.post.components.spans.EmoticonSpanV2
 import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonDrawable
 import com.huanchengfly.tieba.post.utils.EmoticonManager.getEmoticonIdByName
+import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.roundToInt
 
@@ -175,18 +177,20 @@ object StringUtil {
         return toLong().getShortNumString()
     }
 
+    /** A count for running text: in full below 10,000, then as 1.2万 or 1.2亿, worded for the language. */
     fun Long.getShortNumString(): String {
-        val long = this
-        return if (long > 9999) {
-            val longW = long * 10 / 10000L / 10F
-            if (longW > 999) {
-                val longKW = longW.toLong() * 10 / 1000L / 10F
-                "${longKW}KW"
-            } else {
-                "${longW}W"
-            }
-        } else {
-            "$this"
-        }
+        if (this < 10_000) return "$this"
+        return CompactDecimalFormat.getInstance(Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT).format(this)
+    }
+
+    fun Int.getShortNumeralString(): String {
+        return toLong().getShortNumeralString()
+    }
+
+    /** A count in the numeral face, which has no Chinese: 1.2W from 10,000, whole W from 10,000,000. */
+    fun Long.getShortNumeralString(): String = when {
+        this < 10_000 -> "$this"
+        this < 10_000_000 -> "${this / 1_000 / 10f}W"
+        else -> "${this / 10_000}W"
     }
 }
