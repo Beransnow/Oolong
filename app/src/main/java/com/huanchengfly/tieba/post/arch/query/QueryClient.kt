@@ -66,6 +66,9 @@ class Query<K : Any, T : Any> internal constructor(
     /** The result for [key]: the kept one while fresh, else that of the request already running or a new one. */
     suspend fun get(key: K): T = client.get(this, key)
 
+    /** Loads [key] again even if fresh, joining a request already running, and returns the result. */
+    suspend fun reload(key: K): T = client.reload(this, key)
+
     /** The kept result for [key], fresh or not, without loading it. */
     fun peek(key: K): T? = client.peek(this, key)
 
@@ -171,6 +174,10 @@ class QueryClient(
 
     internal suspend fun <K : Any, T : Any> get(query: Query<K, T>, key: K): T {
         if (isFresh(query, key)) peek(query, key)?.let { return it }
+        return reload(query, key)
+    }
+
+    internal suspend fun <K : Any, T : Any> reload(query: Query<K, T>, key: K): T {
         @Suppress("UNCHECKED_CAST")
         val data = start(query, key).await() as T
         return state.value.read(data, query.normalize)

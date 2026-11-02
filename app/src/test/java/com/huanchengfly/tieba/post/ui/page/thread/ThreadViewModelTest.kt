@@ -100,12 +100,12 @@ class ThreadViewModelTest {
         threadInfo: ThreadInfo? = null,
         appScope: CoroutineScope = backgroundScope,
         client: QueryClient = queryClient(),
+        repository: ThreadRepository = threadRepository(client),
     ): ThreadViewModel {
-        val dispatcher = mainDispatcherRule.dispatcher
         threadInfo?.let { listing(client, it.toThreadSummary { _, _ -> }) }
         return ThreadViewModel(
             args = ThreadKey(threadId = 9_000L, postId = postId, sortType = sortType),
-            repository = ThreadRepository(remote, agreeRemote, postRemote, { _, _ -> }, dispatcher),
+            repository = repository,
             client = client,
             threads = threadActions(client, agreeRemote),
             blockRuleSource = object : BlockRuleSource {
@@ -162,6 +162,27 @@ class ThreadViewModelTest {
         blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
         assertEquals(listOf(true, false), viewModel.state.value.posts.items.map { it.blocked })
+    }
+
+    private fun threadRepository(client: QueryClient) =
+        ThreadRepository(remote, agreeRemote, postRemote, { _, _ -> }, mainDispatcherRule.dispatcher, client)
+
+    @Test
+    fun `a thread peeked at opens without loading it again, and refreshing loads it again`() = runTest {
+        respond(data(listOf(post(2))), data(listOf(post(2), post(3))))
+        val client = queryClient()
+        val repository = threadRepository(client)
+        repository.prefetch(ThreadKey(threadId = 9_000L).query())
+        runCurrent()
+
+        val viewModel = createViewModel(client = client, repository = repository)
+        runCurrent()
+        assertEquals(listOf(2L), viewModel.state.value.posts.items.map { it.post.id })
+        coVerify(exactly = 1) { remote.page(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+
+        viewModel.refresh()
+        runCurrent()
+        assertEquals(listOf(2L, 3L), viewModel.state.value.posts.items.map { it.post.id })
     }
 
     /** A list showing [threads], as the one a thread is opened from. */

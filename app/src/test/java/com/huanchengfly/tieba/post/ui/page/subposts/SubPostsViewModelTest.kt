@@ -15,6 +15,7 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -72,7 +73,7 @@ class SubPostsViewModelTest {
     private fun TestScope.createViewModel(postId: Long = 77, subPostId: Long = 0, loadFromSubPost: Boolean = false) =
         SubPostsViewModel(
             key = SubPostsKey(threadId = 9_000L, postId = postId, subPostId = subPostId, loadFromSubPost = loadFromSubPost),
-            repository = ThreadRepository(remote, agreeRemote, mockk(), { _, _ -> }, mainDispatcherRule.dispatcher),
+            repository = ThreadRepository(remote, agreeRemote, mockk(), { _, _ -> }, mainDispatcherRule.dispatcher, queryClient()),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
             },

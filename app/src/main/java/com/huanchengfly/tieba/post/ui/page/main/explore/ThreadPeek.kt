@@ -31,7 +31,9 @@ import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.shareMenuIt
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
 import com.huanchengfly.tieba.post.ui.page.thread.FirstPostContent
+import com.huanchengfly.tieba.post.ui.page.thread.key
 import com.huanchengfly.tieba.post.ui.page.thread.navigateToThread
+import com.huanchengfly.tieba.post.ui.page.thread.query
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuPreview
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
@@ -40,13 +42,15 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import javax.inject.Inject
 
-/** Storing a thread from its peek. */
+/** Storing a thread from its peek, and loading it meanwhile so that opening it shows it at once. */
 @HiltViewModel
 class ThreadPeekViewModel @Inject constructor(
     private val repository: ThreadRepository,
     private val messages: MessageController,
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
+
+    fun prefetch(thread: ThreadSummary) = repository.prefetch(thread.key().query())
 
     fun store(thread: ThreadSummary) = actions.launch("store-${thread.id}") {
         runCatching { repository.addStore(thread.id, thread.firstPostId) }
@@ -85,6 +89,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val shortcuts = LocalBlockShortcuts.current
     return remember(menus, context, navigator, viewModel, collect, shortcuts) {
         ThreadPeeker { thread, from, at, options, onDislike ->
+            viewModel.prefetch(thread)
             val items = buildList {
                 add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
                 addAll(shareMenuItems(context, thread.id, thread.title))

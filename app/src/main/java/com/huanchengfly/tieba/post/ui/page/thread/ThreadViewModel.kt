@@ -110,15 +110,7 @@ class ThreadViewModel @AssistedInject constructor(
     private val messages: MessageController,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : ViewModel() {
-    private val query = MutableStateFlow(
-        ThreadQuery(
-            threadId = args.threadId,
-            sort = ThreadSort.entries.firstOrNull { it.value == args.sortType } ?: ThreadSort.OldestFirst,
-            seeLz = args.seeLz,
-            forumId = args.forumId,
-            fromStore = args.from == ThreadPageFrom.FROM_STORE,
-        )
-    )
+    private val query = MutableStateFlow(args.query())
 
     /** What each loaded page says about the thread, as opposed to its posts. */
     private val meta = MutableStateFlow(Meta())
@@ -145,8 +137,12 @@ class ThreadViewModel @AssistedInject constructor(
     /** A post to scroll to as soon as a page containing it loads. */
     private var scrollToPost: Long? = args.postId.takeIf { it != 0L }
 
+    /** Whether nothing loaded yet: a first page just loaded, e.g. while peeking at the thread, is used then. */
+    private var opening = true
+
     private val posts = pager(initialKey = refreshKey, itemKey = { post: Post -> post.id }) { key ->
-        val page = repository.page(query.value, key)
+        val page = repository.page(query.value, key, cached = opening)
+        opening = false
         meta.update { meta ->
             meta.copy(
                 page = page.copy(firstPost = page.firstPost ?: meta.page?.firstPost),
@@ -383,6 +379,7 @@ class ThreadViewModel @AssistedInject constructor(
      * post where it is.
      */
     fun onReplySent(newPostId: Long, inPost: Long? = null) {
+        repository.changed(args.threadId)
         if (inPost != null) return reloadPost(inPost)
         scrollToPost = newPostId
         when {

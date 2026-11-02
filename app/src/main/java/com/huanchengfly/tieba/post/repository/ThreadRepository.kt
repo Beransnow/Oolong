@@ -12,6 +12,7 @@ import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.BawuType
 import com.huanchengfly.tieba.post.model.ForumSummary
@@ -25,6 +26,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.minutes
 import com.huanchengfly.tieba.post.api.models.protos.Agree as ProtoAgree
 import com.huanchengfly.tieba.post.api.models.protos.Post as ProtoPost
 import com.huanchengfly.tieba.post.api.models.protos.SubPostList as ProtoSubPost
@@ -129,8 +131,32 @@ class ThreadRepository @Inject constructor(
     private val postRemote: PostRemoteDataSource,
     private val emoticons: EmoticonRegistry,
     @IoDispatcher private val io: CoroutineDispatcher,
+    client: QueryClient,
 ) {
-    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
+    /** First pages, kept a little so that peeking at a thread and then opening it loads it once. */
+    private val firstPages = client.query<ThreadQuery, ThreadPage>(
+        name = "thread",
+        staleTime = 1.minutes,
+        normalize = { it.copy(thread = it.thread.copy(summary = Threads(it.thread.summary))) },
+    ) { query -> load(query, ThreadCursor.first()) }
+
+    /**
+     * A page of the thread. With [cached], the first page loaded in the last minute is used again,
+     * as when opening a thread just peeked at; any first page loaded is kept for that.
+     */
+    suspend fun page(query: ThreadQuery, cursor: ThreadCursor, cached: Boolean = false): ThreadPage = when {
+        cursor != ThreadCursor.first() -> load(query, cursor)
+        cached -> firstPages.get(query)
+        else -> firstPages.reload(query)
+    }
+
+    /** Starts loading the first page of [query] ahead of opening it. */
+    fun prefetch(query: ThreadQuery) = firstPages.prefetch(query)
+
+    /** Forgets the first pages kept of thread [threadId], which changed. */
+    fun changed(threadId: Long) = firstPages.invalidate { it.threadId == threadId }
+
+    private suspend fun load(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
         val data = remote.page(
             threadId = query.threadId,
             page = when (cursor) {
@@ -176,7 +202,7 @@ class ThreadRepository @Inject constructor(
         tbs: String?,
     ) = withContext(io) {
         remote.deletePost(forum.id, forum.name, threadId, postId, ownPost, isSubPost = isSubPost, tbs = tbs)
-    }
+    }.also { changed(threadId) }
 
     suspend fun vote(thread: ThreadDetail, optionIds: Collection<Int>) = withContext(io) {
         postRemote.addPollPost(thread.id, thread.forum.id, optionIds.toList())
@@ -205,12 +231,12 @@ class ThreadRepository @Inject constructor(
         tbs: String?,
     ) = withContext(io) {
         remote.deletePost(thread.forum.id, thread.forum.name, thread.id, postId, ownPost, tbs = tbs)
-    }
+    }.also { changed(thread.id) }
 
     suspend fun deleteThread(thread: ThreadDetail, ownThread: Boolean, tbs: String?) =
         withContext(io) {
             remote.deleteThread(thread.forum.id, thread.forum.name, thread.id, ownThread, tbs = tbs)
-        }
+        }.also { changed(thread.id) }
 }
 
 internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: EmoticonRegistry): ThreadPage {
