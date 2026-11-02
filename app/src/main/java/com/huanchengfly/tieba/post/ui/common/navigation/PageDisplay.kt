@@ -19,12 +19,14 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.rememberLifecycleOwner
 import androidx.navigation3.scene.OverlayScene
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
 /** A scene by its class and key: recalculated for the same pages, a scene is still the same one. */
@@ -80,23 +82,35 @@ fun <T : Any> PageDisplay(
     val segment = remember { Segment() }
     val zIndices = remember { mutableStateMapOf(wanted to 0f) }
 
+    // How fast the transition moves while it plays by itself, for turning it round from that pace
+    LaunchedEffect(state) {
+        var last = state.fraction
+        var lastTime = withFrameNanos { it }
+        while (true) {
+            val time = withFrameNanos { it }
+            if (fraction.played) {
+                val now = state.fraction
+                val dt = (time - lastTime) / 1_000_000_000f
+                if (dt > 0f && state.currentState != state.targetState) fraction.velocity = (now - last) / dt
+                last = now
+            }
+            lastTime = time
+        }
+    }
     // Keyed on the peek too: letting go of one wants the same scene, now to be gone through
     LaunchedEffect(wanted, peeking) {
         val from = state.currentState
         val to = state.targetState
-        // After a transition that was played rather than driven, pick up from where it got to
+        // After a transition that played by itself, pick up from where it got to
         if (fraction.played) {
             fraction.value = state.fraction
-            fraction.velocity = 0f
             fraction.played = false
         }
         when (wanted) {
             // Going on, or settled with the scene recalculated
-            to -> if (from != to) {
-                state.driveTo(1f, segment.drive, fraction)
-                state.snapTo(wanted)
-            }
-            // Turning round
+            to -> if (from != to) state.play(wanted, segment.drive, fraction)
+            // Turning round: driven, from where it is and as fast as it moves, so it carries on a
+            // moment before it comes back
             from -> {
                 state.driveTo(0f, segment.drive, fraction)
                 state.snapTo(wanted)
@@ -108,22 +122,22 @@ fun <T : Any> PageDisplay(
                 val next = fromScene?.let { transitionFor(it, toScene, peeking) }
                 segment.transform = next?.transform
                 segment.drive = next?.drive ?: segment.drive
-                zIndices[wanted] = (zIndices[to] ?: 0f) + (next?.zIndex ?: 0f)
+                // A page coming in goes over every page still showing, and one coming back under them
+                val shownZ = listOf(from, to).mapNotNull { zIndices[it] }
+                zIndices[wanted] = when {
+                    next == null || next.zIndex == 0f -> zIndices[to] ?: 0f
+                    next.zIndex > 0f -> (shownZ.maxOrNull() ?: 0f) + next.zIndex
+                    else -> (shownZ.minOrNull() ?: 0f) + next.zIndex
+                }
                 fraction.value = 0f
                 fraction.velocity = 0f
-                if (from != to && !peeking) {
-                    // Pages were still moving to another scene. The transition carries their
-                    // movement on to the end alongside the new one, and while it does, seeking
-                    // waits for it: so the new one plays, rather than being driven
-                    fraction.played = true
-                    state.animateTo(wanted, segment.drive)
-                } else {
-                    state.seekTo(0f, wanted)
+                // Pages still moving to another scene carry on to the end on their own springs,
+                // alongside the new move
+                if (peeking) {
                     // A peek waits at 0 for the finger to let go
-                    if (!peeking) {
-                        state.driveTo(1f, segment.drive, fraction)
-                        state.snapTo(wanted)
-                    }
+                    state.seekTo(0f, wanted)
+                } else {
+                    state.play(wanted, segment.drive, fraction)
                 }
             }
         }
@@ -207,8 +221,20 @@ private class Fraction {
     var value = 0f
     var velocity = 0f
 
-    /** Whether the transition was last played by itself, so [value] is out of date. */
+    /** Whether the transition plays by itself, so [value] is out of date and [velocity] sampled. */
     var played = false
+}
+
+/**
+ * Plays the transition on to [target] by [spec]. Played, not driven: a move interrupted by another
+ * then carries on to its end on its own spring, alongside the new one.
+ */
+private suspend fun <S> SeekableTransitionState<S>.play(target: S, spec: FiniteAnimationSpec<Float>, fraction: Fraction) {
+    fraction.played = true
+    animateTo(target, spec)
+    fraction.played = false
+    fraction.value = 0f
+    fraction.velocity = 0f
 }
 
 /**
@@ -218,10 +244,18 @@ private class Fraction {
  */
 private suspend fun <S> SeekableTransitionState<S>.driveTo(target: Float, spec: FiniteAnimationSpec<Float>, fraction: Fraction) {
     val animation = TargetBasedAnimation(spec, Float.VectorConverter, fraction.value, target, AnimationVector1D(fraction.velocity))
+    // At the system's animation scale, so removing animations or slowing them down applies here too
+    val scale = coroutineContext[MotionDurationScale]?.scaleFactor ?: 1f
+    if (scale <= 0f) {
+        fraction.value = target
+        fraction.velocity = 0f
+        if (currentState != targetState) seekTo(target.coerceIn(0f, 1f))
+        return
+    }
     // As if it started a frame ago, so the first frame already moves instead of only telling the time
     val start = withFrameNanos { it } - FrameNanos
     while (true) {
-        val time = withFrameNanos { it } - start
+        val time = ((withFrameNanos { it } - start) / scale).toLong()
         val done = animation.isFinishedFromNanos(time)
         fraction.value = if (done) target else animation.getValueFromNanos(time)
         fraction.velocity = if (done) 0f else animation.getVelocityVectorFromNanos(time).value
