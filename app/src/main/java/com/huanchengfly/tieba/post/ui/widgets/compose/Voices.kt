@@ -4,11 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,10 +27,13 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,8 +52,9 @@ import com.huanchengfly.tieba.post.utils.FileUtil
 import kotlinx.coroutines.delay
 
 /**
- * A voice post: a capsule with a play button, how far it has played and its length. Longer
- * voices draw longer capsules. One voice plays at a time, wherever it is; a long press saves it.
+ * A voice post: a capsule with a play button and its length, filled a shade darker as far as it
+ * has played. Longer voices draw longer capsules. Dragging along it moves the playing position;
+ * one voice plays at a time, wherever it is; a long press saves it.
  *
  * @param duration its length in milliseconds
  */
@@ -67,6 +70,10 @@ fun VoicePlayer(
     val state = if (playing) VoicePlayback.state else VoiceState.Idle
     val position = if (playing) VoicePlayback.position else 0L
     val length = duration.toLong().takeIf { it > 0 } ?: VoicePlayback.duration.takeIf { playing } ?: 0L
+    // Where a drag along the capsule has moved the position to, as a fraction, while dragging
+    var dragged by remember { mutableStateOf<Float?>(null) }
+    val played = if (length > 0) (position.toFloat() / length).coerceIn(0f, 1f) else 0f
+    val fraction = dragged ?: played
 
     // Stops when the voice leaves the screen
     DisposableEffect(url) {
@@ -95,7 +102,26 @@ fun VoicePlayer(
                 .width(widthOf(length))
                 .height(40.dp)
                 .clip(CircleShape)
-                .background(colors.accent.copy(alpha = 0.12f))
+                .background(colors.accent.copy(alpha = 0.10f))
+                .drawBehind {
+                    drawRect(colors.accent.copy(alpha = 0.22f), size = size.copy(width = size.width * fraction))
+                }
+                .pointerInput(url, length) {
+                    if (length <= 0) return@pointerInput
+                    // By how far the finger moves, not where it lands: a drag that starts on the
+                    // play button does not jump to the start
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragged = played },
+                        onDragEnd = {
+                            dragged?.let { VoicePlayback.seek(context, url, (it * length).toLong()) }
+                            dragged = null
+                        },
+                        onDragCancel = { dragged = null },
+                    ) { change, amount ->
+                        change.consume()
+                        dragged = ((dragged ?: played) + amount / size.width).coerceIn(0f, 1f)
+                    }
+                }
                 .padding(start = 6.dp, end = 14.dp),
         ) {
             Box(
@@ -112,20 +138,15 @@ fun VoicePlayer(
                     VoiceState.Idle -> Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
                 }
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(3.dp)
-                    .clip(CircleShape)
-                    .background(colors.accent.copy(alpha = 0.25f)),
-            ) {
-                val fraction = if (length > 0) (position.toFloat() / length).coerceIn(0f, 1f) else 0f
-                Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction).background(colors.accent))
-            }
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = formatTime(if (state == VoiceState.Idle) length else position),
+                text = formatTime(
+                    when {
+                        dragged != null -> (fraction * length).toLong()
+                        state == VoiceState.Idle -> length
+                        else -> position
+                    }
+                ),
                 color = colors.accent,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -159,11 +180,11 @@ enum class VoiceState { Idle, Loading, Playing }
 @Stable
 object VoicePlayback {
     var url by mutableStateOf<String?>(null)
-        private set
+        internal set
     var state by mutableStateOf(VoiceState.Idle)
-        private set
+        internal set
     var position by mutableLongStateOf(0L)
-        private set
+        internal set
     var duration by mutableLongStateOf(0L)
         private set
 
@@ -202,8 +223,18 @@ object VoicePlayback {
         }
     }
 
+    /** Plays [url] from [position], from where it is if it is the one playing. */
+    fun seek(context: Context, url: String, position: Long) {
+        if (this.url != url || player == null) toggle(context, url)
+        player?.run {
+            seekTo(position)
+            play()
+        }
+        this.position = position
+    }
+
     fun updatePosition() {
-        position = player?.currentPosition ?: 0
+        player?.let { position = it.currentPosition }
     }
 
     fun stop() {

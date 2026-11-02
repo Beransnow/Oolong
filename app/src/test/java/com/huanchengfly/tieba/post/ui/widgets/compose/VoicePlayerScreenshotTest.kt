@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,6 +21,23 @@ import org.robolectric.annotation.GraphicsMode
 class VoicePlayerScreenshotTest {
     @get:Rule
     val legacyApp = LegacyAppRule()
+
+    @After
+    fun stop() {
+        VoicePlayback.stop()
+    }
+
+    @Test
+    fun playedPartly() {
+        VoicePlayback.url = "https://example.com/half"
+        VoicePlayback.state = VoiceState.Playing
+        VoicePlayback.position = 9_000
+        captureScreenshot {
+            Column(modifier = Modifier.padding(16.dp)) {
+                VoicePlayer(url = "https://example.com/half", duration = 23_000)
+            }
+        }
+    }
 
     @Test
     fun shortAndLong() {
