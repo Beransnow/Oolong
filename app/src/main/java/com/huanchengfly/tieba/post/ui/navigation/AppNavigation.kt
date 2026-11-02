@@ -42,7 +42,10 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStrategy
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
+import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageHost
+import com.huanchengfly.tieba.post.ui.common.navigation.PageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
+import com.huanchengfly.tieba.post.ui.common.navigation.pageHost
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -237,41 +240,57 @@ fun AppNavDisplay(
                             } else Modifier
                         ),
                 ) {
-                    NavDisplay(
-                        backStack = backStack,
-                        modifier = Modifier.fillMaxSize(),
-                        onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
-                        entryDecorators = listOf(
-                            rememberSaveableStateHolderNavEntryDecorator(),
-                            rememberViewModelStoreNavEntryDecorator(),
-                        ),
-                        sceneStrategies = strategies,
-                        transitionSpec = {
-                            if (relayout) PageTransitions.crossFade() else PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
-                        },
-                        popTransitionSpec = {
-                            if (relayout) PageTransitions.crossFade() else PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
-                        },
-                        entryProvider = entryProvider {
-                            entry<Page>(
-                                clazzContentKey = { it.id },
-                                metadata = { it.key.metadata() },
-                            ) { page ->
-                                val isTop = backStack.lastOrNull() == page
-                                val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
-                                CompositionLocalProvider(
-                                    LocalIsTopEntry provides isTop,
-                                    LocalNavigator provides pageNavigator,
-                                ) {
-                                    if (page.key.readsAtWidth) {
-                                        ReadingWidth { KeyContent(page.key) }
-                                    } else {
-                                        KeyContent(page.key)
+                    val pageHost = remember { PageHost() }
+                    CompositionLocalProvider(LocalPageHost provides pageHost) {
+                        NavDisplay(
+                            backStack = backStack,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pageHost(pageHost),
+                            onBack = { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) },
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator(),
+                            ),
+                            sceneStrategies = strategies,
+                            // Deeper or back by the scenes themselves, not by how the back stack last changed: back
+                            // pressed while a page is still coming in leaves that same segment running, and it has
+                            // to keep the push's motion as it is reversed, or the page underneath runs off first
+                            transitionSpec = {
+                                when {
+                                    relayout -> PageTransitions.crossFade()
+                                    isDeeper(initialState, targetState) == false -> PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                                    else -> PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                                }
+                            },
+                            popTransitionSpec = {
+                                when {
+                                    relayout -> PageTransitions.crossFade()
+                                    isDeeper(initialState, targetState) == true -> PageTransitions.transitionSpec<Scene<NavKey>>(overlap)()
+                                    else -> PageTransitions.popTransitionSpec<Scene<NavKey>>(overlap)()
+                                }
+                            },
+                            entryProvider = entryProvider {
+                                entry<Page>(
+                                    clazzContentKey = { it.id },
+                                    metadata = { it.key.metadata() },
+                                ) { page ->
+                                    val isTop = backStack.lastOrNull() == page
+                                    val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
+                                    CompositionLocalProvider(
+                                        LocalIsTopEntry provides isTop,
+                                        LocalNavigator provides pageNavigator,
+                                    ) {
+                                        if (page.key.readsAtWidth) {
+                                            ReadingWidth { KeyContent(page.key) }
+                                        } else {
+                                            KeyContent(page.key)
+                                        }
                                     }
                                 }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -336,4 +355,11 @@ private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, jump: Rail
         navigationItems = items,
         showLabels = showLabels,
     )
+}
+
+/** Whether [to] lies deeper in the back stack than [from], or null when they are as deep. */
+private fun isDeeper(from: Scene<NavKey>, to: Scene<NavKey>): Boolean? {
+    val fromDepth = from.previousEntries.size
+    val toDepth = to.previousEntries.size
+    return if (toDepth == fromDepth) null else toDepth > fromDepth
 }

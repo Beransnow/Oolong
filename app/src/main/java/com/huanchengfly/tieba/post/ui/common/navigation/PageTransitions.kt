@@ -3,27 +3,43 @@ package com.huanchengfly.tieba.post.ui.common.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -35,6 +51,7 @@ import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Whether the latest change to the back stack removed pages, as opposed to adding them. */
@@ -141,10 +158,17 @@ object PageTransitions {
                 EnterExitState.PostExit -> if (isPop) 0f else underPageDim
             }
         }
-
+        // Where the page is, against the host that pages slide within
+        val host = LocalPageHost.current
+        val pageX = remember { mutableFloatStateOf(0f) }
+        val pageWidth = remember { mutableFloatStateOf(0f) }
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .onGloballyPositioned {
+                    pageX.floatValue = it.positionInRoot().x
+                    pageWidth.floatValue = it.size.width.toFloat()
+                }
                 .drawWithContent {
                     // Whether pages are moving, by the scene transition: a page's own transition
                     // can be left mid-way, still running, when a push is interrupted by back
@@ -173,10 +197,24 @@ object PageTransitions {
                         )
                     }
                     drawContent()
-                    // Only while pages move: a page at rest is never dimmed, wherever its own
-                    // transition was left
-                    val alpha = dim.value
-                    if (alpha > 0f && moving) {
+                    val width = pageWidth.floatValue
+                    val alpha = if (host != null && width > 0f && abs(width - host.width) < 1f) {
+                        // The page underneath sits to the start side of where it rests, covered on
+                        // a push and coming back on a pop, while the page on top comes and goes on
+                        // the end side and is never dimmed. How dim follows how far it is from
+                        // rest, so the dim eases with the slide and turns back with it when the
+                        // transition is interrupted
+                        val towardStart = (host.left - pageX.floatValue) * (if (layoutDirection == LayoutDirection.Rtl) -1f else 1f)
+                        val underneath = towardStart > 0f
+                        val distance = abs(towardStart)
+                        if (underneath) underPageDim * (distance / (width * UnderPageOffset)).coerceIn(0f, 1f) else 0f
+                    } else if (moving) {
+                        // A pane of a wider scene: its own animation, only while pages move
+                        dim.value
+                    } else {
+                        0f
+                    }
+                    if (alpha > 0f) {
                         drawRect(Color.Black.copy(alpha = alpha))
                     }
                 }
@@ -185,6 +223,22 @@ object PageTransitions {
             content()
         }
     }
+}
+
+/** Where pages slide within: the area the navigation lays them out in, which itself stays put. */
+@Stable
+class PageHost {
+    var left by mutableFloatStateOf(0f)
+    var width by mutableFloatStateOf(0f)
+}
+
+/** The [PageHost] around the pages, which pages measure their slide against. */
+val LocalPageHost = staticCompositionLocalOf<PageHost?> { null }
+
+/** Records where [host] is laid out; apply to the container the pages slide within. */
+fun Modifier.pageHost(host: PageHost): Modifier = onGloballyPositioned {
+    host.left = it.positionInRoot().x
+    host.width = it.size.width.toFloat()
 }
 
 /** Shows the top entry alone, in a [PageTransitions.PageFrame]. */
