@@ -243,9 +243,12 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
                 content = post.content.withPlayableVideo(thread.videoInfo),
             )
         }
-    val posts = post_list.filterNot { it.floor == 1 }.map(mapper::post)
-    val hasMore = page.has_more != 0 && posts.isNotEmpty()
-    val hasPrevious = page.has_prev != 0 && posts.isNotEmpty()
+    // Floor 0 holds adverts dressed as replies
+    val posts = post_list.filter { it.floor > 1 }.map(mapper::post)
+    // A page of only adverts is not the end of the thread
+    val hasReplies = post_list.any { it.floor != 1 }
+    val hasMore = page.has_more != 0 && hasReplies
+    val hasPrevious = page.has_prev != 0 && hasReplies
 
     return ThreadPage(
         thread = ThreadDetail(

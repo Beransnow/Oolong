@@ -171,6 +171,15 @@ class ThreadRepositoryTest {
     }
 
     @Test
+    fun `adverts on floor 0 are dropped without ending the thread`() = runTest {
+        respond(data(listOf(post(1, 1, lz), post(500, 0), post(2, 2))))
+        assertEquals(listOf(2L), repository.page(ThreadQuery(9_000), ThreadCursor.Number(0)).posts.items.map { it.id })
+
+        respond(data(listOf(post(501, 0))))
+        assertEquals(ThreadCursor.Number(2), repository.page(ThreadQuery(9_000), ThreadCursor.Number(0)).posts.next)
+    }
+
+    @Test
     fun `an author id of 0 falls back to the author's own id`() = runTest {
         respond(data(listOf(post(2, 2, author = replier, authorId = 0))))
 
