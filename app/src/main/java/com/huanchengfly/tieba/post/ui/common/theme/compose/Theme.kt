@@ -9,15 +9,21 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.compose.darken
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /**
  * A theme's colours. System colours are named for what they are for and suit any page; component
@@ -222,9 +228,18 @@ fun TiebaLiteTheme(
     )
     val useDynamicTheme = isDynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
+    // The translucent theme's text colour and the picked colours are settings of their own:
+    // changing them leaves the theme name as it was
+    val picks by remember {
+        context.dataStore.data
+            .map { listOf(it[TranslucentTextKey], it[TranslucentColorKey], it[CustomColorKey]) }
+            .distinctUntilChanged()
+    }.collectAsState(initial = null)
     val extendedColors = if (!useDynamicTheme || ThemeUtil.isTranslucentTheme(theme)) {
-        val nowTheme = ThemeUtil.getCurrentTheme(theme)
-        themeColors(nowTheme, pickedColor(context, nowTheme))
+        remember(theme, picks) {
+            val nowTheme = ThemeUtil.getCurrentTheme(theme)
+            themeColors(nowTheme, pickedColor(context, nowTheme))
+        }
     } else {
         getDynamicColor(theme, dynamicTonalPalette(context))
     }
@@ -240,6 +255,10 @@ fun TiebaLiteTheme(
         )
     }
 }
+
+private val TranslucentTextKey = intPreferencesKey("translucent_background_theme")
+private val TranslucentColorKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
+private val CustomColorKey = stringPreferencesKey("custom_primary_color")
 
 object ExtendedTheme {
     val colors: ExtendedColors
