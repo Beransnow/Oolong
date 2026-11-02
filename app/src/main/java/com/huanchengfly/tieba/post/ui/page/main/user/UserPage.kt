@@ -335,7 +335,7 @@ fun UserScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Switch(
-                        checked = ThemeUtil.isNightMode(ThemeUtil.themeState.value),
+                        checked = ExtendedTheme.colors.isNightMode,
                         onCheckedChange = { ThemeUtil.toggleDark() }
                     )
                 }
