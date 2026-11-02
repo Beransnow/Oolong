@@ -40,13 +40,15 @@ class ExploreRepositoryTest {
     )
 
     @Test
-    fun `recommended threads carry their dislike reasons and leave out live streams and hidden videos`() = runTest {
+    fun `recommended threads carry their dislike reasons and leave out live streams, hidden videos and adverts`() = runTest {
         hideVideos = true
+        val forum = SimpleForum(id = 52)
         coEvery { remote.personalized(true, 1) } returns PersonalizedResponseData(
             thread_list = listOf(
-                ThreadInfo(id = 1, threadId = 1),
-                ThreadInfo(id = 2, threadId = 2, ala_info = AlaLiveInfo()),
-                ThreadInfo(id = 3, threadId = 3, videoInfo = VideoInfo()),
+                ThreadInfo(id = 1, threadId = 1, forumInfo = forum),
+                ThreadInfo(id = 2, threadId = 2, forumInfo = forum, ala_info = AlaLiveInfo()),
+                ThreadInfo(id = 3, threadId = 3, forumInfo = forum, videoInfo = VideoInfo()),
+                ThreadInfo(id = 4, threadId = 4),
             ),
             thread_personalized = listOf(
                 ThreadPersonalized(tid = 1, dislikeResource = listOf(DislikeReason(dislikeReason = "看过了", dislikeId = 2, extra = "x"))),

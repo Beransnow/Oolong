@@ -100,9 +100,10 @@ class ExploreRepository @Inject constructor(
         agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 
+    /** Drops live streams, videos if hidden, and adverts from outside any forum, which carry no forum. */
     private fun filter(threads: List<ThreadInfo>): List<ThreadInfo> {
         val hideVideos = videoFilter.hidesVideos()
-        return threads.filter { it.ala_info == null && !(hideVideos && it.videoInfo != null) }
+        return threads.filter { it.ala_info == null && it.forumInfo != null && !(hideVideos && it.videoInfo != null) }
     }
 }
 
