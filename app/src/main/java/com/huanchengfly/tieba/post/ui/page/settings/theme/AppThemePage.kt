@@ -388,23 +388,29 @@ private fun MenuCheck() {
     Icon(Icons.Rounded.Check, contentDescription = null, tint = ExtendedTheme.colors.text, modifier = Modifier.size(20.dp))
 }
 
-/** The colours, four to a row, each a round swatch in its colours as the light theme uses them. */
+/** The colours, four to a row, each a round swatch in its colours as the page now uses them. */
 @Composable
 private fun AccentGrid(settings: ThemeSettings, customColor: Color?, onCustom: () -> Unit) {
     val names = stringArrayResource(id = R.array.accent_names)
     val plain = settings.style == ColorStyle.Plain
     val context = LocalContext.current
+    val dark = ExtendedTheme.colors.isNightMode
+    fun colorsOf(accent: String, picked: Color? = null): ExtendedColors {
+        val light = themeColors(accent, picked, plain = plain)
+        if (!dark) return light
+        return themeColors(settings.darkTheme, darkAccent = light.accent.takeUnless { accent == ThemeUtil.THEME_DEFAULT })
+    }
     val swatches = buildList<@Composable RowScope.() -> Unit> {
         ThemeSettings.ACCENTS.forEachIndexed { index, accent ->
             if (accent == ThemeUtil.THEME_CUSTOM) return@forEachIndexed
             add {
-                val colors = themeColors(accent, plain = plain)
+                val colors = colorsOf(accent)
                 Swatch(names[index], settings.accent == accent, Brush.radialGradient(listOf(colors.emphasis, colors.accent)), colors.onEmphasis, { ThemeUtil.selectAccent(accent) })
             }
         }
         add {
             val selected = settings.accent == ThemeUtil.THEME_CUSTOM
-            val colors = themeColors(ThemeUtil.THEME_CUSTOM, customColor, plain = plain)
+            val colors = colorsOf(ThemeUtil.THEME_CUSTOM, customColor)
             Swatch(
                 name = stringResource(id = R.string.title_custom_color),
                 selected = selected,

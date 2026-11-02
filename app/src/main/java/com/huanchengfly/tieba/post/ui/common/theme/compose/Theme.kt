@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.common.theme.compose
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Build
 import androidx.compose.material.Colors
 import androidx.compose.material.MaterialTheme
@@ -229,8 +230,22 @@ fun colorsOf(settings: ThemeSettings, dark: Boolean, picks: Any? = null): Extend
     }
     return remember(settings, theme, picks) {
         val nowTheme = ThemeUtil.getCurrentTheme(theme)
-        themeColors(nowTheme, pickedColor(context, nowTheme), plain = settings.style == ColorStyle.Plain)
+        themeColors(
+            nowTheme,
+            pickedColor(context, nowTheme),
+            plain = settings.style == ColorStyle.Plain,
+            darkAccent = darkAccentOf(context, settings),
+        )
     }
+}
+
+/**
+ * The colour [settings] give the dark themes: the light theme's own, but none for the default
+ * blue, whose dark themes have their own blue.
+ */
+fun darkAccentOf(context: Context, settings: ThemeSettings): Color? {
+    if (settings.accent == ThemeUtil.THEME_DEFAULT || settings.isDynamic) return null
+    return themeColors(settings.accent, pickedColor(context, settings.accent)).accent
 }
 
 /** The translucent theme's text colour and the picked colours, which the colours depend on too. */

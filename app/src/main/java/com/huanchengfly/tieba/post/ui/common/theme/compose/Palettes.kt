@@ -2,8 +2,10 @@ package com.huanchengfly.tieba.post.ui.common.theme.compose
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
+import kotlin.math.hypot
 
 private val TiebaBlue = Color(0xFF4477E0)
 private val NightBlue = Color(0xFF5588D7)
@@ -112,6 +114,37 @@ private val AmoledDark = night(
     refreshIndicator = Color(0xFF1C1C1C),
 )
 
+/** This dark theme with [accent], lifted to read on it, in place of the blue. */
+private fun ExtendedColors.withAccent(accent: Color?): ExtendedColors {
+    if (accent == null) return this
+    val lifted = lifted(accent)
+    return copy(
+        accent = lifted,
+        emphasis = lifted,
+        // Lifted colours are light: what goes on them is dark
+        onEmphasis = background,
+        invertChip = lifted.copy(alpha = 0.3f),
+        onInvertChip = lifted,
+    )
+}
+
+/**
+ * [color] as light as a dark background needs: the same hue and chroma, its lightness raised to
+ * at least [MIN_DARK_LIGHTNESS]. Near-greys, as black, become a light grey.
+ */
+internal fun lifted(color: Color): Color {
+    val lab = color.convert(ColorSpaces.CieLab)
+    val (lightness, a, b) = Triple(lab.red, lab.green, lab.blue)
+    if (hypot(a, b) < GREY_CHROMA) {
+        return Color(GREY_LIGHTNESS, 0f, 0f, 1f, ColorSpaces.CieLab).convert(ColorSpaces.Srgb)
+    }
+    return Color(maxOf(lightness, MIN_DARK_LIGHTNESS), a, b, 1f, ColorSpaces.CieLab).convert(ColorSpaces.Srgb)
+}
+
+private const val MIN_DARK_LIGHTNESS = 70f
+private const val GREY_LIGHTNESS = 82f
+private const val GREY_CHROMA = 8f
+
 /**
  * The translucent theme with light text over a dark wallpaper. The page itself is clear; what
  * must stay opaque, as sheets, menus and spinners, takes [ExtendedColors.sheet].
@@ -173,12 +206,14 @@ private fun translucentDark(accent: Color) = ExtendedColors(
  * The colours of [theme], a theme name as [ThemeUtil] gives it, with the translucent theme named
  * by its variant. [picked] is the colour the user picked for the custom or translucent theme;
  * other themes ignore it. A [plain] light theme is black and white, keeping its colour for links
- * and buttons; the default theme is plain unless asked otherwise, the others are not.
+ * and buttons; the default theme is plain unless asked otherwise, the others are not. A dark
+ * theme takes [darkAccent], a light theme's colour, lifted to read on it; without it, the blue.
  */
 fun themeColors(
     theme: String,
     picked: Color? = null,
     plain: Boolean = theme == ThemeUtil.THEME_DEFAULT,
+    darkAccent: Color? = null,
 ): ExtendedColors {
     fun light(accent: Color) = light(theme, accent, emphasis = if (plain) Color.Black else accent)
     return when (theme) {
@@ -188,9 +223,9 @@ fun themeColors(
         ThemeUtil.THEME_PINK -> light(accent = Color(0xFFFF9A9E))
         ThemeUtil.THEME_RED -> light(accent = Color(0xFFC51100))
         ThemeUtil.THEME_CUSTOM -> light(accent = picked ?: TiebaBlue)
-        ThemeUtil.THEME_BLUE_DARK -> BlueDark
-        ThemeUtil.THEME_GREY_DARK -> GreyDark
-        ThemeUtil.THEME_AMOLED_DARK -> AmoledDark
+        ThemeUtil.THEME_BLUE_DARK -> BlueDark.withAccent(darkAccent)
+        ThemeUtil.THEME_GREY_DARK -> GreyDark.withAccent(darkAccent)
+        ThemeUtil.THEME_AMOLED_DARK -> AmoledDark.withAccent(darkAccent)
         ThemeUtil.THEME_TRANSLUCENT_LIGHT -> translucentLight(picked ?: TiebaBlue)
         ThemeUtil.THEME_TRANSLUCENT_DARK -> translucentDark(picked ?: TiebaBlue)
         else -> light(ThemeUtil.THEME_DEFAULT, accent = TiebaBlue, emphasis = if (plain) Color.Black else TiebaBlue)

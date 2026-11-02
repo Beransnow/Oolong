@@ -71,6 +71,10 @@ class PaletteSnapshotTest {
             Setup("dynamic_light", light(dynamic)),
             Setup("dynamic_dark", dark(ThemeUtil.THEME_BLUE_DARK, dynamic)),
             Setup("dynamic_amoled", dark(ThemeUtil.THEME_AMOLED_DARK, dynamic)),
+            Setup("pink_dark", dark(ThemeUtil.THEME_AMOLED_DARK, "pink")),
+            Setup("black_dark", dark(ThemeUtil.THEME_GREY_DARK, "black")),
+            Setup("purple_dark", dark(ThemeUtil.THEME_BLUE_DARK, "purple")),
+            Setup("custom_picked_dark", dark(ThemeUtil.THEME_BLUE_DARK, ThemeUtil.THEME_CUSTOM), accent = PICKED),
         )
 
     @Test
