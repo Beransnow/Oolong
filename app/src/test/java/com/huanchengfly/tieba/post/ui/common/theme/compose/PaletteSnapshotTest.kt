@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
@@ -38,8 +39,17 @@ class PaletteSnapshotTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
-    /** A theme as the user sets it up: its name, the translucent text setting and dynamic colour. */
-    private data class Setup(val name: String, val theme: String, val darkText: Boolean = false, val dynamic: Boolean = false)
+    /**
+     * A theme as the user sets it up: its name, the translucent text setting, dynamic colour and
+     * the colour picked for the custom or translucent theme.
+     */
+    private data class Setup(
+        val name: String,
+        val theme: String,
+        val darkText: Boolean = false,
+        val dynamic: Boolean = false,
+        val accent: String? = null,
+    )
 
     private val setups = listOf(
         "tieba", "black", "blue", "purple", "pink", "red", "custom",
@@ -47,6 +57,9 @@ class PaletteSnapshotTest {
     ).map { Setup(it, it) } + listOf(
         Setup("translucent_light", ThemeUtil.THEME_TRANSLUCENT, darkText = false),
         Setup("translucent_dark", ThemeUtil.THEME_TRANSLUCENT, darkText = true),
+        Setup("custom_picked", ThemeUtil.THEME_CUSTOM, accent = PICKED),
+        Setup("translucent_light_picked", ThemeUtil.THEME_TRANSLUCENT, darkText = false, accent = PICKED),
+        Setup("translucent_dark_picked", ThemeUtil.THEME_TRANSLUCENT, darkText = true, accent = PICKED),
         Setup("dynamic_light", ThemeUtil.THEME_DEFAULT, dynamic = true),
         Setup("dynamic_dark", ThemeUtil.THEME_BLUE_DARK, dynamic = true),
         Setup("dynamic_amoled", ThemeUtil.THEME_AMOLED_DARK, dynamic = true),
@@ -69,6 +82,9 @@ class PaletteSnapshotTest {
                     it[intPreferencesKey("translucent_background_theme")] =
                         if (next.darkText) ThemeUtil.TRANSLUCENT_THEME_DARK else ThemeUtil.TRANSLUCENT_THEME_LIGHT
                     it[booleanPreferencesKey("useDynamicColorTheme")] = next.dynamic
+                    for (key in listOf("custom_primary_color", ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)) {
+                        if (next.accent != null) it[stringPreferencesKey(key)] = next.accent else it.remove(stringPreferencesKey(key))
+                    }
                 }
             }
             // Through another theme first: the two translucent setups share one theme name, and the
@@ -120,5 +136,6 @@ class PaletteSnapshotTest {
     private companion object {
         const val GOLDEN = "src/test/resources/theme/palette.txt"
         const val ACTUAL = "build/palette-actual.txt"
+        const val PICKED = "#FF336699"
     }
 }
