@@ -25,9 +25,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DislikeOption
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
@@ -42,14 +45,14 @@ import kotlinx.collections.immutable.persistentListOf
  */
 @Composable
 fun FeedMenu(
-    threadId: Long,
-    title: String,
+    thread: ThreadSummary,
     options: ImmutableList<DislikeOption>,
     onDislike: (clickTime: Long, reasons: ImmutableList<DislikeOption>) -> Unit,
 ) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val menus = LocalContextMenus.current
+    val shortcuts = LocalBlockShortcuts.current
     var bounds by remember { mutableStateOf(Rect.Zero) }
     var menuId by remember { mutableStateOf<Long?>(null) }
     // The menu holds the icon while it shows, and gives it back where it took it
@@ -59,9 +62,9 @@ fun FeedMenu(
         onClick = {
             menus ?: return@IconButton
             val dislikes = dislikeMenuItems(context, navigator, options, onDislike)
-            val items = dislikes + shareMenuItems(context, threadId, title).mapIndexed { i, item ->
+            val items = dislikes + shareMenuItems(context, thread.id, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
-            }
+            } + shortcuts?.let { blockMenuItems(context, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
             menuId = menus.show(items, anchor = bounds, icon = Icons.Rounded.MoreHoriz)
         },
         modifier = Modifier
@@ -117,6 +120,9 @@ fun shareMenuItems(context: Context, threadId: Long, title: String): List<Contex
         ContextMenuItem(Icons.Rounded.Link, context.getString(R.string.title_copy_link)) { TiebaUtil.copyText(context, url) },
     )
 }
+
+/** Whether the server offers keeping the thread's forum out of the recommendations. */
+fun List<DislikeOption>.offersBlockingForum() = any { it.id == BlockForumOption }
 
 /** The option that keeps the thread's forum out of the recommendations. */
 private const val BlockForumOption = 7

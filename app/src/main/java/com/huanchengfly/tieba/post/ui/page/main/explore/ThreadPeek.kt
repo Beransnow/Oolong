@@ -26,7 +26,10 @@ import com.huanchengfly.tieba.post.model.knownFirstFloor
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
+import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.offersBlockingForum
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.shareMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
 import com.huanchengfly.tieba.post.ui.page.thread.FirstPostContent
 import com.huanchengfly.tieba.post.ui.page.thread.navigateToThread
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
@@ -79,7 +82,8 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val collect = stringResource(id = R.string.title_collect)
-    return remember(menus, context, navigator, viewModel, collect) {
+    val shortcuts = LocalBlockShortcuts.current
+    return remember(menus, context, navigator, viewModel, collect, shortcuts) {
         ThreadPeeker { thread, from, at, options, onDislike ->
             val items = buildList {
                 add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
@@ -87,6 +91,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
                 dislikeMenuItems(context, navigator, options, onDislike).forEachIndexed { i, item ->
                     add(if (i == 0) item.copy(startsGroup = true) else item)
                 }
+                if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, thread, forumOffered = options.offersBlockingForum()))
             }
             menus.show(
                 items = items,

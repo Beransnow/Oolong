@@ -424,6 +424,14 @@
     <string name="single_chinese_char" translatable="false">国</string>
     <string name="open_all_sub_posts">查看全部 %d 条回复</string>
     <string name="message_store_thread_update">贴子更新到了第 %d 楼</string>
+    <string name="menu_block">屏蔽…</string>
+    <string name="menu_block_user">屏蔽用户「%1$s」</string>
+    <string name="menu_block_forum">屏蔽「%1$s吧」</string>
+    <string name="menu_block_keywords">屏蔽关键词…</string>
+    <string name="title_block_keywords">屏蔽关键词</string>
+    <string name="tip_block_keywords">多个词用空格分开，同时含有才屏蔽</string>
+    <string name="button_block">屏蔽</string>
+    <string name="toast_blocked">已屏蔽%1$s</string>
     <string name="block_tip">%1$s · %2$s</string>
     <string name="block_tip_label">已屏蔽</string>
     <string name="block_tip_floor">%1$d 楼已屏蔽</string>

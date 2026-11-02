@@ -77,6 +77,9 @@ import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.ui.navigation.rememberAppBackStack
 import com.huanchengfly.tieba.post.ui.navigation.toDeepLinkKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcutsHost
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentWallpaper
 import com.huanchengfly.tieba.post.ui.page.settings.theme.redrawOutdatedWallpaper
 import com.huanchengfly.tieba.post.ui.page.settings.theme.rememberWallpaperDim
@@ -140,6 +143,9 @@ private const val SPLASH_ICON_MILLIS = 400L
 class MainActivityV2 : AppCompatActivity() {
     @Inject
     lateinit var accountRepository: AccountRepository
+
+    @Inject
+    lateinit var blockShortcuts: BlockShortcuts
 
     private val handler = Handler(Looper.getMainLooper())
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
@@ -417,9 +423,10 @@ class MainActivityV2 : AppCompatActivity() {
             TranslucentThemeBackground {
                 val backStack = rememberAppBackStack(linked = linkedKey)
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
-                CompositionLocalProvider(LocalNavigator provides navigator) {
+                CompositionLocalProvider(LocalNavigator provides navigator, LocalBlockShortcuts provides blockShortcuts) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         AppNavDisplay(backStack = backStack)
+                        BlockShortcutsHost(blockShortcuts)
                         AppDialogHost()
                     }
                 }

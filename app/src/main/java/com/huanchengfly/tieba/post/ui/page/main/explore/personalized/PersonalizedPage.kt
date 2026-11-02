@@ -282,8 +282,7 @@ private fun FeedList(
                                             },
                                         ) {
                                             FeedMenu(
-                                                threadId = threadId,
-                                                title = item.title,
+                                                thread = item,
                                                 options = dislikeOptions,
                                                 onDislike = { clickTime, reasons -> onDislike(item, reasons, clickTime) },
                                             )

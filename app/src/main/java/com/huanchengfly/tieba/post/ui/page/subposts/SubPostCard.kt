@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockableMenuItems
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBranch
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostLine
 import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
@@ -82,40 +83,42 @@ internal fun SubPostReply(
                 isLz = subPost.author.id == threadAuthorId,
                 onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply },
                 menuContent = { menuState ->
-                    if (!hideReply) {
+                    BlockableMenuItems(author = subPost.author, forum = null, text = "", menuState = menuState) {
+                        if (!hideReply) {
+                            DropdownMenuItem(
+                                onClick = {
+                                    onEvent(SubPostsEvent.Reply(post, subPost))
+                                    menuState.expanded = false
+                                }
+                            ) {
+                                Text(text = stringResource(id = R.string.btn_reply))
+                            }
+                        }
                         DropdownMenuItem(
                             onClick = {
-                                onEvent(SubPostsEvent.Reply(post, subPost))
+                                onEvent(SubPostsEvent.Copy(subPost.content.plainText))
                                 menuState.expanded = false
                             }
                         ) {
-                            Text(text = stringResource(id = R.string.btn_reply))
+                            Text(text = stringResource(id = R.string.menu_copy))
                         }
-                    }
-                    DropdownMenuItem(
-                        onClick = {
-                            onEvent(SubPostsEvent.Copy(subPost.content.plainText))
-                            menuState.expanded = false
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.menu_copy))
-                    }
-                    DropdownMenuItem(
-                        onClick = {
-                            onEvent(SubPostsEvent.Report(subPost.id))
-                            menuState.expanded = false
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.title_report))
-                    }
-                    if (canDelete) {
                         DropdownMenuItem(
                             onClick = {
-                                onEvent(SubPostsEvent.Delete(subPost))
+                                onEvent(SubPostsEvent.Report(subPost.id))
                                 menuState.expanded = false
                             }
                         ) {
-                            Text(text = stringResource(id = R.string.title_delete))
+                            Text(text = stringResource(id = R.string.title_report))
+                        }
+                        if (canDelete) {
+                            DropdownMenuItem(
+                                onClick = {
+                                    onEvent(SubPostsEvent.Delete(subPost))
+                                    menuState.expanded = false
+                                }
+                            ) {
+                                Text(text = stringResource(id = R.string.title_delete))
+                            }
                         }
                     }
                 },
