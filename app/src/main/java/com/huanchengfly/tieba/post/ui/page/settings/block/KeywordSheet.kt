@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
@@ -52,6 +51,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
@@ -170,7 +170,7 @@ fun KeywordSheet(text: String, onBlock: (List<String>) -> Unit, onDismiss: () ->
             }
         },
         sheetState = state,
-        sheetShape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
+        sheetShape = SmoothCornerShape(Radius.xl, bottom = false),
         sheetBackgroundColor = colors.sheet,
         scrimColor = colors.scrim,
         content = {},
@@ -186,7 +186,7 @@ private fun KeywordInput(value: String, onChange: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 46.dp)
-            .clip(Corners.md)
+            .clip(Corners.sm)
             .background(colors.inset)
             .padding(horizontal = Spacing.sm, vertical = 12.dp),
     ) {

@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
@@ -631,7 +630,7 @@ private fun MenuRow(
             .fillMaxWidth()
             .heightIn(min = ItemHeight)
             .padding(horizontal = 6.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(ItemShape)
             .background(if (highlighted) colors.chip else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
@@ -886,6 +885,9 @@ private val MenuMinWidth = 200.dp
 private val MenuMaxWidth = 280.dp
 private val ItemHeight = 46.dp
 private val MenuBlur = 24.dp
+
+/** An item's highlight, inset 6dp in the menu and so as round as the menu less that. */
+private val ItemShape = SmoothCornerShape(Radius.lg - 6.dp)
 
 /** How much wider than its menu a child menu is, on each side. */
 private val ChildWiden = 10.dp

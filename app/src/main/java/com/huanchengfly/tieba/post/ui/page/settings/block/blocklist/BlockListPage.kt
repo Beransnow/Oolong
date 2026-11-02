@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.DismissDirection
@@ -45,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +64,8 @@ import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.tests
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.navigation.BlockRuleKey
@@ -194,9 +196,9 @@ fun BlockListScreen(
                 )
                 val shape = when {
                     shown.size == 1 -> Corners.md
-                    index == 0 -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-                    index == shown.lastIndex -> RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
-                    else -> RoundedCornerShape(0.dp)
+                    index == 0 -> SmoothCornerShape(Radius.md, bottom = false)
+                    index == shown.lastIndex -> SmoothCornerShape(Radius.md, top = false)
+                    else -> RectangleShape
                 }
                 Box(modifier = Modifier.padding(horizontal = Spacing.md).clip(shape)) {
                     SwipeToDismiss(

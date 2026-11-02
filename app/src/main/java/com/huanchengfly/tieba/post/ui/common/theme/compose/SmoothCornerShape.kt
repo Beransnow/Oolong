@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -24,24 +25,38 @@ import kotlin.math.tan
  *
  * When the shape is too small for the full corner, the smoothing gives way first and then the
  * radius, so a capsule ends in plain semicircles.
+ *
+ * Without [top] or [bottom], the corners on that side are square, as for the first or last row of
+ * a group whose rows are shaped one by one.
  */
 @Immutable
 class SmoothCornerShape(
     private val radius: Dp,
     private val smoothing: Float = DefaultSmoothing,
+    private val top: Boolean = true,
+    private val bottom: Boolean = true,
 ) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val r = with(density) { radius.toPx() }
-        if (r <= 0f || size.isEmpty()) return Outline.Rectangle(size.toRect())
-        return Outline.Generic(Path().apply { addSmoothRect(size.width, size.height, r, smoothing) })
+        if (r <= 0f || size.isEmpty() || (!top && !bottom)) return Outline.Rectangle(size.toRect())
+        if (top && bottom) return Outline.Generic(Path().apply { addSmoothRect(size.width, size.height, r, smoothing) })
+        // The whole corner reaches past the square side and is cut off there
+        val reach = r * 2
+        val corners = Path().apply {
+            addSmoothRect(size.width, size.height + reach, r, smoothing)
+            if (!top) translate(Offset(0f, -reach))
+        }
+        val bounds = Path().apply { addRect(size.toRect()) }
+        return Outline.Generic(Path.combine(PathOperation.Intersect, corners, bounds))
     }
 
     override fun equals(other: Any?): Boolean =
-        other is SmoothCornerShape && other.radius == radius && other.smoothing == smoothing
+        other is SmoothCornerShape && other.radius == radius && other.smoothing == smoothing &&
+            other.top == top && other.bottom == bottom
 
-    override fun hashCode(): Int = 31 * radius.hashCode() + smoothing.hashCode()
+    override fun hashCode(): Int = ((31 * radius.hashCode() + smoothing.hashCode()) * 31 + top.hashCode()) * 31 + bottom.hashCode()
 
-    override fun toString(): String = "SmoothCornerShape(radius=$radius, smoothing=$smoothing)"
+    override fun toString(): String = "SmoothCornerShape(radius=$radius, smoothing=$smoothing, top=$top, bottom=$bottom)"
 
     companion object {
         /** The smoothing every corner in the app uses. */

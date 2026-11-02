@@ -390,7 +390,7 @@ private fun ConditionRowLayout(
             if (valueFills) room >= MinValueWidth.roundToPx() else valueMeasurable.maxIntrinsicWidth(loose.maxHeight) <= room
         val valuePlaceable = valueMeasurable?.measure(
             when {
-                !inline -> Constraints.fixedWidth(width - Spacing.xs.roundToPx())
+                !inline -> Constraints.fixedWidth(width)
                 valueFills -> Constraints.fixedWidth(room.coerceAtLeast(0))
                 else -> loose.copy(maxWidth = room.coerceAtLeast(0))
             },
@@ -412,7 +412,8 @@ private fun ConditionRowLayout(
                     val x = if (valueFills) left + gap else width - removePlaceable.width - gap - it.width
                     it.place(x, center(it))
                 } else {
-                    it.place(Spacing.xs.roundToPx(), firstLine + gap)
+                    // Across the row, as far from the card's sides as the row is, so its corners follow the card's
+                    it.place(0, firstLine + gap)
                 }
             }
         }
@@ -430,7 +431,7 @@ private fun Pick(text: String, color: Color = ExtendedTheme.colors.text, onClick
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.xs)
+            .clip(Corners.sm)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
             .clickable { onClick(bounds) }
             .padding(horizontal = Spacing.xs),
@@ -448,7 +449,7 @@ private fun ValueInput(value: String, hint: String, regex: Boolean, onChange: (S
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.xs)
+            .clip(Corners.sm)
             .background(colors.background)
             .padding(horizontal = 10.dp),
     ) {
@@ -504,7 +505,7 @@ private fun LengthInput(length: Int, onChange: (Int) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.xs)
+            .clip(Corners.sm)
             .background(colors.background)
             .padding(horizontal = 10.dp),
     ) {
