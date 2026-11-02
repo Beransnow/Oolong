@@ -1,290 +1,183 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.animation.core.TweenSpec
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.interaction.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterialApi::class)
+/**
+ * A switch (design-system.md §9.1): a filled capsule track with a white pill knob. Held, the knob
+ * grows a little past the track and turns to clear glass; it can be dragged across or tapped.
+ *
+ * It adds no touch area of its own: it sits in a row that toggles it when tapped.
+ */
 @Composable
 fun Switch(
     checked: Boolean,
     onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    colors: SwitchColors = SwitchDefaults.colors(),
+    interactionSource: MutableInteractionSource? = null,
 ) {
-    val strokeWidth = with(LocalDensity.current) { TrackStrokeWidth.toPx() }
-    val gap = with(LocalDensity.current) { Gap.toPx() }
-    val minBound = strokeWidth + gap
-    val maxBound = minBound + with(LocalDensity.current) { ThumbPathLength.toPx() }
-    val swipeableState = rememberSwipeableStateFor(checked, onCheckedChange ?: {}, AnimationSpec)
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val toggleableModifier =
-        if (onCheckedChange != null) {
-            Modifier.toggleable(
-                value = checked,
-                onValueChange = onCheckedChange,
-                enabled = enabled,
-                role = Role.Switch,
-                interactionSource = interactionSource,
-                indication = null
-            )
-        } else {
-            Modifier
-        }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val dragged by source.collectIsDraggedAsState()
+    val held by animateFloatAsState(
+        targetValue = if (enabled && (pressed || dragged)) 1f else 0f,
+        animationSpec = if (pressed || dragged) Motion.press() else Motion.release(),
+        label = "held",
+    )
+
+    val haptics = LocalHapticFeedback.current
+    val currentOnCheckedChange by rememberUpdatedState(onCheckedChange)
+    val change: (Boolean) -> Unit = { value ->
+        haptics.performHapticFeedback(if (value) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+        currentOnCheckedChange?.invoke(value)
+    }
+
+    // 0 off, 1 on; follows the finger while dragged
+    val position = remember { Animatable(if (checked) 1f else 0f, visibilityThreshold = Motion.ProgressThreshold) }
+    var dragging by remember { mutableStateOf(false) }
+    LaunchedEffect(checked, dragging) {
+        if (!dragging) position.animateTo(if (checked) 1f else 0f, Motion.snap())
+    }
+    val scope = rememberCoroutineScope()
+    val travelPx = with(LocalDensity.current) { KnobTravel.toPx() }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val dragState = rememberDraggableState { delta ->
+        val d = if (rtl) -delta else delta
+        scope.launch { position.snapTo((position.value + d / travelPx).coerceIn(0f, 1f)) }
+    }
+
+    val colors = ExtendedTheme.colors
+    val offTrack = colors.text.copy(alpha = if (colors.isNightMode) 0.22f else 0.12f)
+    // The track shows the state, not where the knob is dragged to
+    val trackOn by animateFloatAsState(if (checked) 1f else 0f, Motion.snap(), label = "track")
+    val track = lerp(offTrack, colors.emphasis, trackOn)
+    val glassState = rememberHazeState()
+    val glassAvailable = isGlassAvailable()
 
     Box(
         modifier
-            .then(toggleableModifier)
-            .swipeable(
-                state = swipeableState,
-                anchors = mapOf(minBound to false, maxBound to true),
-                thresholds = { _, _ -> FractionalThreshold(0.5f) },
-                orientation = Orientation.Horizontal,
-                enabled = enabled && onCheckedChange != null,
-                reverseDirection = isRtl,
-                interactionSource = interactionSource,
-                resistance = null
+            .then(
+                if (onCheckedChange != null) {
+                    Modifier
+                        .toggleable(
+                            value = checked,
+                            onValueChange = change,
+                            enabled = enabled,
+                            role = Role.Switch,
+                            interactionSource = source,
+                            indication = null,
+                        )
+                        .draggable(
+                            state = dragState,
+                            orientation = Orientation.Horizontal,
+                            enabled = enabled,
+                            interactionSource = source,
+                            onDragStarted = { dragging = true },
+                            onDragStopped = {
+                                val on = position.value > 0.5f
+                                dragging = false
+                                if (on != checked) change(on)
+                            },
+                        )
+                } else {
+                    Modifier
+                }
             )
-            .wrapContentSize(Alignment.Center)
-            .requiredSize(SwitchWidth, SwitchHeight)
+            .size(TrackWidth, TrackHeight)
+            .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha },
+        contentAlignment = Alignment.CenterStart,
     ) {
-        SwitchImpl(
-            checked = checked,
-            enabled = enabled,
-            colors = colors,
-            thumbValue = swipeableState.offset,
-            interactionSource = interactionSource
-        )
-    }
-}
-
-@Composable
-private fun BoxScope.SwitchImpl(
-    checked: Boolean,
-    enabled: Boolean,
-    colors: SwitchColors,
-    thumbValue: State<Float>,
-    interactionSource: InteractionSource
-) {
-    val interactions = remember { mutableStateListOf<Interaction>() }
-
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is PressInteraction.Press -> interactions.add(interaction)
-                is PressInteraction.Release -> interactions.remove(interaction.press)
-                is PressInteraction.Cancel -> interactions.remove(interaction.press)
-                is DragInteraction.Start -> interactions.add(interaction)
-                is DragInteraction.Stop -> interactions.remove(interaction.start)
-                is DragInteraction.Cancel -> interactions.remove(interaction.start)
-            }
+        // What the held knob sees: the track, and clear space around it as far as the knob reaches
+        Box(
+            Modifier
+                .requiredSize(TrackWidth + HeldGrowthWidth, TrackHeight + HeldGrowthHeight)
+                .hazeSource(glassState),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .size(TrackWidth, TrackHeight)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(track)
+            )
         }
-    }
-
-    val elevation = 0.dp
-    val trackColor by colors.trackColor(enabled, checked)
-    Canvas(Modifier.align(Alignment.Center).fillMaxSize()) {
-        drawTrack(trackColor, TrackWidth.toPx(), TrackStrokeWidth.toPx(), checked)
-    }
-    val thumbColor by colors.thumbColor(enabled, checked)
-    val elevationOverlay = LocalElevationOverlay.current
-    val absoluteElevation = LocalAbsoluteElevation.current + elevation
-    val resolvedThumbColor =
-        if (thumbColor == ExtendedTheme.colors.card && elevationOverlay != null) {
-            elevationOverlay.apply(thumbColor, absoluteElevation)
-        } else {
-            thumbColor
-        }
-    Spacer(
-        Modifier
-            .align(Alignment.CenterStart)
-            .offset { IntOffset(thumbValue.value.roundToInt(), 0) }
-//            .indication(
-//                interactionSource = interactionSource,
-//                indication = rememberRipple(bounded = false, radius = ThumbRippleRadius)
-//            )
-            .requiredSize(ThumbDiameter)
-//            .shadow(elevation, CircleShape, clip = false)
-            .background(resolvedThumbColor, CircleShape)
-    )
-}
-
-private fun DrawScope.drawTrack(trackColor: Color, trackWidth: Float, strokeWidth: Float, fill: Boolean = false) {
-    val strokeRadius = size.height / 2
-    val topY = center.y - size.height / 2 + strokeWidth / 2
-    drawRoundRect(
-        color = trackColor,
-        topLeft = Offset(strokeWidth / 2, topY),
-        size = Size(width = trackWidth - strokeWidth, height = size.height - strokeWidth),
-        cornerRadius = CornerRadius(strokeRadius),
-        style = if (fill) Fill else Stroke(width = strokeWidth, cap = StrokeCap.Round)
-    )
-}
-
-internal val TrackWidth = 35.dp
-internal val TrackStrokeWidth = 2.dp
-internal val ThumbDiameter = 9.dp
-
-private val SwitchWidth = TrackWidth
-private val SwitchHeight = 15.dp + TrackStrokeWidth
-private val Gap = (SwitchHeight - TrackStrokeWidth - ThumbDiameter) / 2
-private val ThumbPathLength = TrackWidth - ThumbDiameter - TrackStrokeWidth * 2 - Gap * 2
-
-private val AnimationSpec = TweenSpec<Float>(durationMillis = 100)
-
-@Stable
-interface SwitchColors {
-    @Composable
-    fun thumbColor(enabled: Boolean, checked: Boolean): State<Color>
-
-    @Composable
-    fun trackColor(enabled: Boolean, checked: Boolean): State<Color>
-}
-
-/**
- * Contains the default values used by [Switch]
- */
-object SwitchDefaults {
-    /**
-     * Creates a [SwitchColors] that represents the different colors used in a [Switch] in
-     * different states.
-     *
-     * @param checkedThumbColor the color used for the thumb when enabled and checked
-     * @param checkedTrackColor the color used for the track when enabled and checked
-     * @param checkedTrackAlpha the alpha applied to [checkedTrackColor] and
-     * [disabledCheckedTrackColor]
-     * @param uncheckedThumbColor the color used for the thumb when enabled and unchecked
-     * @param uncheckedTrackColor the color used for the track when enabled and unchecked
-     * @param uncheckedTrackAlpha the alpha applied to [uncheckedTrackColor] and
-     * [disabledUncheckedTrackColor]
-     * @param disabledCheckedThumbColor the color used for the thumb when disabled and checked
-     * @param disabledCheckedTrackColor the color used for the track when disabled and checked
-     * @param disabledUncheckedThumbColor the color used for the thumb when disabled and unchecked
-     * @param disabledUncheckedTrackColor the color used for the track when disabled and unchecked
-     */
-    @Composable
-    fun colors(
-        checkedThumbColor: Color = ExtendedTheme.colors.onEmphasis,
-        checkedTrackColor: Color = ExtendedTheme.colors.emphasis,
-        checkedTrackAlpha: Float = 1f,
-        uncheckedThumbColor: Color = ExtendedTheme.colors.text,
-        uncheckedTrackColor: Color = ExtendedTheme.colors.text,
-        uncheckedTrackAlpha: Float = 1f,
-        disabledCheckedThumbColor: Color = checkedThumbColor
-            .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(ExtendedTheme.colors.card),
-        disabledCheckedTrackColor: Color = checkedTrackColor
-            .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(ExtendedTheme.colors.card),
-        disabledUncheckedThumbColor: Color = uncheckedThumbColor
-            .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(ExtendedTheme.colors.card),
-        disabledUncheckedTrackColor: Color = uncheckedTrackColor
-            .copy(alpha = ContentAlpha.disabled)
-            .compositeOver(ExtendedTheme.colors.card)
-    ): SwitchColors = DefaultSwitchColors(
-        checkedThumbColor = checkedThumbColor,
-        checkedTrackColor = checkedTrackColor.copy(alpha = checkedTrackAlpha),
-        uncheckedThumbColor = uncheckedThumbColor,
-        uncheckedTrackColor = uncheckedTrackColor.copy(alpha = uncheckedTrackAlpha),
-        disabledCheckedThumbColor = disabledCheckedThumbColor,
-        disabledCheckedTrackColor = disabledCheckedTrackColor.copy(alpha = checkedTrackAlpha),
-        disabledUncheckedThumbColor = disabledUncheckedThumbColor,
-        disabledUncheckedTrackColor = disabledUncheckedTrackColor.copy(alpha = uncheckedTrackAlpha)
-    )
-}
-
-/**
- * Default [SwitchColors] implementation.
- */
-@Immutable
-private class DefaultSwitchColors(
-    private val checkedThumbColor: Color,
-    private val checkedTrackColor: Color,
-    private val uncheckedThumbColor: Color,
-    private val uncheckedTrackColor: Color,
-    private val disabledCheckedThumbColor: Color,
-    private val disabledCheckedTrackColor: Color,
-    private val disabledUncheckedThumbColor: Color,
-    private val disabledUncheckedTrackColor: Color
-) : SwitchColors {
-    @Composable
-    override fun thumbColor(enabled: Boolean, checked: Boolean): State<Color> {
-        return rememberUpdatedState(
-            if (enabled) {
-                if (checked) checkedThumbColor else uncheckedThumbColor
-            } else {
-                if (checked) disabledCheckedThumbColor else disabledUncheckedThumbColor
-            }
+        val growWidth = HeldGrowthWidth * held
+        val knobWidth = KnobWidth + growWidth
+        val knobHeight = KnobHeight + HeldGrowthHeight * held
+        val p = if (rtl) 1f - position.value else position.value
+        val knobShape = RoundedCornerShape(percent = 50)
+        Box(
+            Modifier
+                .offset {
+                    val x = KnobInset.toPx() + KnobTravel.toPx() * p - growWidth.toPx() / 2
+                    IntOffset(x.roundToInt(), 0)
+                }
+                .requiredSize(knobWidth, knobHeight)
+                .shadow(KnobElevation, knobShape, ambientColor = KnobAmbient, spotColor = KnobSpot)
+                .clip(knobShape)
+                // The white knob fades out as the glass fades in, where glass is drawn
+                .background(Color.White.copy(alpha = if (glassAvailable) 1f - held else 1f))
+                .controlLens(glassState, knobShape, held)
         )
     }
-
-    @Composable
-    override fun trackColor(enabled: Boolean, checked: Boolean): State<Color> {
-        return rememberUpdatedState(
-            if (enabled) {
-                if (checked) checkedTrackColor else uncheckedTrackColor
-            } else {
-                if (checked) disabledCheckedTrackColor else disabledUncheckedTrackColor
-            }
-        )
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as DefaultSwitchColors
-
-        if (checkedThumbColor != other.checkedThumbColor) return false
-        if (checkedTrackColor != other.checkedTrackColor) return false
-        if (uncheckedThumbColor != other.uncheckedThumbColor) return false
-        if (uncheckedTrackColor != other.uncheckedTrackColor) return false
-        if (disabledCheckedThumbColor != other.disabledCheckedThumbColor) return false
-        if (disabledCheckedTrackColor != other.disabledCheckedTrackColor) return false
-        if (disabledUncheckedThumbColor != other.disabledUncheckedThumbColor) return false
-        if (disabledUncheckedTrackColor != other.disabledUncheckedTrackColor) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = checkedThumbColor.hashCode()
-        result = 31 * result + checkedTrackColor.hashCode()
-        result = 31 * result + uncheckedThumbColor.hashCode()
-        result = 31 * result + uncheckedTrackColor.hashCode()
-        result = 31 * result + disabledCheckedThumbColor.hashCode()
-        result = 31 * result + disabledCheckedTrackColor.hashCode()
-        result = 31 * result + disabledUncheckedThumbColor.hashCode()
-        result = 31 * result + disabledUncheckedTrackColor.hashCode()
-        return result
-    }
 }
+
+private val TrackWidth = 50.dp
+private val TrackHeight = 26.dp
+private val KnobWidth = 30.dp
+private val KnobHeight = 20.dp
+private val KnobInset = (TrackHeight - KnobHeight) / 2
+private val KnobTravel = TrackWidth - KnobWidth - KnobInset * 2
+
+/** How much the knob grows while held, standing out past the track like the navigation lens. */
+private val HeldGrowthWidth = 16.dp
+private val HeldGrowthHeight = 14.dp
+
+private val KnobElevation = 2.dp
+private val KnobAmbient = Color.Black.copy(alpha = 0.12f)
+private val KnobSpot = Color.Black.copy(alpha = 0.24f)
+
+private const val DisabledAlpha = 0.38f

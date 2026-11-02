@@ -346,6 +346,46 @@ private val UnblurredClearOptics = GlassOptics(
     refractionDetailIntensity = 0.76f,
 )
 
+/** Whether glass is drawn: the device supports it and reduce transparency is off. */
+@Composable
+fun isGlassAvailable(): Boolean = currentGlassTier() == GlassTier.Glass
+
+/**
+ * A control's part that turns to glass while held, such as a switch's knob (design-system.md
+ * §8.1): clear glass, like the navigation bar's lens, over [state], faded in by [alpha]. [state]
+ * should capture everything the part can cover, transparent where the control draws nothing, so
+ * what lies beyond the control shows through as it is. Only on [GlassTier.Glass].
+ */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+fun Modifier.controlLens(state: HazeState, shape: RoundedCornerShape, alpha: Float): Modifier {
+    if (alpha <= 0f || currentGlassTier() != GlassTier.Glass) return this
+    val style = remember(shape, alpha) {
+        GlassStyle.clear.then {
+            shape(shape)
+            backgroundColor(Color.Transparent)
+            optics(ControlLensOptics)
+            alpha(alpha)
+        }
+    }
+    return hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
+}
+
+/**
+ * [UnblurredClearOptics] for a control a few dozen dp across: refraction only at the rim, so what is
+ * under the part reads sharply, as through the navigation bar's lens.
+ */
+@OptIn(ExperimentalHazeApi::class)
+private val ControlLensOptics = GlassOptics(
+    refractionStrength = 0.5f,
+    refractionHeightFraction = 0.35f,
+    refractionDisplacement = 6.dp,
+    refractionProfile = RefractionProfile.Edge(6.dp),
+    depth = OpticalSizeValue.Fixed(1f),
+    blurRadius = OpticalSizeValue.Fixed(0.dp),
+    refractionDetailIntensity = 0.76f,
+)
+
 /** Above the scaffold content, which is captured at the default zIndex of 0. */
 private const val LensTargetZIndex = 1f
 
