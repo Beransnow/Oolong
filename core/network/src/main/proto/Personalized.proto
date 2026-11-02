@@ -9,6 +9,7 @@ import "ThreadInfo.proto";
 import "AppPosInfo.proto";
 import "Error.proto";
 import "AppTransmitData.proto";
+import "Toast.proto";
 
 message PersonalizedRequestData {
   string ad_context_list = 30;
@@ -64,4 +65,6 @@ message DislikeReason {
   string dislikeReason = 1;
   uint32 dislikeId = 2;
   string extra = 3;
+  string schema = 4;
+  Toast toast = 5;
 }

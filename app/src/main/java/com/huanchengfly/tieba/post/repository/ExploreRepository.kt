@@ -111,5 +111,11 @@ private fun topicTag(tag: Int) = when (tag) {
 }
 
 private fun ThreadPersonalized.dislikeOptions() = dislikeResource.map {
-    DislikeOption(id = it.dislikeId, text = it.dislikeReason, extra = it.extra)
+    DislikeOption(
+        id = it.dislikeId,
+        text = it.dislikeReason,
+        extra = it.extra,
+        schema = it.schema.takeIf(String::isNotBlank),
+        toast = it.toast?.content?.joinToString("") { part -> part.text }?.takeIf(String::isNotBlank),
+    )
 }

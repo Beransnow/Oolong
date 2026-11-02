@@ -14,7 +14,15 @@ data class RecommendedThread(
 
 /** A reason for not wanting a recommended thread. */
 @Immutable
-data class DislikeOption(val id: Int, val text: String, val extra: String) {
+data class DislikeOption(
+    val id: Int,
+    val text: String,
+    val extra: String,
+    /** Where the option leads instead of disliking, such as a report page; null for a plain reason. */
+    val schema: String? = null,
+    /** What to tell the user once disliked, when the server says. */
+    val toast: String? = null,
+) {
     /** Whether the option is long enough to take a whole row of the menu. */
     val wide: Boolean get() = id == 7
 }

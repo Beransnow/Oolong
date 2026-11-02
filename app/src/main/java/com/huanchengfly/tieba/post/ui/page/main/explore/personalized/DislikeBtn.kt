@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,11 +36,14 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DislikeOption
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.utils.launchUrl
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -48,6 +52,8 @@ fun Dislike(
     options: ImmutableList<DislikeOption>,
     onDislike: (clickTime: Long, reasons: ImmutableList<DislikeOption>) -> Unit,
 ) {
+    val context = LocalContext.current
+    val navigator = LocalNavigator.current
     var clickTime by remember { mutableStateOf(0L) }
     val selectedReasons = remember { mutableStateListOf<DislikeOption>() }
     val menuState = rememberMenuState()
@@ -87,6 +93,7 @@ fun Dislike(
                             .clickable {
                                 dismiss()
                                 onDislike(clickTime, selectedReasons.toImmutableList())
+                                selectedReasons.firstNotNullOfOrNull { it.toast }?.let { context.toastShort(it) }
                             }
                             .padding(vertical = 4.dp, horizontal = 8.dp),
                         color = ExtendedTheme.colors.onAccent,
@@ -125,7 +132,12 @@ fun Dislike(
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(color = backgroundColor)
                                 .clickable {
-                                    if (selectedReasons.contains(it)) {
+                                    val schema = it.schema
+                                    // Some options lead somewhere, such as reporting the thread, instead of being a reason
+                                    if (schema != null) {
+                                        dismiss()
+                                        launchUrl(context, navigator, schema)
+                                    } else if (selectedReasons.contains(it)) {
                                         selectedReasons.remove(it)
                                     } else {
                                         selectedReasons.add(it)

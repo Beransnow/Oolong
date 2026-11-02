@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.utils.Util.createSnackbar
+import org.json.JSONObject
 
 @JvmOverloads
 fun getItemBackgroundDrawable(
@@ -166,6 +167,18 @@ fun launchUrl(
             else -> {
                 context.toastShort(R.string.toast_feature_unavailable)
             }
+        }
+        return
+    }
+    if (scheme == "tiebaapp") {
+        // Portal links carry the page they open as JSON in `params`
+        val pageUrl = uri.getQueryParameter("params")
+            ?.takeIf { host == "router" && path == "/portal" }
+            ?.let { runCatching { JSONObject(it).getJSONObject("pageParams").getString("url") }.getOrNull() }
+        if (pageUrl.isNullOrEmpty()) {
+            context.toastShort(R.string.toast_feature_unavailable)
+        } else {
+            launchUrl(context, navigator, pageUrl)
         }
         return
     }
