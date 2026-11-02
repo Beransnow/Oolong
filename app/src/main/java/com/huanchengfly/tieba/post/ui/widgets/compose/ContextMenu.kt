@@ -3,8 +3,11 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +44,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -71,6 +75,10 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -313,6 +321,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     val run: (Int) -> Unit = { index ->
         when {
             closing -> Unit
+            // Under open children, the menu only folds them away
+            opened != null -> foldChildren()
             items[index].children != null -> openChildren(index)
             else -> {
                 items[index].onClick()
@@ -320,7 +330,10 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             }
         }
     }
-    val hovered = menus.finger?.let(::itemAt)
+    // A finger pressed on the open menu, as against the one still down from the long press
+    var pressedOn by remember { mutableStateOf<Int?>(null) }
+    val itemsScroll = rememberScrollState()
+    val hovered = menus.finger?.let(::itemAt) ?: pressedOn
     LaunchedEffect(hovered) {
         if (hovered != null) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
@@ -426,10 +439,16 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     }
                     // Inside the scaling, so items are measured against the menu as laid out
                     .onPlaced { itemsCoordinates = it }
+                    .slideToPick(
+                        scroll = itemsScroll,
+                        at = { position -> itemPlaces.indexOfFirst { it.contains(position) }.takeIf { it >= 0 } },
+                        onOver = { pressedOn = it },
+                        onPick = run,
+                    )
                     .widthIn(min = MenuMinWidth, max = MenuMaxWidth)
                     .width(IntrinsicSize.Max)
                     // A menu longer than the screen scrolls
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(itemsScroll)
                     .padding(vertical = 6.dp),
             ) {
                 items.forEachIndexed { index, item ->
@@ -440,9 +459,12 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         item = item,
                         highlighted = hovered == index,
                         onClick = { run(index) },
-                        modifier = Modifier.onGloballyPositioned { row ->
-                            itemsCoordinates?.let { itemPlaces[index] = it.localBoundingBoxOf(row) }
-                        },
+                        modifier = Modifier
+                            .onGloballyPositioned { row ->
+                                itemsCoordinates?.let { itemPlaces[index] = it.localBoundingBoxOf(row) }
+                            }
+                            // Its children's head stands in for it while they show
+                            .graphicsLayer { alpha = if (opened == index) 0f else 1f },
                     )
                 }
             }
@@ -610,6 +632,36 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     }
 }
 
+/**
+ * Picking an item by pressing anywhere on a menu: the item under the finger lights up while it
+ * slides, and the one under it when it lifts runs, as a long press that slid onto the menu does.
+ * A press that scrolled the menu picks nothing. [at] finds the item at a point of this layout.
+ */
+@Composable
+private fun Modifier.slideToPick(scroll: ScrollState, at: (Offset) -> Int?, onOver: (Int?) -> Unit, onPick: (Int) -> Unit): Modifier {
+    val currentAt by rememberUpdatedState(at)
+    val currentOver by rememberUpdatedState(onOver)
+    val currentPick by rememberUpdatedState(onPick)
+    return pointerInput(Unit) {
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val scrolled = scroll.value
+            var over = currentAt(down.position)
+            currentOver(over)
+            while (true) {
+                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) {
+                    if (scroll.value == scrolled) over?.let(currentPick)
+                    break
+                }
+                over = currentAt(change.position)
+                currentOver(over)
+            }
+            currentOver(null)
+        }
+    }
+}
+
 /** One item of a menu: its icon, label and detail, and a check when chosen or › when it opens more. */
 @Composable
 private fun MenuRow(
@@ -632,7 +684,14 @@ private fun MenuRow(
             .padding(horizontal = 6.dp)
             .clip(ItemShape)
             .background(if (highlighted) colors.chip else Color.Transparent)
-            .clickable(onClick = onClick)
+            // Presses are followed by the menu as a whole, so a finger can slide between items
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick {
+                    onClick()
+                    true
+                }
+            }
             .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -683,6 +742,17 @@ private fun ChildMenu(
     val colors = ExtendedTheme.colors
     val insets = WindowInsets.safeDrawing
     val children = item.children.orEmpty()
+    val haptic = LocalHapticFeedback.current
+    // The head and then each child, where they sit in the card, for a finger sliding over them
+    val places = remember { mutableStateListOf(*Array(children.size + 1) { Rect.Zero }) }
+    var column by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var pressedOn by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(pressedOn) {
+        if (pressedOn != null) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
+    val scroll = rememberScrollState()
+    val pick: (Int) -> Unit = { index -> if (index == 0) onFold() else onPick(children[index - 1]) }
+    fun Modifier.place(index: Int) = onGloballyPositioned { row -> column?.let { places[index] = it.localBoundingBoxOf(row) } }
     // Where the card is now and when open, worked out in layout and drawn from
     var final by remember { mutableStateOf(Rect.Zero) }
     var now by remember { mutableStateOf(Rect.Zero) }
@@ -709,32 +779,62 @@ private fun ChildMenu(
             Column(
                 modifier = Modifier
                     .graphicsLayer {
+                        // At their own size throughout: the head starts exactly on the row it
+                        // came from and the glass unfolds from that row to show the rest
                         val p = progress()
-                        val scale = if (final.width > 0f) now.width / final.width else 1f
-                        scaleX = scale
-                        scaleY = scale
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        translationX = now.left - final.left
-                        translationY = now.top - final.top
-                        shape = ChildClip(now.width / scale, now.height / scale, corner / scale)
+                        val head = ChildPadding.toPx()
+                        translationX = lerp(from.left - final.left, 0f, p)
+                        translationY = lerp(from.top - head - final.top, 0f, p)
+                        shape = ChildClip(
+                            left = now.left - final.left - translationX,
+                            top = now.top - final.top - translationY,
+                            width = now.width,
+                            height = now.height,
+                            corner = corner,
+                        )
                         clip = true
-                        // The head is the row it came from, so it shows at once; the rest sharpens
-                        alpha = (p / 0.4f).coerceIn(0f, 1f)
-                        val blur = IconBlur.toPx() * (1f - ((p - 0.3f) / 0.5f).coerceIn(0f, 1f))
-                        renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                     }
+                    .onPlaced { column = it }
+                    .slideToPick(
+                        scroll = scroll,
+                        at = { position -> places.indexOfFirst { it.contains(position) }.takeIf { it >= 0 } },
+                        onOver = { pressedOn = it },
+                        onPick = pick,
+                    )
                     .widthIn(min = MenuMinWidth, max = MenuMaxWidth + ChildWiden * 2)
                     .width(IntrinsicSize.Max)
-                    .verticalScroll(rememberScrollState())
-                    .padding(vertical = 6.dp),
+                    .verticalScroll(scroll)
+                    .padding(vertical = ChildPadding),
             ) {
-                MenuRow(item = item, highlighted = false, onClick = onFold, trailing = Icons.Rounded.ExpandLess, bold = true)
-                Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
-                children.forEachIndexed { index, child ->
-                    if (child.startsGroup && index > 0) {
-                        Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                MenuRow(
+                    item = item,
+                    highlighted = pressedOn == 0,
+                    onClick = onFold,
+                    trailing = Icons.Rounded.ExpandLess,
+                    bold = true,
+                    modifier = Modifier.place(0),
+                )
+                // The rest comes out of a blur as the glass reaches it
+                Column(
+                    modifier = Modifier.graphicsLayer {
+                        val p = progress()
+                        alpha = ((p - 0.1f) / 0.4f).coerceIn(0f, 1f)
+                        val blur = IconBlur.toPx() * (1f - ((p - 0.25f) / 0.5f).coerceIn(0f, 1f))
+                        renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
+                    },
+                ) {
+                    Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                    children.forEachIndexed { index, child ->
+                        if (child.startsGroup && index > 0) {
+                            Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                        }
+                        MenuRow(
+                            item = child,
+                            highlighted = pressedOn == index + 1,
+                            onClick = { onPick(child) },
+                            modifier = Modifier.place(index + 1),
+                        )
                     }
-                    MenuRow(item = child, highlighted = false, onClick = { onPick(child) })
                 }
             }
         },
@@ -750,7 +850,7 @@ private fun ChildMenu(
         val height = items.height.toFloat()
         // The head lies over the row, as far as the screen allows
         val left = (menu.center.x - width / 2).coerceIn(margin, (constraints.maxWidth - width - margin).coerceAtLeast(margin))
-        val y = (from.top - 6.dp.toPx()).coerceIn(top, (bottom - height).coerceAtLeast(top))
+        val y = (from.top - ChildPadding.toPx()).coerceIn(top, (bottom - height).coerceAtLeast(top))
         final = Rect(Offset(left, y), Size(width, height))
         val p = progress()
         now = Rect(
@@ -770,10 +870,21 @@ private fun ChildMenu(
     }
 }
 
-/** A child menu's glass as its items see it, scaled from their top left corner. */
-private class ChildClip(private val width: Float, private val height: Float, private val corner: Float) : Shape {
+/** A child menu's glass as its items see it: [width] by [height] at [left], [top] of them. */
+private class ChildClip(
+    private val left: Float,
+    private val top: Float,
+    private val width: Float,
+    private val height: Float,
+    private val corner: Float,
+) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        Outline.Generic(Path().apply { addSmoothRect(width, height, corner, SmoothCornerShape.DefaultSmoothing) })
+        Outline.Generic(
+            Path().apply {
+                addSmoothRect(width, height, corner, SmoothCornerShape.DefaultSmoothing)
+                translate(Offset(left, top))
+            },
+        )
 }
 
 /**
@@ -888,6 +999,9 @@ private val MenuBlur = 24.dp
 
 /** An item's highlight, inset 6dp in the menu and so as round as the menu less that. */
 private val ItemShape = SmoothCornerShape(Radius.lg - 6.dp)
+
+/** Above a child menu's head and below its last item. */
+private val ChildPadding = 6.dp
 
 /** How much wider than its menu a child menu is, on each side. */
 private val ChildWiden = 10.dp
