@@ -28,10 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -94,6 +90,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ShadowAmbient
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ShadowSpot
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.addSmoothRect
 import com.huanchengfly.tieba.post.ui.common.theme.compose.glassEdge
 import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
@@ -453,7 +450,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             ) {
                 items.forEachIndexed { index, item ->
                     if (item.startsGroup && index > 0) {
-                        Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                        Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp))
                     }
                     MenuRow(
                         item = item,
@@ -670,8 +667,8 @@ private fun MenuRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     trailing: ImageVector? = when {
-        item.children != null -> Icons.Rounded.ChevronRight
-        item.selected -> Icons.Rounded.Check
+        item.children != null -> Symbols.ChevronRight
+        item.selected -> Symbols.Check
         else -> null
     },
     bold: Boolean = false,
@@ -694,7 +691,7 @@ private fun MenuRow(
             }
             .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         when {
             item.leading != null -> item.leading.invoke()
@@ -810,7 +807,7 @@ private fun ChildMenu(
                     item = item,
                     highlighted = pressedOn == 0,
                     onClick = onFold,
-                    trailing = Icons.Rounded.ExpandLess,
+                    trailing = Symbols.ExpandLess,
                     bold = true,
                     modifier = Modifier.place(0),
                 )
@@ -823,10 +820,10 @@ private fun ChildMenu(
                         renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                     },
                 ) {
-                    Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                    Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp))
                     children.forEachIndexed { index, child ->
                         if (child.startsGroup && index > 0) {
-                            Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                            Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp))
                         }
                         MenuRow(
                             item = child,
@@ -992,9 +989,9 @@ private const val PreviewDimNight = 0.3f
 private val FingerGap = 20.dp
 private val Margin = 12.dp
 private val IconBlur = 20.dp
-private val MenuMinWidth = 200.dp
+private val MenuMinWidth = 180.dp
 private val MenuMaxWidth = 280.dp
-private val ItemHeight = 46.dp
+private val ItemHeight = 44.dp
 private val MenuBlur = 24.dp
 
 /** An item's highlight, inset 6dp in the menu and so as round as the menu less that. */
