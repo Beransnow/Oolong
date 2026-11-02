@@ -536,22 +536,20 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
 private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -> Unit): List<ContextMenuItem> {
     @Composable
     fun item(field: ConditionField, label: Int) =
-        ContextMenuItem(icon = field.icon, label = stringResource(id = label), selected = field == selected) { onPick(field) }
+        ContextMenuItem(icon = null, label = stringResource(id = label), selected = field == selected) { onPick(field) }
 
     @Composable
-    fun group(icon: ImageVector, label: Int, vararg children: ContextMenuItem) =
-        ContextMenuItem(icon = icon, label = stringResource(id = label), selected = children.any { it.selected }, children = children.toList())
+    fun group(label: Int, vararg children: ContextMenuItem) =
+        ContextMenuItem(icon = null, label = stringResource(id = label), selected = children.any { it.selected }, children = children.toList())
 
     return listOf(
         group(
-            Symbols.TextFields,
             R.string.rule_group_text,
             item(ConditionField.TitleOrBody, R.string.rule_field_title_or_body),
             item(ConditionField.Title, R.string.rule_field_title),
             item(ConditionField.Body, R.string.rule_field_body),
         ),
         group(
-            Symbols.Person,
             R.string.rule_group_author,
             item(ConditionField.Author, R.string.rule_field_user),
             item(ConditionField.Level, R.string.rule_field_level_short),
@@ -560,7 +558,6 @@ private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -
         ),
         item(ConditionField.Forum, R.string.rule_field_forum),
         group(
-            Symbols.Category,
             R.string.rule_group_content,
             item(ConditionField.Content, R.string.rule_field_kind),
             item(ConditionField.Length, R.string.rule_field_length),
@@ -583,20 +580,6 @@ private fun fieldName(field: ConditionField): String = stringResource(
         ConditionField.Length -> R.string.rule_field_length
     },
 )
-
-private val ConditionField.icon: ImageVector
-    get() = when (this) {
-        ConditionField.TitleOrBody -> Symbols.TextFields
-        ConditionField.Title -> Symbols.Title
-        ConditionField.Body -> Symbols.Article
-        ConditionField.Author -> Symbols.Person
-        ConditionField.Level -> Symbols.BarChart
-        ConditionField.ThreadAuthor -> Symbols.Badge
-        ConditionField.Ip -> Symbols.LocationOn
-        ConditionField.Forum -> Symbols.Forum
-        ConditionField.Content -> Symbols.Category
-        ConditionField.Length -> Symbols.ShortText
-    }
 
 @Composable
 private fun opName(op: ConditionOp, negated: Boolean): String = stringResource(
@@ -677,16 +660,16 @@ private fun SentenceCard(
         val anchor = box.translate(at)
         val items = when (part) {
             RulePart.Scope -> scopes.map { (scope, label) ->
-                ContextMenuItem(scope.icon, label, selected = rule.scope == scope) { onEdit { it.copy(scope = scope) } }
+                ContextMenuItem(icon = null, label = label, selected = rule.scope == scope) { onEdit { it.copy(scope = scope) } }
             }
 
             RulePart.Action -> actions.map { (action, label) ->
-                ContextMenuItem(action.icon, label, selected = rule.action == action) { onEdit { it.copy(action = action) } }
+                ContextMenuItem(icon = null, label = label, selected = rule.action == action) { onEdit { it.copy(action = action) } }
             }
 
             RulePart.Expiry -> expiries.map { (days, label) ->
                 val chosen = days == null && rule.expiresAt == null
-                ContextMenuItem(expiryIcon(days), label, selected = chosen) { onExpiry(days) }
+                ContextMenuItem(icon = null, label = label, selected = chosen) { onExpiry(days) }
             }
 
             RulePart.Join -> joins.map { (join, label) ->
@@ -733,26 +716,4 @@ private fun SentenceCard(
             modifier = Modifier.onGloballyPositioned { origin = it },
         )
     }
-}
-
-private val BlockRule.Scope.icon: ImageVector
-    get() = when (this) {
-        BlockRule.Scope.All -> Symbols.Public
-        BlockRule.Scope.Feeds -> Symbols.Explore
-        BlockRule.Scope.Forum -> Symbols.Forum
-        BlockRule.Scope.Thread -> Symbols.Article
-    }
-
-private val BlockRule.Action.icon: ImageVector
-    get() = when (this) {
-        BlockRule.Action.Default -> Symbols.Tune
-        BlockRule.Action.Fold -> Symbols.UnfoldLess
-        BlockRule.Action.Hide -> Symbols.VisibilityOff
-        BlockRule.Action.Allow -> Symbols.Visibility
-    }
-
-private fun expiryIcon(days: Int?): ImageVector = when (days) {
-    null -> Symbols.AllInclusive
-    7 -> Symbols.Event
-    else -> Symbols.CalendarMonth
 }
