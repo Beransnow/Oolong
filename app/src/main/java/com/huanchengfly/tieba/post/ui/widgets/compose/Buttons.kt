@@ -52,7 +52,9 @@ fun Button(
     // The press veil takes the content colour, so a filled button lightens rather than darkens
     CompositionLocalProvider(LocalContentColor provides contentColor.copy(alpha = 1f)) {
         Surface(
-            modifier = Modifier
+            // The caller's modifier first, so its padding lies outside the shape instead of being
+            // clipped into it
+            modifier = modifier
                 .pressScale(interactionSource)
                 .clip(shape)
                 .clickable(
@@ -60,8 +62,7 @@ fun Button(
                     enabled = enabled,
                     interactionSource = interactionSource,
                     indication = PressFeedback.Overlay
-                )
-                .then(modifier),
+                ),
             shape = shape,
             color = colors.backgroundColor(enabled).value,
             contentColor = contentColor.copy(alpha = 1f),
