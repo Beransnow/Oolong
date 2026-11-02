@@ -16,11 +16,14 @@ import androidx.media3.common.Player.STATE_READY
 import androidx.media3.common.VideoSize
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.RawResourceDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import com.huanchengfly.tieba.core.network.TiebaProfile
+import com.huanchengfly.tieba.post.api.getUserAgent
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.FlowDebouncer
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.set
 import kotlinx.coroutines.CoroutineScope
@@ -319,7 +322,9 @@ internal class DefaultVideoPlayerController(
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun prepare() {
         fun createVideoSource(): MediaSource {
-            val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context)
+            // The video servers may refuse requests that do not come from the app
+            val http = DefaultHttpDataSource.Factory().setUserAgent(getUserAgent("tieba/${TiebaProfile.PROTO_12_52.version}"))
+            val dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context, http)
 
             return when (val source = source) {
                 is VideoPlayerSource.Raw -> {
