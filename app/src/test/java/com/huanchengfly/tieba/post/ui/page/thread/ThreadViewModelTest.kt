@@ -185,6 +185,23 @@ class ThreadViewModelTest {
         assertEquals(listOf(2L, 3L), viewModel.state.value.posts.items.map { it.post.id })
     }
 
+    @Test
+    fun `a thread opened again soon shows what was loaded of it`() = runTest {
+        respond(data(listOf(post(2))), data(listOf(post(3)), ProtoPage(current_page = 2, total_page = 3, new_total_page = 3)))
+        val client = queryClient()
+        val repository = threadRepository(client)
+        val first = createViewModel(client = client, repository = repository)
+        runCurrent()
+        first.loadMore()
+        runCurrent()
+
+        val again = createViewModel(client = client, repository = repository)
+        runCurrent()
+        assertEquals(listOf(2L, 3L), again.state.value.posts.items.map { it.post.id })
+        assertEquals("标题", again.state.value.thread?.title)
+        coVerify(exactly = 2) { remote.page(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
     /** A list showing [threads], as the one a thread is opened from. */
     private fun TestScope.listing(client: QueryClient, vararg threads: ThreadSummary) = client.pager(
         scope = backgroundScope,

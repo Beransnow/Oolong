@@ -133,30 +133,24 @@ class ThreadRepository @Inject constructor(
     @IoDispatcher private val io: CoroutineDispatcher,
     client: QueryClient,
 ) {
-    /** First pages, kept a little so that peeking at a thread and then opening it loads it once. */
-    private val firstPages = client.query<ThreadQuery, ThreadPage>(
-        name = "thread",
-        staleTime = 1.minutes,
-        normalize = { it.copy(thread = it.thread.copy(summary = Threads(it.thread.summary))) },
-    ) { query -> load(query, ThreadCursor.first()) }
-
     /**
-     * A page of the thread. With [cached], the first page loaded in the last minute is used again,
-     * as when opening a thread just peeked at; any first page loaded is kept for that.
+     * The posts of threads as the thread page shows them, kept a little: a thread peeked at and
+     * then opened, or opened again soon, shows what was loaded of it at once.
      */
-    suspend fun page(query: ThreadQuery, cursor: ThreadCursor, cached: Boolean = false): ThreadPage = when {
-        cursor != ThreadCursor.first() -> load(query, cursor)
-        cached -> firstPages.get(query)
-        else -> firstPages.reload(query)
-    }
+    val posts = client.infiniteQuery<ThreadQuery, ThreadCursor, ThreadPage, Post>(
+        name = "thread",
+        itemKey = Post::id,
+        page = { it.posts },
+        staleTime = 1.minutes,
+    ) { query, cursor -> page(query, cursor) }
 
-    /** Starts loading the first page of [query] ahead of opening it. */
-    fun prefetch(query: ThreadQuery) = firstPages.prefetch(query)
+    /** Starts loading the start of [query] ahead of opening it. */
+    fun prefetch(query: ThreadQuery) = posts.prefetch(query, ThreadCursor.first())
 
-    /** Forgets the first pages kept of thread [threadId], which changed. */
-    fun changed(threadId: Long) = firstPages.invalidate { it.threadId == threadId }
+    /** Marks what is kept of thread [threadId], which changed, to be loaded again. */
+    fun changed(threadId: Long) = posts.invalidate { it.threadId == threadId }
 
-    private suspend fun load(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
+    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
         val data = remote.page(
             threadId = query.threadId,
             page = when (cursor) {

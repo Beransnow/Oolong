@@ -8,8 +8,9 @@ import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.Loads
 import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.QueryPager
 import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadDetail
@@ -44,7 +45,9 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,13 +57,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 
 /** A reply and how the block rules block it, or some of the replies shown inside it, by their ids. */
 @Immutable
@@ -98,7 +104,7 @@ sealed interface ThreadEffect {
     data class ScrollToPost(val postId: Long) : ThreadEffect
 }
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ThreadViewModel.Factory::class)
 class ThreadViewModel @AssistedInject constructor(
     @Assisted private val args: ThreadKey,
@@ -137,19 +143,35 @@ class ThreadViewModel @AssistedInject constructor(
     /** A post to scroll to as soon as a page containing it loads. */
     private var scrollToPost: Long? = args.postId.takeIf { it != 0L }
 
-    /** Whether nothing loaded yet: a first page just loaded, e.g. while peeking at the thread, is used then. */
-    private var opening = true
+    /** Holds the list shown; the one shown before is let go when another replaces it. */
+    private var listJob: Job? = null
 
-    private val posts = pager(initialKey = refreshKey, itemKey = { post: Post -> post.id }) { key ->
-        val page = repository.page(query.value, key, cached = opening)
-        opening = false
+    /**
+     * The posts of the query shown, kept by the app: a thread opened again, or just peeked at,
+     * shows what was loaded of it, and turning a filter back off shows the list from before.
+     */
+    private val lists = MutableStateFlow(open(query.value, refreshKey))
+
+    private val posts: QueryPager<ThreadCursor, Post, ThreadPage> get() = lists.value
+
+    private fun open(query: ThreadQuery, from: ThreadCursor): QueryPager<ThreadCursor, Post, ThreadPage> {
+        listJob?.cancel()
+        val job = Job(viewModelScope.coroutineContext.job).also { listJob = it }
+        return repository.posts.pager(viewModelScope + job, query, from)
+    }
+
+    /** Takes what the list loaded besides its posts, and scrolls to a post once a page brings it. */
+    private suspend fun onLoads(loads: Loads<ThreadCursor, ThreadPage>) {
+        val latest = loads.latest ?: return
+        val page = latest.response
+        val refreshed = loads.refreshed?.response
         meta.update { meta ->
             meta.copy(
-                page = page.copy(firstPost = page.firstPost ?: meta.page?.firstPost),
-                maxPage = if (key == refreshKey) page.currentPage else maxOf(meta.maxPage, page.currentPage),
+                page = page.copy(firstPost = page.firstPost ?: refreshed?.firstPost ?: meta.page?.firstPost),
+                maxPage = if (latest.refreshed) page.currentPage else maxOf(meta.maxPage, page.currentPage, refreshed?.currentPage ?: 0),
             )
         }
-        if (key == refreshKey && scrollAfterRefresh) {
+        if (latest.refreshed && latest.cursor == refreshKey && scrollAfterRefresh) {
             scrollAfterRefresh = false
             effects.send(ThreadEffect.ScrollToFirstReply)
         }
@@ -159,14 +181,13 @@ class ThreadViewModel @AssistedInject constructor(
                 effects.send(ThreadEffect.ScrollToPost(postId))
             }
         }
-        page.posts
     }
 
     /** Block flags for the last list and rules seen, which most state changes leave as they are. */
     private var blocked: Pair<Triple<List<Post>, BlockRules, String?>, ImmutableList<PostItem>>? = null
 
     private val items: Flow<PagerState<PostItem>> = combine(
-        posts.state,
+        lists.flatMapLatest { it.state },
         blockRuleSource.rules,
         // Rules for one forum need to know the thread's
         meta.map { it.page?.thread?.forum?.name }.distinctUntilChanged(),
@@ -204,6 +225,7 @@ class ThreadViewModel @AssistedInject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ThreadState(query.value))
 
     init {
+        lists.flatMapLatest { it.loads }.onEach(::onLoads).launchIn(viewModelScope)
         combine(meta.map { it.page?.thread }.filterNotNull(), readUpTo) { thread, postId -> thread to postId }
             .debounce(HISTORY_DELAY)
             .onEach { (thread, postId) -> history.save(thread, query.value.seeLz, findPost(postId)) }
@@ -252,13 +274,13 @@ class ThreadViewModel @AssistedInject constructor(
     fun setSeeLz(seeLz: Boolean) {
         if (query.value.seeLz == seeLz) return
         query.update { it.copy(seeLz = seeLz) }
-        refresh()
+        show(ThreadCursor.first())
     }
 
     fun setSort(sort: ThreadSort) {
         if (query.value.sort == sort) return
         query.update { it.copy(sort = sort) }
-        refresh()
+        show(ThreadCursor.first())
     }
 
     /** Whether only the author's posts were shown before immersive reading turned that on. */
@@ -400,6 +422,13 @@ class ThreadViewModel @AssistedInject constructor(
     /** The last post on screen, which history and the store mark remember. */
     fun onReadUpTo(postId: Long) {
         readUpTo.value = postId
+    }
+
+    /** Shows the list of the query now asked for, as kept if it is, from [from]. */
+    private fun show(from: ThreadCursor) {
+        refreshKey = from
+        scrollAfterRefresh = false
+        lists.value = open(query.value, from)
     }
 
     private fun refreshFrom(key: ThreadCursor, scrollToFirstReply: Boolean = false) {
