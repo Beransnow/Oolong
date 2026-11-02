@@ -386,6 +386,35 @@ private val ControlLensOptics = GlassOptics(
     refractionDetailIntensity = 0.76f,
 )
 
+/**
+ * A large clear lens over [state], such as the one lifted off the icon on the about page: like
+ * [controlLens], but bending what it covers from further in from its rim, as a thicker glass does.
+ * Only on [GlassTier.Glass].
+ */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+fun Modifier.loupeLens(state: HazeState, shape: RoundedCornerShape): Modifier {
+    if (currentGlassTier() != GlassTier.Glass) return this
+    // On the page's ground, as pages leave theirs to the window and what lies under the lens would show
+    val background = ExtendedTheme.colors.background
+    val style = remember(shape, background) {
+        GlassStyle.clear.then {
+            shape(shape)
+            backgroundColor(background)
+            optics(LoupeOptics)
+        }
+    }
+    return hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
+}
+
+/** Clear glass, unblurred, with a deep rim for a lens a hundred dp or more across. */
+@OptIn(ExperimentalHazeApi::class)
+private val LoupeOptics = GlassOptics.clear.copy(
+    refractionDisplacement = 40.dp,
+    refractionProfile = RefractionProfile.Edge(40.dp),
+    blurRadius = OpticalSizeValue.Fixed(0.dp),
+)
+
 /** Above the scaffold content, which is captured at the default zIndex of 0. */
 private const val LensTargetZIndex = 1f
 
