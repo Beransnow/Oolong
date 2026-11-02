@@ -125,6 +125,9 @@ class SingleAccountSigner(
                         val results = mSignData.map { it.forumId.toLong() }
                             .chunked(SignRemoteDataSource.MAX_MSIGN_FORUMS)
                             .map { signs.mSign(it, tbs) }
+                        results.firstOrNull { it.info.isEmpty() }?.refusal?.let { refusal ->
+                            withContext(Dispatchers.Main) { mProgressListener?.onMSignRefused(refusal) }
+                        }
                         emit(results.flatMap { it.info })
                     }
                 } else {
@@ -253,4 +256,7 @@ interface ProgressListener {
         errorCode: Int,
         errorMsg: String
     )
+
+    /** Official one-click sign-in refused the forums for [reason]; they are signed in to one by one. */
+    fun onMSignRefused(reason: String) {}
 }

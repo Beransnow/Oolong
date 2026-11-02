@@ -179,6 +179,10 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         ).show()
     }
 
+    override fun onMSignRefused(reason: String) {
+        Toast.makeText(this, getString(R.string.toast_msign_refused, reason), Toast.LENGTH_LONG).show()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         coroutineContext.cancel()

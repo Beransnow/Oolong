@@ -57,6 +57,18 @@ class MSignTest {
     }
 
     @Test
+    fun `decodes a refusal sent with the result list as a string`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","info":"","sign_notice":"","error":{"errno":1,"errmsg":"x","usermsg":"操作过于频繁"}}"""
+        )
+
+        val response = dataSource.mSign(listOf(1L))
+
+        assertEquals(emptyList(), response.info)
+        assertEquals("操作过于频繁", response.refusal)
+    }
+
+    @Test
     fun `refuses more than 50 forums`() = runTest {
         assertFailsWith<IllegalArgumentException> { dataSource.mSign((1L..51L).toList()) }
     }
