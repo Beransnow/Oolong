@@ -47,10 +47,24 @@ import java.util.Locale
 object ThemeUtil {
     /** The theme choices; change them through [updateSettings]. */
     val settingsState: MutableState<ThemeSettings> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
-        mutableStateOf(
-            if (App.isInitialized) runBlocking { ThemeSettings.from(dataStore.data.first()) }
-            else ThemeSettings()
-        )
+        mutableStateOf(ThemeSettings()).also { if (App.isInitialized) load(it) }
+    }
+
+    /** Whether [settingsState] holds the saved settings rather than the defaults. */
+    @Volatile
+    private var loaded = false
+
+    /**
+     * Reads the saved settings into [state]. Asked for before the app has started, the defaults
+     * stand in until it has; saving them then would lose the saved ones.
+     */
+    private fun load(state: MutableState<ThemeSettings>) {
+        state.value = runBlocking { ThemeSettings.from(dataStore.data.first()) }
+        loaded = true
+    }
+
+    private fun ensureLoaded() {
+        if (!loaded && App.isInitialized) synchronized(this) { if (!loaded) load(settingsState) }
     }
 
     /** The name of the theme drawn now, worked out from [settingsState]; see [refresh]. */
@@ -107,12 +121,14 @@ object ThemeUtil {
 
     /** Works out the theme drawn now again, as after the system turns dark or light. */
     fun refresh() {
+        ensureLoaded()
         val name = settingsState.value.themeName(isSystemDark())
         if (themeState.value != name) themeState.value = name
     }
 
     /** Changes the theme choices and saves them. */
     fun updateSettings(transform: (ThemeSettings) -> ThemeSettings) {
+        ensureLoaded()
         val settings = transform(settingsState.value)
         if (settings == settingsState.value) return
         settingsState.value = settings
