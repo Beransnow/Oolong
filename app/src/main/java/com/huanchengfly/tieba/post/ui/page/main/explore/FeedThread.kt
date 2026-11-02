@@ -25,9 +25,3 @@ internal fun <T, R> PagerState<T>.mapItems(transform: (T) -> R) = PagerState(
     hasMore = hasMore,
     hasPrevious = hasPrevious,
 )
-
-/** [thread] liked or not, its like count following. */
-internal fun ThreadSummary.withAgreed(agreed: Boolean) = if (agree.agreed == agreed) this else copy(agree = agree.toggled())
-
-internal fun List<ThreadSummary>.withAgreed(threadId: Long, agreed: Boolean) =
-    map { if (it.id == threadId) it.withAgreed(agreed) else it }

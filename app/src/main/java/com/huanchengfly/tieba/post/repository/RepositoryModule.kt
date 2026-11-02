@@ -1,6 +1,8 @@
 package com.huanchengfly.tieba.post.repository
 
 import android.content.Context
+import com.huanchengfly.tieba.post.arch.ApplicationScope
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.appPreferences
 import dagger.Binds
@@ -9,6 +11,13 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,6 +53,16 @@ abstract class RepositoryModule {
 
         @Provides
         fun providePosterName(accounts: AccountRepository): PosterName = PosterName { accounts.current.value?.nameShow }
+
+        /** The app's cache, emptied when the account changes, since what it holds is as that account sees it. */
+        @Provides
+        @Singleton
+        fun provideQueryClient(@ApplicationScope scope: CoroutineScope, accounts: AccountRepository): QueryClient =
+            QueryClient(scope).also { client ->
+                accounts.current.map { it?.uid }.distinctUntilChanged().drop(1)
+                    .onEach { client.clear() }
+                    .launchIn(scope)
+            }
 
         @Provides
         fun provideEmoticonRegistry(): EmoticonRegistry = EmoticonRegistry(EmoticonManager::registerEmoticon)

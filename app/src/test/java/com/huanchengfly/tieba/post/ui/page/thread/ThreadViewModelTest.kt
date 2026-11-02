@@ -13,16 +13,23 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.Page
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadDetail
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -92,12 +99,15 @@ class ThreadViewModelTest {
         sortType: Int = 0,
         threadInfo: ThreadInfo? = null,
         appScope: CoroutineScope = backgroundScope,
+        client: QueryClient = queryClient(),
     ): ThreadViewModel {
         val dispatcher = mainDispatcherRule.dispatcher
-        threadInfo?.let { ThreadPreviewCache.put(it.toThreadSummary { _, _ -> }) }
+        threadInfo?.let { listing(client, it.toThreadSummary { _, _ -> }) }
         return ThreadViewModel(
             args = ThreadKey(threadId = 9_000L, postId = postId, sortType = sortType),
             repository = ThreadRepository(remote, agreeRemote, postRemote, { _, _ -> }, dispatcher),
+            client = client,
+            threads = threadActions(client, agreeRemote),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
             },
@@ -152,6 +162,29 @@ class ThreadViewModelTest {
         blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
         assertEquals(listOf(true, false), viewModel.state.value.posts.items.map { it.blocked })
+    }
+
+    /** A list showing [threads], as the one a thread is opened from. */
+    private fun TestScope.listing(client: QueryClient, vararg threads: ThreadSummary) = client.pager(
+        scope = backgroundScope,
+        initialKey = 1,
+        itemKey = ThreadSummary::id,
+        normalize = { Threads(it) },
+    ) { Page(threads.toList()) }.also { runCurrent() }
+
+    @Test
+    fun `liking the thread shows in the list it was opened from`() = runTest {
+        respond(data(listOf(post(2))))
+        val client = queryClient()
+        val list = listing(client, ThreadInfo(threadId = 9_000, title = "标题").toThreadSummary { _, _ -> })
+        val viewModel = createViewModel(client = client)
+        runCurrent()
+
+        viewModel.agreeThread()
+        runCurrent()
+
+        assertEquals(true, viewModel.state.value.thread?.agree?.agreed)
+        assertEquals(true, list.state.value.items.single().agree.agreed)
     }
 
     @Test
@@ -381,7 +414,6 @@ class ThreadViewModelTest {
         )
         val viewModel = createViewModel(threadInfo = passed)
         runCurrent()
-        assertNull(ThreadPreviewCache.take(9_000), "the page takes the thread it was handed")
 
         assertEquals("列表里的标题", viewModel.state.value.preview?.title)
         assertEquals(10L, viewModel.state.value.preview?.author?.id)

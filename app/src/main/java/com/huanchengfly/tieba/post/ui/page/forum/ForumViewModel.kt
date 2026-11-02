@@ -10,7 +10,8 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
@@ -23,9 +24,10 @@ import com.huanchengfly.tieba.post.repository.ForumCursor
 import com.huanchengfly.tieba.post.repository.ForumHistory
 import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.ForumSortStore
+import com.huanchengfly.tieba.post.repository.ThreadActions
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.repository.check
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -82,6 +84,8 @@ data class ForumState(
 class ForumViewModel @AssistedInject constructor(
     @Assisted key: ForumKey,
     private val repository: ForumRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     blockRuleSource: BlockRuleSource,
     private val history: ForumHistory,
     private val sortStore: ForumSortStore,
@@ -197,28 +201,20 @@ class ForumViewModel @AssistedInject constructor(
     fun agree(tab: ForumTab, threadId: Long) {
         val pager = pagers.value[tab] ?: return
         val thread = pager.state.value.items.firstOrNull { it.id == threadId } ?: return
-        val agree = !thread.agree.agreed
         actions.launch("agree-$threadId") {
-            setAgreed(threadId, agree)
-            runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                setAgreed(threadId, !agree)
-                messages.showError(R.string.toast_agree_failed, it)
-            }
-        }
-    }
-
-    /** Marks the thread agreed or not in every list holding it. */
-    private fun setAgreed(threadId: Long, agree: Boolean) {
-        pagers.value.values.forEach { pager ->
-            pager.update { items ->
-                items.map { if (it.id == threadId) it.withAgreed(agree) else it }
-            }
+            runCatching { threads.agree(thread, !thread.agree.agreed) }
+                .onFailure { messages.showError(R.string.toast_agree_failed, it) }
         }
     }
 
     private fun pagerOf(tab: ForumTab): Pager<ForumCursor, ThreadSummary> {
         pagers.value[tab]?.let { return it }
-        val pager = pager(initialKey = ForumCursor.first(tab), itemKey = { thread: ThreadSummary -> thread.id }) { cursor ->
+        val pager = client.pager(
+            scope = viewModelScope,
+            initialKey = ForumCursor.first(tab),
+            itemKey = { thread: ThreadSummary -> thread.id },
+            normalize = { Threads(it) },
+        ) { cursor ->
             val selection = selection.value
             val page = repository.threads(
                 forumName = forumName,

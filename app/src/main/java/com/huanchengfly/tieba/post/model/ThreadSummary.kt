@@ -43,6 +43,9 @@ data class ThreadSummary(
     val hotNum: Long = 0,
 )
 
+/** The thread liked or not, its like count following. */
+fun ThreadSummary.withAgreed(agreed: Boolean) = if (agree.agreed == agreed) this else copy(agree = agree.toggled())
+
 /**
  * The first floor as a list knows it, to show until the thread page loads it: all of its content,
  * but no likes or replies inside it. Its id is 0, as it isn't the loaded post.

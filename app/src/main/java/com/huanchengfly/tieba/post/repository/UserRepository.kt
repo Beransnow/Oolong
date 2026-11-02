@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.core.network.TiebaServerException
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.User
@@ -29,7 +27,6 @@ data class UserPostsPage(val posts: Page<Int, UserPost>, val hidden: Boolean = f
 /** A user's profile, what they posted and the forums they follow, and following them. */
 class UserRepository @Inject constructor(
     private val remote: UserRemoteDataSource,
-    private val agreeRemote: AgreeRemoteDataSource,
     private val uploadRemote: UploadRemoteDataSource,
     @IoDispatcher private val io: CoroutineDispatcher,
     private val emoticons: EmoticonRegistry,
@@ -93,10 +90,6 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun uploadPortrait(picture: File): String? = uploadPortrait(withContext(io) { picture.readBytes() })
-
-    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
-    }
 }
 
 /** The upload of a portrait that waits for review, which the server sends as an error. */

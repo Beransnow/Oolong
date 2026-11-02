@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.api.models.protos.frsPage.FrsPageResponseData
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.NavTabInfo
 import com.huanchengfly.tieba.post.api.models.protos.generalTabList.GeneralTabListResponseData
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
@@ -27,6 +28,8 @@ import com.huanchengfly.tieba.post.repository.ForumSortStore
 import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.repository.forumRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -80,9 +83,14 @@ class ForumViewModelTest {
         coEvery { remote.page(any(), any(), any(), any(), any(), any()) } returnsMany pages.toList()
     }
 
-    private fun TestScope.createViewModel(storedSort: Int = ForumSort.REPLY_TIME) = ForumViewModel(
+    private fun TestScope.createViewModel(
+        storedSort: Int = ForumSort.REPLY_TIME,
+        client: QueryClient = queryClient(),
+    ) = ForumViewModel(
         key = ForumKey("吧名"),
-        repository = forumRepository(remote, likeRemote, signRemote, agreeRemote = agreeRemote),
+        repository = forumRepository(remote, likeRemote, signRemote),
+        client = client,
+        threads = threadActions(client, agreeRemote),
         blockRuleSource = object : BlockRuleSource {
             override val rules = blockRules
         },

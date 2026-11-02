@@ -7,14 +7,17 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotTopic
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.ThreadActions
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -47,6 +50,8 @@ data class HotState(
 @HiltViewModel
 class HotViewModel @Inject constructor(
     private val repository: ExploreRepository,
+    client: QueryClient,
+    private val threads: ThreadActions,
     private val messages: MessageController,
     blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
@@ -64,7 +69,10 @@ class HotViewModel @Inject constructor(
         val opened: Boolean = false,
     )
 
-    val state: StateFlow<HotState> = combine(local, blockRuleSource.rules) { local, rules ->
+    val state: StateFlow<HotState> = combine(
+        local.withLatestEntities(client) { it.copy(threads = it.threads.map { thread -> Threads(thread) }) },
+        blockRuleSource.rules,
+    ) { local, rules ->
         HotState(
             topics = local.topics.toImmutableList(),
             categories = local.categories.toImmutableList(),
@@ -87,19 +95,10 @@ class HotViewModel @Inject constructor(
         if (code != local.value.category) load(code, whole = false)
     }
 
-    fun agree(thread: ThreadSummary) {
-        val agree = !thread.agree.agreed
-        actions.launch("agree-${thread.id}") {
-            setAgreed(thread.id, agree)
-            runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                setAgreed(thread.id, !agree)
-                messages.showError(R.string.toast_agree_failed, it)
-            }
-        }
+    fun agree(thread: ThreadSummary) = actions.launch("agree-${thread.id}") {
+        runCatching { threads.agree(thread, !thread.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
-
-    private fun setAgreed(threadId: Long, agree: Boolean) =
-        local.update { it.copy(threads = it.threads.withAgreed(threadId, agree)) }
 
     private fun load(code: String, whole: Boolean) {
         loadJob?.cancel()

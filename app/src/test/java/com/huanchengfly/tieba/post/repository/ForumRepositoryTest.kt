@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeForumResponse
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
@@ -255,8 +254,7 @@ internal fun forumRepository(
     likeRemote: LikeRemoteDataSource = mockk(),
     signRemote: SignRemoteDataSource = mockk(),
     videoFilter: VideoThreadFilter = VideoThreadFilter { false },
-    agreeRemote: AgreeRemoteDataSource = mockk(relaxed = true),
-) = ForumRepository(remote, likeRemote, signRemote, agreeRemote, videoFilter, Dispatchers.Unconfined, { _, _ -> })
+) = ForumRepository(remote, likeRemote, signRemote, videoFilter, Dispatchers.Unconfined, { _, _ -> })
 
 internal fun forumRuleData(
     rules: List<ForumRule> = listOf(

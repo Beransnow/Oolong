@@ -2,10 +2,20 @@ package com.huanchengfly.tieba.post.arch.query
 
 /**
  * A kind of thing the app shows in many places, such as a thread, told apart by [id]. Declared
- * once, e.g. `val Threads = EntityType<Long, ThreadSummary>("thread") { it.id }`.
+ * once, e.g. `val Threads = EntityType<Long, ThreadSummary>("thread", id = { it.id })`.
+ *
+ * @param merge the entity to keep when a [newer] copy loads while there is an [older] one; places
+ * leaving out some of what others show can fill it in from the older copy.
  */
-class EntityType<I : Any, E : Any>(private val name: String, val id: (E) -> I) {
+class EntityType<I : Any, E : Any>(
+    private val name: String,
+    val id: (E) -> I,
+    private val merge: (older: E, newer: E) -> E = { _, newer -> newer },
+) {
     internal fun keyOf(entity: E) = EntityKey(this, id(entity))
+
+    @Suppress("UNCHECKED_CAST")
+    internal fun mergeAny(older: Any, newer: Any): Any = merge(older as E, newer as E)
 
     override fun toString() = name
 }

@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.forum.ForumRemoteDataSource
 import com.huanchengfly.tieba.core.network.forum.LikeRemoteDataSource
 import com.huanchengfly.tieba.core.network.sign.SignRemoteDataSource
@@ -64,7 +62,6 @@ class ForumRepository @Inject constructor(
     private val remote: ForumRemoteDataSource,
     private val likeRemote: LikeRemoteDataSource,
     private val signRemote: SignRemoteDataSource,
-    private val agreeRemote: AgreeRemoteDataSource,
     private val videoFilter: VideoThreadFilter,
     @IoDispatcher private val io: CoroutineDispatcher,
     private val emoticons: EmoticonRegistry,
@@ -182,10 +179,6 @@ class ForumRepository @Inject constructor(
             bonusPoints = bonus,
             rank = info.userSignRank?.toIntOrNull() ?: 0,
         )
-    }
-
-    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 
     /**

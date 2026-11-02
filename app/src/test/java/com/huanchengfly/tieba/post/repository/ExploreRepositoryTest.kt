@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.explore.ExploreRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.AlaLiveInfo
 import com.huanchengfly.tieba.post.api.models.protos.FrsTabInfo
@@ -36,7 +35,7 @@ class ExploreRepositoryTest {
     }
     private var hideVideos = false
     private val repository = ExploreRepository(
-        remote, mockk<AgreeRemoteDataSource>(relaxed = true), store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> },
+        remote, store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> },
     )
 
     @Test

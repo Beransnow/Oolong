@@ -1,5 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.user
 
+import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.identity.Session
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.Agree
@@ -7,6 +8,7 @@ import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Page
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.model.UserThread
@@ -15,11 +17,14 @@ import com.huanchengfly.tieba.post.repository.UserPostsPage
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.repository.toUserPost
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -37,9 +42,13 @@ class UserProfileViewModelTest {
     private val shown = mutableListOf<Int>()
     private val user = UserProfile(id = 7, name = "n", nameShow = "", portrait = "p")
 
-    private fun createViewModel(uid: Long = 7) = UserProfileViewModel(
+    private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
+
+    private fun TestScope.createViewModel(uid: Long = 7, client: QueryClient = queryClient()) = UserProfileViewModel(
         key = UserProfileKey(uid),
         repository = repository,
+        client = client,
+        threads = threadActions(client, agreeRemote),
         blockList = mockk(relaxed = true),
         messages = object : MessageController {
             override fun show(message: Int, vararg args: Any) {
@@ -135,7 +144,7 @@ class UserProfileViewModelTest {
         runCurrent()
 
         assertEquals(true, (viewModel.state.value.threads.items.single() as UserThread).thread.agree.agreed)
-        coVerify { repository.agreeThread(any(), true) }
+        coVerify { agreeRemote.opAgree(any(), any(), undo = false) }
     }
 
     @Test

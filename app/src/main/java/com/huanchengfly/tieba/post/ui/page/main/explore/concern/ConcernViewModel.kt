@@ -8,14 +8,16 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.ThreadActions
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.mapItems
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +33,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ConcernViewModel @Inject constructor(
     private val repository: ExploreRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     private val messages: MessageController,
     blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
@@ -54,21 +58,19 @@ class ConcernViewModel @Inject constructor(
 
     fun loadMore() = pager().loadMore()
 
-    fun agree(thread: ThreadSummary) {
-        val pager = pager.value ?: return
-        val agree = !thread.agree.agreed
-        actions.launch("agree-${thread.id}") {
-            pager.update { it.withAgreed(thread.id, agree) }
-            runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                pager.update { it.withAgreed(thread.id, !agree) }
-                messages.showError(R.string.toast_agree_failed, it)
-            }
-        }
+    fun agree(thread: ThreadSummary) = actions.launch("agree-${thread.id}") {
+        runCatching { threads.agree(thread, !thread.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     private fun pager(): Pager<String, ThreadSummary> {
         pager.value?.let { return it }
-        return pager(initialKey = "", itemKey = { thread: ThreadSummary -> thread.id }) { pageTag ->
+        return client.pager(
+            scope = viewModelScope,
+            initialKey = "",
+            itemKey = { thread: ThreadSummary -> thread.id },
+            normalize = { Threads(it) },
+        ) { pageTag ->
             repository.followedUsersThreads(pageTag)
         }.also { pager.value = it }
     }

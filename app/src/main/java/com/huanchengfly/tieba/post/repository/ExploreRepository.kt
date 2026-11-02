@@ -1,7 +1,5 @@
 package com.huanchengfly.tieba.post.repository
 
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.explore.ExploreRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.personalized.ThreadPersonalized
@@ -27,7 +25,6 @@ interface ConcernFeedStore {
 /** The explore tab's feeds: recommended threads, the followed users' threads and the hot threads. */
 class ExploreRepository @Inject constructor(
     private val remote: ExploreRemoteDataSource,
-    private val agreeRemote: AgreeRemoteDataSource,
     private val concernStore: ConcernFeedStore,
     private val videoFilter: VideoThreadFilter,
     @IoDispatcher private val io: CoroutineDispatcher,
@@ -94,10 +91,6 @@ class ExploreRepository @Inject constructor(
             extras = reasons.map { it.extra },
             clickTime = clickTime,
         )
-    }
-
-    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 
     /** Drops live streams, videos if hidden, and adverts from outside any forum, which carry no forum. */

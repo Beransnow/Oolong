@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotThreads
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
@@ -10,11 +11,14 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -34,8 +38,10 @@ class HotViewModelTest {
         threads = ids.map { ThreadInfo(id = it, threadId = it).toThreadSummary { _, _ -> } },
     )
 
-    private fun createViewModel() = HotViewModel(
+    private fun TestScope.createViewModel(client: QueryClient = queryClient()) = HotViewModel(
         repository = repository,
+        client = client,
+        threads = threadActions(client),
         messages = mockk<MessageController>(relaxed = true),
         blockRuleSource = object : BlockRuleSource {
             override val rules = MutableStateFlow(BlockRules { null })

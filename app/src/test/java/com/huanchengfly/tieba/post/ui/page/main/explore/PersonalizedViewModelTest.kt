@@ -1,20 +1,25 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
+import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.Agree
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.model.RecommendedThread
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
+import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -32,8 +37,12 @@ class PersonalizedViewModelTest {
 
     private fun thread(id: Long) = RecommendedThread(ThreadInfo(id = id, threadId = id, agree = Agree(hasAgree = 0)).toThreadSummary { _, _ -> })
 
-    private fun createViewModel() = PersonalizedViewModel(
+    private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
+
+    private fun TestScope.createViewModel(client: QueryClient = queryClient()) = PersonalizedViewModel(
         repository = repository,
+        client = client,
+        threads = threadActions(client, agreeRemote),
         messages = messages,
         blockRuleSource = object : BlockRuleSource {
             override val rules = MutableStateFlow(BlockRules { null })
@@ -106,7 +115,7 @@ class PersonalizedViewModelTest {
     @Test
     fun `a failed like is undone`() = runTest {
         coEvery { repository.recommended(true, 1) } returns listOf(thread(1))
-        coEvery { repository.agreeThread(any(), true) } throws IOException()
+        coEvery { agreeRemote.opAgree(any(), any(), any(), any()) } throws IOException()
         val viewModel = createViewModel()
         viewModel.open()
         runCurrent()
@@ -116,5 +125,19 @@ class PersonalizedViewModelTest {
 
         assertEquals(false, viewModel.state.value.list.items.single().feed.thread.agree.agreed)
         verify { messages.showError(any(), any()) }
+    }
+
+    @Test
+    fun `a like made on another page shows in the list`() = runTest {
+        coEvery { repository.recommended(true, 1) } returns listOf(thread(1))
+        val client = queryClient()
+        val viewModel = createViewModel(client)
+        viewModel.open()
+        runCurrent()
+
+        threadActions(client).agree(thread(1).thread, true)
+        runCurrent()
+
+        assertEquals(true, viewModel.state.value.list.items.single().feed.thread.agree.agreed)
     }
 }

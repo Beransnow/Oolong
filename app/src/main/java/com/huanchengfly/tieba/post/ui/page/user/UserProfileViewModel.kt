@@ -11,6 +11,8 @@ import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserProfile
@@ -18,9 +20,10 @@ import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.repository.BlackSettings
 import com.huanchengfly.tieba.post.repository.BlockListRepository
+import com.huanchengfly.tieba.post.repository.ThreadActions
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -62,6 +65,8 @@ data class UserProfileState(
 class UserProfileViewModel @AssistedInject constructor(
     @Assisted key: UserProfileKey,
     private val repository: UserRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     private val blockList: BlockListRepository,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
@@ -193,31 +198,20 @@ class UserProfileViewModel @AssistedInject constructor(
         val thread = pager.state.value.items
             .firstNotNullOfOrNull { (it as? UserThread)?.thread?.takeIf { t -> t.id == threadId && t.firstPostId == postId } }
             ?: return
-        val agree = !thread.agree.agreed
         actions.launch("agree-$threadId-$postId") {
-            setAgreed(pager, threadId, postId, agree)
-            runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                setAgreed(pager, threadId, postId, !agree)
-                messages.showError(R.string.toast_agree_failed, it)
-            }
-        }
-    }
-
-    private fun setAgreed(pager: Pager<Int, UserPost>, threadId: Long, postId: Long, agree: Boolean) {
-        pager.update { items ->
-            items.map { post ->
-                if (post is UserThread && post.thread.id == threadId && post.thread.firstPostId == postId) {
-                    UserThread(post.thread.withAgreed(agree))
-                } else {
-                    post
-                }
-            }
+            runCatching { threads.agree(thread, !thread.agree.agreed) }
+                .onFailure { messages.showError(R.string.toast_agree_failed, it) }
         }
     }
 
     private fun postsOf(tab: UserTab): Pager<Int, UserPost> {
         postPagers.value[tab]?.let { return it }
-        val pager = pager(initialKey = 1, itemKey = { post: UserPost -> post.key }) { page ->
+        val pager = client.pager(
+            scope = viewModelScope,
+            initialKey = 1,
+            itemKey = { post: UserPost -> post.key },
+            normalize = { if (it is UserThread) UserThread(Threads(it.thread)) else it },
+        ) { page ->
             val result = repository.posts(uid, threads = tab == UserTab.Threads, page = page)
             if (page == 1) profile.update { it.copy(postsHidden = result.hidden) }
             result.posts

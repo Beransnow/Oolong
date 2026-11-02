@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.core.network.TiebaServerException
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.upload.UploadRemoteDataSource
 import com.huanchengfly.tieba.core.network.user.LikedForumsResponse
 import com.huanchengfly.tieba.core.network.user.UserRemoteDataSource
@@ -26,7 +25,7 @@ import kotlin.test.assertTrue
 class UserRepositoryTest {
     private val remote = mockk<UserRemoteDataSource>()
     private val uploadRemote = mockk<UploadRemoteDataSource>()
-    private val repository = UserRepository(remote, mockk<AgreeRemoteDataSource>(relaxed = true), uploadRemote, Dispatchers.Unconfined, { _, _ -> })
+    private val repository = UserRepository(remote, uploadRemote, Dispatchers.Unconfined, { _, _ -> })
 
     @Test
     fun `maps the profile`() = runTest {

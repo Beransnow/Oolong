@@ -11,16 +11,18 @@ import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.RefreshMode
-import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.RecommendedThread
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.ThreadActions
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.mapItems
-import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -85,6 +87,8 @@ data class PersonalizedState(
 @HiltViewModel
 class PersonalizedViewModel @Inject constructor(
     private val repository: ExploreRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     private val messages: MessageController,
     blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
@@ -125,16 +129,9 @@ class PersonalizedViewModel @Inject constructor(
 
     fun loadMore() = pager().loadMore()
 
-    fun agree(thread: ThreadSummary) {
-        val pager = pager.value ?: return
-        val agree = !thread.agree.agreed
-        actions.launch("agree-${thread.id}") {
-            pager.setAgreed(thread.id, agree)
-            runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                pager.setAgreed(thread.id, !agree)
-                messages.showError(R.string.toast_agree_failed, it)
-            }
-        }
+    fun agree(thread: ThreadSummary) = actions.launch("agree-${thread.id}") {
+        runCatching { threads.agree(thread, !thread.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     /**
@@ -159,18 +156,14 @@ class PersonalizedViewModel @Inject constructor(
         local.update { it.copy(undoable = it.undoable - threadId) }
     }
 
-    private fun Pager<Int, RecommendedThread>.setAgreed(threadId: Long, agree: Boolean) = update { items ->
-        items.map { item ->
-            if (item.thread.id == threadId) item.copy(thread = item.thread.withAgreed(agree)) else item
-        }
-    }
-
     private fun pager(): Pager<Int, RecommendedThread> {
         pager.value?.let { return it }
         // Page 1 asks for new threads, the pages after it continue the list
-        return pager(
+        return client.pager(
+            scope = viewModelScope,
             initialKey = 1,
             itemKey = { item: RecommendedThread -> item.thread.id },
+            normalize = { it.copy(thread = Threads(it.thread)) },
             refreshMode = RefreshMode.Prepend,
         ) { page ->
             val loaded = pager.value?.state?.value?.items.orEmpty()

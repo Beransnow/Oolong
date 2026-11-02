@@ -178,12 +178,6 @@ class ThreadRepository @Inject constructor(
         remote.deletePost(forum.id, forum.name, threadId, postId, ownPost, isSubPost = isSubPost, tbs = tbs)
     }
 
-    /** Agrees with the thread, or takes it back when [agree] is false. */
-    suspend fun agreeThread(thread: ThreadDetail, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
-        Unit
-    }
-
     suspend fun vote(thread: ThreadDetail, optionIds: Collection<Int>) = withContext(io) {
         postRemote.addPollPost(thread.id, thread.forum.id, optionIds.toList())
     }

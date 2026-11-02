@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.arch.query
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
@@ -27,8 +26,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -93,14 +90,10 @@ class Query<K : Any, T : Any> internal constructor(
  * A result is dropped once nothing has observed it for its query's `gcTime`, and an entity once no
  * result or pager holds it. Everything is in memory, and [clear] drops it all.
  */
-@Singleton
-class QueryClient internal constructor(
+class QueryClient(
     parent: CoroutineScope,
-    private val timeSource: TimeSource.WithComparableMarks,
+    private val timeSource: TimeSource.WithComparableMarks = TimeSource.Monotonic,
 ) {
-    @Inject
-    constructor(@ApplicationScope parent: CoroutineScope) : this(parent, TimeSource.Monotonic)
-
     // A failed request fails only its callers, not the requests beside it
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext[Job]))
     private val state = MutableStateFlow(Snapshot())
@@ -239,6 +232,10 @@ class QueryClient internal constructor(
         collections.put(id, collection)?.cancel()
     }
 
+    /** Keeps [entities] while [holder] holds them, along with what it held already. */
+    internal fun hold(holder: Any, entities: Map<EntityKey, Any>) =
+        state.update { it.put(entities).holding(holder, entities.keys) }
+
     /** Keeps the entities of [items] while [holder] holds them, and returns the items with their latest versions. */
     internal fun <T> hold(holder: Any, items: List<T>, normalize: Normalize<T>): List<T> {
         val taken = Taker().apply { items.forEach { normalize(it) } }.entities
@@ -307,7 +304,11 @@ private data class Snapshot(
         },
     )
 
-    fun put(taken: Map<EntityKey, Any>) = copy(entities = entities.putAll(taken))
+    fun put(taken: Map<EntityKey, Any>) = copy(
+        entities = entities.mutate { result ->
+            taken.forEach { (key, newer) -> result[key] = entities[key]?.let { key.type.mergeAny(it, newer) } ?: newer }
+        },
+    )
 
     fun holding(holder: Any, keys: Set<EntityKey>) = copy(holds = holds.put(holder, holds[holder].orEmpty() + keys))
 
@@ -333,7 +334,7 @@ private data class Snapshot(
 }
 
 /** Takes the entities from a value just loaded. */
-private class Taker : Normalizer {
+internal class Taker : Normalizer {
     val entities = HashMap<EntityKey, Any>()
 
     override fun <E : Any> EntityType<*, E>.invoke(entity: E): E = entity.also { entities[keyOf(it)] = it }

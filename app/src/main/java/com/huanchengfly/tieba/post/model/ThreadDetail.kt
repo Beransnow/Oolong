@@ -48,8 +48,6 @@ data class ThreadDetail(
     /** The thread this one shares, if it shares one. */
     val shared: SharedThread? get() = summary.shared
     val isStored: Boolean get() = storeMarkPostId != null
-
-    fun withAgree(agree: Agree) = copy(summary = summary.copy(agree = agree))
 }
 
 @Immutable

@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -27,7 +28,11 @@ class QueryClientTest {
 
     private data class Feed(val threads: List<Thread>)
 
-    private val Threads = EntityType<Long, Thread>("thread") { it.id }
+    private val Threads = EntityType<Long, Thread>(
+        "thread",
+        id = { it.id },
+        merge = { older, newer -> newer.copy(title = newer.title.ifEmpty { older.title }) },
+    )
 
     private fun TestScope.client() = QueryClient(backgroundScope, testScheduler.timeSource)
 
@@ -232,6 +237,32 @@ class QueryClientTest {
         gate.complete(Unit)
         runCurrent()
         assertEquals("b 1", states.last().data)
+    }
+
+    @Test
+    fun `a newer copy keeps what it leaves out from the older one`() = runTest {
+        val client = client()
+        client.query<Long, Thread>("full", normalize = { Threads(it) }) { Thread(it, "title") }.get(1)
+        client.query<Long, Thread>("partial", normalize = { Threads(it) }) { Thread(it, "", liked = true) }.get(1)
+
+        assertEquals(Thread(1, "title", liked = true), client.get(Threads, 1))
+    }
+
+    @Test
+    fun `state a view model keeps follows its entities without undoing them`() = runTest {
+        val client = client()
+        val kept = MutableStateFlow(Feed(listOf(Thread(1))) to 0)
+        val (values, _) = collect(kept.withLatestEntities(client) { (feed, n) -> feed.copy(threads = feed.threads.map { Threads(it) }) to n })
+        runCurrent()
+
+        client.update(Threads, 1L) { it.copy(liked = true) }
+        runCurrent()
+        assertEquals(true, values.last().first.threads.single().liked)
+
+        // Emitted again for another reason, still with the old copy
+        kept.value = kept.value.copy(second = 1)
+        runCurrent()
+        assertEquals(true, values.last().first.threads.single().liked)
     }
 
     @Test

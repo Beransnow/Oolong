@@ -9,6 +9,8 @@ import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.ThreadSummary
@@ -20,12 +22,14 @@ import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.repository.Blockable
+import com.huanchengfly.tieba.post.repository.ThreadActions
 import com.huanchengfly.tieba.post.repository.ThreadCursor
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadPage
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -99,6 +103,8 @@ sealed interface ThreadEffect {
 class ThreadViewModel @AssistedInject constructor(
     @Assisted private val args: ThreadKey,
     private val repository: ThreadRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     blockRuleSource: BlockRuleSource,
     private val history: ThreadHistory,
     private val messages: MessageController,
@@ -123,7 +129,8 @@ class ThreadViewModel @AssistedInject constructor(
         val immersive: Boolean = false,
     )
 
-    private val preview = ThreadPreviewCache.take(args.threadId)
+    /** The thread as the list it was opened from showed it, if it was. */
+    private val preview = client.get(Threads, args.threadId)
 
     private val effects = Channel<ThreadEffect>(Channel.BUFFERED)
     val effect: Flow<ThreadEffect> = effects.receiveAsFlow()
@@ -181,7 +188,11 @@ class ThreadViewModel @AssistedInject constructor(
         )
     }
 
-    val state: StateFlow<ThreadState> = combine(query, meta, items) { query, meta, items ->
+    private val latestMeta = meta.withLatestEntities(client) { meta ->
+        meta.copy(page = meta.page?.let { it.copy(thread = it.thread.copy(summary = Threads(it.thread.summary))) })
+    }
+
+    val state: StateFlow<ThreadState> = combine(query, latestMeta, items) { query, meta, items ->
         val page = meta.page
         ThreadState(
             query = query,
@@ -270,13 +281,9 @@ class ThreadViewModel @AssistedInject constructor(
     }
 
     fun agreeThread() = actions.launch("agree-thread") {
-        val thread = meta.value.page?.thread ?: return@launch
-        val agree = !thread.agree.agreed
-        updateThread { it.withAgree(it.agree.toggled()) }
-        runCatching { repository.agreeThread(thread, agree) }.onFailure { e ->
-            updateThread { it.withAgree(it.agree.toggled()) }
-            messages.showError(R.string.toast_agree_failed, e)
-        }
+        val thread = state.value.thread ?: return@launch
+        runCatching { threads.agree(thread.summary, !thread.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     /** Votes for [optionIds] in the thread's poll, shown at once and rolled back if it fails. */
