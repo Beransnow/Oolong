@@ -125,23 +125,6 @@ fun PrefsExternal(text: String? = null) {
     }
 }
 
-/** One option in a choice's menu, checked when it is the chosen one. */
-@Composable
-fun PrefsChoiceItem(name: String, selected: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(onClick = onClick) {
-        Text(text = name, modifier = Modifier.weight(1f))
-        if (selected) {
-            Spacer(modifier = Modifier.width(16.dp))
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = null,
-                tint = ExtendedTheme.colors.text,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-    }
-}
-
 /** A choice's value on the end of its row, with the up-and-down mark of a menu of values. */
 @Composable
 fun PrefsChoiceValue(text: String) {

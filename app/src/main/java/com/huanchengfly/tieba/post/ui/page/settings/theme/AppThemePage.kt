@@ -89,7 +89,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.TranslucentThemeKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
@@ -99,6 +99,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.Appearance
 import com.huanchengfly.tieba.post.utils.ColorStyle
@@ -360,21 +361,17 @@ private fun DarkBackgroundRow(settings: ThemeSettings, monetDark: Color) {
         values.mapIndexed { index, value -> Triple(value, names[index], themeColors(value).background) }
     }
     val selected = options.firstOrNull { it.first == settings.darkTheme } ?: options.first()
-    ClickMenu(
-        menuContent = {
-            options.forEach { (value, name, color) ->
-                DropdownMenuItem(onClick = {
-                    // Monet's own grey leaves the theme picked for the other styles as it was
-                    if (value != selected.first) ThemeUtil.selectDarkTheme(value)
-                    dismiss()
-                }) {
-                    BackgroundDot(color)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = name, modifier = Modifier.weight(1f))
-                    if (value == selected.first) MenuCheck()
+    Box(
+        modifier = Modifier.clickMenu(
+            items = {
+                options.map { (value, name, color) ->
+                    ContextMenuItem(icon = null, label = name, leading = { BackgroundDot(color) }, selected = value == selected.first) {
+                        // Monet's own grey leaves the theme picked for the other styles as it was
+                        if (value != selected.first) ThemeUtil.selectDarkTheme(value)
+                    }
                 }
-            }
-        },
+            },
+        ),
     ) {
         TextPref(
             title = stringResource(id = R.string.title_dark_background),
@@ -398,12 +395,6 @@ private fun BackgroundDot(color: Color) {
             .background(color, CircleShape)
             .border(1.dp, ExtendedTheme.colors.divider, CircleShape),
     )
-}
-
-@Composable
-private fun MenuCheck() {
-    Spacer(modifier = Modifier.width(16.dp))
-    Icon(Icons.Rounded.Check, contentDescription = null, tint = ExtendedTheme.colors.text, modifier = Modifier.size(20.dp))
 }
 
 /**
@@ -574,27 +565,16 @@ private fun MonetStyleRow(selected: MonetStyle) {
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun <T> ChoiceRow(title: String, selected: T, options: List<Triple<T, String, String>>, onSelect: (T) -> Unit) {
-    ClickMenu(
-        menuContent = {
-            options.forEach { (value, name, description) ->
-                DropdownMenuItem(onClick = {
-                    onSelect(value)
-                    dismiss()
-                }) {
-                    Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
-                        Text(text = name)
-                        Text(
-                            text = description,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = ExtendedTheme.colors.textSecondary,
-                        )
+    Box(
+        modifier = Modifier.clickMenu(
+            items = {
+                options.map { (value, name, description) ->
+                    ContextMenuItem(icon = null, label = name, detail = description, selected = value == selected) {
+                        if (value != selected) onSelect(value)
                     }
-                    if (value == selected) MenuCheck()
                 }
-            }
-        },
+            },
+        ),
     ) {
         TextPref(
             title = title,

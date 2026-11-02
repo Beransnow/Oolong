@@ -28,7 +28,10 @@ import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.OpenInBrowser
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -67,13 +70,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AccompanistWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogs
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.PermissionUtils
@@ -192,54 +195,23 @@ fun WebViewPage(
                 },
                 navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
                 actions = {
-                    val menuState = rememberMenuState()
-                    ClickMenu(
-                        menuContent = {
-                            DropdownMenuItem(
-                                onClick = {
-                                    val url = webViewState.webView?.url ?: initialUrl
-                                    TiebaUtil.copyText(context, url)
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_copy_link))
-                            }
-                            DropdownMenuItem(
-                                onClick = {
-                                    val uri = (webViewState.webView?.url ?: initialUrl).toUri()
-                                    context.startActivity(
-                                        Intent(
-                                            Intent.ACTION_VIEW,
-                                            uri
-                                        )
-                                    )
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_open_in_browser))
-                            }
-                            DropdownMenuItem(
-                                onClick = {
-                                    webViewNavigator.reload()
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_refresh))
-                            }
-                        },
-                        menuState = menuState,
-                        triggerShape = CircleShape
-                    ) {
-                        Box(
-                            modifier = Modifier.size(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.btn_more)
+                    val copyLink = stringResource(id = R.string.title_copy_link)
+                    val openInBrowser = stringResource(id = R.string.title_open_in_browser)
+                    val refresh = stringResource(id = R.string.title_refresh)
+                    MenuIconButton(
+                        icon = Icons.Rounded.MoreVert,
+                        contentDescription = stringResource(id = R.string.btn_more),
+                        items = {
+                            val url = webViewState.webView?.url ?: initialUrl
+                            listOf(
+                                ContextMenuItem(Icons.Rounded.Link, copyLink) { TiebaUtil.copyText(context, url) },
+                                ContextMenuItem(Icons.Rounded.OpenInBrowser, openInBrowser) {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+                                },
+                                ContextMenuItem(Icons.Rounded.Refresh, refresh) { webViewNavigator.reload() },
                             )
-                        }
-                    }
+                        },
+                    )
                 },
             )
         }

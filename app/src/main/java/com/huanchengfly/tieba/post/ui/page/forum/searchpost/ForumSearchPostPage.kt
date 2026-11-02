@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -84,9 +83,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchThreadList
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuTriggerState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -382,46 +383,32 @@ fun ForumSearchPostScreen(
                                                 onClick = {}
                                             )
                                     ) {
-                                        val menuState = rememberMenuState()
-
+                                        val sortMenu = rememberMenuTriggerState()
                                         val rotate by animateFloatAsState(
-                                            targetValue = if (menuState.expanded) 180f else 0f,
+                                            targetValue = if (sortMenu.open) 180f else 0f,
                                             label = "ArrowIndicatorRotate"
                                         )
-
-                                        ClickMenu(
-                                            menuContent = {
-                                                ListSinglePicker(
-                                                    itemTitles = sortTypeMapping.values.toImmutableList(),
-                                                    itemValues = sortTypeMapping.keys.toImmutableList(),
-                                                    selectedPosition = sortTypeMapping.keys.indexOf(state.order),
-                                                    onItemSelected = { _, _, newOrder, changed ->
-                                                        if (changed) onSetOrder(newOrder)
-                                                        dismiss()
-                                                    }
-                                                )
-                                            },
-                                            menuState = menuState,
-                                            indication = null
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.clickMenu(
+                                                items = { choiceMenuItems(sortTypeMapping.toList(), state.order, onSetOrder) },
+                                                indication = null,
+                                                state = sortMenu,
+                                            ),
                                         ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-//                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Text(
-                                                    text = sortTypeMapping[state.order]
-                                                        ?: "",
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Rounded.ArrowDropDown,
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(16.dp)
-                                                        .rotate(rotate)
-                                                )
-                                            }
+                                            Text(
+                                                text = sortTypeMapping[state.order]
+                                                    ?: "",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Rounded.ArrowDropDown,
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(16.dp)
+                                                    .rotate(rotate)
+                                            )
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
                                         Row(

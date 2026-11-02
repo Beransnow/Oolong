@@ -1,11 +1,17 @@
 package com.huanchengfly.tieba.post.ui.page.subposts
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Reply
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -16,21 +22,24 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.ui.common.PostBody
-import com.huanchengfly.tieba.post.ui.page.settings.block.BlockableMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
+import com.huanchengfly.tieba.post.ui.page.thread.PostMenuLabels
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBranch
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostLine
 import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
 import com.huanchengfly.tieba.post.ui.page.thread.bawuName
 import com.huanchengfly.tieba.post.ui.page.thread.floorIndent
 import com.huanchengfly.tieba.post.ui.page.thread.floorRuleColor
+import com.huanchengfly.tieba.post.ui.page.thread.postMenuLabels
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 
@@ -72,6 +81,8 @@ internal fun SubPostReply(
     onEvent: (SubPostsEvent) -> Unit,
 ) {
     val subPost = item.subPost
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
     BlockableContent(
         block = item.block,
         modifier = Modifier.fillMaxWidth().floorIndent(),
@@ -82,48 +93,28 @@ internal fun SubPostReply(
                 subPost = subPost,
                 isLz = subPost.author.id == threadAuthorId,
                 onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply },
-                menuContent = { menuState ->
-                    BlockableMenuItems(author = subPost.author, forum = null, text = "", menuState = menuState) {
-                        if (!hideReply) {
-                            DropdownMenuItem(
-                                onClick = {
-                                    onEvent(SubPostsEvent.Reply(post, subPost))
-                                    menuState.expanded = false
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.btn_reply))
-                            }
-                        }
-                        DropdownMenuItem(
-                            onClick = {
-                                onEvent(SubPostsEvent.Copy(subPost.content.plainText))
-                                menuState.expanded = false
-                            }
-                        ) {
-                            Text(text = stringResource(id = R.string.menu_copy))
-                        }
-                        DropdownMenuItem(
-                            onClick = {
-                                onEvent(SubPostsEvent.Report(subPost.id))
-                                menuState.expanded = false
-                            }
-                        ) {
-                            Text(text = stringResource(id = R.string.title_report))
-                        }
-                        if (canDelete) {
-                            DropdownMenuItem(
-                                onClick = {
-                                    onEvent(SubPostsEvent.Delete(subPost))
-                                    menuState.expanded = false
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_delete))
-                            }
-                        }
-                    }
-                },
+                menuItems = { replyMenuItems(context, post, subPost, hideReply, canDelete, shortcuts, onEvent) },
                 onAgree = { onEvent(SubPostsEvent.AgreeSubPost(subPost.id)) },
             )
         }
     }
+}
+
+/** What a long press on a reply offers here, with blocking its author after when [shortcuts] are there. */
+private fun replyMenuItems(
+    context: Context,
+    post: Post,
+    subPost: SubPost,
+    hideReply: Boolean,
+    canDelete: Boolean,
+    shortcuts: BlockShortcuts?,
+    onEvent: (SubPostsEvent) -> Unit,
+): List<ContextMenuItem> = buildList {
+    if (!hideReply) {
+        add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, context.getString(R.string.btn_reply)) { onEvent(SubPostsEvent.Reply(post, subPost)) })
+    }
+    add(ContextMenuItem(Icons.Rounded.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Icons.Rounded.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
+    if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
+    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, subPost.author, forum = null, text = ""))
 }

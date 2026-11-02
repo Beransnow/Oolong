@@ -15,6 +15,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import kotlinx.coroutines.launch
 
 /**
@@ -48,7 +50,6 @@ fun DropDownPref(
     leadingIcon: @Composable (() -> Unit)? = null,
     entries: Map<String, String> = mapOf()
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
     val selectionKey = stringPreferencesKey(key)
     val scope = rememberCoroutineScope()
 
@@ -64,7 +65,6 @@ fun DropDownPref(
                 datastore.edit { preferences ->
                     preferences[selectionKey] = item.key
                 }
-                expanded = false
                 onValueChange?.invoke(item.key)
             } catch (e: Exception) {
                 Log.e("DropDownPref", "Could not write pref $key to database. ${e.printStackTrace()}")
@@ -72,7 +72,12 @@ fun DropDownPref(
         }
     }
 
-    Column {
+    Box(
+        modifier = Modifier.clickMenu(
+            items = { choiceMenuItems(entries.toList(), value) { key -> edit(entries.entries.first { it.key == key }) } },
+            enabled = enabled,
+        ),
+    ) {
         TextPref(
             title = title,
             modifier = modifier,
@@ -84,33 +89,6 @@ fun DropDownPref(
             textColor = textColor,
             leadingIcon = leadingIcon,
             enabled = enabled,
-            onClick = {
-                expanded = true
-            },
         )
-
-        Box(
-            modifier = Modifier
-                .padding(start = 16.dp)
-        ) {
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = if (dropdownBackgroundColor != null) Modifier.background(dropdownBackgroundColor) else Modifier
-            ) {
-                entries.forEach { item ->
-                    DropdownMenuItem(
-                        onClick = {
-                            edit(item)
-                        }
-                    ) {
-                        Text(
-                            text = item.value,
-                            style = MaterialTheme.typography.body1
-                        )
-                    }
-                }
-            }
-        }
     }
 }

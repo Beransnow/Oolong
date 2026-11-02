@@ -20,6 +20,7 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -47,14 +48,14 @@ import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebViewClient
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadingState
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.WebView
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberSaveableWebViewState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberWebViewNavigator
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -167,31 +168,12 @@ fun LoginPage(
                 },
                 navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
                 actions = {
-                    val menuState = rememberMenuState()
-                    ClickMenu(
-                        menuContent = {
-                            DropdownMenuItem(
-                                onClick = {
-                                    webViewNavigator.reload()
-                                    dismiss()
-                                }
-                            ) {
-                                Text(text = stringResource(id = R.string.title_refresh))
-                            }
-                        },
-                        menuState = menuState,
-                        triggerShape = CircleShape
-                    ) {
-                        Box(
-                            modifier = Modifier.size(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(id = R.string.btn_more)
-                            )
-                        }
-                    }
+                    val refresh = stringResource(id = R.string.title_refresh)
+                    MenuIconButton(
+                        icon = Icons.Rounded.MoreVert,
+                        contentDescription = stringResource(id = R.string.btn_more),
+                        items = { listOf(ContextMenuItem(Icons.Rounded.Refresh, refresh) { webViewNavigator.reload() }) },
+                    )
                 },
             )
         }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,13 +28,13 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.history.HistoryList
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 
 /** One tab of the history: today's visits, then the earlier ones; long pressing one offers to delete it. */
@@ -103,18 +105,12 @@ private fun HistoryItem(
     onClick: () -> Unit = {},
     onDelete: () -> Unit = {},
 ) {
-    val menuState = rememberMenuState()
-    LongClickMenu(
-        menuContent = {
-            DropdownMenuItem(onClick = {
-                onDelete()
-                menuState.expanded = false
-            }) {
-                Text(text = stringResource(id = R.string.title_delete))
-            }
-        },
-        menuState = menuState,
-        onClick = onClick
+    val delete = stringResource(id = R.string.title_delete)
+    Box(
+        modifier = Modifier.longPressMenu(
+            items = { listOf(ContextMenuItem(Icons.Rounded.Delete, delete, onClick = onDelete)) },
+            onClick = onClick,
+        ),
     ) {
         Column(
             modifier = modifier

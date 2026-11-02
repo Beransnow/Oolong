@@ -28,9 +28,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.HeartBroken
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,21 +67,21 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.CollapsingState
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarRowHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitleStart
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuScope
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.PlaceholderHighlight
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.fade
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -409,7 +412,7 @@ internal fun ForumHeaderPlaceholder(
 internal fun ForumTopBar(
     onEvent: (ForumEvent) -> Unit,
     canSearch: Boolean = true,
-    menuContent: (@Composable MenuScope.() -> Unit)? = null,
+    menu: (() -> List<ContextMenuItem>)? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val accent = LocalForumAccent.current
@@ -426,42 +429,30 @@ internal fun ForumTopBar(
                     )
                 }
             }
-            if (menuContent != null) {
-                ClickMenu(menuContent = menuContent, menuState = rememberMenuState(), triggerShape = CircleShape) {
-                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(id = R.string.btn_more)
-                        )
-                    }
-                }
+            if (menu != null) {
+                MenuIconButton(
+                    icon = Icons.Rounded.MoreVert,
+                    contentDescription = stringResource(id = R.string.btn_more),
+                    items = menu,
+                )
             }
         },
         content = content,
     )
 }
 
+/** The forum's ⋯ menu: sharing it, putting it on the home screen and, if followed, unfollowing it. */
 @Composable
-internal fun ForumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean, dismiss: () -> Unit) {
-    DropdownMenuItem(onClick = {
-        onEvent(ForumEvent.Share)
-        dismiss()
-    }) {
-        Text(text = stringResource(id = R.string.title_share))
-    }
-    DropdownMenuItem(onClick = {
-        onEvent(ForumEvent.SendToDesktop)
-        dismiss()
-    }) {
-        Text(text = stringResource(id = R.string.title_send_to_desktop))
-    }
-    if (liked) {
-        DropdownMenuItem(onClick = {
-            onEvent(ForumEvent.Unfollow)
-            dismiss()
-        }) {
-            Text(text = stringResource(id = R.string.title_unfollow))
-        }
+internal fun forumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean): () -> List<ContextMenuItem> {
+    val share = stringResource(id = R.string.title_share)
+    val toDesktop = stringResource(id = R.string.title_send_to_desktop)
+    val unfollow = stringResource(id = R.string.title_unfollow)
+    return {
+        listOfNotNull(
+            ContextMenuItem(Icons.Rounded.Share, share) { onEvent(ForumEvent.Share) },
+            ContextMenuItem(Icons.Rounded.AddToHomeScreen, toDesktop) { onEvent(ForumEvent.SendToDesktop) },
+            ContextMenuItem(Icons.Rounded.HeartBroken, unfollow) { onEvent(ForumEvent.Unfollow) }.takeIf { liked },
+        )
     }
 }
 
@@ -495,24 +486,14 @@ internal fun ForumTabRow(
         tabs.forEachIndexed { index, tab ->
             val selected = index == selectedIndex
             if (tab == ForumTab.Latest) {
+                val sorts = SortTypes.zip(
+                    listOf(stringResource(id = R.string.title_sort_by_reply), stringResource(id = R.string.title_sort_by_send)),
+                )
                 TabClickMenu(
                     selected = selected,
                     onClick = { onSelect(index) },
                     text = { Text(text = tab.title(), style = tabTextStyle()) },
-                    menuContent = {
-                        ListSinglePicker(
-                            itemTitles = persistentListOf(
-                                stringResource(id = R.string.title_sort_by_reply),
-                                stringResource(id = R.string.title_sort_by_send),
-                            ),
-                            itemValues = SortTypes,
-                            selectedPosition = SortTypes.indexOf(sortType),
-                            onItemSelected = { _, _, value, changed ->
-                                if (changed) onEvent(ForumEvent.SetSort(value))
-                                dismiss()
-                            }
-                        )
-                    },
+                    items = { choiceMenuItems(sorts, sortType) { onEvent(ForumEvent.SetSort(it)) } },
                     selectedContentColor = ExtendedTheme.colors.text,
                     unselectedContentColor = ExtendedTheme.colors.textSecondary
                 )

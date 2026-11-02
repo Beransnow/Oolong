@@ -89,6 +89,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.SearchBox
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -405,16 +406,10 @@ private fun ColumnScope.SearchTabRow(
                             item.text(pagerState.currentPage == index)
                         }
                     },
-                    menuContent = {
-                        ListSinglePicker(
-                            itemTitles = item.sortTypes.keys.toImmutableList(),
-                            itemValues = item.sortTypes.values.toImmutableList(),
-                            selectedPosition = item.sortTypes.values.indexOf(item.selectedSortType()),
-                            onItemSelected = { _, _, value, changed ->
-                                if (changed) item.onSelectedSortTypeChange(value)
-                                dismiss()
-                            }
-                        )
+                    items = {
+                        choiceMenuItems(item.sortTypes.map { (label, value) -> value to label }, item.selectedSortType()) {
+                            item.onSelectedSortTypeChange(it)
+                        }
                     }
                 )
             } else {

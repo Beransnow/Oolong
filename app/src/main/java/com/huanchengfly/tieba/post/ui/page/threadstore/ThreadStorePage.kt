@@ -15,6 +15,8 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BookmarkRemove
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -55,15 +57,16 @@ import com.huanchengfly.tieba.post.ui.page.thread.ThreadPageFromStoreExtra
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadSortType
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getUsernameAnnotatedString
@@ -188,13 +191,12 @@ private fun StoreItem(
     val hasUpdate = info.hasUpdate
     val isDeleted = info.deleted
     val textMeasurer = rememberTextMeasurer()
-    LongClickMenu(
-        menuContent = {
-            DropdownMenuItem(onClick = onDelete) {
-                Text(text = stringResource(id = R.string.title_collect_on))
-            }
-        },
-        onClick = onClick
+    val unstore = stringResource(id = R.string.title_collect_on)
+    Box(
+        modifier = Modifier.longPressMenu(
+            items = { listOf(ContextMenuItem(Icons.Rounded.BookmarkRemove, unstore, onClick = onDelete)) },
+            onClick = onClick,
+        ),
     ) {
         Column(
             modifier = modifier

@@ -44,8 +44,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.UiComposable
@@ -54,8 +56,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -465,87 +470,41 @@ fun TabIndicator(
     }
 }
 
-@Composable
-fun TabClickMenu(
-    selected: Boolean,
-    onClick: () -> Unit,
-    menuContent: @Composable MenuScope.() -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    menuState: MenuState = rememberMenuState(),
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    selectedContentColor: Color = LocalContentColor.current,
-    unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium),
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    LaunchedEffect(Unit) {
-        launch {
-            interactionSource.interactions
-                .filterIsInstance<PressInteraction.Press>()
-                .collect {
-                    menuState.offset = it.pressPosition
-                }
-        }
-    }
-    ClickMenu(
-        menuContent = menuContent,
-        menuState = menuState
-    ) {
-        Tab(
-            selected = selected,
-            onClick = {
-                if (!selected) {
-                    onClick()
-                } else {
-                    menuState.toggle()
-                }
-            },
-            modifier = modifier,
-            enabled = enabled,
-            interactionSource = interactionSource,
-            selectedContentColor = selectedContentColor,
-            unselectedContentColor = unselectedContentColor,
-            content = content
-        )
-    }
-}
-
+/**
+ * A tab that, tapped again while selected, opens a menu of [items], such as the orders its list
+ * can take; an arrow marks it while selected and turns while the menu shows.
+ */
 @Composable
 fun TabClickMenu(
     selected: Boolean,
     onClick: () -> Unit,
     text: @Composable () -> Unit,
-    menuContent: @Composable MenuScope.() -> Unit,
+    items: () -> List<ContextMenuItem>,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    menuState: MenuState = rememberMenuState(),
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     selectedContentColor: Color = LocalContentColor.current,
     unselectedContentColor: Color = selectedContentColor.copy(alpha = ContentAlpha.medium),
 ) {
-    TabClickMenu(
+    val menus = LocalContextMenus.current
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    var menuId by remember { mutableStateOf<Long?>(null) }
+    val open = menus?.isShowing(menuId) == true
+    Tab(
         selected = selected,
-        onClick = onClick,
-        menuContent = menuContent,
-        modifier = modifier,
+        onClick = {
+            when {
+                !selected -> onClick()
+                menus != null -> menuId = menus.show(items(), anchor = bounds)
+            }
+        },
+        modifier = modifier.onGloballyPositioned { bounds = it.boundsInWindow() },
         enabled = enabled,
-        menuState = menuState,
-        interactionSource = interactionSource,
         selectedContentColor = selectedContentColor,
         unselectedContentColor = unselectedContentColor,
     ) {
-        val rotate by animateFloatAsState(
-            targetValue = if (menuState.expanded) 180f else 0f,
-            label = "ArrowIndicatorRotate"
-        )
-        val alpha by animateFloatAsState(
-            targetValue = if (selected) 1f else 0f,
-            label = "ArrowIndicatorAlpha"
-        )
-
-        val tabTextStyle =
-            MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
-
+        val rotate by animateFloatAsState(targetValue = if (open) 180f else 0f, label = "ArrowIndicatorRotate")
+        val alpha by animateFloatAsState(targetValue = if (selected) 1f else 0f, label = "ArrowIndicatorAlpha")
+        val tabTextStyle = MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier

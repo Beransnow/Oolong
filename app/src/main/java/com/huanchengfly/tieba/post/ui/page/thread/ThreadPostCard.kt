@@ -1,8 +1,10 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +17,15 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Reply
+import androidx.compose.material.icons.rounded.BookmarkBorder
+import androidx.compose.material.icons.rounded.BookmarkRemove
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -34,18 +43,19 @@ import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.page.settings.block.BlockableMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 
@@ -80,7 +90,9 @@ fun ThreadPostCard(
     val post = item.post
     val indented = post.floor > 1 && !options.immersive
     val indent = Modifier.padding(start = if (indented) Sizes.Small + 8.dp else 0.dp)
-    val menuState = rememberMenuState()
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
     BlockableContent(
         block = item.block,
         tip = { reason, onShow ->
@@ -91,13 +103,12 @@ fun ThreadPostCard(
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp)
     ) {
-        LongClickMenu(
-            menuState = menuState,
-            indication = null,
-            onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
-            menuContent = {
-                PostMenuItems(post, options.hideReply, isStoreMark, canStore, canDelete, menuState, onEvent)
-            }
+        Box(
+            modifier = Modifier.longPressMenu(
+                items = { postMenuItems(labels, context, post, options.hideReply, isStoreMark, canStore, canDelete, shortcuts, onEvent) },
+                onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
+                indication = null,
+            ),
         ) {
             Card(
                 header = {
@@ -248,12 +259,14 @@ private fun SubPostItem(
     onEvent: (ThreadEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val menuState = rememberMenuState()
-    LongClickMenu(
-        menuState = menuState,
-        menuContent = { SubPostMenuItems(post, subPost, hideReply, menuState, onEvent) },
-        shape = RoundedCornerShape(0),
-        onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) }
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
+    Box(
+        modifier = Modifier.longPressMenu(
+            items = { subPostMenuItems(labels, context, post, subPost, hideReply, shortcuts, onEvent) },
+            onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
+        ),
     ) {
         ProvideTextStyle(value = MaterialTheme.typography.body2.copy(color = ExtendedTheme.colors.text)) {
             PbContentText(
@@ -276,107 +289,70 @@ private fun SubPostItem(
     }
 }
 
-/** What a long press on a post offers. */
+/** The labels of the menus of posts and replies, read where they show. */
+@Immutable
+internal class PostMenuLabels(
+    val reply: String,
+    val replyInside: String,
+    val copy: String,
+    val store: String,
+    val unstore: String,
+    val report: String,
+    val delete: String,
+)
+
 @Composable
-internal fun ColumnScope.PostMenuItems(
+internal fun postMenuLabels() = PostMenuLabels(
+    reply = stringResource(id = R.string.btn_reply),
+    replyInside = stringResource(id = R.string.title_reply),
+    copy = stringResource(id = R.string.menu_copy),
+    store = stringResource(id = R.string.title_collect_floor),
+    unstore = stringResource(id = R.string.title_collect_on),
+    report = stringResource(id = R.string.title_report),
+    delete = stringResource(id = R.string.title_delete),
+)
+
+/** What a long press on a post offers, with blocking its author after when [shortcuts] are there. */
+internal fun postMenuItems(
+    labels: PostMenuLabels,
+    context: Context,
     post: Post,
     hideReply: Boolean,
     isStoreMark: Boolean,
     canStore: Boolean,
     canDelete: Boolean,
-    menuState: MenuState,
+    shortcuts: BlockShortcuts?,
     onEvent: (ThreadEvent) -> Unit,
-) {
-    // Blocking from inside a thread leaves its forum out
-    BlockableMenuItems(author = post.author, forum = null, text = "", menuState = menuState) {
-        if (!hideReply) {
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(ThreadEvent.Reply(post))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(text = stringResource(id = R.string.btn_reply))
-            }
-        }
-        DropdownMenuItem(
-            onClick = {
-                onEvent(ThreadEvent.Copy(post.content.plainText))
-                menuState.expanded = false
-            }
-        ) {
-            Text(text = stringResource(id = R.string.menu_copy))
-        }
-        DropdownMenuItem(
-            onClick = {
-                onEvent(ThreadEvent.Report(post.id))
-                menuState.expanded = false
-            }
-        ) {
-            Text(text = stringResource(id = R.string.title_report))
-        }
-        if (canStore) {
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(if (isStoreMark) ThreadEvent.RemoveStore else ThreadEvent.StoreAt(post))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(
-                    text = stringResource(
-                        id = if (isStoreMark) R.string.title_collect_on else R.string.title_collect_floor
-                    )
-                )
-            }
-        }
-        if (canDelete) {
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(ThreadEvent.DeletePost(post))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(text = stringResource(id = R.string.title_delete))
-            }
-        }
+): List<ContextMenuItem> = buildList {
+    if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.reply) { onEvent(ThreadEvent.Reply(post)) })
+    add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(post.content.plainText)) })
+    if (canStore) {
+        add(
+            if (isStoreMark) {
+                ContextMenuItem(Icons.Rounded.BookmarkRemove, labels.unstore) { onEvent(ThreadEvent.RemoveStore) }
+            } else {
+                ContextMenuItem(Icons.Rounded.BookmarkBorder, labels.store) { onEvent(ThreadEvent.StoreAt(post)) }
+            },
+        )
     }
+    add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(post.id)) })
+    if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, labels.delete) { onEvent(ThreadEvent.DeletePost(post)) })
+    // Blocking from inside a thread leaves its forum out
+    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, post.author, forum = null, text = ""))
 }
 
 /** What a long press on a reply inside a post offers. */
-@Composable
-internal fun ColumnScope.SubPostMenuItems(
+internal fun subPostMenuItems(
+    labels: PostMenuLabels,
+    context: Context,
     post: Post,
     subPost: SubPost,
     hideReply: Boolean,
-    menuState: MenuState,
+    shortcuts: BlockShortcuts?,
     onEvent: (ThreadEvent) -> Unit,
-) {
-    BlockableMenuItems(author = subPost.author, forum = null, text = "", menuState = menuState) {
-        if (!hideReply) {
-            DropdownMenuItem(
-                onClick = {
-                    onEvent(ThreadEvent.Reply(post, subPost))
-                    menuState.expanded = false
-                }
-            ) {
-                Text(text = stringResource(id = R.string.title_reply))
-            }
-        }
-        DropdownMenuItem(
-            onClick = {
-                onEvent(ThreadEvent.Copy(subPost.content.plainText))
-                menuState.expanded = false
-            }
-        ) {
-            Text(text = stringResource(id = R.string.menu_copy))
-        }
-        DropdownMenuItem(
-            onClick = {
-                onEvent(ThreadEvent.Report(subPost.id))
-                menuState.expanded = false
-            }
-        ) {
-            Text(text = stringResource(id = R.string.title_report))
-        }
-    }
+): List<ContextMenuItem> = buildList {
+    if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
+    add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
+    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, subPost.author, forum = null, text = ""))
 }

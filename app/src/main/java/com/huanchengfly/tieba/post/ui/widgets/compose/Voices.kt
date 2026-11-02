@@ -18,6 +18,7 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
@@ -92,15 +93,14 @@ fun VoicePlayer(
         }
     }
 
-    LongClickMenu(
-        menuContent = {
-            DropdownMenuItem(onClick = { saveVoice(context, url) }) {
-                Text(text = stringResource(id = R.string.menu_save_audio))
-            }
-        },
-        onClick = { VoicePlayback.toggle(context, url) },
-        shape = CircleShape,
-        modifier = modifier,
+    val save = stringResource(id = R.string.menu_save_audio)
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .longPressMenu(
+                items = { listOf(ContextMenuItem(Icons.Rounded.Download, save) { saveVoice(context, url) }) },
+                onClick = { VoicePlayback.toggle(context, url) },
+            ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

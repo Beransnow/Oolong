@@ -37,9 +37,12 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.NoAccounts
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -92,12 +95,13 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalChromePadding
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuIconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
@@ -265,40 +269,20 @@ private fun UserProfileToolbar(
         },
         actions = {
             if (!isSelf) {
-                ClickMenu(
-                    menuContent = {
-                        DropdownMenuItem(
-                            onClick = {
-                                onAddToList(false)
-                            }
-                        ) {
-                            Text(text = stringResource(id = R.string.menu_add_user_to_black_list))
-                        }
-                        DropdownMenuItem(
-                            onClick = {
-                                onAddToList(true)
-                            }
-                        ) {
-                            Text(text = stringResource(id = R.string.menu_add_user_to_white_list))
-                        }
-                        if (onBlack != null) {
-                            DropdownMenuItem(onClick = onBlack) {
-                                Text(text = stringResource(id = R.string.menu_black_user))
-                            }
-                        }
-                    },
-                    triggerShape = CircleShape
-                ) {
-                    Box(
-                        modifier = Modifier.size(48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.NoAccounts,
-                            contentDescription = stringResource(id = R.string.btn_block)
+                val toBlackList = stringResource(id = R.string.menu_add_user_to_black_list)
+                val toWhiteList = stringResource(id = R.string.menu_add_user_to_white_list)
+                val black = stringResource(id = R.string.menu_black_user)
+                MenuIconButton(
+                    icon = Icons.Rounded.NoAccounts,
+                    contentDescription = stringResource(id = R.string.btn_block),
+                    items = {
+                        listOfNotNull(
+                            ContextMenuItem(Icons.Rounded.VisibilityOff, toBlackList) { onAddToList(false) },
+                            ContextMenuItem(Icons.Rounded.Visibility, toWhiteList) { onAddToList(true) },
+                            onBlack?.let { ContextMenuItem(Icons.Rounded.Block, black, startsGroup = true, onClick = it) },
                         )
-                    }
-                }
+                    },
+                )
             }
         },
     )

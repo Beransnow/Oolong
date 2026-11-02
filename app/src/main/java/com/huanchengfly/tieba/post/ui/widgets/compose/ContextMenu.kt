@@ -14,16 +14,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -54,6 +58,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -98,13 +103,20 @@ import kotlin.math.roundToInt
 /** One thing a context menu offers. */
 @Immutable
 class ContextMenuItem(
-    val icon: ImageVector,
+    val icon: ImageVector?,
     val label: String,
     /** Whether a rule parts it from the items before it. */
     val startsGroup: Boolean = false,
+    /** A second line under the label, saying more about a choice. */
+    val detail: String? = null,
+    /** Drawn before the label in place of an icon, such as a colour or an avatar. */
+    val leading: (@Composable () -> Unit)? = null,
+    /** Whether it is the choice made, which a check after it marks. */
+    val selected: Boolean = false,
     val onClick: () -> Unit,
 ) {
-    fun copy(startsGroup: Boolean = this.startsGroup) = ContextMenuItem(icon, label, startsGroup, onClick)
+    fun copy(startsGroup: Boolean = this.startsGroup) =
+        ContextMenuItem(icon, label, startsGroup, detail, leading, selected, onClick)
 }
 
 /**
@@ -125,6 +137,8 @@ internal class ContextMenuRequest(
     val anchor: Rect,
     /** The button's icon, which the menu swallows as it opens and gives back as it closes. */
     val icon: ImageVector?,
+    /** The icon's colour on the button; the secondary text colour when unspecified. */
+    val iconTint: Color,
     val preview: ContextMenuPreview?,
     val id: Long,
 )
@@ -161,9 +175,10 @@ class ContextMenus internal constructor() {
         anchor: Rect,
         icon: ImageVector? = null,
         preview: ContextMenuPreview? = null,
+        iconTint: Color = Color.Unspecified,
     ): Long {
         finger = null
-        request = ContextMenuRequest(items, anchor, icon, preview, ++shown)
+        request = ContextMenuRequest(items, anchor, icon, iconTint, preview, ++shown)
         return shown
     }
 
@@ -346,7 +361,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = colors.textSecondary,
+                        tint = request.iconTint.takeOrElse { colors.textSecondary },
                         modifier = Modifier.graphicsLayer {
                             val g = grow.value.coerceIn(0f, 1f)
                             val glass = geometry.glass
@@ -388,6 +403,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     .onPlaced { itemsCoordinates = it }
                     .widthIn(min = MenuMinWidth, max = MenuMaxWidth)
                     .width(IntrinsicSize.Max)
+                    // A menu longer than the screen scrolls
+                    .verticalScroll(rememberScrollState())
                     .padding(vertical = 6.dp),
             ) {
                 items.forEachIndexed { index, item ->
@@ -397,7 +414,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(ItemHeight)
+                            .heightIn(min = ItemHeight)
                             .onGloballyPositioned { row ->
                                 itemsCoordinates?.let { itemPlaces[index] = it.localBoundingBoxOf(row) }
                             }
@@ -405,12 +422,23 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (hovered == index) colors.chip else Color.Transparent)
                             .clickable { run(index) }
-                            .padding(horizontal = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(imageVector = item.icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
-                        Text(text = item.label, color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        when {
+                            item.leading != null -> item.leading.invoke()
+                            item.icon != null -> Icon(item.icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = item.label, color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            item.detail?.let { detail ->
+                                Text(text = detail, color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp)
+                            }
+                        }
+                        if (item.selected) {
+                            Icon(Icons.Rounded.Check, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             }
@@ -457,12 +485,12 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         },
     ) { measurables, constraints ->
         val (glassMeasurable, iconMeasurable, itemsMeasurable, previewMeasurable) = measurables
-        val items = itemsMeasurable.measure(Constraints())
-        val size = Size(items.width.toFloat(), items.height.toFloat())
         val gap = FingerGap.toPx()
         val margin = Margin.toPx()
         val top = insets.getTop(this) + margin
         val bottom = constraints.maxHeight - insets.getBottom(this) - margin
+        val items = itemsMeasurable.measure(Constraints(maxHeight = (bottom - top).roundToInt().coerceAtLeast(0)))
+        val size = Size(items.width.toFloat(), items.height.toFloat())
         // A button's menu covers it, from the side it sits on; a press's sits beside the finger
         val fromRight = anchor.center.x > constraints.maxWidth / 2
         val bounds: Rect

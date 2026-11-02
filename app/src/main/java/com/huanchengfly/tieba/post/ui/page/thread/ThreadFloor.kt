@@ -66,14 +66,14 @@ import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -118,7 +118,9 @@ fun ThreadFloor(
     canStore: Boolean = true,
 ) {
     val post = item.post
-    val menuState = rememberMenuState()
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
     val rule = floorRuleColor()
     var floorHeight by remember { mutableIntStateOf(0) }
     var badgeHeight by remember { mutableIntStateOf(0) }
@@ -141,13 +143,12 @@ fun ThreadFloor(
                 drawLine(rule, Offset(x, top), Offset(x, size.height), 1.dp.toPx())
             }
             Column(modifier = Modifier.padding(start = GutterStart, end = 16.dp)) {
-                LongClickMenu(
-                    menuState = menuState,
-                    indication = null,
-                    onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
-                    menuContent = {
-                        PostMenuItems(post, options.hideReply, isStoreMark, canStore, canDelete, menuState, onEvent)
-                    },
+                Box(
+                    modifier = Modifier.longPressMenu(
+                        items = { postMenuItems(labels, context, post, options.hideReply, isStoreMark, canStore, canDelete, shortcuts, onEvent) },
+                        onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
+                        indication = null,
+                    ),
                 ) {
                     Row {
                         Spacer(modifier = Modifier.width(Gutter))
@@ -285,6 +286,9 @@ private fun FloorSubPosts(
     onEvent: (ThreadEvent) -> Unit,
 ) {
     val post = item.post
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
     Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
         post.subPosts.forEach { subPost ->
             BlockableContent(
@@ -298,7 +302,7 @@ private fun FloorSubPosts(
                         subPost = subPost,
                         isLz = subPost.author.id == options.threadAuthorId,
                         onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
-                        menuContent = { SubPostMenuItems(post, subPost, options.hideReply, it, onEvent) },
+                        menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
                         maxLines = 4,
                     )
                 }
@@ -370,19 +374,13 @@ fun SubPostLine(
     subPost: SubPost,
     isLz: Boolean,
     onClick: (() -> Unit)?,
-    menuContent: @Composable ColumnScope.(MenuState) -> Unit,
+    menuItems: () -> List<ContextMenuItem>,
     modifier: Modifier = Modifier,
     maxLines: Int = Int.MAX_VALUE,
     onAgree: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val menuState = rememberMenuState()
-    LongClickMenu(
-        menuState = menuState,
-        menuContent = { menuContent(menuState) },
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-    ) {
+    Box(modifier = modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
         Column(modifier = Modifier.padding(bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Avatar(
@@ -465,17 +463,20 @@ fun ThreadFirstPost(
     onEvent: (ThreadEvent) -> Unit,
 ) {
     val thread = state.thread
-    val menuState = rememberMenuState()
-    LongClickMenu(
-        menuState = menuState,
-        indication = null,
-        // Replying to the first floor replies to the thread
-        onClick = { onEvent(ThreadEvent.Reply(null)) }.takeIf { !options.hideReply },
-        menuContent = {
-            PostMenuItems(post, options.hideReply, isStoreMark, canStore = true, canDelete, menuState) { event ->
-                onEvent(if (event is ThreadEvent.Reply) ThreadEvent.Reply(null) else event)
-            }
-        },
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
+    Box(
+        modifier = Modifier.longPressMenu(
+            items = {
+                postMenuItems(labels, context, post, options.hideReply, isStoreMark, canStore = true, canDelete, shortcuts) { event ->
+                    onEvent(if (event is ThreadEvent.Reply) ThreadEvent.Reply(null) else event)
+                }
+            },
+            // Replying to the first floor replies to the thread
+            onClick = { onEvent(ThreadEvent.Reply(null)) }.takeIf { !options.hideReply },
+            indication = null,
+        ),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 24.dp)) {
             FirstPostContent(

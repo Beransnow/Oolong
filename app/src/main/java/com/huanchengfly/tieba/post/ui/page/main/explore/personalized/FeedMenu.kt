@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,7 @@ fun FeedMenu(
     onDislike: (clickTime: Long, reasons: ImmutableList<DislikeOption>) -> Unit,
 ) {
     val context = LocalContext.current
+    val shareLabels = shareMenuLabels()
     val navigator = LocalNavigator.current
     val menus = LocalContextMenus.current
     val shortcuts = LocalBlockShortcuts.current
@@ -62,7 +64,7 @@ fun FeedMenu(
         onClick = {
             menus ?: return@IconButton
             val dislikes = dislikeMenuItems(context, navigator, options, onDislike)
-            val items = dislikes + shareMenuItems(context, thread.id, thread.title).mapIndexed { i, item ->
+            val items = dislikes + shareMenuItems(shareLabels, context, thread.id, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
             } + shortcuts?.let { blockMenuItems(context, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
             menuId = menus.show(items, anchor = bounds, icon = Icons.Rounded.MoreHoriz)
@@ -110,14 +112,24 @@ fun dislikeMenuItems(
     }
 }
 
+/** The labels of [shareMenuItems], read where the menu is offered. */
+@Immutable
+class ShareMenuLabels(val share: String, val copyLink: String)
+
+@Composable
+fun shareMenuLabels() = ShareMenuLabels(
+    share = stringResource(id = R.string.title_share),
+    copyLink = stringResource(id = R.string.title_copy_link),
+)
+
 /** Sharing thread [threadId], titled [title], or copying its link. */
-fun shareMenuItems(context: Context, threadId: Long, title: String): List<ContextMenuItem> {
+fun shareMenuItems(labels: ShareMenuLabels, context: Context, threadId: Long, title: String): List<ContextMenuItem> {
     val url = "https://tieba.baidu.com/p/$threadId"
     return listOf(
-        ContextMenuItem(Icons.Rounded.Share, context.getString(R.string.title_share)) {
+        ContextMenuItem(Icons.Rounded.Share, labels.share) {
             TiebaUtil.shareText(context, url, title.takeIf(String::isNotBlank))
         },
-        ContextMenuItem(Icons.Rounded.Link, context.getString(R.string.title_copy_link)) { TiebaUtil.copyText(context, url) },
+        ContextMenuItem(Icons.Rounded.Link, labels.copyLink) { TiebaUtil.copyText(context, url) },
     )
 }
 

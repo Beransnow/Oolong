@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.common.prefs.widgets
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -13,12 +14,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.prefs.LocalPrefsDataStore
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.collections.immutable.toImmutableList
@@ -99,17 +100,13 @@ fun ListPref(
             )
         }
         if (enabled) {
-            ClickMenu(
-                menuContent = {
-                    entries.forEach { (value, name) ->
-                        PrefsChoiceItem(name = name, selected = value == selected) {
-                            if (value != selected) edit(value to name)
-                            dismiss()
-                        }
-                    }
-                },
-                content = choice,
-            )
+            Box(
+                modifier = Modifier.clickMenu(
+                    items = { choiceMenuItems(entries.toList(), selected) { value -> if (value != null) edit(value to entries.getValue(value)) } },
+                ),
+            ) {
+                choice()
+            }
         } else {
             choice()
         }

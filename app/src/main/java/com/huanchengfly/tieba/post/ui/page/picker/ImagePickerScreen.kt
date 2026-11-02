@@ -52,10 +52,12 @@ import com.huanchengfly.tieba.post.model.DeviceImage
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import kotlinx.collections.immutable.ImmutableList
 
 /** What the picker may read of the device's pictures. */
@@ -155,14 +157,27 @@ private fun AlbumSwitcher(
     enabled: Boolean,
     onShowAlbum: (Long?) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val current = albums.firstOrNull { it.id == albumId }
+    val names = albums.map { albumName(it) }
     Box {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clip(RoundedCornerShape(100))
-                .clickable(enabled = enabled && albums.isNotEmpty()) { expanded = true }
+                .clickMenu(
+                    items = {
+                        albums.mapIndexed { index, album ->
+                            ContextMenuItem(
+                                icon = null,
+                                label = names[index],
+                                detail = album.count.toString(),
+                                leading = { AlbumCover(album) },
+                                selected = album.id == albumId,
+                            ) { onShowAlbum(album.id) }
+                        }
+                    },
+                    enabled = enabled && albums.isNotEmpty(),
+                )
                 .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         ) {
             Text(
@@ -175,52 +190,17 @@ private fun AlbumSwitcher(
                 Icon(imageVector = Icons.Rounded.ArrowDropDown, contentDescription = null)
             }
         }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(ExtendedTheme.colors.card),
-        ) {
-            albums.forEach { album ->
-                DropdownMenuItem(
-                    onClick = {
-                        expanded = false
-                        onShowAlbum(album.id)
-                    },
-                ) {
-                    AlbumRow(album = album, current = album.id == albumId)
-                }
-            }
-        }
     }
 }
 
 @Composable
-private fun AlbumRow(album: DeviceAlbum, current: Boolean) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        DeviceThumbnail(
-            uri = album.cover,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(6.dp)),
-        )
-        Column(modifier = Modifier.weight(1f, fill = false)) {
-            Text(
-                text = albumName(album),
-                color = ExtendedTheme.colors.text,
-                fontWeight = if (current) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = album.count.toString(),
-                color = ExtendedTheme.colors.textSecondary,
-                style = MaterialTheme.typography.caption,
-            )
-        }
-    }
+private fun AlbumCover(album: DeviceAlbum) {
+    DeviceThumbnail(
+        uri = album.cover,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(6.dp)),
+    )
 }
 
 @Composable

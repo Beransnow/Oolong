@@ -91,63 +91,23 @@ fun AccountNavIcon(
                 .size(size)
         )
     } else {
-        val context = LocalContext.current
-        val menuState = rememberMenuState()
-        LongClickMenu(
-            menuContent = {
-                allAccounts.forEach {
-                    DropdownMenuItem(onClick = { accounts.switchTo(it.id) }) {
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(Sizes.Small)
-                        ) {
-                            Avatar(
-                                data = StringUtil.getAvatarUrl(it.portrait),
-                                contentDescription = stringResource(id = R.string.title_switch_account_long_press),
-                                size = Sizes.Small,
-                            )
-                            if (currentAccount.id == it.id) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CheckCircle,
-                                    contentDescription = stringResource(id = R.string.desc_current_account),
-                                    tint = Color.White,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(color = Color.Black.copy(0.35f))
-                                        .padding(8.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(text = it.nameShow ?: it.name)
-                    }
-                }
-                VerticalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        navigator.navigate(LoginKey)
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = stringResource(id = R.string.title_new_account),
-                        tint = ExtendedTheme.colors.onChip,
-                        modifier = Modifier
-                            .size(Sizes.Small)
-                            .clip(CircleShape)
-                            .background(color = ExtendedTheme.colors.chip)
-                            .padding(8.dp),
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(text = stringResource(id = R.string.title_new_account))
-                }
-            },
-            menuState = menuState,
-            onClick = onClick,
-            shape = CircleShape
+        val newAccount = stringResource(id = R.string.title_new_account)
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .longPressMenu(
+                    items = {
+                        allAccounts.map { account ->
+                            ContextMenuItem(
+                                icon = null,
+                                label = account.nameShow ?: account.name,
+                                leading = { Avatar(data = StringUtil.getAvatarUrl(account.portrait), size = 28.dp, contentDescription = null) },
+                                selected = account.id == currentAccount.id,
+                            ) { accounts.switchTo(account.id) }
+                        } + ContextMenuItem(Icons.Rounded.Add, newAccount, startsGroup = true) { navigator.navigate(LoginKey) }
+                    },
+                    onClick = onClick,
+                ),
         ) {
             Avatar(
                 data = StringUtil.getAvatarUrl(currentAccount.portrait),

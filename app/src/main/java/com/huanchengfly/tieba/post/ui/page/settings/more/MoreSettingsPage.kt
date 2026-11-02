@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -30,7 +31,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
-import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceItem
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
@@ -38,11 +38,12 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
-import com.huanchengfly.tieba.post.ui.widgets.compose.ClickMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -133,20 +134,19 @@ private fun LinkOpeningPref() {
         useCustomTabs -> 1
         else -> 2
     }
-    ClickMenu(
-        menuContent = {
-            options.forEachIndexed { index, name ->
-                PrefsChoiceItem(name = name, selected = index == current) {
+    Box(
+        modifier = Modifier.clickMenu(
+            items = {
+                choiceMenuItems(options.withIndex().map { (index, name) -> index to name }, current) { index ->
                     coroutineScope.launch {
                         dataStore.edit {
                             it[UseWebView] = index == 0
                             it[UseCustomTabs] = index == 1
                         }
                     }
-                    dismiss()
                 }
-            }
-        },
+            },
+        ),
     ) {
         TextPref(
             title = stringResource(id = R.string.title_link_opening),

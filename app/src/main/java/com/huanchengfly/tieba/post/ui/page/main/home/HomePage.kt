@@ -35,8 +35,12 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.HeartBroken
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -90,20 +94,19 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
-import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyVerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
+import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -269,49 +272,6 @@ private fun CompactForumItemPlaceholder() {
 }
 
 @Composable
-private fun ForumItemMenuContent(
-    menuState: MenuState,
-    isTopForum: Boolean,
-    onDeleteTopForum: () -> Unit,
-    onAddTopForum: () -> Unit,
-    onCopyName: () -> Unit,
-    onUnfollow: () -> Unit,
-) {
-    DropdownMenuItem(
-        onClick = {
-            if (isTopForum) {
-                onDeleteTopForum()
-            } else {
-                onAddTopForum()
-            }
-            menuState.expanded = false
-        }
-    ) {
-        if (isTopForum) {
-            Text(text = stringResource(id = R.string.menu_top_del))
-        } else {
-            Text(text = stringResource(id = R.string.menu_top))
-        }
-    }
-    DropdownMenuItem(
-        onClick = {
-            onCopyName()
-            menuState.expanded = false
-        }
-    ) {
-        Text(text = stringResource(id = R.string.title_copy_forum_name))
-    }
-    DropdownMenuItem(
-        onClick = {
-            onUnfollow()
-            menuState.expanded = false
-        }
-    ) {
-        Text(text = stringResource(id = R.string.button_unfollow))
-    }
-}
-
-@Composable
 private fun ForumItemContent(
     item: FollowedForum,
     showAvatar: Boolean
@@ -439,24 +399,22 @@ private fun ForumItem(
     isTopForum: Boolean = false,
 ) {
     val context = LocalContext.current
-    val menuState = rememberMenuState()
-    LongClickMenu(
-        menuContent = {
-            ForumItemMenuContent(
-                menuState = menuState,
-                isTopForum = isTopForum,
-                onDeleteTopForum = { onDeleteTopForum(item) },
-                onAddTopForum = { onAddTopForum(item) },
-                onCopyName = {
-                    TiebaUtil.copyText(context, item.name)
-                },
-                onUnfollow = { onUnfollow(item) }
-            )
-        },
-        menuState = menuState,
-        onClick = {
-            onClick(item)
-        }
+    val pin = stringResource(id = if (isTopForum) R.string.menu_top_del else R.string.menu_top)
+    val copyName = stringResource(id = R.string.title_copy_forum_name)
+    val unfollow = stringResource(id = R.string.button_unfollow)
+    Box(
+        modifier = Modifier.longPressMenu(
+            items = {
+                listOf(
+                    ContextMenuItem(if (isTopForum) Icons.Rounded.PushPin else Icons.Outlined.PushPin, pin) {
+                        if (isTopForum) onDeleteTopForum(item) else onAddTopForum(item)
+                    },
+                    ContextMenuItem(Icons.Rounded.ContentCopy, copyName) { TiebaUtil.copyText(context, item.name) },
+                    ContextMenuItem(Icons.Rounded.HeartBroken, unfollow, startsGroup = true) { onUnfollow(item) },
+                )
+            },
+            onClick = { onClick(item) },
+        ),
     ) {
         ForumItemContent(item = item, showAvatar = showAvatar)
     }

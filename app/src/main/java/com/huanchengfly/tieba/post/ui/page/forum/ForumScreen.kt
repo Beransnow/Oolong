@@ -96,7 +96,7 @@ fun ForumScreen(
             topBar = {
                 ForumTopBar(
                     onEvent = onEvent,
-                    menuContent = { ForumMenu(onEvent, liked = forum.liked, dismiss = { dismiss() }) },
+                    menu = forumMenu(onEvent, liked = forum.liked),
                     content = {
                         ForumHeader(
                             forum = forum,
@@ -205,7 +205,7 @@ private fun ForumLoading(state: ForumState, onEvent: (ForumEvent) -> Unit, modif
             ForumTopBar(
                 onEvent = onEvent,
                 canSearch = false,
-                menuContent = { ForumMenu(onEvent, liked = false, dismiss = { dismiss() }) },
+                menu = forumMenu(onEvent, liked = false),
             )
         },
     ) { contentPadding ->
