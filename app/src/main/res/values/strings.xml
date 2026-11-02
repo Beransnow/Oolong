@@ -124,7 +124,6 @@
     <string name="title_ask_permission_clipboard_copy">要允许 %1$s 写入您的剪贴板吗？</string>
     <string name="title_start_app_permission">要允许 %1$s 打开您的%2$s吗？</string>
     <string name="name_multi_app">应用</string>
-    <string name="settings_night_mode">夜间模式主题</string>
     <string name="settings_forum_single">吧列表单列显示</string>
     <string name="title_hide_explore">隐藏「动态」入口</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
@@ -160,7 +159,6 @@
     <string name="title_settings_default_sort_type">默认排序</string>
     <string name="toast_load_failed">加载失败</string>
     <string name="button_undo">撤销</string>
-    <string name="title_settings_follow_system_night">跟随系统夜间模式</string>
     <string name="title_image_load_type_smart_origin">智能省流量</string>
     <string name="title_image_load_type_smart_load">智能无图</string>
     <string name="title_image_load_type_all_origin">始终高质量</string>
@@ -342,7 +340,6 @@
     <string name="settings_group_links">链接</string>
     <string name="settings_group_storage">存储</string>
     <string name="settings_group_theme">主题</string>
-    <string name="settings_group_night">夜间模式</string>
     <string name="settings_group_text_and_icon">字体与图标</string>
     <string name="settings_group_effects">界面效果</string>
     <string name="settings_group_home">首页</string>
@@ -480,8 +477,6 @@
     <string name="button_expand_more_history">展开历史</string>
     <string name="button_expand_less_history">收起历史</string>
     <string name="button_clear_all">清除全部</string>
-    <string name="title_dynamic_theme">动态取色</string>
-    <string name="desc_night_theme">夜间主题</string>
     <string name="settings_image_darken_when_night_mode">夜间模式下压暗图片</string>
     <string name="title_hide_reply">隐藏回贴入口</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
@@ -537,4 +532,19 @@
     <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>
     <string name="settings_home_page_show_history_forum">显示最近浏览的吧</string>
     <string name="title_settings_reduce_transparency">减少透明效果</string>
+    <string name="title_appearance">外观</string>
+    <string name="appearance_light">浅色</string>
+    <string name="appearance_dark">深色</string>
+    <string name="appearance_system">跟随系统</string>
+    <string name="title_dark_background">深色背景</string>
+    <string name="title_theme_color">主题色</string>
+    <string name="title_color_style">配色风格</string>
+    <string name="color_style_plain">素雅</string>
+    <string name="color_style_plain_desc">以黑白为主，主题色只作点缀</string>
+    <string name="color_style_bright">明快</string>
+    <string name="color_style_bright_desc">主题色用于界面各处</string>
+    <string name="accent_system_wallpaper">系统壁纸</string>
+    <string name="title_background">背景</string>
+    <string name="title_wallpaper">壁纸</string>
+    <string name="title_wallpaper_settings">壁纸设置</string>
 </resources>

@@ -51,7 +51,10 @@ class PaletteSnapshotTest {
         val accent: String? = null,
     )
 
-    private fun light(accent: String) = ThemeSettings(appearance = Appearance.Light, accent = accent)
+    /** A light theme by its old name, which held its colour and its style. */
+    private fun light(theme: String) = ThemeSettings.fromLightTheme(theme).let { (accent, style) ->
+        ThemeSettings(appearance = Appearance.Light, accent = accent, style = style)
+    }
     private fun dark(theme: String, accent: String = ThemeUtil.THEME_DEFAULT) =
         ThemeSettings(appearance = Appearance.Dark, accent = accent, darkTheme = theme)
     private val wallpaper = ThemeSettings(appearance = Appearance.Light, wallpaper = true)

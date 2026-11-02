@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.utils.ColorStyle
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.compose.darken
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -214,30 +216,43 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
     )
 }
 
+/**
+ * The colours [settings] give when the app is [dark] or light. [picks] changes when a colour that
+ * is set apart from them is, as the custom theme's colour.
+ */
 @Composable
-fun TiebaLiteTheme(
-    content: @Composable () -> Unit
-) {
+fun colorsOf(settings: ThemeSettings, dark: Boolean, picks: Any? = null): ExtendedColors {
     val context = LocalContext.current
-    val theme by remember { ThemeUtil.themeState }
-    val settings by remember { ThemeUtil.settingsState }
-    val useDynamicTheme = settings.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val theme = settings.themeNameWhen(dark)
+    if (settings.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !ThemeUtil.isTranslucentTheme(theme)) {
+        return getDynamicColor(theme, dynamicTonalPalette(context))
+    }
+    return remember(settings, theme, picks) {
+        val nowTheme = ThemeUtil.getCurrentTheme(theme)
+        themeColors(nowTheme, pickedColor(context, nowTheme), plain = settings.style == ColorStyle.Plain)
+    }
+}
 
-    // The translucent theme's text colour and the picked colours are settings of their own:
-    // changing them leaves the theme name as it was
+/** The translucent theme's text colour and the picked colours, which the colours depend on too. */
+@Composable
+fun rememberColorPicks(): Any? {
+    val context = LocalContext.current
+    // Settings of their own: changing them leaves the theme name as it was
     val picks by remember {
         context.dataStore.data
             .map { listOf(it[TranslucentTextKey], it[TranslucentColorKey], it[CustomColorKey]) }
             .distinctUntilChanged()
     }.collectAsState(initial = null)
-    val extendedColors = if (!useDynamicTheme || ThemeUtil.isTranslucentTheme(theme)) {
-        remember(theme, picks) {
-            val nowTheme = ThemeUtil.getCurrentTheme(theme)
-            themeColors(nowTheme, pickedColor(context, nowTheme))
-        }
-    } else {
-        getDynamicColor(theme, dynamicTonalPalette(context))
-    }
+    return picks
+}
+
+@Composable
+fun TiebaLiteTheme(
+    content: @Composable () -> Unit
+) {
+    val theme by remember { ThemeUtil.themeState }
+    val settings by remember { ThemeUtil.settingsState }
+    val extendedColors = colorsOf(settings, dark = ThemeUtil.isNightMode(theme), picks = rememberColorPicks())
 
     val colors = getColorPalette(extendedColors)
 

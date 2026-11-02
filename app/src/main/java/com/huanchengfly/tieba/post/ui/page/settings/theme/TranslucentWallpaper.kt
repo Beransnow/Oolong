@@ -174,6 +174,6 @@ suspend fun Context.applyWallpaper(source: File, wallpaper: TranslucentWallpaper
     }
     val old = TranslucentWallpaper.save(this, wallpaper, file.absolutePath)
     if (old != null && old != file.absolutePath) File(old).delete()
-    ThemeUtil.selectWallpaper()
+    ThemeUtil.setWallpaper(true)
     return true
 }

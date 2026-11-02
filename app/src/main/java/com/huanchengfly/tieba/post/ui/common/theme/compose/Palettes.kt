@@ -172,21 +172,29 @@ private fun translucentDark(accent: Color) = ExtendedColors(
 /**
  * The colours of [theme], a theme name as [ThemeUtil] gives it, with the translucent theme named
  * by its variant. [picked] is the colour the user picked for the custom or translucent theme;
- * other themes ignore it.
+ * other themes ignore it. A [plain] light theme is black and white, keeping its colour for links
+ * and buttons; the default theme is plain unless asked otherwise, the others are not.
  */
-fun themeColors(theme: String, picked: Color? = null): ExtendedColors = when (theme) {
-    ThemeUtil.THEME_BLACK -> light(theme, accent = Color.Black)
-    ThemeUtil.THEME_BLUE -> light(theme, accent = TiebaBlue)
-    ThemeUtil.THEME_PURPLE -> light(theme, accent = Color(0xFF512DA8))
-    ThemeUtil.THEME_PINK -> light(theme, accent = Color(0xFFFF9A9E))
-    ThemeUtil.THEME_RED -> light(theme, accent = Color(0xFFC51100))
-    ThemeUtil.THEME_CUSTOM -> light(theme, accent = picked ?: TiebaBlue)
-    ThemeUtil.THEME_BLUE_DARK -> BlueDark
-    ThemeUtil.THEME_GREY_DARK -> GreyDark
-    ThemeUtil.THEME_AMOLED_DARK -> AmoledDark
-    ThemeUtil.THEME_TRANSLUCENT_LIGHT -> translucentLight(picked ?: TiebaBlue)
-    ThemeUtil.THEME_TRANSLUCENT_DARK -> translucentDark(picked ?: TiebaBlue)
-    else -> light(ThemeUtil.THEME_DEFAULT, accent = TiebaBlue, emphasis = Color.Black)
+fun themeColors(
+    theme: String,
+    picked: Color? = null,
+    plain: Boolean = theme == ThemeUtil.THEME_DEFAULT,
+): ExtendedColors {
+    fun light(accent: Color) = light(theme, accent, emphasis = if (plain) Color.Black else accent)
+    return when (theme) {
+        ThemeUtil.THEME_BLACK -> light(accent = Color.Black)
+        ThemeUtil.THEME_BLUE -> light(accent = TiebaBlue)
+        ThemeUtil.THEME_PURPLE -> light(accent = Color(0xFF512DA8))
+        ThemeUtil.THEME_PINK -> light(accent = Color(0xFFFF9A9E))
+        ThemeUtil.THEME_RED -> light(accent = Color(0xFFC51100))
+        ThemeUtil.THEME_CUSTOM -> light(accent = picked ?: TiebaBlue)
+        ThemeUtil.THEME_BLUE_DARK -> BlueDark
+        ThemeUtil.THEME_GREY_DARK -> GreyDark
+        ThemeUtil.THEME_AMOLED_DARK -> AmoledDark
+        ThemeUtil.THEME_TRANSLUCENT_LIGHT -> translucentLight(picked ?: TiebaBlue)
+        ThemeUtil.THEME_TRANSLUCENT_DARK -> translucentDark(picked ?: TiebaBlue)
+        else -> light(ThemeUtil.THEME_DEFAULT, accent = TiebaBlue, emphasis = if (plain) Color.Black else TiebaBlue)
+    }
 }
 
 /** The colour the user picked for [theme], if it is the custom or translucent theme. */

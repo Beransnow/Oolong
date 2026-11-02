@@ -38,22 +38,21 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.ReduceTransparencyKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.roundToInt
 
-/** The theme in use, by the name the theme page gives it. */
+/** The colour in use, by the name the theme page gives it. */
 @Composable
 private fun currentThemeName(): String {
-    val theme by ThemeUtil.themeState
-    val values = stringArrayResource(id = R.array.theme_values)
-    val names = stringArrayResource(id = R.array.themeNames)
+    val settings by ThemeUtil.settingsState
+    val names = stringArrayResource(id = R.array.accent_names)
     return when {
-        ThemeUtil.settingsState.value.isDynamic -> stringResource(id = R.string.title_dynamic_theme)
-        theme == ThemeUtil.THEME_CUSTOM -> stringResource(id = R.string.title_custom_color)
-        theme.startsWith(ThemeUtil.THEME_TRANSLUCENT) -> stringResource(id = R.string.title_theme_translucent)
-        else -> names.getOrNull(values.indexOf(theme)).orEmpty()
+        settings.isDynamic -> stringResource(id = R.string.accent_system_wallpaper)
+        settings.accent == ThemeUtil.THEME_CUSTOM -> stringResource(id = R.string.title_custom_color)
+        else -> names.getOrNull(ThemeSettings.ACCENTS.indexOf(settings.accent)).orEmpty()
     }
 }
 
@@ -65,7 +64,6 @@ fun CustomSettingsPage(
 ) {
     val context = LocalContext.current
     val themeGroup = stringResource(id = R.string.settings_group_theme)
-    val nightGroup = stringResource(id = R.string.settings_group_night)
     val textAndIconGroup = stringResource(id = R.string.settings_group_text_and_icon)
     val effectsGroup = stringResource(id = R.string.settings_group_effects)
     GlassScaffold(
@@ -91,32 +89,6 @@ fun CustomSettingsPage(
                         title = stringResource(id = R.string.title_theme),
                         onClick = { navigator.navigate(AppThemeKey) },
                         trailingContent = { PrefsLinkValue(text = currentThemeName()) },
-                    )
-                }
-            }
-            prefsGroup(nightGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "follow_system_night",
-                        title = stringResource(id = R.string.title_settings_follow_system_night),
-                        defaultChecked = true,
-                        onCheckedChange = { ThemeUtil.setFollowSystem(it) },
-                    )
-                }
-                prefsItem {
-                    val darkThemeValues = stringArrayResource(id = R.array.dark_theme_values)
-                    val darkThemeNames = stringArrayResource(id = R.array.dark_theme_names)
-                    ListPref(
-                        key = "dark_theme",
-                        title = stringResource(id = R.string.settings_night_mode),
-                        defaultValue = ThemeUtil.THEME_AMOLED_DARK,
-                        entries = darkThemeValues.associateWith { value ->
-                            darkThemeNames[darkThemeValues.indexOf(
-                                value
-                            )]
-                        },
-                        useSelectedAsSummary = true,
-                        onValueChange = { ThemeUtil.updateSettings { settings -> settings.copy(darkTheme = it) } },
                     )
                 }
             }

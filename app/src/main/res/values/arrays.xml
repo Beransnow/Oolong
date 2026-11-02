@@ -1,30 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string-array name="theme_values">
-        <item>tieba</item>
-        <item>blue</item>
-        <item>black</item>
-        <item>pink</item>
-        <item>red</item>
-        <item>purple</item>
-        <item>blue_dark</item>
-        <item>grey_dark</item>
-        <item>amoled_dark</item>
-    </string-array>
-
-    <string-array name="themeNames">
-        <item>深海蓝</item>
-        <item>清新蓝</item>
-        <item>高级黑</item>
-        <item>少女粉</item>
-        <item>新年红</item>
-        <item>星空紫</item>
-        <item>静谧蓝</item>
-        <item>深邃灰</item>
-        <item>纯黑</item>
-    </string-array>
-
     <string-array name="dark_theme_names">
         <item>静谧蓝</item>
         <item>深邃灰</item>
@@ -37,4 +13,12 @@
         <item>amoled_dark</item>
     </string-array>
 
+    <!-- The colours on the theme page, in the order ThemeSettings.ACCENTS lists them, but for the custom one -->
+    <string-array name="accent_names">
+        <item>深海蓝</item>
+        <item>高级黑</item>
+        <item>少女粉</item>
+        <item>新年红</item>
+        <item>星空紫</item>
+    </string-array>
 </resources>

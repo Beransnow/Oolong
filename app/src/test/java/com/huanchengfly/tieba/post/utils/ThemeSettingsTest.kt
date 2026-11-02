@@ -32,7 +32,7 @@ class ThemeSettingsTest {
     @Test
     fun `a light theme in use stays the light theme`() {
         assertEquals(
-            ThemeSettings(appearance = Appearance.Light, accent = "pink", darkTheme = "grey_dark"),
+            ThemeSettings(appearance = Appearance.Light, accent = "pink", style = ColorStyle.Bright, darkTheme = "grey_dark"),
             ThemeSettings.migrate(old(theme = "pink", dark = "grey_dark", followSystem = false)),
         )
     }
@@ -40,9 +40,18 @@ class ThemeSettingsTest {
     @Test
     fun `at night the light theme comes from where it was kept aside`() {
         assertEquals(
-            ThemeSettings(appearance = Appearance.Dark, accent = "red", darkTheme = "amoled_dark"),
+            ThemeSettings(appearance = Appearance.Dark, accent = "red", style = ColorStyle.Bright, darkTheme = "amoled_dark"),
             ThemeSettings.migrate(old(theme = "amoled_dark", aside = "red", dark = "blue_dark", followSystem = false)),
         )
+    }
+
+    @Test
+    fun `the default theme is plain, and the bright blue is the default colour used throughout`() {
+        assertEquals(ColorStyle.Plain, ThemeSettings.migrate(old(theme = "tieba")).style)
+        val blue = ThemeSettings.migrate(old(theme = "blue", followSystem = false))
+        assertEquals(ThemeUtil.THEME_DEFAULT, blue.accent)
+        assertEquals(ColorStyle.Bright, blue.style)
+        assertEquals(ThemeUtil.THEME_BLUE, blue.themeName(systemDark = false))
     }
 
     @Test
@@ -84,10 +93,20 @@ class ThemeSettingsTest {
 
     @Test
     fun `reads back what it writes`() {
-        val settings = ThemeSettings(Appearance.Dark, "custom", "blue_dark", wallpaper = true)
+        val settings = ThemeSettings(Appearance.Dark, "custom", ColorStyle.Plain, "blue_dark", wallpaper = true)
         val prefs = mutablePreferencesOf().also { settings.writeTo(it) }
         assertEquals(settings, ThemeSettings.from(prefs))
         assertFalse(ThemeSettings.needsMigration(prefs))
+    }
+
+    @Test
+    fun `settings saved before the style was read with the style their colour had`() {
+        val prefs = mutablePreferencesOf().also { ThemeSettings(accent = "pink").writeTo(it) }
+        prefs.remove(stringPreferencesKey("theme_color_style"))
+        prefs[stringPreferencesKey("theme_accent")] = "blue"
+        val settings = ThemeSettings.from(prefs)
+        assertEquals(ThemeUtil.THEME_DEFAULT, settings.accent)
+        assertEquals(ColorStyle.Bright, settings.style)
     }
 
     @Test
@@ -95,6 +114,5 @@ class ThemeSettingsTest {
         val settings = ThemeSettings(Appearance.System, accent = "pink", darkTheme = "blue_dark")
         assertEquals("pink", settings.themeName(systemDark = false))
         assertEquals("blue_dark", settings.themeName(systemDark = true))
-        assertEquals(Appearance.Dark, settings.fixed(systemDark = true).appearance)
     }
 }

@@ -119,33 +119,29 @@ object ThemeUtil {
         }
     }
 
-    /** Uses the light theme [name]. Picked while fixed to dark, it shows straight away. */
-    fun selectLightTheme(name: String) = updateSettings {
-        it.copy(accent = name, wallpaper = false).showing(dark = false)
-    }
+    /** Uses the colour [name], dark or light. */
+    fun selectAccent(name: String) = updateSettings { it.copy(accent = name, wallpaper = false) }
 
-    /** Uses the dark theme [name]. Picked while fixed to light, it shows straight away. */
-    fun selectDarkTheme(name: String) = updateSettings { it.copy(darkTheme = name).showing(dark = true) }
+    fun selectStyle(style: ColorStyle) = updateSettings { it.copy(style = style) }
+
+    fun selectDarkTheme(name: String) = updateSettings { it.copy(darkTheme = name) }
 
     /** Colours the light and dark themes from the system wallpaper. */
     fun selectDynamicColor() = updateSettings { it.copy(accent = ThemeSettings.ACCENT_DYNAMIC, wallpaper = false) }
 
-    /** Shows the picked wallpaper behind the pages, which takes no dynamic colour. */
-    fun selectWallpaper() = updateSettings {
-        it.copy(wallpaper = true, accent = if (it.isDynamic) THEME_DEFAULT else it.accent).showing(dark = false)
+    /** Shows the picked wallpaper behind the pages while light, or stops showing it. */
+    fun setWallpaper(on: Boolean) = updateSettings {
+        if (!on) return@updateSettings it.copy(wallpaper = false)
+        // The wallpaper takes no dynamic colour
+        it.copy(wallpaper = true, accent = if (it.isDynamic) THEME_DEFAULT else it.accent)
     }
+
+    fun setAppearance(appearance: Appearance) = updateSettings { it.copy(appearance = appearance) }
 
     /** Switches between light and dark, no longer following the system. */
     fun toggleDark() = updateSettings {
         it.copy(appearance = if (it.isDark(isSystemDark())) Appearance.Light else Appearance.Dark)
     }
-
-    fun setFollowSystem(follow: Boolean) = updateSettings {
-        if (follow) it.copy(appearance = Appearance.System) else it.fixed(isSystemDark())
-    }
-
-    private fun ThemeSettings.showing(dark: Boolean): ThemeSettings =
-        if (appearance == Appearance.System) this else copy(appearance = if (dark) Appearance.Dark else Appearance.Light)
 
     @JvmStatic
     fun setChipThemeByLevel(level: String?, parent: View, vararg textViews: TextView) {
