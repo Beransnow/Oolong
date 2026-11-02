@@ -19,7 +19,6 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.github.gzuliyujiang.oaid.DeviceID
-import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
 import com.huanchengfly.tieba.post.components.images.newAppImageLoader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VoicePlayback
@@ -67,7 +66,6 @@ class App : Application(), SingletonImageLoader.Factory {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         updateScreenInfo()
         registerActivityLifecycleCallbacks(ThemeAndVoiceCallbacks)
-        registerActivityLifecycleCallbacks(ClipBoardLinkDetector)
         registerActivityLifecycleCallbacks(OAIDGetter)
         thread {
             EmoticonManager.init(this@App)

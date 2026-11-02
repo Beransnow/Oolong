@@ -22,6 +22,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogs
 import java.util.Calendar
 
 object TiebaUtil {
+    /** The label of what the app copies, so it can tell its own copies apart. */
+    const val ClipLabel = "Tieba Lite"
+
     private fun ClipData.setIsSensitive(isSensitive: Boolean): ClipData = apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             description.extras = PersistableBundle().apply {
@@ -39,7 +42,7 @@ object TiebaUtil {
         isSensitive: Boolean = false
     ) {
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clipData = ClipData.newPlainText("Tieba Lite", text).setIsSensitive(isSensitive)
+        val clipData = ClipData.newPlainText(ClipLabel, text).setIsSensitive(isSensitive)
         cm.setPrimaryClip(clipData)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
             context.toastShort(toast)

@@ -1,20 +1,20 @@
 package com.huanchengfly.tieba.post.components
 
-import android.app.Activity
-import android.app.Application
+import android.content.ClipDescription
+import android.content.Context
 import android.net.Uri
-import android.os.Bundle
+import android.os.Build
+import android.view.textclassifier.TextClassifier
 import androidx.lifecycle.lifecycleScope
-import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.MainActivityV2
-import com.huanchengfly.tieba.post.arch.collectIn
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
-import com.huanchengfly.tieba.post.utils.getClipBoardText
-import com.huanchengfly.tieba.post.utils.getClipBoardTimestamp
+import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
+import com.huanchengfly.tieba.post.utils.clipBoardManager
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.intellij.lang.annotations.RegExp
 import java.util.regex.Pattern
 
 open class ClipBoardLink(
@@ -31,45 +31,76 @@ class ClipBoardThreadLink(
     val threadId: String,
 ) : ClipBoardLink(url)
 
-object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
+/**
+ * Offers to open a Tieba link the user copied elsewhere, once for each copy: looked at when the
+ * app comes to the front, and only read when the clipboard holds something new that may be a
+ * link. What was looked at is kept across launches, so the same copy is never offered again.
+ */
+object ClipBoardLinkDetector {
     private val mutablePreviewInfoStateFlow = MutableStateFlow<QuickPreviewUtil.PreviewInfo?>(null)
     val previewInfoStateFlow
         get() = mutablePreviewInfoStateFlow.asStateFlow()
 
-    private var clipBoardHash: String? = null
-    private var lastTimestamp: Long = 0L
-    private fun updateClipBoardHashCode() {
-        clipBoardHash = getClipBoardHash()
+    /** Whether the app has come to the front since the clipboard was last looked at. */
+    private var due = false
+
+    /** Loading what the offered link shows, which is stopped once the offer is answered. */
+    private var loading: Job? = null
+
+    /** The app came to the front: the clipboard is looked at once the window has focus. */
+    fun onStart() {
+        due = true
     }
 
-    private fun getClipBoardHash(): String {
-        return "$clipBoardTimestamp"
+    /** The offer was answered or dismissed. */
+    fun consume() {
+        loading?.cancel()
+        loading = null
+        mutablePreviewInfoStateFlow.value = null
     }
 
-    private val clipBoard: String?
-        get() {
-            val timestamp = System.currentTimeMillis()
-            return if (timestamp - lastTimestamp >= 10 * 1000L) {
-                lastTimestamp = timestamp
-                App.INSTANCE.getClipBoardText()
-            } else {
-                null
-            }
+    /**
+     * Looks at the clipboard if the app came to the front since it last did. Called once the
+     * window has focus, as without it the system gives apps nothing from the clipboard.
+     */
+    fun check(activity: MainActivityV2) {
+        if (!due) return
+        due = false
+        if (!activity.appPreferences.clipboardLinks) return
+        val manager = activity.clipBoardManager
+        val description = manager.primaryClipDescription ?: return
+        if (!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN) && !description.hasMimeType(ClipDescription.MIMETYPE_TEXT_HTML)) return
+        val seen = activity.getSharedPreferences(Prefs, Context.MODE_PRIVATE)
+        // Each copy has its own time; before Android 8 the text itself tells copies apart
+        val stamp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) description.timestamp.toString() else null
+        if (stamp != null && seen.getString(SeenKey, null) == stamp) return
+        // What the app copied itself, such as a thread's link, is not offered back
+        val unlikelyLink = description.label == TiebaUtil.ClipLabel ||
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            description.classificationStatus == ClipDescription.CLASSIFICATION_COMPLETE &&
+            description.getConfidenceScore(TextClassifier.TYPE_URL) < UrlConfidence
+        if (unlikelyLink && stamp != null) {
+            seen.edit().putString(SeenKey, stamp).apply()
+            return
         }
-
-    private val clipBoardTimestamp: Long
-        get() = App.INSTANCE.getClipBoardTimestamp()
+        val text = manager.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString() ?: return
+        val key = stamp ?: text.hashCode().toString()
+        if (stamp == null && seen.getString(SeenKey, null) == key) return
+        seen.edit().putString(SeenKey, key).apply()
+        if (unlikelyLink) return
+        val url = UrlPattern.matcher(text).takeIf { it.find() }?.group() ?: return
+        val link = parseLink(url) ?: return
+        // Collected once, not again each time the app comes back, which would offer it again
+        loading?.cancel()
+        loading = activity.lifecycleScope.launch {
+            QuickPreviewUtil.getPreviewInfoFlow(activity, link).collect { mutablePreviewInfoStateFlow.value = it }
+        }
+    }
 
     private fun isTiebaDomain(host: String?): Boolean {
         return host != null && (host.equals("wapp.baidu.com", ignoreCase = true) ||
             host.equals("tieba.baidu.com", ignoreCase = true) ||
             host.equals("tiebac.baidu.com", ignoreCase = true))
-    }
-
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        activity.window.decorView.post { checkClipBoard(activity) }
     }
 
     private fun parseLink(url: String): ClipBoardLink? {
@@ -94,47 +125,13 @@ object ClipBoardLinkDetector : Application.ActivityLifecycleCallbacks {
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {}
+    private const val Prefs = "clipboard_link"
+    private const val SeenKey = "seen"
 
-    private fun checkClipBoard(activity: Activity) {
-        if (activity !is MainActivityV2) return
-        if (clipBoardHash == getClipBoardHash()) {
-            mutablePreviewInfoStateFlow.value = null
-            return
-        }
-        updateClipBoardHashCode()
-        val clipBoardText = clipBoard
-        if (clipBoardText != null) {
-            @RegExp val regex =
-                "((http|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?"
-            val pattern = Pattern.compile(regex)
-            val matcher = pattern.matcher(clipBoardText)
-            if (matcher.find()) {
-                val url = matcher.group()
-                val link = parseLink(url)
-                if (link != null) {
-                    if (activity is MainActivityV2) {
-                        activity.lifecycleScope.launch {
-                            QuickPreviewUtil.getPreviewInfoFlow(
-                                activity,
-                                link,
-                                activity.lifecycle
-                            ).collectIn(activity) {
-                                mutablePreviewInfoStateFlow.value = it
-                            }
-                        }
-                    }
-                }
-            } else {
-                mutablePreviewInfoStateFlow.value = null
-            }
-        } else {
-            mutablePreviewInfoStateFlow.value = null
-        }
-    }
+    /** How sure the system must be that a copy holds a link for it to be read. */
+    private const val UrlConfidence = 0.5f
 
-    override fun onActivityPaused(activity: Activity) {}
-    override fun onActivityStopped(activity: Activity) {}
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-    override fun onActivityDestroyed(activity: Activity) {}
+    private val UrlPattern = Pattern.compile(
+        "((http|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?",
+    )
 }

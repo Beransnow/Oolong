@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,6 +127,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -252,6 +255,7 @@ class MainActivityV2 : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        ClipBoardLinkDetector.onStart()
         runCatching {
             ContextCompat.registerReceiver(
                 this,
@@ -305,6 +309,12 @@ class MainActivityV2 : AppCompatActivity() {
         initAutoSign()
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Only a focused window is given the clipboard
+        if (hasFocus) ClipBoardLinkDetector.check(this)
+    }
+
     private fun openClipBoardLink(link: ClipBoardLink) {
         when (link) {
             is ClipBoardThreadLink -> {
@@ -331,6 +341,10 @@ class MainActivityV2 : AppCompatActivity() {
             if (previewInfo != null) {
                 dialogState.show()
             }
+        }
+        // Answered or dismissed, it is not offered again, even if the activity is recreated
+        LaunchedEffect(dialogState) {
+            snapshotFlow { dialogState.show }.drop(1).filter { !it }.collect { ClipBoardLinkDetector.consume() }
         }
 
         Dialog(

@@ -34,6 +34,7 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsExternal
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
+import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -86,6 +87,13 @@ fun MoreSettingsPage(
         ) {
             prefsGroup(linksGroup) {
                 prefsItem { LinkOpeningPref() }
+                prefsItem {
+                    SwitchPref(
+                        key = "clipboard_links",
+                        title = stringResource(id = R.string.settings_clipboard_links),
+                        defaultChecked = true,
+                    )
+                }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // Links to an unverified domain only open in the app once the user allows them

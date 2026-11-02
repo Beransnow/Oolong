@@ -64,6 +64,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var blockVideo by DataStoreDelegates.boolean(defaultValue = false)
 
+    /** Whether a Tieba link copied elsewhere is offered when the app comes to the front. */
+    var clipboardLinks by DataStoreDelegates.boolean(defaultValue = true, key = "clipboard_links")
+
     var collectThreadSeeLz by DataStoreDelegates.boolean(
         defaultValue = true,
         key = "collect_thread_see_lz"
