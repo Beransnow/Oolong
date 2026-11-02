@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
@@ -51,7 +52,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
-import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 /** How a post card looks, beyond the post itself. */
@@ -185,7 +185,7 @@ private fun PostHeader(post: Post, threadAuthorId: Long, onEvent: (ThreadEvent) 
 private fun postDescription(post: Post): String {
     val context = LocalContext.current
     return listOfNotNull(
-        getRelativeTimeString(context, post.time),
+        relativeTime(post.time),
         stringResource(R.string.tip_post_floor, post.floor).takeIf { post.floor > 1 },
         stringResource(R.string.text_ip_location, post.author.ipLocation).takeIf { post.author.ipLocation.isNotEmpty() },
     ).joinToString(" · ")

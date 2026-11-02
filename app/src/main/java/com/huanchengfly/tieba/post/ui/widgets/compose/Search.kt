@@ -52,6 +52,7 @@ import com.huanchengfly.tieba.post.model.SearchAuthor
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.PbContentText
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
@@ -59,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.buildAnnotatedStringWithUser
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -220,7 +220,7 @@ fun SearchThreadUserHeader(
             )
         },
         desc = {
-            MetaText(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, time))
+            MetaText(text = relativeTime(time))
         },
         onClick = onClick,
         modifier = modifier

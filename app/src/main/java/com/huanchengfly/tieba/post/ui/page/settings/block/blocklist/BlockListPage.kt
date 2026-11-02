@@ -52,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.tests
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
@@ -76,7 +77,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.SegmentedControl
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.toImmutableList
 
 @Composable
@@ -340,7 +340,7 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
                 text = when {
                     !rule.enabled -> stringResource(id = R.string.rule_disabled)
                     rule.hits > 0 && rule.lastHitAt != null ->
-                        stringResource(id = R.string.rule_hits, rule.hits, DateTimeUtils.getRelativeTimeString(context, rule.lastHitAt))
+                        stringResource(id = R.string.rule_hits, rule.hits, relativeTime(rule.lastHitAt))
                     else -> stringResource(id = R.string.rule_no_hits)
                 },
                 style = TextStyles.footnote,

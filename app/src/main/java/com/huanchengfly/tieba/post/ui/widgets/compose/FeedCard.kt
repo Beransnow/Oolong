@@ -79,6 +79,7 @@ import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
 import com.huanchengfly.tieba.post.ui.common.navigation.pageOrigin
 import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageOrigin
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
@@ -95,7 +96,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.video.DefaultVideoPlayerCo
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.OnFullScreenModeChangedListener
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.VideoPlayerSource
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.rememberVideoPlayerController
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -155,9 +155,9 @@ fun UserHeader(
             )
         },
         onClick = onClick,
-        desc = (@Composable {
-            MetaText(text = DateTimeUtils.getRelativeTimeString(context, time.toString()))
-        }).takeIf { time != null },
+        desc = time?.let { time ->
+            @Composable { MetaText(text = relativeTime(time.toLong())) }
+        },
         content = content,
         modifier = modifier
     )

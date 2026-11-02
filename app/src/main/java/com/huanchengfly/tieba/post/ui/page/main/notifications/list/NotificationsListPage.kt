@@ -34,6 +34,7 @@ import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.Notification
 import com.huanchengfly.tieba.post.model.NotificationType
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
@@ -53,7 +54,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 @Composable
@@ -180,7 +180,7 @@ private fun NotificationItemContent(
                 },
                 name = { AuthorName(text = AnnotatedString(author.displayName)) },
                 onClick = { onOpenUser(author.id) },
-                desc = { MetaText(text = DateTimeUtils.getRelativeTimeString(LocalContext.current, notification.time)) },
+                desc = { MetaText(text = relativeTime(notification.time)) },
             ) {}
         }
         EmoticonText(

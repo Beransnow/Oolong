@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.HistoryEntry
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.history.HistoryList
@@ -34,7 +35,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
 import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 
 /** One tab of the history: today's visits, then the earlier ones; long pressing one offers to delete it. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -134,10 +134,7 @@ private fun HistoryItem(
                 },
             ) {
                 Text(
-                    text = DateTimeUtils.getRelativeTimeString(
-                        LocalContext.current,
-                        info.time
-                    ),
+                    text = relativeTime(info.time),
                     fontSize = 15.sp,
                     color = ExtendedTheme.colors.text,
                 )

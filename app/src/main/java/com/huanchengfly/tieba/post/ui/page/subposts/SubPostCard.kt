@@ -39,7 +39,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
-import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 
 /** Everything the user can do on the sub-post page. */

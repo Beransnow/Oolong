@@ -66,7 +66,9 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.services.NotifyJobService
+import com.huanchengfly.tieba.post.ui.common.LocalNow
 import com.huanchengfly.tieba.post.ui.common.navigation.PageMorphHost
+import com.huanchengfly.tieba.post.ui.common.rememberMinuteClock
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.navigation.AppNavDisplay
@@ -442,7 +444,9 @@ class MainActivityV2 : AppCompatActivity() {
                 val backStack = rememberAppBackStack(linked = linkedKey)
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
                 val copySheets = remember { CopySheets() }
+                val now = rememberMinuteClock()
                 CompositionLocalProvider(
+                    LocalNow provides now,
                     LocalNavigator provides navigator,
                     LocalBlockShortcuts provides blockShortcuts,
                     LocalCopySheets provides copySheets,

@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserReplies
 import com.huanchengfly.tieba.post.model.UserThread
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
@@ -60,7 +61,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.collections.immutable.ImmutableList
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -338,10 +338,7 @@ private fun UserRepliesItem(
                             )
 
                             Text(
-                                text = DateTimeUtils.getRelativeTimeString(
-                                    LocalContext.current,
-                                    it.time
-                                ),
+                                text = relativeTime(it.time),
                                 style = MaterialTheme.typography.caption,
                                 color = ExtendedTheme.colors.textSecondary,
                             )

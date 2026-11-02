@@ -4,68 +4,73 @@ import android.content.Context
 import com.huanchengfly.tieba.post.R
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import android.text.format.DateFormat as AndroidDateFormat
+
+/** How long ago something was, in the steps a post's time is told in. */
+sealed interface RelativeTime {
+    /** Under a minute ago, or a little ahead of this device's clock. */
+    data object JustNow : RelativeTime
+
+    data class MinutesAgo(val minutes: Int) : RelativeTime
+
+    data class Today(val time: Long) : RelativeTime
+
+    data class Yesterday(val time: Long) : RelativeTime
+
+    data class ThisYear(val time: Long) : RelativeTime
+
+    /** In an earlier year: the date alone, as the time of day no longer matters. */
+    data class Earlier(val time: Long) : RelativeTime
+}
 
 object DateTimeUtils {
-    @JvmStatic
-    fun getRelativeTimeString(
-        context: Context,
-        timestampString: String
-    ): String {
-        return getRelativeTimeString(context, fixTimestamp(timestampString))
+    /**
+     * Which step [time] falls in, seen from [now]: minutes by how long has passed, days and years
+     * by the calendar in [zone].
+     */
+    fun relativeTime(time: Long, now: Long, zone: TimeZone = TimeZone.getDefault()): RelativeTime {
+        val elapsed = now - time
+        if (elapsed < MINUTE) return RelativeTime.JustNow
+        if (elapsed < HOUR) return RelativeTime.MinutesAgo((elapsed / MINUTE).toInt())
+        val then = Calendar.getInstance(zone).apply { timeInMillis = time }
+        val today = Calendar.getInstance(zone).apply { timeInMillis = now }
+        if (then.sameDay(today)) return RelativeTime.Today(time)
+        val yesterday = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+        if (then.sameDay(yesterday)) return RelativeTime.Yesterday(time)
+        if (then.get(Calendar.YEAR) == today.get(Calendar.YEAR)) return RelativeTime.ThisYear(time)
+        return RelativeTime.Earlier(time)
     }
 
+    /** [timestamp], in seconds or milliseconds, as how long before [now] it was. */
     @JvmStatic
-    fun getRelativeTimeString(
-        context: Context,
-        timestamp: Long
-    ): String {
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = fixTimestamp(timestamp)
-        }
-        val currentCalendar = Calendar.getInstance()
-        return if (currentCalendar.after(calendar)) {
-            if (calendar.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR)) {
-                if (calendar.get(Calendar.DAY_OF_MONTH) == currentCalendar.get(Calendar.DAY_OF_MONTH) &&
-                    calendar.get(Calendar.MONTH) == currentCalendar.get(Calendar.MONTH)
-                ) {
-                    if (calendar.get(Calendar.HOUR_OF_DAY) == currentCalendar.get(Calendar.HOUR_OF_DAY)) {
-                        if (calendar.get(Calendar.MINUTE) == currentCalendar.get(Calendar.MINUTE)) {
-                            if (calendar.get(Calendar.SECOND) == currentCalendar.get(Calendar.SECOND)) {
-                                calendar.format(context.getString(R.string.relative_date_after))
-                            } else {
-                                context.getString(
-                                    R.string.relative_date_second,
-                                    currentCalendar.get(Calendar.SECOND) - calendar.get(Calendar.SECOND)
-                                )
-                            }
-                        } else {
-                            context.getString(
-                                R.string.relative_date_minute,
-                                currentCalendar.get(Calendar.MINUTE) - calendar.get(Calendar.MINUTE)
-                            )
-                        }
-                    } else {
-                        context.getString(
-                            R.string.relative_date_today,
-                            calendar.format("HH:mm")
-                        )
-                    }
-                } else {
-                    calendar.format("MM-dd HH:mm")
-                }
-            } else {
-                calendar.format("yyyy-MM-dd HH:mm")
-            }
-        } else {
-            calendar.format(context.getString(R.string.relative_date_after))
-        }
-    }
+    @JvmOverloads
+    fun getRelativeTimeString(context: Context, timestamp: Long, now: Long = System.currentTimeMillis()): String =
+        format(context, relativeTime(fixTimestamp(timestamp), now))
 
-    private fun Calendar.clearTime() {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
+    @JvmStatic
+    @JvmOverloads
+    fun getRelativeTimeString(context: Context, timestampString: String, now: Long = System.currentTimeMillis()): String =
+        format(context, relativeTime(fixTimestamp(timestampString), now))
+
+    fun format(context: Context, relative: RelativeTime): String {
+        val res = context.resources
+        val locale = res.configuration.locales[0] ?: Locale.getDefault()
+        val is24Hour = AndroidDateFormat.is24HourFormat(context)
+        fun pattern(skeleton: String, time: Long) =
+            SimpleDateFormat(AndroidDateFormat.getBestDateTimePattern(locale, skeleton), locale).format(Date(time))
+        fun timeOfDay(time: Long) = pattern(if (is24Hour) "Hm" else "hm", time)
+        return when (relative) {
+            RelativeTime.JustNow -> res.getString(R.string.relative_date_just_now)
+            is RelativeTime.MinutesAgo -> res.getQuantityString(R.plurals.relative_date_minutes, relative.minutes, relative.minutes)
+            is RelativeTime.Today -> res.getString(R.string.relative_date_today, timeOfDay(relative.time))
+            is RelativeTime.Yesterday -> res.getString(R.string.relative_date_yesterday, timeOfDay(relative.time))
+            is RelativeTime.ThisYear -> pattern(if (is24Hour) "MMMdHm" else "MMMdhm", relative.time)
+            is RelativeTime.Earlier -> pattern("yMMMd", relative.time)
+        }
     }
 
     @JvmStatic
@@ -75,9 +80,8 @@ object DateTimeUtils {
         return date == todayDate
     }
 
-    private fun Calendar.format(pattern: String): String {
-        return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(timeInMillis))
-    }
+    private fun Calendar.sameDay(other: Calendar) =
+        get(Calendar.YEAR) == other.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == other.get(Calendar.DAY_OF_YEAR)
 
     private fun fixTimestamp(timestamp: Long): Long {
         return fixTimestamp(timestamp.toString())
@@ -90,4 +94,7 @@ object DateTimeUtils {
         }
         return timestampStrBuilder.toString().toLong()
     }
+
+    private const val MINUTE = 60_000L
+    private const val HOUR = 60 * MINUTE
 }

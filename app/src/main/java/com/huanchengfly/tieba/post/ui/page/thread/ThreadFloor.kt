@@ -56,6 +56,7 @@ import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.common.relativeTime
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
@@ -69,7 +70,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.longPressMenu
-import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 
@@ -254,7 +254,7 @@ private fun FloorBody(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = listOfNotNull(
-                    getRelativeTimeString(context, post.time),
+                    relativeTime(post.time),
                     author.ipLocation.takeIf { it.isNotEmpty() },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.caption,
@@ -409,7 +409,7 @@ fun SubPostLine(
             ) {
                 Text(
                     text = listOfNotNull(
-                        getRelativeTimeString(context, subPost.time),
+                        relativeTime(subPost.time),
                         subPost.author.ipLocation.takeIf { it.isNotEmpty() },
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.caption,
@@ -570,7 +570,7 @@ fun FirstPostContent(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = listOfNotNull(
-                    getRelativeTimeString(context, post.time),
+                    relativeTime(post.time),
                     author.ipLocation.takeIf { it.isNotEmpty() },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.caption,
