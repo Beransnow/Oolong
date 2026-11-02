@@ -21,6 +21,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.navigation.PredictiveBackKey
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
@@ -189,6 +190,14 @@ fun CustomSettingsPage(
                         key = ReduceTransparencyKey.name,
                         title = stringResource(id = R.string.title_settings_reduce_transparency),
                         defaultChecked = false,
+                    )
+                }
+                prefsItem {
+                    SwitchPref(
+                        key = PredictiveBackKey.name,
+                        title = stringResource(id = R.string.title_settings_predictive_back),
+                        summary = stringResource(id = R.string.summary_settings_predictive_back),
+                        defaultChecked = true,
                     )
                 }
             }

@@ -706,6 +706,8 @@
     <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>
     <string name="settings_home_page_show_history_forum">显示最近浏览的吧</string>
     <string name="title_settings_reduce_transparency">减少透明效果</string>
+    <string name="title_settings_predictive_back">预测性返回</string>
+    <string name="summary_settings_predictive_back">拖动返回手势时预览上一页</string>
     <string name="title_appearance">外观</string>
     <string name="appearance_light">浅色</string>
     <string name="appearance_dark">深色</string>

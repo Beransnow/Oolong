@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.navigation3.scene.NavigationBackHandler
 import androidx.navigation3.scene.SceneInfo
 import androidx.navigation3.scene.SceneState
@@ -28,6 +29,7 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationEventState
 import com.huanchengfly.tieba.post.BuildConfig
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -103,6 +105,9 @@ class PagePeek {
     }
 }
 
+/** Whether a back gesture peeks ([PagePeek]); off, it goes back once let go, as the back key does. */
+val PredictiveBackKey = booleanPreferencesKey("predictiveBack")
+
 /** The [PagePeek] of the pages around, for their frames to draw. */
 val LocalPagePeek = staticCompositionLocalOf<PagePeek?> { null }
 
@@ -139,7 +144,9 @@ fun <T : Any> rememberPagePeekBack(
 
     val scope = rememberCoroutineScope()
     val handler = remember(peek) { PeekBackHandler(peek, input, scope) }
+    val peeks by rememberPreferenceAsState(PredictiveBackKey, true)
     SideEffect {
+        handler.peeks = peeks
         handler.sceneState = sceneState
         handler.isBackEnabled = sceneState.currentScene.previousEntries.isNotEmpty()
     }
@@ -159,6 +166,7 @@ private class PeekBackHandler(
     private val scope: CoroutineScope,
 ) : NavigationEventHandler<NavigationEventInfo>(NavigationEventInfo.None, isBackEnabled = false, isForwardEnabled = false) {
     var sceneState: SceneState<*>? = null
+    var peeks = true
 
     /**
      * The peek as shown. It follows the gesture through a quick spring rather than step for step,
@@ -198,6 +206,7 @@ private class PeekBackHandler(
 
     /** Starts peeking if the page on top rests alone over another. */
     private fun tryPeek(event: NavigationEvent) {
+        if (!peeks) return
         val state = sceneState ?: return
         val scene = state.currentScene as? FramedSinglePaneScene<*> ?: return
         val previous = state.previousScenes.lastOrNull() as? FramedSinglePaneScene<*> ?: return
