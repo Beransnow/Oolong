@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -44,6 +45,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.photoview.LocalPhotoViewer
+import com.huanchengfly.tieba.post.ui.page.photoview.photoMenuItems
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.NetworkUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -112,22 +114,24 @@ fun NetworkImage(
         DisposableEffect(viewer, picId) { onDispose { viewer.place(picId, null) } }
     }
     val haptic = LocalHapticFeedback.current
+    val menus = LocalContextMenus.current
+    val originUrl = photoViewData?.picItems?.getOrNull(photoViewData.index)?.originUrl
+    val menuItems = originUrl?.let { photoMenuItems(it) }
     // After a long press, the picture's menu follows this finger until it lifts
     var menuOpen by remember { mutableStateOf(false) }
     var boxOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(
         modifier = Modifier
-            .pointerInput(enableClick, photoViewData, viewer) {
+            .pointerInput(enableClick, photoViewData, viewer, menuItems) {
                 if (enableClick) {
-                    val url = photoViewData?.picItems?.getOrNull(photoViewData.index)?.originUrl
                     detectTapGestures(
-                        onLongPress = if (viewer != null && url != null) {
+                        onLongPress = if (menus != null && menuItems != null) {
                             { offset ->
                                 if (shouldLoad) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     menuOpen = true
-                                    viewer.showMenu(url, at = boxOffset + offset)
+                                    menus.show(menuItems, anchor = Rect(boxOffset + offset, Size.Zero))
                                 }
                             }
                         } else {
@@ -148,19 +152,19 @@ fun NetworkImage(
                     )
                 }
             }
-            .pointerInput(viewer) {
-                if (viewer == null) return@pointerInput
+            .pointerInput(menus) {
+                if (menus == null) return@pointerInput
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
                     while (true) {
                         val change = awaitPointerEvent().changes.firstOrNull() ?: break
                         val position = boxOffset + change.position
                         if (!change.pressed) {
-                            if (menuOpen) viewer.liftFinger(position)
+                            if (menuOpen) menus.liftFinger(position)
                             menuOpen = false
                             break
                         }
-                        if (menuOpen) viewer.moveFinger(position)
+                        if (menuOpen) menus.moveFinger(position)
                     }
                 }
             }

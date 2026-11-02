@@ -2,6 +2,10 @@ package com.huanchengfly.tieba.post.ui.page.photoview
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -18,8 +22,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import coil3.memory.MemoryCache
+import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuHost
+import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
+import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.TiebaUtil
 
 /** Pictures opened out of a thumbnail: where it sat, and what it already showed. */
 @Immutable
@@ -31,16 +42,6 @@ internal data class PhotoOpening(
     val thumbnail: MemoryCache.Key?,
     /** Height over width of the picture, or 0 when not known. */
     val aspect: Float,
-    val id: Long,
-)
-
-/** What can be done with a picture, offered where a long press on it landed. */
-@Immutable
-internal data class PhotoMenu(
-    /** The picture's original. */
-    val url: String,
-    /** Where the press landed, in the window. */
-    val at: Offset,
     val id: Long,
 )
 
@@ -60,17 +61,6 @@ class PhotoViewer internal constructor() {
     /** The thumbnails on screen, by picture id. */
     internal val thumbnails = mutableStateMapOf<String, PhotoThumbnail>()
 
-    internal var menu by mutableStateOf<PhotoMenu?>(null)
-        private set
-
-    /** Where the finger that opened the menu is, in the window, while it stays down. */
-    internal var menuFinger by mutableStateOf<Offset?>(null)
-        private set
-
-    /** Where that finger last lifted, counted so each lift is heard once. */
-    internal var menuLift by mutableStateOf<Pair<Int, Offset>?>(null)
-        private set
-
     private var opened = 0L
 
     /**
@@ -81,33 +71,6 @@ class PhotoViewer internal constructor() {
      */
     fun open(data: PhotoViewData, from: Rect? = null, thumbnail: MemoryCache.Key? = null, aspect: Float = 0f) {
         opening = PhotoOpening(data, from, thumbnail, aspect, ++opened)
-    }
-
-    /**
-     * Offers what can be done with the picture at [url] where a long press landed, [at] in the
-     * window. The finger that pressed stays in charge until it lifts: report it with
-     * [moveFinger] and [liftFinger].
-     */
-    fun showMenu(url: String, at: Offset) {
-        menuFinger = null
-        menu = PhotoMenu(url, at, ++opened)
-    }
-
-    /** The finger that opened the menu moved to [position] in the window. */
-    fun moveFinger(position: Offset) {
-        if (menu != null) menuFinger = position
-    }
-
-    /** The finger that opened the menu lifted at [position]; over an action, that action runs. */
-    fun liftFinger(position: Offset) {
-        if (menu == null) return
-        menuFinger = null
-        menuLift = ((menuLift?.first ?: 0) + 1) to position
-    }
-
-    internal fun closeMenu() {
-        menu = null
-        menuFinger = null
     }
 
     /** Notes where picture [picId]'s thumbnail is; [bounds] null when it leaves the screen. */
@@ -123,24 +86,35 @@ class PhotoViewer internal constructor() {
 /** The window's picture viewer; null where there is none, as in previews and tests. */
 val LocalPhotoViewer = staticCompositionLocalOf<PhotoViewer?> { null }
 
-/** Draws [content] with the picture viewer over it, ready for pictures to open. */
+/** Draws [content] with the picture viewer and context menus over it, ready for pictures to open. */
 @Composable
 fun PhotoViewerHost(content: @Composable () -> Unit) {
     val viewer = remember { PhotoViewer() }
     var origin by remember { mutableStateOf(Offset.Zero) }
     CompositionLocalProvider(LocalPhotoViewer provides viewer) {
         Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
-            content()
-            viewer.menu?.let { menu ->
-                key(menu.id) {
-                    PhotoMenuOverlay(viewer = viewer, menu = menu, origin = origin)
-                }
-            }
+            ContextMenuHost(content = content)
             viewer.opening?.let { opening ->
                 key(opening.id) {
                     PhotoViewerOverlay(viewer = viewer, opening = opening, origin = origin)
                 }
             }
         }
+    }
+}
+
+/** What a long press on the picture at [url], its original, offers: saving, sharing or copying its link. */
+@Composable
+fun photoMenuItems(url: String): List<ContextMenuItem> {
+    val context = LocalContext.current
+    val download = stringResource(id = R.string.desc_download_pic)
+    val shareLabel = stringResource(id = R.string.title_share_pic)
+    val copyLink = stringResource(id = R.string.title_copy_link)
+    return remember(url, download, shareLabel, copyLink) {
+        listOf(
+            ContextMenuItem(Icons.Rounded.Download, download) { ImageUtil.download(context, url) },
+            ContextMenuItem(Icons.Rounded.Share, shareLabel) { share(context, url) },
+            ContextMenuItem(Icons.Rounded.Link, copyLink) { TiebaUtil.copyText(context, url) },
+        )
     }
 }
