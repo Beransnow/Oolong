@@ -64,6 +64,9 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  * [overlay] is chrome over the whole scaffold, above the bars: for chrome that grows out of a bar,
  * such as a reply box opening from the bottom bar, which would move the content if it grew inside
  * the bar's slot. The bar's slot then keeps the bar's resting height and the overlay draws it.
+ *
+ * [sampleContent] false keeps the chrome from sampling the content, for content that can't be
+ * drawn twice: a web view drawn into the blur as well alternates between two renders of the page.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -77,6 +80,7 @@ fun GlassScaffold(
     backgroundColor: Color = ExtendedTheme.colors.background,
     contentColor: Color = contentColorFor(backgroundColor),
     overlay: @Composable () -> Unit = {},
+    sampleContent: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     // On the translucent theme the page joins the wallpaper's state, under its own key, so the
@@ -138,7 +142,7 @@ fun GlassScaffold(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .hazeSource(hazeState, key = glassSource.key)
+                            .then(if (sampleContent) Modifier.hazeSource(hazeState, key = glassSource.key) else Modifier)
                     ) {
                         content(padding)
                     }

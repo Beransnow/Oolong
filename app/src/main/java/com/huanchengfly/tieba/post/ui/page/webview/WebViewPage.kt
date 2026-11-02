@@ -173,6 +173,7 @@ fun WebViewPage(
     val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
 
     GlassScaffold(
+        sampleContent = false,
         topBar = {
             GlassTopBar(
                 title = {
