@@ -1,10 +1,6 @@
 package com.huanchengfly.tieba.post.utils
 
-import android.app.Activity
 import android.content.Context
-import android.os.Build
-import android.view.View
-import androidx.annotation.StyleRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.datastore.core.DataStore
@@ -12,10 +8,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.App.Companion.INSTANCE
-import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.getInt
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.first
@@ -157,10 +151,6 @@ object ThemeUtil {
         )
     }
 
-    fun isDynamicTheme(theme: String): Boolean {
-        return theme.endsWith("_dynamic")
-    }
-
     fun isStatusBarFontDark(): Boolean {
         val theme = getRawTheme()
         return if (isTranslucentTheme(theme)) {
@@ -175,65 +165,12 @@ object ThemeUtil {
         return !isDark()
     }
 
-    fun setTheme(context: Activity) {
-        val nowTheme = getCurrentTheme()
-        context.setTheme(getThemeByName(nowTheme))
-    }
-
-    @JvmOverloads
-    fun getCurrentTheme(
-        theme: String = getRawTheme(),
-        checkDynamic: Boolean = false,
-    ): String {
-        var nowTheme = theme
+    /** [theme] as drawn: the translucent theme by its variant, which the saved text colour picks. */
+    fun getCurrentTheme(theme: String = getRawTheme()): String {
         // The bare name leaves the text to the saved setting; the variants say it themselves
-        if (nowTheme.equals(THEME_TRANSLUCENT, ignoreCase = true)) {
-            val colorTheme =
-                dataStore.getInt("translucent_background_theme", TRANSLUCENT_THEME_LIGHT)
-            nowTheme = if (colorTheme == TRANSLUCENT_THEME_DARK) {
-                THEME_TRANSLUCENT_DARK
-            } else {
-                THEME_TRANSLUCENT_LIGHT
-            }
-        } else if (checkDynamic && settingsState.value.usesSystemPalette && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            nowTheme = "${nowTheme}_dynamic"
-        }
-        return nowTheme
-    }
-
-    @JvmStatic
-    fun setTranslucentDialogBackground(view: View?) {
-        if (view == null) {
-            return
-        }
-        if (!isTranslucentTheme()) {
-            return
-        }
-        view.backgroundTintList = null
-        view.setBackgroundColor(
-            ThemeUtils.getColorById(
-                view.context,
-                R.color.theme_color_card_grey_dark
-            )
-        )
-    }
-
-    @StyleRes
-    private fun getThemeByName(themeName: String): Int {
-        return when (themeName.lowercase(Locale.getDefault())) {
-            THEME_TRANSLUCENT, THEME_TRANSLUCENT_LIGHT -> R.style.TiebaLite_Translucent_Light
-            THEME_TRANSLUCENT_DARK -> R.style.TiebaLite_Translucent_Dark
-            THEME_DEFAULT -> R.style.TiebaLite_Tieba
-            THEME_BLACK -> R.style.TiebaLite_Black
-            THEME_PURPLE -> R.style.TiebaLite_Purple
-            THEME_PINK -> R.style.TiebaLite_Pink
-            THEME_RED -> R.style.TiebaLite_Red
-            THEME_BLUE_DARK -> R.style.TiebaLite_Dark_Blue
-            THEME_GREY_DARK -> R.style.TiebaLite_Dark_Grey
-            THEME_AMOLED_DARK -> R.style.TiebaLite_Dark_Amoled
-            THEME_CUSTOM -> R.style.TiebaLite_Custom
-            else -> R.style.TiebaLite_Tieba
-        }
+        if (!theme.equals(THEME_TRANSLUCENT, ignoreCase = true)) return theme
+        val colorTheme = dataStore.getInt("translucent_background_theme", TRANSLUCENT_THEME_LIGHT)
+        return if (colorTheme == TRANSLUCENT_THEME_DARK) THEME_TRANSLUCENT_DARK else THEME_TRANSLUCENT_LIGHT
     }
 
     @JvmStatic

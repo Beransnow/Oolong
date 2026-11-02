@@ -14,6 +14,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -53,7 +56,7 @@ import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.arch.AppContent
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
@@ -61,6 +64,7 @@ import com.huanchengfly.tieba.post.components.ClipBoardForumLink
 import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
+import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.services.NotifyJobService
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.AppNavDisplay
@@ -77,7 +81,6 @@ import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentWallpaper
 import com.huanchengfly.tieba.post.ui.page.settings.theme.redrawOutdatedWallpaper
 import com.huanchengfly.tieba.post.ui.page.settings.theme.rememberWallpaperDim
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
-import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
@@ -98,6 +101,7 @@ import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityForResult
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityRequest
 import com.huanchengfly.tieba.post.utils.isIgnoringBatteryOptimizations
@@ -109,19 +113,17 @@ import com.huanchengfly.tieba.post.utils.toTiebaKey
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
 val LocalNotificationCountFlow =
     staticCompositionLocalOf<Flow<Int>> { throw IllegalStateException("not allowed here!") }
@@ -135,7 +137,10 @@ private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com
 private const val SPLASH_ICON_MILLIS = 400L
 
 @AndroidEntryPoint
-class MainActivityV2 : BaseComposeActivity() {
+class MainActivityV2 : AppCompatActivity() {
+    @Inject
+    lateinit var accountRepository: AccountRepository
+
     private val handler = Handler(Looper.getMainLooper())
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
 
@@ -144,13 +149,13 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val pickMediasLauncher =
         registerPickMediasLauncher {
-            emitGlobalEvent(GlobalEvent.SelectedImages(it.id, it.uris))
+            lifecycleScope.emitGlobalEvent(GlobalEvent.SelectedImages(it.id, it.uris))
         }
 
     private val mLaunchActivityForResultLauncher = registerForActivityResult(
         LaunchActivityForResult()
     ) {
-        emitGlobalEvent(GlobalEvent.ActivityResult(it.requesterId, it.resultCode, it.intent))
+        lifecycleScope.emitGlobalEvent(GlobalEvent.ActivityResult(it.requesterId, it.resultCode, it.intent))
     }
 
     private val devicePostureFlow: StateFlow<DevicePosture> by lazy {
@@ -265,6 +270,8 @@ class MainActivityV2 : BaseComposeActivity() {
         val iconDone = Process.getStartUptimeMillis() + SPLASH_ICON_MILLIS
         installSplashScreen().setKeepOnScreenCondition { SystemClock.uptimeMillis() < iconDone }
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContent { AppContent(this, accountRepository) { Content() } }
         // The condition is only checked when a frame is drawn
         window.decorView.postDelayed(
             { window.decorView.invalidate() },
@@ -272,22 +279,18 @@ class MainActivityV2 : BaseComposeActivity() {
         )
         window.decorView.setBackgroundColor(0)
         window.setBackgroundDrawable(ColorDrawable(0))
-        launch {
+        lifecycleScope.launch {
             ClientUtils.setActiveTimestamp()
         }
         // Once per activity: called from Content, these would add a listener on every recomposition
-        onGlobalEvent<GlobalEvent.StartSelectImages> {
+        lifecycleScope.onGlobalEvent<GlobalEvent.StartSelectImages> {
             pickMediasLauncher.launch(PickMediasRequest(it.id, it.maxCount))
         }
-        onGlobalEvent<GlobalEvent.StartActivityForResult> {
+        lifecycleScope.onGlobalEvent<GlobalEvent.StartActivityForResult> {
             mLaunchActivityForResultLauncher.launch(LaunchActivityRequest(it.requesterId, it.intent))
         }
         // A recreated activity restores its pages, the linked one among them
         if (savedInstanceState == null) intent?.let { checkIntent(it) }
-    }
-
-    override fun onCreateContent(systemUiController: SystemUiController) {
-        super.onCreateContent(systemUiController)
         fetchAccount()
         initAutoSign()
     }
@@ -380,7 +383,7 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     @Composable
-    override fun Content() {
+    private fun Content() {
         val okSignAlertDialogState = rememberDialogState()
         ClipBoardDetectDialog()
         AlertDialog(

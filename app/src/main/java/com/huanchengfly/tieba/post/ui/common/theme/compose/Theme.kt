@@ -17,11 +17,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.utils.ColorStyle
 import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
+import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.darken
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -286,7 +290,14 @@ fun TiebaLiteTheme(
 
     val colors = getColorPalette(extendedColors)
 
-    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+    // The app's own text size, in place of the system's
+    val context = LocalContext.current
+    val fontScale by remember {
+        context.dataStore.data.map { it[FontScaleKey] ?: 1f }.distinctUntilChanged()
+    }.collectAsState(initial = context.appPreferences.fontScale)
+    val density = Density(LocalDensity.current.density, fontScale)
+
+    CompositionLocalProvider(LocalExtendedColors provides extendedColors, LocalDensity provides density) {
         MaterialTheme(
             colors = colors,
             typography = Typography,
@@ -299,6 +310,7 @@ fun TiebaLiteTheme(
 }
 
 private val TranslucentTextKey = intPreferencesKey("translucent_background_theme")
+private val FontScaleKey = floatPreferencesKey("fontScale")
 
 object ExtendedTheme {
     val colors: ExtendedColors

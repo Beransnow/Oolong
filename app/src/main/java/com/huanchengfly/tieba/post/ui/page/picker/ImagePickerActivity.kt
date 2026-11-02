@@ -7,10 +7,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,23 +22,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.arch.BaseComposeActivity
+import com.huanchengfly.tieba.post.arch.AppContent
+import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.toastShort
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Picks pictures from the device without the system photo picker. Returns them as the result's
  * clip data, like the photo picker does.
  */
 @AndroidEntryPoint
-class ImagePickerActivity : BaseComposeActivity() {
+class ImagePickerActivity : AppCompatActivity() {
+    @Inject
+    lateinit var accountRepository: AccountRepository
+
     private val viewModel: ImagePickerViewModel by viewModels()
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContent { AppContent(this, accountRepository) { Content() } }
+    }
+
     @Composable
-    override fun Content() {
+    private fun Content() {
         val state by viewModel.state.collectAsStateWithLifecycle()
         var access by remember { mutableStateOf(currentAccess()) }
         var asked by rememberSaveable { mutableStateOf(false) }

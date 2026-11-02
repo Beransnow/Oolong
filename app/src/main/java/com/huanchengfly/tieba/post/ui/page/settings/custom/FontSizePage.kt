@@ -1,6 +1,5 @@
 package com.huanchengfly.tieba.post.ui.page.settings.custom
 
-import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,8 +76,8 @@ object FontScale {
 }
 
 /**
- * The app's text size: a post shown at the chosen size, and a slider to choose it. The size is
- * saved as it changes; leaving the page recreates the activity so that every page uses it.
+ * The app's text size: a post shown at the chosen size, and a slider to choose it. Only the post
+ * follows the slider; leaving the page saves the size, which every page then takes.
  */
 @Composable
 fun FontSizePage(
@@ -91,7 +90,7 @@ fun FontSizePage(
 
     fun leave() {
         navigator.navigateUp()
-        if (scale != initial) (context as? Activity)?.recreate()
+        if (scale != initial) context.appPreferences.fontScale = scale
     }
     MyBackHandler(enabled = true) { leave() }
 
@@ -114,10 +113,7 @@ fun FontSizePage(
                 prefsItem {
                     FontSizeSlider(
                         step = step,
-                        onStepChange = {
-                            step = it
-                            context.appPreferences.fontScale = FontScale.of(it)
-                        },
+                        onStepChange = { step = it },
                     )
                 }
             }

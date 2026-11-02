@@ -200,7 +200,6 @@
         <item name="buttonBarNeutralButtonStyle">@style/Widget.Button.Flat.Dense</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu</item>
         <item name="dialogCornerRadius">@dimen/radius</item>
-        <item name="alertDialogStyle">@style/AlertDialog</item>
         <item name="android:listSeparatorTextViewStyle">@style/TextAppearance.ListTitle</item>
         <item name="android:colorPrimary">@color/colorPrimary</item>
         <item name="android:colorAccent">@color/colorAccent</item>
@@ -231,7 +230,6 @@
         <item name="buttonBarNeutralButtonStyle">@style/Widget.Button.Flat.Dense</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenu.Dark</item>
         <item name="dialogCornerRadius">8dp</item>
-        <item name="alertDialogStyle">@style/AlertDialog.Dark</item>
         <item name="android:listSeparatorTextViewStyle">@style/TextAppearance.ListTitle</item>
         <item name="android:colorPrimary">?attr/colorPrimary</item>
         <item name="android:colorAccent">?attr/colorAccent</item>
@@ -434,14 +432,6 @@
         <item name="android:backgroundDimAmount">1.0</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
-    </style>
-
-    <style name="AlertDialog" parent="AlertDialog.AppCompat.Light">
-        <item name="android:layout">@layout/layout_alert_dialog</item>
-    </style>
-
-    <style name="AlertDialog.Dark" parent="AlertDialog.AppCompat">
-        <item name="android:layout">@layout/layout_alert_dialog</item>
     </style>
 
 </resources>
