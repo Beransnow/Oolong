@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -480,22 +481,17 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             val total = placeable.height + menuGap + size.height
             val previewTop = preview.from.translate(-origin).top.coerceIn(top, (bottom - total).coerceAtLeast(top))
             val previewLeft = (constraints.maxWidth - width) / 2
-            geometry.preview = Rect(Offset(previewLeft, previewTop), Size(width, placeable.height.toFloat()))
+            val final = Rect(Offset(previewLeft, previewTop), Size(width, placeable.height.toFloat()))
             val l = lift.value
             val from = preview.from.translate(-origin)
+            geometry.preview = final
             geometry.previewNow = Rect(
-                lerp(from.left, geometry.preview.left, l),
-                lerp(from.top, geometry.preview.top, l),
-                lerp(from.right, geometry.preview.right, l),
-                lerp(from.bottom, geometry.preview.bottom, l),
+                lerp(from.left, final.left, l),
+                lerp(from.top, final.top, l),
+                lerp(from.right, final.right, l),
+                lerp(from.bottom, final.bottom, l),
             )
-            bounds = Rect(
-                Offset(
-                    if (fromRight) geometry.preview.right - size.width else geometry.preview.left,
-                    geometry.preview.bottom + menuGap,
-                ),
-                size,
-            )
+            bounds = Rect(Offset(if (fromRight) final.right - size.width else final.left, final.bottom + menuGap), size)
             placeable
         } else {
             val left = when {
@@ -514,16 +510,17 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             previewMeasurable.measure(Constraints.fixed(0, 0))
         }
         val g = grow.value
-        geometry.bounds = bounds
+        val glass: Rect
+        val corner: Float
         if (fromButton) {
             // Starts as a round drop around the button's icon
             val startSize = anchor.minDimension
             val m = move.value
             val center = Offset(lerp(anchor.center.x, bounds.center.x, m), lerp(anchor.center.y, bounds.center.y, m))
             val half = Offset(lerp(startSize, bounds.width, g), lerp(startSize, bounds.height, g)) / 2f
-            geometry.glass = Rect(center - half, center + half)
+            glass = Rect(center - half, center + half)
             // Round while small, like a drop, easing into the menu's corners
-            geometry.corner = min(geometry.glass.minDimension / 2, lerp(startSize / 2, Radius.lg.toPx(), g.coerceIn(0f, 1f)))
+            corner = min(glass.minDimension / 2, lerp(startSize / 2, Radius.lg.toPx(), g.coerceIn(0f, 1f)))
         } else {
             // Grows evenly out of the point of the menu nearest the finger, or under a preview
             // out of its top edge
@@ -531,26 +528,32 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 anchor.center.x.coerceIn(bounds.left, bounds.right),
                 if (preview != null) bounds.top else anchor.center.y.coerceIn(bounds.top, bounds.bottom),
             )
-            geometry.glass = Rect(
+            glass = Rect(
                 lerp(pivot.x, bounds.left, g),
                 lerp(pivot.y, bounds.top, g),
                 lerp(pivot.x, bounds.right, g),
                 lerp(pivot.y, bounds.bottom, g),
             )
-            geometry.corner = Radius.lg.toPx() * g.coerceAtLeast(0f)
+            corner = Radius.lg.toPx() * g.coerceAtLeast(0f)
         }
-        val glassPlaceable = with(geometry.glass) {
-            glassMeasurable.measure(Constraints.fixed(width.roundToInt().coerceAtLeast(0), height.roundToInt().coerceAtLeast(0)))
-        }
+        geometry.bounds = bounds
+        geometry.glass = glass
+        geometry.corner = corner
+        val glassPlaceable = glassMeasurable.measure(
+            Constraints.fixed(glass.width.roundToInt().coerceAtLeast(0), glass.height.roundToInt().coerceAtLeast(0)),
+        )
         val icon = iconMeasurable.measure(Constraints())
         layout(constraints.maxWidth, constraints.maxHeight) {
-            glassPlaceable.place(geometry.glass.left.roundToInt(), geometry.glass.top.roundToInt())
+            glassPlaceable.place(glass.left.roundToInt(), glass.top.roundToInt())
             icon.place(
                 (anchor.center.x - icon.width / 2f).roundToInt(),
                 (anchor.center.y - icon.height / 2f).roundToInt(),
             )
             items.place(bounds.left.roundToInt(), bounds.top.roundToInt())
-            previewPlaceable.place(geometry.preview.left.roundToInt(), geometry.preview.top.roundToInt())
+            previewPlaceable.place(
+                (if (preview != null) geometry.preview.left else 0f).roundToInt(),
+                (if (preview != null) geometry.preview.top else 0f).roundToInt(),
+            )
         }
     }
 }
@@ -597,14 +600,18 @@ private fun Modifier.previewBackdrop(backdrop: HazeState): Modifier {
     return hazeBlur(input = HazeInput.Sources(backdrop), style = style)
 }
 
+/**
+ * Where the menu's parts are, worked out in layout and drawn from. State, so that what draws them
+ * follows every change: the drop keeps moving home after it has stopped shrinking.
+ */
 private class MenuGeometry {
-    var bounds = Rect.Zero
-    var glass = Rect.Zero
-    var corner = 0f
+    var bounds by mutableStateOf(Rect.Zero)
+    var glass by mutableStateOf(Rect.Zero)
+    var corner by mutableFloatStateOf(0f)
 
     /** Where a preview ends up, and where it is now. */
-    var preview = Rect.Zero
-    var previewNow = Rect.Zero
+    var preview by mutableStateOf(Rect.Zero)
+    var previewNow by mutableStateOf(Rect.Zero)
 }
 
 /** The top [height] of a preview scaled by its growing, rounded by [corner]; the rest is cut off. */
