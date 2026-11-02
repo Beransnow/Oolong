@@ -60,13 +60,14 @@ class PageOrigins {
      * Whether the transition from page [from] to page [to], each framed alone, is a morph:
      * opening a page from the origin left just before, or going back from it. Told each such
      * transition as it starts, which ends any morph before; [kept] are the pages left on the stack.
-     * Going back by a [peek], the page only morphs once let go, and the peek may yet be called off.
+     * Going back by a [peek], the page morphs as soon as the peek starts, since an element can't
+     * join a transition already under way; the peek may yet be called off.
      */
     internal fun morphs(from: Any, to: Any, opening: Boolean, peek: Boolean, kept: Set<Any>): Boolean {
         val origin = pending.also { pending = null }
         morph = when {
             opening -> origin?.let { Morph(page = to, origin = it) }
-            else -> opened[from]?.let { Morph(page = from, origin = it, onRelease = peek) }
+            else -> opened[from]?.let { Morph(page = from, origin = it) }
         }
         if (!peek) opened.keys.retainAll(kept)
         if (opening && origin != null) opened[to] = origin
@@ -81,14 +82,11 @@ class PageOrigins {
 }
 
 @Immutable
-internal data class Morph(val page: Any, val origin: PageOriginKey, val onRelease: Boolean = false)
+internal data class Morph(val page: Any, val origin: PageOriginKey)
 
-/** The morph under way, if it is moving now: one going back by a peek waits for the finger to let go. */
+/** The morph under way, if any. */
 @Composable
-private fun currentMorph(): Morph? {
-    val morph = LocalPageOrigins.current?.morph ?: return null
-    return if (morph.onRelease && LocalPagePeek.current?.committed != true) null else morph
-}
+private fun currentMorph(): Morph? = LocalPageOrigins.current?.morph
 
 /** One origin, kept across leaving and coming back to the page that shows it. */
 @Immutable
