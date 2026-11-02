@@ -1,8 +1,8 @@
 package com.huanchengfly.tieba.post.ui.page.forum
 
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.model.ForumTab
+import com.huanchengfly.tieba.post.model.SharedThread
+import com.huanchengfly.tieba.post.model.ThreadSummary
 
 /** What the user does on the forum page. */
 sealed interface ForumEvent {
@@ -25,9 +25,9 @@ sealed interface ForumEvent {
     data object Refresh : ForumEvent
     data object LoadMore : ForumEvent
 
-    data class OpenThread(val thread: ThreadInfo) : ForumEvent
-    data class OpenReplies(val thread: ThreadInfo) : ForumEvent
-    data class OpenOriginThread(val origin: OriginThreadInfo) : ForumEvent
+    data class OpenThread(val thread: ThreadSummary) : ForumEvent
+    data class OpenReplies(val thread: ThreadSummary) : ForumEvent
+    data class OpenOriginThread(val origin: SharedThread) : ForumEvent
     data class OpenUser(val userId: Long) : ForumEvent
     data class Agree(val tab: ForumTab, val threadId: Long) : ForumEvent
 }

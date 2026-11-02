@@ -5,19 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.updateAgreeStatus
 import com.huanchengfly.tieba.post.arch.Actions
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ForumCursor
@@ -26,6 +23,7 @@ import com.huanchengfly.tieba.post.repository.ForumRepository
 import com.huanchengfly.tieba.post.repository.ForumSortStore
 import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
+import com.huanchengfly.tieba.post.ui.page.main.explore.withAgreed
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -49,7 +47,7 @@ import kotlinx.coroutines.launch
 
 /** A thread in a forum's list, and whether the block rules hide it. */
 @Immutable
-data class ForumThreadItem(val thread: ImmutableHolder<ThreadInfo>, val blocked: Boolean = false)
+data class ForumThreadItem(val thread: ThreadSummary, val blocked: Boolean = false)
 
 @Immutable
 data class ForumState(
@@ -91,7 +89,7 @@ class ForumViewModel @AssistedInject constructor(
     private val forum = MutableStateFlow<ForumDetail?>(null)
     private var tbs: String? = null
     private val selection = MutableStateFlow(Selection())
-    private val pagers = MutableStateFlow<Map<ForumTab, Pager<ForumCursor, ThreadInfo>>>(emptyMap())
+    private val pagers = MutableStateFlow<Map<ForumTab, Pager<ForumCursor, ThreadSummary>>>(emptyMap())
     private val actions = Actions(viewModelScope)
 
     private data class Selection(
@@ -101,7 +99,7 @@ class ForumViewModel @AssistedInject constructor(
     )
 
     /** Block flags for the last lists and rules seen, which most state changes leave as they are. */
-    private val blocked = mutableMapOf<ForumTab, Triple<List<ThreadInfo>, BlockRules, ImmutableList<ForumThreadItem>>>()
+    private val blocked = mutableMapOf<ForumTab, Triple<List<ThreadSummary>, BlockRules, ImmutableList<ForumThreadItem>>>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val listStates = pagers.flatMapLatest { pagers ->
@@ -195,7 +193,7 @@ class ForumViewModel @AssistedInject constructor(
     fun agree(tab: ForumTab, threadId: Long) {
         val pager = pagers.value[tab] ?: return
         val thread = pager.state.value.items.firstOrNull { it.id == threadId } ?: return
-        val agree = thread.agree?.hasAgree != 1
+        val agree = !thread.agree.agreed
         actions.launch("agree-$threadId") {
             setAgreed(threadId, agree)
             runCatching { repository.agreeThread(thread, agree) }.onFailure {
@@ -209,14 +207,14 @@ class ForumViewModel @AssistedInject constructor(
     private fun setAgreed(threadId: Long, agree: Boolean) {
         pagers.value.values.forEach { pager ->
             pager.update { items ->
-                items.map { if (it.id == threadId) it.updateAgreeStatus(if (agree) 1 else 0) else it }
+                items.map { if (it.id == threadId) it.withAgreed(agree) else it }
             }
         }
     }
 
-    private fun pagerOf(tab: ForumTab): Pager<ForumCursor, ThreadInfo> {
+    private fun pagerOf(tab: ForumTab): Pager<ForumCursor, ThreadSummary> {
         pagers.value[tab]?.let { return it }
-        val pager = pager(initialKey = ForumCursor.first(tab), itemKey = { thread: ThreadInfo -> thread.id }) { cursor ->
+        val pager = pager(initialKey = ForumCursor.first(tab), itemKey = { thread: ThreadSummary -> thread.id }) { cursor ->
             val selection = selection.value
             val page = repository.threads(
                 forumName = forumName,
@@ -237,9 +235,9 @@ class ForumViewModel @AssistedInject constructor(
         return pager
     }
 
-    private fun items(tab: ForumTab, threads: List<ThreadInfo>, rules: BlockRules): ImmutableList<ForumThreadItem> {
+    private fun items(tab: ForumTab, threads: List<ThreadSummary>, rules: BlockRules): ImmutableList<ForumThreadItem> {
         blocked[tab]?.takeIf { it.first === threads && it.second === rules }?.let { return it.third }
-        val items = threads.map { ForumThreadItem(it.wrapImmutable(), blocked = rules.blocks(it)) }.toImmutableList()
+        val items = threads.map { ForumThreadItem(it, blocked = rules.blocks(it)) }.toImmutableList()
         blocked[tab] = Triple(threads, rules, items)
         return items
     }

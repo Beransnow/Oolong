@@ -111,7 +111,7 @@ class ForumViewModelTest {
         val state = viewModel.state.value
         assertEquals("吧名", state.forum?.name)
         assertEquals(ForumSort.POST_TIME, state.sortType)
-        assertEquals(listOf(1L), state.list(ForumTab.Latest).items.map { it.thread.get { id } })
+        assertEquals(listOf(1L), state.list(ForumTab.Latest).items.map { it.thread.id })
         assertEquals(
             listOf(ForumTab.Good, ForumTab.Latest, ForumTab.Hot, ForumTab.Custom(99, "吧友互助", 15)),
             state.tabs,
@@ -135,8 +135,8 @@ class ForumViewModelTest {
         runCurrent()
 
         val state = viewModel.state.value
-        assertEquals(listOf(2L), state.list(ForumTab.Hot).items.map { it.thread.get { id } })
-        assertEquals(listOf(3L), state.list(ForumTab.Custom(99, "吧友互助", 15)).items.map { it.thread.get { id } })
+        assertEquals(listOf(2L), state.list(ForumTab.Hot).items.map { it.thread.id })
+        assertEquals(listOf(3L), state.list(ForumTab.Custom(99, "吧友互助", 15)).items.map { it.thread.id })
         coVerify { remote.page("吧名", 1, 1, null, false, 0) }
         assertEquals(listOf("吧名"), saved.map { it.name })
     }
@@ -150,7 +150,7 @@ class ForumViewModelTest {
         viewModel.setSort(ForumSort.POST_TIME)
         runCurrent()
 
-        assertEquals(listOf(5L), viewModel.state.value.list(ForumTab.Latest).items.map { it.thread.get { id } })
+        assertEquals(listOf(5L), viewModel.state.value.list(ForumTab.Latest).items.map { it.thread.id })
         assertEquals(ForumSort.POST_TIME, sorts["吧名"])
         coVerify { remote.page("吧名", 1, 1, 1, false, 0) }
     }
@@ -204,11 +204,11 @@ class ForumViewModelTest {
 
         viewModel.agree(ForumTab.Latest, 1)
         runCurrent()
-        assertEquals(1, viewModel.state.value.list(ForumTab.Latest).items.single().thread.get { agree?.hasAgree })
+        assertEquals(true, viewModel.state.value.list(ForumTab.Latest).items.single().thread.agree.agreed)
 
         response.complete(Unit)
         runCurrent()
-        assertEquals(0, viewModel.state.value.list(ForumTab.Latest).items.single().thread.get { agree?.hasAgree })
+        assertEquals(false, viewModel.state.value.list(ForumTab.Latest).items.single().thread.agree.agreed)
         assertEquals(listOf(R.string.toast_agree_failed), shown)
     }
 

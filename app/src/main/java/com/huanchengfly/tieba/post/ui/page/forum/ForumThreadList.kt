@@ -30,13 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
-import com.huanchengfly.tieba.post.repository.EmoticonRegistry
-import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberThreadPeeker
@@ -105,14 +102,14 @@ internal fun ForumThreadList(
                 }
                 itemsIndexed(
                     items = items,
-                    key = { _, item -> item.thread.get { id } },
+                    key = { _, item -> item.thread.id },
                     contentType = { _, item ->
-                        val thread = item.thread.get()
+                        val thread = item.thread
                         when {
-                            thread.isTop == 1 -> ItemType.Top
-                            thread.media.size == 1 -> ItemType.SingleMedia
-                            thread.media.isNotEmpty() -> ItemType.MultiMedia
-                            thread.videoInfo != null -> ItemType.Video
+                            thread.isTop -> ItemType.Top
+                            thread.images.size == 1 -> ItemType.SingleMedia
+                            thread.images.isNotEmpty() -> ItemType.MultiMedia
+                            thread.video != null -> ItemType.Video
                             else -> ItemType.PlainText
                         }
                     }
@@ -124,30 +121,30 @@ internal fun ForumThreadList(
                             .fillMaxWidth()
                             .padding(vertical = 8.dp, horizontal = 16.dp),
                     ) {
-                        val thread = item.thread.get()
+                        val thread = item.thread
                         Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
-                            if (thread.isTop == 1) {
+                            if (thread.isTop) {
                                 TopThreadItem(
-                                    title = thread.title.takeUnless { it.isBlank() } ?: thread.abstractText,
+                                    title = thread.title.takeUnless { it.isBlank() } ?: thread.abstract,
                                     onClick = { onEvent(ForumEvent.OpenThread(thread)) },
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                             } else {
                                 if (index > 0) {
-                                    if (items[index - 1].thread.get { isTop } == 1) {
+                                    if (items[index - 1].thread.isTop) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                     }
                                     VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                                 FeedCard(
-                                    item = item.thread,
+                                    thread = item.thread,
                                     onClick = { onEvent(ForumEvent.OpenThread(it)) },
                                     onClickReply = { onEvent(ForumEvent.OpenReplies(it)) },
                                     onAgree = { onEvent(ForumEvent.Agree(tab, it.id)) },
-                                    onClickOriginThread = { onEvent(ForumEvent.OpenOriginThread(it)) },
+                                    onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
                                     onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
                                     showForum = false,
-                                    onLongPress = peeker?.let { { thread, from, at -> it.peek(thread.toThreadSummary(EmoticonRegistry { _, _ -> }), from, at) } },
+                                    onLongPress = peeker?.let { { thread, from, at -> it.peek(thread, from, at) } },
                                 )
                             }
                         }

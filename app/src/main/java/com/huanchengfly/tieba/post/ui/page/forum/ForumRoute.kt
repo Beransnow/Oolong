@@ -68,10 +68,10 @@ fun ForumRoute(
             ForumEvent.LoadMore -> viewModel.loadMore()
             is ForumEvent.OpenThread -> navigator.navigateToThread(event.thread)
             is ForumEvent.OpenReplies -> navigator.navigate(
-                ThreadKey(event.thread.threadId, forumId = event.thread.forumId, scrollToReply = true)
+                ThreadKey(event.thread.id, forumId = event.thread.forum.id, scrollToReply = true)
             )
             is ForumEvent.OpenOriginThread -> navigator.navigate(
-                ThreadKey(threadId = event.origin.tid.toLong(), forumId = event.origin.fid)
+                ThreadKey(threadId = event.origin.id, forumId = event.origin.forumId)
             )
             is ForumEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is ForumEvent.Agree -> viewModel.agree(event.tab, event.threadId)

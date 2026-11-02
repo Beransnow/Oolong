@@ -21,6 +21,7 @@ import com.huanchengfly.tieba.post.model.ForumRuleItem
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -50,7 +51,7 @@ sealed interface ForumCursor {
 
 /** A page of a forum's threads, with the forum as frs/page returned it when that was loaded. */
 data class ForumThreadsPage(
-    val threads: Page<ForumCursor, ThreadInfo>,
+    val threads: Page<ForumCursor, ThreadSummary>,
     val forum: ForumDetail? = null,
     val tbs: String? = null,
 )
@@ -66,6 +67,7 @@ class ForumRepository @Inject constructor(
     private val agreeRemote: AgreeRemoteDataSource,
     private val videoFilter: VideoThreadFilter,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val emoticons: EmoticonRegistry,
 ) {
     suspend fun forumRuleDetail(forumId: Long): ForumRuleDetail = withContext(io) {
         remote.forumRuleDetail(forumId).toForumRuleDetail()
@@ -182,19 +184,19 @@ class ForumRepository @Inject constructor(
         )
     }
 
-    suspend fun agreeThread(thread: ThreadInfo, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forumId, undo = !agree)
+    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 
     /**
      * Takes the authors from [users], since a thread's own author holds little more than the id,
      * and drops live streams and, if the user hides them, videos.
      */
-    private fun filter(threads: List<ThreadInfo>, users: List<User>): List<ThreadInfo> {
+    private fun filter(threads: List<ThreadInfo>, users: List<User>): List<ThreadSummary> {
         val hideVideos = videoFilter.hidesVideos()
         return threads
             .filter { it.ala_info == null && !(hideVideos && it.videoInfo != null) }
-            .map { thread -> thread.copy(author = users.find { it.id == thread.authorId } ?: thread.author) }
+            .map { thread -> thread.copy(author = users.find { it.id == thread.authorId } ?: thread.author).toThreadSummary(emoticons) }
     }
 
     private companion object {

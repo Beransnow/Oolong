@@ -187,7 +187,7 @@ class ForumRepositoryTest {
         val threads = repository.threads("吧名", 0, ForumTab.Latest, ForumCursor.FrsPage(1)).threads.items
 
         assertEquals(listOf(1L), threads.map { it.id })
-        assertEquals("作者", threads.single().author?.name)
+        assertEquals("作者", threads.single().author.name)
     }
 
     @Test
@@ -256,7 +256,7 @@ internal fun forumRepository(
     signRemote: SignRemoteDataSource = mockk(),
     videoFilter: VideoThreadFilter = VideoThreadFilter { false },
     agreeRemote: AgreeRemoteDataSource = mockk(relaxed = true),
-) = ForumRepository(remote, likeRemote, signRemote, agreeRemote, videoFilter, Dispatchers.Unconfined)
+) = ForumRepository(remote, likeRemote, signRemote, agreeRemote, videoFilter, Dispatchers.Unconfined, { _, _ -> })
 
 internal fun forumRuleData(
     rules: List<ForumRule> = listOf(

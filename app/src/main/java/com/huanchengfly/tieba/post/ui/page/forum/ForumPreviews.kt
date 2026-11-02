@@ -9,10 +9,10 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.GoodClass
+import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -55,7 +55,7 @@ internal object ForumPreviewData {
             agree = Agree(agreeNum = id, hasAgree = if (id == 3L) 1 else 0),
             _abstract = listOf(Abstract(type = 0, text = "第 $id 个帖子的摘要")),
             forumInfo = SimpleForum(id = 52, name = "测试"),
-        ).wrapImmutable()
+        ).toThreadSummary { _, _ -> }
     )
 
     private val threads = persistentListOf(
