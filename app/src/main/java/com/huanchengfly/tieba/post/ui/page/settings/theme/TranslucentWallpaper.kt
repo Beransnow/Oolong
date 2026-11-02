@@ -26,26 +26,48 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+/** Whether the text over the wallpaper is light or dark, or chosen for how light the wallpaper is. */
+enum class WallpaperText(val value: String) {
+    Auto("auto"),
+    Light("light"),
+    Dark("dark"),
+    ;
+
+    companion object {
+        fun of(value: String?) = entries.firstOrNull { it.value == value }
+    }
+}
+
 /**
  * How the translucent theme draws its wallpaper. The picked image is kept as is; the blurred and
- * dimmed copy the app draws is made from it, so the settings can be changed again later.
+ * darkened copy the app draws is made from it, so the settings can be changed again later.
  *
- * @param darkText dark text over a light wallpaper, as opposed to light text over a dark one
- * @param dim how far the wallpaper fades to black under light text, or to white under dark text
+ * @param text the text colour over it
+ * @param dim how far the wallpaper is darkened, 0 to [MAX_DIM]
  * @param blur how strong the blur is, 0 to [MAX_BLUR]
  * @param accent the theme's emphasis colour as ARGB, or null for the default
  */
 data class TranslucentWallpaper(
-    val darkText: Boolean = false,
+    val text: WallpaperText = WallpaperText.Auto,
     val dim: Float = DEFAULT_DIM,
     val blur: Int = 0,
     val accent: Int? = null,
 ) {
-    /** The colour the wallpaper fades to. */
-    val dimColor: Int get() = if (darkText) Color.WHITE else Color.BLACK
+    /**
+     * Whether the text is dark over a wallpaper whose average relative luminance is [lightness],
+     * once darkened. Chosen, it is the text that stands out more: black text and white text read
+     * equally well at a luminance of [EVEN_LUMINANCE].
+     */
+    fun darkText(lightness: Float): Boolean = when (text) {
+        WallpaperText.Light -> false
+        WallpaperText.Dark -> true
+        // Darkening scales the colour's sRGB values, which luminance follows at about their 2.2th power
+        WallpaperText.Auto -> lightness * (1 - dim).pow(2.2f) > EVEN_LUMINANCE
+    }
 
     /**
      * The blur for [blur], or null for none: up to [MAX_RADIUS] a plain radius, beyond it the image
@@ -60,14 +82,17 @@ data class TranslucentWallpaper(
     /** Where [blur] sits on a slider from 0 to 1, as [blurAt] places it. */
     val blurPosition: Float get() = sqrt(blur.toFloat() / MAX_BLUR)
 
-    /** The theme name whose colours go with [darkText]. */
-    val variant: String
-        get() = if (darkText) ThemeUtil.THEME_TRANSLUCENT_DARK else ThemeUtil.THEME_TRANSLUCENT_LIGHT
+    /** The theme name whose colours go with the text over a wallpaper as light as [lightness]. */
+    fun variant(lightness: Float): String =
+        if (darkText(lightness)) ThemeUtil.THEME_TRANSLUCENT_DARK else ThemeUtil.THEME_TRANSLUCENT_LIGHT
 
     companion object {
-        const val DEFAULT_DIM = 0.3f
+        const val DEFAULT_DIM = 0f
         const val MAX_DIM = 0.8f
         const val MAX_BLUR = 100
+
+        /** Where black text and white text contrast equally with what is behind them. */
+        private const val EVEN_LUMINANCE = 0.18f
 
         /** The largest radius the blur takes; stronger blurs shrink the image first instead. */
         private const val MAX_RADIUS = 25
@@ -84,9 +109,17 @@ data class TranslucentWallpaper(
 
         suspend fun saved(context: Context): TranslucentWallpaper {
             val prefs = context.dataStore.data.first()
+            // Before the text could be chosen for the wallpaper, it was always picked by hand, and
+            // dark text faded the wallpaper to white, which is no longer done
+            val legacyDark = prefs[TextKey] == null && prefs[ThemeKey] == ThemeUtil.TRANSLUCENT_THEME_DARK
+            val legacyText = when {
+                prefs[ThemeKey] == null -> null
+                legacyDark -> WallpaperText.Dark
+                else -> WallpaperText.Light
+            }
             return TranslucentWallpaper(
-                darkText = prefs[ThemeKey] == ThemeUtil.TRANSLUCENT_THEME_DARK,
-                dim = prefs[DimKey] ?: DEFAULT_DIM,
+                text = WallpaperText.of(prefs[TextKey]) ?: legacyText ?: WallpaperText.Auto,
+                dim = if (legacyDark) 0f else prefs[DimKey] ?: DEFAULT_DIM,
                 blur = (prefs[BlurKey] ?: 0).coerceIn(0, MAX_BLUR),
                 accent = prefs[AccentKey]?.let { runCatching { Color.parseColor(it) }.getOrNull() },
             )
@@ -94,20 +127,32 @@ data class TranslucentWallpaper(
 
         private val PathKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)
         private val ThemeKey = intPreferencesKey("translucent_background_theme")
+        private val TextKey = stringPreferencesKey("translucent_wallpaper_text")
         private val DimKey = floatPreferencesKey("translucent_wallpaper_dim")
         private val BlurKey = intPreferencesKey("translucent_background_blur")
         private val AccentKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
 
         /**
-         * Saves [wallpaper] with the drawn wallpaper at [path], all at once and awaited: the theme
-         * switch that follows reads them straight away. Returns the path it replaces.
+         * Whether the drawn wallpaper is from before dark text stopped fading it to white, and is
+         * to be drawn again.
          */
-        internal suspend fun save(context: Context, wallpaper: TranslucentWallpaper, path: String): String? {
+        suspend fun isOutdated(context: Context): Boolean {
+            val prefs = context.dataStore.data.first()
+            return prefs[TextKey] == null && prefs[ThemeKey] == ThemeUtil.TRANSLUCENT_THEME_DARK && prefs[PathKey] != null
+        }
+
+        /**
+         * Saves [wallpaper] with the drawn wallpaper at [path], whose text is [darkText], all at
+         * once and awaited: the theme switch that follows reads them straight away. Returns the
+         * path it replaces.
+         */
+        internal suspend fun save(context: Context, wallpaper: TranslucentWallpaper, path: String, darkText: Boolean): String? {
             var old: String? = null
             context.dataStore.edit {
                 old = it[PathKey]
                 it[PathKey] = path
-                it[ThemeKey] = if (wallpaper.darkText) ThemeUtil.TRANSLUCENT_THEME_DARK else ThemeUtil.TRANSLUCENT_THEME_LIGHT
+                it[TextKey] = wallpaper.text.value
+                it[ThemeKey] = if (darkText) ThemeUtil.TRANSLUCENT_THEME_DARK else ThemeUtil.TRANSLUCENT_THEME_LIGHT
                 it[DimKey] = wallpaper.dim
                 it[BlurKey] = wallpaper.blur
                 if (wallpaper.accent != null) it[AccentKey] = String.format("#%08X", wallpaper.accent) else it.remove(AccentKey)
@@ -117,7 +162,7 @@ data class TranslucentWallpaper(
     }
 }
 
-/** The wallpaper as the app draws it: [source] at screen size, blurred and dimmed. */
+/** The wallpaper as the app draws it: [source] at screen size, blurred and darkened. */
 suspend fun Context.renderWallpaper(source: File, wallpaper: TranslucentWallpaper): Bitmap? {
     val metrics: DisplayMetrics = resources.displayMetrics
     val image = loadBitmap(source) {
@@ -132,7 +177,7 @@ suspend fun Context.renderWallpaper(source: File, wallpaper: TranslucentWallpape
         val out = createBitmap(metrics.widthPixels, metrics.heightPixels)
         Canvas(out).apply {
             drawBitmap(image, null, Rect(0, 0, out.width, out.height), Paint(Paint.FILTER_BITMAP_FLAG))
-            drawColor(ColorUtils.setAlphaComponent(wallpaper.dimColor, (wallpaper.dim * 255).toInt()))
+            drawColor(ColorUtils.setAlphaComponent(Color.BLACK, (wallpaper.dim * 255).toInt()))
         }
         out
     }
@@ -158,12 +203,45 @@ suspend fun Context.wallpaperColors(source: File): List<Int> {
     }
 }
 
+/** The average relative luminance of [source], 0 for black to 1 for white, or null if it cannot be read. */
+suspend fun Context.wallpaperLightness(source: File): Float? {
+    val image = loadBitmap(source) {
+        size(64)
+        memoryCacheKey("translucent-lightness:${source.lastModified()}")
+    } ?: return null
+    return withContext(Dispatchers.Default) {
+        val small = image.copy(Bitmap.Config.ARGB_8888, false)
+        val pixels = IntArray(small.width * small.height).also { small.getPixels(it, 0, small.width, 0, 0, small.width, small.height) }
+        pixels.map { ColorUtils.calculateLuminance(it).toFloat() }.average().toFloat()
+    }
+}
+
 /**
- * Saves [wallpaper] and makes the translucent theme current: the drawn wallpaper goes to a new
- * file, which replaces the old one. False when [source] cannot be drawn.
+ * Draws the wallpaper again from its settings, without changing the theme, if it is from before
+ * dark text stopped fading it to white. The image picked is needed for that; without it, the
+ * wallpaper is left as it is.
+ */
+suspend fun Context.redrawOutdatedWallpaper() {
+    if (!TranslucentWallpaper.isOutdated(this)) return
+    val source = TranslucentWallpaper.source(this)
+    if (!source.exists()) return
+    drawWallpaper(source, TranslucentWallpaper.saved(this))
+}
+
+/**
+ * Saves [wallpaper] and shows it: the drawn wallpaper goes to a new file, which replaces the old
+ * one. False when [source] cannot be drawn.
  */
 suspend fun Context.applyWallpaper(source: File, wallpaper: TranslucentWallpaper): Boolean {
+    if (!drawWallpaper(source, wallpaper)) return false
+    ThemeUtil.setWallpaper(true)
+    return true
+}
+
+/** Draws [wallpaper] from [source] and saves both. False when [source] cannot be drawn. */
+private suspend fun Context.drawWallpaper(source: File, wallpaper: TranslucentWallpaper): Boolean {
     val bitmap = renderWallpaper(source, wallpaper) ?: return false
+    val darkText = wallpaper.darkText(wallpaperLightness(source) ?: 0f)
     val file = withContext(Dispatchers.IO) {
         ImageUtil.compressImage(
             bitmap,
@@ -172,8 +250,7 @@ suspend fun Context.applyWallpaper(source: File, wallpaper: TranslucentWallpaper
             initialQuality = 97,
         )
     }
-    val old = TranslucentWallpaper.save(this, wallpaper, file.absolutePath)
+    val old = TranslucentWallpaper.save(this, wallpaper, file.absolutePath, darkText)
     if (old != null && old != file.absolutePath) File(old).delete()
-    ThemeUtil.setWallpaper(true)
     return true
 }

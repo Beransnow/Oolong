@@ -565,4 +565,5 @@
     <string name="monet_monochrome">单色</string>
     <string name="monet_monochrome_desc">只有灰阶</string>
     <string name="dark_background_default">默认</string>
+    <string name="text_color_auto">自动</string>
 </resources>

@@ -1,8 +1,9 @@
 package com.huanchengfly.tieba.post.ui.page.settings.theme
 
 import android.content.Context
-import android.graphics.Color
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
@@ -16,7 +17,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class TranslucentWallpaperTest {
@@ -31,11 +34,21 @@ class TranslucentWallpaperTest {
     }
 
     @Test
-    fun `light text fades the wallpaper to black, dark text to white`() {
-        assertEquals(Color.BLACK, TranslucentWallpaper(darkText = false).dimColor)
-        assertEquals(ThemeUtil.THEME_TRANSLUCENT_LIGHT, TranslucentWallpaper(darkText = false).variant)
-        assertEquals(Color.WHITE, TranslucentWallpaper(darkText = true).dimColor)
-        assertEquals(ThemeUtil.THEME_TRANSLUCENT_DARK, TranslucentWallpaper(darkText = true).variant)
+    fun `chosen text is dark over a light wallpaper, as darkened`() {
+        val auto = TranslucentWallpaper()
+        assertTrue(auto.darkText(lightness = 0.6f))
+        assertFalse(auto.darkText(lightness = 0.1f))
+        // Darkened by 60%, a wallpaper at 0.55 is as dark as one at about 0.07
+        assertFalse(auto.copy(dim = 0.6f).darkText(lightness = 0.55f))
+        assertTrue(auto.copy(dim = 0.2f).darkText(lightness = 0.55f))
+        assertEquals(ThemeUtil.THEME_TRANSLUCENT_DARK, auto.variant(lightness = 0.6f))
+        assertEquals(ThemeUtil.THEME_TRANSLUCENT_LIGHT, auto.variant(lightness = 0.1f))
+    }
+
+    @Test
+    fun `text picked by hand stays whatever the wallpaper`() {
+        assertFalse(TranslucentWallpaper(text = WallpaperText.Light).darkText(lightness = 1f))
+        assertTrue(TranslucentWallpaper(text = WallpaperText.Dark).darkText(lightness = 0f))
     }
 
     @Test
@@ -63,13 +76,37 @@ class TranslucentWallpaperTest {
 
     @Test
     fun `reads back what was saved and replaces the old wallpaper`() = runTest {
-        val first = TranslucentWallpaper(darkText = true, dim = 0.5f, blur = 12, accent = 0xFF336699.toInt())
-        assertNull(TranslucentWallpaper.save(context, first, "/a.jpg"))
+        val first = TranslucentWallpaper(text = WallpaperText.Dark, dim = 0.5f, blur = 12, accent = 0xFF336699.toInt())
+        assertNull(TranslucentWallpaper.save(context, first, "/a.jpg", darkText = true))
         assertEquals(first, TranslucentWallpaper.saved(context))
 
-        val second = first.copy(accent = null)
-        assertEquals("/a.jpg", TranslucentWallpaper.save(context, second, "/b.jpg"))
+        val second = first.copy(text = WallpaperText.Auto, accent = null)
+        assertEquals("/a.jpg", TranslucentWallpaper.save(context, second, "/b.jpg", darkText = false))
         assertEquals(second, TranslucentWallpaper.saved(context))
+        assertFalse(TranslucentWallpaper.isOutdated(context))
+    }
+
+    @Test
+    fun `dark text saved before it was chosen no longer fades the wallpaper to white`() = runTest {
+        context.dataStore.edit {
+            it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)] = "/a.jpg"
+            it[intPreferencesKey("translucent_background_theme")] = ThemeUtil.TRANSLUCENT_THEME_DARK
+            it[floatPreferencesKey("translucent_wallpaper_dim")] = 0.3f
+        }
+
+        assertEquals(TranslucentWallpaper(text = WallpaperText.Dark, dim = 0f), TranslucentWallpaper.saved(context))
+        assertTrue(TranslucentWallpaper.isOutdated(context))
+    }
+
+    @Test
+    fun `light text saved before it was chosen keeps its darkening`() = runTest {
+        context.dataStore.edit {
+            it[intPreferencesKey("translucent_background_theme")] = ThemeUtil.TRANSLUCENT_THEME_LIGHT
+            it[floatPreferencesKey("translucent_wallpaper_dim")] = 0.3f
+        }
+
+        assertEquals(TranslucentWallpaper(text = WallpaperText.Light, dim = 0.3f), TranslucentWallpaper.saved(context))
+        assertFalse(TranslucentWallpaper.isOutdated(context))
     }
 
     @Test

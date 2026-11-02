@@ -47,6 +47,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -120,7 +121,7 @@ fun TranslucentThemePage(
     val source = remember { TranslucentWallpaper.source(context) }
     // Bumped whenever a new image is cropped into [source], so the preview reloads it
     var sourceVersion by rememberSaveable { mutableIntStateOf(if (source.exists()) 1 else 0) }
-    var darkText by rememberSaveable { mutableStateOf(false) }
+    var text by rememberSaveable { mutableStateOf(WallpaperText.Auto) }
     var dim by rememberSaveable { mutableStateOf(TranslucentWallpaper.DEFAULT_DIM) }
     var blur by rememberSaveable { mutableIntStateOf(0) }
     var accent by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -128,19 +129,24 @@ fun TranslucentThemePage(
     LaunchedEffect(Unit) {
         if (loaded) return@LaunchedEffect
         val saved = TranslucentWallpaper.saved(context)
-        darkText = saved.darkText
+        text = saved.text
         dim = saved.dim
         blur = saved.blur
         accent = saved.accent
         loaded = true
     }
     var applying by remember { mutableStateOf(false) }
-    val wallpaper = TranslucentWallpaper(darkText, dim, blur, accent)
+    val wallpaper = TranslucentWallpaper(text, dim, blur, accent)
 
     var swatches by remember { mutableStateOf(emptyList<Int>()) }
+    var lightness by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(sourceVersion) {
-        if (sourceVersion > 0) swatches = context.wallpaperColors(source)
+        if (sourceVersion > 0) {
+            swatches = context.wallpaperColors(source)
+            lightness = context.wallpaperLightness(source) ?: 0f
+        }
     }
+    val darkText = wallpaper.darkText(lightness)
 
     val pickImage = rememberWallpaperPicker(source) { sourceVersion++ }
 
@@ -155,7 +161,7 @@ fun TranslucentThemePage(
         if (sourceVersion > 0) {
             WallpaperPreview(source, sourceVersion, wallpaper)
         }
-        PreviewColors(wallpaper) {
+        PreviewColors(wallpaper, darkText) {
             Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -184,8 +190,9 @@ fun TranslucentThemePage(
                 SettingsBlock {
                     PanelRow(title = stringResource(id = R.string.title_translucent_text_color)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Choice(stringResource(id = R.string.light_color), selected = !darkText) { darkText = false }
-                            Choice(stringResource(id = R.string.dark_color), selected = darkText) { darkText = true }
+                            Choice(stringResource(id = R.string.text_color_auto), selected = text == WallpaperText.Auto) { text = WallpaperText.Auto }
+                            Choice(stringResource(id = R.string.light_color), selected = text == WallpaperText.Light) { text = WallpaperText.Light }
+                            Choice(stringResource(id = R.string.dark_color), selected = text == WallpaperText.Dark) { text = WallpaperText.Dark }
                         }
                     }
                     AccentRow(accent, swatches) { accent = it }
@@ -238,13 +245,14 @@ private fun WallpaperPreview(source: File, version: Int, wallpaper: TranslucentW
         contentScale = ContentScale.Crop,
         modifier = Modifier.fillMaxSize(),
     )
-    Box(modifier = Modifier.fillMaxSize().background(Color(wallpaper.dimColor).copy(alpha = wallpaper.dim)))
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = wallpaper.dim)))
 }
 
-/** The translucent theme's colours for [wallpaper], whatever theme the app uses now. */
+/** The translucent theme's colours for [wallpaper] with [darkText] or light text, whatever theme the app uses now. */
 @Composable
-private fun PreviewColors(wallpaper: TranslucentWallpaper, content: @Composable () -> Unit) {
-    val colors = themeColors(wallpaper.variant, wallpaper.accent?.let { Color(it) })
+private fun PreviewColors(wallpaper: TranslucentWallpaper, darkText: Boolean, content: @Composable () -> Unit) {
+    val variant = if (darkText) ThemeUtil.THEME_TRANSLUCENT_DARK else ThemeUtil.THEME_TRANSLUCENT_LIGHT
+    val colors = themeColors(variant, wallpaper.accent?.let { Color(it) })
     CompositionLocalProvider(LocalExtendedColors provides colors) {
         MaterialTheme(colors = getColorPalette(colors)) {
             CompositionLocalProvider(LocalContentColor provides colors.text, content = content)

@@ -39,6 +39,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -70,6 +71,7 @@ import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.ui.navigation.rememberAppBackStack
 import com.huanchengfly.tieba.post.ui.navigation.toDeepLinkKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.theme.redrawOutdatedWallpaper
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
@@ -439,6 +441,9 @@ class MainActivityV2 : BaseComposeActivity() {
                     defaultValue = ""
                 )
                 val backgroundFile by remember { derivedStateOf { File(backgroundPath) } }
+                // A wallpaper from before dark text stopped fading it to white is drawn again
+                val context = LocalContext.current
+                LaunchedEffect(Unit) { context.redrawOutdatedWallpaper() }
                 AsyncImage(
                     model = backgroundFile,
                     contentDescription = null,
