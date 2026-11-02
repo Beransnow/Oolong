@@ -97,7 +97,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.menuAnchor
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuTriggerState
 import com.huanchengfly.tieba.post.utils.Appearance
 import com.huanchengfly.tieba.post.utils.ColorStyle
 import com.huanchengfly.tieba.post.utils.MonetStyle
@@ -358,8 +360,10 @@ private fun DarkBackgroundRow(settings: ThemeSettings, monetDark: Color) {
         values.mapIndexed { index, value -> Triple(value, names[index], themeColors(value).background) }
     }
     val selected = options.firstOrNull { it.first == settings.darkTheme } ?: options.first()
+    val menu = rememberMenuTriggerState()
     Box(
         modifier = Modifier.clickMenu(
+            state = menu,
             items = {
                 options.map { (value, name, color) ->
                     ContextMenuItem(icon = null, label = name, leading = { BackgroundDot(color) }, selected = value == selected.first) {
@@ -374,7 +378,7 @@ private fun DarkBackgroundRow(settings: ThemeSettings, monetDark: Color) {
             title = stringResource(id = R.string.title_dark_background),
             enabled = true,
             trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.menuAnchor(menu)) {
                     BackgroundDot(selected.third)
                     Spacer(modifier = Modifier.width(8.dp))
                     PrefsChoiceValue(text = selected.second)
@@ -562,8 +566,10 @@ private fun MonetStyleRow(selected: MonetStyle) {
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun <T> ChoiceRow(title: String, selected: T, options: List<Triple<T, String, String>>, onSelect: (T) -> Unit) {
+    val menu = rememberMenuTriggerState()
     Box(
         modifier = Modifier.clickMenu(
+            state = menu,
             items = {
                 options.map { (value, name, description) ->
                     ContextMenuItem(icon = null, label = name, detail = description, selected = value == selected) {
@@ -576,7 +582,7 @@ private fun <T> ChoiceRow(title: String, selected: T, options: List<Triple<T, St
         TextPref(
             title = title,
             enabled = true,
-            trailingContent = { PrefsChoiceValue(text = options.first { it.first == selected }.second) },
+            trailingContent = { PrefsChoiceValue(text = options.first { it.first == selected }.second, modifier = Modifier.menuAnchor(menu)) },
         )
     }
 }

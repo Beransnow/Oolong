@@ -44,6 +44,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.menuAnchor
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuTriggerState
 import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -134,8 +136,10 @@ private fun LinkOpeningPref() {
         useCustomTabs -> 1
         else -> 2
     }
+    val menu = rememberMenuTriggerState()
     Box(
         modifier = Modifier.clickMenu(
+            state = menu,
             items = {
                 choiceMenuItems(options.withIndex().map { (index, name) -> index to name }, current) { index ->
                     coroutineScope.launch {
@@ -151,7 +155,7 @@ private fun LinkOpeningPref() {
         TextPref(
             title = stringResource(id = R.string.title_link_opening),
             enabled = true,
-            trailingContent = { PrefsChoiceValue(text = options[current]) },
+            trailingContent = { PrefsChoiceValue(text = options[current], modifier = Modifier.menuAnchor(menu)) },
         )
     }
 }

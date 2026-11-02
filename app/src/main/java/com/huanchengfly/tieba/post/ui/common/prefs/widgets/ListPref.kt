@@ -20,8 +20,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
 import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.menuAnchor
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuTriggerState
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
@@ -87,7 +89,8 @@ fun ListPref(
 
     val chosen = entries[selected] ?: "Not Set"
     if (icons.isEmpty()) {
-        // Chosen in a menu where it is tapped, the way a forum's sort is
+        // Chosen in a menu growing out of the value, the way a forum's sort is
+        val menu = rememberMenuTriggerState()
         val choice = @Composable {
             TextPref(
                 title = title,
@@ -96,13 +99,14 @@ fun ListPref(
                 modifier = modifier,
                 textColor = textColor,
                 enabled = enabled,
-                trailingContent = { PrefsChoiceValue(text = chosen) },
+                trailingContent = { PrefsChoiceValue(text = chosen, modifier = Modifier.menuAnchor(menu)) },
             )
         }
         if (enabled) {
             Box(
                 modifier = Modifier.clickMenu(
                     items = { choiceMenuItems(entries.toList(), selected) { value -> if (value != null) edit(value to entries.getValue(value)) } },
+                    state = menu,
                 ),
             ) {
                 choice()

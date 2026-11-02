@@ -69,8 +69,14 @@ class MenuTriggerState internal constructor() {
     internal var menus: ContextMenus? = null
     internal var id by mutableStateOf<Long?>(null)
 
+    /** Where in the window the menu grows out of, when not the whole of what opens it. */
+    internal var anchor: Rect? = null
+
     val open: Boolean get() = menus?.isShowing(id) == true
 }
+
+/** Makes this what [state]'s menu grows out of, such as the value of a setting rather than its row. */
+fun Modifier.menuAnchor(state: MenuTriggerState): Modifier = onGloballyPositioned { state.anchor = it.boundsInWindow() }
 
 @Composable
 fun rememberMenuTriggerState() = remember { MenuTriggerState() }
@@ -90,7 +96,7 @@ fun Modifier.clickMenu(
     return onGloballyPositioned { bounds = it.boundsInWindow() }
         .clickable(interactionSource = interaction, indication = indication, enabled = enabled) {
             val list = items()
-            if (list.isNotEmpty()) state.id = menus.show(list, anchor = bounds)
+            if (list.isNotEmpty()) state.id = menus.show(list, anchor = state.anchor ?: bounds)
         }
 }
 

@@ -123,8 +123,8 @@ fun PrefsExternal(text: String? = null) {
 
 /** A choice's value on the end of its row, with the up-and-down mark of a menu of values. */
 @Composable
-fun PrefsChoiceValue(text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+fun PrefsChoiceValue(text: String, modifier: Modifier = Modifier) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         Text(text = text, maxLines = 1)
         Spacer(modifier = Modifier.width(4.dp))
         Icon(
