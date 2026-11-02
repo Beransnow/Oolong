@@ -76,7 +76,6 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.SharedThread
