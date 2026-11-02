@@ -1,27 +1,20 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,25 +23,21 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.repository.ThreadCursor
 import com.huanchengfly.tieba.post.repository.ThreadPreview
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
-import com.huanchengfly.tieba.post.ui.common.PostBody
-import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.shareMenuItems
+import com.huanchengfly.tieba.post.ui.page.thread.FirstPostContent
 import com.huanchengfly.tieba.post.ui.page.thread.navigateToThread
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuPreview
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
-import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import com.huanchengfly.tieba.post.utils.StringUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -145,36 +134,33 @@ fun rememberThreadPeeker(): ThreadPeeker? {
 }
 
 /**
- * A thread's first floor in full, its pictures uncropped; what the feed knew of it until the
- * floor loads.
+ * A thread's first floor in full, as the thread page shows it; what the feed knew of it until the
+ * floor loads, crossfading into the floor when it does.
  */
 @Composable
 fun ThreadPeek(preview: ThreadPreview, firstPost: Post?, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val colors = ExtendedTheme.colors
-    val author = firstPost?.author ?: preview.author
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (author != null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Avatar(data = StringUtil.getAvatarUrl(author.portrait), size = Sizes.Small, contentDescription = null)
-                Column {
-                    Text(text = author.displayName, style = MaterialTheme.typography.subtitle2, color = colors.text)
-                    Text(
-                        text = DateTimeUtils.getRelativeTimeString(context, (firstPost?.time ?: preview.time).toString()),
-                        style = MaterialTheme.typography.caption,
-                        color = colors.textSecondary,
-                    )
-                }
-            }
+    val known = remember(preview) {
+        preview.author?.let { author ->
+            Post(
+                id = 0,
+                floor = 1,
+                title = preview.title,
+                time = preview.time,
+                author = author,
+                content = preview.content,
+                agree = Agree(0, false),
+                subPosts = persistentListOf(),
+                subPostCount = 0,
+            )
         }
-        if (preview.title.isNotBlank()) {
-            Text(text = preview.title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colors.text)
+    }
+    Crossfade(targetState = firstPost ?: known, modifier = modifier, label = "firstPost") { post ->
+        if (post != null) {
+            FirstPostContent(
+                post = post,
+                title = post.title.ifBlank { preview.title },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            )
         }
-        PostBody(content = firstPost?.content ?: preview.content)
     }
 }

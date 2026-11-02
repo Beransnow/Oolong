@@ -413,8 +413,6 @@ fun ThreadFirstPost(
     photoViewData: (PostContent.Image) -> PhotoViewData?,
     onEvent: (ThreadEvent) -> Unit,
 ) {
-    val context = LocalContext.current
-    val author = post.author
     val thread = state.thread
     val menuState = rememberMenuState()
     LongClickMenu(
@@ -429,70 +427,12 @@ fun ThreadFirstPost(
         },
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 24.dp)) {
-            val title = post.title.ifBlank { thread?.title.orEmpty() }
-            if (title.isNotBlank()) {
-                Text(
-                    text = title,
-                    fontSize = 22.sp,
-                    lineHeight = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ExtendedTheme.colors.text,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-            }
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(modifier = Modifier.clip(CircleShape).clickable { onEvent(ThreadEvent.OpenUser(author.id)) }) {
-                    Avatar(data = StringUtil.getAvatarUrl(author.portrait), size = 28.dp, contentDescription = null)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                ProvideTextStyle(
-                    MaterialTheme.typography.subtitle1.copy(
-                        color = ExtendedTheme.colors.text,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                ) {
-                    UserNameText(
-                        userName = StringUtil.getUsernameAnnotatedString(context, author.name, author.nameShow),
-                        userLevel = author.level,
-                        bawuType = author.bawuName(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onEvent(ThreadEvent.OpenUser(author.id)) },
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = listOfNotNull(
-                        getRelativeTimeString(context, post.time),
-                        author.ipLocation.takeIf { it.isNotEmpty() },
-                    ).joinToString(" · "),
-                    style = MaterialTheme.typography.caption,
-                    color = ExtendedTheme.colors.textSecondary,
-                )
-            }
-            if (isStoreMark) {
-                Chip(
-                    text = stringResource(id = R.string.title_collected_floor),
-                    invertColor = true,
-                    prefixIcon = {
-                        Icon(imageVector = Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(16.dp))
-                    },
-                    modifier = Modifier.padding(start = 16.dp, top = 12.dp),
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            PostBody(
-                content = post.content,
+            FirstPostContent(
+                post = post,
+                title = post.title.ifBlank { thread?.title.orEmpty() },
+                isStoreMark = isStoreMark,
                 photoViewData = photoViewData,
-                fontSize = 17.sp,
-                lineHeight = 30.sp,
-                blockSpacing = 16.dp,
-                textPadding = PaddingValues(horizontal = 16.dp),
+                onOpenUser = { onEvent(ThreadEvent.OpenUser(it)) },
             )
             if (thread != null) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -516,6 +456,91 @@ fun ThreadFirstPost(
                 }
             }
         }
+    }
+}
+
+/**
+ * A thread's first floor as the thread page shows it: its [title], the author, and the content
+ * at reading size. Shared by the thread page and the peek at a thread from a list.
+ *
+ * @param onOpenUser opens the author's profile; null where the author can't be tapped
+ */
+@Composable
+fun FirstPostContent(
+    post: Post,
+    title: String,
+    modifier: Modifier = Modifier,
+    isStoreMark: Boolean = false,
+    photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
+    onOpenUser: ((Long) -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val author = post.author
+    Column(modifier = modifier) {
+        if (title.isNotBlank()) {
+            Text(
+                text = title,
+                fontSize = 22.sp,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = ExtendedTheme.colors.text,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.clip(CircleShape).clickable(enabled = onOpenUser != null) { onOpenUser?.invoke(author.id) }) {
+                Avatar(data = StringUtil.getAvatarUrl(author.portrait), size = 28.dp, contentDescription = null)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            ProvideTextStyle(
+                MaterialTheme.typography.subtitle1.copy(
+                    color = ExtendedTheme.colors.text,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            ) {
+                UserNameText(
+                    userName = StringUtil.getUsernameAnnotatedString(context, author.name, author.nameShow),
+                    userLevel = author.level,
+                    bawuType = author.bawuName(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = onOpenUser != null) { onOpenUser?.invoke(author.id) },
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = listOfNotNull(
+                    getRelativeTimeString(context, post.time),
+                    author.ipLocation.takeIf { it.isNotEmpty() },
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.caption,
+                color = ExtendedTheme.colors.textSecondary,
+            )
+        }
+        if (isStoreMark) {
+            Chip(
+                text = stringResource(id = R.string.title_collected_floor),
+                invertColor = true,
+                prefixIcon = {
+                    Icon(imageVector = Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                },
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        PostBody(
+            content = post.content,
+            photoViewData = photoViewData,
+            fontSize = 17.sp,
+            lineHeight = 30.sp,
+            blockSpacing = 16.dp,
+            textPadding = PaddingValues(horizontal = 16.dp),
+        )
     }
 }
 

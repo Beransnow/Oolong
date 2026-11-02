@@ -429,6 +429,12 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * lift.value.coerceIn(0f, 1f)
                     ambientShadowColor = ShadowAmbient
                     spotShadowColor = ShadowSpot
+                    // Comes out of the card blurred and clears as it grows, so neither the card
+                    // giving way nor the preview taking its place is a cut
+                    val l = lift.value
+                    alpha = (l / 0.35f).coerceIn(0f, 1f)
+                    val blur = IconBlur.toPx() * (1f - ((l - 0.35f) / 0.5f).coerceIn(0f, 1f))
+                    renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                 },
             ) {
                 if (preview != null) {
