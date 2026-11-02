@@ -36,7 +36,7 @@ class PersonalizedViewModelTest {
         repository = repository,
         messages = messages,
         blockRuleSource = object : BlockRuleSource {
-            override val rules = MutableStateFlow(BlockRules { _, _ -> false })
+            override val rules = MutableStateFlow(BlockRules { null })
         },
     )
 

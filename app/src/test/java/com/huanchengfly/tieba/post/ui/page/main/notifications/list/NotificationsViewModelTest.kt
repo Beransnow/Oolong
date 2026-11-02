@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.NotificationRepository
+import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -23,7 +24,7 @@ class NotificationsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = mockk<NotificationRepository>()
-    private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
+    private val blockRules = MutableStateFlow(BlockRules { null })
 
     private fun notification(postId: Long, content: String = "内容 $postId") = Notification(
         threadId = 1, postId = postId, inPost = false, threadTitle = "", content = content,
@@ -65,7 +66,7 @@ class NotificationsViewModelTest {
         viewModel.open(NotificationType.AtMe)
         runCurrent()
 
-        blockRules.value = BlockRules { _, content -> "广告" in content }
+        blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
 
         assertEquals(listOf(true, false), viewModel.state.value.list(NotificationType.AtMe).items.map { it.blocked })

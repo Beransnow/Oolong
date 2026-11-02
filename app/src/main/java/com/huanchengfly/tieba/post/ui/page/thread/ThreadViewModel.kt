@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.repository.ThreadPage
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory

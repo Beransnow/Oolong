@@ -20,6 +20,7 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -55,7 +56,7 @@ class ThreadViewModelTest {
     private val remote = mockk<ThreadRemoteDataSource>(relaxed = true)
     private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
     private val postRemote = mockk<PostRemoteDataSource>(relaxed = true)
-    private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
+    private val blockRules = MutableStateFlow(BlockRules { null })
     private val saved = mutableListOf<Pair<ThreadDetail, Post?>>()
     private val shown = mutableListOf<Int>()
 
@@ -148,7 +149,7 @@ class ThreadViewModelTest {
         runCurrent()
         assertFalse(viewModel.state.value.posts.items[0].blocked)
 
-        blockRules.value = BlockRules { _, content -> "广告" in content }
+        blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
         assertEquals(listOf(true, false), viewModel.state.value.posts.items.map { it.blocked })
     }

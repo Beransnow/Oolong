@@ -24,6 +24,7 @@ import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ForumSortStore
+import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.repository.forumRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
@@ -49,7 +50,7 @@ class ForumViewModelTest {
     private val likeRemote = mockk<LikeRemoteDataSource>()
     private val signRemote = mockk<SignRemoteDataSource>()
     private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
-    private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
+    private val blockRules = MutableStateFlow(BlockRules { null })
     private val saved = mutableListOf<ForumDetail>()
     private val shown = mutableListOf<Int>()
     private val sorts = mutableMapOf<String, Int>()
@@ -218,7 +219,7 @@ class ForumViewModelTest {
         val viewModel = createViewModel()
         runCurrent()
 
-        blockRules.value = BlockRules { _, content -> "广告" in content }
+        blockRules.value = blockRulesMatching { "广告" in it.title }
         runCurrent()
 
         assertEquals(listOf(true, false), viewModel.state.value.list(ForumTab.Latest).items.map { it.blocked })

@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import io.mockk.coEvery
@@ -42,7 +43,7 @@ class SubPostsViewModelTest {
 
     private val remote = mockk<ThreadRemoteDataSource>(relaxed = true)
     private val agreeRemote = mockk<AgreeRemoteDataSource>(relaxed = true)
-    private val blockRules = MutableStateFlow(BlockRules { _, _ -> false })
+    private val blockRules = MutableStateFlow(BlockRules { null })
     private val shown = mutableListOf<Int>()
 
     private val lz = ProtoUser(id = 10, name = "lz")
@@ -182,7 +183,7 @@ class SubPostsViewModelTest {
         val viewModel = createViewModel()
         runCurrent()
 
-        blockRules.value = BlockRules { _, content -> "广告" in content }
+        blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
         assertEquals(listOf(true, false), viewModel.state.value.subPosts.items.map { it.blocked })
     }

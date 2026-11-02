@@ -38,7 +38,7 @@ class HotViewModelTest {
         repository = repository,
         messages = mockk<MessageController>(relaxed = true),
         blockRuleSource = object : BlockRuleSource {
-            override val rules = MutableStateFlow(BlockRules { _, _ -> false })
+            override val rules = MutableStateFlow(BlockRules { null })
         },
     )
 

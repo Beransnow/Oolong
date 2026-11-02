@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.FloorCursor
 import com.huanchengfly.tieba.post.repository.FloorPage
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.repository.blocks
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
