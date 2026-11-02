@@ -1,6 +1,6 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,61 +9,75 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.DropdownMenuItem
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
+import androidx.compose.material.SnackbarResult
+import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material.rememberDismissState
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.gson.reflect.TypeToken
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
+import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
+import com.huanchengfly.tieba.post.ui.navigation.BlockRuleKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.block.RulePart
+import com.huanchengfly.tieba.post.ui.page.settings.block.ruleSentence
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
-import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
-import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
-import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
-import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
-import com.huanchengfly.tieba.post.ui.widgets.compose.placeholder.placeholder
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
-import com.huanchengfly.tieba.post.utils.GsonUtil
+import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
+import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,169 +88,110 @@ fun BlockListPage(
     val state by viewModel.state.collectAsStateWithLifecycle()
     BlockListScreen(
         state = state,
-        onBack = { navigator.navigateUp() },
-        onAdd = viewModel::add,
-        onRemove = viewModel::remove,
+        onBack = navigator::navigateUp,
+        onOpen = { navigator.navigate(BlockRuleKey(it?.id ?: 0)) },
+        onDelete = viewModel::delete,
+        onRestore = viewModel::restore,
     )
 }
 
-/** The block and allow lists in two tabs, with buttons to add to either. */
-@OptIn(ExperimentalFoundationApi::class)
+/**
+ * The rules, one sentence each, newest first, narrowed by kind and by what they match. Rules that
+ * have done nothing for a long time can be cleared at once; any rule can be swiped away.
+ */
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun BlockListScreen(
     state: BlockListState,
     onBack: () -> Unit,
-    onAdd: (category: Int, keywords: String) -> Unit,
-    onRemove: (Block) -> Unit,
+    onOpen: (BlockRule?) -> Unit,
+    onDelete: (List<BlockRule>) -> Unit,
+    onRestore: (List<BlockRule>) -> Unit,
 ) {
-    var addBlockCategory by remember { mutableStateOf(Block.CATEGORY_BLACK_LIST) }
-    val dialogState = rememberDialogState()
-    PromptDialog(
-        onConfirm = { onAdd(addBlockCategory, it) },
-        dialogState = dialogState,
-        title = {
-            Text(
-                text = if (addBlockCategory == Block.CATEGORY_WHITE_LIST) stringResource(id = R.string.title_add_white)
-                else stringResource(id = R.string.title_add_black)
-            )
+    val context = LocalContext.current
+    val scaffoldState = rememberScaffoldState()
+    val scope = rememberCoroutineScope()
+    var filter by rememberSaveable { mutableStateOf(RuleFilter.All) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val shown = state.rules.filter { it.matches(filter) && it.matches(query) }
+    val stale = state.stale
+
+    fun delete(rules: List<BlockRule>) {
+        onDelete(rules)
+        scope.launch {
+            val message = if (rules.size == 1) {
+                context.getString(R.string.toast_rule_deleted)
+            } else {
+                context.getString(R.string.toast_rules_deleted, rules.size)
+            }
+            val result = scaffoldState.snackbarHostState.showSnackbar(message, context.getString(R.string.button_undo))
+            if (result == SnackbarResult.ActionPerformed) onRestore(rules)
         }
-    ) {
-        Text(text = stringResource(id = R.string.tip_add_block))
     }
 
-    val pagerState = rememberPagerState { 2 }
-    val coroutineScope = rememberCoroutineScope()
     GlassScaffold(
+        scaffoldState = scaffoldState,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_block_list)) },
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = onBack)
-                },
-                content = {
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        indicator = { tabPositions ->
-                            PagerTabIndicator(
-                                pagerState = pagerState,
-                                tabPositions = tabPositions
-                            )
-                        },
-                        divider = {},
-                        backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.topBarContent,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .width(84.dp * 2),
-                    ) {
-                        Tab(
-                            selected = pagerState.currentPage == 0,
-                            onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                            text = { Text(text = stringResource(id = R.string.title_black_list)) },
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 1,
-                            onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                            text = { Text(text = stringResource(id = R.string.title_white_list)) },
-                        )
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_block_rules)) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                actions = {
+                    IconButton(onClick = { onOpen(null) }) {
+                        Icon(Icons.Rounded.Add, contentDescription = stringResource(id = R.string.title_new_rule))
                     }
-                }
+                },
             )
         },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(vertical = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .floatingGlass(RoundedCornerShape(percent = 50))
-                        .padding(horizontal = 8.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .clickable {
-                                addBlockCategory = Block.CATEGORY_BLACK_LIST
-                                dialogState.show()
-                            }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Block,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = stringResource(id = R.string.title_add_black),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .clickable {
-                                addBlockCategory = Block.CATEGORY_WHITE_LIST
-                                dialogState.show()
-                            }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = stringResource(id = R.string.title_add_white),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    ) { paddingValues ->
-        HorizontalPager(
-            state = pagerState,
+    ) { padding ->
+        MyLazyColumn(
+            contentPadding = padding,
             modifier = Modifier.fillMaxSize(),
-            key = { it },
-            verticalAlignment = Alignment.Top
-        ) { position ->
-            val items = if (position == 0) state.blackList else state.whiteList
-            StateScreen(
-                isEmpty = items.isEmpty(),
-                isError = false,
-                isLoading = state.loading,
-                loadingScreen = {
-                    MyLazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = paddingValues) {
-                        items(4) {
-                            BlockItemPlaceholder()
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            ) {
-                MyLazyColumn(Modifier.fillMaxSize(), contentPadding = paddingValues) {
-                    items(items, key = { it.id }) {
-                        LongClickMenu(menuContent = {
-                            DropdownMenuItem(onClick = { onRemove(it) }) {
-                                Text(text = stringResource(id = R.string.title_delete))
+        ) {
+            item(key = "search") { SearchField(query, onChange = { query = it }) }
+            item(key = "filter") { FilterRow(filter, onChange = { filter = it }) }
+            if (stale.isNotEmpty() && filter == RuleFilter.All && query.isBlank()) {
+                item(key = "stale") { StaleBanner(stale.size, onClean = { delete(stale) }) }
+            }
+            if (shown.isEmpty() && !state.loading) {
+                item(key = "empty") {
+                    Text(
+                        text = stringResource(id = if (state.rules.isEmpty()) R.string.rules_empty else R.string.rules_none_found),
+                        style = TextStyles.label,
+                        color = ExtendedTheme.colors.textSecondary,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            itemsIndexed(shown, key = { _, rule -> rule.id }) { index, rule ->
+                val dismissState = rememberDismissState(
+                    confirmStateChange = {
+                        if (it == DismissValue.DismissedToStart) delete(listOf(rule))
+                        it == DismissValue.DismissedToStart
+                    },
+                )
+                val shape = when {
+                    shown.size == 1 -> Corners.md
+                    index == 0 -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                    index == shown.lastIndex -> RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
+                    else -> RoundedCornerShape(0.dp)
+                }
+                Box(modifier = Modifier.padding(horizontal = Spacing.md).clip(shape)) {
+                    SwipeToDismiss(
+                        state = dismissState,
+                        directions = setOf(DismissDirection.EndToStart),
+                        background = {
+                            Box(
+                                contentAlignment = Alignment.CenterEnd,
+                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.error)
+                                    .padding(horizontal = 20.dp),
+                            ) {
+                                Text(text = stringResource(id = R.string.title_delete), color = Color.White, style = TextStyles.label)
                             }
-                        }) {
-                            BlockItem(item = it)
-                        }
+                        },
+                    ) {
+                        RuleRow(rule, now = state.now, onClick = { onOpen(rule) })
                     }
                 }
             }
@@ -245,69 +200,172 @@ fun BlockListScreen(
 }
 
 @Composable
-private fun BlockItemPlaceholder() {
+private fun SearchField(query: String, onChange: (String) -> Unit) {
+    val colors = ExtendedTheme.colors
     Row(
-        modifier = Modifier.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+            .fillMaxWidth()
+            .heightIn(min = 40.dp)
+            .clip(Corners.sm)
+            .background(colors.searchField)
+            .padding(horizontal = Spacing.sm),
     ) {
-        Icon(
-            imageVector = Icons.Outlined.Block,
-            contentDescription = null,
-            modifier = Modifier.placeholder(visible = true)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = stringResource(id = R.string.title_block_settings),
-            modifier = Modifier.placeholder(visible = true)
-        )
+        Icon(Icons.Rounded.Search, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(Spacing.xs))
+        Box(modifier = Modifier.weight(1f)) {
+            if (query.isEmpty()) Text(text = stringResource(id = R.string.rules_search), style = TextStyles.bodyCompact, color = colors.textSecondary)
+            BasicTextField(
+                value = query,
+                onValueChange = onChange,
+                singleLine = true,
+                textStyle = TextStyles.bodyCompact.copy(color = colors.text),
+                cursorBrush = SolidColor(colors.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
 @Composable
-private fun BlockItem(
-    item: Block,
-) {
+private fun FilterRow(filter: RuleFilter, onChange: (RuleFilter) -> Unit) {
+    val colors = ExtendedTheme.colors
     Row(
-        modifier = Modifier.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+            .fillMaxWidth()
+            .clip(Corners.sm)
+            .background(colors.inset)
+            .padding(3.dp),
     ) {
-        Icon(
-            imageVector = if (item.type == Block.TYPE_USER) Icons.Outlined.AccountCircle else ImageVector.vectorResource(
-                id = R.drawable.ic_comment_new
-            ),
-            contentDescription = if (item.type == Block.TYPE_USER) stringResource(
-                id = R.string.block_type_user
-            ) else stringResource(
-                id = R.string.block_type_keywords
-            )
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (item.type == Block.TYPE_USER) {
+        RuleFilter.entries.forEach { entry ->
+            val selected = entry == filter
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(Corners.xs)
+                    .background(if (selected) colors.card else Color.Transparent)
+                    .clickable { onChange(entry) }
+                    .padding(vertical = 6.dp),
+            ) {
                 Text(
-                    text = "${item.username}",
-                    style = MaterialTheme.typography.subtitle1
-                )
-                Text(
-                    text = "UID: ${item.uid}",
-                    style = MaterialTheme.typography.caption
-                )
-            } else {
-                val keywordsList: List<String> = runCatching {
-                    GsonUtil.getGson()
-                        .fromJson<List<String>>(
-                            item.keywords ?: "[]",
-                            object : TypeToken<List<String>>() {}.type
-                        )
-                }.getOrDefault(emptyList())
-                Text(
-                    text = keywordsList.joinToString(" "),
-                    style = MaterialTheme.typography.subtitle1
+                    text = stringResource(id = entry.label),
+                    style = TextStyles.caption,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (selected) colors.text else colors.textSecondary,
                 )
             }
         }
     }
 }
+
+private val RuleFilter.label: Int
+    get() = when (this) {
+        RuleFilter.All -> R.string.rule_kind_all
+        RuleFilter.User -> R.string.rule_kind_user
+        RuleFilter.Keyword -> R.string.rule_kind_keyword
+        RuleFilter.Forum -> R.string.rule_kind_forum
+        RuleFilter.Other -> R.string.rule_kind_other
+    }
+
+@Composable
+private fun StaleBanner(count: Int, onClean: () -> Unit) {
+    val colors = ExtendedTheme.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+            .fillMaxWidth()
+            .clip(Corners.md)
+            .background(colors.accent.copy(alpha = 0.10f))
+            .padding(start = Spacing.sm),
+    ) {
+        Text(
+            text = stringResource(id = R.string.rules_stale, count),
+            style = TextStyles.caption,
+            color = colors.text,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onClean) {
+            Text(text = stringResource(id = R.string.button_clean_up), color = colors.accent, style = TextStyles.label)
+        }
+    }
+}
+
+@Composable
+private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val colors = ExtendedTheme.colors
+    val runs = ruleSentence(rule, now)
+    val sentence: AnnotatedString = buildAnnotatedString {
+        runs.forEach { run ->
+            if (run.part == RulePart.Value) {
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(run.text) }
+            } else {
+                append(run.text)
+            }
+        }
+    }
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.chip)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .alpha(if (rule.enabled) 1f else 0.45f)
+                .size(30.dp)
+                .clip(Corners.sm)
+                .background(colors.card),
+        ) {
+            Icon(rule.icon, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(17.dp))
+        }
+        Spacer(modifier = Modifier.width(Spacing.sm))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = sentence,
+                    style = TextStyles.bodyCompact,
+                    color = colors.text,
+                    modifier = Modifier.weight(1f, fill = false).alpha(if (rule.enabled) 1f else 0.45f),
+                )
+                if (rule.action == BlockRule.Action.Allow) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(id = R.string.rule_exception),
+                        style = TextStyles.micro,
+                        color = colors.textSecondary,
+                        modifier = Modifier.clip(Corners.xs).background(colors.inset).padding(horizontal = 5.dp, vertical = 1.dp),
+                    )
+                }
+            }
+            Text(
+                text = when {
+                    !rule.enabled -> stringResource(id = R.string.rule_disabled)
+                    rule.hits > 0 && rule.lastHitAt != null ->
+                        stringResource(id = R.string.rule_hits, rule.hits, DateTimeUtils.getRelativeTimeString(context, rule.lastHitAt))
+                    else -> stringResource(id = R.string.rule_no_hits)
+                },
+                style = TextStyles.footnote,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+    }
+}
+
+private val BlockRule.icon: ImageVector
+    get() = when (match) {
+        is BlockRule.Match.User -> Icons.Rounded.Person
+        is BlockRule.Match.Keyword -> Icons.Rounded.TextFields
+        is BlockRule.Match.Forum -> Icons.Rounded.Forum
+        is BlockRule.Match.Level -> Icons.Rounded.BarChart
+    }

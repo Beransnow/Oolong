@@ -46,6 +46,6 @@ class ListPagesScreenshotTest {
 
     @Test
     fun blockList() {
-        captureScreenshot { BlockListScreen(state = BlockListPreviewData.loaded, onBack = {}, onAdd = { _, _ -> }, onRemove = {}) }
+        captureScreenshot { BlockListScreen(state = BlockListPreviewData.loaded, onBack = {}, onOpen = {}, onDelete = {}, onRestore = {}) }
     }
 }

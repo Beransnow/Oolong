@@ -33,6 +33,9 @@ class BlockListRepository @Inject constructor(
 
     suspend fun update(rule: BlockRule) = withContext(io) { dao.update(rule.toEntity()) }
 
+    /** Puts back rules just removed, with their ids, counts and dates. */
+    suspend fun restore(rules: List<BlockRule>) = withContext(io) { dao.insertAll(rules.map { it.toEntity() }) }
+
     suspend fun remove(ids: List<Long>) = withContext(io) { dao.deleteAll(ids) }
 
     /** Adds a rule on [category]'s list matching all of [keywords]. */

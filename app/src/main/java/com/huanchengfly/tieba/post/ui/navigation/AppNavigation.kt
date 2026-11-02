@@ -76,6 +76,7 @@ import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.about.AboutPage
 import com.huanchengfly.tieba.post.ui.page.settings.account.AccountManagePage
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockRulePage
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.block.blocklist.BlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.custom.CustomSettingsPage
@@ -131,6 +132,7 @@ private fun KeyContent(key: Key) {
         PostSettingsKey -> PostSettingsPage()
         BlockSettingsKey -> BlockSettingsPage()
         BlockListKey -> BlockListPage()
+        is BlockRuleKey -> BlockRulePage(key)
         OKSignSettingsKey -> OKSignSettingsPage()
         MoreSettingsKey -> MoreSettingsPage()
         AboutKey -> AboutPage()

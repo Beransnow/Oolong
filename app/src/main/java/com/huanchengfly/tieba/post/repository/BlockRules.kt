@@ -2,7 +2,7 @@ package com.huanchengfly.tieba.post.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.database.BlockDao
@@ -181,7 +181,8 @@ class DatabaseBlockRuleSource @Inject constructor(
         context.dataStore.data.map { prefs ->
             BlockOptions(
                 hideByDefault = prefs[booleanPreferencesKey(HideBlockedContentKey)] ?: false,
-                lowLevel = prefs[intPreferencesKey(LowLevelKey)]?.takeIf { prefs[booleanPreferencesKey(LowLevelEnabledKey)] == true },
+                lowLevel = (prefs[stringPreferencesKey(LowLevelKey)]?.toIntOrNull() ?: DefaultLowLevel)
+                    .takeIf { prefs[booleanPreferencesKey(LowLevelEnabledKey)] == true },
             )
         },
     ) { rules, options -> blockRulesOf(rules, options, onHit = hits::record) }
@@ -231,3 +232,4 @@ class DatabaseBlockRuleSource @Inject constructor(
 const val HideBlockedContentKey = "hideBlockedContent"
 const val LowLevelEnabledKey = "blockLowLevel"
 const val LowLevelKey = "blockLowLevelBelow"
+const val DefaultLowLevel = 3

@@ -1,7 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block.blocklist
 
-import com.huanchengfly.tieba.post.arch.MessageController
-import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.BlockRule.Match
 import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import io.mockk.coVerify
@@ -13,34 +13,51 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class BlockListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val now = System.currentTimeMillis()
+    private val keyword = BlockRule(id = 1, match = Match.Keyword(listOf("剧透")), createdAt = now - 100 * DAY)
+    private val user = BlockRule(id = 2, match = Match.User(7, "someone"), createdAt = now - DAY, action = BlockRule.Action.Allow)
+    private val forum = BlockRule(id = 3, match = Match.Forum("抽卡"), createdAt = now - 200 * DAY, lastHitAt = now - DAY)
     private val repository = mockk<BlockListRepository>(relaxed = true) {
-        every { rules } returns flowOf(
-            listOf(
-                Block(Block.CATEGORY_BLACK_LIST, Block.TYPE_KEYWORD, keywords = "[\"a\"]", id = 1),
-                Block(Block.CATEGORY_WHITE_LIST, Block.TYPE_USER, username = "u", id = 2),
-            )
-        )
+        every { blockRules } returns flowOf(listOf(keyword, user, forum))
     }
 
     @Test
-    fun `lists each rule on its own list and adds keywords split by spaces`() = runTest {
-        val viewModel = BlockListViewModel(repository, mockk<MessageController>(relaxed = true))
+    fun `lists the rules newest first and finds those long without a hit`() = runTest {
+        val viewModel = BlockListViewModel(repository)
         runCurrent()
 
-        viewModel.add(Block.CATEGORY_BLACK_LIST, "  ")
-        runCurrent()
-        viewModel.add(Block.CATEGORY_BLACK_LIST, "广告  推广")
+        val state = viewModel.state.value
+        assertEquals(listOf(3L, 2L, 1L), state.rules.map { it.id })
+        assertEquals(listOf(1L), state.stale.map { it.id })
+        assertEquals(false, state.loading)
+    }
+
+    @Test
+    fun `rules are narrowed by kind and by what they match`() {
+        assertTrue(keyword.matches(RuleFilter.Keyword) && !keyword.matches(RuleFilter.User))
+        assertTrue(forum.matches("抽") && !forum.matches("原神"))
+    }
+
+    @Test
+    fun `deleted rules can be put back`() = runTest {
+        val viewModel = BlockListViewModel(repository)
         runCurrent()
 
-        assertEquals(listOf(1L), viewModel.state.value.blackList.map { it.id })
-        assertEquals(listOf(2L), viewModel.state.value.whiteList.map { it.id })
-        assertEquals(false, viewModel.state.value.loading)
-        coVerify(exactly = 1) { repository.addKeywords(any(), any()) }
-        coVerify { repository.addKeywords(Block.CATEGORY_BLACK_LIST, listOf("广告", "推广")) }
+        viewModel.delete(listOf(keyword))
+        viewModel.restore(listOf(keyword))
+        runCurrent()
+
+        coVerify { repository.remove(listOf(1L)) }
+        coVerify { repository.restore(listOf(keyword)) }
+    }
+
+    private companion object {
+        const val DAY = 24 * 60 * 60 * 1000L
     }
 }
