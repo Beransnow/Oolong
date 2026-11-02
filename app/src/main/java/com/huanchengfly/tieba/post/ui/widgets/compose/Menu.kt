@@ -93,7 +93,7 @@ fun ClickMenu(
             DropdownMenu(
                 expanded = menuState.expanded,
                 onDismissRequest = { menuScope.dismiss() },
-                modifier = modifier.background(color = ExtendedTheme.colors.card)
+                modifier = modifier.background(color = ExtendedTheme.colors.menu)
             ) {
                 ProvideContentColor(color = ExtendedTheme.colors.text) {
                     menuScope.menuContent()
