@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -75,7 +74,9 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
@@ -130,7 +131,7 @@ fun SearchBox(
         Surface(
             color = backgroundColor,
             contentColor = contentColor,
-            shape = RoundedCornerShape(12.dp),
+            shape = Corners.md,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
@@ -220,7 +221,7 @@ private fun ForumItemPlaceholder(
                 .width(54.dp)
                 .background(
                     color = ExtendedTheme.colors.chip,
-                    shape = RoundedCornerShape(3.dp)
+                    shape = SmoothCornerShape(3.dp)
                 )
                 .padding(vertical = 4.dp)
                 .align(CenterVertically)
@@ -294,7 +295,7 @@ private fun ForumItemContent(
                 .width(54.dp)
                 .background(
                     color = ExtendedTheme.colors.chip,
-                    shape = RoundedCornerShape(3.dp)
+                    shape = SmoothCornerShape(3.dp)
                 )
                 .padding(vertical = 4.dp)
                 .align(CenterVertically)
@@ -649,7 +650,7 @@ private fun VisitedForums(visited: ImmutableList<VisitedForum>, expanded: Boolea
                         modifier = Modifier
                             .padding(horizontal = 4.dp)
                             .height(IntrinsicSize.Min)
-                            .clip(RoundedCornerShape(100))
+                            .clip(Corners.full)
                             .background(color = ExtendedTheme.colors.chip)
                             .clickable { onEvent(HomeEvent.OpenForum(it.name)) }
                             .padding(4.dp),
