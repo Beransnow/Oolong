@@ -44,9 +44,6 @@ fun ThreadInfo.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary = Thr
     hotNum = hotNum.toLong(),
 )
 
-/** What the thread page shows of [this] until its first page loads. */
-fun ThreadSummary.toThreadPreview() = ThreadPreview(title = title, author = author, content = firstPost, time = createTime)
-
 /**
  * The abstract as one line of text: text pieces with runs of spaces collapsed, emoticons as their
  * `#(name)` codes.

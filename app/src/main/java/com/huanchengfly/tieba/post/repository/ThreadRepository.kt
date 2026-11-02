@@ -5,24 +5,20 @@ import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.api.models.protos.pbPage.PbPageResponseData
 import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaUnknownException
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.Page
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.BawuType
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.Post
-import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -87,16 +83,6 @@ sealed interface ThreadCursor {
         fun first(postId: Long = 0): ThreadCursor = if (postId != 0L) Anchor(postId) else Number(0)
     }
 }
-
-/** What is known of a thread before it loads, from the list it was opened from. */
-@Immutable
-data class ThreadPreview(
-    val title: String,
-    val author: User?,
-    val content: ImmutableList<PostContent>,
-    /** Seconds since the epoch. */
-    val time: Long,
-)
 
 @Immutable
 data class ThreadPage(
@@ -166,8 +152,6 @@ class ThreadRepository @Inject constructor(
         )
         data.toThreadPage(query.sort, emoticons)
     }
-
-    fun preview(info: ThreadInfo): ThreadPreview = info.toThreadPreview(emoticons)
 
     /** A page of the replies inside post [postId] of thread [threadId]. */
     suspend fun floor(threadId: Long, postId: Long, forumId: Long, cursor: FloorCursor): FloorPage =
@@ -252,15 +236,19 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
 
     return ThreadPage(
         thread = ThreadDetail(
-            id = thread.id,
-            title = thread.title,
-            author = threadAuthor.toUser(),
-            forum = ForumSummary(id = forum.id, name = forum.name, avatar = forum.avatar),
-            replyCount = thread.replyNum,
-            agree = thread.agree.toAgree(),
-            firstPostId = thread.firstPostId.takeIf { it != 0L } ?: firstPost?.id ?: 0L,
+            summary = thread.toThreadSummary(emoticons).let { summary ->
+                summary.copy(
+                    // The page's own thread may leave out what lists fill in
+                    id = thread.id,
+                    title = thread.title,
+                    author = threadAuthor.toUser(),
+                    forum = ForumSummary(id = forum.id, name = forum.name, avatar = forum.avatar),
+                    agree = thread.agree.toAgree(),
+                    firstPostId = thread.firstPostId.takeIf { it != 0L } ?: firstPost?.id ?: 0L,
+                    firstPost = firstPost?.content ?: summary.firstPost,
+                )
+            },
             storeMarkPostId = if (thread.collectStatus != 0) thread.collectMarkPid.toLongOrNull() ?: 0L else null,
-            origin = thread.origin_thread_info?.takeIf { thread.is_share_thread == 1 }?.wrapImmutable(),
         ),
         firstPost = firstPost,
         posts = Page(
@@ -308,13 +296,6 @@ internal fun PbFloorResponseData.toFloorPage(emoticons: EmoticonRegistry): Floor
         tbs = anti?.tbs?.ifEmpty { null },
     )
 }
-
-fun ThreadInfo.toThreadPreview(emoticons: EmoticonRegistry) = ThreadPreview(
-    title = title,
-    author = author?.toUser(),
-    content = firstPostContent.toPostContent(emoticons),
-    time = createTime.toLong(),
-)
 
 /** Maps posts and their replies, taking authors missing from them from [users]. */
 internal class PostMapper(users: List<ProtoUser>, private val emoticons: EmoticonRegistry) {

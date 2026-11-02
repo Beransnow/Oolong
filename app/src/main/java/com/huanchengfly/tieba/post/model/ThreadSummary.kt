@@ -43,6 +43,22 @@ data class ThreadSummary(
     val hotNum: Long = 0,
 )
 
+/**
+ * The first floor as a list knows it, to show until the thread page loads it: all of its content,
+ * but no likes or replies inside it. Its id is 0, as it isn't the loaded post.
+ */
+fun ThreadSummary.knownFirstFloor() = Post(
+    id = 0,
+    floor = 1,
+    title = title,
+    time = createTime,
+    author = author,
+    content = firstPost,
+    agree = Agree(0, agreed = false),
+    subPosts = persistentListOf(),
+    subPostCount = 0,
+)
+
 /** A picture of a thread as lists show it, at every size the server offers. */
 @Immutable
 data class ThreadImage(

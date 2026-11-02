@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.model
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
-import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import kotlinx.collections.immutable.ImmutableList
 
 @Immutable
@@ -31,21 +29,26 @@ data class Agree(val count: Long, val agreed: Boolean) {
 @Immutable
 data class ForumSummary(val id: Long, val name: String, val avatar: String)
 
+/** A thread as its page shows it: the thread as lists know it, and what only its page knows. */
 @Immutable
 data class ThreadDetail(
-    val id: Long,
-    val title: String,
-    val author: User,
-    val forum: ForumSummary,
-    val replyCount: Int,
-    val agree: Agree,
-    val firstPostId: Long,
+    val summary: ThreadSummary,
     /** The post the thread store marks as read up to, or null when the thread isn't stored. */
     val storeMarkPostId: Long?,
-    /** The shared thread, rendered by the feed card until feeds are migrated. */
-    val origin: ImmutableHolder<OriginThreadInfo>? = null,
 ) {
+    val id: Long get() = summary.id
+    val title: String get() = summary.title
+    val author: User get() = summary.author
+    val forum: ForumSummary get() = summary.forum
+    val replyCount: Int get() = summary.replyCount
+    val agree: Agree get() = summary.agree
+    val firstPostId: Long get() = summary.firstPostId
+
+    /** The thread this one shares, if it shares one. */
+    val shared: SharedThread? get() = summary.shared
     val isStored: Boolean get() = storeMarkPostId != null
+
+    fun withAgree(agree: Agree) = copy(summary = summary.copy(agree = agree))
 }
 
 @Immutable

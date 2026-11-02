@@ -11,6 +11,7 @@ import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadDetail
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.Viewer
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
@@ -18,7 +19,6 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadCursor
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadPage
-import com.huanchengfly.tieba.post.repository.ThreadPreview
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
@@ -62,7 +62,7 @@ data class PostItem(
 data class ThreadState(
     val query: ThreadQuery,
     /** Shown until the thread loads. */
-    val preview: ThreadPreview? = null,
+    val preview: ThreadSummary? = null,
     val thread: ThreadDetail? = null,
     val firstPost: Post? = null,
     val posts: PagerState<PostItem> = PagerState(),
@@ -259,9 +259,9 @@ class ThreadViewModel @AssistedInject constructor(
     fun agreeThread() = actions.launch("agree-thread") {
         val thread = meta.value.page?.thread ?: return@launch
         val agree = !thread.agree.agreed
-        updateThread { it.copy(agree = it.agree.toggled()) }
+        updateThread { it.withAgree(it.agree.toggled()) }
         runCatching { repository.agreeThread(thread, agree) }.onFailure { e ->
-            updateThread { it.copy(agree = it.agree.toggled()) }
+            updateThread { it.withAgree(it.agree.toggled()) }
             messages.showError(R.string.toast_agree_failed, e)
         }
     }

@@ -46,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadStatus
-import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
+import com.huanchengfly.tieba.post.model.knownFirstFloor
 import com.huanchengfly.tieba.post.models.LoadPicPageData
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
@@ -58,7 +58,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.OriginThreadCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.SharedThreadCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
@@ -98,19 +98,7 @@ internal fun ThreadContent(
     chromeEnd: () -> Int = { 0 },
 ) {
     val posts = state.posts
-    val firstPost = state.firstPost ?: state.preview?.let { preview ->
-        Post(
-            id = 0,
-            floor = 1,
-            title = preview.title,
-            time = preview.time,
-            author = preview.author ?: return@let null,
-            content = preview.content,
-            agree = Agree(0, false),
-            subPosts = persistentListOf(),
-            subPostCount = 0,
-        )
-    }
+    val firstPost = state.firstPost ?: state.preview?.knownFirstFloor()
     val loadingFirstTime = posts.refresh == LoadStatus.Loading && posts.items.isEmpty()
     val error = (posts.refresh as? LoadStatus.Error)?.error
 
@@ -256,16 +244,16 @@ private fun FirstPost(
                 showSubPosts = false,
                 photoViewData = { photoViewData(post, it) },
             )
-            state.thread?.origin?.let { origin ->
-                OriginThreadCard(
-                    originThreadInfo = origin,
+            state.thread?.shared?.let { shared ->
+                SharedThreadCard(
+                    shared = shared,
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(ExtendedTheme.colors.inset)
                         .clickable {
-                            onEvent(ThreadEvent.OpenOriginThread(origin.get { tid.toLong() }, origin.get { fid }))
+                            onEvent(ThreadEvent.OpenOriginThread(shared.id, shared.forumId))
                         }
                         .padding(16.dp)
                 )

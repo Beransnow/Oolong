@@ -20,13 +20,10 @@ import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.MessageController
-import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.DislikeOption
-import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.ThreadSummary
-import com.huanchengfly.tieba.post.repository.ThreadPreview
+import com.huanchengfly.tieba.post.model.knownFirstFloor
 import com.huanchengfly.tieba.post.repository.ThreadRepository
-import com.huanchengfly.tieba.post.repository.toThreadPreview
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.shareMenuItems
@@ -84,7 +81,6 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val collect = stringResource(id = R.string.title_collect)
     return remember(menus, context, navigator, viewModel, collect) {
         ThreadPeeker { thread, from, at, options, onDislike ->
-            val preview = thread.toThreadPreview()
             val items = buildList {
                 add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
                 addAll(shareMenuItems(context, thread.id, thread.title))
@@ -99,7 +95,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
                     from = from,
                     onClick = { navigator.navigateToThread(thread) },
                 ) {
-                    ThreadPeek(preview = preview)
+                    ThreadPeek(thread = thread)
                 },
             )
         }
@@ -111,22 +107,8 @@ fun rememberThreadPeeker(): ThreadPeeker? {
  * lists carry the whole first floor, only their abstract is cut short.
  */
 @Composable
-fun ThreadPeek(preview: ThreadPreview, modifier: Modifier = Modifier) {
-    val post = remember(preview) {
-        preview.author?.let { author ->
-            Post(
-                id = 0,
-                floor = 1,
-                title = preview.title,
-                time = preview.time,
-                author = author,
-                content = preview.content,
-                agree = Agree(0, false),
-                subPosts = persistentListOf(),
-                subPostCount = 0,
-            )
-        }
-    } ?: return
+fun ThreadPeek(thread: ThreadSummary, modifier: Modifier = Modifier) {
+    val post = remember(thread) { thread.knownFirstFloor() }
     FirstPostContent(
         post = post,
         title = post.title,

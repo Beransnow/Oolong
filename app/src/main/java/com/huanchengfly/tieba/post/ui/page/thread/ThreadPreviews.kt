@@ -11,9 +11,9 @@ import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.ThreadDetail
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
-import com.huanchengfly.tieba.post.repository.ThreadPreview
 import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
@@ -41,16 +41,21 @@ internal object ThreadPreviewData {
         subPostCount = if (floor == 2) 3 else 0,
     )
 
-    private val thread = ThreadDetail(
+    private val summary = ThreadSummary(
         id = 9_000,
+        forum = ForumSummary(id = 52, name = "测试", avatar = ""),
         title = "帖子标题",
         author = lz,
-        forum = ForumSummary(id = 52, name = "测试", avatar = ""),
+        createTime = 1_700_000_000,
+        listTime = 1_700_000_000,
+        abstract = "",
+        firstPostId = 1,
+        firstPost = text("列表里带过来的一楼摘要"),
         replyCount = 120,
         agree = Agree(count = 2_345, agreed = true),
-        firstPostId = 1,
-        storeMarkPostId = 3,
     )
+
+    private val thread = ThreadDetail(summary = summary, storeMarkPostId = 3)
 
     val loaded = ThreadState(
         query = ThreadQuery(threadId = 9_000),
@@ -64,7 +69,7 @@ internal object ThreadPreviewData {
 
     val loadingWithPreview = ThreadState(
         query = ThreadQuery(threadId = 9_000),
-        preview = ThreadPreview(title = "帖子标题", author = lz, content = text("列表里带过来的一楼摘要"), time = 1_700_000_000),
+        preview = summary,
         posts = PagerState(refresh = LoadStatus.Loading),
     )
 
