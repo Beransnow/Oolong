@@ -7,11 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,6 +18,7 @@ import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
@@ -116,10 +112,10 @@ private fun replyMenuItems(
     onEvent: (SubPostsEvent) -> Unit,
 ): List<ContextMenuItem> = buildList {
     if (!hideReply) {
-        add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, context.getString(R.string.btn_reply)) { onEvent(SubPostsEvent.Reply(post, subPost)) })
+        add(ContextMenuItem(Symbols.Reply, context.getString(R.string.btn_reply)) { onEvent(SubPostsEvent.Reply(post, subPost)) })
     }
-    add(ContextMenuItem(Icons.Rounded.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
-    add(ContextMenuItem(Icons.Rounded.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
-    if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
+    add(ContextMenuItem(Symbols.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Symbols.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
+    if (canDelete) add(ContextMenuItem(Symbols.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
     if (shortcuts != null) addAll(blockMenuItems(blockLabels, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))
 }

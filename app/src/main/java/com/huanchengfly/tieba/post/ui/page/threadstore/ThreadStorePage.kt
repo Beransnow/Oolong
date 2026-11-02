@@ -15,8 +15,6 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BookmarkRemove
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -48,6 +46,7 @@ import com.huanchengfly.tieba.post.model.StoredThread
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -194,7 +193,7 @@ private fun StoreItem(
     val unstore = stringResource(id = R.string.title_collect_on)
     Box(
         modifier = Modifier.longPressMenu(
-            items = { listOf(ContextMenuItem(Icons.Rounded.BookmarkRemove, unstore, onClick = onDelete)) },
+            items = { listOf(ContextMenuItem(Symbols.BookmarkRemove, unstore, onClick = onDelete)) },
             onClick = onClick,
         ),
     ) {

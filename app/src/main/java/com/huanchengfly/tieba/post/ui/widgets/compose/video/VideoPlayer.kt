@@ -21,10 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Fullscreen
-import androidx.compose.material.icons.rounded.FullscreenExit
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -50,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 
@@ -179,7 +176,7 @@ fun VideoPlayer(
 
                     IconButton(onClick = { videoPlayerController.play() }) {
                         Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
+                            imageVector = Symbols.PlayArrowFill,
                             contentDescription = stringResource(id = R.string.btn_play),
                             modifier = Modifier.size(48.dp)
                         )
@@ -271,9 +268,9 @@ private fun FullScreenButton() {
     val videoPlayerController = LocalVideoPlayerController.current
     val isFullScreen by videoPlayerController.collect { isFullScreen }
     val icon = if (isFullScreen) {
-        Icons.Rounded.FullscreenExit
+        Symbols.FullscreenExit
     } else {
-        Icons.Rounded.Fullscreen
+        Symbols.Fullscreen
     }
     Box(
         modifier = Modifier

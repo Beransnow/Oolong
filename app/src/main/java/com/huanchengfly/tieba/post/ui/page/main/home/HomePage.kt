@@ -33,15 +33,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.PushPin
-import androidx.compose.material.icons.outlined.ViewAgenda
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.HeartBroken
-import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -85,6 +76,7 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
 import com.huanchengfly.tieba.post.ui.navigation.SearchKey
@@ -150,7 +142,7 @@ fun SearchBox(
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Search,
+                    imageVector = Symbols.Search,
                     contentDescription = null,
                     modifier = Modifier
                         .align(CenterVertically)
@@ -321,7 +313,7 @@ private fun ForumItemContent(
                 if (item.signedIn) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
-                        imageVector = Icons.Rounded.Check,
+                        imageVector = Symbols.Check,
                         contentDescription = stringResource(id = R.string.tip_signed),
                         modifier = Modifier
                             .size(12.dp)
@@ -375,7 +367,7 @@ private fun CompactForumItemContent(item: FollowedForum) {
             if (item.signedIn) {
                 Spacer(modifier = Modifier.width(2.dp))
                 Icon(
-                    imageVector = Icons.Rounded.Check,
+                    imageVector = Symbols.Check,
                     contentDescription = stringResource(id = R.string.tip_signed),
                     modifier = Modifier.size(11.dp),
                     tint = ExtendedTheme.colors.onChip
@@ -406,11 +398,11 @@ private fun ForumItem(
         modifier = Modifier.longPressMenu(
             items = {
                 listOf(
-                    ContextMenuItem(if (isTopForum) Icons.Rounded.PushPin else Icons.Outlined.PushPin, pin) {
+                    ContextMenuItem(if (isTopForum) Symbols.Keep else Symbols.Keep, pin) {
                         if (isTopForum) onDeleteTopForum(item) else onAddTopForum(item)
                     },
-                    ContextMenuItem(Icons.Rounded.ContentCopy, copyName) { TiebaUtil.copyText(context, item.name) },
-                    ContextMenuItem(Icons.Rounded.HeartBroken, unfollow, startsGroup = true) { onUnfollow(item) },
+                    ContextMenuItem(Symbols.ContentCopy, copyName) { TiebaUtil.copyText(context, item.name) },
+                    ContextMenuItem(Symbols.HeartBroken, unfollow, startsGroup = true) { onUnfollow(item) },
                 )
             },
             onClick = { onClick(item) },
@@ -517,7 +509,7 @@ fun HomeScreen(
                         contentDescription = stringResource(id = R.string.title_oksign)
                     ) { onEvent(HomeEvent.OneKeySign) }
                     ActionItem(
-                        icon = Icons.Outlined.ViewAgenda,
+                        icon = Symbols.ViewAgenda,
                         contentDescription = stringResource(id = R.string.title_switch_list_single),
                         onClick = onToggleListSingle,
                     )
@@ -644,7 +636,7 @@ private fun VisitedForums(visited: ImmutableList<VisitedForum>, expanded: Boolea
             Header(text = stringResource(id = R.string.title_history_forum), invert = false)
             Spacer(modifier = Modifier.weight(1f))
             Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                imageVector = Symbols.ChevronRight,
                 contentDescription = stringResource(id = R.string.desc_show),
                 modifier = Modifier
                     .size(24.dp)

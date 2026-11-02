@@ -2,10 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.photoview
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -27,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import coil3.memory.MemoryCache
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.utils.ImageUtil
@@ -112,9 +109,9 @@ fun photoMenuItems(url: String): List<ContextMenuItem> {
     val copyLink = stringResource(id = R.string.title_copy_link)
     return remember(url, download, shareLabel, copyLink) {
         listOf(
-            ContextMenuItem(Icons.Rounded.Download, download) { ImageUtil.download(context, url) },
-            ContextMenuItem(Icons.Rounded.Share, shareLabel) { share(context, url) },
-            ContextMenuItem(Icons.Rounded.Link, copyLink) { TiebaUtil.copyText(context, url) },
+            ContextMenuItem(Symbols.Download, download) { ImageUtil.download(context, url) },
+            ContextMenuItem(Symbols.Share, shareLabel) { share(context, url) },
+            ContextMenuItem(Symbols.Link, copyLink) { TiebaUtil.copyText(context, url) },
         )
     }
 }

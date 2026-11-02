@@ -29,11 +29,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -68,6 +63,7 @@ import com.huanchengfly.tieba.post.model.SearchHistoryItem
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumSearchPostKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
@@ -172,7 +168,7 @@ private fun SearchHistoryList(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        imageVector = if (expanded) Symbols.ExpandLess else Symbols.ExpandMore,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -323,7 +319,7 @@ fun ForumSearchPostScreen(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                        imageVector = Symbols.ArrowBack,
                                         contentDescription = stringResource(id = R.string.button_back)
                                     )
                                 }
@@ -403,7 +399,7 @@ fun ForumSearchPostScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Icon(
-                                                imageVector = Icons.Rounded.ArrowDropDown,
+                                                imageVector = Symbols.ArrowDropDown,
                                                 contentDescription = null,
                                                 modifier = Modifier
                                                     .size(16.dp)

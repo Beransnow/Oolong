@@ -27,13 +27,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddToHomeScreen
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.HeartBroken
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,6 +57,7 @@ import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarPlaceholder
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -256,7 +250,7 @@ private fun ForumHeaderDetails(
             ) {
                 if (done) {
                     Icon(
-                        imageVector = Icons.Rounded.Check,
+                        imageVector = Symbols.Check,
                         contentDescription = null,
                         tint = accent,
                         modifier = Modifier.size(18.dp),
@@ -424,14 +418,14 @@ internal fun ForumTopBar(
             if (canSearch) {
                 IconButton(onClick = { onEvent(ForumEvent.Search) }) {
                     Icon(
-                        imageVector = Icons.Rounded.Search,
+                        imageVector = Symbols.Search,
                         contentDescription = stringResource(id = R.string.btn_search_in_forum)
                     )
                 }
             }
             if (menu != null) {
                 MenuIconButton(
-                    icon = Icons.Rounded.MoreVert,
+                    icon = Symbols.MoreVert,
                     contentDescription = stringResource(id = R.string.btn_more),
                     items = menu,
                 )
@@ -449,9 +443,9 @@ internal fun forumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean): () -> Lis
     val unfollow = stringResource(id = R.string.title_unfollow)
     return {
         listOfNotNull(
-            ContextMenuItem(Icons.Rounded.Share, share) { onEvent(ForumEvent.Share) },
-            ContextMenuItem(Icons.Rounded.AddToHomeScreen, toDesktop) { onEvent(ForumEvent.SendToDesktop) },
-            ContextMenuItem(Icons.Rounded.HeartBroken, unfollow) { onEvent(ForumEvent.Unfollow) }.takeIf { liked },
+            ContextMenuItem(Symbols.Share, share) { onEvent(ForumEvent.Share) },
+            ContextMenuItem(Symbols.AddToHomeScreen, toDesktop) { onEvent(ForumEvent.SendToDesktop) },
+            ContextMenuItem(Symbols.HeartBroken, unfollow) { onEvent(ForumEvent.Unfollow) }.takeIf { liked },
         )
     }
 }

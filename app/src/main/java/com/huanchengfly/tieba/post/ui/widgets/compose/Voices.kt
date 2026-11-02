@@ -17,10 +17,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +49,7 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.mp3.Mp3Extractor
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.utils.FileUtil
 import kotlinx.coroutines.delay
 
@@ -98,7 +95,7 @@ fun VoicePlayer(
         modifier = modifier
             .clip(CircleShape)
             .longPressMenu(
-                items = { listOf(ContextMenuItem(Icons.Rounded.Download, save) { saveVoice(context, url) }) },
+                items = { listOf(ContextMenuItem(Symbols.Download, save) { saveVoice(context, url) }) },
                 onClick = { VoicePlayback.toggle(context, url) },
             ),
     ) {
@@ -140,8 +137,8 @@ fun VoicePlayer(
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(14.dp),
                     )
-                    VoiceState.Playing -> Icon(Icons.Rounded.Pause, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
-                    VoiceState.Idle -> Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
+                    VoiceState.Playing -> Icon(Symbols.PauseFill, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
+                    VoiceState.Idle -> Icon(Symbols.PlayArrowFill, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(18.dp))
                 }
             }
             Spacer(modifier = Modifier.weight(1f))

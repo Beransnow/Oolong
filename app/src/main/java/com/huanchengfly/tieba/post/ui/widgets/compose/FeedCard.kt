@@ -33,14 +33,6 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.OndemandVideo
-import androidx.compose.material.icons.rounded.Photo
-import androidx.compose.material.icons.rounded.PhotoLibrary
-import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
-import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -86,6 +78,7 @@ import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.photoview.LocalPhotoViewer
@@ -439,7 +432,7 @@ private fun ThreadMedia(
                     MediaPlaceholder(
                         icon = {
                             Icon(
-                                imageVector = Icons.Rounded.OndemandVideo,
+                                imageVector = Symbols.SmartDisplay,
                                 contentDescription = stringResource(id = R.string.desc_video)
                             )
                         },
@@ -486,7 +479,7 @@ private fun ThreadMedia(
                     MediaPlaceholder(
                         icon = {
                             Icon(
-                                imageVector = if (isSinglePhoto) Icons.Rounded.Photo else Icons.Rounded.PhotoLibrary,
+                                imageVector = if (isSinglePhoto) Symbols.Photo else Symbols.PhotoLibrary,
                                 contentDescription = stringResource(id = R.string.desc_photo)
                             )
                         },
@@ -536,7 +529,7 @@ private fun ThreadMedia(
                                     )
                                     if (index == shown.lastIndex && medias.size > shown.size) {
                                         Badge(
-                                            icon = Icons.Rounded.PhotoSizeSelectActual,
+                                            icon = Symbols.Image,
                                             text = "${medias.size}",
                                             modifier = Modifier
                                                 .align(Alignment.BottomEnd)
@@ -644,7 +637,7 @@ fun ThreadAgreeBtn(
     ActionBtn(
         icon = {
             Icon(
-                imageVector = if (hasAgree) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                imageVector = if (hasAgree) Symbols.FavoriteFill else Symbols.Favorite,
                 contentDescription = stringResource(id = R.string.desc_like),
             )
         },
@@ -670,7 +663,7 @@ fun ThreadShareBtn(
     ActionBtn(
         icon = {
             Icon(
-                imageVector = Icons.Rounded.SwapCalls,
+                imageVector = Symbols.SwapCalls,
                 contentDescription = stringResource(id = R.string.desc_share),
             )
         },

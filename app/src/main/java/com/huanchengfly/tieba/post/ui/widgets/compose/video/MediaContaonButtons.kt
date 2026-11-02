@@ -9,10 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 
 @Composable
@@ -106,11 +103,11 @@ fun PlayPauseButton(modifier: Modifier = Modifier) {
         modifier = modifier
     ) {
         if (isPlaying) {
-            ShadowedIcon(icon = Icons.Filled.Pause)
+            ShadowedIcon(icon = Symbols.PauseFill)
         } else {
             when (playbackState) {
                 PlaybackState.ENDED -> {
-                    ShadowedIcon(icon = Icons.Filled.Restore)
+                    ShadowedIcon(icon = Symbols.ReplayFill)
                 }
 
                 PlaybackState.BUFFERING -> {
@@ -118,7 +115,7 @@ fun PlayPauseButton(modifier: Modifier = Modifier) {
                 }
 
                 else -> {
-                    ShadowedIcon(icon = Icons.Filled.PlayArrow)
+                    ShadowedIcon(icon = Symbols.PlayArrowFill)
                 }
             }
         }

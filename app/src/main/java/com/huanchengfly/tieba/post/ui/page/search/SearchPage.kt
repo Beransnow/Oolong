@@ -35,11 +35,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +64,7 @@ import com.huanchengfly.tieba.post.model.SearchOrder
 import com.huanchengfly.tieba.post.model.SearchedPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
@@ -335,7 +331,7 @@ private fun SearchSuggestionList(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Search,
+                        imageVector = Symbols.Search,
                         contentDescription = stringResource(id = R.string.desc_search_sug, it),
                         tint = ExtendedTheme.colors.text
                     )
@@ -511,7 +507,7 @@ private fun SearchHistoryList(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        imageVector = if (expanded) Symbols.ExpandLess else Symbols.ExpandMore,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -573,7 +569,7 @@ private fun SearchTopBar(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    imageVector = Symbols.ArrowBack,
                     contentDescription = stringResource(id = R.string.button_back)
                 )
             }

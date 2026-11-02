@@ -18,18 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ChromeReaderMode
-import androidx.compose.material.icons.automirrored.rounded.OpenInNew
-import androidx.compose.material.icons.automirrored.rounded.Sort
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.StarBorder
-import androidx.compose.material.icons.rounded.SwitchAccessShortcut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 
 /**
  * The thread menu, as it opens out of the actions capsule: how to read the thread, the common
@@ -70,19 +59,19 @@ internal fun ColumnScope.ThreadMenu(
     ) {
         MenuToggle(
             text = stringResource(id = R.string.title_see_lz),
-            icon = Icons.Rounded.Person,
+            icon = Symbols.Person,
             checked = seeLz,
             onClick = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
         )
         MenuToggle(
             text = stringResource(id = R.string.title_sort),
-            icon = Icons.AutoMirrored.Rounded.Sort,
+            icon = Symbols.Sort,
             checked = newestFirst,
             onClick = { onEvent(ThreadEvent.ToggleSort) },
         )
         MenuToggle(
             text = stringResource(id = R.string.title_pure_read),
-            icon = Icons.AutoMirrored.Rounded.ChromeReaderMode,
+            icon = Symbols.ChromeReaderMode,
             checked = immersive,
             onClick = { onEvent(ThreadEvent.ToggleImmersive) },
         )
@@ -94,13 +83,13 @@ internal fun ColumnScope.ThreadMenu(
     ) {
         MenuAction(
             text = stringResource(id = if (stored) R.string.title_collected else R.string.title_collect),
-            icon = if (stored) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+            icon = if (stored) Symbols.StarFill else Symbols.Star,
             on = stored,
             onClick = { onEvent(if (stored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) },
         )
-        MenuAction(stringResource(id = R.string.title_share), Icons.Rounded.Share) { onEvent(ThreadEvent.Share) }
-        MenuAction(stringResource(id = R.string.title_copy_link), Icons.Rounded.Link) { onEvent(ThreadEvent.CopyLink) }
-        MenuAction(stringResource(id = R.string.reply_official_client), Icons.AutoMirrored.Rounded.OpenInNew) {
+        MenuAction(stringResource(id = R.string.title_share), Symbols.Share) { onEvent(ThreadEvent.Share) }
+        MenuAction(stringResource(id = R.string.title_copy_link), Symbols.Link) { onEvent(ThreadEvent.CopyLink) }
+        MenuAction(stringResource(id = R.string.reply_official_client), Symbols.OpenInNew) {
             onEvent(ThreadEvent.OpenInOfficialClient)
         }
     }
@@ -109,16 +98,16 @@ internal fun ColumnScope.ThreadMenu(
         if (!newestFirst) {
             MenuRow(
                 text = stringResource(id = R.string.title_jump_page),
-                icon = Icons.Rounded.SwitchAccessShortcut,
+                icon = Symbols.SwitchAccessShortcut,
                 trailing = stringResource(id = R.string.tip_jump_page, currentPage, totalPage),
                 onClick = onJumpToPage,
             )
         }
-        MenuRow(stringResource(id = R.string.title_report), Icons.Rounded.Flag) { onEvent(ThreadEvent.ReportThread) }
+        MenuRow(stringResource(id = R.string.title_report), Symbols.Flag) { onEvent(ThreadEvent.ReportThread) }
         if (canDelete) {
             MenuRow(
                 text = stringResource(id = R.string.title_delete),
-                icon = Icons.Rounded.Delete,
+                icon = Symbols.Delete,
                 danger = true,
                 onClick = onDelete,
             )

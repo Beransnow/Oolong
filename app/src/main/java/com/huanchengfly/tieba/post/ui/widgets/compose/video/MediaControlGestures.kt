@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +26,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.video.util.getDurationString
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -222,7 +220,7 @@ fun Modifier.quickSeekAnimation(
                 .fillMaxHeight()
         ) {
             ShadowedIcon(
-                Icons.Filled.FastRewind,
+                Symbols.FastRewindFill,
                 modifier = Modifier
                     .alpha(alphaRewind.value)
                     .align(Alignment.Center)
@@ -235,7 +233,7 @@ fun Modifier.quickSeekAnimation(
                 .fillMaxHeight()
         ) {
             ShadowedIcon(
-                Icons.Filled.FastForward,
+                Symbols.FastForwardFill,
                 modifier = Modifier
                     .alpha(alphaForward.value)
                     .align(Alignment.Center)

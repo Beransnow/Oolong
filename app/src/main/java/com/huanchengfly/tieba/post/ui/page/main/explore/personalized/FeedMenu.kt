@@ -3,13 +3,6 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 import android.content.Context
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Block
-import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -28,6 +21,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
@@ -69,14 +63,14 @@ fun FeedMenu(
             val items = dislikes + shareMenuItems(shareLabels, context, thread.id, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
             } + shortcuts?.let { blockMenuItems(blockLabels, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
-            menuId = menus.show(items, anchor = bounds, icon = Icons.Rounded.MoreHoriz)
+            menuId = menus.show(items, anchor = bounds, icon = Symbols.MoreHoriz)
         },
         modifier = Modifier
             .size(24.dp)
             .onGloballyPositioned { bounds = it.boundsInWindow() },
     ) {
         Icon(
-            imageVector = Icons.Rounded.MoreHoriz,
+            imageVector = Symbols.MoreHoriz,
             contentDescription = stringResource(id = R.string.btn_more),
             tint = ExtendedTheme.colors.textSecondary,
             modifier = Modifier.graphicsLayer { alpha = if (open) 0f else 1f },
@@ -99,9 +93,9 @@ fun dislikeMenuItems(
         val schema = option.schema
         ContextMenuItem(
             icon = when {
-                schema != null -> Icons.Rounded.Flag
-                option.id == BlockForumOption -> Icons.Rounded.Block
-                else -> Icons.Rounded.VisibilityOff
+                schema != null -> Symbols.Flag
+                option.id == BlockForumOption -> Symbols.Block
+                else -> Symbols.VisibilityOff
             },
             label = option.text.trim(),
         ) {
@@ -128,10 +122,10 @@ fun shareMenuLabels() = ShareMenuLabels(
 fun shareMenuItems(labels: ShareMenuLabels, context: Context, threadId: Long, title: String): List<ContextMenuItem> {
     val url = "https://tieba.baidu.com/p/$threadId"
     return listOf(
-        ContextMenuItem(Icons.Rounded.Share, labels.share) {
+        ContextMenuItem(Symbols.Share, labels.share) {
             TiebaUtil.shareText(context, url, title.takeIf(String::isNotBlank))
         },
-        ContextMenuItem(Icons.Rounded.Link, labels.copyLink) { TiebaUtil.copyText(context, url) },
+        ContextMenuItem(Symbols.Link, labels.copyLink) { TiebaUtil.copyText(context, url) },
     )
 }
 

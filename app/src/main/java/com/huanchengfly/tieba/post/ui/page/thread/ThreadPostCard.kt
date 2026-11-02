@@ -16,14 +16,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.rounded.BookmarkBorder
-import androidx.compose.material.icons.rounded.BookmarkRemove
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
@@ -44,6 +36,7 @@ import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
@@ -137,7 +130,7 @@ fun ThreadPostCard(
                                 invertColor = true,
                                 prefixIcon = {
                                     Icon(
-                                        imageVector = Icons.Rounded.Star,
+                                        imageVector = Symbols.StarFill,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -329,19 +322,19 @@ internal fun postMenuItems(
     shortcuts: BlockShortcuts?,
     onEvent: (ThreadEvent) -> Unit,
 ): List<ContextMenuItem> = buildList {
-    if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.reply) { onEvent(ThreadEvent.Reply(post)) })
-    add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(post.content.plainText)) })
+    if (!hideReply) add(ContextMenuItem(Symbols.Reply, labels.reply) { onEvent(ThreadEvent.Reply(post)) })
+    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(post.content.plainText)) })
     if (canStore) {
         add(
             if (isStoreMark) {
-                ContextMenuItem(Icons.Rounded.BookmarkRemove, labels.unstore) { onEvent(ThreadEvent.RemoveStore) }
+                ContextMenuItem(Symbols.BookmarkRemove, labels.unstore) { onEvent(ThreadEvent.RemoveStore) }
             } else {
-                ContextMenuItem(Icons.Rounded.BookmarkBorder, labels.store) { onEvent(ThreadEvent.StoreAt(post)) }
+                ContextMenuItem(Symbols.Bookmark, labels.store) { onEvent(ThreadEvent.StoreAt(post)) }
             },
         )
     }
-    add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(post.id)) })
-    if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, labels.delete) { onEvent(ThreadEvent.DeletePost(post)) })
+    add(ContextMenuItem(Symbols.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(post.id)) })
+    if (canDelete) add(ContextMenuItem(Symbols.Delete, labels.delete) { onEvent(ThreadEvent.DeletePost(post)) })
     // Blocking from inside a thread leaves its forum out
     if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, post.author, forum = null, text = post.content.wordText))
 }
@@ -356,8 +349,8 @@ internal fun subPostMenuItems(
     shortcuts: BlockShortcuts?,
     onEvent: (ThreadEvent) -> Unit,
 ): List<ContextMenuItem> = buildList {
-    if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
-    add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
-    add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
+    if (!hideReply) add(ContextMenuItem(Symbols.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
+    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Symbols.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
     if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))
 }

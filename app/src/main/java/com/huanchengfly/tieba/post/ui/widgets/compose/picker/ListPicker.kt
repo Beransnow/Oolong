@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -20,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextWithMinWidth
 import kotlinx.collections.immutable.ImmutableList
@@ -36,7 +35,7 @@ fun <ItemValue> ListSinglePicker(
     itemIcons: ImmutableMap<ItemValue, @Composable () -> Unit> = persistentMapOf(),
     selectedIndicator: @Composable () -> Unit = {
         Icon(
-            imageVector = Icons.Rounded.Check,
+            imageVector = Symbols.Check,
             contentDescription = stringResource(id = R.string.desc_checked)
         )
     },

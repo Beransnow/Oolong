@@ -35,10 +35,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -96,6 +92,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.components.images.rememberImageDownloadProgress
 import com.huanchengfly.tieba.post.model.ThreadPicture
 import com.huanchengfly.tieba.post.toastShort
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.download
@@ -431,9 +428,9 @@ private fun PhotoChrome(
                     )
                 }
             }
-            PhotoAction(Icons.Rounded.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
-            PhotoAction(Icons.Rounded.Share, stringResource(id = R.string.title_share_pic), onShare)
-            PhotoAction(Icons.Rounded.Download, stringResource(id = R.string.desc_download_pic), onSave)
+            PhotoAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
+            PhotoAction(Symbols.Share, stringResource(id = R.string.title_share_pic), onShare)
+            PhotoAction(Symbols.Download, stringResource(id = R.string.desc_download_pic), onSave)
         }
     }
 }

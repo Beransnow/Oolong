@@ -31,8 +31,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -58,6 +56,7 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberThreadPeeker
@@ -317,7 +316,7 @@ private fun RefreshTip(
             .padding(8.dp),
     ) {
         Icon(
-            imageVector = Icons.Rounded.Refresh,
+            imageVector = Symbols.Refresh,
             contentDescription = null
         )
         Spacer(modifier = Modifier.width(16.dp))

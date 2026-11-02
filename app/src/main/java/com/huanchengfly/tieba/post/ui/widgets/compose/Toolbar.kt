@@ -29,9 +29,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,6 +52,7 @@ import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
 import com.huanchengfly.tieba.post.ui.common.LocalAllAccounts
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass.Companion.Compact
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
@@ -104,7 +102,7 @@ fun AccountNavIcon(
                                 leading = { Avatar(data = StringUtil.getAvatarUrl(account.portrait), size = 28.dp, contentDescription = null) },
                                 selected = account.id == currentAccount.id,
                             ) { accounts.switchTo(account.id) }
-                        } + ContextMenuItem(Icons.Rounded.Add, newAccount, startsGroup = true) { navigator.navigate(LoginKey) }
+                        } + ContextMenuItem(Symbols.Add, newAccount, startsGroup = true) { navigator.navigate(LoginKey) }
                     },
                     onClick = onClick,
                 ),

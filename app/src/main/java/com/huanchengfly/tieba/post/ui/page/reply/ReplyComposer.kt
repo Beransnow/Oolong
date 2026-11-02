@@ -25,18 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.outlined.EmojiEmotions
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Gesture
-import androidx.compose.material.icons.rounded.Hd
-import androidx.compose.material.icons.rounded.VerifiedUser
-import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -61,6 +49,7 @@ import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.utils.Emoticon
@@ -149,14 +138,14 @@ fun ReplyComposerContent(
         when {
             error != null -> ReplyErrorRow(error, onEvent)
             showNotice -> NoticeRow(
-                icon = Icons.Rounded.WarningAmber,
+                icon = Symbols.Warning,
                 text = stringResource(id = R.string.reply_notice_risk),
             ) {
                 RowButton(stringResource(id = R.string.reply_official_client)) {
                     onEvent(ReplyComposerEvent.OpenOfficialClient)
                 }
                 ComposerIconButton(
-                    icon = Icons.Rounded.Close,
+                    icon = Symbols.Close,
                     contentDescription = stringResource(id = R.string.reply_notice_dismiss),
                     onClick = { onEvent(ReplyComposerEvent.DismissNotice) },
                     size = 28.dp,
@@ -190,7 +179,7 @@ fun ReplyComposerContent(
                 if (state.images.isNotEmpty()) {
                     ToggleChip(
                         text = stringResource(id = R.string.origin_image),
-                        icon = Icons.Rounded.Hd,
+                        icon = Symbols.Hd,
                         checked = state.originalImages,
                         onCheckedChange = { onEvent(ReplyComposerEvent.SetOriginalImages(it)) },
                     )
@@ -198,7 +187,7 @@ fun ReplyComposerContent(
                 if (hasTail) {
                     ToggleChip(
                         text = stringResource(id = R.string.reply_little_tail),
-                        icon = Icons.Rounded.Gesture,
+                        icon = Symbols.Gesture,
                         checked = state.withTail,
                         onCheckedChange = { onEvent(ReplyComposerEvent.SetWithTail(it)) },
                     )
@@ -212,7 +201,7 @@ fun ReplyComposerContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ComposerIconButton(
-                icon = Icons.Outlined.EmojiEmotions,
+                icon = Symbols.Mood,
                 contentDescription = stringResource(id = R.string.insert_emotions),
                 selected = state.panel == ReplyPanelType.EMOJI,
                 onClick = {
@@ -224,7 +213,7 @@ fun ReplyComposerContent(
                 },
             )
             ComposerIconButton(
-                icon = Icons.Outlined.Image,
+                icon = Symbols.Image,
                 contentDescription = stringResource(id = R.string.insert_photo),
                 enabled = canAttachImages && state.images.size < MaxImages,
                 badge = state.images.size.takeIf { it > 0 },
@@ -233,7 +222,7 @@ fun ReplyComposerContent(
             Spacer(modifier = Modifier.weight(1f))
             if (fullScreen) {
                 Icon(
-                    imageVector = Icons.Rounded.Check,
+                    imageVector = Symbols.Check,
                     contentDescription = null,
                     tint = colors.textSecondary,
                     modifier = Modifier.size(14.dp),
@@ -305,7 +294,7 @@ private fun ReplyToChip(replyTo: ReplyTo, onDrop: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(
-            imageVector = Icons.AutoMirrored.Rounded.Reply,
+            imageVector = Symbols.Reply,
             contentDescription = null,
             tint = colors.textSecondary,
             modifier = Modifier.size(16.dp),
@@ -330,7 +319,7 @@ private fun ReplyToChip(replyTo: ReplyTo, onDrop: () -> Unit) {
             color = colors.textSecondary,
         )
         ComposerIconButton(
-            icon = Icons.Rounded.Close,
+            icon = Symbols.Close,
             contentDescription = stringResource(id = R.string.reply_to_thread),
             onClick = onDrop,
             size = 24.dp,
@@ -348,7 +337,7 @@ private fun ReplyErrorRow(error: ReplyError, onEvent: (ReplyComposerEvent) -> Un
         is ReplyError.Send -> stringResource(id = R.string.reply_error_send, error.message.ifEmpty { unknown })
     }
     NoticeRow(
-        icon = if (error is ReplyError.Verification) Icons.Rounded.VerifiedUser else Icons.Rounded.WarningAmber,
+        icon = if (error is ReplyError.Verification) Symbols.VerifiedUser else Symbols.Warning,
         text = text,
     ) {
         RowButton(stringResource(id = R.string.reply_official_client)) {
@@ -427,7 +416,7 @@ private fun ToggleChip(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(
-            imageVector = if (checked) Icons.Rounded.Check else icon,
+            imageVector = if (checked) Symbols.Check else icon,
             contentDescription = null,
             tint = content,
             modifier = Modifier.size(15.dp),
@@ -505,7 +494,7 @@ private fun SendButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
             )
         } else {
             Icon(
-                imageVector = Icons.Rounded.ArrowUpward,
+                imageVector = Symbols.ArrowUpward,
                 contentDescription = stringResource(id = R.string.send_reply),
                 tint = colors.sheet,
                 modifier = Modifier.size(22.dp),
@@ -549,7 +538,7 @@ private fun ColumnScope.PictureStrip(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Close,
+                        imageVector = Symbols.Close,
                         contentDescription = stringResource(id = R.string.desc_remove_image),
                         tint = Color.White,
                         modifier = Modifier.size(12.dp),
@@ -568,7 +557,7 @@ private fun ColumnScope.PictureStrip(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Add,
+                        imageVector = Symbols.Add,
                         contentDescription = stringResource(id = R.string.desc_add_image),
                         tint = colors.textSecondary,
                     )

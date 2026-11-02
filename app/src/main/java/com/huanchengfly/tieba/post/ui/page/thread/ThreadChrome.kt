@@ -24,11 +24,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,6 +39,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -120,7 +116,7 @@ private fun MenuButton(open: Boolean, onClick: () -> Unit) {
     ) {
         val tint = ExtendedTheme.colors.textSecondary
         Icon(
-            imageVector = Icons.Rounded.MoreHoriz,
+            imageVector = Symbols.MoreHoriz,
             contentDescription = if (open) null else stringResource(id = R.string.btn_more),
             tint = tint,
             modifier = Modifier.graphicsLayer {
@@ -129,7 +125,7 @@ private fun MenuButton(open: Boolean, onClick: () -> Unit) {
             },
         )
         Icon(
-            imageVector = Icons.Rounded.Close,
+            imageVector = Symbols.Close,
             contentDescription = if (open) stringResource(id = R.string.reply_menu_close) else null,
             tint = tint,
             modifier = Modifier.graphicsLayer {
@@ -156,7 +152,7 @@ private fun ThreadAgreeButton(agree: Agree, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Icon(
-            imageVector = if (agree.agreed) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+            imageVector = if (agree.agreed) Symbols.FavoriteFill else Symbols.Favorite,
             contentDescription = stringResource(id = R.string.title_agree),
             tint = color,
         )

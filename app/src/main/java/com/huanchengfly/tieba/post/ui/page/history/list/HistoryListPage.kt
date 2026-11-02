@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -25,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.history.HistoryList
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
@@ -108,7 +107,7 @@ private fun HistoryItem(
     val delete = stringResource(id = R.string.title_delete)
     Box(
         modifier = Modifier.longPressMenu(
-            items = { listOf(ContextMenuItem(Icons.Rounded.Delete, delete, onClick = onDelete)) },
+            items = { listOf(ContextMenuItem(Symbols.Delete, delete, onClick = onDelete)) },
             onClick = onClick,
         ),
     ) {

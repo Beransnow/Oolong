@@ -17,10 +17,6 @@ import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.SlowMotionVideo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -56,6 +52,7 @@ import com.huanchengfly.tieba.post.pxToSpFloat
 import com.huanchengfly.tieba.post.spToPxFloat
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.EmoticonUtil.emoticonString
 import com.huanchengfly.tieba.post.utils.calcLineHeightPx
@@ -228,7 +225,7 @@ fun IconText(
                     ),
                     children = {
                         Icon(
-                            Icons.Rounded.Link,
+                            Symbols.Link,
                             contentDescription = stringResource(id = R.string.link),
                             modifier = Modifier.size(sizeDp),
                             tint = ExtendedTheme.colors.accent,
@@ -243,7 +240,7 @@ fun IconText(
                     ),
                     children = {
                         Icon(
-                            Icons.Rounded.SlowMotionVideo,
+                            Symbols.SlowMotionVideo,
                             contentDescription = stringResource(id = R.string.desc_video),
                             modifier = Modifier.size(sizeDp),
                             tint = ExtendedTheme.colors.accent,
@@ -258,7 +255,7 @@ fun IconText(
                     ),
                     children = {
                         Icon(
-                            Icons.Rounded.AccountCircle,
+                            Symbols.AccountCircle,
                             contentDescription = stringResource(id = R.string.user),
                             modifier = Modifier.size(sizeDp),
                             tint = ExtendedTheme.colors.accent,

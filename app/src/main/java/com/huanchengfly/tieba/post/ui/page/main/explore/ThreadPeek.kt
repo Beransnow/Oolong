@@ -2,8 +2,6 @@ package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -24,6 +22,7 @@ import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.knownFirstFloor
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.offersBlockingForum
@@ -95,7 +94,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
         ThreadPeeker { thread, from, at, options, onDislike ->
             viewModel.prefetch(thread)
             val items = buildList {
-                add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
+                add(ContextMenuItem(Symbols.Star, collect) { viewModel.store(thread) })
                 addAll(shareMenuItems(shareLabels, context, thread.id, thread.title))
                 dislikeMenuItems(context, navigator, options, onDislike).forEachIndexed { i, item ->
                     add(if (i == 0) item.copy(startsGroup = true) else item)

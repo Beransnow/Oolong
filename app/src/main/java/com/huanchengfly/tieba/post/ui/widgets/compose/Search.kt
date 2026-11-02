@@ -23,10 +23,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +55,7 @@ import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
@@ -370,7 +367,7 @@ fun SearchMedia(
                 }
                 if (picCount > 3) {
                     Badge(
-                        icon = Icons.Rounded.PhotoSizeSelectActual,
+                        icon = Symbols.Image,
                         text = "$mediaCount",
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -452,7 +449,7 @@ fun SearchBox(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Clear,
+                            imageVector = Symbols.Close,
                             contentDescription = stringResource(id = R.string.button_clear)
                         )
                     }
@@ -470,7 +467,7 @@ fun SearchBox(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Search,
+                        imageVector = Symbols.Search,
                         contentDescription = stringResource(id = R.string.button_search)
                     )
                 }

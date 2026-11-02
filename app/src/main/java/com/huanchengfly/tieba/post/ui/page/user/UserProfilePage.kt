@@ -34,15 +34,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Block
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.NoAccounts
-import androidx.compose.material.icons.rounded.Verified
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -82,6 +73,7 @@ import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.models.PicItem
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.navigation.EditProfileKey
@@ -273,13 +265,13 @@ private fun UserProfileToolbar(
                 val toWhiteList = stringResource(id = R.string.menu_add_user_to_white_list)
                 val black = stringResource(id = R.string.menu_black_user)
                 MenuIconButton(
-                    icon = Icons.Rounded.NoAccounts,
+                    icon = Symbols.NoAccounts,
                     contentDescription = stringResource(id = R.string.btn_block),
                     items = {
                         listOfNotNull(
-                            ContextMenuItem(Icons.Rounded.VisibilityOff, toBlackList) { onAddToList(false) },
-                            ContextMenuItem(Icons.Rounded.Visibility, toWhiteList) { onAddToList(true) },
-                            onBlack?.let { ContextMenuItem(Icons.Rounded.Block, black, startsGroup = true, onClick = it) },
+                            ContextMenuItem(Symbols.VisibilityOff, toBlackList) { onAddToList(false) },
+                            ContextMenuItem(Symbols.Visibility, toWhiteList) { onAddToList(true) },
+                            onBlack?.let { ContextMenuItem(Symbols.Block, black, startsGroup = true, onClick = it) },
                         )
                     },
                 )
@@ -795,10 +787,10 @@ private fun UserProfileDetail(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (isSelf) {
-                            Icon(imageVector = Icons.Rounded.Edit, contentDescription = null)
+                            Icon(imageVector = Symbols.Edit, contentDescription = null)
                             Text(text = stringResource(id = R.string.menu_edit_info))
                         } else if (!user.followed) {
-                            Icon(imageVector = Icons.Rounded.Add, contentDescription = null)
+                            Icon(imageVector = Symbols.Add, contentDescription = null)
                             Text(text = stringResource(id = R.string.button_follow))
                         } else {
                             Text(text = stringResource(id = R.string.button_unfollow))
@@ -885,7 +877,7 @@ private fun UserProfileDetail(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Verified,
+                    imageVector = Symbols.Verified,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = ExtendedTheme.colors.emphasis,
@@ -914,7 +906,7 @@ private fun UserProfileDetail(
                 ),
                 appendIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.ContentCopy,
+                        imageVector = Symbols.ContentCopy,
                         contentDescription = null
                     )
                 },

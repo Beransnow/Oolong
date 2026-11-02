@@ -1,0 +1,92 @@
+# Material Symbols Rounded used by the app, one per line; "fill" after a name for its filled form.
+# Regenerate Symbols.kt with: python3 tools/symbols/generate.py
+account_circle
+add
+add_to_home_screen
+align_vertical_top
+all_inclusive
+arrow_back
+arrow_drop_down
+arrow_upward
+article
+auto_stories
+badge
+bar_chart
+block
+bookmark
+bookmark_remove
+border_color
+calendar_month
+category
+check
+chevron_right
+chrome_reader_mode
+close
+content_copy
+delete
+download
+edit
+edit_note
+event
+expand_less
+expand_more
+explore
+fast_forward fill
+fast_rewind fill
+favorite
+favorite fill
+flag
+format_color_reset
+forum
+fullscreen
+fullscreen_exit
+gesture
+hd
+heart_broken
+image
+keep
+layers
+link
+location_on
+mood
+more_horiz
+more_vert
+no_accounts
+open_in_browser
+open_in_new
+palette
+pause fill
+person
+person_off
+photo
+photo_camera
+photo_library
+play_arrow fill
+public
+refresh
+remove
+replay fill
+reply
+search
+share
+short_text
+slow_motion_video
+smart_display
+sort
+star
+star fill
+swap_calls
+switch_access_shortcut
+task_alt
+text_fields
+title
+tune
+unfold_less
+unfold_more
+verified
+verified_user
+vertical_align_top
+view_agenda
+visibility
+visibility_off
+warning

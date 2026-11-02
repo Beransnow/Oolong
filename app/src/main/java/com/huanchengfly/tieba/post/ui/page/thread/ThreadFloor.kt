@@ -26,12 +26,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -65,6 +59,7 @@ import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -249,7 +244,7 @@ private fun FloorBody(
                 text = stringResource(id = R.string.title_collected_floor),
                 invertColor = true,
                 prefixIcon = {
-                    Icon(imageVector = Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(imageVector = Symbols.StarFill, contentDescription = null, modifier = Modifier.size(16.dp))
                 },
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -431,7 +426,7 @@ fun SubPostLine(
                     )
                 } else if (subPost.agree.count > 0) {
                     Icon(
-                        imageVector = Icons.Rounded.FavoriteBorder,
+                        imageVector = Symbols.Favorite,
                         contentDescription = stringResource(id = R.string.title_agree),
                         tint = ExtendedTheme.colors.textSecondary,
                         modifier = Modifier.size(14.dp),
@@ -501,16 +496,16 @@ fun ThreadFirstPost(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ActionPill(
-                        icon = if (thread.agree.agreed) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                        icon = if (thread.agree.agreed) Symbols.FavoriteFill else Symbols.Favorite,
                         text = if (thread.agree.count > 0) thread.agree.count.getShortNumString() else stringResource(R.string.title_agree),
                         active = thread.agree.agreed,
                     ) { onEvent(ThreadEvent.AgreeThread) }
                     ActionPill(
-                        icon = if (thread.isStored) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                        icon = if (thread.isStored) Symbols.StarFill else Symbols.Star,
                         text = stringResource(if (thread.isStored) R.string.title_collected else R.string.title_collect),
                         active = thread.isStored,
                     ) { onEvent(if (thread.isStored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) }
-                    ActionPill(icon = Icons.Rounded.Share, text = stringResource(R.string.title_share), active = false) {
+                    ActionPill(icon = Symbols.Share, text = stringResource(R.string.title_share), active = false) {
                         onEvent(ThreadEvent.Share)
                     }
                 }
@@ -587,7 +582,7 @@ fun FirstPostContent(
                 text = stringResource(id = R.string.title_collected_floor),
                 invertColor = true,
                 prefixIcon = {
-                    Icon(imageVector = Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(imageVector = Symbols.StarFill, contentDescription = null, modifier = Modifier.size(16.dp))
                 },
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp),
             )

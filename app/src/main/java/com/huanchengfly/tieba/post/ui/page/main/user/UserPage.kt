@@ -21,8 +21,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -49,6 +47,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.AboutKey
 import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
 import com.huanchengfly.tieba.post.ui.navigation.HistoryKey
@@ -219,7 +218,7 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.width(16.dp))
         Icon(
-            imageVector = Icons.Rounded.AccountCircle,
+            imageVector = Symbols.AccountCircle,
             contentDescription = null,
             tint = ExtendedTheme.colors.onChip,
             modifier = Modifier

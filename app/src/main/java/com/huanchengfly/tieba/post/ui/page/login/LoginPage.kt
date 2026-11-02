@@ -18,9 +18,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -43,6 +40,7 @@ import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.repository.AccountActions
 import com.huanchengfly.tieba.post.ui.common.LocalAccountActions
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.webview.MyWebChromeClient
@@ -170,9 +168,9 @@ fun LoginPage(
                 actions = {
                     val refresh = stringResource(id = R.string.title_refresh)
                     MenuIconButton(
-                        icon = Icons.Rounded.MoreVert,
+                        icon = Symbols.MoreVert,
                         contentDescription = stringResource(id = R.string.btn_more),
-                        items = { listOf(ContextMenuItem(Icons.Rounded.Refresh, refresh) { webViewNavigator.reload() }) },
+                        items = { listOf(ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() }) },
                     )
                 },
             )

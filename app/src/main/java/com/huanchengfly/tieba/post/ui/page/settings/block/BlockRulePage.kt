@@ -20,30 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AllInclusive
-import androidx.compose.material.icons.rounded.Article
-import androidx.compose.material.icons.rounded.Badge
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Category
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Event
-import androidx.compose.material.icons.rounded.Explore
-import androidx.compose.material.icons.rounded.Forum
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.ShortText
-import androidx.compose.material.icons.rounded.TextFields
-import androidx.compose.material.icons.rounded.Title
-import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material.icons.rounded.UnfoldLess
-import androidx.compose.material.icons.rounded.UnfoldMore
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,6 +66,7 @@ import com.huanchengfly.tieba.post.model.flat
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.navigation.BlockRuleKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
@@ -330,7 +307,7 @@ private fun ConditionRow(test: FlatCondition.Test, onChange: (FlatCondition.Test
             },
             remove = {
                 Icon(
-                    Icons.Rounded.Close,
+                    Symbols.Close,
                     contentDescription = stringResource(id = R.string.rule_condition_remove),
                     tint = colors.textSecondary,
                     modifier = Modifier
@@ -437,7 +414,7 @@ private fun Pick(text: String, color: Color = ExtendedTheme.colors.text, onClick
             .padding(horizontal = Spacing.xs),
     ) {
         Text(text = text, style = TextStyles.bodyCompact, color = color, maxLines = 1)
-        Icon(Icons.Rounded.UnfoldMore, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.padding(start = 2.dp).size(16.dp))
+        Icon(Symbols.UnfoldMore, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.padding(start = 2.dp).size(16.dp))
     }
 }
 
@@ -468,7 +445,7 @@ private fun Slash() {
 private fun LevelStepper(level: Int, onChange: (Int) -> Unit) {
     val colors = ExtendedTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
-        StepButton(Icons.Rounded.Remove, stringResource(id = R.string.rule_level_down), enabled = level > LevelRange.first) { onChange(level - 1) }
+        StepButton(Symbols.Remove, stringResource(id = R.string.rule_level_down), enabled = level > LevelRange.first) { onChange(level - 1) }
         Text(
             text = stringResource(id = R.string.rule_level, level),
             style = TextStyles.bodyCompact.copy(fontFeatureSettings = "tnum"),
@@ -476,7 +453,7 @@ private fun LevelStepper(level: Int, onChange: (Int) -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.width(52.dp),
         )
-        StepButton(Icons.Rounded.Add, stringResource(id = R.string.rule_level_up), enabled = level < LevelRange.last) { onChange(level + 1) }
+        StepButton(Symbols.Add, stringResource(id = R.string.rule_level_up), enabled = level < LevelRange.last) { onChange(level + 1) }
     }
 }
 
@@ -545,10 +522,10 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
             .clip(Corners.full)
             .background(colors.chip)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
-            .clickable { menus?.show(items = items, anchor = bounds, icon = Icons.Rounded.Add) }
+            .clickable { menus?.show(items = items, anchor = bounds, icon = Symbols.Add) }
             .padding(start = Spacing.sm, end = Spacing.md),
     ) {
-        Icon(Icons.Rounded.Add, contentDescription = null, tint = colors.text, modifier = Modifier.size(18.dp))
+        Icon(Symbols.Add, contentDescription = null, tint = colors.text, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(Spacing.xxs))
         Text(text = stringResource(id = R.string.rule_add_condition), style = TextStyles.label, color = colors.text)
     }
@@ -567,14 +544,14 @@ private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -
 
     return listOf(
         group(
-            Icons.Rounded.TextFields,
+            Symbols.TextFields,
             R.string.rule_group_text,
             item(ConditionField.TitleOrBody, R.string.rule_field_title_or_body),
             item(ConditionField.Title, R.string.rule_field_title),
             item(ConditionField.Body, R.string.rule_field_body),
         ),
         group(
-            Icons.Rounded.Person,
+            Symbols.Person,
             R.string.rule_group_author,
             item(ConditionField.Author, R.string.rule_field_user),
             item(ConditionField.Level, R.string.rule_field_level_short),
@@ -583,7 +560,7 @@ private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -
         ),
         item(ConditionField.Forum, R.string.rule_field_forum),
         group(
-            Icons.Rounded.Category,
+            Symbols.Category,
             R.string.rule_group_content,
             item(ConditionField.Content, R.string.rule_field_kind),
             item(ConditionField.Length, R.string.rule_field_length),
@@ -609,16 +586,16 @@ private fun fieldName(field: ConditionField): String = stringResource(
 
 private val ConditionField.icon: ImageVector
     get() = when (this) {
-        ConditionField.TitleOrBody -> Icons.Rounded.TextFields
-        ConditionField.Title -> Icons.Rounded.Title
-        ConditionField.Body -> Icons.Rounded.Article
-        ConditionField.Author -> Icons.Rounded.Person
-        ConditionField.Level -> Icons.Rounded.BarChart
-        ConditionField.ThreadAuthor -> Icons.Rounded.Badge
-        ConditionField.Ip -> Icons.Rounded.Place
-        ConditionField.Forum -> Icons.Rounded.Forum
-        ConditionField.Content -> Icons.Rounded.Category
-        ConditionField.Length -> Icons.Rounded.ShortText
+        ConditionField.TitleOrBody -> Symbols.TextFields
+        ConditionField.Title -> Symbols.Title
+        ConditionField.Body -> Symbols.Article
+        ConditionField.Author -> Symbols.Person
+        ConditionField.Level -> Symbols.BarChart
+        ConditionField.ThreadAuthor -> Symbols.Badge
+        ConditionField.Ip -> Symbols.LocationOn
+        ConditionField.Forum -> Symbols.Forum
+        ConditionField.Content -> Symbols.Category
+        ConditionField.Length -> Symbols.ShortText
     }
 
 @Composable
@@ -760,22 +737,22 @@ private fun SentenceCard(
 
 private val BlockRule.Scope.icon: ImageVector
     get() = when (this) {
-        BlockRule.Scope.All -> Icons.Rounded.Public
-        BlockRule.Scope.Feeds -> Icons.Rounded.Explore
-        BlockRule.Scope.Forum -> Icons.Rounded.Forum
-        BlockRule.Scope.Thread -> Icons.Rounded.Article
+        BlockRule.Scope.All -> Symbols.Public
+        BlockRule.Scope.Feeds -> Symbols.Explore
+        BlockRule.Scope.Forum -> Symbols.Forum
+        BlockRule.Scope.Thread -> Symbols.Article
     }
 
 private val BlockRule.Action.icon: ImageVector
     get() = when (this) {
-        BlockRule.Action.Default -> Icons.Rounded.Tune
-        BlockRule.Action.Fold -> Icons.Rounded.UnfoldLess
-        BlockRule.Action.Hide -> Icons.Rounded.VisibilityOff
-        BlockRule.Action.Allow -> Icons.Rounded.Visibility
+        BlockRule.Action.Default -> Symbols.Tune
+        BlockRule.Action.Fold -> Symbols.UnfoldLess
+        BlockRule.Action.Hide -> Symbols.VisibilityOff
+        BlockRule.Action.Allow -> Symbols.Visibility
     }
 
 private fun expiryIcon(days: Int?): ImageVector = when (days) {
-    null -> Icons.Rounded.AllInclusive
-    7 -> Icons.Rounded.Event
-    else -> Icons.Rounded.CalendarMonth
+    null -> Symbols.AllInclusive
+    7 -> Symbols.Event
+    else -> Symbols.CalendarMonth
 }

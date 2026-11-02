@@ -28,11 +28,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AlignVerticalTop
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +43,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.reply.Content
 import com.huanchengfly.tieba.post.ui.page.reply.Panel
 import com.huanchengfly.tieba.post.ui.page.reply.ReplyCapsuleContent
@@ -154,7 +150,7 @@ fun SubPostsScreen(
                         title = { Text(text = title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h6) },
                         navigationIcon = {
                             IconButton(onClick = { onEvent(SubPostsEvent.Back) }) {
-                                Icon(imageVector = Icons.Rounded.Close, contentDescription = stringResource(id = R.string.btn_close))
+                                Icon(imageVector = Symbols.Close, contentDescription = stringResource(id = R.string.btn_close))
                             }
                         },
                     )
@@ -173,7 +169,7 @@ fun SubPostsScreen(
                     navigationIcon = {
                         IconButton(onClick = { onEvent(SubPostsEvent.Back) }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                imageVector = Symbols.ArrowBack,
                                 contentDescription = stringResource(id = R.string.btn_close)
                             )
                         }
@@ -181,7 +177,7 @@ fun SubPostsScreen(
                     actions = {
                         IconButton(onClick = { onEvent(SubPostsEvent.OpenThread) }) {
                             Icon(
-                                imageVector = Icons.Rounded.OpenInBrowser,
+                                imageVector = Symbols.OpenInBrowser,
                                 contentDescription = stringResource(id = R.string.btn_open_origin_thread)
                             )
                         }
@@ -290,7 +286,7 @@ private fun SubPostsContent(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Rounded.AlignVerticalTop, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Symbols.AlignVerticalTop, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(text = stringResource(id = R.string.btn_load_previous), color = ExtendedTheme.colors.text, fontSize = 14.sp)
                     }

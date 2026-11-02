@@ -8,9 +8,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -31,6 +28,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.EditTextPref
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -121,7 +119,7 @@ fun AccountManagePage(
                             trailingContent = if (current) {
                                 {
                                     Icon(
-                                        imageVector = Icons.Rounded.Check,
+                                        imageVector = Symbols.Check,
                                         contentDescription = null,
                                         tint = ExtendedTheme.colors.text,
                                         modifier = Modifier.size(20.dp),
@@ -136,7 +134,7 @@ fun AccountManagePage(
                         title = stringResource(id = R.string.title_new_account),
                         leadingIcon = {
                             AvatarIcon(
-                                icon = Icons.Rounded.Add,
+                                icon = Symbols.Add,
                                 size = Sizes.Small,
                                 contentDescription = null,
                                 color = ExtendedTheme.colors.text,

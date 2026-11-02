@@ -25,8 +25,6 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +48,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.DeviceAlbum
 import com.huanchengfly.tieba.post.model.DeviceImage
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
@@ -187,7 +186,7 @@ private fun AlbumSwitcher(
                 modifier = Modifier.weight(1f, fill = false),
             )
             if (enabled && albums.isNotEmpty()) {
-                Icon(imageVector = Icons.Rounded.ArrowDropDown, contentDescription = null)
+                Icon(imageVector = Symbols.ArrowDropDown, contentDescription = null)
             }
         }
     }

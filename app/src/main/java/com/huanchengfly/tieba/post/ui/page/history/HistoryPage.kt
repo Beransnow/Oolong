@@ -8,8 +8,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.HistoryEntry
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -92,7 +91,7 @@ fun HistoryScreen(
                 actions = {
                     IconButton(onClick = onClear) {
                         Icon(
-                            imageVector = Icons.Outlined.Delete,
+                            imageVector = Symbols.Delete,
                             contentDescription = stringResource(id = R.string.title_history_delete),
                             tint = ExtendedTheme.colors.topBarContent
                         )

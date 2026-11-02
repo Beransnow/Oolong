@@ -39,10 +39,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.FormatColorReset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -86,6 +82,7 @@ import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorOf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.getColorPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.themeColors
@@ -417,7 +414,7 @@ private fun AccentRow(accent: Int?, swatches: List<Int>, onChange: (Int?) -> Uni
         ) {
             item {
                 Swatch(color = null, selected = accent == null, onClick = { onChange(null) }) {
-                    Icon(Icons.Rounded.FormatColorReset, contentDescription = null, tint = ExtendedTheme.colors.textSecondary)
+                    Icon(Symbols.FormatColorReset, contentDescription = null, tint = ExtendedTheme.colors.textSecondary)
                 }
             }
             items(swatches) { color ->
@@ -426,7 +423,7 @@ private fun AccentRow(accent: Int?, swatches: List<Int>, onChange: (Int?) -> Uni
             item {
                 val isCustom = accent != null && accent !in swatches
                 Swatch(color = if (isCustom) Color(accent!!) else null, selected = isCustom, onClick = { dialog.show() }) {
-                    if (!isCustom) Icon(Icons.Rounded.Add, contentDescription = null, tint = ExtendedTheme.colors.textSecondary)
+                    if (!isCustom) Icon(Symbols.Add, contentDescription = null, tint = ExtendedTheme.colors.textSecondary)
                 }
             }
         }
@@ -450,7 +447,7 @@ private fun Swatch(
             .border(if (selected) 2.dp else 0.dp, if (selected) colors.text else Color.Transparent, CircleShape)
             .clickable(onClick = onClick),
     ) {
-        if (selected && color != null) Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White)
+        if (selected && color != null) Icon(Symbols.Check, contentDescription = null, tint = Color.White)
         content()
     }
 }

@@ -23,16 +23,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.Category
-import androidx.compose.material.icons.rounded.Forum
-import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.ShortText
-import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.rememberDismissState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,6 +57,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.navigation.BlockRuleKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
@@ -145,7 +136,7 @@ fun BlockListScreen(
                 navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
                 actions = {
                     IconButton(onClick = { onOpen(null) }) {
-                        Icon(Icons.Rounded.Add, contentDescription = stringResource(id = R.string.title_new_rule))
+                        Icon(Symbols.Add, contentDescription = stringResource(id = R.string.title_new_rule))
                     }
                 },
             )
@@ -236,7 +227,7 @@ private fun SearchField(query: String, onChange: (String) -> Unit) {
             .background(colors.inset)
             .padding(horizontal = Spacing.sm),
     ) {
-        Icon(Icons.Rounded.Search, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(20.dp))
+        Icon(Symbols.Search, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(Spacing.xs))
         Box(modifier = Modifier.weight(1f)) {
             if (query.isEmpty()) Text(text = stringResource(id = R.string.rules_search), style = TextStyles.bodyCompact, color = colors.textSecondary)
@@ -362,10 +353,10 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
 
 private val BlockRule.icon: ImageVector
     get() = when (val test = condition.tests.singleOrNull()) {
-        null -> Icons.Rounded.Layers
-        is BlockRule.Condition.User, is BlockRule.Condition.AuthorName -> Icons.Rounded.Person
-        is BlockRule.Condition.Text -> Icons.Rounded.TextFields
-        is BlockRule.Condition.Forum, is BlockRule.Condition.ForumName -> Icons.Rounded.Forum
-        is BlockRule.Condition.LevelBelow -> Icons.Rounded.BarChart
-        else -> if (test is BlockRule.Condition.ShorterThan) Icons.Rounded.ShortText else Icons.Rounded.Category
+        null -> Symbols.Layers
+        is BlockRule.Condition.User, is BlockRule.Condition.AuthorName -> Symbols.Person
+        is BlockRule.Condition.Text -> Symbols.TextFields
+        is BlockRule.Condition.Forum, is BlockRule.Condition.ForumName -> Symbols.Forum
+        is BlockRule.Condition.LevelBelow -> Symbols.BarChart
+        else -> if (test is BlockRule.Condition.ShorterThan) Symbols.ShortText else Symbols.Category
     }

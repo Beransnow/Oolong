@@ -37,10 +37,6 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BorderColor
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -77,6 +73,7 @@ import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorsOf
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
@@ -286,7 +283,7 @@ private fun SelectedBadge(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
         modifier = modifier.size(20.dp).background(ExtendedTheme.colors.emphasis, CircleShape),
     ) {
-        Icon(Icons.Rounded.Check, contentDescription = null, tint = ExtendedTheme.colors.onEmphasis, modifier = Modifier.size(14.dp))
+        Icon(Symbols.Check, contentDescription = null, tint = ExtendedTheme.colors.onEmphasis, modifier = Modifier.size(14.dp))
     }
 }
 
@@ -443,7 +440,7 @@ private fun AccentGrid(settings: ThemeSettings, customColor: Color?, onCustom: (
                 content = content,
                 // Picked for the first time, or picked again, it asks for the colour
                 onClick = { if (selected || customColor == null) onCustom() else ThemeUtil.selectAccent(ThemeUtil.THEME_CUSTOM) },
-                icon = { Icon(Icons.Rounded.ColorLens, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                icon = { Icon(Symbols.Palette, contentDescription = null, modifier = Modifier.size(20.dp)) },
             )
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -511,7 +508,7 @@ private fun RowScope.Swatch(
         ) {
             CompositionLocalProvider(LocalContentColor provides content) {
                 when {
-                    selected -> Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                    selected -> Icon(Symbols.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                     icon != null -> icon()
                 }
             }
@@ -669,7 +666,7 @@ private fun CustomColorDialog(customPrimaryColorDialogState: DialogState) {
                             }
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Check,
+                                imageVector = Symbols.Check,
                                 contentDescription = stringResource(id = R.string.button_sure_default)
                             )
                         }
@@ -690,7 +687,7 @@ private fun CustomColorDialog(customPrimaryColorDialogState: DialogState) {
                             modifier = Modifier.align(Alignment.TopEnd)
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.BorderColor,
+                                imageVector = Symbols.BorderColor,
                                 contentDescription = stringResource(id = R.string.desc_input_color)
                             )
                         }

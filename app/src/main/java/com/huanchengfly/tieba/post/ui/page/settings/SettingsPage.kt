@@ -6,14 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.TaskAlt
-import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -28,6 +20,7 @@ import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.AccountManageKey
 import com.huanchengfly.tieba.post.ui.navigation.BlockSettingsKey
 import com.huanchengfly.tieba.post.ui.navigation.CustomSettingsKey
@@ -85,7 +78,7 @@ fun NowAccountItem(
             onClick = { navigator.navigate(LoginKey) },
             leadingIcon = {
                 AvatarIcon(
-                    icon = Icons.Rounded.AccountCircle,
+                    icon = Symbols.AccountCircle,
                     size = Sizes.Small,
                     contentDescription = stringResource(id = R.string.title_new_account),
                     color = ExtendedTheme.colors.onChip,
@@ -131,21 +124,21 @@ fun SettingsPage(
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_settings_custom),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.Palette, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Palette, contentDescription = null) } },
                             onClick = { navigator.navigate(CustomSettingsKey) }
                         )
                     }
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_settings_read_habit),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.AutoStories, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.AutoStories, contentDescription = null) } },
                             onClick = { navigator.navigate(HabitSettingsKey) }
                         )
                     }
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_settings_post),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.EditNote, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.EditNote, contentDescription = null) } },
                             onClick = { navigator.navigate(PostSettingsKey) }
                         )
                     }
@@ -154,14 +147,14 @@ fun SettingsPage(
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_block_settings),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.Block, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Block, contentDescription = null) } },
                             onClick = { navigator.navigate(BlockSettingsKey) }
                         )
                     }
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_oksign),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.TaskAlt, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.TaskAlt, contentDescription = null) } },
                             onClick = { navigator.navigate(OKSignSettingsKey) }
                         )
                     }
@@ -170,7 +163,7 @@ fun SettingsPage(
                     prefsItem {
                         TextPref(
                             title = stringResource(id = R.string.title_settings_more),
-                            leadingIcon = { LeadingIcon { Icon(imageVector = Icons.Outlined.MoreHoriz, contentDescription = null) } },
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.MoreHoriz, contentDescription = null) } },
                             onClick = { navigator.navigate(MoreSettingsKey) }
                         )
                     }

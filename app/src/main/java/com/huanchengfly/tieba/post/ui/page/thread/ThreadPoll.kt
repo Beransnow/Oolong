@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +29,7 @@ import com.huanchengfly.tieba.post.model.PollOption
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import kotlin.math.roundToInt
@@ -124,7 +123,7 @@ private fun ChoiceRow(option: PollOption, selected: Boolean, onClick: () -> Unit
             color = if (selected) colors.accent else colors.text,
             modifier = Modifier.weight(1f),
         )
-        if (selected) Icon(Icons.Rounded.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp))
+        if (selected) Icon(Symbols.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -150,7 +149,7 @@ private fun ResultRow(option: PollOption, total: Long, chosen: Boolean) {
             color = if (chosen) colors.accent else colors.text,
             modifier = Modifier.weight(1f),
         )
-        if (chosen) Icon(Icons.Rounded.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
+        if (chosen) Icon(Symbols.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
         Text(
             text = "${(share * 100).roundToInt()}%",
             style = TextStyles.label,
