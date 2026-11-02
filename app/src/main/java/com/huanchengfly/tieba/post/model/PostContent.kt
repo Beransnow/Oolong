@@ -50,8 +50,12 @@ sealed interface TextSpan {
     @Immutable
     data class Plain(override val text: String) : TextSpan
 
+    /**
+     * @param actualHost where the link really goes, when [text] reads as an address elsewhere;
+     * null when the text names no address or the right one
+     */
     @Immutable
-    data class Link(override val text: String, val url: String) : TextSpan
+    data class Link(override val text: String, val url: String, val actualHost: String? = null) : TextSpan
 
     @Immutable
     data class Mention(override val text: String, val userId: Long) : TextSpan

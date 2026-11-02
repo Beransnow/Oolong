@@ -117,4 +117,25 @@ class PostContentMappingTest {
         val image = map(PbContent(type = 3, originSrc = "o.jpg", bsize = "")).single() as PostContent.Image
         assertEquals(0 to 0, image.width to image.height)
     }
+
+    @Test
+    fun `a link whose text names another site says where it really goes`() {
+        val check = "http://tieba.baidu.com/mo/q/checkurl?url=https%3A%2F%2Fexample.com%2Fa&urlrefer=x"
+
+        assertEquals("example.com", misleadingLinkHost("https://tieba.baidu.com/p/1", check))
+        assertEquals("example.com", misleadingLinkHost("tieba.baidu.com", "https://example.com/"))
+        assertEquals(null, misleadingLinkHost("https://example.com/a", check))
+        assertEquals(null, misleadingLinkHost("www.example.com", "https://m.example.com/"))
+        assertEquals(null, misleadingLinkHost("tieba.baidu.com/p/1", "https://wapp.baidu.com/p/1"))
+        assertEquals(null, misleadingLinkHost("点击这里", check))
+        assertEquals("b.com.cn", misleadingLinkHost("a.com.cn", "https://b.com.cn/"))
+    }
+
+    @Test
+    fun `link text naming another site is marked when mapped`() {
+        val content = listOf(PbContent(type = 1, text = "tieba.baidu.com", link = "https://example.com/")).toPostContent { _, _ -> }
+
+        val link = (content.single() as PostContent.Text).spans.single() as TextSpan.Link
+        assertEquals("example.com", link.actualHost)
+    }
 }

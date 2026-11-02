@@ -88,7 +88,9 @@ fun PostBody(
 private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHeight: TextUnit) {
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
-    val text = remember(spans, accent, videoTag) { spans.toAnnotatedString(accent, videoTag) }
+    val warning = MaterialTheme.colors.error
+    val actualHost = stringResource(id = R.string.link_actual_host)
+    val text = remember(spans, accent, videoTag, warning, actualHost) { spans.toAnnotatedString(accent, videoTag, warning, actualHost) }
     PbContentText(
         text = text,
         fontSize = fontSize,
@@ -164,10 +166,16 @@ private val PostContent.Image.aspectRatio: Float
 
 /**
  * Inline text with links, mentions and video links in [accent], marked for [PbContentText] to
- * open, and emoticons as inline images.
+ * open, and emoticons as inline images. A link whose text names another site is followed by
+ * where it really goes, in [warning], written with [actualHostFormat].
  */
 @OptIn(ExperimentalTextApi::class)
-fun List<TextSpan>.toAnnotatedString(accent: Color, videoTag: String): AnnotatedString =
+fun List<TextSpan>.toAnnotatedString(
+    accent: Color,
+    videoTag: String,
+    warning: Color,
+    actualHostFormat: String,
+): AnnotatedString =
     buildAnnotatedString {
         forEach { span ->
             when (span) {
@@ -177,6 +185,9 @@ fun List<TextSpan>.toAnnotatedString(accent: Color, videoTag: String): Annotated
                     appendInlineContent("link_icon", alternateText = "🔗")
                     withAnnotation(tag = "url", annotation = span.url) {
                         withStyle(SpanStyle(color = accent)) { append(span.text) }
+                        span.actualHost?.let { host ->
+                            withStyle(SpanStyle(color = warning)) { append(actualHostFormat.format(host)) }
+                        }
                     }
                 }
 
@@ -207,7 +218,9 @@ fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = Exte
     val context = LocalContext.current
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
-    return remember(subPost, isLz, nameColor, accent, videoTag) {
+    val warning = MaterialTheme.colors.error
+    val actualHost = stringResource(id = R.string.link_actual_host)
+    return remember(subPost, isLz, nameColor, accent, videoTag, warning, actualHost) {
         buildAnnotatedString {
             withAnnotation("user", "${subPost.author.id}") {
                 withStyle(SpanStyle(color = nameColor, fontWeight = FontWeight.Bold)) {
@@ -219,7 +232,7 @@ fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = Exte
                 append(": ")
             }
             subPost.content.forEach { block ->
-                if (block is PostContent.Text) append(block.spans.toAnnotatedString(accent, videoTag))
+                if (block is PostContent.Text) append(block.spans.toAnnotatedString(accent, videoTag, warning, actualHost))
             }
         }
     }
