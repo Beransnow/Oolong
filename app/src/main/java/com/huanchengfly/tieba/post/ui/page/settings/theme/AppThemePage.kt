@@ -220,6 +220,7 @@ private fun ThemeGroup(content: @Composable ColumnScope.() -> Unit) {
 /** Light, dark or as the system is, each shown as a small home page in its colours. */
 @Composable
 private fun AppearancePicker(settings: ThemeSettings, light: ExtendedColors, dark: ExtendedColors, wallpaper: File?) {
+    val nightOverlay = TranslucentWallpaper.nightOverlay(rememberWallpaperDim())
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -228,12 +229,12 @@ private fun AppearancePicker(settings: ThemeSettings, light: ExtendedColors, dar
             HomePreview(light, wallpaper)
         }
         AppearanceOption(stringResource(id = R.string.appearance_dark), settings.appearance == Appearance.Dark, { ThemeUtil.setAppearance(Appearance.Dark) }) {
-            HomePreview(dark, null)
+            HomePreview(dark, wallpaper, nightOverlay)
         }
         AppearanceOption(stringResource(id = R.string.appearance_system), settings.appearance == Appearance.System, { ThemeUtil.setAppearance(Appearance.System) }) {
             HomePreview(light, wallpaper)
             // The lower right half dark: it turns with the system
-            Box(modifier = Modifier.fillMaxSize().clip(LowerRightHalf)) { HomePreview(dark, null) }
+            Box(modifier = Modifier.fillMaxSize().clip(LowerRightHalf)) { HomePreview(dark, wallpaper, nightOverlay) }
         }
     }
 }
@@ -290,9 +291,10 @@ private fun SelectedBadge(modifier: Modifier = Modifier) {
 
 /** A home page in miniature: the title, the search field, the tabs, two posts and the bottom bar. */
 @Composable
-private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?) {
+private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overlay: Float = 0f) {
     if (wallpaper != null) {
         AsyncImage(model = wallpaper, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+        if (overlay > 0f) Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = overlay)))
     }
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),

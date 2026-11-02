@@ -88,6 +88,7 @@ class PaletteSnapshotTest {
             Setup("pink_vibrant", monet("pink", MonetStyle.Vibrant)),
             Setup("red_rainbow", monet("red", MonetStyle.Rainbow)),
             Setup("dynamic_expressive", monet(dynamic, MonetStyle.Expressive)),
+            Setup("translucent_night", wallpaper.copy(appearance = Appearance.Dark), darkText = true),
         )
 
     @Test

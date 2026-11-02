@@ -277,7 +277,9 @@ fun TiebaLiteTheme(
 ) {
     val theme by remember { ThemeUtil.themeState }
     val settings by remember { ThemeUtil.settingsState }
-    val extendedColors = colorsOf(settings, dark = ThemeUtil.isNightMode(theme), picks = rememberColorPicks())
+    // At night the wallpaper's theme is not a dark one by name: ask the settings
+    val dark = remember(theme, settings) { ThemeUtil.isDark() }
+    val extendedColors = colorsOf(settings, dark = dark, picks = rememberColorPicks())
 
     val colors = getColorPalette(extendedColors)
 

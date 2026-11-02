@@ -7,6 +7,11 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.DisplayMetrics
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.createBitmap
 import androidx.datastore.preferences.core.edit
@@ -24,6 +29,7 @@ import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.pow
@@ -88,6 +94,15 @@ data class TranslucentWallpaper(
 
     companion object {
         const val DEFAULT_DIM = 0f
+
+        /** How dark the wallpaper is at night at the least. */
+        private const val NIGHT_DIM = 0.6f
+
+        /**
+         * The black laid over a wallpaper darkened by [dim] at night, so that it is darkened by
+         * [NIGHT_DIM] at the least.
+         */
+        fun nightOverlay(dim: Float): Float = ((NIGHT_DIM - dim) / (1 - dim)).coerceIn(0f, 1f)
         const val MAX_DIM = 0.8f
         const val MAX_BLUR = 100
 
@@ -128,7 +143,7 @@ data class TranslucentWallpaper(
         private val PathKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)
         private val ThemeKey = intPreferencesKey("translucent_background_theme")
         private val TextKey = stringPreferencesKey("translucent_wallpaper_text")
-        private val DimKey = floatPreferencesKey("translucent_wallpaper_dim")
+        internal val DimKey = floatPreferencesKey("translucent_wallpaper_dim")
         private val BlurKey = intPreferencesKey("translucent_background_blur")
         private val AccentKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
 
@@ -160,6 +175,16 @@ data class TranslucentWallpaper(
             return old
         }
     }
+}
+
+/** How far the wallpaper is darkened, as saved. */
+@Composable
+fun rememberWallpaperDim(): Float {
+    val context = LocalContext.current
+    val dim by remember {
+        context.dataStore.data.map { it[TranslucentWallpaper.DimKey] ?: TranslucentWallpaper.DEFAULT_DIM }
+    }.collectAsState(initial = TranslucentWallpaper.DEFAULT_DIM)
+    return dim
 }
 
 /** The wallpaper as the app draws it: [source] at screen size, blurred and darkened. */

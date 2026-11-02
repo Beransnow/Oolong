@@ -15,6 +15,7 @@ import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,7 +73,9 @@ import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
 import com.huanchengfly.tieba.post.ui.navigation.rememberAppBackStack
 import com.huanchengfly.tieba.post.ui.navigation.toDeepLinkKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.theme.TranslucentWallpaper
 import com.huanchengfly.tieba.post.ui.page.settings.theme.redrawOutdatedWallpaper
+import com.huanchengfly.tieba.post.ui.page.settings.theme.rememberWallpaperDim
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.SystemUiController
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
@@ -444,14 +448,19 @@ class MainActivityV2 : BaseComposeActivity() {
                 // A wallpaper from before dark text stopped fading it to white is drawn again
                 val context = LocalContext.current
                 LaunchedEffect(Unit) { context.redrawOutdatedWallpaper() }
-                AsyncImage(
-                    model = backgroundFile,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .wallpaperGlassSource(wallpaperGlass),
-                    contentScale = ContentScale.Crop
-                )
+                // Darker at night, under the glass too
+                val nightOverlay = if (ThemeUtil.isDark()) TranslucentWallpaper.nightOverlay(rememberWallpaperDim()) else 0f
+                Box(modifier = Modifier.fillMaxSize().wallpaperGlassSource(wallpaperGlass)) {
+                    AsyncImage(
+                        model = backgroundFile,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    if (nightOverlay > 0f) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = nightOverlay)))
+                    }
+                }
             }
             // Content stays in one place whatever the theme: moving it would rebuild every page
             CompositionLocalProvider(LocalWallpaperGlass provides wallpaperGlass.takeIf { translucent }, content = content)

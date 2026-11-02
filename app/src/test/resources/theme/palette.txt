@@ -835,3 +835,34 @@ dynamic_expressive m.surface              FFFFFBFF
 dynamic_expressive m.onSurface            FF000000
 dynamic_expressive m.primarySurface       FF7E5260
 dynamic_expressive isNightMode false isLight true
+translucent_night accent                 FF4477E0
+translucent_night background             00000000
+translucent_night card                   10FFFFFF
+translucent_night chip                   18F8F8F8
+translucent_night divider                10FFFFFF
+translucent_night emphasis               FF4477E0
+translucent_night inset                  15FFFFFF
+translucent_night invertChip             FF4477E0
+translucent_night menu                   FF202020
+translucent_night onAccent               FFFFFFFF
+translucent_night onChip                 FF808080
+translucent_night onEmphasis             FFFFFFFF
+translucent_night onInvertChip           FFFFFFFF
+translucent_night onSearchField          FFBFBFBF
+translucent_night refreshIndicator       FF202020
+translucent_night searchField            10FFFFFF
+translucent_night sheet                  FF202020
+translucent_night text                   DEFFFFFF
+translucent_night textDisabled           61FFFFFF
+translucent_night textSecondary          99FFFFFF
+translucent_night topBarContent          DFFFFFFF
+translucent_night topBarContentSecondary 8AFFFFFF
+translucent_night m.primary              FF4477E0
+translucent_night m.secondary            FF4477E0
+translucent_night m.onSecondary          FFFFFFFF
+translucent_night m.background           00000000
+translucent_night m.onBackground         DEFFFFFF
+translucent_night m.surface              10FFFFFF
+translucent_night m.onSurface            FFFFFFFF
+translucent_night m.primarySurface       10FFFFFF
+translucent_night isNightMode false isLight false

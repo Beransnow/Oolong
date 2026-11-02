@@ -102,6 +102,9 @@ object ThemeUtil {
 
     private fun isSystemDark(): Boolean = App.isInitialized && App.isSystemNight
 
+    /** Whether the app is dark now, as [settingsState] and the system say. */
+    fun isDark(): Boolean = settingsState.value.isDark(isSystemDark())
+
     /** Works out the theme drawn now again, as after the system turns dark or light. */
     fun refresh() {
         val name = settingsState.value.themeName(isSystemDark())
@@ -228,7 +231,8 @@ object ThemeUtil {
         checkDynamic: Boolean = false,
     ): String {
         var nowTheme = theme
-        if (isTranslucentTheme(nowTheme)) {
+        // The bare name leaves the text to the saved setting; the variants say it themselves
+        if (nowTheme.equals(THEME_TRANSLUCENT, ignoreCase = true)) {
             val colorTheme =
                 dataStore.getInt("translucent_background_theme", TRANSLUCENT_THEME_LIGHT)
             nowTheme = if (colorTheme == TRANSLUCENT_THEME_DARK) {

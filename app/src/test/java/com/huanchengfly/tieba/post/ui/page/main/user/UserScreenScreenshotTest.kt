@@ -5,6 +5,8 @@ import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
 import com.huanchengfly.tieba.post.testing.captureScreenshot
 import com.huanchengfly.tieba.post.testing.captureScreenshotPaused
+import com.huanchengfly.tieba.post.utils.Appearance
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import org.junit.After
 import org.junit.Rule
@@ -26,7 +28,7 @@ class UserScreenScreenshotTest {
 
     @After
     fun resetTheme() {
-        ThemeUtil.themeState.value = ThemeUtil.THEME_DEFAULT
+        ThemeUtil.updateSettings { ThemeSettings() }
     }
 
     private val account = Account(
@@ -46,7 +48,7 @@ class UserScreenScreenshotTest {
 
     @Test
     fun loggedInDark() {
-        ThemeUtil.themeState.value = ThemeUtil.THEME_AMOLED_DARK
+        ThemeUtil.updateSettings { ThemeSettings(appearance = Appearance.Dark, darkTheme = ThemeUtil.THEME_AMOLED_DARK) }
         captureScreenshot { UserScreen(account = account, isLoading = false, onRefresh = {}) }
     }
 

@@ -59,7 +59,7 @@ enum class MonetStyle(val value: String) {
  * @param style how the light theme uses [accent]
  * @param monetStyle how [ColorStyle.Monet] makes its palette
  * @param darkTheme the dark theme's name, used whenever the app is dark
- * @param wallpaper whether the page shows the picked wallpaper, while light
+ * @param wallpaper whether the page shows the picked wallpaper
  */
 data class ThemeSettings(
     val appearance: Appearance = Appearance.System,
@@ -86,10 +86,13 @@ data class ThemeSettings(
     /** The name of the theme to draw, as the colours are looked up by. */
     fun themeName(systemDark: Boolean): String = themeNameWhen(isDark(systemDark))
 
-    /** The name of the theme drawn while the app is [dark] or light. */
+    /**
+     * The name of the theme drawn while the app is [dark] or light. The wallpaper stays at night,
+     * darker and with light text.
+     */
     fun themeNameWhen(dark: Boolean): String = when {
+        wallpaper -> if (dark) ThemeUtil.THEME_TRANSLUCENT_LIGHT else ThemeUtil.THEME_TRANSLUCENT
         dark -> darkTheme
-        wallpaper -> ThemeUtil.THEME_TRANSLUCENT
         isSystemColor -> ThemeUtil.THEME_DEFAULT
         // The bright blue was a theme of its own before the style was
         accent == ThemeUtil.THEME_DEFAULT && style == ColorStyle.Bright -> ThemeUtil.THEME_BLUE

@@ -70,11 +70,12 @@ class ThemeSettingsTest {
     }
 
     @Test
-    fun `the wallpaper is kept through the night`() {
+    fun `the wallpaper is kept through the night, with light text`() {
         val settings = ThemeSettings.migrate(old(theme = "grey_dark", aside = "translucent"))
         assertTrue(settings.wallpaper)
         assertEquals(ThemeUtil.THEME_DEFAULT, settings.accent)
-        assertEquals("grey_dark", settings.themeName(systemDark = true))
+        assertEquals("grey_dark", settings.darkTheme)
+        assertEquals(ThemeUtil.THEME_TRANSLUCENT_LIGHT, settings.themeName(systemDark = true))
     }
 
     @Test
