@@ -115,7 +115,9 @@ object ThemeUtil {
         settingsState.value = settings
         refresh()
         MainScope().launch(Dispatchers.IO) {
-            dataStore.edit { settings.writeTo(it) }
+            // Saves are not done in the order they are started: each saves the settings as they
+            // are by then, so that the last done holds the last change
+            dataStore.edit { settingsState.value.writeTo(it) }
         }
     }
 
