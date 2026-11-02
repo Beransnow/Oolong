@@ -3,6 +3,8 @@ package com.huanchengfly.tieba.post.ui.page.settings.block
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.repository.DefaultLowLevel
 import com.huanchengfly.tieba.post.repository.HideBlockedContentKey
 import com.huanchengfly.tieba.post.repository.LowLevelEnabledKey
@@ -35,7 +38,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.SegmentedControl
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * Blocking: what is often wanted as switches, how blocked content shows, and the rules. The
@@ -50,6 +55,9 @@ fun BlockSettingsPage(
     val context = LocalContext.current
     val activeRules by viewModel.activeRules.collectAsStateWithLifecycle()
     val lowLevel by context.dataStore.collectPreferenceAsState(booleanPreferencesKey(LowLevelEnabledKey), false)
+    val hideBlocked by context.dataStore.collectPreferenceAsState(booleanPreferencesKey(HideBlockedContentKey), false)
+    val foldLabel = stringResource(id = R.string.settings_blocked_fold)
+    val hideLabel = stringResource(id = R.string.settings_blocked_hide)
     val spoilerDialog = rememberDialogState()
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri?.let(viewModel::export)
@@ -114,7 +122,12 @@ fun BlockSettingsPage(
             }
             prefsGroup(blockedGroup) {
                 prefsItem {
-                    SwitchPref(key = HideBlockedContentKey, title = stringResource(id = R.string.settings_hide_blocked_content))
+                    SegmentedControl(
+                        options = persistentListOf(foldLabel, hideLabel),
+                        selected = if (hideBlocked) 1 else 0,
+                        onSelect = { context.dataStore.putBoolean(HideBlockedContentKey, it == 1) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
                 }
             }
             prefsFooter { stringResource(id = R.string.settings_blocked_content_note) }
@@ -123,19 +136,23 @@ fun BlockSettingsPage(
                     TextPref(
                         title = stringResource(id = R.string.title_block_rules),
                         onClick = { navigator.navigate(BlockListKey) },
-                        trailingContent = { PrefsLinkValue(text = activeRules?.toString().orEmpty()) },
+                        trailingContent = {
+                            PrefsLinkValue(text = activeRules?.let { stringResource(id = R.string.rules_count, it) }.orEmpty())
+                        },
                     )
                 }
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.settings_block_export),
                         onClick = { exporter.launch(BackupFileName) },
+                        trailingContent = null,
                     )
                 }
                 prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.settings_block_import),
                         onClick = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                        trailingContent = null,
                     )
                 }
             }

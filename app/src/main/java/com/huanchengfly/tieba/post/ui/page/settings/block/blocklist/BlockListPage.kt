@@ -22,7 +22,6 @@ import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.SnackbarResult
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -33,11 +32,9 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.rememberDismissState
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -68,17 +65,22 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
 import com.huanchengfly.tieba.post.ui.navigation.BlockRuleKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.RulePart
 import com.huanchengfly.tieba.post.ui.page.settings.block.ruleSentence
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.Button
+import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.SegmentedControl
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
-import kotlinx.coroutines.launch
+import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun BlockListPage(
@@ -110,9 +112,7 @@ fun BlockListScreen(
 ) {
     val deletedOne = stringResource(id = R.string.toast_rule_deleted)
     val deletedMany = stringResource(id = R.string.toast_rules_deleted)
-    val undo = stringResource(id = R.string.button_undo)
-    val scaffoldState = rememberScaffoldState()
-    val scope = rememberCoroutineScope()
+    val shortcuts = LocalBlockShortcuts.current
     var filter by rememberSaveable { mutableStateOf(RuleFilter.All) }
     var query by rememberSaveable { mutableStateOf("") }
     val shown = state.rules.filter { it.matches(filter) && it.matches(query) }
@@ -120,15 +120,18 @@ fun BlockListScreen(
 
     fun delete(rules: List<BlockRule>) {
         onDelete(rules)
-        scope.launch {
-            val message = if (rules.size == 1) deletedOne else deletedMany.format(rules.size)
-            val result = scaffoldState.snackbarHostState.showSnackbar(message, undo)
-            if (result == SnackbarResult.ActionPerformed) onRestore(rules)
-        }
+        shortcuts?.showUndo(if (rules.size == 1) deletedOne else deletedMany.format(rules.size)) { onRestore(rules) }
     }
 
+    val cleanDialog = rememberDialogState()
+    ConfirmDialog(
+        dialogState = cleanDialog,
+        onConfirm = { delete(stale) },
+        confirmText = stringResource(id = R.string.title_delete),
+        title = { Text(text = stringResource(id = R.string.title_clean_up_rules, stale.size)) },
+    )
+
     GlassScaffold(
-        scaffoldState = scaffoldState,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
@@ -147,19 +150,35 @@ fun BlockListScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "search") { SearchField(query, onChange = { query = it }) }
-            item(key = "filter") { FilterRow(filter, onChange = { filter = it }) }
+            item(key = "filter") {
+                SegmentedControl(
+                    options = RuleFilter.entries.map { stringResource(id = it.label) }.toImmutableList(),
+                    selected = filter.ordinal,
+                    onSelect = { filter = RuleFilter.entries[it] },
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs).fillMaxWidth(),
+                )
+            }
             if (stale.isNotEmpty() && filter == RuleFilter.All && query.isBlank()) {
-                item(key = "stale") { StaleBanner(stale.size, onClean = { delete(stale) }) }
+                item(key = "stale") { StaleBanner(stale.size, onClean = { cleanDialog.show() }) }
             }
             if (shown.isEmpty() && !state.loading) {
                 item(key = "empty") {
-                    Text(
-                        text = stringResource(id = if (state.rules.isEmpty()) R.string.rules_empty else R.string.rules_none_found),
-                        style = TextStyles.label,
-                        color = ExtendedTheme.colors.textSecondary,
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                        textAlign = TextAlign.Center,
-                    )
+                    ) {
+                        Text(
+                            text = stringResource(id = if (state.rules.isEmpty()) R.string.rules_empty else R.string.rules_none_found),
+                            style = TextStyles.label,
+                            color = ExtendedTheme.colors.textSecondary,
+                            textAlign = TextAlign.Center,
+                        )
+                        if (state.rules.isEmpty()) {
+                            Button(onClick = { onOpen(null) }, modifier = Modifier.padding(top = Spacing.md)) {
+                                Text(text = stringResource(id = R.string.title_new_rule), style = TextStyles.label)
+                            }
+                        }
+                    }
                 }
             }
             itemsIndexed(shown, key = { _, rule -> rule.id }) { index, rule ->
@@ -208,7 +227,7 @@ private fun SearchField(query: String, onChange: (String) -> Unit) {
             .fillMaxWidth()
             .heightIn(min = 40.dp)
             .clip(Corners.sm)
-            .background(colors.searchField)
+            .background(colors.inset)
             .padding(horizontal = Spacing.sm),
     ) {
         Icon(Icons.Rounded.Search, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(20.dp))
@@ -224,40 +243,6 @@ private fun SearchField(query: String, onChange: (String) -> Unit) {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 modifier = Modifier.fillMaxWidth(),
             )
-        }
-    }
-}
-
-@Composable
-private fun FilterRow(filter: RuleFilter, onChange: (RuleFilter) -> Unit) {
-    val colors = ExtendedTheme.colors
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier
-            .padding(horizontal = Spacing.md, vertical = Spacing.xs)
-            .fillMaxWidth()
-            .clip(Corners.sm)
-            .background(colors.inset)
-            .padding(3.dp),
-    ) {
-        RuleFilter.entries.forEach { entry ->
-            val selected = entry == filter
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(Corners.xs)
-                    .background(if (selected) colors.card else Color.Transparent)
-                    .clickable { onChange(entry) }
-                    .padding(vertical = 6.dp),
-            ) {
-                Text(
-                    text = stringResource(id = entry.label),
-                    style = TextStyles.caption,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) colors.text else colors.textSecondary,
-                )
-            }
         }
     }
 }
@@ -279,19 +264,27 @@ private fun StaleBanner(count: Int, onClean: () -> Unit) {
         modifier = Modifier
             .padding(horizontal = Spacing.md, vertical = Spacing.xs)
             .fillMaxWidth()
+            .heightIn(min = 52.dp)
             .clip(Corners.md)
-            .background(colors.accent.copy(alpha = 0.10f))
-            .padding(start = Spacing.sm),
+            .background(colors.chip)
+            .padding(start = Spacing.md, end = Spacing.xs),
     ) {
         Text(
             text = stringResource(id = R.string.rules_stale, count),
             style = TextStyles.caption,
-            color = colors.text,
+            color = colors.textSecondary,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onClean) {
-            Text(text = stringResource(id = R.string.button_clean_up), color = colors.accent, style = TextStyles.label)
-        }
+        // A text button: no background of its own
+        Text(
+            text = stringResource(id = R.string.button_clean_up),
+            style = TextStyles.label,
+            color = colors.accent,
+            modifier = Modifier
+                .clip(Corners.full)
+                .clickable(onClick = onClean)
+                .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+        )
     }
 }
 
@@ -342,7 +335,7 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
                         text = stringResource(id = R.string.rule_exception),
                         style = TextStyles.micro,
                         color = colors.textSecondary,
-                        modifier = Modifier.clip(Corners.xs).background(colors.inset).padding(horizontal = 5.dp, vertical = 1.dp),
+                        modifier = Modifier.clip(Corners.xs).background(colors.card).padding(horizontal = 5.dp, vertical = 1.dp),
                     )
                 }
             }

@@ -90,7 +90,7 @@
     <string name="button_yes">是</string>
     <string name="title_agree">点赞</string>
     <string name="toast_agree_failed">点赞失败 %1$s</string>
-    <string name="toast_vote_failed">投票失败 %1$s</string>
+    <string name="toast_vote_failed">无法投票 %1$s</string>
     <string name="poll_single">单选</string>
     <string name="poll_multiple">多选</string>
     <string name="poll_voters">%1$d 人参与</string>
@@ -487,6 +487,7 @@
     <string name="rule_condition_in_forum">仅在某个吧里</string>
     <string name="rule_condition_title_only">仅匹配标题</string>
     <string name="rule_condition_forum_hint">吧名</string>
+    <string name="rule_condition_remove">移除条件</string>
     <string name="rule_enabled">启用</string>
     <string name="rule_delete">删除规则</string>
     <string name="rule_expiry_7">7 天</string>
@@ -501,12 +502,17 @@
     <string name="settings_block_spoiler_hint">作品或剧情的名字</string>
     <string name="button_block_7_days">屏蔽 7 天</string>
     <string name="settings_blocked_content">被屏蔽的内容</string>
-    <string name="settings_blocked_content_note">关闭时，被屏蔽的内容折叠为一行，点一下可以查看。单条规则可以另选。</string>
+    <string name="settings_blocked_content_note">折叠时显示屏蔽的原因，点按可以查看。单条规则可以另选。</string>
     <string name="settings_block_rules_group">规则</string>
+    <string name="settings_blocked_fold">折叠为一行</string>
+    <string name="settings_blocked_hide">完全隐藏</string>
+    <string name="rules_count">%1$d 条</string>
+    <string name="title_clean_up_rules">删除 %1$d 条长期未命中的规则？</string>
+    <string name="title_delete_rule">删除这条规则？</string>
     <string name="settings_block_export">导出规则</string>
     <string name="settings_block_import">导入规则</string>
     <string name="toast_rules_exported">已导出 %1$d 条规则</string>
-    <string name="toast_rules_export_failed">导出失败 %1$s</string>
+    <string name="toast_rules_export_failed">无法导出 %1$s</string>
     <string name="toast_rules_imported">已导入 %1$d 条规则</string>
     <string name="toast_rules_import_failed">无法读取这个文件</string>
     <string name="block_tip">%1$s · %2$s</string>
@@ -612,8 +618,8 @@
     <string name="button_save">保存</string>
     <string name="toast_black_saved">已保存拉黑设置</string>
     <string name="toast_black_removed">已解除拉黑</string>
-    <string name="toast_black_load_failed">获取拉黑设置失败 %1$s</string>
-    <string name="toast_black_save_failed">保存拉黑设置失败 %1$s</string>
+    <string name="toast_black_load_failed">无法获取拉黑设置 %1$s</string>
+    <string name="toast_black_save_failed">无法保存拉黑设置 %1$s</string>
     <string name="btn_block">屏蔽选项</string>
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>
