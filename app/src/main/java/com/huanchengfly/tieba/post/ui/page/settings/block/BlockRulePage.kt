@@ -85,7 +85,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.BlockRule.Condition
-import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.model.FlatCondition
 import com.huanchengfly.tieba.post.model.flat
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
@@ -342,21 +341,17 @@ private fun ConditionRow(test: FlatCondition.Test, onChange: (FlatCondition.Test
                 )
             },
         )
-        val note = when {
-            condition is Condition.Text && !condition.pattern.isValid -> R.string.rule_regex_invalid
-            condition is Condition.AuthorName && !condition.pattern.isValid -> R.string.rule_regex_invalid
-            condition is Condition.ForumName && !condition.pattern.isValid -> R.string.rule_regex_invalid
-            condition is Condition.ShorterThan -> R.string.rule_note_length
-            condition is Condition.Has && condition.kind == ContentKind.Emoticon -> R.string.rule_note_emoticon
-            condition is Condition.Only && condition.kind == ContentKind.Emoticon -> R.string.rule_note_emoticon
-            condition is Condition.Only -> R.string.rule_note_only
+        val pattern = when (condition) {
+            is Condition.Text -> condition.pattern
+            is Condition.AuthorName -> condition.pattern
+            is Condition.ForumName -> condition.pattern
             else -> null
         }
-        if (note != null) {
+        if (pattern != null && !pattern.isValid) {
             Text(
-                text = stringResource(id = note),
+                text = stringResource(id = R.string.rule_regex_invalid),
                 style = TextStyles.footnote,
-                color = if (note == R.string.rule_regex_invalid) MaterialTheme.colors.error else colors.textSecondary,
+                color = MaterialTheme.colors.error,
                 modifier = Modifier.padding(start = Spacing.sm, end = Spacing.sm, bottom = Spacing.xs),
             )
         }

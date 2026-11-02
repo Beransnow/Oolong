@@ -33,14 +33,15 @@ fun blockMenuLabels() = BlockMenuLabels(
 )
 
 /**
- * Blocking [thread]'s author, its forum unless [forumOffered] already, or keywords starting from
- * its title, as one context menu item in a group of its own that opens the choices in place.
+ * Blocking [thread]'s author, its forum unless [forumOffered] already, or keywords picked from
+ * its title and what lists show of it, as one context menu item in a group of its own that opens
+ * the choices in place.
  */
 fun blockMenuItems(labels: BlockMenuLabels, shortcuts: BlockShortcuts, thread: ThreadSummary, forumOffered: Boolean = false): List<ContextMenuItem> =
-    blockMenuItems(labels, shortcuts, thread.author, thread.forum.name.takeUnless { forumOffered }, thread.title)
+    blockMenuItems(labels, shortcuts, thread.author, thread.forum.name.takeUnless { forumOffered }, thread.title + "\n" + thread.abstract)
 
 /**
- * Blocking [author], the [forum] if given, or keywords starting from [text], as one context menu
+ * Blocking [author], the [forum] if given, or keywords picked from [text], as one context menu
  * item in a group of its own that opens the choices in place.
  */
 fun blockMenuItems(labels: BlockMenuLabels, shortcuts: BlockShortcuts, author: User?, forum: String?, text: String): List<ContextMenuItem> {

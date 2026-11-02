@@ -37,7 +37,7 @@ class BlockableTest {
     fun `emoticons are not words, and media are not text`() {
         val item = of(text(TextSpan.Plain("看"), TextSpan.Emoticon("image_emoticon", "滑稽")), image(), PostContent.Voice("md5", 3))
 
-        assertEquals("看\n\n\n", item.content)
+        assertEquals("看\n\n", item.content)
     }
 
     @Test

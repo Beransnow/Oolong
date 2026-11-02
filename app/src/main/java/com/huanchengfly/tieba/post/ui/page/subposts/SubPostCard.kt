@@ -21,6 +21,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
+import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
@@ -120,5 +121,5 @@ private fun replyMenuItems(
     add(ContextMenuItem(Icons.Rounded.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
     add(ContextMenuItem(Icons.Rounded.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
     if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
-    if (shortcuts != null) addAll(blockMenuItems(blockLabels, shortcuts, subPost.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(blockLabels, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))
 }

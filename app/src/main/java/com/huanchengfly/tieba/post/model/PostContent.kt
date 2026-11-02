@@ -73,7 +73,13 @@ sealed interface TextSpan {
     }
 }
 
-/** The content as plain text, for copying and for matching block rules. */
+/** The words the content says, without emoticons or media, one block a line. */
+val List<PostContent>.wordText: String
+    get() = joinToString("\n") { content ->
+        if (content is PostContent.Text) content.spans.filter { it !is TextSpan.Emoticon }.joinToString("") { it.text } else ""
+    }
+
+/** The content as plain text, for copying. */
 val List<PostContent>.plainText: String
     get() = joinToString("\n") { content ->
         when (content) {

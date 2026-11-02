@@ -35,11 +35,9 @@ import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Spacing
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
-import com.huanchengfly.tieba.post.ui.widgets.compose.PromptDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.TextButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.blockReason
 import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,7 +46,7 @@ import javax.inject.Singleton
 
 /**
  * Blocking from where the content is: a rule added at once with every default, a toast to take
- * it back, and a prompt for keywords. [BlockShortcutsHost] shows the toast and the prompt.
+ * it back, and a sheet to pick keywords. [BlockShortcutsHost] shows the toast and the sheet.
  */
 @Singleton
 class BlockShortcuts @Inject constructor(
@@ -59,7 +57,7 @@ class BlockShortcuts @Inject constructor(
     internal var notice by mutableStateOf<Notice?>(null)
         private set
 
-    /** What the keyword prompt starts with, while it shows. */
+    /** What the keyword sheet picks words out of, while it shows. */
     internal var keywordPrompt by mutableStateOf<String?>(null)
 
     /** A toast with a way to take back what it reports. */
@@ -84,7 +82,7 @@ class BlockShortcuts @Inject constructor(
 
     fun blockForum(name: String) = block(BlockRule(condition = BlockRule.Condition.Forum(name.removeSuffix("吧"))))
 
-    /** Asks for keywords, starting from [text], and blocks them. */
+    /** Asks for keywords, picked out of [text], and blocks them. */
     fun askKeywords(text: String) {
         keywordPrompt = text
     }
@@ -106,7 +104,7 @@ class BlockShortcuts @Inject constructor(
 
 val LocalBlockShortcuts = staticCompositionLocalOf<BlockShortcuts?> { null }
 
-/** The toast after blocking and the keyword prompt, over the whole window. */
+/** The toast after blocking and the keyword sheet, over the whole window. */
 @Composable
 fun BlockShortcutsHost(shortcuts: BlockShortcuts) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -130,22 +128,11 @@ fun BlockShortcutsHost(shortcuts: BlockShortcuts) {
     }
     val prompt = shortcuts.keywordPrompt
     if (prompt != null) {
-        val state = rememberDialogState()
-        LaunchedEffect(prompt) { state.show() }
-        PromptDialog(
-            dialogState = state,
-            initialValue = prompt,
-            title = { Text(text = stringResource(id = R.string.title_block_keywords)) },
-            confirmText = stringResource(id = R.string.button_block),
-            onConfirm = { text ->
-                val words = text.split(' ', '　').filter { it.isNotBlank() }
-                if (words.isNotEmpty()) shortcuts.block(BlockRule(condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(words))))
-                shortcuts.keywordPrompt = null
-            },
-            onCancel = { shortcuts.keywordPrompt = null },
-        ) {
-            Text(text = stringResource(id = R.string.tip_block_keywords))
-        }
+        KeywordSheet(
+            text = prompt,
+            onBlock = { words -> shortcuts.block(BlockRule(condition = BlockRule.Condition.Text(BlockRule.Pattern.Words(words)))) },
+            onDismiss = { shortcuts.keywordPrompt = null },
+        )
     }
 }
 

@@ -38,6 +38,7 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
+import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
@@ -342,7 +343,7 @@ internal fun postMenuItems(
     add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(post.id)) })
     if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, labels.delete) { onEvent(ThreadEvent.DeletePost(post)) })
     // Blocking from inside a thread leaves its forum out
-    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, post.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, post.author, forum = null, text = post.content.wordText))
 }
 
 /** What a long press on a reply inside a post offers. */
@@ -358,5 +359,5 @@ internal fun subPostMenuItems(
     if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
     add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
     add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
-    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, subPost.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))
 }

@@ -430,6 +430,8 @@
     <string name="menu_block_keywords_item">关键词…</string>
     <string name="title_block_keywords">屏蔽关键词</string>
     <string name="tip_block_keywords">多个词用空格分开，同时含有才屏蔽</string>
+    <string name="keywords_pick">选词</string>
+    <string name="keywords_type">手动输入</string>
     <string name="button_block">屏蔽</string>
     <string name="toast_blocked">已屏蔽%1$s</string>
     <string name="rule_in">"在 "</string>
@@ -505,16 +507,13 @@
     <string name="rule_op_has_not">不包含</string>
     <string name="rule_op_only">只有</string>
     <string name="rule_op_not_only">不只有</string>
-    <string name="rule_note_length">只数文字和数字，表情、标点、空格和链接不算</string>
-    <string name="rule_note_emoticon">贴吧表情、表情包和 emoji 都算</string>
-    <string name="rule_note_only">空格和标点不影响判断</string>
     <string name="rule_hint_ip">地区</string>
     <string name="rule_hint_name">名字中的词，多个用空格分开</string>
     <string name="rule_length_unit">字</string>
     <string name="rule_level_down">低一级</string>
     <string name="rule_level_up">高一级</string>
     <string name="rule_field_conditions">条件</string>
-    <string name="rule_nested">这条规则的条件有多层，在此只能查看</string>
+    <string name="rule_nested">条件有多层，只能查看</string>
     <string name="rule_forever">永久</string>
     <string name="rule_expired">已失效</string>
     <string name="rule_expires_in">%1$d 天后失效</string>

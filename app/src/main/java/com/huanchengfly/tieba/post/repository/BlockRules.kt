@@ -17,6 +17,7 @@ import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.flat
 import com.huanchengfly.tieba.post.model.tests
+import com.huanchengfly.tieba.post.model.wordText
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -60,31 +61,27 @@ fun Blockable(
 ): Blockable {
     val kinds = mutableSetOf<ContentKind>()
     var length = 0
-    val text = buildString {
-        content.forEach { block ->
-            when (block) {
-                is PostContent.Text -> block.spans.forEach { span ->
-                    when (span) {
-                        is TextSpan.Plain -> {
-                            length += letterCount(span.text)
-                            if (span.text.hasEmoji()) kinds += ContentKind.Emoticon
-                        }
-                        is TextSpan.Link -> kinds += ContentKind.Link
-                        is TextSpan.VideoLink -> kinds += ContentKind.Video
-                        is TextSpan.Mention -> kinds += ContentKind.Mention
-                        is TextSpan.Emoticon -> kinds += ContentKind.Emoticon
+    content.forEach { block ->
+        when (block) {
+            is PostContent.Text -> block.spans.forEach { span ->
+                when (span) {
+                    is TextSpan.Plain -> {
+                        length += letterCount(span.text)
+                        if (span.text.hasEmoji()) kinds += ContentKind.Emoticon
                     }
-                    // Emoticons are pictures; their names are not words the post says
-                    if (span !is TextSpan.Emoticon) append(span.text)
+                    is TextSpan.Link -> kinds += ContentKind.Link
+                    is TextSpan.VideoLink -> kinds += ContentKind.Video
+                    is TextSpan.Mention -> kinds += ContentKind.Mention
+                    is TextSpan.Emoticon -> kinds += ContentKind.Emoticon
                 }
-                is PostContent.Image -> kinds += if (block.sticker) ContentKind.Emoticon else ContentKind.Image
-                is PostContent.Video -> kinds += ContentKind.Video
-                is PostContent.Voice -> kinds += ContentKind.Voice
             }
-            append('\n')
+            is PostContent.Image -> kinds += if (block.sticker) ContentKind.Emoticon else ContentKind.Image
+            is PostContent.Video -> kinds += ContentKind.Video
+            is PostContent.Voice -> kinds += ContentKind.Voice
         }
     }
-    return Blockable(author, text, place, title, forum, kinds, length, byThreadAuthor)
+    // Emoticons are pictures; their names are not words the post says
+    return Blockable(author, content.wordText, place, title, forum, kinds, length, byThreadAuthor)
 }
 
 /** Content a [rule] matched, and whether it is hidden rather than folded. */
