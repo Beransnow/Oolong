@@ -143,7 +143,7 @@ internal fun ForumThreadList(
                                     onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
                                     onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
                                     showForum = false,
-                                    onLongPress = peeker?.let { { thread, from, at -> it.peek(thread, from, at) } },
+                                    onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
                                 )
                             }
                         }

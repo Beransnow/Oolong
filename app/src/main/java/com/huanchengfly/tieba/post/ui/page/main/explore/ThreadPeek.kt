@@ -22,6 +22,7 @@ import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.knownFirstFloor
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
@@ -63,19 +64,21 @@ class ThreadPeekViewModel @Inject constructor(
 /** Long-pressing a thread card: a look at its whole first floor, over what can be done with it. */
 @Stable
 class ThreadPeeker internal constructor(
-    private val show: (ThreadSummary, Rect, Offset, ImmutableList<DislikeOption>, (Long, ImmutableList<DislikeOption>) -> Unit) -> Unit,
+    private val show: (ThreadSummary, Rect, Offset, PageOrigin, ImmutableList<DislikeOption>, (Long, ImmutableList<DislikeOption>) -> Unit) -> Unit,
 ) {
     /**
      * Peeks at [thread], whose card is at [from] in the window and was pressed [at], offering the
-     * server's [options] for not wanting it besides storing, sharing and copying its link.
+     * server's [options] for not wanting it besides storing, sharing and copying its link. Opened
+     * from the peek, the thread's page grows out of it, and closes back into the card, [origin].
      */
     fun peek(
         thread: ThreadSummary,
         from: Rect,
         at: Offset,
+        origin: PageOrigin,
         options: ImmutableList<DislikeOption> = persistentListOf(),
         onDislike: (clickTime: Long, reasons: ImmutableList<DislikeOption>) -> Unit = { _, _ -> },
-    ) = show(thread, from, at, options, onDislike)
+    ) = show(thread, from, at, origin, options, onDislike)
 }
 
 /** Peeks at threads of this feed; null where there are no context menus. */
@@ -91,7 +94,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val blockLabels = blockMenuLabels()
     val shortcuts = LocalBlockShortcuts.current
     return remember(menus, context, navigator, viewModel, collect, shortcuts, shareLabels, blockLabels) {
-        ThreadPeeker { thread, from, at, options, onDislike ->
+        ThreadPeeker { thread, from, at, origin, options, onDislike ->
             viewModel.prefetch(thread)
             val items = buildList {
                 add(ContextMenuItem(Symbols.Star, collect) { viewModel.store(thread) })
@@ -106,7 +109,11 @@ fun rememberThreadPeeker(): ThreadPeeker? {
                 anchor = Rect(at, Size.Zero),
                 preview = ContextMenuPreview(
                     from = from,
-                    onClick = { navigator.navigateToThread(thread) },
+                    origin = origin,
+                    onClick = {
+                        origin.leave()
+                        navigator.navigateToThread(thread)
+                    },
                 ) {
                     ThreadPeek(thread = thread)
                 },

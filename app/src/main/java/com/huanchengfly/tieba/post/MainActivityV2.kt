@@ -66,6 +66,7 @@ import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.repository.AccountRepository
 import com.huanchengfly.tieba.post.services.NotifyJobService
+import com.huanchengfly.tieba.post.ui.common.navigation.PageMorphHost
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.AppNavDisplay
 import com.huanchengfly.tieba.post.ui.navigation.BackStackNavigator
@@ -425,7 +426,8 @@ class MainActivityV2 : AppCompatActivity() {
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
                 CompositionLocalProvider(LocalNavigator provides navigator, LocalBlockShortcuts provides blockShortcuts) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        AppNavDisplay(backStack = backStack)
+                        // Around the menus as well as the pages: a page can open out of what a menu previews
+                        PageMorphHost { AppNavDisplay(backStack = backStack) }
                         BlockShortcutsHost(blockShortcuts)
                         AppDialogHost()
                     }

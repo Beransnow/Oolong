@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.SharedThread
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -24,8 +25,11 @@ class FeedThreadEvents(
     val onOpenForum: (ForumSummary) -> Unit = {},
     val onOpenUser: (User) -> Unit = {},
     val onOpenOrigin: (SharedThread) -> Unit = {},
-    /** Long-pressing a card, at its bounds and the press in the window; null where it does nothing. */
-    val onPeek: ((ThreadSummary, from: Rect, at: Offset) -> Unit)? = null,
+    /**
+     * Long-pressing a card, at its bounds and the press in the window, with the card as the
+     * origin of the thread's page; null where it does nothing.
+     */
+    val onPeek: ((ThreadSummary, from: Rect, at: Offset, origin: PageOrigin) -> Unit)? = null,
 )
 
 /** Opens what a thread card's parts lead to; liking is up to the feed. */
@@ -41,7 +45,7 @@ fun rememberFeedThreadEvents(onAgree: (ThreadSummary) -> Unit): FeedThreadEvents
             onOpenForum = { navigator.navigate(ForumKey(it.name)) },
             onOpenUser = { navigator.navigate(UserProfileKey(it.id)) },
             onOpenOrigin = { navigator.navigate(ThreadKey(threadId = it.id, forumId = it.forumId)) },
-            onPeek = peeker?.let { { thread, from, at -> it.peek(thread, from, at) } },
+            onPeek = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
         )
     }
 }

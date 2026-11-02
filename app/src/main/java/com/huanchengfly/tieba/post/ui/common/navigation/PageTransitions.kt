@@ -138,9 +138,14 @@ object PageTransitions {
     /**
      * For animations told by [PageDisplay]'s transitions: linear over one fixed length, so where
      * they are follows the fraction the display drives, and the pace is the driving spring's.
-     * Every animation on those transitions must use it, or the fractions drift apart.
+     * Every animation on those transitions must use it, or the fractions drift apart. One that
+     * moves over only part of the transition runs from fraction [start] to [end].
      */
-    fun <T> seeked(): FiniteAnimationSpec<T> = tween(SeekMillis, easing = LinearEasing)
+    fun <T> seeked(start: Float = 0f, end: Float = 1f): FiniteAnimationSpec<T> = tween(
+        durationMillis = ((end - start) * SeekMillis).roundToInt(),
+        delayMillis = (start * SeekMillis).roundToInt(),
+        easing = LinearEasing,
+    )
 
     private const val SeekMillis = 1000
 
@@ -154,7 +159,8 @@ object PageTransitions {
      * How [PageDisplay] moves from one scene to another: a step deeper or back by how many pages are
      * under each, sliding as [transitionSpec] and [popTransitionSpec] do; a quick cross-fade for
      * the same pages laid out again ([relayout]); and, for a [peek], only the page on top sliding
-     * off, as the page underneath is already in place.
+     * off, as the page underneath is already in place. A page opened from one of [origins] grows
+     * out of it instead, and shrinks into it going back, while the page underneath stays put.
      */
     fun <T : Any> between(
         from: Scene<T>,
@@ -162,20 +168,45 @@ object PageTransitions {
         overlap: State<Boolean>,
         relayout: Boolean,
         peek: Boolean,
+        origins: PageOrigins? = null,
     ): PageTransition {
         val fromDepth = from.previousEntries.size
         val toDepth = to.previousEntries.size
+        val morph = origins != null && when {
+            // Over the translucent theme's wallpaper pages have no ground of their own to morph
+            relayout || !overlap.value || from !is FramedSinglePaneScene<*> || to !is FramedSinglePaneScene<*> -> false.also { origins.clear() }
+            else -> origins.morphs(
+                from = from.key,
+                to = to.key,
+                opening = toDepth > fromDepth,
+                peek = peek,
+                kept = (to.previousEntries + to.entries).mapTo(mutableSetOf()) { it.contentKey },
+            )
+        }
         return when {
             relayout -> PageTransition(
                 { fadeIn(seeked()) togetherWith fadeOut(seeked()) },
                 drive = tween(CrossFadeMillis),
                 zIndex = 0f,
             )
+            // Let go of, the page slides off as from any peek, unless it shrinks into its origin
             peek -> PageTransition(
                 {
                     EnterTransition.None togetherWith
                         slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, seeked(), targetOffset = { it })
                 },
+                drive = drive(),
+                zIndex = -1f,
+            )
+            // The page and its origin carry the motion; the pages underneath stay put
+            morph && toDepth > fromDepth -> PageTransition(
+                { EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished },
+                drive = drive(),
+                zIndex = 1f,
+            )
+            // Fading as well, in case its origin has gone meanwhile
+            morph -> PageTransition(
+                { EnterTransition.None togetherWith fadeOut(seeked(end = MorphFade)) },
                 drive = drive(),
                 zIndex = -1f,
             )
@@ -270,6 +301,7 @@ object PageTransitions {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .then(if (key != null) Modifier.pageMorph(key) else Modifier)
                 .onGloballyPositioned {
                     pageX.floatValue = it.positionInRoot().x
                     pageWidth.floatValue = it.size.width.toFloat()

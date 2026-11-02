@@ -77,6 +77,9 @@ import com.huanchengfly.tieba.post.model.ThreadVideo
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
+import com.huanchengfly.tieba.post.ui.common.navigation.pageOrigin
+import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageOrigin
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
@@ -696,8 +699,8 @@ fun FeedCard(
     onClickShared: (SharedThread) -> Unit = {},
     /** Whether to show the thread's forum, which a forum's own list leaves out. */
     showForum: Boolean = true,
-    /** Long-pressing the card, at its bounds and the press in the window. */
-    onLongPress: ((ThreadSummary, from: Rect, at: Offset) -> Unit)? = null,
+    /** Long-pressing the card, at its bounds and the press in the window, with the card as an origin. */
+    onLongPress: ((ThreadSummary, from: Rect, at: Offset, origin: PageOrigin) -> Unit)? = null,
     dislikeAction: @Composable () -> Unit = {},
 ) {
     // A long press opens the card's menu, which the pressing finger can then slide onto and lift
@@ -728,6 +731,8 @@ fun FeedCard(
             }
     }
     val author = thread.author
+    // The thread page opens out of the card, and closes back into it
+    val origin = rememberPageOrigin()
     Card(
         header = {
             UserHeader(
@@ -794,16 +799,19 @@ fun FeedCard(
                 )
             }
         },
-        onClick = { onClick(thread) },
+        onClick = {
+            origin.leave()
+            onClick(thread)
+        },
         onLongClick = onLongPress?.let { peek ->
             {
                 coordinates?.let {
                     peeking = true
-                    peek(thread, Rect(it.positionInWindow(), it.size.toSize()), pressAt)
+                    peek(thread, Rect(it.positionInWindow(), it.size.toSize()), pressAt, origin)
                 }
             }
         },
-        modifier = modifier.then(pressTracking),
+        modifier = modifier.pageOrigin(origin).then(pressTracking),
     )
 }
 

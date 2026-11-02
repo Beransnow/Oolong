@@ -273,8 +273,8 @@ private fun FeedList(
                                             onClickUser = events.onOpenUser,
                                             onClickShared = events.onOpenOrigin,
                                             onLongPress = peeker?.let { peeker ->
-                                                { thread, from, at ->
-                                                    peeker.peek(thread, from, at, dislikeOptions) { clickTime, reasons ->
+                                                { thread, from, at, origin ->
+                                                    peeker.peek(thread, from, at, origin, dislikeOptions) { clickTime, reasons ->
                                                         onDislike(thread, reasons, clickTime)
                                                     }
                                                 }

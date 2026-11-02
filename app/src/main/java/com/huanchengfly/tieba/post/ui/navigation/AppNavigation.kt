@@ -41,6 +41,7 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStrategy
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageHost
+import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageOrigins
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageBackHandler
 import com.huanchengfly.tieba.post.ui.common.navigation.PageDisplay
@@ -248,6 +249,7 @@ fun AppNavDisplay(
                 ) {
                     val pageHost = remember { PageHost() }
                     val pagePeek = remember { PagePeek() }
+                    val pageOrigins = LocalPageOrigins.current
                     val entries = rememberDecoratedNavEntries(
                         backStack = backStack,
                         entryDecorators = listOf(
@@ -287,7 +289,7 @@ fun AppNavDisplay(
                                 .fillMaxSize()
                                 .pageHost(pageHost),
                         ) { from, to, peek ->
-                            PageTransitions.between(from, to, overlap, relayout, peek)
+                            PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins)
                         }
                     }
                 }

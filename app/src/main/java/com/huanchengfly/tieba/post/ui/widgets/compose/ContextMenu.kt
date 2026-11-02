@@ -84,6 +84,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.navigation.PageOrigin
+import com.huanchengfly.tieba.post.ui.common.navigation.pageOriginStandIn
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
@@ -130,12 +132,14 @@ class ContextMenuItem(
 
 /**
  * A larger look at what was long-pressed, shown above its menu: [content] grows out of [from],
- * the pressed thing's bounds in the window, and tapping it runs [onClick].
+ * the pressed thing's bounds in the window, and tapping it runs [onClick]. When that opens a page
+ * from [origin], the page grows out of the preview, which stays until it has.
  */
 @Immutable
 class ContextMenuPreview(
     val from: Rect,
     val onClick: () -> Unit,
+    val origin: PageOrigin? = null,
     val content: @Composable () -> Unit,
 )
 
@@ -285,6 +289,19 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 sink.join()
             }
+            menus.closed(request.id)
+        }
+    }
+
+    // Opening a page out of the preview: it becomes the page, so the rest fades away around it,
+    // and the overlay stays until the page has grown out of it
+    fun handOff(origin: PageOrigin) {
+        if (closing) return
+        closing = true
+        scope.launch {
+            launch { grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
+            origin.awaitOpened()
+            lift.snapTo(0f)
             menus.closed(request.id)
         }
     }
@@ -491,7 +508,11 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 },
             ) {
                 if (preview != null) {
-                    Box(modifier = Modifier.background(colors.card)) {
+                    Box(
+                        modifier = Modifier
+                            .then(if (preview.origin != null) Modifier.pageOriginStandIn(preview.origin) else Modifier)
+                            .background(colors.card),
+                    ) {
                         preview.content()
                         // Over the content, so a tap anywhere on it opens what it shows
                         Box(
@@ -499,7 +520,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                                 .matchParentSize()
                                 .clickable(enabled = !closing) {
                                     preview.onClick()
-                                    dismiss()
+                                    if (preview.origin != null) handOff(preview.origin) else dismiss()
                                 },
                         )
                     }
