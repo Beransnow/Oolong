@@ -30,12 +30,14 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -165,6 +167,9 @@ class ContextMenus internal constructor() {
     internal var request by mutableStateOf<ContextMenuRequest?>(null)
         private set
 
+    /** How many things on screen can't be drawn twice, as a menu's glass would draw them ([KeepFromMenuGlass]). */
+    internal var unsampleable by mutableIntStateOf(0)
+
     /** Where the finger that opened the menu is, in the window, while it stays down. */
     internal var finger by mutableStateOf<Offset?>(null)
         private set
@@ -217,6 +222,19 @@ class ContextMenus internal constructor() {
     }
 }
 
+/**
+ * Keeps menus from blurring the window while this is composed, for content that can't be drawn
+ * twice: a web view drawn into a menu's glass as well alternates between two renders of its page.
+ */
+@Composable
+fun KeepFromMenuGlass() {
+    val menus = LocalContextMenus.current ?: return
+    DisposableEffect(menus) {
+        menus.unsampleable++
+        onDispose { menus.unsampleable-- }
+    }
+}
+
 /** The window's context menus; null where there are none, as in previews and tests. */
 val LocalContextMenus = staticCompositionLocalOf<ContextMenus?> { null }
 
@@ -229,12 +247,16 @@ fun ContextMenuHost(content: @Composable () -> Unit) {
     val backdrop = rememberHazeState()
     CompositionLocalProvider(LocalContextMenus provides menus) {
         Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
-            Box(modifier = if (menus.request != null) Modifier.hazeSource(backdrop) else Modifier) {
+            val sampled = menus.unsampleable == 0
+            Box(modifier = if (menus.request != null && sampled) Modifier.hazeSource(backdrop) else Modifier) {
                 content()
             }
             menus.request?.let { request ->
                 key(request.id) {
-                    ContextMenuOverlay(menus = menus, request = request, origin = origin, backdrop = backdrop)
+                    // Nothing to blur: the menu takes its opaque look
+                    CompositionLocalProvider(LocalGlassTier provides if (sampled) LocalGlassTier.current else GlassTier.Solid) {
+                        ContextMenuOverlay(menus = menus, request = request, origin = origin, backdrop = backdrop)
+                    }
                 }
             }
         }

@@ -214,6 +214,7 @@ fun WebView(
     client.navigator = navigator
     chromeClient.state = state
 
+    KeepFromMenuGlass()
     AndroidView(
         factory = { context ->
             (factory?.invoke(context) ?: WebView(context)).apply {
