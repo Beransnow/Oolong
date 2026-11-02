@@ -3,6 +3,7 @@ package com.huanchengfly.tieba.post.ui.common.theme.compose
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.material.Colors
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
@@ -290,8 +291,10 @@ fun TiebaLiteTheme(
             colors = colors,
             typography = Typography,
             shapes = Shapes,
-            content = content
-        )
+        ) {
+            // Inside MaterialTheme, which provides its own ripple
+            CompositionLocalProvider(LocalIndication provides PressFeedback.Overlay, content = content)
+        }
     }
 }
 

@@ -1,7 +1,6 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +14,7 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ButtonElevation
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Surface
@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.PressFeedback
 
 @Composable
 fun Button(
@@ -47,32 +48,35 @@ fun Button(
     content: @Composable RowScope.() -> Unit
 ) {
     val contentColor by colors.contentColor(enabled)
-    Surface(
-        modifier = Modifier
-            .clip(shape)
-            .clickable(
-                onClick = onClick,
-                enabled = enabled,
-                interactionSource = interactionSource,
-                indication = LocalIndication.current
-            )
-            .then(modifier),
-        shape = shape,
-        color = colors.backgroundColor(enabled).value,
-        contentColor = contentColor.copy(alpha = 1f),
-        border = border,
-        elevation = elevation?.elevation(enabled, interactionSource)?.value ?: 0.dp,
-    ) {
-        CompositionLocalProvider(LocalContentAlpha provides contentColor.alpha) {
-            ProvideTextStyle(
-                value = MaterialTheme.typography.button
-            ) {
-                Row(
-                    Modifier.padding(contentPadding),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = content
+    // The press veil takes the content colour, so a filled button lightens rather than darkens
+    CompositionLocalProvider(LocalContentColor provides contentColor.copy(alpha = 1f)) {
+        Surface(
+            modifier = Modifier
+                .clip(shape)
+                .clickable(
+                    onClick = onClick,
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                    indication = PressFeedback.Scale
                 )
+                .then(modifier),
+            shape = shape,
+            color = colors.backgroundColor(enabled).value,
+            contentColor = contentColor.copy(alpha = 1f),
+            border = border,
+            elevation = elevation?.elevation(enabled, interactionSource)?.value ?: 0.dp,
+        ) {
+            CompositionLocalProvider(LocalContentAlpha provides contentColor.alpha) {
+                ProvideTextStyle(
+                    value = MaterialTheme.typography.button
+                ) {
+                    Row(
+                        Modifier.padding(contentPadding),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = content
+                    )
+                }
             }
         }
     }
