@@ -232,12 +232,8 @@ fun themeColors(
     }
 }
 
-/** The colour the user picked for [theme], if it is the custom or translucent theme. */
+/** The colour the user picked for [theme], if it is the custom theme. */
 fun pickedColor(context: Context, theme: String): Color? {
-    val saved = when {
-        theme == ThemeUtil.THEME_CUSTOM -> context.appPreferences.customPrimaryColor
-        ThemeUtil.isTranslucentTheme(theme) -> context.appPreferences.translucentPrimaryColor
-        else -> null
-    }
+    val saved = if (theme == ThemeUtil.THEME_CUSTOM) context.appPreferences.customPrimaryColor else null
     return saved?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
 }

@@ -125,7 +125,7 @@ object ThemeUtil {
     }
 
     /** Uses the colour [name], dark or light. */
-    fun selectAccent(name: String) = updateSettings { it.copy(accent = name, wallpaper = false) }
+    fun selectAccent(name: String) = updateSettings { it.copy(accent = name) }
 
     fun selectStyle(style: ColorStyle) = updateSettings { it.copy(style = style) }
 

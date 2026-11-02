@@ -151,6 +151,24 @@ data class ThemeSettings(
         internal val BackgroundKey = stringPreferencesKey("theme_background")
         internal val StyleKey = stringPreferencesKey("theme_color_style")
         internal val MonetStyleKey = stringPreferencesKey("theme_monet_style")
+        val CustomColorKey = stringPreferencesKey("custom_primary_color")
+        private val OldWallpaperColorKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
+
+        /** Whether [prefs] hold a colour picked for the wallpaper alone, from before it took the theme colour. */
+        fun hasWallpaperColor(prefs: Preferences): Boolean = prefs[OldWallpaperColorKey] != null
+
+        /**
+         * Moves the colour picked for the wallpaper alone to the theme colour, as a custom one, if
+         * the wallpaper is shown and no custom colour is kept; otherwise it is dropped.
+         */
+        fun moveWallpaperColor(prefs: MutablePreferences) {
+            val color = prefs.remove(OldWallpaperColorKey) ?: return
+            if (prefs[BackgroundKey] != BACKGROUND_WALLPAPER || prefs[CustomColorKey] != null) return
+            prefs[CustomColorKey] = color
+            prefs[AccentKey] = ThemeUtil.THEME_CUSTOM
+            // It was used throughout over the wallpaper
+            prefs[StyleKey] = ColorStyle.Bright.value
+        }
 
         private val OldThemeKey = stringPreferencesKey(ThemeUtil.KEY_THEME)
         private val OldLightThemeKey = stringPreferencesKey(ThemeUtil.KEY_OLD_THEME)

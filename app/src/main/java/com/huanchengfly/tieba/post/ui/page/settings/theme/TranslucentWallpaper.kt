@@ -26,6 +26,7 @@ import com.huanchengfly.tieba.post.components.images.BlurTransformation
 import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.utils.ImageUtil
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -55,7 +56,8 @@ enum class WallpaperText(val value: String) {
  * @param text the text colour over it
  * @param dim how far the wallpaper is darkened, 0 to [MAX_DIM]
  * @param blur how strong the blur is, 0 to [MAX_BLUR]
- * @param accent the theme's emphasis colour as ARGB, or null for the default
+ * @param accent a colour picked from the wallpaper for the theme as ARGB, saved as the custom
+ *   theme colour; null leaves the theme colour as it is
  */
 data class TranslucentWallpaper(
     val text: WallpaperText = WallpaperText.Auto,
@@ -136,7 +138,6 @@ data class TranslucentWallpaper(
                 text = WallpaperText.of(prefs[TextKey]) ?: legacyText ?: WallpaperText.Auto,
                 dim = if (legacyDark) 0f else prefs[DimKey] ?: DEFAULT_DIM,
                 blur = (prefs[BlurKey] ?: 0).coerceIn(0, MAX_BLUR),
-                accent = prefs[AccentKey]?.let { runCatching { Color.parseColor(it) }.getOrNull() },
             )
         }
 
@@ -145,7 +146,6 @@ data class TranslucentWallpaper(
         private val TextKey = stringPreferencesKey("translucent_wallpaper_text")
         internal val DimKey = floatPreferencesKey("translucent_wallpaper_dim")
         private val BlurKey = intPreferencesKey("translucent_background_blur")
-        private val AccentKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
 
         /**
          * Whether the drawn wallpaper is from before dark text stopped fading it to white, and is
@@ -170,7 +170,7 @@ data class TranslucentWallpaper(
                 it[ThemeKey] = if (darkText) ThemeUtil.TRANSLUCENT_THEME_DARK else ThemeUtil.TRANSLUCENT_THEME_LIGHT
                 it[DimKey] = wallpaper.dim
                 it[BlurKey] = wallpaper.blur
-                if (wallpaper.accent != null) it[AccentKey] = String.format("#%08X", wallpaper.accent) else it.remove(AccentKey)
+                if (wallpaper.accent != null) it[ThemeSettings.CustomColorKey] = String.format("#%08X", wallpaper.accent)
             }
             return old
         }
@@ -260,6 +260,8 @@ suspend fun Context.redrawOutdatedWallpaper() {
 suspend fun Context.applyWallpaper(source: File, wallpaper: TranslucentWallpaper): Boolean {
     if (!drawWallpaper(source, wallpaper)) return false
     ThemeUtil.setWallpaper(true)
+    // A colour picked from the wallpaper becomes the theme colour, as a custom one
+    if (wallpaper.accent != null) ThemeUtil.selectAccent(ThemeUtil.THEME_CUSTOM)
     return true
 }
 

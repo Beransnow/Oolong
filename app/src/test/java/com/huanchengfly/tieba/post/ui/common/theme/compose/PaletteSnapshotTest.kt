@@ -66,6 +66,9 @@ class PaletteSnapshotTest {
         monetStyle = style,
     )
     private val wallpaper = ThemeSettings(appearance = Appearance.Light, wallpaper = true)
+
+    /** The wallpaper with a colour picked for it, which is the custom colour. */
+    private val pickedWallpaper = wallpaper.copy(accent = ThemeUtil.THEME_CUSTOM, style = ColorStyle.Bright)
     private val dynamic = ThemeSettings.ACCENT_DYNAMIC
 
     private val setups = listOf("tieba", "black", "blue", "purple", "pink", "red", "custom").map { Setup(it, light(it)) } +
@@ -74,8 +77,8 @@ class PaletteSnapshotTest {
             Setup("translucent_light", wallpaper, darkText = false),
             Setup("translucent_dark", wallpaper, darkText = true),
             Setup("custom_picked", light(ThemeUtil.THEME_CUSTOM), accent = PICKED),
-            Setup("translucent_light_picked", wallpaper, darkText = false, accent = PICKED),
-            Setup("translucent_dark_picked", wallpaper, darkText = true, accent = PICKED),
+            Setup("translucent_light_picked", pickedWallpaper, darkText = false, accent = PICKED),
+            Setup("translucent_dark_picked", pickedWallpaper, darkText = true, accent = PICKED),
             Setup("dynamic_light", light(dynamic)),
             Setup("dynamic_dark", dark(ThemeUtil.THEME_BLUE_DARK, dynamic)),
             Setup("dynamic_amoled", dark(ThemeUtil.THEME_AMOLED_DARK, dynamic)),

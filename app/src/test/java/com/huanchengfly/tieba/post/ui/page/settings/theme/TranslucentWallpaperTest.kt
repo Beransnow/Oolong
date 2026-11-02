@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.testing.LegacyAppRule
+import com.huanchengfly.tieba.post.utils.ThemeSettings
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -76,11 +77,11 @@ class TranslucentWallpaperTest {
 
     @Test
     fun `reads back what was saved and replaces the old wallpaper`() = runTest {
-        val first = TranslucentWallpaper(text = WallpaperText.Dark, dim = 0.5f, blur = 12, accent = 0xFF336699.toInt())
+        val first = TranslucentWallpaper(text = WallpaperText.Dark, dim = 0.5f, blur = 12)
         assertNull(TranslucentWallpaper.save(context, first, "/a.jpg", darkText = true))
         assertEquals(first, TranslucentWallpaper.saved(context))
 
-        val second = first.copy(text = WallpaperText.Auto, accent = null)
+        val second = first.copy(text = WallpaperText.Auto)
         assertEquals("/a.jpg", TranslucentWallpaper.save(context, second, "/b.jpg", darkText = false))
         assertEquals(second, TranslucentWallpaper.saved(context))
         assertFalse(TranslucentWallpaper.isOutdated(context))
@@ -110,10 +111,10 @@ class TranslucentWallpaperTest {
     }
 
     @Test
-    fun `ignores a saved accent that is not a colour`() = runTest {
-        context.dataStore.edit { it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)] = "not a colour" }
+    fun `a colour picked from the wallpaper is saved as the custom colour`() = runTest {
+        TranslucentWallpaper.save(context, TranslucentWallpaper(accent = 0xFF336699.toInt()), "/a.jpg", darkText = false)
 
+        assertEquals("#FF336699", context.dataStore.data.first()[ThemeSettings.CustomColorKey])
         assertNull(TranslucentWallpaper.saved(context).accent)
-        assertEquals("not a colour", context.dataStore.data.first()[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)])
     }
 }

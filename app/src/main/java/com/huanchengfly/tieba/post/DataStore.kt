@@ -76,6 +76,18 @@ private val dataStoreInstance by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) 
                         return ThemeSettings.needsMigration(currentData)
                     }
                 },
+                // The wallpaper had a colour of its own; it takes the theme colour now
+                object : DataMigration<Preferences> {
+                    override suspend fun cleanUp() {}
+
+                    override suspend fun migrate(currentData: Preferences): Preferences {
+                        return currentData.toMutablePreferences().apply { ThemeSettings.moveWallpaperColor(this) }.toPreferences()
+                    }
+
+                    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+                        return ThemeSettings.hasWallpaperColor(currentData)
+                    }
+                },
             )
         }
     )

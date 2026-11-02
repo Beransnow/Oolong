@@ -17,7 +17,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.utils.ColorStyle
 import com.huanchengfly.tieba.post.utils.ThemeSettings
@@ -240,7 +239,8 @@ fun colorsOf(settings: ThemeSettings, dark: Boolean, picks: Any? = null): Extend
         val nowTheme = if (settings.isSystemColor && !dark) ThemeUtil.THEME_CUSTOM else ThemeUtil.getCurrentTheme(theme)
         themeColors(
             nowTheme,
-            if (settings.isSystemColor) colorOf(context, settings) else pickedColor(context, nowTheme),
+            // The wallpaper takes the theme colour
+            if (settings.isSystemColor || ThemeUtil.isTranslucentTheme(nowTheme)) colorOf(context, settings) else pickedColor(context, nowTheme),
             plain = settings.style == ColorStyle.Plain,
             darkAccent = darkAccentOf(context, settings),
         )
@@ -265,7 +265,7 @@ fun rememberColorPicks(): Any? {
     // Settings of their own: changing them leaves the theme name as it was
     val picks by remember {
         context.dataStore.data
-            .map { listOf(it[TranslucentTextKey], it[TranslucentColorKey], it[CustomColorKey]) }
+            .map { listOf(it[TranslucentTextKey], it[ThemeSettings.CustomColorKey]) }
             .distinctUntilChanged()
     }.collectAsState(initial = null)
     return picks
@@ -294,8 +294,6 @@ fun TiebaLiteTheme(
 }
 
 private val TranslucentTextKey = intPreferencesKey("translucent_background_theme")
-private val TranslucentColorKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
-private val CustomColorKey = stringPreferencesKey("custom_primary_color")
 
 object ExtendedTheme {
     val colors: ExtendedColors

@@ -113,6 +113,32 @@ class ThemeSettingsTest {
     }
 
     @Test
+    fun `a colour picked for the wallpaper becomes the custom colour while none is kept`() {
+        val prefs = mutablePreferencesOf().also { ThemeSettings(wallpaper = true).writeTo(it) }
+        prefs[stringPreferencesKey("translucent_primary_color")] = "#FF336699"
+        assertTrue(ThemeSettings.hasWallpaperColor(prefs))
+
+        ThemeSettings.moveWallpaperColor(prefs)
+
+        assertFalse(ThemeSettings.hasWallpaperColor(prefs))
+        assertEquals("#FF336699", prefs[ThemeSettings.CustomColorKey])
+        assertEquals(ThemeUtil.THEME_CUSTOM, ThemeSettings.from(prefs).accent)
+    }
+
+    @Test
+    fun `a colour picked for the wallpaper leaves a kept custom colour alone`() {
+        val prefs = mutablePreferencesOf().also { ThemeSettings(accent = "pink", wallpaper = true).writeTo(it) }
+        prefs[ThemeSettings.CustomColorKey] = "#FF000000"
+        prefs[stringPreferencesKey("translucent_primary_color")] = "#FF336699"
+
+        ThemeSettings.moveWallpaperColor(prefs)
+
+        assertFalse(ThemeSettings.hasWallpaperColor(prefs))
+        assertEquals("#FF000000", prefs[ThemeSettings.CustomColorKey])
+        assertEquals("pink", ThemeSettings.from(prefs).accent)
+    }
+
+    @Test
     fun `switching between light and dark keeps both themes`() {
         val settings = ThemeSettings(Appearance.System, accent = "pink", darkTheme = "blue_dark")
         assertEquals("pink", settings.themeName(systemDark = false))
