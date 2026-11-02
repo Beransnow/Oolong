@@ -503,6 +503,12 @@
     <string name="settings_blocked_content">被屏蔽的内容</string>
     <string name="settings_blocked_content_note">关闭时，被屏蔽的内容折叠为一行，点一下可以查看。单条规则可以另选。</string>
     <string name="settings_block_rules_group">规则</string>
+    <string name="settings_block_export">导出规则</string>
+    <string name="settings_block_import">导入规则</string>
+    <string name="toast_rules_exported">已导出 %1$d 条规则</string>
+    <string name="toast_rules_export_failed">导出失败 %1$s</string>
+    <string name="toast_rules_imported">已导入 %1$d 条规则</string>
+    <string name="toast_rules_import_failed">无法读取这个文件</string>
     <string name="block_tip">%1$s · %2$s</string>
     <string name="block_tip_label">已屏蔽</string>
     <string name="block_tip_floor">%1$d 楼已屏蔽</string>

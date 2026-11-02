@@ -9,6 +9,7 @@ import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.toJson
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -32,6 +33,17 @@ class BlockListRepository @Inject constructor(
     }
 
     suspend fun update(rule: BlockRule) = withContext(io) { dao.update(rule.toEntity()) }
+
+    /** Adds those of [rules] that no saved rule does already; returns how many. */
+    suspend fun import(rules: List<BlockRule>): Int = withContext(io) {
+        val saved = dao.all().first().map { it.toBlockRule() }
+        val now = System.currentTimeMillis()
+        val added = rules.filter { rule -> saved.none { it.sameAs(rule) } }
+            .distinctBy { it.copy(id = 0) }
+            .map { it.copy(id = 0, createdAt = now) }
+        dao.insertAll(added.map { it.toEntity() })
+        added.size
+    }
 
     /** Puts back rules just removed, with their ids, counts and dates. */
     suspend fun restore(rules: List<BlockRule>) = withContext(io) { dao.insertAll(rules.map { it.toEntity() }) }

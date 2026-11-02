@@ -1,5 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
@@ -49,6 +51,12 @@ fun BlockSettingsPage(
     val activeRules by viewModel.activeRules.collectAsStateWithLifecycle()
     val lowLevel by context.dataStore.collectPreferenceAsState(booleanPreferencesKey(LowLevelEnabledKey), false)
     val spoilerDialog = rememberDialogState()
+    val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let(viewModel::export)
+    }
+    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::import)
+    }
     PromptDialog(
         dialogState = spoilerDialog,
         title = { Text(text = stringResource(id = R.string.settings_block_spoiler)) },
@@ -115,7 +123,21 @@ fun BlockSettingsPage(
                         trailingContent = { PrefsLinkValue(text = activeRules?.toString().orEmpty()) },
                     )
                 }
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.settings_block_export),
+                        onClick = { exporter.launch(BackupFileName) },
+                    )
+                }
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.settings_block_import),
+                        onClick = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                    )
+                }
             }
         }
     }
 }
+
+private const val BackupFileName = "tblite-block-rules.json"
