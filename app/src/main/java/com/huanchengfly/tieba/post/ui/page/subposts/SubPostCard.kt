@@ -14,8 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
-import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
@@ -58,7 +58,7 @@ sealed interface SubPostsEvent {
 
     /** Reply in the post without replying to anyone in particular. */
     data object ReplyToPost : SubPostsEvent
-    data class Copy(val text: String) : SubPostsEvent
+    data class Copy(val content: List<PostContent>) : SubPostsEvent
     data class Report(val postId: Long) : SubPostsEvent
 
     /** Delete [subPost], or the post itself when null. */
@@ -114,7 +114,7 @@ private fun replyMenuItems(
     if (!hideReply) {
         add(ContextMenuItem(Symbols.Reply, context.getString(R.string.btn_reply)) { onEvent(SubPostsEvent.Reply(post, subPost)) })
     }
-    add(ContextMenuItem(Symbols.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Symbols.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content)) })
     add(ContextMenuItem(Symbols.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
     if (canDelete) add(ContextMenuItem(Symbols.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
     if (shortcuts != null) addAll(blockMenuItems(blockLabels, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))

@@ -44,9 +44,6 @@ data class SubPostsSheetKey(
 }
 
 @Serializable
-data class CopyTextKey(val text: String) : Key
-
-@Serializable
 data class ForumKey(val forumName: String) : Key
 
 @Serializable
@@ -67,8 +64,9 @@ data object EditProfileKey : Key
 @Serializable
 data class NotificationsKey(val initialTab: Int = 0) : Key
 
+/** Searching, for [keyword] at once when it is given. */
 @Serializable
-data object SearchKey : Key
+data class SearchKey(val keyword: String = "") : Key
 
 @Serializable
 data object HistoryKey : Key

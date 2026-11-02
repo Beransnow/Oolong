@@ -1,5 +1,8 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
+import com.huanchengfly.tieba.post.model.PostContent
+import com.huanchengfly.tieba.post.model.TextSpan
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.Locale
@@ -57,4 +60,56 @@ class WordPickerStateTest {
         assertTrue(state.pieces.take(4).all { it.picked && it.split })
         assertFalse(state.split(0))
     }
+
+    @Test
+    fun `with punctuation, marks can be picked and stay with the word before them`() {
+        val pieces = splitWords("没死！真的", Locale.SIMPLIFIED_CHINESE, punctuation = true)
+        val mark = pieces.single { it.text == "！" }
+
+        assertTrue(mark.isWord && mark.clings)
+        assertEquals("没死！真的", pieces.joinToString("") { it.text })
+    }
+
+    @Test
+    fun `copying nothing picked takes the whole text`() {
+        val state = WordPickerState(copyPieces(content))
+
+        assertEquals("提取码 8f3k#(滑稽)\n@小林 你好", state.copied)
+    }
+
+    @Test
+    fun `copying keeps what stood between picked pieces and parts further apart by a space`() {
+        val state = state("提取码", " ", "8f3k", "，", "记得", "换")
+        state.toggle(0)
+        state.toggle(2)
+        state.toggle(5)
+
+        assertEquals("提取码 8f3k 换", state.copied)
+    }
+
+    @Test
+    fun `links, mentions and emoticons are whole pieces that do not split`() {
+        val state = WordPickerState(copyPieces(content))
+        val mention = state.pieces.indexOfFirst { it.text == "@小林" }
+
+        assertEquals(WordPiece.Look.Link, state.pieces[mention].look)
+        assertFalse(state.split(mention))
+        assertEquals(WordPiece.Look.Emoticon, state.pieces.single { it.text == "#(滑稽)" }.look)
+    }
+
+    @Test
+    fun `picking all picks every word and nothing between`() {
+        val state = state("甲", " ", "乙")
+        state.pickAll(true)
+
+        assertTrue(state.allPicked)
+        assertFalse(state.pieces[1].picked)
+        assertEquals("甲 乙", state.copied)
+    }
+
+    private val content = listOf(
+        PostContent.Text(persistentListOf(TextSpan.Plain("提取码 8f3k"), TextSpan.Emoticon("image_emoticon25", "滑稽"))),
+        PostContent.Image("1", persistentListOf(), "", 1, 1, false, 0),
+        PostContent.Text(persistentListOf(TextSpan.Mention("@小林", 1L), TextSpan.Plain(" 你好"))),
+    )
 }

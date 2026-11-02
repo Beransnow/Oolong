@@ -108,17 +108,27 @@ data class SearchPageItem(
 
 @Composable
 fun SearchPage(
+    keyword: String = "",
     navigator: Navigator = LocalNavigator.current,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var input by rememberSaveable { mutableStateOf("") }
 
+    // Opened for a keyword, it searches for it once, as if typed
+    var searched by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!searched && keyword.isNotBlank()) viewModel.search(keyword)
+        searched = true
+    }
+
     LaunchedEffect(state.keyword) {
         if (state.keyword.isNotEmpty()) input = state.keyword
     }
+    // Back from what it was opened for goes back to where that came from, not to the history
+    val backToHistory = state.keyword.isNotEmpty() && state.keyword != keyword.trim()
     MyBackHandler(
-        enabled = state.keyword.isNotEmpty(),
+        enabled = backToHistory,
     ) {
         viewModel.search("")
     }
@@ -136,7 +146,7 @@ fun SearchPage(
                 viewModel.search(it)
             },
             onBack = {
-                if (state.keyword.isEmpty()) navigator.navigateUp() else viewModel.search("")
+                if (backToHistory) viewModel.search("") else navigator.navigateUp()
             },
             onOpenTab = viewModel::open,
             onRefreshTab = viewModel::refresh,

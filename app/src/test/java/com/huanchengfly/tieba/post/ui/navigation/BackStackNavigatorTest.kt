@@ -74,11 +74,11 @@ class BackStackNavigatorTest {
     fun leavingAListKeepsTheListAboveIt() {
         val forum = push(ForumKey("a"))
         push(ThreadKey(1))
-        push(SearchKey)
+        push(SearchKey())
 
         navigator.forPage(forum).navigateUp()
 
-        assertEquals(listOf(MainKey, SearchKey), keys)
+        assertEquals(listOf(MainKey, SearchKey()), keys)
     }
 
     @Test

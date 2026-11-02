@@ -17,7 +17,6 @@ import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
-import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -26,6 +25,7 @@ import com.huanchengfly.tieba.post.ui.page.reply.ReplyTo
 import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
 import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyComposer
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPreferences
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalCopySheets
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import kotlinx.coroutines.launch
 
@@ -41,6 +41,7 @@ fun SubPostsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val copySheets = LocalCopySheets.current
     val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
     val listState = rememberLazyListState()
@@ -111,7 +112,7 @@ fun SubPostsRoute(
             is SubPostsEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
             is SubPostsEvent.Reply -> reply(event.subPost)
             SubPostsEvent.ReplyToPost -> reply()
-            is SubPostsEvent.Copy -> navigator.navigate(CopyTextKey(event.text))
+            is SubPostsEvent.Copy -> copySheets?.show(event.content)
             is SubPostsEvent.Report -> coroutineScope.launch {
                 TiebaUtil.reportPost(context, navigator, event.postId.toString())
             }

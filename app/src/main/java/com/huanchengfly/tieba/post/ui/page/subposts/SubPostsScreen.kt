@@ -232,7 +232,7 @@ private fun SubPostsContent(
             is ThreadEvent.Reply -> onEvent(SubPostsEvent.Reply(post))
             is ThreadEvent.AgreePost -> onEvent(SubPostsEvent.AgreePost)
             is ThreadEvent.OpenUser -> onEvent(SubPostsEvent.OpenUser(event.userId))
-            is ThreadEvent.Copy -> onEvent(SubPostsEvent.Copy(event.text))
+            is ThreadEvent.Copy -> onEvent(SubPostsEvent.Copy(event.content))
             is ThreadEvent.Report -> onEvent(SubPostsEvent.Report(event.postId))
             is ThreadEvent.DeletePost -> onEvent(SubPostsEvent.Delete(null))
             else -> Unit

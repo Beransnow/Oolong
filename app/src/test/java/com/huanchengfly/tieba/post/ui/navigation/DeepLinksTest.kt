@@ -17,7 +17,7 @@ class DeepLinksTest {
         assertEquals(ForumKey("android"), key("tblite://forum/android"))
         assertEquals(NotificationsKey(1), key("tblite://notifications/1"))
         assertEquals(HistoryKey, key("tblite://history"))
-        assertEquals(SearchKey, key("tblite://search"))
+        assertEquals(SearchKey(), key("tblite://search"))
         assertEquals(ThreadStoreKey, key("tblite://favorite"))
     }
 

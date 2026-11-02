@@ -28,7 +28,6 @@ import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.repository.ThreadSort
-import com.huanchengfly.tieba.post.ui.navigation.CopyTextKey
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsSheetKey
@@ -41,6 +40,7 @@ import com.huanchengfly.tieba.post.ui.page.reply.openInOfficialClient
 import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
 import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyComposer
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalCopySheets
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.TiebaUtil
@@ -60,6 +60,7 @@ fun ThreadRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val copySheets = LocalCopySheets.current
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val scaffoldState = rememberScaffoldState()
@@ -188,7 +189,7 @@ fun ThreadRoute(
             is ThreadEvent.OpenOriginThread ->
                 navigator.navigate(ThreadKey(threadId = event.threadId, forumId = event.forumId))
 
-            is ThreadEvent.Copy -> navigator.navigate(CopyTextKey(event.text))
+            is ThreadEvent.Copy -> copySheets?.show(event.content)
             is ThreadEvent.Report -> coroutineScope.launch {
                 TiebaUtil.reportPost(context, navigator, event.postId.toString())
             }

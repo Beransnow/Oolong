@@ -155,7 +155,7 @@ fun ExplorePage() {
                         icon = Symbols.Search,
                         contentDescription = stringResource(id = R.string.title_search)
                     ) {
-                        navigator.navigate(SearchKey)
+                        navigator.navigate(SearchKey())
                     }
                 },
             ) {

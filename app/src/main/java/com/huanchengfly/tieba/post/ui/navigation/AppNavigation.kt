@@ -54,8 +54,6 @@ import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClas
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
-import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogPage
-import com.huanchengfly.tieba.post.ui.page.dialogs.CopyTextDialogProperties
 import com.huanchengfly.tieba.post.ui.page.forum.ForumPage
 import com.huanchengfly.tieba.post.ui.page.forum.detail.ForumDetailPage
 import com.huanchengfly.tieba.post.ui.page.forum.rule.ForumRuleDetailPage
@@ -107,7 +105,6 @@ private fun KeyContent(key: Key) {
         is ThreadKey -> ThreadPage(key)
         is SubPostsKey -> SubPostsPage(key)
         is SubPostsSheetKey -> SubPostsSheetPage(key)
-        is CopyTextKey -> CopyTextDialogPage(key.text)
         is ForumKey -> ForumPage(key)
         is ForumDetailKey -> ForumDetailPage(key)
         is ForumRuleDetailKey -> ForumRuleDetailPage(key)
@@ -115,7 +112,7 @@ private fun KeyContent(key: Key) {
         is UserProfileKey -> UserProfilePage(key)
         EditProfileKey -> EditProfilePage()
         is NotificationsKey -> NotificationsPage(initialTab = key.initialTab)
-        SearchKey -> SearchPage()
+        is SearchKey -> SearchPage(keyword = key.keyword)
         HistoryKey -> HistoryPage()
         ThreadStoreKey -> ThreadStorePage()
         HotTopicListKey -> HotTopicListPage()
@@ -141,11 +138,11 @@ private fun KeyContent(key: Key) {
 /** Where [this] goes when two panes fit; null for pages that show over others. */
 internal val Key.paneRole: PaneRole?
     get() = when (this) {
-        MainKey, is ForumKey, SearchKey, HistoryKey, ThreadStoreKey, HotTopicListKey,
+        MainKey, is ForumKey, is SearchKey, HistoryKey, ThreadStoreKey, HotTopicListKey,
         is ForumSearchPostKey, SettingsKey, is NotificationsKey -> PaneRole.List
 
         LoginKey, TranslucentThemeKey -> PaneRole.Full
-        is SubPostsSheetKey, is CopyTextKey -> null
+        is SubPostsSheetKey -> null
         else -> PaneRole.Detail
     }
 
@@ -158,7 +155,6 @@ private val Key.readsAtWidth: Boolean
 
 private fun Key.metadata(): Map<String, Any> = when (presentation) {
     Presentation.Sheet -> BottomSheetSceneStrategy.bottomSheet()
-    Presentation.Dialog -> DialogSceneStrategy.dialog(CopyTextDialogProperties)
     Presentation.Page -> paneRole(checkNotNull(paneRole))
 }
 

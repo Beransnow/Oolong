@@ -29,7 +29,6 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
-import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.model.wordText
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.ui.common.PbContentText
@@ -323,7 +322,7 @@ internal fun postMenuItems(
     onEvent: (ThreadEvent) -> Unit,
 ): List<ContextMenuItem> = buildList {
     if (!hideReply) add(ContextMenuItem(Symbols.Reply, labels.reply) { onEvent(ThreadEvent.Reply(post)) })
-    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(post.content.plainText)) })
+    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(post.content)) })
     if (canStore) {
         add(
             if (isStoreMark) {
@@ -350,7 +349,7 @@ internal fun subPostMenuItems(
     onEvent: (ThreadEvent) -> Unit,
 ): List<ContextMenuItem> = buildList {
     if (!hideReply) add(ContextMenuItem(Symbols.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
-    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
+    add(ContextMenuItem(Symbols.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content)) })
     add(ContextMenuItem(Symbols.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
     if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, subPost.author, forum = null, text = subPost.content.wordText))
 }

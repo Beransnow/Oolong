@@ -462,7 +462,7 @@ fun HomePage(
         onEvent = { event ->
             when (event) {
                 HomeEvent.Refresh -> viewModel.refresh()
-                HomeEvent.Search -> navigator.navigate(SearchKey)
+                HomeEvent.Search -> navigator.navigate(SearchKey())
                 HomeEvent.OneKeySign -> TiebaUtil.startSign(context)
                 HomeEvent.ToggleHistory -> viewModel.toggleHistory()
                 is HomeEvent.OpenForum -> navigator.navigate(ForumKey(event.name))

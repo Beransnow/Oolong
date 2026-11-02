@@ -15,7 +15,7 @@ fun Uri.toDeepLinkKey(): Key? {
         "thread" -> argument?.toLongOrNull()?.let(::ThreadKey)
         "notifications" -> NotificationsKey(argument?.toIntOrNull() ?: 0)
         "history" -> HistoryKey
-        "search" -> SearchKey
+        "search" -> SearchKey()
         "favorite" -> ThreadStoreKey
         else -> null
     }

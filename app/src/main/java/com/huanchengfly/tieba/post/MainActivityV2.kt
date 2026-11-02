@@ -91,9 +91,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.AppDialogHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
+import com.huanchengfly.tieba.post.ui.widgets.compose.CopySheetHost
+import com.huanchengfly.tieba.post.ui.widgets.compose.CopySheets
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
+import com.huanchengfly.tieba.post.ui.widgets.compose.LocalCopySheets
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalWallpaperGlass
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
@@ -424,11 +427,17 @@ class MainActivityV2 : AppCompatActivity() {
             TranslucentThemeBackground {
                 val backStack = rememberAppBackStack(linked = linkedKey)
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
-                CompositionLocalProvider(LocalNavigator provides navigator, LocalBlockShortcuts provides blockShortcuts) {
+                val copySheets = remember { CopySheets() }
+                CompositionLocalProvider(
+                    LocalNavigator provides navigator,
+                    LocalBlockShortcuts provides blockShortcuts,
+                    LocalCopySheets provides copySheets,
+                ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         // Around the menus as well as the pages: a page can open out of what a menu previews
                         PageMorphHost { AppNavDisplay(backStack = backStack) }
                         BlockShortcutsHost(blockShortcuts)
+                        CopySheetHost(copySheets)
                         AppDialogHost()
                     }
                 }

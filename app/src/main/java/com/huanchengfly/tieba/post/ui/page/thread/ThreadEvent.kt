@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.thread
 
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 
 /** Everything the user can do on the thread page. */
@@ -28,7 +29,9 @@ sealed interface ThreadEvent {
     /** Open the replies inside [post], at [subPostId] or from the start when 0. */
     data class OpenSubPosts(val post: Post, val subPostId: Long) : ThreadEvent
     data class OpenOriginThread(val threadId: Long, val forumId: Long) : ThreadEvent
-    data class Copy(val text: String) : ThreadEvent
+
+    /** Copy [content] or a part of it. */
+    data class Copy(val content: List<PostContent>) : ThreadEvent
     data class Report(val postId: Long) : ThreadEvent
     data object ReportThread : ThreadEvent
     data object Share : ThreadEvent

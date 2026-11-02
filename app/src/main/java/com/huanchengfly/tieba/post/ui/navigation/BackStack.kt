@@ -35,12 +35,11 @@ val NavKey.key: Key
     get() = (this as Page).key
 
 /** How a page shows: filling the window, or over the pages below it. */
-enum class Presentation { Page, Sheet, Dialog }
+enum class Presentation { Page, Sheet }
 
 val Key.presentation: Presentation
     get() = when (this) {
         is SubPostsSheetKey -> Presentation.Sheet
-        is CopyTextKey -> Presentation.Dialog
         else -> Presentation.Page
     }
 

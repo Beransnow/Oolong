@@ -5,13 +5,17 @@ import android.icu.util.ULocale
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +28,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -36,6 +41,7 @@ import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
@@ -48,12 +54,17 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TextStyles
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import kotlin.math.abs
 
-/** A piece of text in a word picker: a word, which can be picked, or what stands between words. */
+/**
+ * A piece of text in a word picker: a word, which can be picked, or what stands between words. A
+ * line break in what stands between starts a new line of chips.
+ */
 @Immutable
 data class WordPiece(
     val text: String,
@@ -63,20 +74,39 @@ data class WordPiece(
     val split: Boolean = false,
     /** Which piece it is, kept while pieces around it split. */
     val id: Int = 0,
-)
+    /** Whether it stays on the line of the piece before it, as punctuation does. */
+    val clings: Boolean = false,
+    val look: Look = Look.Plain,
+) {
+    enum class Look {
+        Plain,
+
+        /** A link or a mention, kept whole. */
+        Link,
+
+        /** An emoticon, written as `#(name)` and kept whole. */
+        Emoticon,
+    }
+}
 
 /**
  * [text] cut into words and what stands between them, with the system's dictionary for languages
- * such as Chinese that don't put spaces between words.
+ * such as Chinese that don't put spaces between words. With [punctuation], marks and symbols can
+ * be picked too, each staying with the piece before it.
  */
-fun splitWords(text: String, locale: Locale = Locale.getDefault()): List<WordPiece> {
+fun splitWords(text: String, locale: Locale = Locale.getDefault(), punctuation: Boolean = false): List<WordPiece> {
     val iterator = BreakIterator.getWordInstance(ULocale.forLocale(locale))
     iterator.setText(text)
     val pieces = mutableListOf<WordPiece>()
     var start = iterator.first()
     var end = iterator.next()
     while (end != BreakIterator.DONE) {
-        pieces += WordPiece(text.substring(start, end), isWord = iterator.ruleStatus >= BreakIterator.WORD_NONE_LIMIT)
+        val piece = text.substring(start, end)
+        pieces += when {
+            iterator.ruleStatus >= BreakIterator.WORD_NONE_LIMIT -> WordPiece(piece, isWord = true)
+            punctuation && piece.isNotBlank() -> WordPiece(piece, isWord = true, clings = true)
+            else -> WordPiece(piece, isWord = false)
+        }
         start = end
         end = iterator.next()
     }
@@ -104,7 +134,36 @@ class WordPickerState(pieces: List<WordPiece>) {
             }
         }.map { it.toString() }
 
+    val anyPicked: Boolean get() = pieces.any { it.picked }
+
+    val allPicked: Boolean get() = pieces.any { it.isWord } && pieces.all { !it.isWord || it.picked }
+
+    /**
+     * What copying takes: with nothing picked, the whole text. Otherwise the picked pieces in
+     * order, keeping what stood between two of them and setting parts further apart off by a
+     * space.
+     */
+    val copied: String
+        get() {
+            if (!anyPicked) return pieces.joinToString("") { it.text }
+            val out = StringBuilder()
+            pieces.forEachIndexed { i, piece ->
+                when {
+                    piece.picked -> out.append(piece.text)
+                    !piece.isWord -> {
+                        val before = pieces.subList(0, i).lastOrNull { it.isWord }
+                        val after = pieces.subList(i + 1, pieces.size).firstOrNull { it.isWord }
+                        if (before?.picked == true && after?.picked == true) out.append(piece.text)
+                    }
+                    out.isNotEmpty() && !out.endsWith(' ') && pieces.subList(i + 1, pieces.size).any { it.picked } -> out.append(' ')
+                }
+            }
+            return out.toString().replace(Spaces, " ").trim()
+        }
+
     fun toggle(index: Int) = set(index..index, !pieces[index].picked)
+
+    fun pickAll(picked: Boolean) = set(pieces.indices, picked)
 
     /** Picks, or with [picked] false clears, the words in [range]; the other pieces become [others]. */
     fun set(range: IntRange, picked: Boolean, others: List<Boolean>? = null) {
@@ -114,9 +173,10 @@ class WordPickerState(pieces: List<WordPiece>) {
         }
     }
 
-    /** Splits the word at [index] into its characters, each picked as the word was; false if it has one. */
+    /** Splits the word at [index] into its characters, each picked as the word was; false if it has one or is kept whole. */
     fun split(index: Int): Boolean {
         val piece = pieces[index]
+        if (piece.look != WordPiece.Look.Plain) return false
         val characters = piece.text.codePoints().toArray().map { String(Character.toChars(it)) }
         if (characters.size < 2) return false
         pieces = pieces.subList(0, index) +
@@ -129,16 +189,19 @@ class WordPickerState(pieces: List<WordPiece>) {
 @Composable
 fun rememberWordPickerState(text: String): WordPickerState = remember(text) { WordPickerState(splitWords(text)) }
 
+private val Spaces = Regex(" +")
+
 /**
  * The words of a text as chips to pick: tap one to pick it, slide from one to pick or clear every
  * word up to the finger, in reading order, and hold one to split it into characters. Slides that
- * start upwards or downwards are left to whatever scrolls the picker.
+ * start upwards or downwards are left to whatever scrolls the picker; given that [scroll], a slide
+ * held near its top or bottom edge scrolls it on.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WordPicker(state: WordPickerState, modifier: Modifier = Modifier) {
-    val colors = ExtendedTheme.colors
+fun WordPicker(state: WordPickerState, modifier: Modifier = Modifier, scroll: ScrollState? = null) {
     val haptic = LocalHapticFeedback.current
+    val edge = with(LocalDensity.current) { AutoScrollEdge.toPx() }
     // Where each piece is, to find the one under the finger
     val places = remember { mutableStateMapOf<Int, Rect>() }
     var container by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -152,57 +215,119 @@ fun WordPicker(state: WordPickerState, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .onPlaced { container = it }
-            .pointerInput(state) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val start = at(down.position) ?: return@awaitEachGesture
-                    val picking = !state.pieces[start].picked
-                    val before = state.pieces.map { it.picked }
-                    when (withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { awaitStart(down.id, down.position, viewConfiguration.touchSlop) }) {
-                        // Held still: the word splits
-                        null -> if (state.split(start)) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        GestureStart.Lift -> state.toggle(start)
-                        GestureStart.Scroll -> Unit
-                        GestureStart.Slide -> {
-                            state.set(start..start, picking, before)
-                            var last = start
-                            while (true) {
-                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                                if (!change.pressed) break
-                                change.consume()
-                                val over = at(change.position) ?: continue
-                                if (over == last) continue
-                                last = over
-                                state.set(minOf(start, over)..maxOf(start, over), picking, before)
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            .pointerInput(state, scroll) {
+                coroutineScope {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val start = at(down.position) ?: return@awaitEachGesture
+                        val picking = !state.pieces[start].picked
+                        val before = state.pieces.map { it.picked }
+                        when (withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { awaitStart(down.id, down.position, viewConfiguration.touchSlop) }) {
+                            // Held still: the word splits
+                            null -> if (state.split(start)) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            GestureStart.Lift -> state.toggle(start)
+                            GestureStart.Scroll -> Unit
+                            GestureStart.Slide -> {
+                                state.set(start..start, picking, before)
+                                var last = start
+                                fun slideTo(position: Offset) {
+                                    val over = at(position) ?: return
+                                    if (over == last) return
+                                    last = over
+                                    state.set(minOf(start, over)..maxOf(start, over), picking, before)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                                // The finger where the picker shows it, which scrolling moves over the words
+                                var finger = down.position - Offset(0f, scroll?.value?.toFloat() ?: 0f)
+                                val autoScroll = scroll?.let {
+                                    launch {
+                                        while (true) {
+                                            val height = it.viewportSize.toFloat()
+                                            val step = when {
+                                                finger.y < edge -> -(edge - finger.y.coerceAtLeast(0f))
+                                                finger.y > height - edge -> finger.y.coerceAtMost(height) - (height - edge)
+                                                else -> 0f
+                                            } * AutoScrollSpeed
+                                            if (step != 0f && it.scrollBy(step) != 0f) slideTo(finger + Offset(0f, it.value.toFloat()))
+                                            withFrameNanos { }
+                                        }
+                                    }
+                                }
+                                while (true) {
+                                    val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!change.pressed) break
+                                    change.consume()
+                                    finger = change.position - Offset(0f, scroll?.value?.toFloat() ?: 0f)
+                                    slideTo(change.position)
+                                }
+                                autoScroll?.cancel()
                             }
                         }
                     }
                 }
             },
     ) {
-        state.pieces.forEachIndexed { index, piece ->
-            if (piece.text.isBlank()) return@forEachIndexed
-            key(piece.id) {
-                Piece(
-                    piece = piece,
-                    // Out of the text in reading order at first; a split word's characters at once
-                    appearDelay = if (piece.split) 0L else minOf(index * AppearStagger, AppearStaggerMax),
-                    modifier = Modifier
-                        .onPlaced { coordinates -> container?.let { places[piece.id] = it.localBoundingBoxOf(coordinates) } }
-                        .semantics {
-                            if (piece.isWord) {
-                                role = Role.Checkbox
-                                selected = piece.picked
-                                onClick {
-                                    state.toggle(index)
-                                    true
-                                }
-                            }
-                        },
-                )
+        lines(state.pieces).forEach { line ->
+            when (line) {
+                // A line break takes a line of its own, with nothing on it
+                null -> Box(modifier = Modifier.fillMaxWidth())
+                else -> key(state.pieces[line.first].id) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        line.forEach { index -> PieceAt(state, index, places, { container }) }
+                    }
+                }
             }
         }
+    }
+}
+
+/**
+ * The pieces' indices as the picker lays them out: runs that stay on one line, each a word and
+ * any marks clinging to it, with null for each line break. What else stands between is left out.
+ */
+private fun lines(pieces: List<WordPiece>): List<IntRange?> = buildList {
+    var run: Int? = null
+    fun close(end: Int) {
+        run?.let { add(it until end) }
+        run = null
+    }
+    pieces.forEachIndexed { index, piece ->
+        when {
+            piece.isWord && piece.clings && run != null -> Unit
+            piece.isWord || piece.text.isNotBlank() -> {
+                close(index)
+                run = index
+            }
+            else -> {
+                close(index)
+                if ('\n' in piece.text && lastOrNull() != null) add(null)
+            }
+        }
+    }
+    close(pieces.size)
+}
+
+@Composable
+private fun PieceAt(state: WordPickerState, index: Int, places: MutableMap<Int, Rect>, container: () -> LayoutCoordinates?) {
+    val piece = state.pieces[index]
+    key(piece.id) {
+        Piece(
+            piece = piece,
+            // Out of the text in reading order at first; a split word's characters at once
+            appearDelay = if (piece.split) 0L else minOf(index * AppearStagger, AppearStaggerMax),
+            modifier = Modifier
+                .onPlaced { coordinates -> container()?.let { places[piece.id] = it.localBoundingBoxOf(coordinates) } }
+                .semantics {
+                    if (piece.isWord) {
+                        role = Role.Checkbox
+                        selected = piece.picked
+                        onClick {
+                            state.toggle(state.pieces.indexOfFirst { it.id == piece.id })
+                            true
+                        }
+                    }
+                },
+        )
     }
 }
 
@@ -227,13 +352,14 @@ private fun Piece(piece: WordPiece, appearDelay: Long, modifier: Modifier = Modi
         targetValue = when {
             !piece.isWord -> colors.textDisabled
             piece.picked -> colors.onInvertChip
+            piece.look == WordPiece.Look.Link -> colors.accent
             else -> colors.text
         },
         animationSpec = Motion.snap(),
         label = "piece text",
     )
     val lift by animateFloatAsState(if (piece.picked) PickedScale else 1f, Motion.snap(), label = "piece lift")
-    val shape = if (piece.split) Corners.xs else Corners.sm
+    val shape = if (piece.split || piece.clings) Corners.xs else Corners.sm
     Box(
         modifier = modifier
             .graphicsLayer {
@@ -250,15 +376,23 @@ private fun Piece(piece: WordPiece, appearDelay: Long, modifier: Modifier = Modi
                     Modifier
                         .clip(shape)
                         .background(background)
-                        .padding(horizontal = if (piece.split) 8.dp else 11.dp, vertical = 6.dp)
+                        .padding(horizontal = if (piece.split || piece.clings) 8.dp else 11.dp, vertical = 6.dp)
                 } else {
                     Modifier.padding(horizontal = 2.dp, vertical = 6.dp)
                 },
             ),
     ) {
-        Text(text = piece.text, style = TextStyles.bodyCompact, color = content)
+        if (piece.look == WordPiece.Look.Emoticon) {
+            EmoticonText(text = piece.text, style = TextStyles.bodyCompact, color = content)
+        } else {
+            Text(text = piece.text, style = TextStyles.bodyCompact, color = content)
+        }
     }
 }
+
+/** How near its top or bottom edge a slide scrolls the picker, and how fast for each pixel nearer. */
+private val AutoScrollEdge = 48.dp
+private const val AutoScrollSpeed = 0.25f
 
 private const val AppearStagger = 14L
 private const val AppearStaggerMax = 280L
