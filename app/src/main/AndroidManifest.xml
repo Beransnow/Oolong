@@ -55,6 +55,7 @@
         android:icon="@mipmap/ic_launcher_new"
         android:label="@string/app_name"
         android:largeHeap="true"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -436,5 +437,14 @@
                 android:name="com.huanchengfly.tieba.post.components.WindowInitializer"
                 android:value="androidx.startup" />
         </provider>
+        <!-- Keeps the language chosen for the app where the system cannot (before Android 13) -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
     </application>
 </manifest>

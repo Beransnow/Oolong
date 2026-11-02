@@ -1,8 +1,12 @@
 package com.huanchengfly.tieba.post.ui.page.settings.custom
 
 import android.os.Build
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
@@ -16,12 +20,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.navigation.PredictiveBackKey
+import com.huanchengfly.tieba.post.ui.common.prefs.PrefsChoiceValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsLinkValue
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
@@ -37,6 +43,10 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.ReduceTransparencyKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.choiceMenuItems
+import com.huanchengfly.tieba.post.ui.widgets.compose.clickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.menuAnchor
+import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuTriggerState
 import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeSettings
@@ -93,6 +103,9 @@ fun CustomSettingsPage(
                     )
                 }
             }
+            prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                prefsItem { LanguagePref() }
+            }
             prefsGroup(textAndIconGroup) {
                 prefsItem {
                     TextPref(
@@ -111,9 +124,9 @@ fun CustomSettingsPage(
                         title = stringResource(id = R.string.settings_app_icon),
                         defaultValue = LauncherIcons.DEFAULT_ICON,
                         entries = mapOf(
-                            LauncherIcons.NEW_ICON to "新图标",
-                            LauncherIcons.NEW_ICON_INVERT to "新图标（反色）",
-                            LauncherIcons.OLD_ICON to "旧图标",
+                            LauncherIcons.NEW_ICON to stringResource(id = R.string.app_icon_new),
+                            LauncherIcons.NEW_ICON_INVERT to stringResource(id = R.string.app_icon_new_inverted),
+                            LauncherIcons.OLD_ICON to stringResource(id = R.string.app_icon_old),
                         ),
                         icons = mapOf(
                             LauncherIcons.NEW_ICON to {
@@ -123,7 +136,7 @@ fun CustomSettingsPage(
                                             R.drawable.ic_launcher_new_round
                                         )
                                     ),
-                                    contentDescription = "新图标",
+                                    contentDescription = stringResource(id = R.string.app_icon_new),
                                     modifier = Modifier.size(Sizes.Medium)
                                 )
                             },
@@ -134,7 +147,7 @@ fun CustomSettingsPage(
                                             R.drawable.ic_launcher_new_invert_round
                                         )
                                     ),
-                                    contentDescription = "新图标（反色）",
+                                    contentDescription = stringResource(id = R.string.app_icon_new_inverted),
                                     modifier = Modifier.size(Sizes.Medium)
                                 )
                             },
@@ -145,7 +158,7 @@ fun CustomSettingsPage(
                                             R.drawable.ic_launcher_round
                                         )
                                     ),
-                                    contentDescription = "旧图标",
+                                    contentDescription = stringResource(id = R.string.app_icon_old),
                                     modifier = Modifier.size(Sizes.Medium)
                                 )
                             },
@@ -202,5 +215,41 @@ fun CustomSettingsPage(
                 }
             }
         }
+    }
+}
+
+/**
+ * The language the app is shown in: the system's, or one chosen for the app alone, which the
+ * system keeps as the app's language and shows in its own settings on Android 13 and later.
+ */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun LanguagePref() {
+    val options = listOf(
+        "" to stringResource(id = R.string.language_system),
+        "zh-CN" to stringResource(id = R.string.language_zh_cn),
+        "en" to stringResource(id = R.string.language_en),
+    )
+    val current = AppCompatDelegate.getApplicationLocales().toLanguageTags().let { tags ->
+        options.firstOrNull { (tag, _) -> tag.isNotEmpty() && tags.startsWith(tag.substringBefore('-')) }?.first ?: ""
+    }
+    val menu = rememberMenuTriggerState()
+    Box(
+        modifier = Modifier.clickMenu(
+            state = menu,
+            items = {
+                choiceMenuItems(options, current) { tag ->
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                }
+            },
+        ),
+    ) {
+        TextPref(
+            title = stringResource(id = R.string.title_language),
+            enabled = true,
+            trailingContent = {
+                PrefsChoiceValue(text = options.first { it.first == current }.second, modifier = Modifier.menuAnchor(menu))
+            },
+        )
     }
 }
