@@ -510,6 +510,16 @@
     <string name="title_user_hide_post">该用户已隐藏动态</string>
     <string name="menu_add_user_to_black_list">添加到黑名单</string>
     <string name="menu_add_user_to_white_list">添加到白名单</string>
+    <string name="menu_black_user">拉黑</string>
+    <string name="title_black_user">拉黑 %1$s</string>
+    <string name="black_follow">禁止对方关注我</string>
+    <string name="black_interact">禁止对方与我互动</string>
+    <string name="black_chat">禁止对方给我发私信</string>
+    <string name="button_save">保存</string>
+    <string name="toast_black_saved">已保存拉黑设置</string>
+    <string name="toast_black_removed">已解除拉黑</string>
+    <string name="toast_black_load_failed">获取拉黑设置失败 %1$s</string>
+    <string name="toast_black_save_failed">保存拉黑设置失败 %1$s</string>
     <string name="btn_block">屏蔽选项</string>
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">登录失败 %s</string>

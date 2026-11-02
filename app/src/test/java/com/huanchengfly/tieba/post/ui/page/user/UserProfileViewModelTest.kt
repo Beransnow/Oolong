@@ -10,6 +10,7 @@ import com.huanchengfly.tieba.post.arch.Page
 import com.huanchengfly.tieba.post.model.LikedForum
 import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.model.UserThread
+import com.huanchengfly.tieba.post.repository.BlackSettings
 import com.huanchengfly.tieba.post.repository.UserPostsPage
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.repository.toUserPost
@@ -68,6 +69,24 @@ class UserProfileViewModelTest {
         assertTrue(state.postsHidden)
         assertEquals(listOf(52L), state.forums.items.map { it.id })
         coVerify(exactly = 0) { repository.posts(7, false, any()) }
+    }
+
+    @Test
+    fun `blacklisting reads what the user is barred from and saves the change`() = runTest {
+        coEvery { repository.profile(7) } returns user
+        coEvery { repository.blackSettings(7) } returns BlackSettings(follow = false, interact = false, chat = false)
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.loadBlack()
+        runCurrent()
+        assertEquals(BlackSettings(follow = false, interact = false, chat = false), viewModel.state.value.black)
+
+        val barred = BlackSettings(follow = true, interact = true, chat = false)
+        viewModel.setBlack(barred)
+        runCurrent()
+        coVerify { repository.setBlack(7, barred) }
+        assertEquals(barred, viewModel.state.value.black)
     }
 
     @Test

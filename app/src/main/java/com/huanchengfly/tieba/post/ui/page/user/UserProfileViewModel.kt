@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.model.UserPost
 import com.huanchengfly.tieba.post.model.UserProfile
 import com.huanchengfly.tieba.post.model.UserThread
 import com.huanchengfly.tieba.post.models.database.Block
+import com.huanchengfly.tieba.post.repository.BlackSettings
 import com.huanchengfly.tieba.post.repository.BlockListRepository
 import com.huanchengfly.tieba.post.repository.UserRepository
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -52,6 +53,8 @@ data class UserProfileState(
     val forums: PagerState<LikedForum> = PagerState(),
     /** Whether the user hides their threads and replies from others. */
     val postsHidden: Boolean = false,
+    /** What the viewer bars this user from, once asked for; null until then. */
+    val black: BlackSettings? = null,
 )
 
 /** A user's profile, and their threads, replies and forums, each loaded the first time its tab shows. */
@@ -73,6 +76,7 @@ class UserProfileViewModel @AssistedInject constructor(
         val load: LoadStatus = LoadStatus.Idle,
         val following: Boolean = false,
         val postsHidden: Boolean = false,
+        val black: BlackSettings? = null,
     )
 
     private val postPagers = MutableStateFlow<Map<UserTab, Pager<Int, UserPost>>>(emptyMap())
@@ -101,6 +105,7 @@ class UserProfileViewModel @AssistedInject constructor(
                 posts = posts.toItems(),
                 forums = forums,
                 postsHidden = profile.postsHidden,
+                black = profile.black,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, UserProfileState(uid))
 
@@ -148,6 +153,23 @@ class UserProfileViewModel @AssistedInject constructor(
             runCatching { blockList.addUser(category, user.id, user.name) }
                 .onSuccess { messages.show(R.string.toast_add_success) }
         }
+    }
+
+    /** Asks what the viewer bars this user from, for [UserProfileState.black]. */
+    fun loadBlack() = actions.launch("black") {
+        profile.update { it.copy(black = null) }
+        runCatching { repository.blackSettings(uid) }
+            .onSuccess { settings -> profile.update { it.copy(black = settings) } }
+            .onFailure { messages.showError(R.string.toast_black_load_failed, it) }
+    }
+
+    fun setBlack(settings: BlackSettings) = actions.launch("black") {
+        runCatching { repository.setBlack(uid, settings) }
+            .onSuccess {
+                profile.update { it.copy(black = settings) }
+                messages.show(if (settings.any) R.string.toast_black_saved else R.string.toast_black_removed)
+            }
+            .onFailure { messages.showError(R.string.toast_black_save_failed, it) }
     }
 
     /** Follows the user, or unfollows them when followed; the button shows the change at once. */

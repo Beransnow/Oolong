@@ -18,6 +18,11 @@ import okio.ByteString.Companion.toByteString
 import java.io.File
 import javax.inject.Inject
 
+/** What the user bars another user from: following them, interacting with their posts, messaging them. */
+data class BlackSettings(val follow: Boolean, val interact: Boolean, val chat: Boolean) {
+    val any: Boolean get() = follow || interact || chat
+}
+
 /** A page of what a user posted, and whether they hide their posts from others. */
 data class UserPostsPage(val posts: Page<Int, UserPost>, val hidden: Boolean = false)
 
@@ -57,6 +62,15 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun follow(user: UserProfile) = withContext(io) { remote.follow(user.portrait) }
+
+    suspend fun blackSettings(uid: Long): BlackSettings = withContext(io) {
+        val permissions = remote.blackInfo(uid)
+        BlackSettings(follow = permissions.follow == "1", interact = permissions.interact == "1", chat = permissions.chat == "1")
+    }
+
+    suspend fun setBlack(uid: Long, settings: BlackSettings) = withContext(io) {
+        remote.setBlack(uid, follow = settings.follow, interact = settings.interact, chat = settings.chat)
+    }
 
     suspend fun unfollow(user: UserProfile) = withContext(io) { remote.unfollow(user.portrait) }
 

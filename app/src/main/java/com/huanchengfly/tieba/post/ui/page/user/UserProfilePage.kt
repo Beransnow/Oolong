@@ -119,6 +119,17 @@ fun UserProfilePage(
     viewModel: UserProfileViewModel = hiltViewModel<UserProfileViewModel, UserProfileViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var showBlack by remember { mutableStateOf(false) }
+    if (showBlack) {
+        state.profile?.let { user ->
+            BlackDialog(
+                name = user.nameShow.ifEmpty { user.name },
+                settings = state.black,
+                onSave = viewModel::setBlack,
+                onDismiss = { showBlack = false },
+            )
+        }
+    }
     ProvideNavigator(navigator = navigator) {
         StateScreen(
             modifier = Modifier.fillMaxSize(),
@@ -139,6 +150,10 @@ fun UserProfilePage(
                     onUnfollow = viewModel::toggleFollow,
                     onRefresh = viewModel::refreshAll,
                     onAddToList = viewModel::addToList,
+                    onBlack = {
+                        viewModel.loadBlack()
+                        showBlack = true
+                    }.takeIf { state.loggedIn },
                     listContent = { tab, expanded -> UserProfileList(state, tab, expanded, viewModel) },
                 )
             }
@@ -182,6 +197,8 @@ private fun UserProfileContent(
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
     onAddToList: (allow: Boolean) -> Unit,
+    /** Opens the blacklist settings; null when no one is logged in. */
+    onBlack: (() -> Unit)?,
     listContent: @Composable (UserTab, Boolean) -> Unit,
 ) {
     when (LocalWindowSizeClass.current.widthSizeClass) {
@@ -195,6 +212,7 @@ private fun UserProfileContent(
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
                 onAddToList = onAddToList,
+                onBlack = onBlack,
                 listContent = listContent,
             )
         }
@@ -210,6 +228,7 @@ private fun UserProfileContent(
                 onUnfollow = onUnfollow,
                 onRefresh = onRefresh,
                 onAddToList = onAddToList,
+                onBlack = onBlack,
                 listContent = listContent,
             )
         }
@@ -223,6 +242,8 @@ private fun UserProfileToolbar(
     showTitle: Boolean,
     onBack: () -> Unit,
     onAddToList: (allow: Boolean) -> Unit,
+    /** Opens the blacklist settings; null when no one is logged in. */
+    onBlack: (() -> Unit)?,
 ) {
     GlassTopBar(
         title = {
@@ -255,6 +276,11 @@ private fun UserProfileToolbar(
                         ) {
                             Text(text = stringResource(id = R.string.menu_add_user_to_white_list))
                         }
+                        if (onBlack != null) {
+                            DropdownMenuItem(onClick = onBlack) {
+                                Text(text = stringResource(id = R.string.menu_black_user))
+                            }
+                        }
                     },
                     triggerShape = CircleShape
                 ) {
@@ -285,6 +311,8 @@ private fun UserProfileContentNormal(
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
     onAddToList: (allow: Boolean) -> Unit,
+    /** Opens the blacklist settings; null when no one is logged in. */
+    onBlack: (() -> Unit)?,
     listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -315,6 +343,7 @@ private fun UserProfileContentNormal(
                 showTitle = !isShowHeaderArea,
                 onBack = onBack,
                 onAddToList = onAddToList,
+                onBlack = onBlack,
             )
         }
     ) { paddingValues ->
@@ -505,6 +534,8 @@ private fun UserProfileContentExpanded(
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
     onAddToList: (allow: Boolean) -> Unit,
+    /** Opens the blacklist settings; null when no one is logged in. */
+    onBlack: (() -> Unit)?,
     listContent: @Composable (UserTab, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -519,6 +550,7 @@ private fun UserProfileContentExpanded(
                 showTitle = false,
                 onBack = onBack,
                 onAddToList = onAddToList,
+                onBlack = onBlack,
             )
         }
     ) { paddingValues ->
