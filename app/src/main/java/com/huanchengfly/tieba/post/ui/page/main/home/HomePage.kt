@@ -398,7 +398,7 @@ private fun ForumItem(
         modifier = Modifier.longPressMenu(
             items = {
                 listOf(
-                    ContextMenuItem(if (isTopForum) Symbols.Keep else Symbols.Keep, pin) {
+                    ContextMenuItem(if (isTopForum) Symbols.KeepFill else Symbols.Keep, pin) {
                         if (isTopForum) onDeleteTopForum(item) else onAddTopForum(item)
                     },
                     ContextMenuItem(Symbols.ContentCopy, copyName) { TiebaUtil.copyText(context, item.name) },

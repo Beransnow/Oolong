@@ -45,6 +45,7 @@ hd
 heart_broken
 image
 keep
+keep fill
 layers
 link
 location_on
