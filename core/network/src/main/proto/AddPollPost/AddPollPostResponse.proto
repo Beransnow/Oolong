@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tieba.addPollPost;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.addPollPost";
+
+import "Error.proto";
+
+// Unlike other responses, the data comes first and the error second
+message AddPollPostResponse {
+  AddPollPostResponseData data = 1;
+  Error error = 2;
+}
+
+message AddPollPostResponseData {
+  int32 error_code = 1;
+  string error_msg = 2;
+}

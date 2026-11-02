@@ -15,10 +15,14 @@ import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.post.api.models.protos.Anti
 import com.huanchengfly.tieba.post.api.models.protos.Error
 import com.huanchengfly.tieba.post.api.models.protos.PostAntiInfo
+import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostRequest
+import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostResponse
+import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostResponseData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequest
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponseData
+import com.squareup.wire.Message
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -58,13 +62,13 @@ class PostRemoteDataSourceTest {
     @After
     fun tearDown() = server.close()
 
-    private fun enqueue(response: AddPostResponse) {
+    private fun enqueue(response: Message<*, *>) {
         server.enqueue(MockResponse.Builder().body(Buffer().write(response.encode())).build())
     }
 
-    private fun parts(): List<Pair<String, ByteString>> {
+    private fun parts(target: String = "/c/c/post/add?cmd=309731&format=protobuf"): List<Pair<String, ByteString>> {
         val request = server.takeRequest()
-        assertEquals("/c/c/post/add?cmd=309731&format=protobuf", request.target)
+        assertEquals(target, request.target)
         assertEquals("protobuf", request.headers["x_bd_data_type"])
         assertEquals(null, request.headers["client_type"])
         val boundary = request.headers["Content-Type"]!!.substringAfter("boundary=")
@@ -144,5 +148,27 @@ class PostRemoteDataSourceTest {
 
         val error = assertFailsWith<TiebaServerException> { dataSource.addPost(reply) }
         assertEquals(340001, error.code)
+    }
+
+    @Test
+    fun `votes with the chosen options joined and the form fields beside them`() = runTest {
+        enqueue(AddPollPostResponse(data_ = AddPollPostResponseData()))
+
+        dataSource.addPollPost(threadId = 100, forumId = 52, optionIds = listOf(2, 5))
+
+        val parts = parts("/c/c/post/addPollPost?cmd=309006&format=protobuf")
+        val fields = parts.dropLast(1).map { it.first to it.second.utf8() }
+        assertEquals("tbs-value", fields.single { it.first == "tbs" }.second)
+        val sent = AddPollPostRequest.ADAPTER.decode(parts.last().second).data_!!
+        assertEquals(Triple(100L, "2,5", 52L), Triple(sent.thread_id, sent.options, sent.forum_id))
+    }
+
+    @Test
+    fun `throws a refused vote from either error field`() = runTest {
+        enqueue(AddPollPostResponse(data_ = AddPollPostResponseData(error_code = 2, error_msg = "已投票")))
+        assertEquals(2, assertFailsWith<TiebaServerException> { dataSource.addPollPost(100, 52, listOf(1)) }.code)
+
+        enqueue(AddPollPostResponse(error = Error(error_code = 3, error_msg = "投票已结束")))
+        assertEquals(3, assertFailsWith<TiebaServerException> { dataSource.addPollPost(100, 52, listOf(1)) }.code)
     }
 }

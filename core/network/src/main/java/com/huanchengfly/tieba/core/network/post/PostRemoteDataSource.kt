@@ -9,6 +9,8 @@ import com.huanchengfly.tieba.core.network.form.signedParams
 import com.huanchengfly.tieba.core.network.identity.SessionProvider
 import com.huanchengfly.tieba.core.network.protobuf.ProtobufBody
 import com.huanchengfly.tieba.core.network.writeResponseError
+import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostRequest
+import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequest
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostRequestData
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
@@ -44,6 +46,20 @@ class PostRemoteDataSource(
         }
         checkResponse(response, code = 0, message = "")
         return checkNotNull(response.data_)
+    }
+
+    /**
+     * Votes for [optionIds] in a thread's poll. The request carries no common request; the form
+     * fields beside it identify the user. An error in the leading data field is thrown as any
+     * response's error is.
+     */
+    suspend fun addPollPost(threadId: Long, forumId: Long, optionIds: List<Int>) {
+        val request = AddPollPostRequest(
+            AddPollPostRequestData(thread_id = threadId, options = optionIds.joinToString(","), forum_id = forumId),
+        )
+        val fields = signedParams(commonParams.form(profile, includeTbs = true), withSig = false)
+        val response = service.addPollPost(ProtobufBody(request, fields))
+        response.error?.takeIf { it.error_code != 0 }?.let { throw TiebaServerException(it.error_code, it.error_msg, response) }
     }
 
     private fun checkResponse(response: AddPostResponse, code: Int, message: String) {
