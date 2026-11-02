@@ -29,7 +29,26 @@ interface UserFormService {
 
     @POST("c/c/profile/modify")
     suspend fun modifyProfile(@Body body: RequestBody): JsonObject
+
+    @POST("c/u/user/getUserBlackInfo")
+    suspend fun blackInfo(@Body body: RequestBody): BlackInfoResponse
+
+    @POST("c/c/user/setUserBlack")
+    suspend fun setBlack(@Body body: RequestBody): JsonObject
 }
+
+/** What the user has barred another user from; each is "1" when barred. */
+@Serializable
+data class BlackInfoResponse(
+    @SerialName("perm_list") val permissions: BlackPermissions? = null,
+)
+
+@Serializable
+data class BlackPermissions(
+    val follow: String? = null,
+    val interact: String? = null,
+    val chat: String? = null,
+)
 
 /** A page of the forums a user follows, as far as they let others see. */
 @Serializable

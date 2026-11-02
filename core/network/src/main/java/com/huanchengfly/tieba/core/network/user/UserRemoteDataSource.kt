@@ -114,6 +114,22 @@ class UserRemoteDataSource(
         formService.unfollow(signedFormBody(params, withSig = false))
     }
 
+    /** What the user has barred [uid] from: following them, interacting with their posts, messaging them. */
+    suspend fun blackInfo(uid: Long): BlackPermissions {
+        val params = commonParams.form(formProfile) + listOf("black_uid" to uid.toString())
+        return formService.blackInfo(signedFormBody(params, withSig = false)).permissions ?: BlackPermissions()
+    }
+
+    /** Bars [uid] from following the user, interacting with their posts and messaging them, as each is true. */
+    suspend fun setBlack(uid: Long, follow: Boolean, interact: Boolean, chat: Boolean) {
+        fun flag(barred: Boolean) = if (barred) 1 else 0
+        val params = commonParams.form(formProfile, includeTbs = true) + listOf(
+            "black_uid" to uid.toString(),
+            "perm_list" to "{\"follow\":${flag(follow)},\"interact\":${flag(interact)},\"chat\":${flag(chat)}}",
+        )
+        formService.setBlack(signedFormBody(params, withSig = false))
+    }
+
     /**
      * Changes the user's own profile.
      *

@@ -134,4 +134,25 @@ class UserRemoteDataSourceTest {
         assertEquals("1", form.value("need_cam_decrypt"))
         assertEquals("0", form.value("need_keep_nickname_flag"))
     }
+
+    @Test
+    fun `reads and sets what another user is barred from`() = runTest {
+        server.enqueue("""{"error_code":"0","perm_list":{"follow":1,"interact":0,"chat":"1"},"is_black_white":0}""")
+        server.enqueue("""{"error_code":"0"}""")
+
+        val permissions = dataSource.blackInfo(42)
+        dataSource.setBlack(42, follow = true, interact = false, chat = true)
+
+        assertEquals(BlackPermissions(follow = "1", interact = "0", chat = "1"), permissions)
+        val read = server.takeRequest()
+        assertEquals("/c/u/user/getUserBlackInfo", read.target)
+        assertEquals("42", read.form().value("black_uid"))
+        val set = server.takeRequest()
+        assertEquals("/c/c/user/setUserBlack", set.target)
+        val form = set.form()
+        assertSigned(form, withSig = false)
+        assertEquals("42", form.value("black_uid"))
+        assertEquals("""{"follow":1,"interact":0,"chat":1}""", form.value("perm_list"))
+        assertEquals("tbs-value", form.value("tbs"))
+    }
 }
