@@ -28,6 +28,8 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -70,6 +72,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -113,10 +116,12 @@ class ContextMenuItem(
     val leading: (@Composable () -> Unit)? = null,
     /** Whether it is the choice made, which a check after it marks. */
     val selected: Boolean = false,
-    val onClick: () -> Unit,
+    /** What it opens in place of running, over the menu, out of its own row; null for none. */
+    val children: List<ContextMenuItem>? = null,
+    val onClick: () -> Unit = {},
 ) {
     fun copy(startsGroup: Boolean = this.startsGroup) =
-        ContextMenuItem(icon, label, startsGroup, detail, leading, selected, onClick)
+        ContextMenuItem(icon, label, startsGroup, detail, leading, selected, children, onClick)
 }
 
 /**
@@ -281,6 +286,22 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     }
 
     val items = request.items
+    // The item whose children show over the menu, and how far they have come out of its row
+    var opened by remember { mutableStateOf<Int?>(null) }
+    val sub = remember { Animatable(0f) }
+    fun openChildren(index: Int) {
+        opened = index
+        scope.launch {
+            sub.snapTo(0f)
+            sub.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
+        }
+    }
+    fun foldChildren() {
+        scope.launch {
+            sub.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+            opened = null
+        }
+    }
     // Where each item sits in the open menu. Taken from layout, as the items grow by scaling,
     // which moves them on screen without laying them out again.
     val itemPlaces = remember { mutableStateListOf(*Array(items.size) { Rect.Zero }) }
@@ -291,9 +312,13 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         return itemPlaces.indexOfFirst { it.contains(local) }.takeIf { it >= 0 }
     }
     val run: (Int) -> Unit = { index ->
-        if (!closing) {
-            items[index].onClick()
-            dismiss()
+        when {
+            closing -> Unit
+            items[index].children != null -> openChildren(index)
+            else -> {
+                items[index].onClick()
+                dismiss()
+            }
         }
     }
     val hovered = menus.finger?.let(::itemAt)
@@ -314,7 +339,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         if ((lifted - start).getDistance() > slop) itemAt(lifted)?.let(run)
     }
 
-    BackHandler(enabled = !closing) { dismiss() }
+    BackHandler(enabled = !closing) { if (opened != null) foldChildren() else dismiss() }
 
     // Menus take no scrim. A preview is content over content, so behind it the page blurs and
     // dims as it rises, the way a lifted card stands apart. A tap anywhere else only closes them.
@@ -326,7 +351,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 .previewBackdrop(backdrop),
         )
     }
-    Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { dismiss() } })
+    Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { if (opened != null) foldChildren() else dismiss() } })
 
     val insets = WindowInsets.safeDrawing
     val anchor = request.anchor.translate(-origin)
@@ -395,8 +420,9 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         translationY = glass.top - bounds.top
                         shape = GlassClip(geometry, scale)
                         clip = true
-                        alpha = ((g - 0.2f) / 0.3f).coerceIn(0f, 1f)
-                        val blur = IconBlur.toPx() * (1f - ((g - 0.45f) / 0.4f).coerceIn(0f, 1f))
+                        alpha = ((g - 0.2f) / 0.3f).coerceIn(0f, 1f) * lerp(1f, UnderAlpha, sub.value)
+                        // Under open children the menu stays in sight, blurred, as what they came from
+                        val blur = IconBlur.toPx() * (1f - ((g - 0.45f) / 0.4f).coerceIn(0f, 1f)) + UnderBlur.toPx() * sub.value
                         renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                     }
                     // Inside the scaling, so items are measured against the menu as laid out
@@ -411,35 +437,14 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     if (item.startsGroup && index > 0) {
                         Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = ItemHeight)
-                            .onGloballyPositioned { row ->
-                                itemsCoordinates?.let { itemPlaces[index] = it.localBoundingBoxOf(row) }
-                            }
-                            .padding(horizontal = 6.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (hovered == index) colors.chip else Color.Transparent)
-                            .clickable { run(index) }
-                            .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        when {
-                            item.leading != null -> item.leading.invoke()
-                            item.icon != null -> Icon(item.icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = item.label, color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            item.detail?.let { detail ->
-                                Text(text = detail, color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp)
-                            }
-                        }
-                        if (item.selected) {
-                            Icon(Icons.Rounded.Check, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
-                        }
-                    }
+                    MenuRow(
+                        item = item,
+                        highlighted = hovered == index,
+                        onClick = { run(index) },
+                        modifier = Modifier.onGloballyPositioned { row ->
+                            itemsCoordinates?.let { itemPlaces[index] = it.localBoundingBoxOf(row) }
+                        },
+                    )
                 }
             }
             // The preview, at its final size and place, carried by the pressed thing's bounds
@@ -584,6 +589,192 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             )
         }
     }
+
+    val open = opened
+    val openRow = open?.let { itemPlaces.getOrNull(it) }
+    if (open != null && openRow != null) {
+        ChildMenu(
+            item = items[open],
+            from = openRow.translate(geometry.bounds.topLeft),
+            menu = geometry.bounds,
+            // Closing the menu takes them along
+            progress = { min(sub.value, grow.value) },
+            backdrop = backdrop,
+            onFold = ::foldChildren,
+            onPick = { child ->
+                if (!closing) {
+                    child.onClick()
+                    dismiss()
+                }
+            },
+        )
+    }
+}
+
+/** One item of a menu: its icon, label and detail, and a check when chosen or › when it opens more. */
+@Composable
+private fun MenuRow(
+    item: ContextMenuItem,
+    highlighted: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailing: ImageVector? = when {
+        item.children != null -> Icons.Rounded.ChevronRight
+        item.selected -> Icons.Rounded.Check
+        else -> null
+    },
+    bold: Boolean = false,
+) {
+    val colors = ExtendedTheme.colors
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = ItemHeight)
+            .padding(horizontal = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (highlighted) colors.chip else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = if (item.detail != null) 8.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        when {
+            item.leading != null -> item.leading.invoke()
+            item.icon != null -> Icon(item.icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.label,
+                color = colors.text,
+                fontSize = 15.sp,
+                fontWeight = if (bold) FontWeight.SemiBold else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            item.detail?.let { detail ->
+                Text(text = detail, color = colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp)
+            }
+        }
+        if (trailing != null) {
+            Icon(
+                trailing,
+                contentDescription = null,
+                tint = if (item.selected && item.children == null) colors.text else colors.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+/**
+ * The children of [item], on glass of their own over the menu: they come out of the item's row
+ * at [from], a little wider than the [menu], their head where the row was. Tapping the head
+ * folds them back into it.
+ */
+@Composable
+private fun ChildMenu(
+    item: ContextMenuItem,
+    from: Rect,
+    menu: Rect,
+    progress: () -> Float,
+    backdrop: HazeState,
+    onFold: () -> Unit,
+    onPick: (ContextMenuItem) -> Unit,
+) {
+    val colors = ExtendedTheme.colors
+    val insets = WindowInsets.safeDrawing
+    val children = item.children.orEmpty()
+    // Where the card is now and when open, worked out in layout and drawn from
+    var final by remember { mutableStateOf(Rect.Zero) }
+    var now by remember { mutableStateOf(Rect.Zero) }
+    var corner by remember { mutableFloatStateOf(0f) }
+    Layout(
+        modifier = Modifier.fillMaxSize(),
+        content = {
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        shape = SmoothCornerShape((corner / density).dp)
+                        clip = true
+                        shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * progress().coerceIn(0f, 1f)
+                        ambientShadowColor = ShadowAmbient
+                        spotShadowColor = ShadowSpot
+                    }
+                    .menuGlass(backdrop)
+                    .drawWithContent {
+                        drawContent()
+                        val edge = SmoothCornerShape((corner / density).dp).createOutline(size, layoutDirection, this)
+                        drawOutline(edge, colors.glassEdge, style = Stroke(width = 0.5.dp.toPx() * 2))
+                    },
+            )
+            Column(
+                modifier = Modifier
+                    .graphicsLayer {
+                        val p = progress()
+                        val scale = if (final.width > 0f) now.width / final.width else 1f
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        translationX = now.left - final.left
+                        translationY = now.top - final.top
+                        shape = ChildClip(now.width / scale, now.height / scale, corner / scale)
+                        clip = true
+                        // The head is the row it came from, so it shows at once; the rest sharpens
+                        alpha = (p / 0.4f).coerceIn(0f, 1f)
+                        val blur = IconBlur.toPx() * (1f - ((p - 0.3f) / 0.5f).coerceIn(0f, 1f))
+                        renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
+                    }
+                    .widthIn(min = MenuMinWidth, max = MenuMaxWidth + ChildWiden * 2)
+                    .width(IntrinsicSize.Max)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 6.dp),
+            ) {
+                MenuRow(item = item, highlighted = false, onClick = onFold, trailing = Icons.Rounded.ExpandLess, bold = true)
+                Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                children.forEachIndexed { index, child ->
+                    if (child.startsGroup && index > 0) {
+                        Divider(color = colors.divider, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+                    }
+                    MenuRow(item = child, highlighted = false, onClick = { onPick(child) })
+                }
+            }
+        },
+    ) { (glassMeasurable, itemsMeasurable), constraints ->
+        val margin = Margin.toPx()
+        val top = insets.getTop(this) + margin
+        val bottom = constraints.maxHeight - insets.getBottom(this) - margin
+        val minWidth = (menu.width + ChildWiden.toPx() * 2).roundToInt().coerceAtMost(constraints.maxWidth - 2 * margin.roundToInt())
+        val items = itemsMeasurable.measure(
+            Constraints(minWidth = minWidth.coerceAtLeast(0), maxHeight = (bottom - top).roundToInt().coerceAtLeast(0)),
+        )
+        val width = items.width.toFloat()
+        val height = items.height.toFloat()
+        // The head lies over the row, as far as the screen allows
+        val left = (menu.center.x - width / 2).coerceIn(margin, (constraints.maxWidth - width - margin).coerceAtLeast(margin))
+        val y = (from.top - 6.dp.toPx()).coerceIn(top, (bottom - height).coerceAtLeast(top))
+        final = Rect(Offset(left, y), Size(width, height))
+        val p = progress()
+        now = Rect(
+            lerp(from.left, final.left, p),
+            lerp(from.top, final.top, p),
+            lerp(from.right, final.right, p),
+            lerp(from.bottom, final.bottom, p),
+        )
+        corner = lerp(12.dp.toPx(), Radius.lg.toPx(), p.coerceIn(0f, 1f))
+        val glass = glassMeasurable.measure(
+            Constraints.fixed(now.width.roundToInt().coerceAtLeast(0), now.height.roundToInt().coerceAtLeast(0)),
+        )
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            glass.place(now.left.roundToInt(), now.top.roundToInt())
+            items.place(final.left.roundToInt(), final.top.roundToInt())
+        }
+    }
+}
+
+/** A child menu's glass as its items see it, scaled from their top left corner. */
+private class ChildClip(private val width: Float, private val height: Float, private val corner: Float) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Generic(Path().apply { addSmoothRect(width, height, corner, SmoothCornerShape.DefaultSmoothing) })
 }
 
 /**
@@ -695,3 +886,10 @@ private val MenuMinWidth = 200.dp
 private val MenuMaxWidth = 280.dp
 private val ItemHeight = 46.dp
 private val MenuBlur = 24.dp
+
+/** How much wider than its menu a child menu is, on each side. */
+private val ChildWiden = 10.dp
+
+/** A menu under its open children: faded and blurred. */
+private const val UnderAlpha = 0.55f
+private val UnderBlur = 3.dp

@@ -32,6 +32,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuLabels
 import com.huanchengfly.tieba.post.ui.widgets.compose.ContextMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.IconButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalContextMenus
@@ -52,6 +53,7 @@ fun FeedMenu(
 ) {
     val context = LocalContext.current
     val shareLabels = shareMenuLabels()
+    val blockLabels = blockMenuLabels()
     val navigator = LocalNavigator.current
     val menus = LocalContextMenus.current
     val shortcuts = LocalBlockShortcuts.current
@@ -66,7 +68,7 @@ fun FeedMenu(
             val dislikes = dislikeMenuItems(context, navigator, options, onDislike)
             val items = dislikes + shareMenuItems(shareLabels, context, thread.id, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
-            } + shortcuts?.let { blockMenuItems(context, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
+            } + shortcuts?.let { blockMenuItems(blockLabels, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
             menuId = menus.show(items, anchor = bounds, icon = Icons.Rounded.MoreHoriz)
         },
         modifier = Modifier

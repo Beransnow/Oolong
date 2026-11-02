@@ -43,9 +43,11 @@ import com.huanchengfly.tieba.post.ui.common.PbContentText
 import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.rememberSubPostText
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuLabels
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -299,6 +301,7 @@ internal class PostMenuLabels(
     val unstore: String,
     val report: String,
     val delete: String,
+    val block: BlockMenuLabels,
 )
 
 @Composable
@@ -310,6 +313,7 @@ internal fun postMenuLabels() = PostMenuLabels(
     unstore = stringResource(id = R.string.title_collect_on),
     report = stringResource(id = R.string.title_report),
     delete = stringResource(id = R.string.title_delete),
+    block = blockMenuLabels(),
 )
 
 /** What a long press on a post offers, with blocking its author after when [shortcuts] are there. */
@@ -338,7 +342,7 @@ internal fun postMenuItems(
     add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(post.id)) })
     if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, labels.delete) { onEvent(ThreadEvent.DeletePost(post)) })
     // Blocking from inside a thread leaves its forum out
-    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, post.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, post.author, forum = null, text = ""))
 }
 
 /** What a long press on a reply inside a post offers. */
@@ -354,5 +358,5 @@ internal fun subPostMenuItems(
     if (!hideReply) add(ContextMenuItem(Icons.AutoMirrored.Rounded.Reply, labels.replyInside) { onEvent(ThreadEvent.Reply(post, subPost)) })
     add(ContextMenuItem(Icons.Rounded.ContentCopy, labels.copy) { onEvent(ThreadEvent.Copy(subPost.content.plainText)) })
     add(ContextMenuItem(Icons.Rounded.Flag, labels.report, startsGroup = true) { onEvent(ThreadEvent.Report(subPost.id)) })
-    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, subPost.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(labels.block, shortcuts, subPost.author, forum = null, text = ""))
 }

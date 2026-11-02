@@ -82,17 +82,20 @@ fun conditionSentence(condition: Condition, nested: Boolean = false): List<Sente
 @Composable
 fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
     fun value(text: String) = SentenceRun(text, RulePart.Value)
+
+    // A value not typed yet reads as an ellipsis between its marks
+    fun typed(text: String) = text.ifBlank { "…" }
     fun plain(text: String) = SentenceRun(text)
 
     @Composable
     fun pattern(subject: String, pattern: Pattern): List<SentenceRun> = when (pattern) {
         is Pattern.Words -> listOf(
             plain(subject + stringResource(if (negated) R.string.rule_not_containing else R.string.rule_containing)),
-            value("「${pattern.words.joinToString(" ")}」"),
+            value("「${typed(pattern.words.joinToString(" "))}」"),
         )
         is Pattern.Regex -> listOf(
             plain(subject + stringResource(if (negated) R.string.rule_not_matching else R.string.rule_matching)),
-            value("/${pattern.pattern}/"),
+            value("/${typed(pattern.pattern)}/"),
         )
     }
     return when (test) {
@@ -106,9 +109,9 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
         )
 
         is Condition.User -> if (negated) {
-            listOf(plain(stringResource(R.string.rule_author_is_not)), value("「${test.shownName}」"))
+            listOf(plain(stringResource(R.string.rule_author_is_not)), value("「${typed(test.shownName)}」"))
         } else {
-            listOf(plain(stringResource(R.string.rule_user)), value(test.shownName))
+            listOf(plain(stringResource(R.string.rule_user)), value(typed(test.shownName)))
         }
 
         is Condition.AuthorName -> pattern(stringResource(R.string.rule_author_name), test.pattern)
@@ -118,11 +121,11 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
         )
 
         Condition.ThreadAuthor -> listOf(plain(stringResource(if (negated) R.string.rule_not_thread_author else R.string.rule_thread_author)))
-        is Condition.Ip -> listOf(plain(stringResource(if (negated) R.string.rule_ip_is_not else R.string.rule_ip_is)), value("「${test.region}」"))
+        is Condition.Ip -> listOf(plain(stringResource(if (negated) R.string.rule_ip_is_not else R.string.rule_ip_is)), value("「${typed(test.region)}」"))
         is Condition.Forum -> if (negated) {
-            listOf(plain(stringResource(R.string.rule_not_in)), value(stringResource(R.string.rule_forum, test.name.removeSuffix("吧"))))
+            listOf(plain(stringResource(R.string.rule_not_in)), value(stringResource(R.string.rule_forum, typed(test.name.removeSuffix("吧")))))
         } else {
-            listOf(value(stringResource(R.string.rule_forum, test.name.removeSuffix("吧"))), plain(stringResource(R.string.rule_inside)))
+            listOf(value(stringResource(R.string.rule_forum, typed(test.name.removeSuffix("吧")))), plain(stringResource(R.string.rule_inside)))
         }
 
         is Condition.ForumName -> pattern(stringResource(R.string.rule_forum_name), test.pattern)

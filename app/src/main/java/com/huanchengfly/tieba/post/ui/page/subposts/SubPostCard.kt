@@ -22,9 +22,11 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.ui.common.PostBody
+import com.huanchengfly.tieba.post.ui.page.settings.block.BlockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.settings.block.BlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.LocalBlockShortcuts
 import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuItems
+import com.huanchengfly.tieba.post.ui.page.settings.block.blockMenuLabels
 import com.huanchengfly.tieba.post.ui.page.thread.PostMenuLabels
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostBranch
 import com.huanchengfly.tieba.post.ui.page.thread.SubPostLine
@@ -83,6 +85,7 @@ internal fun SubPostReply(
     val subPost = item.subPost
     val context = LocalContext.current
     val shortcuts = LocalBlockShortcuts.current
+    val blockLabels = blockMenuLabels()
     BlockableContent(
         block = item.block,
         modifier = Modifier.fillMaxWidth().floorIndent(),
@@ -93,7 +96,7 @@ internal fun SubPostReply(
                 subPost = subPost,
                 isLz = subPost.author.id == threadAuthorId,
                 onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply },
-                menuItems = { replyMenuItems(context, post, subPost, hideReply, canDelete, shortcuts, onEvent) },
+                menuItems = { replyMenuItems(context, blockLabels, post, subPost, hideReply, canDelete, shortcuts, onEvent) },
                 onAgree = { onEvent(SubPostsEvent.AgreeSubPost(subPost.id)) },
             )
         }
@@ -103,6 +106,7 @@ internal fun SubPostReply(
 /** What a long press on a reply offers here, with blocking its author after when [shortcuts] are there. */
 private fun replyMenuItems(
     context: Context,
+    blockLabels: BlockMenuLabels,
     post: Post,
     subPost: SubPost,
     hideReply: Boolean,
@@ -116,5 +120,5 @@ private fun replyMenuItems(
     add(ContextMenuItem(Icons.Rounded.ContentCopy, context.getString(R.string.menu_copy)) { onEvent(SubPostsEvent.Copy(subPost.content.plainText)) })
     add(ContextMenuItem(Icons.Rounded.Flag, context.getString(R.string.title_report), startsGroup = true) { onEvent(SubPostsEvent.Report(subPost.id)) })
     if (canDelete) add(ContextMenuItem(Icons.Rounded.Delete, context.getString(R.string.title_delete)) { onEvent(SubPostsEvent.Delete(subPost)) })
-    if (shortcuts != null) addAll(blockMenuItems(context, shortcuts, subPost.author, forum = null, text = ""))
+    if (shortcuts != null) addAll(blockMenuItems(blockLabels, shortcuts, subPost.author, forum = null, text = ""))
 }

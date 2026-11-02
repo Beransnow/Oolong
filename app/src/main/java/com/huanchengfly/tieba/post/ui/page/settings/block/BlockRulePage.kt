@@ -74,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
@@ -557,11 +558,42 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
     }
 }
 
+/** What a row can look at, in groups that open in place, so the menu stays short. */
 @Composable
-private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -> Unit): List<ContextMenuItem> =
-    ConditionField.entries.map { field ->
-        ContextMenuItem(icon = field.icon, label = fieldName(field), selected = field == selected) { onPick(field) }
-    }
+private fun fieldMenuItems(selected: ConditionField?, onPick: (ConditionField) -> Unit): List<ContextMenuItem> {
+    @Composable
+    fun item(field: ConditionField, label: Int) =
+        ContextMenuItem(icon = field.icon, label = stringResource(id = label), selected = field == selected) { onPick(field) }
+
+    @Composable
+    fun group(icon: ImageVector, label: Int, vararg children: ContextMenuItem) =
+        ContextMenuItem(icon = icon, label = stringResource(id = label), selected = children.any { it.selected }, children = children.toList())
+
+    return listOf(
+        group(
+            Icons.Rounded.TextFields,
+            R.string.rule_group_text,
+            item(ConditionField.TitleOrBody, R.string.rule_field_title_or_body),
+            item(ConditionField.Title, R.string.rule_field_title),
+            item(ConditionField.Body, R.string.rule_field_body),
+        ),
+        group(
+            Icons.Rounded.Person,
+            R.string.rule_group_author,
+            item(ConditionField.Author, R.string.rule_field_user),
+            item(ConditionField.Level, R.string.rule_field_level_short),
+            item(ConditionField.ThreadAuthor, R.string.rule_field_identity),
+            item(ConditionField.Ip, R.string.rule_field_ip),
+        ),
+        item(ConditionField.Forum, R.string.rule_field_forum),
+        group(
+            Icons.Rounded.Category,
+            R.string.rule_group_content,
+            item(ConditionField.Content, R.string.rule_field_kind),
+            item(ConditionField.Length, R.string.rule_field_length),
+        ),
+    )
+}
 
 @Composable
 private fun fieldName(field: ConditionField): String = stringResource(
@@ -626,7 +658,7 @@ private fun TextInput(
     val colors = ExtendedTheme.colors
     val style = TextStyles.bodyCompact.copy(color = colors.text, fontFamily = if (monospace) FontFamily.Monospace else null)
     Box(modifier = modifier.padding(vertical = 7.dp)) {
-        if (value.isEmpty()) Text(text = hint, style = style.copy(color = colors.textSecondary))
+        if (value.isEmpty()) Text(text = hint, style = style.copy(color = colors.textSecondary), maxLines = 1, overflow = TextOverflow.Ellipsis)
         BasicTextField(
             value = value,
             onValueChange = onChange,
