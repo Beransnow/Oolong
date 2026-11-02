@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -92,7 +93,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCardOptions
 import com.huanchengfly.tieba.post.ui.page.thread.PostItem
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPostCard
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFloor
 import com.huanchengfly.tieba.post.ui.utils.rememberSystemUiController
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
@@ -301,7 +302,14 @@ private fun SamplePost() {
             }
         }
     ) {
-        ThreadPostCard(item = item, options = PostCardOptions(threadAuthorId = 0), onEvent = {})
+        ThreadFloor(
+            item = item,
+            options = PostCardOptions(threadAuthorId = 0),
+            onEvent = {},
+            listState = rememberLazyListState(),
+            key = "Preview",
+            startsRule = true,
+        )
     }
 }
 

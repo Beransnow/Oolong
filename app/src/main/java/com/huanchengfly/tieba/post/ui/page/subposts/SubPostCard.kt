@@ -16,9 +16,12 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.ui.common.PostBody
-import com.huanchengfly.tieba.post.ui.page.thread.PostAgreeBtn
+import com.huanchengfly.tieba.post.ui.page.thread.SubPostBranch
+import com.huanchengfly.tieba.post.ui.page.thread.SubPostLine
 import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
 import com.huanchengfly.tieba.post.ui.page.thread.bawuName
+import com.huanchengfly.tieba.post.ui.page.thread.floorIndent
+import com.huanchengfly.tieba.post.ui.page.thread.floorRuleColor
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
@@ -53,119 +56,72 @@ sealed interface SubPostsEvent {
     data class Delete(val subPost: SubPost?) : SubPostsEvent
 }
 
-/** A reply inside the post: author, time and like button, then what they said. */
+/**
+ * A reply inside the post, as a floor shows its replies but in full: on a branch off the rule that
+ * runs down from the post, the last one ending it.
+ */
 @Composable
-internal fun SubPostCard(
+internal fun SubPostReply(
     post: Post,
     item: SubPostItem,
     threadAuthorId: Long,
     canDelete: Boolean,
     hideReply: Boolean,
+    last: Boolean,
     onEvent: (SubPostsEvent) -> Unit,
 ) {
     val subPost = item.subPost
-    val menuState = rememberMenuState()
     BlockableContent(
         blocked = item.blocked,
         blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_sub_post)) }) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().floorIndent(),
     ) {
-        LongClickMenu(
-            menuState = menuState,
-            indication = null,
-            menuContent = {
-                if (!hideReply) {
+        // BlockableContent only lays out its tip with the modifier, so the reply takes its own
+        SubPostBranch(rule = floorRuleColor(), modifier = Modifier.fillMaxWidth().floorIndent(), rail = true, last = last) {
+            SubPostLine(
+                subPost = subPost,
+                isLz = subPost.author.id == threadAuthorId,
+                onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply },
+                menuContent = { menuState ->
+                    if (!hideReply) {
+                        DropdownMenuItem(
+                            onClick = {
+                                onEvent(SubPostsEvent.Reply(post, subPost))
+                                menuState.expanded = false
+                            }
+                        ) {
+                            Text(text = stringResource(id = R.string.btn_reply))
+                        }
+                    }
                     DropdownMenuItem(
                         onClick = {
-                            onEvent(SubPostsEvent.Reply(post, subPost))
+                            onEvent(SubPostsEvent.Copy(subPost.content.plainText))
                             menuState.expanded = false
                         }
                     ) {
-                        Text(text = stringResource(id = R.string.btn_reply))
+                        Text(text = stringResource(id = R.string.menu_copy))
                     }
-                }
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(SubPostsEvent.Copy(subPost.content.plainText))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(text = stringResource(id = R.string.menu_copy))
-                }
-                DropdownMenuItem(
-                    onClick = {
-                        onEvent(SubPostsEvent.Report(subPost.id))
-                        menuState.expanded = false
-                    }
-                ) {
-                    Text(text = stringResource(id = R.string.title_report))
-                }
-                if (canDelete) {
                     DropdownMenuItem(
                         onClick = {
-                            onEvent(SubPostsEvent.Delete(subPost))
+                            onEvent(SubPostsEvent.Report(subPost.id))
                             menuState.expanded = false
                         }
                     ) {
-                        Text(text = stringResource(id = R.string.title_delete))
+                        Text(text = stringResource(id = R.string.title_report))
                     }
-                }
-            },
-            onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply }
-        ) {
-            Card(
-                header = { SubPostHeader(subPost, threadAuthorId, onEvent) },
-                content = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .padding(start = Sizes.Small + 8.dp)
-                            .fillMaxWidth()
-                    ) {
-                        PostBody(content = subPost.content)
+                    if (canDelete) {
+                        DropdownMenuItem(
+                            onClick = {
+                                onEvent(SubPostsEvent.Delete(subPost))
+                                menuState.expanded = false
+                            }
+                        ) {
+                            Text(text = stringResource(id = R.string.title_delete))
+                        }
                     }
-                }
+                },
+                onAgree = { onEvent(SubPostsEvent.AgreeSubPost(subPost.id)) },
             )
         }
-    }
-}
-
-@Composable
-private fun SubPostHeader(subPost: SubPost, threadAuthorId: Long, onEvent: (SubPostsEvent) -> Unit) {
-    val context = LocalContext.current
-    val author = subPost.author
-    UserHeader(
-        avatar = {
-            Avatar(
-                data = StringUtil.getAvatarUrl(author.portrait),
-                size = Sizes.Small,
-                contentDescription = null
-            )
-        },
-        name = {
-            UserNameText(
-                userName = StringUtil.getUsernameAnnotatedString(context, author.name, author.nameShow),
-                userLevel = author.level,
-                isLz = author.id == threadAuthorId,
-                bawuType = author.bawuName(),
-            )
-        },
-        desc = {
-            Text(
-                text = listOfNotNull(
-                    getRelativeTimeString(context, subPost.time),
-                    stringResource(R.string.text_ip_location, author.ipLocation).takeIf { author.ipLocation.isNotEmpty() },
-                ).joinToString(" ")
-            )
-        },
-        onClick = { onEvent(SubPostsEvent.OpenUser(author.id)) }
-    ) {
-        PostAgreeBtn(
-            hasAgreed = subPost.agree.agreed,
-            agreeNum = subPost.agree.count,
-            onClick = { onEvent(SubPostsEvent.AgreeSubPost(subPost.id)) }
-        )
     }
 }

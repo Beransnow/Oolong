@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
@@ -44,7 +45,7 @@ import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.thread.PostCardOptions
 import com.huanchengfly.tieba.post.ui.page.thread.PostItem
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPostCard
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFloor
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -163,7 +164,14 @@ private fun FontSizePreview(scale: Float) {
                     }
                 }
         ) {
-            ThreadPostCard(item = item, options = PostCardOptions(threadAuthorId = 0), onEvent = {})
+            ThreadFloor(
+                item = item,
+                options = PostCardOptions(threadAuthorId = 0),
+                onEvent = {},
+                listState = rememberLazyListState(),
+                key = "Preview",
+                startsRule = true,
+            )
         }
     }
 }

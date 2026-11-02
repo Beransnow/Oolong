@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -69,6 +71,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LongClickMenu
+import com.huanchengfly.tieba.post.ui.widgets.compose.MenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
@@ -111,10 +114,12 @@ fun ThreadFloor(
     isStoreMark: Boolean = false,
     canDelete: Boolean = false,
     photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
+    /** Whether the floor's menu offers storing the thread up to it. */
+    canStore: Boolean = true,
 ) {
     val post = item.post
     val menuState = rememberMenuState()
-    val rule = ExtendedTheme.colors.textDisabled.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.45f else 0.7f)
+    val rule = floorRuleColor()
     var floorHeight by remember { mutableIntStateOf(0) }
     var badgeHeight by remember { mutableIntStateOf(0) }
     BlockableContent(
@@ -141,7 +146,7 @@ fun ThreadFloor(
                     indication = null,
                     onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
                     menuContent = {
-                        PostMenuItems(post, options.hideReply, isStoreMark, canStore = true, canDelete, menuState, onEvent)
+                        PostMenuItems(post, options.hideReply, isStoreMark, canStore, canDelete, menuState, onEvent)
                     },
                 ) {
                     Row {
@@ -276,7 +281,7 @@ private fun FloorBody(
 private fun FloorSubPosts(
     item: PostItem,
     options: PostCardOptions,
-    rule: androidx.compose.ui.graphics.Color,
+    rule: Color,
     onEvent: (ThreadEvent) -> Unit,
 ) {
     val post = item.post
@@ -292,19 +297,14 @@ private fun FloorSubPosts(
                     )
                 },
             ) {
-                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                    Canvas(modifier = Modifier.width(Gutter).fillMaxSize()) {
-                        val x = Gutter.toPx() / 2
-                        val y = (SubPostAvatarSize / 2).toPx()
-                        val r = 10.dp.toPx()
-                        val branch = Path().apply {
-                            moveTo(x, y - r)
-                            quadraticTo(x, y, x + r, y)
-                            lineTo(size.width - 4.dp.toPx(), y)
-                        }
-                        drawPath(branch, rule, style = Stroke(1.dp.toPx()))
-                    }
-                    FloorSubPost(post, subPost, isLz = subPost.author.id == options.threadAuthorId, options.hideReply, onEvent)
+                SubPostBranch(rule = rule) {
+                    SubPostLine(
+                        subPost = subPost,
+                        isLz = subPost.author.id == options.threadAuthorId,
+                        onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
+                        menuContent = { SubPostMenuItems(post, subPost, options.hideReply, it, onEvent) },
+                        maxLines = 4,
+                    )
                 }
             }
         }
@@ -326,22 +326,66 @@ private fun FloorSubPosts(
     }
 }
 
-/** A reply inside a post, compact: the avatar, then who and what in one paragraph, then when. */
+/** The colour of the rule down a floor and the branches off it to its replies. */
 @Composable
-private fun FloorSubPost(
-    post: Post,
+fun floorRuleColor(): Color =
+    ExtendedTheme.colors.textDisabled.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.45f else 0.7f)
+
+/** Lines content up with a floor's body, past the avatar column the floor's rule runs down. */
+fun Modifier.floorIndent(): Modifier = padding(start = GutterStart, end = 16.dp)
+
+/**
+ * [content], a reply, on a branch off a floor's rule. Inside a floor the floor draws the rule;
+ * elsewhere [rail] draws it here too, on down to the next reply unless this is the [last].
+ */
+@Composable
+fun SubPostBranch(
+    rule: Color,
+    modifier: Modifier = Modifier,
+    rail: Boolean = false,
+    last: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    Row(modifier = modifier.height(IntrinsicSize.Min)) {
+        Canvas(modifier = Modifier.width(Gutter).fillMaxSize()) {
+            val x = Gutter.toPx() / 2
+            val y = (SubPostAvatarSize / 2).toPx()
+            val r = 10.dp.toPx()
+            val stroke = 1.dp.toPx()
+            if (rail) drawLine(rule, Offset(x, 0f), Offset(x, if (last) y - r else size.height), stroke)
+            val branch = Path().apply {
+                moveTo(x, y - r)
+                quadraticTo(x, y, x + r, y)
+                lineTo(size.width - 4.dp.toPx(), y)
+            }
+            drawPath(branch, rule, style = Stroke(stroke))
+        }
+        content()
+    }
+}
+
+/**
+ * A reply inside a post: the avatar, then who and what in one paragraph, then when. In a floor it
+ * is cut to [maxLines] and shows its likes; on the replies' own page it shows in full, with
+ * [onAgree] a like button.
+ */
+@Composable
+fun SubPostLine(
     subPost: SubPost,
     isLz: Boolean,
-    hideReply: Boolean,
-    onEvent: (ThreadEvent) -> Unit,
+    onClick: (() -> Unit)?,
+    menuContent: @Composable ColumnScope.(MenuState) -> Unit,
+    modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+    onAgree: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val menuState = rememberMenuState()
     LongClickMenu(
         menuState = menuState,
-        menuContent = { SubPostMenuItems(post, subPost, hideReply, menuState, onEvent) },
-        onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
-        modifier = Modifier.fillMaxWidth(),
+        menuContent = { menuContent(menuState) },
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -359,7 +403,7 @@ private fun FloorSubPost(
                         lineHeight = 22.sp,
                         emoticonSize = 0.9f,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 4,
+                        maxLines = maxLines,
                         inlineContent = mapOf(
                             "Lz" to buildChipInlineContent(
                                 stringResource(id = R.string.tip_lz),
@@ -383,7 +427,15 @@ private fun FloorSubPost(
                     color = ExtendedTheme.colors.textSecondary,
                     modifier = Modifier.weight(1f),
                 )
-                if (subPost.agree.count > 0) {
+                if (onAgree != null) {
+                    // The button pads its icon; shift it so the icon lines up with the text's right edge
+                    PostAgreeBtn(
+                        hasAgreed = subPost.agree.agreed,
+                        agreeNum = subPost.agree.count,
+                        onClick = onAgree,
+                        modifier = Modifier.offset(x = 8.dp),
+                    )
+                } else if (subPost.agree.count > 0) {
                     Icon(
                         imageVector = Icons.Rounded.FavoriteBorder,
                         contentDescription = stringResource(id = R.string.title_agree),

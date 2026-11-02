@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -60,7 +60,7 @@ import com.huanchengfly.tieba.post.ui.page.reply.rememberReplyChromeState
 import com.huanchengfly.tieba.post.ui.page.thread.PostCardOptions
 import com.huanchengfly.tieba.post.ui.page.thread.PostItem
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadEvent
-import com.huanchengfly.tieba.post.ui.page.thread.ThreadPostCard
+import com.huanchengfly.tieba.post.ui.page.thread.ThreadFloor
 import com.huanchengfly.tieba.post.ui.page.thread.ThreadPreferences
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
@@ -72,11 +72,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.paddedStickyHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.plus
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreenScope
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * The replies inside a post, as a page of its own or, with [isSheet], in a bottom sheet over the
@@ -255,17 +255,17 @@ private fun SubPostsContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             item(key = "Post") {
-                Column {
-                    ThreadPostCard(
-                        item = PostItem(post, blocked = state.postBlocked),
-                        options = PostCardOptions(threadAuthorId = 0, hideBlocked = preferences.hideBlocked, hideReply = preferences.hideReply),
-                        onEvent = postEvents,
-                        canDelete = state.viewerId != null && post.author.id == state.viewerId,
-                        canStore = false,
-                        showSubPosts = false,
-                    )
-                    VerticalDivider(thickness = 2.dp)
-                }
+                // The floor as the thread shows it, its replies listed below instead of inside it
+                ThreadFloor(
+                    item = PostItem(post.copy(subPosts = persistentListOf()), blocked = state.postBlocked),
+                    options = PostCardOptions(threadAuthorId = state.threadAuthorId, hideBlocked = preferences.hideBlocked, hideReply = preferences.hideReply),
+                    onEvent = postEvents,
+                    listState = listState,
+                    key = "Post",
+                    startsRule = true,
+                    canDelete = state.viewerId != null && post.author.id == state.viewerId,
+                    canStore = false,
+                )
             }
             paddedStickyHeader(listState, key = "SubPostsHeader") {
                 Row(
@@ -296,13 +296,14 @@ private fun SubPostsContent(
                     }
                 }
             }
-            items(items = subPosts.items, key = { it.subPost.id }) { item ->
-                SubPostCard(
+            itemsIndexed(items = subPosts.items, key = { _, it -> it.subPost.id }) { index, item ->
+                SubPostReply(
                     post = post,
                     item = item,
                     threadAuthorId = state.threadAuthorId,
                     canDelete = state.viewerId != null && item.subPost.author.id == state.viewerId,
                     hideReply = preferences.hideReply,
+                    last = index == subPosts.items.lastIndex && !subPosts.hasMore,
                     onEvent = onEvent,
                 )
             }
