@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.mp3.Mp3Extractor
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.utils.FileUtil
@@ -74,6 +78,8 @@ fun VoicePlayer(
     var dragged by remember { mutableStateOf<Float?>(null) }
     val played = if (length > 0) (position.toFloat() / length).coerceIn(0f, 1f) else 0f
     val fraction = dragged ?: played
+    // The gesture outlives this composition; it reads where the voice is now through this
+    val playedNow by rememberUpdatedState(played)
 
     // Stops when the voice leaves the screen
     DisposableEffect(url) {
@@ -111,7 +117,7 @@ fun VoicePlayer(
                     // By how far the finger moves, not where it lands: a drag that starts on the
                     // play button does not jump to the start
                     detectHorizontalDragGestures(
-                        onDragStart = { dragged = played },
+                        onDragStart = { dragged = playedNow },
                         onDragEnd = {
                             dragged?.let { VoicePlayback.seek(context, url, (it * length).toLong()) }
                             dragged = null
@@ -119,7 +125,7 @@ fun VoicePlayer(
                         onDragCancel = { dragged = null },
                     ) { change, amount ->
                         change.consume()
-                        dragged = ((dragged ?: played) + amount / size.width).coerceIn(0f, 1f)
+                        dragged = ((dragged ?: playedNow) + amount / size.width).coerceIn(0f, 1f)
                     }
                 }
                 .padding(start = 6.dp, end = 14.dp),
@@ -251,6 +257,8 @@ object VoicePlayback {
     /**
      * Speech that takes the audio focus and pauses when the headphones are pulled out, decoded
      * with an extension such as FFmpeg where there is one, for formats the system cannot play.
+     * Voices are short, so seeking reads the file up to the position instead of estimating where
+     * it lies, and works in files without a seek table.
      */
     @OptIn(UnstableApi::class)
     private fun buildPlayer(context: Context): ExoPlayer {
@@ -262,6 +270,7 @@ object VoicePlayback {
             )
             .setHandleAudioBecomingNoisy(true)
             .setRenderersFactory(DefaultRenderersFactory(app).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(app, DefaultExtractorsFactory().setMp3ExtractorFlags(Mp3Extractor.FLAG_ENABLE_INDEX_SEEKING)))
             .build()
     }
 }
