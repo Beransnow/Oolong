@@ -33,6 +33,7 @@ import com.huanchengfly.tieba.post.repository.ThreadQuery
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.repository.Threads
+import com.huanchengfly.tieba.post.repository.check
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -461,10 +462,8 @@ private data class ThreadOrigin(val forum: String, val authorId: Long)
 private fun Post.withBlocked(rules: BlockRules, origin: ThreadOrigin?): PostItem {
     val post = this
     fun check(author: User, content: List<PostContent>) = rules.check(
-        Blockable(
-            author, content, BlockPlace.Thread, forum = origin?.forum,
-            byThreadAuthor = origin != null && author.id == origin.authorId,
-        ),
+        author, content, BlockPlace.Thread, forum = origin?.forum,
+        byThreadAuthor = origin != null && author.id == origin.authorId,
     )
     return PostItem(
         post = post,

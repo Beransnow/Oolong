@@ -27,6 +27,7 @@ import com.huanchengfly.tieba.post.repository.FloorPage
 import com.huanchengfly.tieba.post.repository.SubPosts
 import com.huanchengfly.tieba.post.repository.ThreadActions
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.repository.check
 import com.huanchengfly.tieba.post.repository.post
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import dagger.assisted.Assisted
@@ -132,7 +133,7 @@ class SubPostsViewModel @AssistedInject constructor(
         val forumName = floor?.forum?.name
         val threadAuthorId = floor?.threadAuthorId ?: 0L
         fun check(author: User, content: List<PostContent>) = rules.check(
-            Blockable(author, content, BlockPlace.Thread, forum = forumName, byThreadAuthor = threadAuthorId != 0L && author.id == threadAuthorId),
+            author, content, BlockPlace.Thread, forum = forumName, byThreadAuthor = threadAuthorId != 0L && author.id == threadAuthorId,
         )
         val items = blocked.map(Triple(rules, forumName, threadAuthorId), pager.items) { SubPostItem(it, check(it.author, it.content)) }
             .toImmutableList()

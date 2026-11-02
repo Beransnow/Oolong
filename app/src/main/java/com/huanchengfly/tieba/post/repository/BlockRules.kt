@@ -8,7 +8,6 @@ import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.database.BlockDao
 import com.huanchengfly.tieba.post.model.BlockRule
 import com.huanchengfly.tieba.post.model.BlockRule.Condition
-import com.huanchengfly.tieba.post.model.BlockRule.Pattern
 import com.huanchengfly.tieba.post.model.BlockRule.TextField
 import com.huanchengfly.tieba.post.model.ContentKind
 import com.huanchengfly.tieba.post.model.PostContent
@@ -92,7 +91,20 @@ data class BlockVerdict(val rule: BlockRule, val hidden: Boolean)
 fun interface BlockRules {
     /** How [item] is blocked, or null when it is shown. */
     fun check(item: Blockable): BlockVerdict?
+
+    /** Whether nothing is blocked whatever is checked, so there is no need to look at items. */
+    val empty: Boolean get() = false
 }
+
+/** How the rules block [content] by [author], looked at only when there are rules to look with. */
+fun BlockRules.check(
+    author: User,
+    content: List<PostContent>,
+    place: BlockPlace,
+    title: String = "",
+    forum: String? = null,
+    byThreadAuthor: Boolean = false,
+): BlockVerdict? = if (empty) null else check(Blockable(author, content, place, title, forum, byThreadAuthor))
 
 /** Whether the rules block something by [author] saying [content] inside a thread. */
 fun BlockRules.blocks(author: User, content: String): Boolean =
@@ -103,6 +115,7 @@ fun BlockRules.blocks(author: User, content: String): Boolean =
  * or what lists know of it where that is missing.
  */
 fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? {
+    if (empty) return null
     val item = if (thread.firstPost.isNotEmpty()) {
         Blockable(thread.author, thread.firstPost, place, title = thread.title, forum = thread.forum.name, byThreadAuthor = true)
     } else {
@@ -164,6 +177,7 @@ fun blockRulesOf(
 ): BlockRules {
     val active = rules.filter { it.isActive(now) } +
         listOfNotNull(options.lowLevel?.let { BlockRule(id = LowLevelRuleId, condition = Condition.LevelBelow(it)) })
+    if (active.isEmpty()) return NoBlockRules
     val (exceptions, blocks) = active.map(::CompiledRule).partition { it.rule.action == BlockRule.Action.Allow }
     return BlockRules { item ->
         // Whatever rules look at is worked out once for all of them
@@ -183,15 +197,23 @@ fun blockRulesOf(
 /** The id of the rule the low level setting stands for, which is not stored. */
 const val LowLevelRuleId = -1L
 
+private object NoBlockRules : BlockRules {
+    override val empty: Boolean get() = true
+
+    override fun check(item: Blockable): BlockVerdict? = null
+}
+
 /** An item with what tests compare, each worked out when first needed. */
 private class Subject(val item: Blockable) {
     private val normalized = arrayOfNulls<String>(TextField.entries.size)
+    private val both by lazy(LazyThreadSafetyMode.NONE) { item.title + "\n" + item.content }
     val names by lazy(LazyThreadSafetyMode.NONE) {
         listOf(item.author.name, item.author.nameShow).filter { it.isNotBlank() }.distinct()
     }
+    val normalizedNames by lazy(LazyThreadSafetyMode.NONE) { names.map(::normalizeForMatching) }
 
     fun text(field: TextField): String = when (field) {
-        TextField.Both -> item.title + "\n" + item.content
+        TextField.Both -> both
         TextField.Title -> item.title
         TextField.Body -> item.content
     }
@@ -203,10 +225,22 @@ private class Subject(val item: Blockable) {
 
 private typealias Test = (Subject) -> Boolean
 
+/** A test and roughly how much it costs, so tests joined together run the cheap ones first. */
+private class Compiled(val test: Test, val cost: Int)
+
+/** Comparing fields of the item and of its author. */
+private const val CostCheap = 0
+
+/** Looking for words in text normalized once per item. */
+private const val CostWords = 1
+
+/** Running a pattern over the text. */
+private const val CostPattern = 2
+
 private class CompiledRule(val rule: BlockRule) {
     // A test that can't be judged, such as a broken pattern, leaves the whole rule doing nothing:
     // turned around, it would otherwise match everything
-    private val test: Test = compile(rule.condition) ?: { false }
+    private val test: Test = compile(rule.condition)?.test ?: { false }
 
     // A rule only about forums blocks their threads elsewhere; opening the forum itself shows them
     private val forumOnly = rule.condition.tests.let { tests -> tests.isNotEmpty() && tests.all { it is Condition.Forum } } &&
@@ -220,21 +254,31 @@ private class CompiledRule(val rule: BlockRule) {
     }
 }
 
-/** [condition] as a test, or null when it can't be judged. */
-private fun compile(condition: Condition): Test? = when (condition) {
-    is Condition.AllOf -> condition.conditions.map { compile(it) ?: return null }
-        .takeIf { it.isNotEmpty() }?.let { tests -> { subject -> tests.all { it(subject) } } }
-    is Condition.AnyOf -> condition.conditions.map { compile(it) ?: return null }
-        .takeIf { it.isNotEmpty() }?.let { tests -> { subject -> tests.any { it(subject) } } }
-    is Condition.Not -> compile(condition.condition)?.let { test -> { subject -> !test(subject) } }
+/**
+ * [condition] as a test, or null when it can't be judged. Tests joined together run the cheap ones
+ * first: which runs first changes nothing but how soon the answer is known.
+ */
+private fun compile(condition: Condition): Compiled? = when (condition) {
+    is Condition.AllOf -> condition.conditions.map { compile(it) ?: return null }.sortedBy { it.cost }
+        .takeIf { it.isNotEmpty() }
+        ?.let { parts -> Compiled({ subject -> parts.all { it.test(subject) } }, parts.maxOf { it.cost }) }
+    is Condition.AnyOf -> condition.conditions.map { compile(it) ?: return null }.sortedBy { it.cost }
+        .takeIf { it.isNotEmpty() }
+        ?.let { parts -> Compiled({ subject -> parts.any { it.test(subject) } }, parts.maxOf { it.cost }) }
+    is Condition.Not -> compile(condition.condition)?.let { part -> Compiled({ subject -> !part.test(subject) }, part.cost) }
 
     is Condition.Text -> when (val pattern = condition.pattern) {
-        is Pattern.Regex -> regexOf(pattern)?.let { regex -> { subject -> regex.containsMatchIn(subject.text(condition.field)) } }
-        is Pattern.Words -> wordsOf(pattern)?.let { words ->
-            { subject ->
-                val text = subject.words(condition.field)
-                words.all { it in text }
-            }
+        is BlockRule.Pattern.Regex -> regexOf(pattern)?.let { regex ->
+            Compiled({ subject -> regex.containsMatchIn(subject.text(condition.field)) }, CostPattern)
+        }
+        is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { words ->
+            Compiled(
+                { subject ->
+                    val text = subject.words(condition.field)
+                    words.all { it in text }
+                },
+                CostWords,
+            )
         }
     }
 
@@ -243,38 +287,52 @@ private fun compile(condition: Condition): Test? = when (condition) {
     is Condition.User -> if (condition.uid == 0L && condition.name.isBlank()) {
         null
     } else {
-        { subject ->
+        cheap { subject ->
             val author = subject.item.author
             (condition.uid != 0L && condition.uid == author.id) ||
                 // A name typed in, without an id, may be either name the user is shown by
                 (condition.name.isNotBlank() && (condition.name == author.name || (condition.uid == 0L && condition.name == author.nameShow)))
         }
     }
-    is Condition.AuthorName -> namePattern(condition.pattern)?.let { test -> { subject -> subject.names.any(test) } }
-    is Condition.LevelBelow -> condition.level.takeIf { it > 0 }?.let { level -> { subject -> subject.item.author.level in 1 until level } }
-    Condition.ThreadAuthor -> { subject -> subject.item.byThreadAuthor }
+    is Condition.AuthorName -> when (val pattern = condition.pattern) {
+        is BlockRule.Pattern.Regex -> regexOf(pattern)?.let { regex ->
+            Compiled({ subject -> subject.names.any { regex.containsMatchIn(it) } }, CostPattern)
+        }
+        is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { words ->
+            Compiled({ subject -> subject.normalizedNames.any { name -> words.all { it in name } } }, CostWords)
+        }
+    }
+    is Condition.LevelBelow -> condition.level.takeIf { it > 0 }?.let { level -> cheap { subject -> subject.item.author.level in 1 until level } }
+    Condition.ThreadAuthor -> cheap { subject -> subject.item.byThreadAuthor }
     is Condition.Ip -> condition.region.trim().takeIf { it.isNotEmpty() }?.let { region ->
-        { subject -> subject.item.author.ipLocation.trim().equals(region, ignoreCase = true) }
+        cheap { subject -> subject.item.author.ipLocation.trim().equals(region, ignoreCase = true) }
     }
     is Condition.Forum -> forumKey(condition.name).takeIf { it.isNotEmpty() }?.let { key ->
-        { subject -> subject.item.forum?.let(::forumKey) == key }
+        cheap { subject -> subject.item.forum?.let(::forumKey) == key }
     }
-    is Condition.ForumName -> namePattern(condition.pattern)?.let { test -> { subject -> subject.item.forum?.let(test) == true } }
-    is Condition.Has -> { subject -> condition.kind in subject.item.kinds }
-    is Condition.Only -> { subject -> subject.item.kinds == setOf(condition.kind) && subject.item.length == 0 }
-    is Condition.ShorterThan -> condition.length.takeIf { it > 0 }?.let { length -> { subject -> subject.item.length < length } }
+    is Condition.ForumName -> namePattern(condition.pattern)?.let { test ->
+        Compiled(
+            { subject -> subject.item.forum?.let(test) == true },
+            if (condition.pattern is BlockRule.Pattern.Regex) CostPattern else CostWords,
+        )
+    }
+    is Condition.Has -> cheap { subject -> condition.kind in subject.item.kinds }
+    is Condition.Only -> cheap { subject -> subject.item.kinds == setOf(condition.kind) && subject.item.length == 0 }
+    is Condition.ShorterThan -> condition.length.takeIf { it > 0 }?.let { length -> cheap { subject -> subject.item.length < length } }
 }
 
-private fun regexOf(pattern: Pattern.Regex): Regex? =
+private fun cheap(test: Test) = Compiled(test, CostCheap)
+
+private fun regexOf(pattern: BlockRule.Pattern.Regex): Regex? =
     pattern.pattern.takeIf { it.isNotEmpty() }?.let { runCatching { Regex(it, RegexOption.IGNORE_CASE) }.getOrNull() }
 
-private fun wordsOf(pattern: Pattern.Words): List<String>? =
+private fun wordsOf(pattern: BlockRule.Pattern.Words): List<String>? =
     pattern.words.map(::normalizeForMatching).filter { it.isNotEmpty() }.takeIf { it.isNotEmpty() }
 
 /** A test of a name against [pattern]. */
-private fun namePattern(pattern: Pattern): ((String) -> Boolean)? = when (pattern) {
-    is Pattern.Regex -> regexOf(pattern)?.let { regex -> { name -> regex.containsMatchIn(name) } }
-    is Pattern.Words -> wordsOf(pattern)?.let { words ->
+private fun namePattern(pattern: BlockRule.Pattern): ((String) -> Boolean)? = when (pattern) {
+    is BlockRule.Pattern.Regex -> regexOf(pattern)?.let { regex -> { name -> regex.containsMatchIn(name) } }
+    is BlockRule.Pattern.Words -> wordsOf(pattern)?.let { words ->
         { name -> normalizeForMatching(name).let { normalized -> words.all { it in normalized } } }
     }
 }
@@ -316,6 +374,24 @@ private fun String.hasEmoji(): Boolean {
  * spaces, punctuation and symbols dropped, so "剧 透" and "ＡＢＣ" match "剧透" and "abc".
  */
 fun normalizeForMatching(text: String): String {
+    // Most posts hold only characters that normalizing leaves as they are, or maps by a fixed
+    // offset, which is far quicker to do by hand
+    val out = CharArray(text.length)
+    var length = 0
+    for (c in text) {
+        if (!isPlain(c)) return slowNormalizeForMatching(text)
+        val char = if (c in '\uFF01'..'\uFF5E') c - FullWidthOffset else c
+        if (char in 'A'..'Z') {
+            out[length++] = char + ('a' - 'A')
+        } else if (char in 'a'..'z' || char in '0'..'9' || (char >= '\u0080' && Character.isLetterOrDigit(char))) {
+            out[length++] = char
+        }
+    }
+    return String(out, 0, length)
+}
+
+/** [normalizeForMatching] the long way, for any text. */
+internal fun slowNormalizeForMatching(text: String): String {
     val plain = Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase()
     return buildString(plain.length) {
         var i = 0
@@ -325,6 +401,22 @@ fun normalizeForMatching(text: String): String {
             i += Character.charCount(code)
         }
     }
+}
+
+/** How far full-width forms of ASCII are from ASCII. */
+private const val FullWidthOffset = 0xFEE0
+
+/**
+ * Whether NFKC leaves [c] as it is, or, for full-width ASCII, moves it by [FullWidthOffset]:
+ * ASCII, common CJK ideographs, kana without the marks that combine, and common punctuation.
+ */
+private fun isPlain(c: Char): Boolean = when (c) {
+    in '\u0000'..'\u007F' -> true
+    in '\u4E00'..'\u9FFF', in '\u3400'..'\u4DBF' -> true
+    in '\u3041'..'\u3096', in '\u30A1'..'\u30FE' -> true
+    in '\uFF01'..'\uFF5E' -> true
+    in '\u3000'..'\u3003', in '\u3008'..'\u3011', in '\u2010'..'\u2027' -> true
+    else -> false
 }
 
 interface BlockRuleSource {
