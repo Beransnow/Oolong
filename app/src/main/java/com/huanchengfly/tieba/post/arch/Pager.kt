@@ -47,6 +47,12 @@ data class PagerState<T>(
     val hasPrevious: Boolean = false,
 )
 
+/** What a [Pager] is loading a page for, told to its load. */
+class PageLoad internal constructor(
+    /** Whether the page replaces the list, or for a feed goes in front of it, rather than extends it. */
+    val refreshing: Boolean,
+)
+
 enum class RefreshMode {
     /** A refresh replaces the list. */
     Replace,
@@ -73,7 +79,7 @@ class Pager<K : Any, T>(
     private val initialKey: K,
     private val itemKey: (T) -> Any,
     private val refreshMode: RefreshMode = RefreshMode.Replace,
-    private val load: suspend (key: K) -> Page<K, T>,
+    private val load: suspend PageLoad.(key: K) -> Page<K, T>,
 ) {
     private val _state = MutableStateFlow(PagerState<T>())
     val state: StateFlow<PagerState<T>> = _state.asStateFlow()
@@ -98,7 +104,7 @@ class Pager<K : Any, T>(
             it.copy(refresh = LoadStatus.Loading, append = LoadStatus.Idle, prepend = LoadStatus.Idle)
         }
         refreshJob = scope.launch {
-            val page = loadOrNull(from) { error -> copy(refresh = LoadStatus.Error(error)) }
+            val page = loadOrNull(from, refreshing = true) { error -> copy(refresh = LoadStatus.Error(error)) }
                 ?: return@launch
             nextKey = page.next
             prevKey = page.prev
@@ -126,7 +132,7 @@ class Pager<K : Any, T>(
         if (refreshJob?.isActive == true || appendJob?.isActive == true) return
         _state.update { it.copy(append = LoadStatus.Loading) }
         appendJob = scope.launch {
-            val page = loadOrNull(key) { error -> copy(append = LoadStatus.Error(error)) }
+            val page = loadOrNull(key, refreshing = false) { error -> copy(append = LoadStatus.Error(error)) }
                 ?: return@launch
             val newItems = _state.value.newItems(page.items)
             nextKey = page.next.takeIf { newItems.isNotEmpty() }
@@ -146,7 +152,7 @@ class Pager<K : Any, T>(
         if (refreshJob?.isActive == true || prependJob?.isActive == true) return
         _state.update { it.copy(prepend = LoadStatus.Loading) }
         prependJob = scope.launch {
-            val page = loadOrNull(key) { error -> copy(prepend = LoadStatus.Error(error)) }
+            val page = loadOrNull(key, refreshing = false) { error -> copy(prepend = LoadStatus.Error(error)) }
                 ?: return@launch
             val newItems = _state.value.newItems(page.items)
             prevKey = page.prev.takeIf { newItems.isNotEmpty() }
@@ -172,10 +178,11 @@ class Pager<K : Any, T>(
 
     private suspend fun loadOrNull(
         key: K,
+        refreshing: Boolean,
         onError: PagerState<T>.(Throwable) -> PagerState<T>,
     ): Page<K, T>? = try {
         // A load that swallowed its cancellation must not write a page of a list since replaced
-        load(key).also { currentCoroutineContext().ensureActive() }
+        PageLoad(refreshing).load(key).also { currentCoroutineContext().ensureActive() }
     } catch (e: CancellationException) {
         throw e
     } catch (e: Throwable) {
@@ -189,4 +196,4 @@ fun <K : Any, T> ViewModel.pager(
     itemKey: (T) -> Any,
     refreshMode: RefreshMode = RefreshMode.Replace,
     load: suspend (key: K) -> Page<K, T>,
-): Pager<K, T> = Pager(viewModelScope, initialKey, itemKey, refreshMode, load)
+): Pager<K, T> = Pager(viewModelScope, initialKey, itemKey, refreshMode) { key -> load(key) }

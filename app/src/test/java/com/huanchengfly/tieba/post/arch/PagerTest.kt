@@ -32,7 +32,7 @@ class PagerTest {
         initialKey: Int = 1,
         refreshMode: RefreshMode = RefreshMode.Replace,
         load: suspend (Int) -> Page<Int, Item> = numberedPages(),
-    ) = Pager(this, initialKey, Item::id, refreshMode, load)
+    ) = Pager(this, initialKey, Item::id, refreshMode) { key -> load(key) }
 
     private val Pager<Int, Item>.ids get() = state.value.items.map { it.id }
 

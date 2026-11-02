@@ -2,6 +2,9 @@ package com.huanchengfly.tieba.post.arch.query
 
 import androidx.compose.runtime.Immutable
 import com.huanchengfly.tieba.post.arch.LoadStatus
+import com.huanchengfly.tieba.post.arch.Page
+import com.huanchengfly.tieba.post.arch.Pager
+import com.huanchengfly.tieba.post.arch.RefreshMode
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
@@ -14,16 +17,19 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.ComparableTimeMark
@@ -100,7 +106,9 @@ class QueryClient(
     // A failed request fails only its callers, not the requests beside it
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext[Job]))
     private val state = MutableStateFlow(Snapshot())
+    private val names = ConcurrentHashMap.newKeySet<String>()
     private val queries = ConcurrentHashMap<String, Query<*, *>>()
+    private val lists = ConcurrentHashMap<QueryId, ListEntry>()
     private val requests = ConcurrentHashMap<QueryId, Deferred<Any>>()
     private val observers = ConcurrentHashMap<QueryId, Int>()
     private val collections = ConcurrentHashMap<QueryId, Job>()
@@ -113,9 +121,26 @@ class QueryClient(
         normalize: Normalize<T> = { it },
         fetch: suspend (K) -> T,
     ): Query<K, T> {
-        val query = Query(this, name, staleTime, gcTime, normalize, fetch)
-        check(queries.putIfAbsent(name, query) == null) { "Query $name is declared twice" }
-        return query
+        check(names.add(name)) { "Query $name is declared twice" }
+        return Query(this, name, staleTime, gcTime, normalize, fetch).also { queries[name] = it }
+    }
+
+    /**
+     * Declares a query for lists loaded page by page, whose [page]s the [fetch]ed responses hold;
+     * [name] must be unique among all queries.
+     */
+    fun <K : Any, C : Any, P : Any, T> infiniteQuery(
+        name: String,
+        itemKey: (T) -> Any,
+        page: (P) -> Page<C, T>,
+        staleTime: Duration = Duration.ZERO,
+        gcTime: Duration = 5.minutes,
+        refreshMode: RefreshMode = RefreshMode.Replace,
+        normalize: Normalize<T> = { it },
+        fetch: suspend (key: K, cursor: C) -> P,
+    ): InfiniteQuery<K, C, P, T> {
+        check(names.add(name)) { "Query $name is declared twice" }
+        return InfiniteQuery(this, name, staleTime, gcTime, itemKey, refreshMode, page, normalize, fetch)
     }
 
     /** The latest version of an entity, with the changes of running mutations. */
@@ -153,6 +178,9 @@ class QueryClient(
         requests.clear()
         state.update { Snapshot(holds = it.holds.mutate { holds -> holds.keys.removeAll { holder -> holder is QueryId } }) }
         observers.keys.forEach { id -> queries[id.name]?.let { start(it, id.key) } }
+        lists.forEach { (id, list) ->
+            if (observers.containsKey(id)) list.reload() else drop(id)
+        }
     }
 
     internal fun <K : Any, T : Any> observe(query: Query<K, T>, key: K): Flow<QueryState<T>> {
@@ -161,15 +189,21 @@ class QueryClient(
             .map { it.queryState(id, query.normalize) }
             .distinctUntilChanged()
             .onStart {
-                observers.merge(id, 1, Int::plus)
-                collections.remove(id)?.cancel()
+                attach(id)
                 if (!isFresh(query, key)) start(query, key)
             }
-            .onCompletion {
-                if (observers.computeIfPresent(id) { _, count -> (count - 1).takeIf { it > 0 } } == null) {
-                    collectLater(id, query.gcTime)
-                }
-            }
+            .onCompletion { detach(id, query.gcTime) }
+    }
+
+    private fun attach(id: QueryId) {
+        observers.merge(id, 1, Int::plus)
+        collections.remove(id)?.cancel()
+    }
+
+    private fun detach(id: QueryId, gcTime: Duration) {
+        if (observers.computeIfPresent(id) { _, count -> (count - 1).takeIf { it > 0 } } == null) {
+            collectLater(id, gcTime)
+        }
     }
 
     internal suspend fun <K : Any, T : Any> get(query: Query<K, T>, key: K): T {
@@ -234,9 +268,77 @@ class QueryClient(
     private fun collectLater(id: QueryId, gcTime: Duration) {
         val collection = scope.launch {
             delay(gcTime)
-            if (!observers.containsKey(id) && !requests.containsKey(id)) state.update { it.release(id) }
+            if (!observers.containsKey(id) && !requests.containsKey(id)) drop(id)
         }
         collections.put(id, collection)?.cancel()
+    }
+
+    private fun drop(id: QueryId) {
+        lists.remove(id)?.job?.cancel()
+        state.update { it.release(id) }
+    }
+
+    /** The list of [key] from [initialCursor], shared by all who show it, held while [scope] lives. */
+    internal fun <K : Any, C : Any, P : Any, T> pager(
+        query: InfiniteQuery<K, C, P, T>,
+        scope: CoroutineScope,
+        key: K,
+        initialCursor: C,
+    ): QueryPager<C, T, P> {
+        val id = QueryId(query.name, ListKey(key, initialCursor))
+        attach(id)
+        scope.coroutineContext.job.invokeOnCompletion { detach(id, query.gcTime) }
+        val list = list(query, id, key, initialCursor)
+        @Suppress("UNCHECKED_CAST")
+        return QueryPager(list.pager as Pager<C, T>, list.loads as StateFlow<Loads<C, P>>)
+    }
+
+    internal fun <K : Any, C : Any> prefetch(query: InfiniteQuery<K, C, *, *>, key: K, initialCursor: C) {
+        val id = QueryId(query.name, ListKey(key, initialCursor))
+        list(query, id, key, initialCursor)
+        if (!observers.containsKey(id)) collectLater(id, query.gcTime)
+    }
+
+    internal fun <K : Any> invalidate(query: InfiniteQuery<K, *, *, *>, predicate: (K) -> Boolean) {
+        lists.forEach { (id, list) ->
+            @Suppress("UNCHECKED_CAST")
+            if (id.name == query.name && predicate((id.key as ListKey).key as K)) {
+                if (observers.containsKey(id)) list.loadedAt = null else drop(id)
+            }
+        }
+    }
+
+    /** The list kept for [id], loading again if it is stale, or a new one loading its first page. */
+    private fun list(query: InfiniteQuery<*, *, *, *>, id: QueryId, key: Any, initialCursor: Any): ListEntry {
+        lists[id]?.let { return it.apply { if (!isFresh(query.staleTime)) reload() } }
+        synchronized(lists) {
+            lists[id]?.let { return it }
+            val job = SupervisorJob(scope.coroutineContext.job)
+            val list = ListEntry(job)
+            lists[id] = list
+            @Suppress("UNCHECKED_CAST")
+            list.start(CoroutineScope(scope.coroutineContext + job), query as InfiniteQuery<Any, Any, Any, Any?>, id, key, initialCursor)
+            return list
+        }
+    }
+
+    private fun ListEntry.start(
+        listScope: CoroutineScope,
+        query: InfiniteQuery<Any, Any, Any, Any?>,
+        id: QueryId,
+        key: Any,
+        initialCursor: Any,
+    ) {
+        pager = Pager(listScope, initialCursor, query.itemKey, query.refreshMode) { cursor ->
+            val response = query.fetch(key, cursor)
+            currentCoroutineContext().ensureActive()
+            val loaded = Loaded(cursor, response, refreshing)
+            loads.update { if (refreshing) Loads(loaded, loaded) else it.copy(latest = loaded) }
+            if (refreshing) loadedAt = timeSource.markNow()
+            val page = query.page(response)
+            page.copy(items = hold(id, page.items, query.normalize))
+        }
+        listScope.launch { entityChanges.collect { pager.update { items -> latest(items, query.normalize) } } }
     }
 
     /** Keeps [entities] while [holder] holds them, along with what it held already. */
@@ -264,6 +366,25 @@ class QueryClient(
 }
 
 internal data class QueryId(val name: String, val key: Any)
+
+private data class ListKey(val key: Any, val initialCursor: Any)
+
+/** A list an [InfiniteQuery] keeps: its pager, which loads in the client's scope, and what it loaded. */
+private class ListEntry(val job: Job) {
+    lateinit var pager: Pager<Any, Any?>
+    val loads = MutableStateFlow(Loads<Any, Any>())
+
+    /** When the list was last refreshed; null before, or once invalidated. */
+    @Volatile
+    var loadedAt: ComparableTimeMark? = null
+
+    fun isFresh(staleTime: Duration) = loadedAt?.let { it.elapsedNow() < staleTime } == true
+
+    /** Refreshes the list unless it already is, keeping what it shows until the new page comes. */
+    fun reload() {
+        if (pager.state.value.refresh != LoadStatus.Loading) pager.refresh()
+    }
+}
 
 private data class Entry(
     val data: Any? = null,
