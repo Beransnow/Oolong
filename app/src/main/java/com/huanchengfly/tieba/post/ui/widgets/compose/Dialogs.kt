@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +20,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,21 +33,27 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
-import androidx.constraintlayout.compose.Visibility
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
+import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
+import com.huanchengfly.tieba.post.ui.common.theme.compose.glassEdge
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.AnyPopDialogProperties
 import com.huanchengfly.tieba.post.ui.widgets.compose.dialogs.DirectionState
@@ -60,7 +66,7 @@ fun DialogScope.DialogPositiveButton(
     text: String,
     onClick: () -> Unit = {}
 ) {
-    TextButton(
+    Button(
         onClick = {
             onClick()
             dismiss()
@@ -68,7 +74,7 @@ fun DialogScope.DialogPositiveButton(
         modifier = Modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(100),
-        colors = ButtonDefaults.textButtonColors(
+        colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.emphasis,
             contentColor = ExtendedTheme.colors.onEmphasis
         ),
@@ -86,14 +92,14 @@ fun DialogScope.DialogNegativeButton(
     text: String,
     onClick: (() -> Unit)? = null
 ) {
-    TextButton(
+    Button(
         onClick = {
             dismiss()
             onClick?.invoke()
         },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(100),
-        colors = ButtonDefaults.textButtonColors(
+        colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.text.copy(
                 alpha = 0.1f
             ),
@@ -401,70 +407,89 @@ fun Dialog(
         cancelable = cancelable,
         cancelableOnTouchOutside = cancelableOnTouchOutside,
     ) {
-        ConstraintLayout(
+        Column(
             modifier = modifier
-                .wrapContentHeight()
-                .animateContentSize()
+                .padding(horizontal = DialogMargin)
+                .padding(bottom = if (compactWindow) DialogMargin else 0.dp)
                 .widthIn(max = MaxDialogWidth)
                 .fillMaxWidth()
-                .padding(16.dp)
-                .background(
-                    color = ExtendedTheme.colors.sheet,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(vertical = 24.dp),
+                .dialogSurface()
+                .animateContentSize(),
         ) {
-            val (titleRef, contentRef, buttonsRef) = createRefs()
-            Column(
-                modifier = Modifier
-                    .constrainAs(titleRef) {
-                        top.linkTo(parent.top)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        width = Dimension.fillToConstraints
-                        visibility = if (title == null) {
-                            Visibility.Gone
-                        } else {
-                            Visibility.Visible
-                        }
-                    }
-            ) {
-                if (title != null) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 24.dp)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
-                            title()
-                        }
+            if (title != null) {
+                Box(modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp)) {
+                    ProvideTextStyle(value = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)) {
+                        title()
                     }
                 }
             }
-            Column(
-                modifier = Modifier
-                    .constrainAs(contentRef) {
-                        top.linkTo(titleRef.bottom, margin = 16.dp, goneMargin = 0.dp)
-                        bottom.linkTo(buttonsRef.top, margin = 16.dp, goneMargin = 0.dp)
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        height = Dimension.preferredWrapContent
-                    }
-            ) {
+            Column(modifier = Modifier.padding(top = if (title != null) 8.dp else 24.dp)) {
                 content()
             }
-            Column(
-                modifier = Modifier
-                    .constrainAs(buttonsRef) {
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(parent.bottom)
-                        width = Dimension.fillToConstraints
-                    }
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            DialogButtonRow {
                 buttons()
+            }
+        }
+    }
+}
+
+/** Space between a dialog and the window's edges, and above the navigation bar on phones. */
+private val DialogMargin = 16.dp
+
+/** The radius of dialogs; buttons [ButtonInset] in from it sit concentric. */
+private val DialogShape = SmoothCornerShape(Radius.xl)
+
+/** How far buttons sit from the dialog's edges. */
+private val ButtonInset = 14.dp
+
+/** A dialog's panel (design-system.md §2.5): the temporary layer, opaque in its own window. */
+@Composable
+private fun Modifier.dialogSurface(): Modifier {
+    val colors = ExtendedTheme.colors
+    val night = colors.isNightMode
+    return this
+        .shadow(
+            elevation = if (night) 32.dp else 24.dp,
+            shape = DialogShape,
+            ambientColor = Color.Black.copy(alpha = if (night) 0.16f else 0.14f),
+            spotColor = Color.Black.copy(alpha = if (night) 0.26f else 0.22f),
+        )
+        .clip(DialogShape)
+        .background(colors.sheet)
+        .border(0.5.dp, colors.glassEdge, DialogShape)
+}
+
+/**
+ * Lays out a dialog's buttons: two short ones side by side, cancel on the left and confirm on the
+ * right (they are given confirm first); otherwise one per line, as given.
+ */
+@Composable
+private fun DialogButtonRow(content: @Composable () -> Unit) {
+    Layout(content = content) { measurables, constraints ->
+        if (measurables.isEmpty()) return@Layout layout(0, 0) {}
+        val inset = ButtonInset.roundToPx()
+        val top = 6.dp.roundToPx()
+        val gap = 10.dp.roundToPx()
+        val width = constraints.maxWidth - inset * 2
+        val half = (width - gap) / 2
+        val sideBySide = measurables.size == 2 && measurables.all { it.maxIntrinsicWidth(Int.MAX_VALUE) <= half }
+        if (sideBySide) {
+            val placeables = measurables.map { it.measure(Constraints.fixedWidth(half)) }
+            val height = placeables.maxOf { it.height }
+            layout(constraints.maxWidth, inset * 2 + top + height) {
+                placeables[1].placeRelative(inset, inset + top)
+                placeables[0].placeRelative(inset + half + gap, inset + top)
+            }
+        } else {
+            val lineGap = 8.dp.roundToPx()
+            val placeables = measurables.map { it.measure(Constraints.fixedWidth(width)) }
+            val height = placeables.sumOf { it.height } + lineGap * (placeables.size - 1)
+            layout(constraints.maxWidth, inset * 2 + top + height) {
+                var y = inset + top
+                placeables.forEach {
+                    it.placeRelative(inset, y)
+                    y += it.height + lineGap
+                }
             }
         }
     }

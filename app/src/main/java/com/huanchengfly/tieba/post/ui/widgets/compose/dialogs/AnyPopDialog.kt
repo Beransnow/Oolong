@@ -9,6 +9,8 @@ import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,14 +38,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.view.WindowCompat
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
+import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,6 +67,13 @@ tailrec fun Context.getActivityWindow(): Window? = when (this) {
 }
 
 private const val DefaultDurationMillis: Int = 250
+
+/** The scrim fades with the dialog's opacity, a little longer so the panel leads. */
+private const val ScrimInMillis = 180
+private const val ScrimOutMillis = 120
+
+/** How blurred a dialog's content is as it starts appearing and as it finishes leaving. */
+private val ContentBlur = 12.dp
 
 @Composable
 private fun DialogFullScreen(
@@ -99,11 +114,12 @@ private fun DialogFullScreen(
         ),
         content = {
             val animColor = remember { Animatable(Color.Transparent) }
+            val scrim = ExtendedTheme.colors.scrim
             LaunchedEffect(isAnimateLayout) {
                 if (properties.backgroundDimEnabled) {
                     animColor.animateTo(
-                        if (isAnimateLayout) Color.Black.copy(alpha = 0.45F) else Color.Transparent,
-                        animationSpec = tween(properties.durationMillis)
+                        if (isAnimateLayout) scrim else Color.Transparent,
+                        animationSpec = tween(if (isAnimateLayout) ScrimInMillis else ScrimOutMillis),
                     )
                 } else {
                     delay(properties.durationMillis.toLong())
@@ -120,6 +136,12 @@ private fun DialogFullScreen(
                     val attributes = WindowManager.LayoutParams()
                     attributes.copyFrom(activityWindow.attributes)
                     attributes.type = dialogWindow.attributes.type
+                    // Copying the activity's attributes brings its window animations along, which
+                    // played before and after the dialog's own; the dialog draws its own motion
+                    // and scrim, so the window has neither animations nor a dim of its own
+                    attributes.windowAnimations = 0
+                    attributes.dimAmount = 0f
+                    attributes.flags = attributes.flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND.inv()
                     dialogWindow.attributes = attributes
 
                     dialogWindow.setLayout(
@@ -158,18 +180,28 @@ private fun DialogFullScreen(
                         DirectionState.TOP -> fadeIn() + slideInVertically(initialOffsetY = { -it })
                         DirectionState.LEFT -> fadeIn() + slideInHorizontally(initialOffsetX = { -it })
                         DirectionState.RIGHT -> fadeIn() + slideInHorizontally(initialOffsetX = { it })
-                        DirectionState.CENTER -> fadeIn() + scaleIn(initialScale = 0.8F)
-                        else -> fadeIn() + slideInVertically(initialOffsetY = { it })
+                        // A centred dialog condenses where it stands (design-system.md §9.3)
+                        DirectionState.CENTER -> fadeIn(Motion.fadeIn()) + scaleIn(Motion.morph(), initialScale = 0.9f)
+                        // One at the bottom rises from the bottom edge
+                        else -> fadeIn(Motion.fadeIn()) + slideInVertically(Motion.present()) { it * 2 / 5 }
                     },
                     exit = when (properties.direction) {
                         DirectionState.TOP -> fadeOut() + slideOutVertically(targetOffsetY = { -it })
                         DirectionState.LEFT -> fadeOut() + slideOutHorizontally(targetOffsetX = { -it })
                         DirectionState.RIGHT -> fadeOut() + slideOutHorizontally(targetOffsetX = { it })
-                        DirectionState.CENTER -> fadeOut() + scaleOut(targetScale = 0.8F)
-                        else -> fadeOut() + slideOutVertically(targetOffsetY = { it })
+                        DirectionState.CENTER -> fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.94f)
+                        else -> fadeOut(Motion.fadeOut()) + slideOutVertically(Motion.dismiss()) { it * 2 / 5 }
                     }
                 ) {
-                    content()
+                    // A centred dialog is blurred while it appears and leaves, sharp once in place
+                    val condenses = properties.direction == DirectionState.CENTER
+                    val blur by transition.animateDp(
+                        transitionSpec = { if (targetState == EnterExitState.Visible) Motion.settle() else Motion.dismiss() },
+                        label = "blur",
+                    ) { if (it == EnterExitState.Visible || !condenses) 0.dp else ContentBlur }
+                    Box(modifier = if (blur > 0.dp) Modifier.blur(blur, BlurredEdgeTreatment.Unbounded) else Modifier) {
+                        content()
+                    }
                 }
             }
             BackHandler(enabled = properties.dismissOnBackPress, onBack = handleBackPress)
