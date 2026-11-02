@@ -219,9 +219,10 @@ fun themeColors(
     return when (theme) {
         ThemeUtil.THEME_BLACK -> light(accent = Color.Black)
         ThemeUtil.THEME_BLUE -> light(accent = TiebaBlue)
-        ThemeUtil.THEME_PURPLE -> light(accent = Color(0xFF512DA8))
-        ThemeUtil.THEME_PINK -> light(accent = Color(0xFFFF9A9E))
-        ThemeUtil.THEME_RED -> light(accent = Color(0xFFC51100))
+        ThemeUtil.THEME_PURPLE -> light(accent = Color(0xFF6E52C9))
+        ThemeUtil.THEME_PINK -> light(accent = Color(0xFFD9577A))
+        ThemeUtil.THEME_RED -> light(accent = Color(0xFFD6362C))
+        ThemeUtil.THEME_GREEN -> light(accent = Color(0xFF2F8F5B))
         ThemeUtil.THEME_CUSTOM -> light(accent = picked ?: TiebaBlue)
         ThemeUtil.THEME_BLUE_DARK -> BlueDark.withAccent(darkAccent)
         ThemeUtil.THEME_GREY_DARK -> GreyDark.withAccent(darkAccent)

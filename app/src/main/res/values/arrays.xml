@@ -15,10 +15,11 @@
 
     <!-- The colours on the theme page, in the order ThemeSettings.ACCENTS lists them, but for the custom one -->
     <string-array name="accent_names">
-        <item>深海蓝</item>
-        <item>高级黑</item>
-        <item>少女粉</item>
-        <item>新年红</item>
-        <item>星空紫</item>
+        <item>海蓝</item>
+        <item>墨黑</item>
+        <item>樱粉</item>
+        <item>朱红</item>
+        <item>竹青</item>
+        <item>堇紫</item>
     </string-array>
 </resources>

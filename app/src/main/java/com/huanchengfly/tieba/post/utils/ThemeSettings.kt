@@ -117,6 +117,7 @@ data class ThemeSettings(
             ThemeUtil.THEME_BLACK,
             ThemeUtil.THEME_PINK,
             ThemeUtil.THEME_RED,
+            ThemeUtil.THEME_GREEN,
             ThemeUtil.THEME_PURPLE,
             ThemeUtil.THEME_CUSTOM,
         )

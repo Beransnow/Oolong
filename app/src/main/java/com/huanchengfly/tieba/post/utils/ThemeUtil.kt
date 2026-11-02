@@ -65,6 +65,7 @@ object ThemeUtil {
     const val THEME_PURPLE = "purple"
     const val THEME_PINK = "pink"
     const val THEME_RED = "red"
+    const val THEME_GREEN = "green"
     const val THEME_BLUE_DARK = "blue_dark"
     const val THEME_GREY_DARK = "grey_dark"
     const val THEME_AMOLED_DARK = "amoled_dark"
@@ -187,6 +188,7 @@ object ThemeUtil {
             THEME_PURPLE,
             THEME_PINK,
             THEME_RED,
+            THEME_GREEN,
             THEME_BLUE_DARK,
             THEME_GREY_DARK,
             THEME_AMOLED_DARK,
