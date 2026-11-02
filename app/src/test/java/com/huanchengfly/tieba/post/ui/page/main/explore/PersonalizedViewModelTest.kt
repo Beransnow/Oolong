@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.post.model.RecommendedThread
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.PersonalizedViewModel
 import io.mockk.coEvery
@@ -29,7 +30,7 @@ class PersonalizedViewModelTest {
     private val repository = mockk<ExploreRepository>()
     private val messages = mockk<MessageController>(relaxed = true)
 
-    private fun thread(id: Long) = RecommendedThread(ThreadInfo(id = id, threadId = id, agree = Agree(hasAgree = 0)))
+    private fun thread(id: Long) = RecommendedThread(ThreadInfo(id = id, threadId = id, agree = Agree(hasAgree = 0)).toThreadSummary { _, _ -> })
 
     private fun createViewModel() = PersonalizedViewModel(
         repository = repository,
@@ -39,7 +40,7 @@ class PersonalizedViewModelTest {
         },
     )
 
-    private val PersonalizedViewModel.ids get() = state.value.list.items.map { it.feed.thread.get { threadId } }
+    private val PersonalizedViewModel.ids get() = state.value.list.items.map { it.feed.thread.id }
 
     @Test
     fun `refreshing puts the new threads in front and marks where the old ones begin`() = runTest {
@@ -113,7 +114,7 @@ class PersonalizedViewModelTest {
         viewModel.agree(thread(1).thread)
         runCurrent()
 
-        assertEquals(0, viewModel.state.value.list.items.single().feed.thread.get { agree?.hasAgree })
+        assertEquals(false, viewModel.state.value.list.items.single().feed.thread.agree.agreed)
         verify { messages.showError(any(), any()) }
     }
 }

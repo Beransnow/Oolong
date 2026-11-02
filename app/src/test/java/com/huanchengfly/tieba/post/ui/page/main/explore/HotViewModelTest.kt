@@ -8,6 +8,7 @@ import com.huanchengfly.tieba.post.model.HotThreads
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ExploreRepository
+import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotViewModel
 import io.mockk.coEvery
@@ -30,7 +31,7 @@ class HotViewModelTest {
     private fun hot(vararg ids: Long) = HotThreads(
         topics = emptyList(),
         categories = listOf(HotCategory("game", "游戏")),
-        threads = ids.map { ThreadInfo(id = it, threadId = it) },
+        threads = ids.map { ThreadInfo(id = it, threadId = it).toThreadSummary { _, _ -> } },
     )
 
     private fun createViewModel() = HotViewModel(
@@ -41,7 +42,7 @@ class HotViewModelTest {
         },
     )
 
-    private val HotViewModel.ids get() = state.value.threads.map { it.thread.get { threadId } }
+    private val HotViewModel.ids get() = state.value.threads.map { it.thread.id }
 
     @Test
     fun `loads once when opened and switches categories`() = runTest {

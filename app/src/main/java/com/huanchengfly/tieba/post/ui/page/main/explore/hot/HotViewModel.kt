@@ -4,13 +4,12 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.hasAgreed
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
@@ -59,7 +58,7 @@ class HotViewModel @Inject constructor(
         val topics: List<HotTopic> = emptyList(),
         val categories: List<HotCategory> = emptyList(),
         val category: String = HotCategory.ALL,
-        val threads: List<ThreadInfo> = emptyList(),
+        val threads: List<ThreadSummary> = emptyList(),
         val load: LoadStatus = LoadStatus.Loading,
         val switching: Boolean = false,
         val opened: Boolean = false,
@@ -88,12 +87,12 @@ class HotViewModel @Inject constructor(
         if (code != local.value.category) load(code, whole = false)
     }
 
-    fun agree(thread: ThreadInfo) {
-        val agree = !thread.hasAgreed
-        actions.launch("agree-${thread.threadId}") {
-            setAgreed(thread.threadId, agree)
+    fun agree(thread: ThreadSummary) {
+        val agree = !thread.agree.agreed
+        actions.launch("agree-${thread.id}") {
+            setAgreed(thread.id, agree)
             runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                setAgreed(thread.threadId, !agree)
+                setAgreed(thread.id, !agree)
                 messages.showError(R.string.toast_agree_failed, it)
             }
         }

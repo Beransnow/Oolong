@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.model.HotThreads
 import com.huanchengfly.tieba.post.model.HotTopic
 import com.huanchengfly.tieba.post.model.RankedTopic
 import com.huanchengfly.tieba.post.model.RecommendedThread
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -30,6 +31,7 @@ class ExploreRepository @Inject constructor(
     private val concernStore: ConcernFeedStore,
     private val videoFilter: VideoThreadFilter,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val emoticons: EmoticonRegistry,
 ) {
     /**
      * A page of recommended threads, without live streams and, if the user hides them, videos.
@@ -40,16 +42,16 @@ class ExploreRepository @Inject constructor(
         val response = remote.personalized(refresh, page)
         val personalized = response.thread_personalized.associateBy { it.tid }
         filter(response.thread_list).map { thread ->
-            RecommendedThread(thread, personalized[thread.id]?.dislikeOptions().orEmpty().toImmutableList())
+            RecommendedThread(thread.toThreadSummary(emoticons), personalized[thread.id]?.dislikeOptions().orEmpty().toImmutableList())
         }
     }
 
     /** A page of the threads the users the user follows posted; the key is the server's page tag, empty for the first. */
-    suspend fun followedUsersThreads(pageTag: String): Page<String, ThreadInfo> = withContext(io) {
+    suspend fun followedUsersThreads(pageTag: String): Page<String, ThreadSummary> = withContext(io) {
         val first = pageTag.isEmpty()
         val response = remote.userLike(pageTag, concernStore.lastRequestUnix)
         if (first) concernStore.lastRequestUnix = response.requestUnix
-        val threads = response.threadInfo.filter { it.recommendType == 1 }.mapNotNull { it.threadList }
+        val threads = response.threadInfo.filter { it.recommendType == 1 }.mapNotNull { it.threadList?.toThreadSummary(emoticons) }
         Page(threads, next = response.pageTag.takeIf { response.hasMore == 1 && it.isNotEmpty() })
     }
 
@@ -61,7 +63,7 @@ class ExploreRepository @Inject constructor(
                 HotTopic(topic.topicId, topic.topicName, topicTag(topic.tag))
             },
             categories = response.hotThreadTabInfo.map { HotCategory(it.tabCode, it.tabName) },
-            threads = response.threadInfo,
+            threads = response.threadInfo.map { it.toThreadSummary(emoticons) },
         )
     }
 
@@ -84,18 +86,18 @@ class ExploreRepository @Inject constructor(
      *
      * @param clickTime when the user opened the menu, in Unix milliseconds
      */
-    suspend fun dislike(thread: ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) = withContext(io) {
+    suspend fun dislike(thread: ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) = withContext(io) {
         remote.dislike(
-            threadId = thread.threadId,
-            forumId = thread.forumInfo?.id ?: thread.forumId,
+            threadId = thread.id,
+            forumId = thread.forum.id,
             reasonIds = reasons.map { it.id },
             extras = reasons.map { it.extra },
             clickTime = clickTime,
         )
     }
 
-    suspend fun agreeThread(thread: ThreadInfo, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Thread(thread.threadId, thread.firstPostId), thread.forumId, undo = !agree)
+    suspend fun agreeThread(thread: ThreadSummary, agree: Boolean) = withContext(io) {
+        agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
     }
 
     private fun filter(threads: List<ThreadInfo>): List<ThreadInfo> {

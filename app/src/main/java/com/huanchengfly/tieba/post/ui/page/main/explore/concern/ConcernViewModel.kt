@@ -3,14 +3,13 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.concern
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.hasAgreed
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.Pager
 import com.huanchengfly.tieba.post.arch.PagerState
 import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
@@ -36,7 +35,7 @@ class ConcernViewModel @Inject constructor(
     blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
-    private val pager = MutableStateFlow<Pager<String, ThreadInfo>?>(null)
+    private val pager = MutableStateFlow<Pager<String, ThreadSummary>?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<PagerState<FeedThread>> = combine(
@@ -55,21 +54,21 @@ class ConcernViewModel @Inject constructor(
 
     fun loadMore() = pager().loadMore()
 
-    fun agree(thread: ThreadInfo) {
+    fun agree(thread: ThreadSummary) {
         val pager = pager.value ?: return
-        val agree = !thread.hasAgreed
-        actions.launch("agree-${thread.threadId}") {
-            pager.update { it.withAgreed(thread.threadId, agree) }
+        val agree = !thread.agree.agreed
+        actions.launch("agree-${thread.id}") {
+            pager.update { it.withAgreed(thread.id, agree) }
             runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                pager.update { it.withAgreed(thread.threadId, !agree) }
+                pager.update { it.withAgreed(thread.id, !agree) }
                 messages.showError(R.string.toast_agree_failed, it)
             }
         }
     }
 
-    private fun pager(): Pager<String, ThreadInfo> {
+    private fun pager(): Pager<String, ThreadSummary> {
         pager.value?.let { return it }
-        return pager(initialKey = "", itemKey = { thread: ThreadInfo -> thread.threadId }) { pageTag ->
+        return pager(initialKey = "", itemKey = { thread: ThreadSummary -> thread.id }) { pageTag ->
             repository.followedUsersThreads(pageTag)
         }.also { pager.value = it }
     }

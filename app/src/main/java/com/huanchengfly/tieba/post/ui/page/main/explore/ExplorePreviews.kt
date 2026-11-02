@@ -9,10 +9,11 @@ import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.HotCategory
 import com.huanchengfly.tieba.post.model.HotTopic
+import com.huanchengfly.tieba.post.repository.EmoticonRegistry
+import com.huanchengfly.tieba.post.repository.toThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.TiebaLiteTheme
 import com.huanchengfly.tieba.post.ui.page.main.explore.concern.ConcernScreen
 import com.huanchengfly.tieba.post.ui.page.main.explore.hot.HotScreen
@@ -41,14 +42,16 @@ internal object ExplorePreviewData {
         hotNum = hotNum,
     )
 
+    private val emoticons = EmoticonRegistry { _, _ -> }
+
     private val threads = listOf(
         thread(1, "第一个帖子", "数码", hotNum = 1_234_567),
         thread(2, "第二个帖子", "游戏", hotNum = 345_678),
         thread(3, "第三个帖子", "动漫", hotNum = 23_456),
         thread(4, "第四个帖子", "音乐", hotNum = 1_234),
-    )
+    ).map { it.toThreadSummary(emoticons) }
 
-    val concern = PagerState(items = threads.map { FeedThread(it.wrapImmutable()) }.toImmutableList(), hasMore = true)
+    val concern = PagerState(items = threads.map { FeedThread(it) }.toImmutableList(), hasMore = true)
 
     private val dislikeOptions = persistentListOf(
         DislikeOption(1, "不感兴趣", ""),
@@ -58,7 +61,7 @@ internal object ExplorePreviewData {
 
     val personalized = PersonalizedState(
         list = PagerState(
-            items = threads.map { RecommendedItem(FeedThread(it.wrapImmutable()), dislikeOptions) }.toImmutableList(),
+            items = threads.map { RecommendedItem(FeedThread(it), dislikeOptions) }.toImmutableList(),
             hasMore = true,
         ),
         disliked = persistentSetOf(3L),

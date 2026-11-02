@@ -272,7 +272,7 @@ fun HotScreen(
                 } else {
                     itemsIndexed(
                         items = threadList,
-                        key = { _, item -> "Thread_${item.thread.get { threadId }}" }
+                        key = { _, item -> "Thread_${item.thread.id}" }
                     ) { index, (item, blocked) ->
                         Container {
                             BlockableContent(
@@ -281,16 +281,16 @@ fun HotScreen(
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                             ) {
                                 FeedCard(
-                                    item = item,
+                                    thread = item,
                                     onClick = events.onOpen,
                                     onClickReply = events.onOpenReplies,
                                     onAgree = events.onAgree,
                                     onClickForum = events.onOpenForum,
                                     onClickUser = events.onOpenUser,
-                                    onClickOriginThread = events.onOpenOrigin,
+                                    onClickShared = events.onOpenOrigin,
                                     onLongPress = events.onPeek,
                                 ) {
-                                    HotRank(index = index, hotNum = item.get { hotNum })
+                                    HotRank(index = index, hotNum = item.hotNum.toInt())
                                 }
                             }
                         }

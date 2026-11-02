@@ -4,8 +4,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
-import com.huanchengfly.tieba.post.api.models.protos.hasAgreed
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.MessageController
@@ -16,6 +14,7 @@ import com.huanchengfly.tieba.post.arch.RefreshMode
 import com.huanchengfly.tieba.post.arch.pager
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.RecommendedThread
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
@@ -126,13 +125,13 @@ class PersonalizedViewModel @Inject constructor(
 
     fun loadMore() = pager().loadMore()
 
-    fun agree(thread: ThreadInfo) {
+    fun agree(thread: ThreadSummary) {
         val pager = pager.value ?: return
-        val agree = !thread.hasAgreed
-        actions.launch("agree-${thread.threadId}") {
-            pager.setAgreed(thread.threadId, agree)
+        val agree = !thread.agree.agreed
+        actions.launch("agree-${thread.id}") {
+            pager.setAgreed(thread.id, agree)
             runCatching { repository.agreeThread(thread, agree) }.onFailure {
-                pager.setAgreed(thread.threadId, !agree)
+                pager.setAgreed(thread.id, !agree)
                 messages.showError(R.string.toast_agree_failed, it)
             }
         }
@@ -142,8 +141,8 @@ class PersonalizedViewModel @Inject constructor(
      * Puts a row that can take it back in place of [thread], then after a while hides it and tells
      * the server why the user doesn't want it; it stays hidden if that fails.
      */
-    fun dislike(thread: ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) {
-        val threadId = thread.threadId
+    fun dislike(thread: ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) {
+        val threadId = thread.id
         if (threadId in pendingDislikes || threadId in local.value.disliked) return
         local.update { it.copy(undoable = it.undoable + (threadId to reasons.firstNotNullOfOrNull { r -> r.toast })) }
         pendingDislikes[threadId] = viewModelScope.launch {
@@ -162,7 +161,7 @@ class PersonalizedViewModel @Inject constructor(
 
     private fun Pager<Int, RecommendedThread>.setAgreed(threadId: Long, agree: Boolean) = update { items ->
         items.map { item ->
-            if (item.thread.threadId == threadId) item.copy(thread = item.thread.withAgreed(agree)) else item
+            if (item.thread.id == threadId) item.copy(thread = item.thread.withAgreed(agree)) else item
         }
     }
 
@@ -171,7 +170,7 @@ class PersonalizedViewModel @Inject constructor(
         // Page 1 asks for new threads, the pages after it continue the list
         return pager(
             initialKey = 1,
-            itemKey = { item: RecommendedThread -> item.thread.threadId },
+            itemKey = { item: RecommendedThread -> item.thread.id },
             refreshMode = RefreshMode.Prepend,
         ) { page ->
             val loaded = pager.value?.state?.value?.items.orEmpty()
@@ -182,8 +181,8 @@ class PersonalizedViewModel @Inject constructor(
     }
 
     private fun onRefreshed(loaded: List<RecommendedThread>, threads: List<RecommendedThread>) {
-        val loadedIds = loaded.mapTo(HashSet()) { it.thread.threadId }
-        val count = threads.distinctBy { it.thread.threadId }.count { it.thread.threadId !in loadedIds }
+        val loadedIds = loaded.mapTo(HashSet()) { it.thread.id }
+        val count = threads.distinctBy { it.thread.id }.count { it.thread.id !in loadedIds }
         local.update {
             it.copy(
                 newCount = if (loaded.isEmpty()) 0 else count,

@@ -18,14 +18,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.model.Agree
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.repository.ThreadPreview
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.repository.toThreadPreview
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.dislikeMenuItems
 import com.huanchengfly.tieba.post.ui.page.main.explore.personalized.shareMenuItems
@@ -47,11 +48,8 @@ class ThreadPeekViewModel @Inject constructor(
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
 
-    /** What the list knows of [thread], which carries its whole first floor. */
-    fun preview(thread: ThreadInfo): ThreadPreview = repository.preview(thread)
-
-    fun store(thread: ThreadInfo) = actions.launch("store-${thread.threadId}") {
-        runCatching { repository.addStore(thread.threadId, thread.firstPostId) }
+    fun store(thread: ThreadSummary) = actions.launch("store-${thread.id}") {
+        runCatching { repository.addStore(thread.id, thread.firstPostId) }
             .onSuccess { messages.show(R.string.message_add_favorite_success, 1) }
             .onFailure { messages.showError(R.string.message_add_favorite_failure, it) }
     }
@@ -60,14 +58,14 @@ class ThreadPeekViewModel @Inject constructor(
 /** Long-pressing a thread card: a look at its whole first floor, over what can be done with it. */
 @Stable
 class ThreadPeeker internal constructor(
-    private val show: (ThreadInfo, Rect, Offset, ImmutableList<DislikeOption>, (Long, ImmutableList<DislikeOption>) -> Unit) -> Unit,
+    private val show: (ThreadSummary, Rect, Offset, ImmutableList<DislikeOption>, (Long, ImmutableList<DislikeOption>) -> Unit) -> Unit,
 ) {
     /**
      * Peeks at [thread], whose card is at [from] in the window and was pressed [at], offering the
      * server's [options] for not wanting it besides storing, sharing and copying its link.
      */
     fun peek(
-        thread: ThreadInfo,
+        thread: ThreadSummary,
         from: Rect,
         at: Offset,
         options: ImmutableList<DislikeOption> = persistentListOf(),
@@ -86,10 +84,10 @@ fun rememberThreadPeeker(): ThreadPeeker? {
     val collect = stringResource(id = R.string.title_collect)
     return remember(menus, context, navigator, viewModel, collect) {
         ThreadPeeker { thread, from, at, options, onDislike ->
-            val preview = viewModel.preview(thread)
+            val preview = thread.toThreadPreview()
             val items = buildList {
                 add(ContextMenuItem(Icons.Rounded.StarBorder, collect) { viewModel.store(thread) })
-                addAll(shareMenuItems(context, thread.threadId, thread.title))
+                addAll(shareMenuItems(context, thread.id, thread.title))
                 dislikeMenuItems(context, navigator, options, onDislike).forEachIndexed { i, item ->
                     add(if (i == 0) item.copy(startsGroup = true) else item)
                 }

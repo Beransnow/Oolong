@@ -77,19 +77,25 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.Media
 import com.huanchengfly.tieba.post.api.models.protos.OriginThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.PostInfoList
 import com.huanchengfly.tieba.post.api.models.protos.SimpleForum
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.User
-import com.huanchengfly.tieba.post.api.models.protos.VideoInfo
 import com.huanchengfly.tieba.post.api.models.protos.abstractText
 import com.huanchengfly.tieba.post.api.models.protos.renders
 import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.findActivity
+import com.huanchengfly.tieba.post.model.ForumSummary
+import com.huanchengfly.tieba.post.model.SharedThread
+import com.huanchengfly.tieba.post.model.ThreadImage
+import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.model.ThreadVideo
 import com.huanchengfly.tieba.post.models.PhotoViewData
+import com.huanchengfly.tieba.post.repository.toThreadImage
+import com.huanchengfly.tieba.post.repository.toThreadVideo
+import com.huanchengfly.tieba.post.ui.common.PostBody
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -111,18 +117,13 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlin.math.max
 import kotlin.math.min
+import com.huanchengfly.tieba.post.model.User as ModelUser
 
-private val ImmutableHolder<Media>.url: String
-    get() = ImageUtil.getUrl(
-        App.INSTANCE,
-        true,
-        get { originPic },
-        get { bigPic },
-        get { dynamicPic },
-        get { srcPic }
-    )
+private val ThreadImage.url: String
+    get() = ImageUtil.getUrl(App.INSTANCE, true, original, large, animated, small)
 
 @Composable
 private fun UserHeader(
@@ -458,8 +459,8 @@ private fun ThreadMedia(
     forumName: String,
     threadId: Long,
     modifier: Modifier = Modifier,
-    medias: ImmutableList<ImmutableHolder<Media>> = persistentListOf(),
-    videoInfo: ImmutableHolder<VideoInfo>? = null,
+    medias: ImmutableList<ThreadImage> = persistentListOf(),
+    videoInfo: ThreadVideo? = null,
 ) {
     val context = LocalContext.current
 
@@ -500,12 +501,7 @@ private fun ThreadMedia(
                     )
                 } else {
                     val aspectRatio = remember(videoInfo) {
-                        max(
-                            videoInfo
-                                .get { thumbnailWidth }
-                                .toFloat() / videoInfo.get { thumbnailHeight },
-                            16f / 9
-                        )
+                        max(videoInfo.coverWidth.toFloat() / videoInfo.coverHeight, 16f / 9)
                     }
                     Box(
                         modifier = Modifier.clickable(
@@ -515,8 +511,8 @@ private fun ThreadMedia(
                         )
                     ) {
                         VideoPlayer(
-                            videoUrl = videoInfo.get { videoUrl },
-                            thumbnailUrl = videoInfo.get { thumbnailUrl },
+                            videoUrl = videoInfo.url,
+                            thumbnailUrl = videoInfo.cover,
                             modifier = Modifier
                                 .fillMaxWidth(singleMediaFraction)
                                 .aspectRatio(aspectRatio)
@@ -531,7 +527,7 @@ private fun ThreadMedia(
                         medias, forumId, forumName, threadId
                     ) {
                         getPhotoViewData(
-                            medias = medias.map { it.get() },
+                            images = medias,
                             forumId = forumId,
                             forumName = forumName,
                             threadId = threadId,
@@ -554,7 +550,7 @@ private fun ThreadMedia(
                 } else {
                     val photoViewData = { index: Int ->
                         getPhotoViewData(
-                            medias = medias.map { it.get() },
+                            images = medias,
                             forumId = forumId,
                             forumName = forumName,
                             threadId = threadId,
@@ -614,14 +610,14 @@ private fun ThreadMedia(
  */
 @Composable
 private fun SinglePhoto(
-    media: ImmutableHolder<Media>,
+    media: ThreadImage,
     photoViewData: PhotoViewData,
     modifier: Modifier = Modifier,
 ) {
     val ratio = remember(media) {
-        val width = media.get { width }.toFloat()
-        val height = media.get { height }.toFloat()
-        if (width > 0f && height > 0f && media.get { isLongPic } != 1) width / height else 3f / 4
+        val width = media.width.toFloat()
+        val height = media.height.toFloat()
+        if (width > 0f && height > 0f && !media.isLong) width / height else 3f / 4
     }
     BoxWithConstraints(modifier = modifier) {
         val wide = ratio >= 1f
@@ -653,8 +649,8 @@ private fun ThreadMedia(
         // Feed lists leave forumName empty and only fill in forumInfo
         forumName = item.get { forumName.ifEmpty { forumInfo?.name.orEmpty() } },
         threadId = item.get { threadId },
-        medias = item.getImmutableList { media },
-        videoInfo = item.get { videoInfo }?.wrapImmutable(),
+        medias = item.get { media }.map { it.toThreadImage() }.toImmutableList(),
+        videoInfo = item.get { videoInfo }?.toThreadVideo(),
         modifier = modifier,
     )
 }
@@ -678,8 +674,8 @@ fun OriginThreadCard(
             forumId = originThreadInfo.get { fid },
             forumName = originThreadInfo.get { fname },
             threadId = originThreadInfo.get { tid.toLong() },
-            medias = originThreadInfo.getImmutableList { media },
-            videoInfo = originThreadInfo.get { video_info }?.wrapImmutable()
+            medias = originThreadInfo.get { media }.map { it.toThreadImage() }.toImmutableList(),
+            videoInfo = originThreadInfo.get { video_info }?.toThreadVideo()
         )
     }
 }
@@ -913,6 +909,154 @@ fun FeedCard(
     )
 }
 
+/**
+ * A thread in a list: its author and when, its title and abstract, its pictures or video, the
+ * thread it shares, then its forum, shares, replies and likes.
+ */
+@Composable
+fun FeedCard(
+    thread: ThreadSummary,
+    onClick: (ThreadSummary) -> Unit,
+    onAgree: (ThreadSummary) -> Unit,
+    modifier: Modifier = Modifier,
+    onClickReply: (ThreadSummary) -> Unit = {},
+    onClickUser: (ModelUser) -> Unit = {},
+    onClickForum: (ForumSummary) -> Unit = {},
+    onClickShared: (SharedThread) -> Unit = {},
+    /** Whether to show the thread's forum, which a forum's own list leaves out. */
+    showForum: Boolean = true,
+    /** Long-pressing the card, at its bounds and the press in the window. */
+    onLongPress: ((ThreadSummary, from: Rect, at: Offset) -> Unit)? = null,
+    dislikeAction: @Composable () -> Unit = {},
+) {
+    // A long press opens the card's menu, which the pressing finger can then slide onto and lift
+    val menus = LocalContextMenus.current
+    var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var pressAt by remember { mutableStateOf(Offset.Zero) }
+    var peeking by remember { mutableStateOf(false) }
+    val pressTracking = if (onLongPress == null) {
+        Modifier
+    } else {
+        Modifier
+            .onGloballyPositioned { coordinates = it }
+            .pointerInput(menus) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    pressAt = coordinates?.localToWindow(down.position) ?: Offset.Zero
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull() ?: break
+                        val position = coordinates?.localToWindow(change.position) ?: break
+                        if (!change.pressed) {
+                            if (peeking) menus?.liftFinger(position)
+                            peeking = false
+                            break
+                        }
+                        if (peeking) menus?.moveFinger(position)
+                    }
+                }
+            }
+    }
+    val author = thread.author
+    Card(
+        header = {
+            UserHeader(
+                nameProvider = { author.name },
+                nameShowProvider = { author.nameShow },
+                portraitProvider = { author.portrait },
+                timeProvider = { thread.listTime.toInt() },
+                onClick = { onClickUser(author) },
+            ) { dislikeAction() }
+        },
+        content = {
+            ThreadContent(
+                title = thread.title,
+                abstractText = thread.abstract,
+                tabName = thread.tabName,
+                showTitle = thread.title.isNotBlank(),
+                showAbstract = thread.abstract.isNotBlank(),
+                isGood = thread.isGood,
+            )
+
+            ThreadMedia(
+                forumId = thread.forum.id,
+                forumName = thread.forum.name,
+                threadId = thread.id,
+                medias = thread.images,
+                videoInfo = thread.video,
+            )
+
+            thread.shared?.let { shared ->
+                SharedThreadCard(
+                    shared = shared,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(ExtendedTheme.colors.inset)
+                        .clickable { onClickShared(shared) }
+                        .padding(16.dp)
+                )
+            }
+        },
+        action = {
+            FeedCardActions(
+                forum = {
+                    if (showForum) {
+                        ThreadForumInfo(
+                            forumName = thread.forum.name,
+                            forumAvatar = thread.forum.avatar,
+                            onClick = { onClickForum(thread.forum) },
+                        )
+                    }
+                }
+            ) {
+                ThreadShareBtn(
+                    shareNum = thread.shareCount,
+                    onClick = {},
+                )
+                ThreadReplyBtn(
+                    replyNum = thread.replyCount,
+                    onClick = { onClickReply(thread) },
+                )
+                ThreadAgreeBtn(
+                    hasAgree = thread.agree.agreed,
+                    agreeNum = thread.agree.count.toInt(),
+                    onClick = { onAgree(thread) },
+                )
+            }
+        },
+        onClick = { onClick(thread) },
+        onLongClick = onLongPress?.let { peek ->
+            {
+                coordinates?.let {
+                    peeking = true
+                    peek(thread, Rect(it.positionInWindow(), it.size.toSize()), pressAt)
+                }
+            }
+        },
+        modifier = modifier.then(pressTracking),
+    )
+}
+
+/** The thread a thread shares: what it says, then its pictures or video. */
+@Composable
+fun SharedThreadCard(
+    shared: SharedThread,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        PostBody(content = shared.content)
+        ThreadMedia(
+            forumId = shared.forumId,
+            forumName = shared.forumName,
+            threadId = shared.id,
+            medias = shared.images,
+            videoInfo = shared.video,
+        )
+    }
+}
+
 @Composable
 fun FeedCard(
     item: ImmutableHolder<PostInfoList>,
@@ -948,8 +1092,8 @@ fun FeedCard(
                 forumId = item.get { forum_id },
                 forumName = item.get { forum_name },
                 threadId = item.get { thread_id },
-                medias = item.getImmutableList { media },
-                videoInfo = item.getNullableImmutable { video_info }
+                medias = item.get { media }.map { it.toThreadImage() }.toImmutableList(),
+                videoInfo = item.get { video_info }?.toThreadVideo()
             )
 
             item.getNullableImmutable { origin_thread_info }

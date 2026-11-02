@@ -52,11 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.LoadStatus
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.model.DislikeOption
+import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThreadEvents
 import com.huanchengfly.tieba.post.ui.page.main.explore.rememberFeedThreadEvents
@@ -106,7 +106,7 @@ fun PersonalizedScreen(
     events: FeedThreadEvents,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
-    onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
+    onDislike: (ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
     onUndoDislike: (threadId: Long) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
@@ -214,7 +214,7 @@ private fun FeedList(
     disliked: ImmutableSet<Long>,
     undoable: ImmutableMap<Long, String?>,
     events: FeedThreadEvents,
-    onDislike: (ThreadInfo, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
+    onDislike: (ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
     onUndoDislike: (threadId: Long) -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -227,19 +227,19 @@ private fun FeedList(
     ) {
         itemsIndexed(
             items = items,
-            key = { _, item -> "${item.feed.thread.get { id }}" },
+            key = { _, item -> "${item.feed.thread.id}" },
             contentType = { _, item ->
                 val thread = item.feed.thread
                 when {
-                    thread.get { videoInfo } != null -> "Video"
-                    thread.get { media }.size == 1 -> "SingleMedia"
-                    thread.get { media }.size > 1 -> "MultiMedia"
+                    thread.video != null -> "Video"
+                    thread.images.size == 1 -> "SingleMedia"
+                    thread.images.size > 1 -> "MultiMedia"
                     else -> "PlainText"
                 }
             }
         ) { index, (feed, dislikeOptions) ->
             val (item, blocked) = feed
-            val threadId = item.get { threadId }
+            val threadId = item.id
             val isHidden = threadId in disliked
             val isRefreshPosition = index + 1 == newCount
             val showDivider = !isHidden && !isRefreshPosition && index < items.size - 1
@@ -267,13 +267,13 @@ private fun FeedList(
                                 ) {
                                     Column {
                                         FeedCard(
-                                            item = item,
+                                            thread = item,
                                             onClick = events.onOpen,
                                             onClickReply = events.onOpenReplies,
                                             onAgree = events.onAgree,
                                             onClickForum = events.onOpenForum,
                                             onClickUser = events.onOpenUser,
-                                            onClickOriginThread = events.onOpenOrigin,
+                                            onClickShared = events.onOpenOrigin,
                                             onLongPress = peeker?.let { peeker ->
                                                 { thread, from, at ->
                                                     peeker.peek(thread, from, at, dislikeOptions) { clickTime, reasons ->
@@ -284,9 +284,9 @@ private fun FeedList(
                                         ) {
                                             FeedMenu(
                                                 threadId = threadId,
-                                                title = item.get { title },
+                                                title = item.title,
                                                 options = dislikeOptions,
-                                                onDislike = { clickTime, reasons -> onDislike(item.get(), reasons, clickTime) },
+                                                onDislike = { clickTime, reasons -> onDislike(item, reasons, clickTime) },
                                             )
                                         }
                                         if (showDivider) {

@@ -113,7 +113,7 @@ class ThreadViewModel @AssistedInject constructor(
         val immersive: Boolean = false,
     )
 
-    private val preview = ThreadPreviewCache.take(args.threadId)?.let(repository::preview)
+    private val preview = ThreadPreviewCache.take(args.threadId)
 
     private val effects = Channel<ThreadEffect>(Channel.BUFFERED)
     val effect: Flow<ThreadEffect> = effects.receiveAsFlow()

@@ -36,7 +36,7 @@ class ExploreRepositoryTest {
     }
     private var hideVideos = false
     private val repository = ExploreRepository(
-        remote, mockk<AgreeRemoteDataSource>(relaxed = true), store, { hideVideos }, Dispatchers.Unconfined,
+        remote, mockk<AgreeRemoteDataSource>(relaxed = true), store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> },
     )
 
     @Test
@@ -109,7 +109,7 @@ class ExploreRepositoryTest {
     fun `dislikes a thread with the reasons picked`() = runTest {
         val thread = ThreadInfo(id = 9, threadId = 9, forumInfo = SimpleForum(id = 52))
 
-        repository.dislike(thread, listOf(DislikeOption(1, "a", "e1"), DislikeOption(7, "b", "e2")), clickTime = 5)
+        repository.dislike(thread.toThreadSummary { _, _ -> }, listOf(DislikeOption(1, "a", "e1"), DislikeOption(7, "b", "e2")), clickTime = 5)
 
         coVerify { remote.dislike(9, 52, listOf(1, 7), listOf("e1", "e2"), 5) }
     }

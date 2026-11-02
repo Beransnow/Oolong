@@ -93,7 +93,7 @@ fun ConcernScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    itemsIndexed(items = list.items, key = { _, item -> item.thread.get { threadId } }) { index, item ->
+                    itemsIndexed(items = list.items, key = { _, item -> item.thread.id }) { index, item ->
                         Container {
                             BlockableContent(
                                 blocked = item.blocked,
@@ -102,13 +102,13 @@ fun ConcernScreen(
                             ) {
                                 Column {
                                     FeedCard(
-                                        item = item.thread,
+                                        thread = item.thread,
                                         onClick = events.onOpen,
                                         onClickReply = events.onOpenReplies,
                                         onAgree = events.onAgree,
                                         onClickForum = events.onOpenForum,
                                         onClickUser = events.onOpenUser,
-                                        onClickOriginThread = events.onOpenOrigin,
+                                        onClickShared = events.onOpenOrigin,
                                         onLongPress = events.onPeek,
                                     )
                                     if (index < list.items.size - 1) {

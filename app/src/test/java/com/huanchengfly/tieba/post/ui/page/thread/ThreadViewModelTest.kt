@@ -17,6 +17,7 @@ import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadHistory
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.ThreadSort
+import com.huanchengfly.tieba.post.repository.toThreadPreview
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import io.mockk.coEvery
@@ -88,7 +89,7 @@ class ThreadViewModelTest {
         appScope: CoroutineScope = backgroundScope,
     ): ThreadViewModel {
         val dispatcher = mainDispatcherRule.dispatcher
-        threadInfo?.let(ThreadPreviewCache::put)
+        threadInfo?.let { ThreadPreviewCache.put(it.threadId, it.toThreadPreview { _, _ -> }) }
         return ThreadViewModel(
             args = ThreadKey(threadId = 9_000L, postId = postId, sortType = sortType),
             repository = ThreadRepository(remote, agreeRemote, { _, _ -> }, dispatcher),

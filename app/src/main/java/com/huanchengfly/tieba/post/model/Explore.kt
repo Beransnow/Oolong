@@ -1,14 +1,13 @@
 package com.huanchengfly.tieba.post.model
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 /** A recommended thread, and the reasons the user may give for not wanting threads like it. */
 @Immutable
 data class RecommendedThread(
-    val thread: ThreadInfo,
+    val thread: ThreadSummary,
     val dislikeOptions: ImmutableList<DislikeOption> = persistentListOf(),
 )
 
@@ -54,5 +53,5 @@ data class HotCategory(val code: String, val name: String) {
 data class HotThreads(
     val topics: List<HotTopic>,
     val categories: List<HotCategory>,
-    val threads: List<ThreadInfo>,
+    val threads: List<ThreadSummary>,
 )
