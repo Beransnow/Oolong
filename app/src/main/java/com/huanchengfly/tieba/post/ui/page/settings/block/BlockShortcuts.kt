@@ -72,7 +72,8 @@ class BlockShortcuts @Inject constructor(
         }
     }
 
-    fun blockUser(uid: Long, name: String) = block(BlockRule(match = BlockRule.Match.User(uid, name)))
+    fun blockUser(uid: Long, name: String, displayName: String = "") =
+        block(BlockRule(match = BlockRule.Match.User(uid, name, displayName.takeIf { it != name }.orEmpty())))
 
     fun blockForum(name: String) = block(BlockRule(match = BlockRule.Match.Forum(name.removeSuffix("吧"))))
 

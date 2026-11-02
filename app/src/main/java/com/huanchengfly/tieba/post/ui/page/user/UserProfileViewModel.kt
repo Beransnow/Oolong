@@ -155,7 +155,7 @@ class UserProfileViewModel @AssistedInject constructor(
         val user = profile.value.profile ?: return
         val category = if (allow) Block.CATEGORY_WHITE_LIST else Block.CATEGORY_BLACK_LIST
         actions.launch("block") {
-            runCatching { blockList.addUser(category, user.id, user.name) }
+            runCatching { blockList.addUser(category, user.id, user.name, user.nameShow) }
                 .onSuccess { messages.show(R.string.toast_add_success) }
         }
     }

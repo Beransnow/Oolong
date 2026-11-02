@@ -56,8 +56,8 @@ class BlockListRepository @Inject constructor(
     )
 
     /** Adds a rule on [category]'s list matching the user with [uid] or [name]. */
-    suspend fun addUser(category: Int, uid: Long, name: String) = add(
-        BlockRule(match = BlockRule.Match.User(uid, name), action = actionOf(category)),
+    suspend fun addUser(category: Int, uid: Long, name: String, displayName: String = "") = add(
+        BlockRule(match = BlockRule.Match.User(uid, name, displayName.takeIf { it != name }.orEmpty()), action = actionOf(category)),
     )
 
     suspend fun remove(id: Long) = withContext(io) { dao.delete(id) }
@@ -75,7 +75,7 @@ private const val TypeLevel = 3
 fun BlockEntity.toBlockRule() = BlockRule(
     id = id,
     match = when (type) {
-        TypeUser -> BlockRule.Match.User(uid?.toLongOrNull() ?: 0L, username.orEmpty())
+        TypeUser -> BlockRule.Match.User(uid?.toLongOrNull() ?: 0L, username.orEmpty(), displayName.orEmpty())
         TypeForum -> BlockRule.Match.Forum(forumName.orEmpty())
         TypeLevel -> BlockRule.Match.Level(level ?: 0)
         else -> BlockRule.Match.Keyword(keywords?.let { runCatching { it.fromJson<List<String>>() }.getOrNull() }.orEmpty(), regex)
@@ -120,7 +120,12 @@ fun BlockRule.toEntity(): BlockEntity {
     )
     return when (val match = match) {
         is BlockRule.Match.Keyword -> base.copy(type = TypeKeyword, keywords = match.words.toJson(), regex = match.regex)
-        is BlockRule.Match.User -> base.copy(type = TypeUser, uid = match.uid.toString(), username = match.name)
+        is BlockRule.Match.User -> base.copy(
+            type = TypeUser,
+            uid = match.uid.toString(),
+            username = match.name,
+            displayName = match.displayName.ifBlank { null },
+        )
         is BlockRule.Match.Forum -> base.copy(type = TypeForum, forumName = match.name)
         is BlockRule.Match.Level -> base.copy(type = TypeLevel, level = match.level)
     }

@@ -29,7 +29,7 @@ fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<Senten
     when (val match = rule.match) {
         is BlockRule.Match.User -> {
             add(SentenceRun(stringResource(R.string.rule_user)))
-            add(SentenceRun(match.name.ifBlank { match.uid.toString() }, RulePart.Value))
+            add(SentenceRun(match.shownName, RulePart.Value))
             add(SentenceRun(stringResource(R.string.rule_whose_content)))
         }
 

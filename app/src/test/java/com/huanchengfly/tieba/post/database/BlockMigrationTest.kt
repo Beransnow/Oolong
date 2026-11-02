@@ -62,7 +62,7 @@ class BlockMigrationTest {
         )
 
         val db = Room.databaseBuilder(context, AppDatabase::class.java, file.absolutePath)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
             .also { database = it }
         val rules = db.blockDao().all().first().map { it.toBlockRule() }

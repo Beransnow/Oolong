@@ -32,6 +32,7 @@ object BlockRuleBackup {
         val regex: Boolean = false,
         val uid: Long = 0,
         val name: String = "",
+        val displayName: String = "",
         val level: Int = 0,
         val inForum: String? = null,
         val titleOnly: Boolean = false,
@@ -53,7 +54,7 @@ object BlockRuleBackup {
         )
         return when (val match = match) {
             is Match.Keyword -> base.copy(type = "keyword", words = match.words, regex = match.regex)
-            is Match.User -> base.copy(type = "user", uid = match.uid, name = match.name)
+            is Match.User -> base.copy(type = "user", uid = match.uid, name = match.name, displayName = match.displayName)
             is Match.Forum -> base.copy(type = "forum", name = match.name)
             is Match.Level -> base.copy(type = "level", level = match.level)
         }
@@ -62,7 +63,7 @@ object BlockRuleBackup {
     private fun Entry.toRule(): BlockRule? {
         val match = when (type) {
             "keyword" -> Match.Keyword(words, regex).takeIf { words.any { it.isNotBlank() } }
-            "user" -> Match.User(uid, name).takeIf { uid != 0L || name.isNotBlank() }
+            "user" -> Match.User(uid, name, displayName).takeIf { uid != 0L || name.isNotBlank() }
             "forum" -> Match.Forum(name).takeIf { name.isNotBlank() }
             "level" -> Match.Level(level).takeIf { level > 0 }
             else -> null

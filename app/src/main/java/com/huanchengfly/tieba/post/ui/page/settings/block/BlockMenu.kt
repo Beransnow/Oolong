@@ -52,7 +52,7 @@ fun ColumnScope.BlockableMenuItems(
         Text(text = "‹ " + stringResource(id = R.string.button_block), color = ExtendedTheme.colors.textSecondary)
     }
     if (author != null && (author.id != 0L || author.name.isNotBlank())) {
-        DropdownMenuItem(onClick = { shortcuts.blockUser(author.id, author.name).also { close() } }) {
+        DropdownMenuItem(onClick = { shortcuts.blockUser(author.id, author.name, author.displayName).also { close() } }) {
             Text(text = stringResource(id = R.string.menu_block_user, author.displayName))
         }
     }
@@ -75,7 +75,7 @@ fun blockMenuItems(context: Context, shortcuts: BlockShortcuts, thread: ThreadSu
         val author = thread.author
         if (author.id != 0L || author.name.isNotBlank()) {
             add(ContextMenuItem(Icons.Rounded.PersonOff, context.getString(R.string.menu_block_user, author.displayName)) {
-                shortcuts.blockUser(author.id, author.name)
+                shortcuts.blockUser(author.id, author.name, author.displayName)
             })
         }
         if (!forumOffered && thread.forum.name.isNotBlank()) {

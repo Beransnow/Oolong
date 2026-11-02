@@ -26,6 +26,7 @@ data class BlockEntity(
     val username: String? = null,
     val uid: String? = null,
     @ColumnInfo(name = "forum_name") val forumName: String? = null,
+    @ColumnInfo(name = "display_name") val displayName: String? = null,
     val level: Int? = null,
     @ColumnInfo(defaultValue = "0") val regex: Boolean = false,
     @ColumnInfo(name = "in_forum") val inForum: String? = null,
@@ -61,6 +62,13 @@ interface BlockDao {
 
     @Query("UPDATE block_rules SET hits = hits + :count, last_hit_at = :at WHERE id = :id")
     suspend fun addHits(id: Long, count: Long, at: Long)
+}
+
+/** User rules keep how the user was shown when blocked. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `block_rules` ADD COLUMN `display_name` TEXT")
+    }
 }
 
 /** Rules gain conditions, where they apply, what they do, an expiry, a switch and hit counts. */

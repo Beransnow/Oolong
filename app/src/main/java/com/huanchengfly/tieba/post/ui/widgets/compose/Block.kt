@@ -66,7 +66,7 @@ fun BlockTip(
 /** Why [rule] blocks something, as a tip says it. */
 @Composable
 fun blockReason(rule: BlockRule): String = when (val match = rule.match) {
-    is BlockRule.Match.User -> stringResource(id = R.string.block_reason_user, match.name)
+    is BlockRule.Match.User -> stringResource(id = R.string.block_reason_user, match.shownName)
     is BlockRule.Match.Forum -> stringResource(id = R.string.block_reason_forum, match.name.removeSuffix("吧"))
     is BlockRule.Match.Level -> stringResource(id = R.string.block_reason_level, match.level)
     is BlockRule.Match.Keyword -> stringResource(

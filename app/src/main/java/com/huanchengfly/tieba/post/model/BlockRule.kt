@@ -25,8 +25,13 @@ data class BlockRule(
 ) {
     @Immutable
     sealed interface Match {
-        /** A user, by id, or by account name where the id is unknown. */
-        data class User(val uid: Long, val name: String) : Match
+        /**
+         * A user, by id, or by account name where the id is unknown. [displayName] is how the user
+         * was shown when blocked, for showing the rule.
+         */
+        data class User(val uid: Long, val name: String, val displayName: String = "") : Match {
+            val shownName: String get() = displayName.ifBlank { name }.ifBlank { uid.toString() }
+        }
 
         /** Content containing every one of [words], or matching [words]' only entry when [regex]. */
         data class Keyword(val words: List<String>, val regex: Boolean = false) : Match
