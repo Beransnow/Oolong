@@ -27,6 +27,8 @@ sealed interface PostContent {
         val height: Int,
         val showOriginButton: Boolean,
         val originSize: Int,
+        /** A sticker, sent like an emoticon, rather than a picture. */
+        val sticker: Boolean = false,
     ) : PostContent
 
     /** A video playable in place, or only openable on the web when [url] is empty. */

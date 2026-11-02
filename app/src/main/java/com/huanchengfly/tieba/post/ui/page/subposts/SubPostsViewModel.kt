@@ -13,9 +13,9 @@ import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.User
-import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
@@ -129,15 +129,18 @@ class SubPostsViewModel @AssistedInject constructor(
 
     val state: StateFlow<SubPostsState> = combine(latestFloor, subPosts.state, blockRuleSource.rules) { floor, pager, rules ->
         val forumName = floor?.forum?.name
-        fun check(author: User, content: String) = rules.check(Blockable(author, content, BlockPlace.Thread, forum = forumName))
+        val threadAuthorId = floor?.threadAuthorId ?: 0L
+        fun check(author: User, content: List<PostContent>) = rules.check(
+            Blockable(author, content, BlockPlace.Thread, forum = forumName, byThreadAuthor = threadAuthorId != 0L && author.id == threadAuthorId),
+        )
         val cached = blocked?.takeIf { it.first === pager.items && it.second === rules }
         val items = cached?.third
-            ?: pager.items.map { SubPostItem(it, check(it.author, it.content.plainText)) }.toImmutableList()
+            ?: pager.items.map { SubPostItem(it, check(it.author, it.content)) }.toImmutableList()
                 .also { blocked = Triple(pager.items, rules, it) }
         SubPostsState(
             threadId = threadId,
             post = floor?.post,
-            postBlock = floor?.post?.let { check(it.author, it.content.plainText) },
+            postBlock = floor?.post?.let { check(it.author, it.content) },
             threadAuthorId = floor?.threadAuthorId ?: 0L,
             forum = floor?.forum,
             subPosts = PagerState(

@@ -72,6 +72,7 @@ private fun PbContent.toBlock(): PostContent? {
             height = height,
             showOriginButton = showOriginalBtn == 1,
             originSize = originSize,
+            sticker = true,
         )
 
         5 -> PostContent.Video(url = link, coverUrl = src, webUrl = text, width = width, height = height)

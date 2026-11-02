@@ -7,6 +7,8 @@ import com.huanchengfly.tieba.post.arch.ApplicationScope
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.database.BlockDao
 import com.huanchengfly.tieba.post.model.BlockRule
+import com.huanchengfly.tieba.post.model.PostContent
+import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +28,10 @@ import javax.inject.Singleton
 /** Where content is shown, for rules that apply only in some places. */
 enum class BlockPlace { Feeds, Forum, Thread, Messages }
 
-/** What block rules look at: who wrote it, what it says, and where. */
+/** What content holds besides plain words. */
+enum class ContentKind { Link, Image, Video, Voice, Mention, Emoticon }
+
+/** What block rules look at: who wrote it, what it says, what else it holds, and where. */
 data class Blockable(
     val author: User,
     val content: String,
@@ -34,7 +39,50 @@ data class Blockable(
     val title: String = "",
     /** The forum it is in, by name without 吧; null when unknown. */
     val forum: String? = null,
+    val kinds: Set<ContentKind> = emptySet(),
+    /** How many letters and digits its own words have; emoticons, links, mentions, spaces and punctuation don't count. */
+    val length: Int = letterCount(content),
+    /** Whether whoever started the thread wrote it. */
+    val byThreadAuthor: Boolean = false,
 )
+
+/** [content] by [author] as block rules see it: its words for keywords, and what else it holds. */
+fun Blockable(
+    author: User,
+    content: List<PostContent>,
+    place: BlockPlace,
+    title: String = "",
+    forum: String? = null,
+    byThreadAuthor: Boolean = false,
+): Blockable {
+    val kinds = mutableSetOf<ContentKind>()
+    var length = 0
+    val text = buildString {
+        content.forEach { block ->
+            when (block) {
+                is PostContent.Text -> block.spans.forEach { span ->
+                    when (span) {
+                        is TextSpan.Plain -> {
+                            length += letterCount(span.text)
+                            if (span.text.hasEmoji()) kinds += ContentKind.Emoticon
+                        }
+                        is TextSpan.Link -> kinds += ContentKind.Link
+                        is TextSpan.VideoLink -> kinds += ContentKind.Video
+                        is TextSpan.Mention -> kinds += ContentKind.Mention
+                        is TextSpan.Emoticon -> kinds += ContentKind.Emoticon
+                    }
+                    // Emoticons are pictures; their names are not words the post says
+                    if (span !is TextSpan.Emoticon) append(span.text)
+                }
+                is PostContent.Image -> kinds += if (block.sticker) ContentKind.Emoticon else ContentKind.Image
+                is PostContent.Video -> kinds += ContentKind.Video
+                is PostContent.Voice -> kinds += ContentKind.Voice
+            }
+            append('\n')
+        }
+    }
+    return Blockable(author, text, place, title, forum, kinds, length, byThreadAuthor)
+}
 
 /** Content a [rule] matched, and whether it is hidden rather than folded. */
 data class BlockVerdict(val rule: BlockRule, val hidden: Boolean)
@@ -49,9 +97,25 @@ fun interface BlockRules {
 fun BlockRules.blocks(author: User, content: String): Boolean =
     check(Blockable(author, content, BlockPlace.Thread)) != null
 
-/** How the rules block [thread] in a list at [place], by its author, its forum or what its title or abstract says. */
-fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? =
-    check(Blockable(thread.author, thread.abstract, place, title = thread.title, forum = thread.forum.name))
+/**
+ * How the rules block [thread] in a list at [place], by its author, its forum, or its first floor,
+ * or what lists know of it where that is missing.
+ */
+fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? {
+    val item = if (thread.firstPost.isNotEmpty()) {
+        Blockable(thread.author, thread.firstPost, place, title = thread.title, forum = thread.forum.name, byThreadAuthor = true)
+    } else {
+        Blockable(
+            thread.author, thread.abstract, place, title = thread.title, forum = thread.forum.name,
+            kinds = buildSet {
+                if (thread.images.isNotEmpty()) add(ContentKind.Image)
+                if (thread.video != null) add(ContentKind.Video)
+            },
+            byThreadAuthor = true,
+        )
+    }
+    return check(item)
+}
 
 /** Rules that fold whatever [predicate] picks, for previews and tests. */
 fun blockRulesMatching(predicate: (Blockable) -> Boolean): BlockRules {
@@ -145,6 +209,29 @@ private fun BlockRule.Scope.covers(place: BlockPlace) = when (this) {
 }
 
 private fun forumKey(name: String) = name.trim().removeSuffix("吧").lowercase()
+
+/** How many letters and digits [text] has. */
+fun letterCount(text: String): Int {
+    var count = 0
+    var i = 0
+    while (i < text.length) {
+        val code = text.codePointAt(i)
+        if (Character.isLetterOrDigit(code)) count++
+        i += Character.charCount(code)
+    }
+    return count
+}
+
+/** Whether [this] has emoji or other pictographs, which Unicode files as symbols. */
+private fun String.hasEmoji(): Boolean {
+    var i = 0
+    while (i < length) {
+        val code = codePointAt(i)
+        if (Character.getType(code) == Character.OTHER_SYMBOL.toInt()) return true
+        i += Character.charCount(code)
+    }
+    return false
+}
 
 /**
  * [text] as keywords are matched against it: full-width forms made plain, case folded, and

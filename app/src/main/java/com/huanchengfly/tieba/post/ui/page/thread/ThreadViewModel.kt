@@ -13,11 +13,11 @@ import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.arch.query.QueryPager
 import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
-import com.huanchengfly.tieba.post.model.plainText
 import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
@@ -185,17 +185,17 @@ class ThreadViewModel @AssistedInject constructor(
     }
 
     /** Block flags for the last list and rules seen, which most state changes leave as they are. */
-    private var blocked: Pair<Triple<List<Post>, BlockRules, String?>, ImmutableList<PostItem>>? = null
+    private var blocked: Pair<Triple<List<Post>, BlockRules, ThreadOrigin?>, ImmutableList<PostItem>>? = null
 
     private val items: Flow<PagerState<PostItem>> = combine(
         lists.flatMapLatest { it.state },
         blockRuleSource.rules,
-        // Rules for one forum need to know the thread's
-        meta.map { it.page?.thread?.forum?.name }.distinctUntilChanged(),
-    ) { state, rules, forum ->
-        val key = Triple(state.items, rules, forum)
-        val cached = blocked?.takeIf { (k, _) -> k.first === state.items && k.second === rules && k.third == forum }
-        val items = cached?.second ?: state.items.withBlocked(rules, forum).also { blocked = key to it }
+        // Rules for one forum, or about the thread author, need to know the thread's
+        meta.map { meta -> meta.page?.thread?.let { ThreadOrigin(it.forum.name, it.author.id) } }.distinctUntilChanged(),
+    ) { state, rules, origin ->
+        val key = Triple(state.items, rules, origin)
+        val cached = blocked?.takeIf { (k, _) -> k.first === state.items && k.second === rules && k.third == origin }
+        val items = cached?.second ?: state.items.withBlocked(rules, origin).also { blocked = key to it }
         PagerState(
             items = items,
             refresh = state.refresh,
@@ -456,13 +456,21 @@ class ThreadViewModel @AssistedInject constructor(
     }
 }
 
-private fun List<Post>.withBlocked(rules: BlockRules, forum: String?): ImmutableList<PostItem> = map { post ->
-    fun check(author: User, content: String) = rules.check(Blockable(author, content, BlockPlace.Thread, forum = forum))
+/** Where a thread's posts were written: its forum, by name, and who started it. */
+private data class ThreadOrigin(val forum: String, val authorId: Long)
+
+private fun List<Post>.withBlocked(rules: BlockRules, origin: ThreadOrigin?): ImmutableList<PostItem> = map { post ->
+    fun check(author: User, content: List<PostContent>) = rules.check(
+        Blockable(
+            author, content, BlockPlace.Thread, forum = origin?.forum,
+            byThreadAuthor = origin != null && author.id == origin.authorId,
+        ),
+    )
     PostItem(
         post = post,
-        block = check(post.author, post.content.plainText),
+        block = check(post.author, post.content),
         subPostBlocks = post.subPosts
-            .mapNotNull { subPost -> check(subPost.author, subPost.content.plainText)?.let { subPost.id to it } }
+            .mapNotNull { subPost -> check(subPost.author, subPost.content)?.let { subPost.id to it } }
             .toMap()
             .toImmutableMap(),
     )
