@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import java.text.Normalizer
+import java.util.IdentityHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -115,6 +116,26 @@ fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? {
         )
     }
     return check(item)
+}
+
+/**
+ * Items of a list as the block rules have them, remembered for each item, so a list that grows by
+ * a page or has one item changed is only checked for what is new. Whatever else the check depends
+ * on, such as the rules, goes in the key, and a new key checks everything again.
+ */
+class BlockMemo<T : Any, R : Any> {
+    private var key: Any? = null
+    private var done = IdentityHashMap<T, R>()
+
+    @Synchronized
+    fun map(key: Any, items: List<T>, transform: (T) -> R): List<R> {
+        val before = if (key == this.key) done else IdentityHashMap()
+        val now = IdentityHashMap<T, R>(items.size)
+        val result = items.map { item -> now.getOrPut(item) { before[item] ?: transform(item) } }
+        this.key = key
+        done = now
+        return result
+    }
 }
 
 /** Rules that fold whatever [predicate] picks, for previews and tests. */

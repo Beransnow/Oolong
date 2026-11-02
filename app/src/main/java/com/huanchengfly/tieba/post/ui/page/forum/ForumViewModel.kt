@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.model.ForumDetail
 import com.huanchengfly.tieba.post.model.ForumSort
 import com.huanchengfly.tieba.post.model.ForumTab
 import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.repository.BlockMemo
 import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
@@ -106,8 +107,8 @@ class ForumViewModel @AssistedInject constructor(
         val goodClassId: Int = 0,
     )
 
-    /** Block flags for the last lists and rules seen, which most state changes leave as they are. */
-    private val blocked = mutableMapOf<ForumTab, Triple<List<ThreadSummary>, BlockRules, ImmutableList<ForumThreadItem>>>()
+    /** Block flags for each tab's threads, which most state changes leave as they are. */
+    private val blocked = mutableMapOf<ForumTab, BlockMemo<ThreadSummary, ForumThreadItem>>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val listStates = pagers.flatMapLatest { pagers ->
@@ -236,10 +237,8 @@ class ForumViewModel @AssistedInject constructor(
     }
 
     private fun items(tab: ForumTab, threads: List<ThreadSummary>, rules: BlockRules): ImmutableList<ForumThreadItem> {
-        blocked[tab]?.takeIf { it.first === threads && it.second === rules }?.let { return it.third }
-        val items = threads.map { ForumThreadItem(it, rules.check(it, BlockPlace.Forum)) }.toImmutableList()
-        blocked[tab] = Triple(threads, rules, items)
-        return items
+        val memo = blocked.getOrPut(tab) { BlockMemo() }
+        return memo.map(rules, threads) { ForumThreadItem(it, rules.check(it, BlockPlace.Forum)) }.toImmutableList()
     }
 
     @AssistedFactory

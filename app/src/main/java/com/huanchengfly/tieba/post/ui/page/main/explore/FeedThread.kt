@@ -17,8 +17,11 @@ data class FeedThread(val thread: ThreadSummary, val block: BlockVerdict? = null
 
 internal fun BlockRules.feedThread(thread: ThreadSummary) = FeedThread(thread, check(thread, BlockPlace.Feeds))
 
-internal fun <T, R> PagerState<T>.mapItems(transform: (T) -> R) = PagerState(
-    items = items.map(transform).toImmutableList(),
+internal fun <T, R> PagerState<T>.mapItems(transform: (T) -> R) = withItems(items.map(transform))
+
+/** The same pages holding [items] in place of their own. */
+internal fun <T, R> PagerState<T>.withItems(items: List<R>) = PagerState(
+    items = items.toImmutableList(),
     refresh = refresh,
     append = append,
     prepend = prepend,

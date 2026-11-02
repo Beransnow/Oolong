@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.model.ThreadDetail
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.model.Viewer
+import com.huanchengfly.tieba.post.repository.BlockMemo
 import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
@@ -184,8 +185,8 @@ class ThreadViewModel @AssistedInject constructor(
         }
     }
 
-    /** Block flags for the last list and rules seen, which most state changes leave as they are. */
-    private var blocked: Pair<Triple<List<Post>, BlockRules, ThreadOrigin?>, ImmutableList<PostItem>>? = null
+    /** Block flags for each post, which most state changes leave as they are. */
+    private val blocked = BlockMemo<Post, PostItem>()
 
     private val items: Flow<PagerState<PostItem>> = combine(
         lists.flatMapLatest { it.state },
@@ -193,9 +194,7 @@ class ThreadViewModel @AssistedInject constructor(
         // Rules for one forum, or about the thread author, need to know the thread's
         meta.map { meta -> meta.page?.thread?.let { ThreadOrigin(it.forum.name, it.author.id) } }.distinctUntilChanged(),
     ) { state, rules, origin ->
-        val key = Triple(state.items, rules, origin)
-        val cached = blocked?.takeIf { (k, _) -> k.first === state.items && k.second === rules && k.third == origin }
-        val items = cached?.second ?: state.items.withBlocked(rules, origin).also { blocked = key to it }
+        val items = blocked.map(rules to origin, state.items) { it.withBlocked(rules, origin) }.toImmutableList()
         PagerState(
             items = items,
             refresh = state.refresh,
@@ -459,14 +458,15 @@ class ThreadViewModel @AssistedInject constructor(
 /** Where a thread's posts were written: its forum, by name, and who started it. */
 private data class ThreadOrigin(val forum: String, val authorId: Long)
 
-private fun List<Post>.withBlocked(rules: BlockRules, origin: ThreadOrigin?): ImmutableList<PostItem> = map { post ->
+private fun Post.withBlocked(rules: BlockRules, origin: ThreadOrigin?): PostItem {
+    val post = this
     fun check(author: User, content: List<PostContent>) = rules.check(
         Blockable(
             author, content, BlockPlace.Thread, forum = origin?.forum,
             byThreadAuthor = origin != null && author.id == origin.authorId,
         ),
     )
-    PostItem(
+    return PostItem(
         post = post,
         block = check(post.author, post.content),
         subPostBlocks = post.subPosts
@@ -474,4 +474,4 @@ private fun List<Post>.withBlocked(rules: BlockRules, origin: ThreadOrigin?): Im
             .toMap()
             .toImmutableMap(),
     )
-}.toImmutableList()
+}

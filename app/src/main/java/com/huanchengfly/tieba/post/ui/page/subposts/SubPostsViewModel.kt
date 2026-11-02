@@ -16,6 +16,7 @@ import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.PostContent
 import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.User
+import com.huanchengfly.tieba.post.repository.BlockMemo
 import com.huanchengfly.tieba.post.repository.BlockPlace
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
@@ -122,7 +123,7 @@ class SubPostsViewModel @AssistedInject constructor(
     }
 
     /** Block flags for the last list and rules seen, which most state changes leave as they are. */
-    private var blocked: Triple<List<SubPost>, BlockRules, ImmutableList<SubPostItem>>? = null
+    private val blocked = BlockMemo<SubPost, SubPostItem>()
 
     /** The post as liked here or anywhere else it shows. */
     private val latestFloor = floor.withLatestEntities(client) { it?.copy(post = post(it.post)) }
@@ -133,10 +134,8 @@ class SubPostsViewModel @AssistedInject constructor(
         fun check(author: User, content: List<PostContent>) = rules.check(
             Blockable(author, content, BlockPlace.Thread, forum = forumName, byThreadAuthor = threadAuthorId != 0L && author.id == threadAuthorId),
         )
-        val cached = blocked?.takeIf { it.first === pager.items && it.second === rules }
-        val items = cached?.third
-            ?: pager.items.map { SubPostItem(it, check(it.author, it.content)) }.toImmutableList()
-                .also { blocked = Triple(pager.items, rules, it) }
+        val items = blocked.map(Triple(rules, forumName, threadAuthorId), pager.items) { SubPostItem(it, check(it.author, it.content)) }
+            .toImmutableList()
         SubPostsState(
             threadId = threadId,
             post = floor?.post,

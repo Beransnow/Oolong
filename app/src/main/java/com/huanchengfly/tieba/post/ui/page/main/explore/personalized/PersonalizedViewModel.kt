@@ -16,13 +16,14 @@ import com.huanchengfly.tieba.post.arch.query.pager
 import com.huanchengfly.tieba.post.model.DislikeOption
 import com.huanchengfly.tieba.post.model.RecommendedThread
 import com.huanchengfly.tieba.post.model.ThreadSummary
+import com.huanchengfly.tieba.post.repository.BlockMemo
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.ExploreRepository
 import com.huanchengfly.tieba.post.repository.ThreadActions
 import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.ui.page.main.explore.FeedThread
 import com.huanchengfly.tieba.post.ui.page.main.explore.feedThread
-import com.huanchengfly.tieba.post.ui.page.main.explore.mapItems
+import com.huanchengfly.tieba.post.ui.page.main.explore.withItems
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -94,6 +95,9 @@ class PersonalizedViewModel @Inject constructor(
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
     private val pager = MutableStateFlow<Pager<Int, RecommendedThread>?>(null)
+
+    /** Block flags for each thread, which most state changes leave as they are. */
+    private val blocked = BlockMemo<RecommendedThread, RecommendedItem>()
     private val local = MutableStateFlow(Local())
 
     private val pendingDislikes = mutableMapOf<Long, Job>()
@@ -112,7 +116,7 @@ class PersonalizedViewModel @Inject constructor(
         blockRuleSource.rules,
     ) { list, local, rules ->
         PersonalizedState(
-            list = list.mapItems { RecommendedItem(rules.feedThread(it.thread), it.dislikeOptions) },
+            list = list.withItems(blocked.map(rules, list.items) { RecommendedItem(rules.feedThread(it.thread), it.dislikeOptions) }),
             disliked = local.disliked.toImmutableSet(),
             undoable = local.undoable.toImmutableMap(),
             newCount = local.newCount,
