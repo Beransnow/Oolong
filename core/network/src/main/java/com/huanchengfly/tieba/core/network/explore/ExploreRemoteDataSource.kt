@@ -21,6 +21,7 @@ import com.huanchengfly.tieba.post.api.models.protos.userLike.UserLikeResponseDa
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.put
+import java.util.concurrent.atomic.AtomicInteger
 
 /** The feeds of the explore tab: recommended threads, the followed users' threads and the hot lists. */
 class ExploreRemoteDataSource(
@@ -33,6 +34,13 @@ class ExploreRemoteDataSource(
     private val service = network.service<ExploreService>(protoProfile)
     private val formService = network.service<ExploreFormService>(formProfile)
 
+    // Recommendations come as the newer clients get them, with their newer ways of disliking a thread
+    private val personalizedProfile = TiebaProfile.PROTO_22_FLOOR
+    private val personalizedService = network.service<ExploreService>(personalizedProfile)
+
+    /** How many times recommendations were asked for, which the server counts as the feed goes on. */
+    private val personalizedRequests = AtomicInteger()
+
     /**
      * A page of recommended threads.
      *
@@ -43,26 +51,30 @@ class ExploreRemoteDataSource(
         val request = PersonalizedRequest(
             PersonalizedRequestData(
                 app_pos = commonParams.appPos(),
-                common = commonParams.protobuf(protoProfile),
+                common = commonParams.protobuf(personalizedProfile),
                 load_type = if (refresh) 1 else 2,
                 pn = page,
                 need_tags = 0,
-                page_thread_count = 11,
-                pre_ad_thread_count = 0,
+                // A refresh leaves the count to the server; later pages ask for a dozen
+                page_thread_count = if (refresh) 0 else 12,
+                pre_ad_thread_count = if (refresh) 0 else 11,
                 sug_count = 0,
                 tag_code = 0,
-                q_type = 1,
+                q_type = 2,
                 need_forumlist = 0,
                 new_net_type = 1,
                 new_install = 0,
-                request_times = 0,
+                request_times = personalizedRequests.incrementAndGet(),
                 invoke_source = "",
                 scr_dip = device.screenDensity.toDouble(),
                 scr_h = device.screenHeight,
                 scr_w = device.screenWidth,
+                is_newfeed = 1,
+                is_new_user = 0,
+                cache_column_style = 1,
             )
         )
-        return checkNotNull(service.personalized(ProtobufBody(request, commonParams.stokenField())).data_)
+        return checkNotNull(personalizedService.personalized(ProtobufBody(request, commonParams.stokenField())).data_)
     }
 
     /**

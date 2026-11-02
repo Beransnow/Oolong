@@ -8,6 +8,7 @@ import "CommonRequest.proto";
 import "ThreadInfo.proto";
 import "AppPosInfo.proto";
 import "Error.proto";
+import "AppTransmitData.proto";
 
 message PersonalizedRequestData {
   string ad_context_list = 30;
@@ -30,6 +31,11 @@ message PersonalizedRequestData {
   int32 scr_w = 8;
   uint32 sug_count = 7;
   uint32 tag_code = 2;
+  AppTransmitData app_transmit_data = 38;
+  int32 is_newfeed = 40;
+  uint32 is_new_user = 44;
+  string ad_external_info = 45;
+  uint32 cache_column_style = 46;
 }
 
 message PersonalizedRequest {

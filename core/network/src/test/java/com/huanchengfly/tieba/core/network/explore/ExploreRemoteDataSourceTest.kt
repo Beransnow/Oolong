@@ -43,10 +43,10 @@ class ExploreRemoteDataSourceTest {
         server.server.enqueue(MockResponse.Builder().body(Buffer().write(bytes)).build())
     }
 
-    private fun sentData(target: String): ByteString {
+    private fun sentData(target: String, profile: TiebaProfile = TiebaProfile.PROTO_12_52): ByteString {
         val request = server.takeRequest()
         assertEquals(target, request.target)
-        commonParams.headers(TiebaProfile.PROTO_12_52).forEach { (name, value) -> assertEquals(value, request.headers[name], name) }
+        commonParams.headers(profile).forEach { (name, value) -> assertEquals(value, request.headers[name], name) }
         val parts = multipartParts(request.headers["Content-Type"]!!, request.body!!)
         assertEquals(listOf("stoken", "data"), parts.map { it.first })
         return parts[1].second
@@ -60,14 +60,24 @@ class ExploreRemoteDataSourceTest {
         dataSource.personalized(refresh = true, page = 1)
         dataSource.personalized(refresh = false, page = 3)
 
-        val refresh = PersonalizedRequest.ADAPTER.decode(sentData("/c/f/excellent/personalized?cmd=309264&format=protobuf")).data_!!
+        val target = "/c/f/excellent/personalized?cmd=309264&format=protobuf"
+        val refresh = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_FLOOR)).data_!!
         assertEquals(1, refresh.load_type)
         assertEquals(1, refresh.pn)
-        assertEquals(commonParams.protobuf(TiebaProfile.PROTO_12_52), refresh.common)
+        assertEquals(0, refresh.page_thread_count)
+        assertEquals(0, refresh.pre_ad_thread_count)
+        assertEquals(1, refresh.request_times)
+        assertEquals(1, refresh.is_newfeed)
+        assertEquals(2, refresh.q_type)
+        assertEquals(1, refresh.cache_column_style)
+        assertEquals(commonParams.protobuf(TiebaProfile.PROTO_22_FLOOR), refresh.common)
         assertEquals(commonParams.appPos(), refresh.app_pos)
-        val more = PersonalizedRequest.ADAPTER.decode(sentData("/c/f/excellent/personalized?cmd=309264&format=protobuf")).data_!!
+        val more = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_FLOOR)).data_!!
         assertEquals(2, more.load_type)
         assertEquals(3, more.pn)
+        assertEquals(12, more.page_thread_count)
+        assertEquals(11, more.pre_ad_thread_count)
+        assertEquals(2, more.request_times)
     }
 
     @Test
