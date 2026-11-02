@@ -44,6 +44,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -78,6 +80,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -297,6 +300,14 @@ fun ReplyChrome(
         val capsuleShown = surface == ChromeSurface.None && !replyGlassShown && !menuGlassShown
         val restAlpha by animateFloatAsState(if (capsuleShown) 1f else 0f, tween(if (capsuleShown) 220 else 60), label = "rest")
         val dissolve by animateFloatAsState(if (surface == ChromeSurface.None) 0f else 1f, spring(stiffness = 500f), label = "dissolve")
+        // Counts the capsules' returns to rest. Their glass keeps sampling at the scale it last had
+        // while they shrank, so it is made anew once they are back at full size
+        var rests by remember { mutableIntStateOf(0) }
+        LaunchedEffect(Unit) {
+            snapshotFlow { surface == ChromeSurface.None && dissolve == 0f }
+                .drop(1)
+                .collect { atRest -> if (atRest) rests++ }
+        }
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -308,7 +319,7 @@ fun ReplyChrome(
                 },
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (replyCapsule != null) {
+            if (replyCapsule != null) key(rests) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -340,7 +351,7 @@ fun ReplyChrome(
             } else {
                 Box(modifier = Modifier.weight(1f))
             }
-            if (actions != null) {
+            if (actions != null) key(rests) {
                 Row(
                     modifier = Modifier
                         .height(ReplyCapsuleHeight)
