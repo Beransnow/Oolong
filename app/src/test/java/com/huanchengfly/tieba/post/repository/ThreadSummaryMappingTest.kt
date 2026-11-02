@@ -87,9 +87,16 @@ class ThreadSummaryMappingTest {
         assertEquals(11, summary.firstPostId)
         assertEquals("一楼全文", summary.firstPost.plainText)
         val image = summary.images.single()
-        assertEquals("o", image.original)
+        assertEquals(Triple("b", "s", "o"), Triple(image.small, image.large, image.original))
         assertTrue(image.isLong)
         assertEquals(ThreadVideo("v", "t", 16, 9), summary.video)
+    }
+
+    @Test
+    fun `a picture missing some sizes takes the nearest one there is`() {
+        val image = Media(bigPic = "b").toThreadImage()
+
+        assertEquals(Triple("b", "b", "b"), Triple(image.small, image.large, image.original))
     }
 
     @Test

@@ -63,10 +63,14 @@ internal fun List<PbContent>.abstractText(emoticons: EmoticonRegistry): String =
     }
 }
 
+/**
+ * `bigPic` is sized for the card, `srcPic` up to 1920 wide and `originPic` the upload itself. Shared
+ * threads may leave some of them empty; each then falls back to the nearest one there is.
+ */
 internal fun Media.toThreadImage() = ThreadImage(
-    small = srcPic,
-    large = bigPic,
-    original = originPic,
+    small = bigPic.ifEmpty { srcPic }.ifEmpty { originPic },
+    large = srcPic.ifEmpty { bigPic }.ifEmpty { originPic },
+    original = originPic.ifEmpty { srcPic }.ifEmpty { bigPic },
     animated = dynamicPic,
     width = width,
     height = height,
