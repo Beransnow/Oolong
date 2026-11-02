@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
@@ -488,7 +489,7 @@ private fun ThreadMedia(
                             )
                         },
                         text = {
-                            Text(text = stringResource(id = R.string.btn_open_photos, mediaCount))
+                            Text(text = pluralStringResource(id = R.plurals.btn_open_photos, count = mediaCount, mediaCount))
                         },
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { photoViewer?.open(photoViewData) }

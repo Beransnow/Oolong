@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.page.settings.block
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.model.BlockRule
@@ -46,7 +47,7 @@ fun ruleSentence(rule: BlockRule, now: Long, full: Boolean = false): List<Senten
         val text = when {
             expiresAt == null -> stringResource(R.string.rule_forever)
             expiresAt <= now -> stringResource(R.string.rule_expired)
-            else -> stringResource(R.string.rule_expires_in, ((expiresAt - now + DayMillis - 1) / DayMillis).toInt())
+            else -> ((expiresAt - now + DayMillis - 1) / DayMillis).toInt().let { pluralStringResource(R.plurals.rule_expires_in, it, it) }
         }
         add(SentenceRun(text, RulePart.Expiry, expiresAt == null))
     }
@@ -133,7 +134,7 @@ fun testSentence(test: Condition, negated: Boolean): List<SentenceRun> {
         is Condition.Only -> listOf(plain(stringResource(if (negated) R.string.rule_not_only else R.string.rule_only)), value(kindName(test.kind)))
         is Condition.ShorterThan -> listOf(
             plain(stringResource(if (negated) R.string.rule_length_not_below else R.string.rule_length_below)),
-            value(stringResource(R.string.rule_length, test.length)),
+            value(pluralStringResource(R.plurals.rule_length, test.length, test.length)),
         )
 
         is Condition.AllOf, is Condition.AnyOf, is Condition.Not -> conditionSentence(test, nested = true)

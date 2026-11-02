@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
@@ -60,7 +61,7 @@ fun PollCard(
         Text(
             text = listOfNotNull(
                 stringResource(if (poll.multiple) R.string.poll_multiple else R.string.poll_single),
-                stringResource(R.string.poll_voters, poll.voters),
+                pluralStringResource(R.plurals.poll_voters, poll.voters.toInt(), poll.voters),
                 stringResource(R.string.poll_closed).takeIf { poll.closed },
             ).joinToString(" · "),
             style = TextStyles.caption,

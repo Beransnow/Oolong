@@ -116,8 +116,9 @@ fun UserNameText(
 }
 
 /** How a moderator is labelled next to their name, or null for anyone else. */
+@Composable
 fun User.bawuName(): String? = when (bawuType) {
-    BawuType.Manager -> "吧主"
-    BawuType.Assist -> "小吧主"
+    BawuType.Manager -> stringResource(id = R.string.bawu_manager)
+    BawuType.Assist -> stringResource(id = R.string.bawu_assist)
     null -> null
 }

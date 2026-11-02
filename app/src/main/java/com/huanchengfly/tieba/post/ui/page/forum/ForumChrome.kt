@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -260,7 +261,7 @@ private fun ForumHeaderDetails(
                 Text(
                     text = when {
                         !forum.liked -> stringResource(id = R.string.button_follow)
-                        done -> stringResource(id = R.string.button_signed_in, forum.signedDays)
+                        done -> pluralStringResource(id = R.plurals.button_signed_in, count = forum.signedDays, forum.signedDays)
                         else -> stringResource(id = R.string.button_sign_in)
                     },
                     fontSize = 14.sp,

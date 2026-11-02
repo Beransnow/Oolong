@@ -112,7 +112,7 @@ object TiebaUtil {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "${if (title != null) "「$title」\n" else ""}$text\n（分享自贴吧 Lite）"
+                "${if (title != null) "「$title」\n" else ""}$text\n" + context.getString(R.string.share_suffix)
             )
         })
     }

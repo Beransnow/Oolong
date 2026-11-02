@@ -49,13 +49,13 @@ class NotifyJobService : JobService() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channelGroup = NotificationChannelGroup(CHANNEL_GROUP, CHANNEL_GROUP_NAME)
+                val channelGroup = NotificationChannelGroup(CHANNEL_GROUP, getString(R.string.channel_group_messages))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    channelGroup.description = "贴吧的各种消息通知"
+                    channelGroup.description = getString(R.string.channel_group_messages_description)
                 }
                 notificationManager!!.createNotificationChannelGroup(channelGroup)
-                createChannel(CHANNEL_REPLY, CHANNEL_REPLY_NAME)
-                createChannel(CHANNEL_AT, CHANNEL_AT_NAME)
+                createChannel(CHANNEL_REPLY, getString(R.string.title_reply_me))
+                createChannel(CHANNEL_AT, getString(R.string.title_at_me))
             }
         }
         scope.launch {
@@ -91,7 +91,7 @@ class NotifyJobService : JobService() {
                         ),
                         ID_REPLY,
                         CHANNEL_REPLY,
-                        CHANNEL_REPLY_NAME,
+                        getString(R.string.title_reply_me),
                         Intent(ACTION_VIEW, Uri.parse("tblite://notifications/0")).setPackage(packageName)
                     )
                 }
@@ -113,7 +113,7 @@ class NotifyJobService : JobService() {
                         ),
                         ID_AT,
                         CHANNEL_AT,
-                        CHANNEL_AT_NAME,
+                        getString(R.string.title_at_me),
                         Intent(ACTION_VIEW, Uri.parse("tblite://notifications/1")).setPackage(packageName)
                     )
                 }
@@ -171,12 +171,9 @@ class NotifyJobService : JobService() {
         const val ACTION_NEW_MESSAGE = "com.huanchengfly.tieba.post.action.NEW_MESSAGE"
         const val CHANNEL_GROUP = "20"
         const val CHANNEL_AT = "3"
-        const val CHANNEL_AT_NAME = "提到我的"
         const val CHANNEL_TOTAL = "total"
         const val ID_REPLY = 20
         const val ID_AT = 21
-        private const val CHANNEL_GROUP_NAME = "消息通知"
         private const val CHANNEL_REPLY = "2"
-        private const val CHANNEL_REPLY_NAME = "回复我的"
     }
 }

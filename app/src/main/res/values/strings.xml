@@ -93,7 +93,9 @@
     <string name="toast_vote_failed">无法投票 %1$s</string>
     <string name="poll_single">单选</string>
     <string name="poll_multiple">多选</string>
-    <string name="poll_voters">%1$d 人参与</string>
+    <plurals name="poll_voters">
+        <item quantity="other">%1$d 人参与</item>
+    </plurals>
     <string name="poll_closed">已结束</string>
     <string name="button_vote">投票</string>
     <string name="title_copy_forum_name">复制吧名</string>
@@ -147,7 +149,9 @@
     <string name="title_settings_read_habit">浏览</string>
     <string name="settings_collect_thread_see_lz">打开时只看楼主</string>
     <string name="settings_collect_thread_desc_sort">打开时倒序浏览</string>
-    <string name="toast_feed_refresh">更新了 %1$d 条动态</string>
+    <plurals name="toast_feed_refresh">
+        <item quantity="other">更新了 %1$d 条动态</item>
+    </plurals>
     <string name="tip_disliked">将减少此类推荐</string>
     <string name="tip_refresh">上次看到这里，点按刷新</string>
     <string name="button_finish">完成</string>
@@ -170,7 +174,9 @@
     <string name="title_settings_image_load_type">加载方式</string>
     <string name="tip_touch_to_view">点按查看</string>
     <string name="title_signing_progress">%1$s正在签到（%2$d/%3$d）</string>
-    <string name="text_oksign_done">共签到 %1$d 个吧</string>
+    <plurals name="text_oksign_done">
+        <item quantity="other">共签到 %1$d 个吧</item>
+    </plurals>
     <string name="summary_copy_bduss">他人得到后可以登录你的账号</string>
 
     <string name="title_share_pic">分享图片</string>
@@ -376,7 +382,9 @@
     <string name="settings_app_icon">应用图标</string>
     <string name="text_stat_threads">帖子</string>
     <string name="snackbar_agree_fail">无法点赞：%2$s（%1$d）</string>
-    <string name="button_signed_in">已签 %d 天</string>
+    <plurals name="button_signed_in">
+        <item quantity="other">已签 %d 天</item>
+    </plurals>
     <string name="btn_search_in_forum">吧内搜索</string>
     <string name="btn_more">更多选项</string>
     <string name="launcher_not_support_pin_shortcut">启动器不支持创建快捷方式</string>
@@ -424,7 +432,9 @@
     <string name="message_update_collect_mark_failed">无法更新收藏楼层 %s</string>
     <string name="message_update_collect_mark_success">已更新收藏楼层</string>
     <string name="single_chinese_char" translatable="false">国</string>
-    <string name="open_all_sub_posts">查看全部 %d 条回复</string>
+    <plurals name="open_all_sub_posts">
+        <item quantity="other">查看全部 %d 条回复</item>
+    </plurals>
     <string name="message_store_thread_update">帖子已更新到第 %d 楼</string>
     <string name="menu_block">屏蔽</string>
     <string name="menu_block_user_item">用户「%1$s」</string>
@@ -464,7 +474,9 @@
     <string name="rule_not_only">内容不只有</string>
     <string name="rule_length_below">"字数少于 "</string>
     <string name="rule_length_not_below">"字数不少于 "</string>
-    <string name="rule_length">%1$d 字</string>
+    <plurals name="rule_length">
+        <item quantity="other">%1$d 字</item>
+    </plurals>
     <string name="rule_kind_link">链接</string>
     <string name="rule_kind_image">图片</string>
     <string name="rule_kind_video">视频</string>
@@ -518,7 +530,9 @@
     <string name="rule_nested">条件有多层，只能查看</string>
     <string name="rule_forever">永久</string>
     <string name="rule_expired">已失效</string>
-    <string name="rule_expires_in">%1$d 天后失效</string>
+    <plurals name="rule_expires_in">
+        <item quantity="other">%1$d 天后失效</item>
+    </plurals>
     <string name="rule_scope_all">所有地方</string>
     <string name="rule_scope_feeds">推荐和热榜</string>
     <string name="rule_scope_forum">吧里</string>
@@ -528,7 +542,9 @@
     <string name="rule_action_hide">隐藏</string>
     <string name="rule_action_allow">始终显示</string>
     <string name="rule_exception">例外</string>
-    <string name="rule_hits">命中 %1$d 次 · 最近 %2$s</string>
+    <plurals name="rule_hits">
+        <item quantity="other">命中 %1$d 次 · 最近 %2$s</item>
+    </plurals>
     <string name="rule_no_hits">尚未命中</string>
     <string name="rule_disabled">已停用</string>
     <string name="rule_kind_all">全部</string>
@@ -536,7 +552,9 @@
     <string name="rule_kind_keyword">关键词</string>
     <string name="rule_kind_forum">吧</string>
     <string name="rule_kind_other">其他</string>
-    <string name="rules_stale">有 %1$d 条规则超过 90 天没有命中</string>
+    <plurals name="rules_stale">
+        <item quantity="other">有 %1$d 条规则超过 90 天没有命中</item>
+    </plurals>
     <string name="button_clean_up">清理</string>
     <string name="rules_search">搜索</string>
     <string name="rules_empty">没有屏蔽规则</string>
@@ -572,8 +590,12 @@
     <string name="settings_block_rules_group">规则</string>
     <string name="settings_blocked_fold">折叠为一行</string>
     <string name="settings_blocked_hide">完全隐藏</string>
-    <string name="rules_count">%1$d 条</string>
-    <string name="title_clean_up_rules">删除 %1$d 条长期未命中的规则？</string>
+    <plurals name="rules_count">
+        <item quantity="other">%1$d 条</item>
+    </plurals>
+    <plurals name="title_clean_up_rules">
+        <item quantity="other">删除 %1$d 条长期未命中的规则？</item>
+    </plurals>
     <string name="title_delete_rule">删除这条规则？</string>
     <string name="settings_block_export">导出规则</string>
     <string name="settings_block_import">导入规则</string>
@@ -597,7 +619,9 @@
     <string name="btn_play">播放</string>
     <string name="title_sub_posts">%d 楼的回复</string>
     <string name="title_sub_posts_default">回复</string>
-    <string name="title_sub_posts_header">%d 条回复</string>
+    <plurals name="title_sub_posts_header">
+        <item quantity="other">%d 条回复</item>
+    </plurals>
     <string name="pull_to_load">继续上拉加载</string>
     <string name="release_to_load">松开加载</string>
     <string name="title_block_list">屏蔽词管理</string>
@@ -660,7 +684,9 @@
     <string name="button_deselect_all">取消全选</string>
     <string name="title_copy">复制</string>
     <string name="desc_photo">图片</string>
-    <string name="btn_open_photos">查看图片（%d）</string>
+    <plurals name="btn_open_photos">
+        <item quantity="other">查看图片（%d）</item>
+    </plurals>
     <string name="title_hide_media">在列表中收起图片和视频</string>
     <string name="button_open">打开</string>
     <string name="btn_hide">隐藏</string>
@@ -754,4 +780,12 @@
     <string name="monet_monochrome_desc">只有灰阶</string>
     <string name="dark_background_default">默认</string>
     <string name="text_color_auto">自动</string>
+    <string name="app_icon_new">新图标</string>
+    <string name="app_icon_new_inverted">新图标（反色）</string>
+    <string name="app_icon_old">旧图标</string>
+    <string name="channel_group_messages">消息通知</string>
+    <string name="channel_group_messages_description">贴吧的各种消息通知</string>
+    <string name="bawu_manager">吧主</string>
+    <string name="bawu_assist">小吧主</string>
+    <string name="share_suffix">（分享自贴吧 Lite）</string>
 </resources>

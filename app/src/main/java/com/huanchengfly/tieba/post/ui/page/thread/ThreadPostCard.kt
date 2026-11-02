@@ -20,6 +20,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -231,7 +232,7 @@ private fun SubPosts(
 
         if (post.subPostCount > post.subPosts.size) {
             Text(
-                text = stringResource(id = R.string.open_all_sub_posts, post.subPostCount),
+                text = pluralStringResource(id = R.plurals.open_all_sub_posts, count = post.subPostCount, post.subPostCount),
                 style = MaterialTheme.typography.caption,
                 fontSize = 13.sp,
                 color = ExtendedTheme.colors.accent,

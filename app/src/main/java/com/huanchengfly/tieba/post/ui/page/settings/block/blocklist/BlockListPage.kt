@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -125,7 +126,7 @@ fun BlockListScreen(
         dialogState = cleanDialog,
         onConfirm = { delete(stale) },
         confirmText = stringResource(id = R.string.title_delete),
-        title = { Text(text = stringResource(id = R.string.title_clean_up_rules, stale.size)) },
+        title = { Text(text = pluralStringResource(id = R.plurals.title_clean_up_rules, count = stale.size, stale.size)) },
     )
 
     GlassScaffold(
@@ -267,7 +268,7 @@ private fun StaleBanner(count: Int, onClean: () -> Unit) {
             .padding(start = Spacing.md, end = Spacing.xs),
     ) {
         Text(
-            text = stringResource(id = R.string.rules_stale, count),
+            text = pluralStringResource(id = R.plurals.rules_stale, count = count, count),
             style = TextStyles.caption,
             color = colors.textSecondary,
             modifier = Modifier.weight(1f),
@@ -340,7 +341,7 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
                 text = when {
                     !rule.enabled -> stringResource(id = R.string.rule_disabled)
                     rule.hits > 0 && rule.lastHitAt != null ->
-                        stringResource(id = R.string.rule_hits, rule.hits, relativeTime(rule.lastHitAt))
+                        pluralStringResource(id = R.plurals.rule_hits, count = rule.hits.toInt(), rule.hits, relativeTime(rule.lastHitAt))
                     else -> stringResource(id = R.string.rule_no_hits)
                 },
                 style = TextStyles.footnote,

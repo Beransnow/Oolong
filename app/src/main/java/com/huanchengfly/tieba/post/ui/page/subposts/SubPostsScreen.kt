@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -271,7 +272,7 @@ private fun SubPostsContent(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = stringResource(id = R.string.title_sub_posts_header, state.totalCount),
+                        text = pluralStringResource(id = R.plurals.title_sub_posts_header, count = state.totalCount, state.totalCount),
                         style = MaterialTheme.typography.subtitle1
                     )
                 }

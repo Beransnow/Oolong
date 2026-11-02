@@ -226,8 +226,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     override fun onFinish(success: Boolean, signedCount: Int, total: Int) {
         updateNotification(
             getString(R.string.title_oksign_finish),
-            if (total > 0) getString(
-                R.string.text_oksign_done,
+            if (total > 0) resources.getQuantityString(
+                R.plurals.text_oksign_done,
+                signedCount,
                 signedCount
             ) else getString(R.string.text_oksign_no_signable),
             packageManager.getLaunchIntentForPackage(packageName)?.apply {

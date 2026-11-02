@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -198,7 +199,7 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
             .align(Alignment.TopCenter)
     ) {
         Text(
-            text = stringResource(id = R.string.toast_feed_refresh, refreshCount),
+            text = pluralStringResource(id = R.plurals.toast_feed_refresh, count = refreshCount, refreshCount),
             color = ExtendedTheme.colors.onAccent
         )
     }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -147,7 +148,7 @@ fun BlockSettingsPage(
                         title = stringResource(id = R.string.title_block_rules),
                         onClick = { navigator.navigate(BlockListKey) },
                         trailingContent = {
-                            PrefsLinkValue(text = activeRules?.let { stringResource(id = R.string.rules_count, it) }.orEmpty())
+                            PrefsLinkValue(text = activeRules?.let { pluralStringResource(id = R.plurals.rules_count, count = it, it) }.orEmpty())
                         },
                     )
                 }

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -305,7 +306,7 @@ private fun FloorSubPosts(
         }
         if (post.subPostCount > post.subPosts.size) {
             Text(
-                text = stringResource(id = R.string.open_all_sub_posts, post.subPostCount),
+                text = pluralStringResource(id = R.plurals.open_all_sub_posts, count = post.subPostCount, post.subPostCount),
                 style = MaterialTheme.typography.caption,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
