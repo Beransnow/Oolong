@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Process
 import android.webkit.WebSettings
@@ -207,9 +206,6 @@ class App : Application(), SingletonImageLoader.Factory {
 
     companion object {
         const val TAG = "App"
-
-        @JvmStatic
-        var translucentBackground: Drawable? = null
 
         private val packageName: String
             get() = INSTANCE.packageName

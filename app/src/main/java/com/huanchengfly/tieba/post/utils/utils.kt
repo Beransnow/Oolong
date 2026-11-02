@@ -12,16 +12,13 @@ import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import android.view.View
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.google.android.material.snackbar.Snackbar
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
-import com.huanchengfly.tieba.post.api.retrofit.exception.TiebaException
 import com.huanchengfly.tieba.post.components.images.loadBitmap
 import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.toastShort
@@ -30,7 +27,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.WebViewKey
-import com.huanchengfly.tieba.post.utils.Util.createSnackbar
 import org.json.JSONObject
 
 @JvmOverloads
@@ -232,27 +228,6 @@ fun launchUrl(
             }
         }
     }
-}
-
-fun showErrorSnackBar(view: View, throwable: Throwable) {
-    val code = if (throwable is TiebaException) throwable.code else -1
-    createSnackbar(
-        view,
-        view.context.getString(R.string.snackbar_error, code),
-        Snackbar.LENGTH_LONG
-    )
-        .setAction(R.string.button_detail) {
-            val stackTrace = throwable.stackTraceToString()
-            DialogUtil.build(view.context)
-                .setTitle(R.string.title_dialog_error_detail)
-                .setMessage(stackTrace)
-                .setPositiveButton(R.string.button_copy_detail) { _, _ ->
-                    TiebaUtil.copyText(view.context, stackTrace)
-                }
-                .setNegativeButton(R.string.btn_close, null)
-                .show()
-        }
-        .show()
 }
 
 val Context.powerManager: PowerManager

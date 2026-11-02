@@ -5,7 +5,6 @@ import static com.huanchengfly.tieba.post.utils.ColorUtils.greifyColor;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -16,22 +15,15 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 
 import androidx.annotation.AttrRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.ColorRes;
 import androidx.annotation.Dimension;
 import androidx.annotation.IntRange;
-import androidx.annotation.NonNull;
 import androidx.annotation.Px;
-import androidx.annotation.StringRes;
 import androidx.appcompat.widget.AppCompatDrawableManager;
 
-import com.google.android.material.snackbar.Snackbar;
-import com.huanchengfly.tieba.post.R;
-import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils;
 
 import java.lang.reflect.Field;
 import java.util.Calendar;
@@ -39,27 +31,7 @@ import java.util.Calendar;
 public class Util {
     public static final String TAG = "Util";
 
-    public static Snackbar createSnackbar(@NonNull View view, @NonNull CharSequence text, @Snackbar.Duration int duration) {
-        Snackbar snackbar = Snackbar.make(view, text, duration);
-        snackbar.setActionTextColor(ThemeUtils.getColorByAttr(view.getContext(), R.attr.colorAccent));
-        View mView = snackbar.getView();
-        Button mButton = mView.findViewById(R.id.snackbar_action);
-        TextView mTextView = mView.findViewById(R.id.snackbar_text);
-        mButton.setTextAppearance(view.getContext(), R.style.TextAppearance_Bold);
-        if (ThemeUtil.isTranslucentTheme(ThemeUtil.getRawTheme())) {
-            mView.setBackgroundTintList(ColorStateList.valueOf(view.getResources().getColor(R.color.white)));
-            mTextView.setTextColor(view.getResources().getColor(R.color.color_text));
-        } else {
-            mView.setBackgroundTintList(ColorStateList.valueOf(ThemeUtils.getColorByAttr(view.getContext(), R.attr.colorCard)));
-            mTextView.setTextColor(ThemeUtils.getColorByAttr(view.getContext(), R.attr.colorText));
-        }
-        mTextView.setTextAppearance(view.getContext(), R.style.TextAppearance_Bold);
-        return snackbar;
-    }
 
-    public static Snackbar createSnackbar(@NonNull View view, @StringRes int resId, @Snackbar.Duration int duration) {
-        return createSnackbar(view, view.getResources().getText(resId), duration);
-    }
 
     public static Bitmap tintBitmap(Bitmap inBitmap, int tintColor) {
         if (inBitmap == null) {
