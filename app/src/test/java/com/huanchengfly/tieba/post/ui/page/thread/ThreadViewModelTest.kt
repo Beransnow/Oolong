@@ -54,6 +54,8 @@ import kotlin.test.assertTrue
 import com.huanchengfly.tieba.post.api.models.protos.Agree as ProtoAgree
 import com.huanchengfly.tieba.post.api.models.protos.Page as ProtoPage
 import com.huanchengfly.tieba.post.api.models.protos.Post as ProtoPost
+import com.huanchengfly.tieba.post.api.models.protos.SubPost as ProtoSubPosts
+import com.huanchengfly.tieba.post.api.models.protos.SubPostList as ProtoSubPost
 import com.huanchengfly.tieba.post.api.models.protos.User as ProtoUser
 
 class ThreadViewModelTest {
@@ -165,7 +167,7 @@ class ThreadViewModelTest {
     }
 
     private fun threadRepository(client: QueryClient) =
-        ThreadRepository(remote, agreeRemote, postRemote, { _, _ -> }, mainDispatcherRule.dispatcher, client)
+        ThreadRepository(remote, postRemote, { _, _ -> }, mainDispatcherRule.dispatcher, client)
 
     @Test
     fun `a thread peeked at opens without loading it again, and refreshing loads it again`() = runTest {
@@ -200,6 +202,24 @@ class ThreadViewModelTest {
         assertEquals(listOf(2L, 3L), again.state.value.posts.items.map { it.post.id })
         assertEquals("标题", again.state.value.thread?.title)
         coVerify(exactly = 2) { remote.page(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `likes given to a post or a reply inside it on another page show here`() = runTest {
+        val reply = ProtoSubPost(id = 201, author_id = 20, content = listOf(PbContent(type = 0, text = "楼中楼")))
+        respond(data(listOf(post(2).copy(sub_post_list = ProtoSubPosts(sub_post_list = listOf(reply))))))
+        val client = queryClient()
+        val viewModel = createViewModel(client = client)
+        runCurrent()
+
+        // As the page of the replies inside post 2 would
+        threadActions(client).agreePost(9_000, 52, 2, true)
+        threadActions(client).agreeSubPost(9_000, 52, 201, true)
+        runCurrent()
+
+        val post = viewModel.state.value.posts.items.single().post
+        assertEquals(6L to true, post.agree.count to post.agree.agreed)
+        assertEquals(true, post.subPosts.single().agree.agreed)
     }
 
     /** A list showing [threads], as the one a thread is opened from. */

@@ -1,8 +1,6 @@
 package com.huanchengfly.tieba.post.repository
 
 import androidx.compose.runtime.Immutable
-import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
-import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.core.network.post.PostRemoteDataSource
 import com.huanchengfly.tieba.core.network.thread.ThreadRemoteDataSource
 import com.huanchengfly.tieba.post.api.models.protos.PbContent
@@ -127,7 +125,6 @@ data class FloorPage(
 @Singleton
 class ThreadRepository @Inject constructor(
     private val remote: ThreadRemoteDataSource,
-    private val agreeRemote: AgreeRemoteDataSource,
     private val postRemote: PostRemoteDataSource,
     private val emoticons: EmoticonRegistry,
     @IoDispatcher private val io: CoroutineDispatcher,
@@ -142,6 +139,7 @@ class ThreadRepository @Inject constructor(
         itemKey = Post::id,
         page = { it.posts },
         staleTime = 1.minutes,
+        normalize = { post(it) },
     ) { query, cursor -> page(query, cursor) }
 
     /** Starts loading the start of [query] ahead of opening it. */
@@ -181,11 +179,6 @@ class ThreadRepository @Inject constructor(
             remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId).toFloorPage(emoticons)
         }
 
-    suspend fun agreeSubPost(threadId: Long, forumId: Long, subPostId: Long, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.SubPost(threadId, subPostId), forumId, undo = !agree)
-        Unit
-    }
-
     /** Deletes a post, or with [isSubPost] a reply inside one, from the sub-post page. */
     suspend fun deletePost(
         forum: ForumSummary,
@@ -200,14 +193,6 @@ class ThreadRepository @Inject constructor(
 
     suspend fun vote(thread: ThreadDetail, optionIds: Collection<Int>) = withContext(io) {
         postRemote.addPollPost(thread.id, thread.forum.id, optionIds.toList())
-    }
-
-    suspend fun agreePost(thread: ThreadDetail, postId: Long, agree: Boolean) =
-        agreePost(thread.id, thread.forum.id, postId, agree)
-
-    suspend fun agreePost(threadId: Long, forumId: Long, postId: Long, agree: Boolean) = withContext(io) {
-        agreeRemote.opAgree(AgreeTarget.Post(threadId, postId), forumId, undo = !agree)
-        Unit
     }
 
     suspend fun addStore(threadId: Long, markPostId: Long) = withContext(io) {

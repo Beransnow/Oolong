@@ -8,7 +8,9 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.Actions
 import com.huanchengfly.tieba.post.arch.MessageController
 import com.huanchengfly.tieba.post.arch.PagerState
-import com.huanchengfly.tieba.post.arch.pager
+import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.arch.query.pager
+import com.huanchengfly.tieba.post.arch.query.withLatestEntities
 import com.huanchengfly.tieba.post.model.ForumSummary
 import com.huanchengfly.tieba.post.model.Post
 import com.huanchengfly.tieba.post.model.SubPost
@@ -21,7 +23,10 @@ import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.repository.Blockable
 import com.huanchengfly.tieba.post.repository.FloorCursor
 import com.huanchengfly.tieba.post.repository.FloorPage
+import com.huanchengfly.tieba.post.repository.SubPosts
+import com.huanchengfly.tieba.post.repository.ThreadActions
 import com.huanchengfly.tieba.post.repository.ThreadRepository
+import com.huanchengfly.tieba.post.repository.post
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -74,6 +79,8 @@ sealed interface SubPostsEffect {
 class SubPostsViewModel @AssistedInject constructor(
     @Assisted key: SubPostsKey,
     private val repository: ThreadRepository,
+    private val client: QueryClient,
+    private val threads: ThreadActions,
     blockRuleSource: BlockRuleSource,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
@@ -95,7 +102,12 @@ class SubPostsViewModel @AssistedInject constructor(
     /** A reply to scroll to as soon as a page containing it loads. */
     private var scrollToSubPost: Long? = firstKey.subPostId.takeIf { it != 0L }
 
-    private val subPosts = pager(initialKey = firstKey, itemKey = { subPost: SubPost -> subPost.id }) { key ->
+    private val subPosts = client.pager(
+        scope = viewModelScope,
+        initialKey = firstKey,
+        itemKey = { subPost: SubPost -> subPost.id },
+        normalize = { SubPosts(it) },
+    ) { key ->
         val page = repository.floor(threadId, postId, forumId, key)
         postId = page.post.id
         forumId = page.forum.id
@@ -112,7 +124,10 @@ class SubPostsViewModel @AssistedInject constructor(
     /** Block flags for the last list and rules seen, which most state changes leave as they are. */
     private var blocked: Triple<List<SubPost>, BlockRules, ImmutableList<SubPostItem>>? = null
 
-    val state: StateFlow<SubPostsState> = combine(floor, subPosts.state, blockRuleSource.rules) { floor, pager, rules ->
+    /** The post as liked here or anywhere else it shows. */
+    private val latestFloor = floor.withLatestEntities(client) { it?.copy(post = post(it.post)) }
+
+    val state: StateFlow<SubPostsState> = combine(latestFloor, subPosts.state, blockRuleSource.rules) { floor, pager, rules ->
         val forumName = floor?.forum?.name
         fun check(author: User, content: String) = rules.check(Blockable(author, content, BlockPlace.Thread, forum = forumName))
         val cached = blocked?.takeIf { it.first === pager.items && it.second === rules }
@@ -147,23 +162,15 @@ class SubPostsViewModel @AssistedInject constructor(
     fun loadPrevious() = subPosts.loadPrevious()
 
     fun agreePost() = actions.launch("agree-post") {
-        val post = floor.value?.post ?: return@launch
-        val agree = !post.agree.agreed
-        updatePost { it.copy(agree = it.agree.toggled()) }
-        runCatching { repository.agreePost(threadId, forumId, post.id, agree) }.onFailure { e ->
-            updatePost { it.copy(agree = it.agree.toggled()) }
-            messages.showError(R.string.toast_agree_failed, e)
-        }
+        val post = state.value.post ?: return@launch
+        runCatching { threads.agreePost(threadId, forumId, post.id, !post.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     fun agreeSubPost(subPostId: Long) = actions.launch("agree-$subPostId") {
         val subPost = subPosts.state.value.items.firstOrNull { it.id == subPostId } ?: return@launch
-        val agree = !subPost.agree.agreed
-        updateSubPost(subPostId) { it.copy(agree = it.agree.toggled()) }
-        runCatching { repository.agreeSubPost(threadId, forumId, subPostId, agree) }.onFailure { e ->
-            updateSubPost(subPostId) { it.copy(agree = it.agree.toggled()) }
-            messages.showError(R.string.toast_agree_failed, e)
-        }
+        runCatching { threads.agreeSubPost(threadId, forumId, subPostId, !subPost.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     /** Deletes a reply inside the post, or with null the post itself, which closes the page. */
@@ -196,14 +203,6 @@ class SubPostsViewModel @AssistedInject constructor(
     fun onReplySent(newSubPostId: Long) {
         scrollToSubPost = newSubPostId
         subPosts.refresh(FloorCursor(page = 1, subPostId = newSubPostId))
-    }
-
-    private fun updatePost(transform: (Post) -> Post) {
-        floor.update { it?.copy(post = transform(it.post)) }
-    }
-
-    private fun updateSubPost(subPostId: Long, transform: (SubPost) -> SubPost) {
-        subPosts.update { items -> items.map { if (it.id == subPostId) transform(it) else it } }
     }
 
     @AssistedFactory

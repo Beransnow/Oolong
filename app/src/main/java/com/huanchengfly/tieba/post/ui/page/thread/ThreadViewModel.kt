@@ -23,6 +23,7 @@ import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.BlockVerdict
 import com.huanchengfly.tieba.post.repository.Blockable
+import com.huanchengfly.tieba.post.repository.Posts
 import com.huanchengfly.tieba.post.repository.ThreadActions
 import com.huanchengfly.tieba.post.repository.ThreadCursor
 import com.huanchengfly.tieba.post.repository.ThreadHistory
@@ -328,12 +329,8 @@ class ThreadViewModel @AssistedInject constructor(
     fun agreePost(postId: Long) = actions.launch("agree-$postId") {
         val thread = meta.value.page?.thread ?: return@launch
         val post = posts.state.value.items.firstOrNull { it.id == postId } ?: return@launch
-        val agree = !post.agree.agreed
-        updatePost(postId) { it.copy(agree = it.agree.toggled()) }
-        runCatching { repository.agreePost(thread, postId, agree) }.onFailure { e ->
-            updatePost(postId) { it.copy(agree = it.agree.toggled()) }
-            messages.showError(R.string.toast_agree_failed, e)
-        }
+        runCatching { threads.agreePost(thread.id, thread.forum.id, postId, !post.agree.agreed) }
+            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
     }
 
     /** Stores the thread marked as read up to [post], by default the last one the user saw. */
@@ -415,7 +412,7 @@ class ThreadViewModel @AssistedInject constructor(
         runCatching { repository.page(query.value, ThreadCursor.Anchor(postId)) }
             .onSuccess { page ->
                 val reloaded = page.posts.items.firstOrNull { it.id == postId } ?: return@onSuccess
-                updatePost(postId) { reloaded }
+                client.update(Posts, postId) { reloaded }
             }
     }
 
@@ -447,10 +444,6 @@ class ThreadViewModel @AssistedInject constructor(
         meta.update { meta ->
             meta.copy(page = meta.page?.let { it.copy(thread = transform(it.thread)) })
         }
-    }
-
-    private fun updatePost(postId: Long, transform: (Post) -> Post) {
-        posts.update { items -> items.map { if (it.id == postId) transform(it) else it } }
     }
 
     @AssistedFactory

@@ -36,7 +36,7 @@ import com.huanchengfly.tieba.post.api.models.protos.User as ProtoUser
 class ThreadRepositoryTest {
     private val remote = mockk<ThreadRemoteDataSource>()
     private val postRemote = mockk<PostRemoteDataSource>(relaxed = true)
-    private val repository = ThreadRepository(remote, mockk(), postRemote, { _, _ -> }, Dispatchers.Unconfined, QueryClient(CoroutineScope(Dispatchers.Unconfined)))
+    private val repository = ThreadRepository(remote, postRemote, { _, _ -> }, Dispatchers.Unconfined, QueryClient(CoroutineScope(Dispatchers.Unconfined)))
 
     private val lz = ProtoUser(id = 10, name = "lz", nameShow = "楼主", portrait = "p10", level_id = 12)
     private val replier = ProtoUser(id = 20, name = "replier", nameShow = "", portrait = "p20", level_id = 3)

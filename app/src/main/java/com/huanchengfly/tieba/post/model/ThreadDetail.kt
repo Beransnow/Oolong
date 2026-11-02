@@ -24,6 +24,9 @@ enum class BawuType { Manager, Assist }
 @Immutable
 data class Agree(val count: Long, val agreed: Boolean) {
     fun toggled(): Agree = if (agreed) Agree(count - 1, false) else Agree(count + 1, true)
+
+    /** Liked or not, the count following. */
+    fun withAgreed(agreed: Boolean): Agree = if (this.agreed == agreed) this else toggled()
 }
 
 @Immutable

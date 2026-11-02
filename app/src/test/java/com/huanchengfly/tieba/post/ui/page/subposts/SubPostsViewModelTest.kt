@@ -10,12 +10,14 @@ import com.huanchengfly.tieba.post.api.models.protos.SubPostList
 import com.huanchengfly.tieba.post.api.models.protos.ThreadInfo
 import com.huanchengfly.tieba.post.api.models.protos.pbFloor.PbFloorResponseData
 import com.huanchengfly.tieba.post.arch.MessageController
+import com.huanchengfly.tieba.post.arch.query.QueryClient
 import com.huanchengfly.tieba.post.repository.BlockRuleSource
 import com.huanchengfly.tieba.post.repository.BlockRules
 import com.huanchengfly.tieba.post.repository.ThreadRepository
 import com.huanchengfly.tieba.post.repository.blockRulesMatching
 import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.testing.queryClient
+import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsKey
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -70,10 +72,17 @@ class SubPostsViewModelTest {
         coEvery { remote.floor(any(), any(), any(), any(), any()) } returnsMany pages.toList()
     }
 
-    private fun TestScope.createViewModel(postId: Long = 77, subPostId: Long = 0, loadFromSubPost: Boolean = false) =
+    private fun TestScope.createViewModel(
+        postId: Long = 77,
+        subPostId: Long = 0,
+        loadFromSubPost: Boolean = false,
+        client: QueryClient = queryClient(),
+    ) =
         SubPostsViewModel(
             key = SubPostsKey(threadId = 9_000L, postId = postId, subPostId = subPostId, loadFromSubPost = loadFromSubPost),
-            repository = ThreadRepository(remote, agreeRemote, mockk(), { _, _ -> }, mainDispatcherRule.dispatcher, queryClient()),
+            repository = ThreadRepository(remote, mockk(), { _, _ -> }, mainDispatcherRule.dispatcher, client),
+            client = client,
+            threads = threadActions(client, agreeRemote),
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
             },

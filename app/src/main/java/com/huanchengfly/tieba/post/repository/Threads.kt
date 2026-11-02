@@ -4,9 +4,13 @@ import com.huanchengfly.tieba.core.network.agree.AgreeRemoteDataSource
 import com.huanchengfly.tieba.core.network.agree.AgreeTarget
 import com.huanchengfly.tieba.post.arch.IoDispatcher
 import com.huanchengfly.tieba.post.arch.query.EntityType
+import com.huanchengfly.tieba.post.arch.query.Normalizer
 import com.huanchengfly.tieba.post.arch.query.QueryClient
+import com.huanchengfly.tieba.post.model.Post
+import com.huanchengfly.tieba.post.model.SubPost
 import com.huanchengfly.tieba.post.model.ThreadSummary
 import com.huanchengfly.tieba.post.model.withAgreed
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -40,7 +44,23 @@ private fun ThreadSummary.filledFrom(older: ThreadSummary) = copy(
     hotNum = hotNum.takeIf { it != 0L } ?: older.hotNum,
 )
 
-/** What the user does to a thread from wherever it shows, seen at once everywhere it does. */
+/** Posts, one copy each in the [QueryClient] wherever they were loaded. */
+val Posts = EntityType<Long, Post>("post", id = { it.id }, merge = { older, newer -> newer.filledFrom(older) })
+
+/** Replies inside posts, one copy each in the [QueryClient] wherever they were loaded. */
+val SubPosts = EntityType<Long, SubPost>("sub post", id = { it.id })
+
+/** The page of the replies inside a post leaves out the few the thread page shows in it. */
+private fun Post.filledFrom(older: Post) = copy(
+    subPosts = subPosts.ifEmpty { older.subPosts },
+    subPostCount = subPostCount.takeIf { it != 0 } ?: older.subPostCount,
+)
+
+/** Marks [post] and the replies shown inside it as entities: the post first, then its replies as it has them. */
+fun Normalizer.post(post: Post): Post =
+    Posts(post).let { latest -> latest.copy(subPosts = latest.subPosts.map { SubPosts(it) }.toImmutableList()) }
+
+/** What the user does to a thread or its posts from wherever they show, seen at once everywhere they do. */
 @Singleton
 class ThreadActions @Inject constructor(
     private val client: QueryClient,
@@ -53,6 +73,20 @@ class ThreadActions @Inject constructor(
             withContext(io) {
                 agreeRemote.opAgree(AgreeTarget.Thread(thread.id, thread.firstPostId), thread.forum.id, undo = !agree)
             }
+        }
+    }
+
+    /** Agrees with post [postId] of a thread, or takes it back; rolled back if it fails. */
+    suspend fun agreePost(threadId: Long, forumId: Long, postId: Long, agree: Boolean) {
+        client.mutate({ update(Posts, postId) { it.copy(agree = it.agree.withAgreed(agree)) } }) {
+            withContext(io) { agreeRemote.opAgree(AgreeTarget.Post(threadId, postId), forumId, undo = !agree) }
+        }
+    }
+
+    /** Agrees with reply [subPostId] inside a post, or takes it back; rolled back if it fails. */
+    suspend fun agreeSubPost(threadId: Long, forumId: Long, subPostId: Long, agree: Boolean) {
+        client.mutate({ update(SubPosts, subPostId) { it.copy(agree = it.agree.withAgreed(agree)) } }) {
+            withContext(io) { agreeRemote.opAgree(AgreeTarget.SubPost(threadId, subPostId), forumId, undo = !agree) }
         }
     }
 }

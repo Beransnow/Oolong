@@ -44,7 +44,7 @@ data class ThreadSummary(
 )
 
 /** The thread liked or not, its like count following. */
-fun ThreadSummary.withAgreed(agreed: Boolean) = if (agree.agreed == agreed) this else copy(agree = agree.toggled())
+fun ThreadSummary.withAgreed(agreed: Boolean) = copy(agree = agree.withAgreed(agreed))
 
 /**
  * The first floor as a list knows it, to show until the thread page loads it: all of its content,
