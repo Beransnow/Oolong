@@ -197,9 +197,6 @@ dependencies {
     implementation(libs.compose.animation)
     implementation(libs.compose.animation.graphics)
     implementation(libs.compose.material)
-    implementation(libs.compose.material.icons.core)
-    // Optional - Add full set of material icons
-    implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.ui.util)
 //    implementation "androidx.compose.material3:material3"
 

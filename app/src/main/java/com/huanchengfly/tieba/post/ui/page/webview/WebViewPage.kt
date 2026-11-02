@@ -27,11 +27,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.OpenInBrowser
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -62,6 +57,7 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.currentColors
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -200,16 +196,16 @@ fun WebViewPage(
                     val openInBrowser = stringResource(id = R.string.title_open_in_browser)
                     val refresh = stringResource(id = R.string.title_refresh)
                     MenuIconButton(
-                        icon = Icons.Rounded.MoreVert,
+                        icon = Symbols.MoreVert,
                         contentDescription = stringResource(id = R.string.btn_more),
                         items = {
                             val url = webViewState.webView?.url ?: initialUrl
                             listOf(
-                                ContextMenuItem(Icons.Rounded.Link, copyLink) { TiebaUtil.copyText(context, url) },
-                                ContextMenuItem(Icons.Rounded.OpenInBrowser, openInBrowser) {
+                                ContextMenuItem(Symbols.Link, copyLink) { TiebaUtil.copyText(context, url) },
+                                ContextMenuItem(Symbols.OpenInBrowser, openInBrowser) {
                                     context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
                                 },
-                                ContextMenuItem(Icons.Rounded.Refresh, refresh) { webViewNavigator.reload() },
+                                ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() },
                             )
                         },
                     )
