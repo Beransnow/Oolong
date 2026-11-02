@@ -282,8 +282,7 @@ private fun SamplePost() {
                 id = 2,
                 floor = 2,
                 title = "",
-                // A minute ahead, so it reads 刚刚 however long the page takes to show
-                time = System.currentTimeMillis() / 1000 + 60,
+                time = System.currentTimeMillis() / 1000,
                 author = author,
                 content = text(question),
                 agree = Agree(count = 0, agreed = false),
