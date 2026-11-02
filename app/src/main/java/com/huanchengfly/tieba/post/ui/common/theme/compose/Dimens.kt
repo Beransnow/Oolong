@@ -18,8 +18,8 @@ object Radius {
     /** Menus, popovers. */
     val lg = 18.dp
 
-    /** Dialogs, bottom sheets, input panels. */
-    val xl = 26.dp
+    /** Dialogs, bottom sheets, input panels; a 44dp capsule 14dp in from it sits concentric. */
+    val xl = 36.dp
 }
 
 /** The corner shapes for [Radius], all smooth. */
