@@ -63,7 +63,7 @@ object PageTransitions {
     private const val ShadowAlpha = 0.12f
 
     /** A spring, so a transition interrupted halfway carries on from where it is. */
-    private fun <T> spec(): FiniteAnimationSpec<T> = Motion.settle()
+    private fun <T> spec(): FiniteAnimationSpec<T> = Motion.page()
 
     /** Whether pages overlap as they slide, which follows the theme. */
     @Composable
@@ -146,7 +146,15 @@ object PageTransitions {
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithContent {
-                    if (transition.currentState != transition.targetState) {
+                    // Whether pages are moving, by the scene transition: a page's own transition
+                    // can be left mid-way, still running, when a push is interrupted by back
+                    val scenes = transition.parentTransition
+                    val moving = if (scenes != null) {
+                        scenes.currentState != scenes.targetState
+                    } else {
+                        transition.currentState != transition.targetState
+                    }
+                    if (moving) {
                         val shadowWidth = ShadowWidth.toPx()
                         val ltr = layoutDirection == LayoutDirection.Ltr
                         val left = if (ltr) -shadowWidth else size.width
@@ -165,8 +173,10 @@ object PageTransitions {
                         )
                     }
                     drawContent()
+                    // Only while pages move: a page at rest is never dimmed, wherever its own
+                    // transition was left
                     val alpha = dim.value
-                    if (alpha > 0f) {
+                    if (alpha > 0f && moving) {
                         drawRect(Color.Black.copy(alpha = alpha))
                     }
                 }
