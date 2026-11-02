@@ -94,7 +94,10 @@ class AccountRepository @Inject constructor(
         return true
     }
 
-    override suspend fun logIn(bduss: String, sToken: String, cookie: String?): Account = withContext(Dispatchers.IO) {
+    override suspend fun logIn(bduss: String, sToken: String, cookie: String?): Account = logIn(bduss, sToken, cookie, zid = null)
+
+    /** Logs in, keeping [zid] if given rather than fetching a new one. */
+    private suspend fun logIn(bduss: String, sToken: String, cookie: String?, zid: String?): Account = withContext(Dispatchers.IO) {
         val login = coroutineScope {
             val nickname = async { remote.initNickname(bduss, sToken) }
             val firstLogin = InstallState.firstLogin(hasAccounts = accounts.value.isNotEmpty()) == "1"
@@ -111,7 +114,7 @@ class AccountRepository @Inject constructor(
             portrait = login.user.portrait
             tbs = login.anti.tbs
             if (uuid.isNullOrBlank()) uuid = UUID.randomUUID().toString()
-            zid = SofireUtils.fetchZid().first()
+            this.zid = zid ?: SofireUtils.fetchZid().first()
         }
         runCatching { remote.userInfo(account.uid.toLong(), bduss, sToken) }.onSuccess { user ->
             account.nameShow = user.nameShow
@@ -121,8 +124,12 @@ class AccountRepository @Inject constructor(
         account
     }
 
-    /** Logs [account] in again, refreshing what is saved about it. */
-    suspend fun refresh(account: Account): Account = logIn(account.bduss, account.sToken, account.cookie)
+    /**
+     * Logs [account] in again, refreshing what is saved about it. Its z_id is kept: fetching one
+     * fails where ad blockers stop the request, which would stop sign-in with it.
+     */
+    suspend fun refresh(account: Account): Account =
+        logIn(account.bduss, account.sToken, account.cookie, zid = account.zid?.takeIf { it.isNotBlank() })
 
     override fun logOut(): Account? {
         val account = current.value ?: return null
