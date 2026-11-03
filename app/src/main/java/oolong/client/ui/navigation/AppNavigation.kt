@@ -89,7 +89,6 @@ import oolong.client.ui.page.settings.oksign.OKSignSettingsPage
 import oolong.client.ui.page.settings.post.PostSettingsPage
 import oolong.client.ui.page.settings.theme.AppThemePage
 import oolong.client.ui.page.settings.theme.TranslucentThemePage
-import oolong.client.ui.page.settings.tuning.TopBarTuningPage
 import oolong.client.ui.page.subposts.SubPostsPage
 import oolong.client.ui.page.subposts.SubPostsSheetPage
 import oolong.client.ui.page.thread.ThreadPage
@@ -132,7 +131,6 @@ private fun KeyContent(key: Key) {
         CustomSettingsKey -> CustomSettingsPage()
         FontSizeKey -> FontSizePage()
         SearchPlacementKey -> SearchPlacementPage()
-        TopBarTuningKey -> TopBarTuningPage()
         HabitSettingsKey -> HabitSettingsPage()
         PostSettingsKey -> PostSettingsPage()
         BlockSettingsKey -> BlockSettingsPage()

@@ -242,7 +242,7 @@ fun GlassTopBar(
         val hidden = ((foreground.height - statusBar.getTop(this)) * hiddenFraction()).roundToInt()
         // The edge reaches a little past the bar, over the content, so the blur comes in before
         // the bar's edge instead of ending in a line there. It shows only once content is under it.
-        val extend = TopBarEdgeTuning.extend.dp.roundToPx()
+        val extend = TopBarEdgeExtend.roundToPx()
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
             .measure(Constraints.fixed(foreground.width, height - hidden + extend))
         layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
