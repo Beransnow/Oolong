@@ -130,8 +130,10 @@ private fun RowScope.MenuTile(
     onClick: () -> Unit,
 ) {
     val colors = ExtendedTheme.colors
-    val background by animateColorAsState(if (checked) colors.text else colors.chip, Motion.snap(), label = "tileBackground")
-    val content by animateColorAsState(if (checked) colors.sheet else colors.text, Motion.snap(), label = "tileContent")
+    // Tinted, not filled, so the menu's glass shows through the tiles
+    val rest = colors.text.copy(alpha = if (colors.isNightMode) TileTintNight else TileTint)
+    val background by animateColorAsState(if (checked) colors.emphasis.copy(alpha = TileCheckedTint) else rest, Motion.snap(), label = "tileBackground")
+    val content by animateColorAsState(if (checked) colors.emphasis else colors.text, Motion.snap(), label = "tileContent")
     val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
@@ -202,5 +204,10 @@ private val TileHeight = 72.dp
 private val TileShape = SmoothCornerShape(14.dp)
 
 private const val DisabledAlpha = 0.38f
+
+/** How strongly the tiles tint the menu glass: by the text colour at rest, by the emphasis colour when on. */
+private const val TileTint = 0.05f
+private const val TileTintNight = 0.08f
+private const val TileCheckedTint = 0.16f
 
 private val DangerColor = Color(0xFFD23B3B)
