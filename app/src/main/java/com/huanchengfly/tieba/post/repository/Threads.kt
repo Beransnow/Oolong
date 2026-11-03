@@ -42,6 +42,7 @@ private fun ThreadSummary.filledFrom(older: ThreadSummary) = copy(
     shared = shared ?: older.shared,
     tabName = tabName.ifEmpty { older.tabName },
     hotNum = hotNum.takeIf { it != 0L } ?: older.hotNum,
+    isTop = isTop ?: older.isTop,
 )
 
 /** Posts, one copy each in the [QueryClient] wherever they were loaded. */

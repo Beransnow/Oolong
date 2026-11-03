@@ -251,6 +251,8 @@ internal fun PbPageResponseData.toThreadPage(sort: ThreadSort, emoticons: Emotic
                     agree = thread.agree.toAgree(),
                     firstPostId = thread.firstPostId.takeIf { it != 0L } ?: firstPost?.id ?: 0L,
                     firstPost = firstPost?.content ?: summary.firstPost,
+                    // The page doesn't say whether the thread is pinned, only its forum's list does
+                    isTop = null,
                 )
             },
             storeMarkPostId = if (thread.collectStatus != 0) thread.collectMarkPid.toLongOrNull() ?: 0L else null,

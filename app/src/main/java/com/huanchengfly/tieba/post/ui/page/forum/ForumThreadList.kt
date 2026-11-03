@@ -106,7 +106,7 @@ internal fun ForumThreadList(
                     contentType = { _, item ->
                         val thread = item.thread
                         when {
-                            thread.isTop -> ItemType.Top
+                            thread.isTop == true -> ItemType.Top
                             thread.images.size == 1 -> ItemType.SingleMedia
                             thread.images.isNotEmpty() -> ItemType.MultiMedia
                             thread.video != null -> ItemType.Video
@@ -122,7 +122,7 @@ internal fun ForumThreadList(
                     ) {
                         val thread = item.thread
                         Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
-                            if (thread.isTop) {
+                            if (thread.isTop == true) {
                                 TopThreadItem(
                                     title = thread.title.takeUnless { it.isBlank() } ?: thread.abstract,
                                     onClick = { onEvent(ForumEvent.OpenThread(thread)) },
@@ -130,7 +130,7 @@ internal fun ForumThreadList(
                                 )
                             } else {
                                 if (index > 0) {
-                                    if (items[index - 1].thread.isTop) {
+                                    if (items[index - 1].thread.isTop == true) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                     }
                                     VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))

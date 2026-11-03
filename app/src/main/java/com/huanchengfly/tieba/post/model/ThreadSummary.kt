@@ -35,8 +35,8 @@ data class ThreadSummary(
     val agree: Agree = Agree(0, agreed = false),
     /** Marked good by the forum's moderators. */
     val isGood: Boolean = false,
-    /** Pinned to the top of its forum. */
-    val isTop: Boolean = false,
+    /** Pinned to the top of its forum; null where that isn't told, as on the thread page. */
+    val isTop: Boolean? = null,
     /** The forum's section the thread is filed under, shown before the title; empty for none. */
     val tabName: String = "",
     /** How hot the thread is on the hot threads ranking; 0 elsewhere. */

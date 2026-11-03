@@ -250,6 +250,17 @@ class ThreadViewModelTest {
     }
 
     @Test
+    fun `a pinned thread stays pinned in its forum's list once its page has loaded`() = runTest {
+        respond(data(listOf(post(2))))
+        val client = queryClient()
+        val list = listing(client, ThreadInfo(threadId = 9_000, title = "标题", isTop = 1).toThreadSummary { _, _ -> })
+        createViewModel(client = client)
+        runCurrent()
+
+        assertEquals(true, list.state.value.items.single().isTop)
+    }
+
+    @Test
     fun `agreeing shows at once and is rolled back when it fails`() = runTest {
         respond(data(listOf(post(2))))
         val response = CompletableDeferred<Unit>()
