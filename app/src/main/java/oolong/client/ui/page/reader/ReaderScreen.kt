@@ -74,6 +74,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -124,7 +125,6 @@ import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.utils.ThemeUtil
 import java.util.Calendar
-import java.util.Locale
 
 /** How the reader sets its text, chosen by the reader. */
 data class ReaderStyle(
@@ -955,7 +955,7 @@ private fun RowScope.Option(selected: Boolean, onClick: () -> Unit, content: @Co
 /** [seconds] as a date: month and day, with the year when it isn't this year. */
 @Composable
 private fun formatDate(seconds: Long): String {
-    val locale = Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     return remember(seconds, locale) {
         val time = Calendar.getInstance().apply { timeInMillis = seconds * 1000 }
         val thisYear = time.get(Calendar.YEAR) == Calendar.getInstance().get(Calendar.YEAR)
