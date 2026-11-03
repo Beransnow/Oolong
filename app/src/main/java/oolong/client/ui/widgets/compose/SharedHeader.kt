@@ -55,9 +55,12 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
     internal var headerHeight by mutableIntStateOf(0)
     internal var pinnedHeight by mutableIntStateOf(0)
 
+    /** The room above the content, under the bar, which the header goes on through as it leaves. */
+    internal var clearance by mutableIntStateOf(0)
+
     /**
-     * How far the header was gone when the list in view last stopped, which every list is kept in
-     * line with, and what holds the header while no list tells where it is, as while one loads.
+     * How far the header had moved up when the list in view last stopped, which every list is kept
+     * in line with, and what holds the header while no list tells where it is, as while one loads.
      */
     internal var held by mutableIntStateOf(0)
 
@@ -67,8 +70,14 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
     /** Each page's list, by page, to keep in line with the header. */
     internal val lists = mutableStateMapOf<Int, LazyListState>()
 
+    /**
+     * How far the header has moved up: past the content's top and on under the bar until it has
+     * left the screen, so none of it stays behind the bar's glass.
+     */
+    internal val moved: Int get() = (page.scrolled ?: held).coerceIn(0, headerHeight + clearance)
+
     /** How much of the header has gone under the bar, in pixels. */
-    val collapsed: Int get() = (page.scrolled ?: held).coerceIn(0, headerHeight)
+    val collapsed: Int get() = moved.coerceAtMost(headerHeight)
 
     /** Whether the header has all gone under the bar, as of when the list in view last moved it. */
     val gone: Boolean get() = headerHeight > 0 && held >= headerHeight
@@ -115,6 +124,7 @@ fun SharedHeaderPager(
     pageContent: @Composable (page: Int) -> Unit,
 ) {
     val density = LocalDensity.current
+    SideEffect { state.clearance = with(density) { contentPadding.calculateTopPadding().roundToPx() } }
     val listPadding = remember(contentPadding, density) {
         PaddingAbove(contentPadding) { with(density) { (state.headerHeight + state.pinnedHeight).toDp() } }
     }
@@ -124,16 +134,16 @@ fun SharedHeaderPager(
         var wasScrolling = false
         snapshotFlow {
             val scrolling = state.lists[pagerState.currentPage]?.isScrollInProgress == true
-            scrolling to state.collapsed
-        }.collect { (scrolling, collapsed) ->
+            scrolling to state.moved
+        }.collect { (scrolling, moved) ->
             // While scrolling, and once more as it stops, for where it stopped; not when a list
             // that has just loaded reports its top
             val follow = scrolling || wasScrolling
             wasScrolling = scrolling
             if (!follow || pagerState.isScrollInProgress) return@collect
-            state.held = collapsed
+            state.held = moved
             state.lists.forEach { (index, list) ->
-                if (index != pagerState.currentPage) list.alignWithHeader(collapsed, state.headerHeight)
+                if (index != pagerState.currentPage) list.alignWithHeader(moved, state.headerHeight + state.clearance)
             }
         }
     }
@@ -145,7 +155,7 @@ fun SharedHeaderPager(
                     .layout { measurable, constraints ->
                         val height = contentPadding.calculateTopPadding().roundToPx() + state.headerHeight
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
-                        layout(placeable.width, placeable.height) { placeable.place(0, -state.collapsed) }
+                        layout(placeable.width, placeable.height) { placeable.place(0, -state.moved) }
                     }
                     .background(Brush.verticalGradient(listOf(wash, Color.Transparent)))
             )
@@ -172,7 +182,7 @@ fun SharedHeaderPager(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - state.collapsed) }
+                        .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - state.moved) }
                         .onSizeChanged { state.headerHeight = it.height }
                         .scrollsPageContent(),
                 ) {
@@ -213,22 +223,22 @@ internal fun RegisterWithSharedHeader(list: LazyListState) {
     }
     LaunchedEffect(page.state, list) {
         snapshotFlow { list.layoutInfo.totalItemsCount > 0 }.first { it }
-        list.alignWithHeader(page.state.held, page.state.headerHeight)
+        list.alignWithHeader(page.state.held, page.state.headerHeight + page.state.clearance)
     }
 }
 
 /**
- * Puts this list where it belongs under a header that is [collapsed] of [headerHeight] gone: just
- * as far down while the header still shows, since a header in view means the top of every page;
- * once it has gone, anywhere below it, so a list further down keeps its place.
+ * Puts this list where it belongs under a header that has [moved] up of the [away] it takes to
+ * leave the screen: just as far down while any of it shows, since a header in view means the top
+ * of every page; once it has left, anywhere below it, so a list further down keeps its place.
  */
-private fun LazyListState.alignWithHeader(collapsed: Int, headerHeight: Int) {
-    if (headerHeight <= 0) return
+private fun LazyListState.alignWithHeader(moved: Int, away: Int) {
+    if (away <= 0) return
     // Item offsets start at the end of the top padding. A list not laid out yet, or out of view,
     // goes by its own scroll position; past the first item it is far down.
     val scrolled = layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.offset?.let { -it }
         ?: if (firstVisibleItemIndex == 0) firstVisibleItemScrollOffset else Int.MAX_VALUE
-    val target = if (collapsed < headerHeight) collapsed else maxOf(scrolled, headerHeight)
+    val target = if (moved < away) moved else maxOf(scrolled, away)
     if (target != scrolled) requestScrollToItem(0, target)
 }
 
