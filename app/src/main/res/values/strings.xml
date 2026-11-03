@@ -18,7 +18,6 @@
     <string name="title_history">浏览记录</string>
     <string name="title_history_delete">清空浏览记录</string>
     <string name="toast_delete_success">已删除</string>
-    <string name="title_about">关于</string>
     <string name="my_info_settings">设置</string>
     <string name="title_settings">设置</string>
     <string name="title_settings_custom">外观</string>
@@ -36,10 +35,6 @@
     <string name="title_block_settings">屏蔽</string>
     <string name="toast_reply_success_default">已发送</string>
     <string name="toast_reply_success">已发送，经验 +%s</string>
-    <string name="title_black_list">黑名单</string>
-    <string name="title_white_list">白名单</string>
-    <string name="title_add_black">添加黑名单</string>
-    <string name="title_add_white">添加白名单</string>
     <string name="title_main">首页</string>
     <string name="title_jump_page">跳页</string>
     <string name="tip_jump_page">当前 %1$d/%2$d 页</string>
@@ -51,13 +46,11 @@
     <string name="title_send_to_desktop">发送到桌面</string>
     <string name="toast_send_to_desktop_success">已尝试发送快捷方式</string>
     <string name="toast_send_to_desktop_failed">无法创建快捷方式：%1$s</string>
-    <string name="toast_reply_failed">无法发送：%2$s（%1$d）</string>
     <string name="title_exit_account">退出登录</string>
     <string name="title_copy_bduss">复制 BDUSS</string>
     <string name="title_my_tail">我的小尾巴</string>
     <string name="title_new_account">添加账号</string>
     <string name="title_switch_account">切换账号</string>
-    <string name="title_switch_account_long_press">长按切换账号</string>
     <string name="toast_exit_account_success">已退出登录</string>
     <string name="toast_exit_account_switched">已退出登录，切换到账号 %1$s</string>
     <string name="button_cancel">取消</string>
@@ -77,7 +70,6 @@
     <string name="toast_unlike_failed">无法取消关注 %1$s</string>
     <string name="toast_top_forum_failed">无法置顶 %1$s</string>
     <string name="content_top">置顶</string>
-    <string name="tip_forum_header_liked">LV%1$s %2$s</string>
     <string name="title_forum_name">%1$s吧</string>
     <string name="toast_sign_success">已签到，经验 +%1$s。你是今天第 %2$s 个签到的。</string>
     <string name="button_sign_in">签到</string>
@@ -87,8 +79,6 @@
     <string name="tab_forum_good_class">%1$s · %2$s</string>
     <string name="tab_forum_hot">热门</string>
     <string name="tip_good">精</string>
-    <string name="button_no">否</string>
-    <string name="button_yes">是</string>
     <string name="title_agree">点赞</string>
     <string name="toast_agree_failed">无法点赞 %1$s</string>
     <string name="toast_vote_failed">无法投票 %1$s</string>
@@ -106,7 +96,6 @@
     <string name="tip_permission_storage">用于保存、上传图片，更换头像。</string>
     <string name="tip_no_permission">未获得权限，部分功能可能无法使用</string>
     <string name="toast_no_permission_save_photo">无法保存图片，需要「存储」权限</string>
-    <string name="text_ip_location">来自%s</string>
     <string name="tip_post_floor">第 %d 楼</string>
     <string name="floor_short">%dL</string>
     <string name="title_collect">收藏</string>
@@ -135,7 +124,6 @@
     <string name="title_hide_explore">隐藏「动态」入口</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
     <string name="button_retry">重试</string>
-    <string name="tip_copy_text">长按自由复制</string>
     <string name="menu_copy">复制</string>
     <string name="button_load_new">加载最新</string>
     <string name="menu_top">置顶</string>
@@ -156,10 +144,6 @@
     <string name="tip_refresh">上次看到这里，点按刷新</string>
     <string name="button_finish">完成</string>
     <string name="title_custom_theme">自定义主题</string>
-    <string name="title_color_picker_primary">选择主题色</string>
-    <string name="cpv_select">选择</string>
-    <string name="cpv_custom">自定义</string>
-    <string name="cpv_presets">预设</string>
     <string name="title_dialog_unfollow_forum">取消关注%s吧？</string>
     <string name="menu_save_audio">保存语音</string>
     <string name="title_hot_message_list">话题榜</string>
@@ -186,7 +170,6 @@
     <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$s 条回复</string>
     <string name="subtitle_link">网页链接</string>
     <string name="toast_preparing_share_pic">正在下载图片…</string>
-    <string name="title_select_pic">选择背景图片</string>
     <string name="title_translucent_theme_blur">模糊</string>
     <string name="title_select_color">强调色</string>
     <string name="title_custom_color">自定义</string>
@@ -226,7 +209,6 @@
     <string name="summary_oksign_slow_mode">延长每个吧之间的签到间隔</string>
     <string name="btn_close">关闭</string>
     <string name="button_close_search">关闭搜索</string>
-    <string name="title_uncollected">未收藏</string>
     <string name="title_collected">已收藏</string>
     <string name="text_stat_follow">关注</string>
     <string name="text_stat_fans">粉丝</string>
@@ -244,7 +226,6 @@
     <string name="settings_forum_fab_function">悬浮按钮</string>
     <string name="btn_refresh">刷新</string>
     <string name="btn_back_to_top">回到顶部</string>
-    <string name="title_ui_settings">界面设置</string>
     <string name="dark_color">深色</string>
     <string name="light_color">浅色</string>
     <string name="title_theme_translucent">透明主题</string>
@@ -262,21 +243,10 @@
     <string name="text_size_little_large">较大</string>
     <string name="text_size_large">大</string>
     <string name="text_size_very_large">极大</string>
-    <string name="toast_after_change_will_restart">已保存，即将重启应用以生效</string>
-    <string name="button_detail">详情</string>
-    <string name="title_dialog_error_detail">错误详情</string>
-    <string name="button_copy_detail">复制详情</string>
-    <string name="snackbar_error">出现错误（%1$d）</string>
-    <string name="title_dialog_reply_warning">建议用官方客户端回帖</string>
-    <string name="message_dialog_reply_warning">在本应用回帖可能需要验证码或无法发送，账号也可能受到限制。可以改用官方客户端回帖。</string>
-    <string name="btn_cancel_reply">放弃回帖</string>
-    <string name="btn_continue_reply">继续回帖</string>
-    <string name="button_official_client_reply">用官方客户端回帖</string>
     <string name="toast_official_client_not_install">未安装官方客户端</string>
     <string name="title_post_or_reply_warning">发帖与回帖风险提示</string>
     <string name="title_ignore_battery_optimization">电池优化</string>
     <string name="summary_battery_optimization_ignored">已忽略</string>
-    <string name="toast_ignore_battery_optimization_already">已忽略电池优化</string>
     <string name="button_redo">重做</string>
     <string name="common_permission_calendar">日历</string>
     <string name="common_permission_camera">相机</string>
@@ -334,9 +304,7 @@
     <string name="title_stat_posts_num">回帖</string>
     <string name="toast_feature_unavailable">暂不支持此功能</string>
     <string name="desc_permission_post_notifications">用于发送消息通知、显示一键签到进度</string>
-    <string name="desc_current_account">当前登录</string>
     <string name="source_code">开源代码</string>
-    <string name="summary_now_account">已登录账号 %s</string>
     <string name="title_settings_more">其他</string>
     <string name="title_settings_post">发帖与回帖</string>
     <string name="title_login">登录</string>
@@ -374,9 +342,6 @@
     <string name="desc_like">赞</string>
     <string name="title_concern">关注</string>
     <string name="title_personalized">推荐</string>
-    <string name="block_type_keywords">关键词</string>
-    <string name="block_type_user">用户</string>
-    <string name="tip_add_block">多个关键词用空格分开，同时含有才屏蔽</string>
     <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
     <string name="topic_tag_hot">热</string>
@@ -388,7 +353,6 @@
     <string name="hot_num">热度 %s</string>
     <string name="settings_app_icon">应用图标</string>
     <string name="text_stat_threads">帖子</string>
-    <string name="snackbar_agree_fail">无法点赞：%2$s（%1$d）</string>
     <plurals name="button_signed_in">
         <item quantity="other">已签 %d 天</item>
     </plurals>
@@ -416,8 +380,6 @@
     <string name="button_login">去登录</string>
     <string name="button_go_to_explore">随便看看</string>
     <string name="title_empty_login">未登录</string>
-    <string name="no_internet_connectivity">无网络连接</string>
-    <string name="connectivity_timeout">连接超时</string>
     <string name="title_no_internet_connectivity">无法连接网络</string>
     <string name="title_api_error">无法加载</string>
     <string name="title_unknown_error">发生了一个奇怪的错误…</string>
@@ -448,7 +410,6 @@
     <string name="menu_block_forum_item">「%1$s吧」</string>
     <string name="menu_block_keywords_item">关键词…</string>
     <string name="title_block_keywords">屏蔽关键词</string>
-    <string name="tip_block_keywords">多个词用空格分开，同时含有才屏蔽</string>
     <string name="keywords_pick">选词</string>
     <string name="keywords_type">手动输入</string>
     <string name="button_block">屏蔽</string>
@@ -589,7 +550,6 @@
     <string name="rule_expiry_7">7 天</string>
     <string name="rule_expiry_30">30 天</string>
     <string name="rule_action_default_hint">跟随设置</string>
-    <string name="toast_rule_saved">已保存</string>
     <string name="settings_block_common">常用</string>
     <string name="settings_block_low_level">过滤低等级用户</string>
     <string name="settings_block_low_level_below">低于</string>
@@ -624,8 +584,6 @@
     <string name="block_reason_level">等级低于 %1$d 级</string>
     <string name="block_reason_keyword">关键词「%1$s」</string>
     <string name="block_reason_regex">正则「%1$s」</string>
-    <string name="tip_blocked_post">第 %d 楼已屏蔽</string>
-    <string name="tip_blocked_sub_post">这条回复已屏蔽</string>
     <string name="settings_block_video">不看视频帖</string>
     <string name="btn_full_screen">全屏</string>
     <string name="btn_play">播放</string>
@@ -634,11 +592,8 @@
     <plurals name="title_sub_posts_header">
         <item quantity="other">%d 条回复</item>
     </plurals>
-    <string name="title_block_list">屏蔽词管理</string>
-    <string name="settings_hide_blocked_content">彻底隐藏被屏蔽的内容</string>
     <string name="desc_image">图片</string>
     <string name="desc_add_image">添加图片</string>
-    <string name="toast_upload_image_failed">无法上传图片 %s</string>
     <string name="origin_image">原图</string>
     <string name="desc_remove_image">删除图片</string>
     <string name="reply_notice_risk">在本应用回帖，账号可能受到限制</string>
@@ -670,12 +625,7 @@
     <string name="message_confirm_delete">删除%s？</string>
     <string name="this_thread">本帖</string>
     <string name="this_reply">这条回复</string>
-    <string name="above_is_latest_post">以上为最新回复</string>
-    <string name="below_is_latest_post">以下为最新回复</string>
     <string name="btn_open_origin_thread">查看原帖</string>
-    <string name="tip_blocked_thread">这个帖子已屏蔽</string>
-    <string name="tip_blocked_content">这条内容已屏蔽</string>
-    <string name="tip_blocked_message">这条消息已屏蔽</string>
     <string name="tip_thread_store_deleted">帖子已删除</string>
     <string name="button_clear">清除</string>
     <string name="button_search">搜索</string>
@@ -729,8 +679,6 @@
     <string name="text_god_verify">%s领域大神</string>
     <string name="text_login_failed">无法登录 %s</string>
     <string name="text_login_success">已登录，即将跳转</string>
-    <string name="text_login_failed_default">无法登录</string>
-    <string name="video_preview_not_supported">暂不支持视频预览</string>
     <string name="button_ok">我知道了</string>
     <string name="button_sure">确定(%1$d)</string>
     <string name="button_sure_default">确定</string>

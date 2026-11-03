@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Looked up by name through Resources.getIdentifier (theme colors in App, emoticons in EmoticonManager) -->
+<!-- Looked up by name through Resources.getIdentifier (emoticons in EmoticonManager) -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@color/theme_color_*,@color/color_text_*,@drawable/image_emoticon*" />
+    tools:keep="@drawable/image_emoticon*" />

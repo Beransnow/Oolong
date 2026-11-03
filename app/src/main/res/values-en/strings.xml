@@ -19,7 +19,6 @@
     <string name="title_history">History</string>
     <string name="title_history_delete">Clear history</string>
     <string name="toast_delete_success">Deleted</string>
-    <string name="title_about">About</string>
     <string name="my_info_settings">Settings</string>
     <string name="title_settings">Settings</string>
     <string name="title_settings_custom">Appearance</string>
@@ -37,10 +36,6 @@
     <string name="title_block_settings">Hidden content</string>
     <string name="toast_reply_success_default">Sent</string>
     <string name="toast_reply_success">Sent, +%s XP</string>
-    <string name="title_black_list">Hide</string>
-    <string name="title_white_list">Always show</string>
-    <string name="title_add_black">Add hide rule</string>
-    <string name="title_add_white">Add always-show rule</string>
     <string name="title_main">Home</string>
     <string name="title_jump_page">Go to page</string>
     <string name="tip_jump_page">Page %1$d of %2$d</string>
@@ -52,13 +47,11 @@
     <string name="title_send_to_desktop">Add to home screen</string>
     <string name="toast_send_to_desktop_success">Shortcut requested</string>
     <string name="toast_send_to_desktop_failed">Couldn\'t create shortcut: %1$s</string>
-    <string name="toast_reply_failed">Couldn\'t send: %2$s (%1$d)</string>
     <string name="title_exit_account">Sign out</string>
     <string name="title_copy_bduss">Copy BDUSS</string>
     <string name="title_my_tail">Signature</string>
     <string name="title_new_account">Add account</string>
     <string name="title_switch_account">Switch account</string>
-    <string name="title_switch_account_long_press">Long press to switch accounts</string>
     <string name="toast_exit_account_success">Signed out</string>
     <string name="toast_exit_account_switched">Signed out. Switched to %1$s</string>
     <string name="button_cancel">Cancel</string>
@@ -78,7 +71,6 @@
     <string name="toast_unlike_failed">Couldn\'t unfollow: %1$s</string>
     <string name="toast_top_forum_failed">Couldn\'t pin: %1$s</string>
     <string name="content_top">Pinned</string>
-    <string name="tip_forum_header_liked">LV%1$s %2$s</string>
     <string name="title_forum_name">%1$s</string>
     <string name="toast_sign_success">Checked in, +%1$s XP. You\'re #%2$s to check in today.</string>
     <string name="button_sign_in">Check in</string>
@@ -88,8 +80,6 @@
     <string name="tab_forum_good_class">%1$s · %2$s</string>
     <string name="tab_forum_hot">Hot</string>
     <string name="tip_good">Featured</string>
-    <string name="button_no">No</string>
-    <string name="button_yes">Yes</string>
     <string name="title_agree">Like</string>
     <string name="toast_agree_failed">Couldn\'t like: %1$s</string>
     <string name="toast_vote_failed">Couldn\'t vote: %1$s</string>
@@ -108,7 +98,6 @@
     <string name="tip_permission_storage">Used to save and upload images and change your avatar.</string>
     <string name="tip_no_permission">Permission denied. Some features may not work.</string>
     <string name="toast_no_permission_save_photo">Couldn\'t save image. Storage permission required.</string>
-    <string name="text_ip_location">From %s</string>
     <string name="tip_post_floor">#%d</string>
     <string name="floor_short">#%d</string>
     <string name="title_collect">Save</string>
@@ -137,7 +126,6 @@
     <string name="title_hide_explore">Hide “Explore”</string>
     <string name="toast_clear_success">Cleared</string>
     <string name="button_retry">Retry</string>
-    <string name="tip_copy_text">Long press to select text</string>
     <string name="menu_copy">Copy</string>
     <string name="button_load_new">Load latest</string>
     <string name="menu_top">Pin</string>
@@ -159,10 +147,6 @@
     <string name="tip_refresh">You were here. Tap to refresh</string>
     <string name="button_finish">Done</string>
     <string name="title_custom_theme">Custom theme</string>
-    <string name="title_color_picker_primary">Choose accent color</string>
-    <string name="cpv_select">Select</string>
-    <string name="cpv_custom">Custom</string>
-    <string name="cpv_presets">Presets</string>
     <string name="title_dialog_unfollow_forum">Unfollow %s?</string>
     <string name="menu_save_audio">Save audio</string>
     <string name="title_hot_message_list">Trending topics</string>
@@ -189,7 +173,6 @@
     <string name="subtitle_quick_preview_thread">%1$s · Replies: %2$s</string>
     <string name="subtitle_link">Web link</string>
     <string name="toast_preparing_share_pic">Downloading image…</string>
-    <string name="title_select_pic">Choose background image</string>
     <string name="title_translucent_theme_blur">Blur</string>
     <string name="title_select_color">Accent color</string>
     <string name="title_custom_color">Custom</string>
@@ -230,7 +213,6 @@
     <string name="summary_oksign_slow_mode">Wait longer between forums</string>
     <string name="btn_close">Close</string>
     <string name="button_close_search">Close search</string>
-    <string name="title_uncollected">Not saved</string>
     <string name="title_collected">Saved</string>
     <string name="text_stat_follow">Following</string>
     <string name="text_stat_fans">Followers</string>
@@ -248,7 +230,6 @@
     <string name="settings_forum_fab_function">Floating button</string>
     <string name="btn_refresh">Refresh</string>
     <string name="btn_back_to_top">Back to top</string>
-    <string name="title_ui_settings">Interface</string>
     <string name="dark_color">Dark</string>
     <string name="light_color">Light</string>
     <string name="title_theme_translucent">Translucent theme</string>
@@ -266,21 +247,10 @@
     <string name="text_size_little_large">Large</string>
     <string name="text_size_large">Extra large</string>
     <string name="text_size_very_large">Huge</string>
-    <string name="toast_after_change_will_restart">Saved. Restarting to apply.</string>
-    <string name="button_detail">Details</string>
-    <string name="title_dialog_error_detail">Error details</string>
-    <string name="button_copy_detail">Copy details</string>
-    <string name="snackbar_error">Error (%1$d)</string>
-    <string name="title_dialog_reply_warning">Reply in the official app instead</string>
-    <string name="message_dialog_reply_warning">Replying from this app may require a captcha or fail, and your account may be restricted. You can reply in the official app instead.</string>
-    <string name="btn_cancel_reply">Discard</string>
-    <string name="btn_continue_reply">Continue</string>
-    <string name="button_official_client_reply">Reply in official app</string>
     <string name="toast_official_client_not_install">Official app not installed</string>
     <string name="title_post_or_reply_warning">Posting risks</string>
     <string name="title_ignore_battery_optimization">Battery optimization</string>
     <string name="summary_battery_optimization_ignored">Off</string>
-    <string name="toast_ignore_battery_optimization_already">Battery optimization is already off</string>
     <string name="button_redo">Redo</string>
     <string name="common_permission_calendar">Calendar</string>
     <string name="common_permission_camera">Camera</string>
@@ -338,9 +308,7 @@
     <string name="title_stat_posts_num">Replies</string>
     <string name="toast_feature_unavailable">Not supported yet</string>
     <string name="desc_permission_post_notifications">Used for message notifications and check-in progress</string>
-    <string name="desc_current_account">Current account</string>
     <string name="source_code">Source code</string>
-    <string name="summary_now_account">Signed in as %s</string>
     <string name="title_settings_more">Other</string>
     <string name="title_settings_post">Posting</string>
     <string name="title_login">Sign in</string>
@@ -378,9 +346,6 @@
     <string name="desc_like">Like</string>
     <string name="title_concern">Following</string>
     <string name="title_personalized">For you</string>
-    <string name="block_type_keywords">Keywords</string>
-    <string name="block_type_user">User</string>
-    <string name="tip_add_block">Separate keywords with spaces. Content is hidden only if it contains all of them.</string>
     <string name="desc_download_pic">Download image</string>
     <string name="hot_topic_rank">Topics</string>
     <string name="topic_tag_hot">Hot</string>
@@ -392,7 +357,6 @@
     <string name="hot_num">Heat %s</string>
     <string name="settings_app_icon">App icon</string>
     <string name="text_stat_threads">Threads</string>
-    <string name="snackbar_agree_fail">Couldn\'t like: %2$s (%1$d)</string>
     <plurals name="button_signed_in">
         <item quantity="one">%d-day streak</item>
         <item quantity="other">%d-day streak</item>
@@ -421,8 +385,6 @@
     <string name="button_login">Sign in</string>
     <string name="button_go_to_explore">Look around</string>
     <string name="title_empty_login">Not signed in</string>
-    <string name="no_internet_connectivity">No internet connection</string>
-    <string name="connectivity_timeout">Connection timed out</string>
     <string name="title_no_internet_connectivity">Can\'t connect</string>
     <string name="title_api_error">Couldn\'t load</string>
     <string name="title_unknown_error">An unusual error occurred…</string>
@@ -453,7 +415,6 @@
     <string name="menu_block_forum_item">The %1$s forum</string>
     <string name="menu_block_keywords_item">Keywords…</string>
     <string name="title_block_keywords">Hide keywords</string>
-    <string name="tip_block_keywords">Separate words with spaces. Content is hidden only if it contains all of them.</string>
     <string name="keywords_pick">Pick</string>
     <string name="keywords_type">Type</string>
     <string name="button_block">Hide</string>
@@ -591,7 +552,6 @@
     <string name="rule_expiry_7">7 days</string>
     <string name="rule_expiry_30">30 days</string>
     <string name="rule_action_default_hint">Default</string>
-    <string name="toast_rule_saved">Saved</string>
     <string name="settings_block_common">General</string>
     <string name="settings_block_low_level">Hide low-level users</string>
     <string name="settings_block_low_level_below">Below</string>
@@ -628,8 +588,6 @@
     <string name="block_reason_level">below LV%1$d</string>
     <string name="block_reason_keyword">keyword “%1$s”</string>
     <string name="block_reason_regex">regex “%1$s”</string>
-    <string name="tip_blocked_post">#%d hidden</string>
-    <string name="tip_blocked_sub_post">This comment is hidden</string>
     <string name="settings_block_video">Hide video threads</string>
     <string name="btn_full_screen">Full screen</string>
     <string name="btn_play">Play</string>
@@ -639,11 +597,8 @@
         <item quantity="one">%d comment</item>
         <item quantity="other">%d comments</item>
     </plurals>
-    <string name="title_block_list">Hidden words</string>
-    <string name="settings_hide_blocked_content">Leave out hidden content entirely</string>
     <string name="desc_image">Image</string>
     <string name="desc_add_image">Add image</string>
-    <string name="toast_upload_image_failed">Couldn\'t upload image: %s</string>
     <string name="origin_image">Original</string>
     <string name="desc_remove_image">Remove image</string>
     <string name="reply_notice_risk">Replying from this app may get your account restricted</string>
@@ -675,12 +630,7 @@
     <string name="message_confirm_delete">Delete %s?</string>
     <string name="this_thread">this thread</string>
     <string name="this_reply">this reply</string>
-    <string name="above_is_latest_post">Newest replies above</string>
-    <string name="below_is_latest_post">Newest replies below</string>
     <string name="btn_open_origin_thread">View original thread</string>
-    <string name="tip_blocked_thread">This thread is hidden</string>
-    <string name="tip_blocked_content">This content is hidden</string>
-    <string name="tip_blocked_message">This message is hidden</string>
     <string name="tip_thread_store_deleted">Thread deleted</string>
     <string name="button_clear">Clear</string>
     <string name="button_search">Search</string>
@@ -735,8 +685,6 @@
     <string name="text_god_verify">%s expert</string>
     <string name="text_login_failed">Couldn\'t sign in: %s</string>
     <string name="text_login_success">Signed in. Redirecting…</string>
-    <string name="text_login_failed_default">Couldn\'t sign in</string>
-    <string name="video_preview_not_supported">Video preview isn\'t supported yet</string>
     <string name="button_ok">OK</string>
     <string name="button_sure">OK (%1$d)</string>
     <string name="button_sure_default">OK</string>
