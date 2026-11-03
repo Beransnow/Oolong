@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import dev.chrisbanes.haze.ExperimentalHazeApi
@@ -258,7 +259,7 @@ private const val TopBarTintStops = 32
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
+fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifier {
     val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
@@ -279,11 +280,14 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background) {
+            val style = remember(shape, colors.background, blur) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape)
                     backgroundColor(colors.background)
+                    // Regular blurs a compact control only partly, keeping the content under it
+                    // sharp; with a blur, all of it is frosted, by that much
+                    if (blur != null) optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(blur)) }
                 }
             }
             shadowed.hazeGlass(input = source!!.input, style = style)
