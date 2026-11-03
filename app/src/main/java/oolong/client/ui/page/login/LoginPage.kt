@@ -145,6 +145,7 @@ fun LoginPage(
     val animatedProgress by animateFloatAsState(targetValue = progress, animationSpec = Motion.settle(), label = "progress")
 
     GlassScaffold(
+        sampleContent = false,
         topBar = {
             GlassTopBar(
                 title = {
