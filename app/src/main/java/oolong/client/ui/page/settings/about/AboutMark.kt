@@ -166,64 +166,26 @@ private fun MarkLens.updateHome() {
     home = overlay.localPositionOf(mark, LensCenter * (mark.size.width / 100f))
 }
 
-/** The mark in units of a hundredth of its width, as the splash icon's vector draws it. */
-private fun DrawScope.drawMark(unit: Float, withLens: Boolean) {
-    fun at(x: Float, y: Float) = Offset(x * unit, y * unit)
+/** The mark in units of a hundredth of its width, as the launcher icon's vector draws it. */
+internal fun DrawScope.drawMark(unit: Float, withLens: Boolean) {
     drawCircle(
         brush = Brush.verticalGradient(listOf(Color(0xFF5B8FE6), Color(0xFF2F57B0))),
         radius = 50 * unit,
-        center = at(50f, 50f),
+        center = Offset(50 * unit, 50 * unit),
     )
+    if (withLens) drawMarkLensShadow(unit)
+    drawMarkPaper(unit)
     if (withLens) {
         drawCircle(
-            brush = Brush.radialGradient(
-                0.7f to Color(0x26163A80),
-                0.84f to Color(0x1A163A80),
-                1f to Color(0x00163A80),
-                center = at(64f, 37.6f),
-                radius = 24 * unit,
-            ),
-            radius = 24 * unit,
-            center = at(64f, 37.6f),
-        )
-        drawCircle(
-            brush = Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x2EFFFFFF)), startY = 16 * unit, endY = 56 * unit),
+            brush = Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x2EFFFFFF)), startY = 15 * unit, endY = 55 * unit),
             radius = LensRadius * unit,
             center = LensCenter * unit,
         )
-    }
-    // The bubble and its shadow
-    drawCircle(
-        brush = Brush.radialGradient(
-            0.7f to Color(0x4C163A80),
-            0.84f to Color(0x33163A80),
-            1f to Color(0x00163A80),
-            center = at(41f, 61.2f),
-            radius = 30 * unit,
-        ),
-        radius = 30 * unit,
-        center = at(41f, 61.2f),
-    )
-    drawCircle(
-        brush = Brush.radialGradient(
-            0f to Color.White,
-            0.55f to Color(0xFFF4F8FE),
-            1f to Color(0xFFD8E4F7),
-            center = at(32.25f, 47.75f),
-            radius = 38.75f * unit,
-        ),
-        radius = 25 * unit,
-        center = at(41f, 59f),
-    )
-    val lines = Color(0xFF3F6FC8)
-    drawRoundRect(lines, topLeft = at(28f, 53f), size = Size(22f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
-    drawRoundRect(lines, topLeft = at(28f, 63f), size = Size(13f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
-    if (withLens) {
-        // Where the lens lies over the bubble, the bubble shows through it tinted
-        val bubble = Path().apply { addOval(Rect(at(41f, 59f), 25 * unit)) }
-        clipPath(bubble) {
+        // Where the lens lies over the paper, the paper shows through it tinted
+        val paper = Path().apply { addOval(Rect(PaperCenter * unit, PaperRadius * unit)) }
+        clipPath(paper) {
             drawCircle(
-                brush = Brush.verticalGradient(listOf(Color(0xFFD3E3FA), Color(0xFFAFCAF1)), startY = 16 * unit, endY = 56 * unit),
+                brush = Brush.verticalGradient(listOf(Color(0xFFD3E3FA), Color(0xFFAFCAF1)), startY = 15 * unit, endY = 55 * unit),
                 radius = LensRadius * unit,
                 center = LensCenter * unit,
             )
@@ -232,8 +194,54 @@ private fun DrawScope.drawMark(unit: Float, withLens: Boolean) {
     }
 }
 
+/** The lens's shadow where it lies in the mark, a little below it. */
+private fun DrawScope.drawMarkLensShadow(unit: Float) {
+    val center = LensCenter * unit + Offset(0f, 1.6f * unit)
+    drawCircle(
+        brush = Brush.radialGradient(
+            0.7f to Color(0x26163A80),
+            0.84f to Color(0x1A163A80),
+            1f to Color(0x00163A80),
+            center = center,
+            radius = 23.9f * unit,
+        ),
+        radius = 23.9f * unit,
+        center = center,
+    )
+}
+
+/** The mark's white paper with its two lines, and its shadow. */
+private fun DrawScope.drawMarkPaper(unit: Float) {
+    fun at(x: Float, y: Float) = Offset(x * unit, y * unit)
+    drawCircle(
+        brush = Brush.radialGradient(
+            0.7f to Color(0x4C163A80),
+            0.84f to Color(0x33163A80),
+            1f to Color(0x00163A80),
+            center = at(41.75f, 60.45f),
+            radius = 30 * unit,
+        ),
+        radius = 30 * unit,
+        center = at(41.75f, 60.45f),
+    )
+    drawCircle(
+        brush = Brush.radialGradient(
+            0f to Color.White,
+            0.55f to Color(0xFFF3F7FE),
+            1f to Color(0xFFD6E2F6),
+            center = at(33f, 47f),
+            radius = 38.75f * unit,
+        ),
+        radius = PaperRadius * unit,
+        center = PaperCenter * unit,
+    )
+    val lines = Color(0xFF3F6FC8)
+    drawRoundRect(lines, topLeft = at(28.75f, 52.25f), size = Size(22f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
+    drawRoundRect(lines, topLeft = at(28.75f, 62.25f), size = Size(13f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
+}
+
 /** The lens's soft shadow, a little below it, for a lens of [radius]. */
-private fun DrawScope.drawLensShadow(radius: Float) {
+internal fun DrawScope.drawLensShadow(radius: Float) {
     val center = Offset(size.width / 2, size.height / 2 + radius * 0.06f)
     drawCircle(
         brush = Brush.radialGradient(
@@ -248,7 +256,7 @@ private fun DrawScope.drawLensShadow(radius: Float) {
 }
 
 /** The mark's pale lens, of [radius], at [alpha]: what shows where there is no glass. */
-private fun DrawScope.drawPaintedLens(radius: Float, alpha: Float) {
+internal fun DrawScope.drawPaintedLens(radius: Float, alpha: Float) {
     if (alpha <= 0f) return
     val center = Offset(size.width / 2, size.height / 2)
     drawCircle(
@@ -260,7 +268,7 @@ private fun DrawScope.drawPaintedLens(radius: Float, alpha: Float) {
     drawRim(center, radius, strokeWidth = radius * 0.045f, alpha = alpha)
 }
 
-private fun DrawScope.drawRim(center: Offset, radius: Float, strokeWidth: Float, alpha: Float) {
+internal fun DrawScope.drawRim(center: Offset, radius: Float, strokeWidth: Float, alpha: Float) {
     drawCircle(
         brush = Brush.linearGradient(
             0f to Color(0xF2FFFFFF),
@@ -276,9 +284,11 @@ private fun DrawScope.drawRim(center: Offset, radius: Float, strokeWidth: Float,
     )
 }
 
-/** The lens's place and size in the mark, in hundredths of its width. */
-private val LensCenter = Offset(64f, 36f)
-private const val LensRadius = 20f
+/** The paper's and the lens's places and sizes in the mark, in hundredths of its width. */
+internal val PaperCenter = Offset(41.75f, 58.25f)
+internal const val PaperRadius = 25f
+internal val LensCenter = Offset(64.75f, 35.25f)
+internal const val LensRadius = 20f
 
 private val LiftedDiameter = 128.dp
 private val LiftSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 400f)
