@@ -103,12 +103,12 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.LargeTitleSettle
 import oolong.client.ui.widgets.compose.LargeTitleSlot
-import oolong.client.ui.widgets.compose.scrollEdgeSource
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
+import oolong.client.ui.widgets.compose.scrollEdgeSource
 import oolong.client.utils.Appearance
 import oolong.client.utils.ColorStyle
 import oolong.client.utils.MonetStyle
