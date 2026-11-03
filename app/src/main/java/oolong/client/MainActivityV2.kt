@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -324,6 +325,12 @@ class MainActivityV2 : AppCompatActivity() {
         if (savedInstanceState == null) intent?.let { checkIntent(it) }
         fetchAccount()
         initAutoSign()
+        // Notifications are about the account's messages, so they are asked for once one logs in
+        lifecycleScope.launch {
+            accountRepository.current.map { it != null }.distinctUntilChanged().drop(1).filter { it }.collect {
+                requestNotificationPermission()
+            }
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

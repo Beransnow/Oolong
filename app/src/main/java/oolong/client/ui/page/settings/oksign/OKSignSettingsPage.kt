@@ -46,9 +46,11 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 import oolong.client.utils.BackgroundSettings
+import oolong.client.utils.PermissionUtils
 import oolong.client.utils.isIgnoringBatteryOptimizations
 import oolong.client.utils.launchUrl
 import oolong.client.utils.requestIgnoreBatteryOptimizations
+import oolong.client.utils.requestPermission
 import java.util.Date
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
@@ -85,6 +87,28 @@ fun OKSignSettingsPage(
             onPauseOrDispose {}
         }
         val state = remember(resumes) { RunConditions.read(context) }
+        // The system's own prompt, after a word on what the notifications are for; its settings
+        // only once it no longer asks
+        val requestNotifications: () -> Unit = {
+            context.requestPermission {
+                permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
+                description = context.getString(R.string.desc_permission_post_notifications)
+                onGranted = { resumes++ }
+                onDeniedForever = { BackgroundSettings.openNotifications(context) }
+            }
+        }
+        // Turning signing in automatically on is when its results start to need notifications
+        LaunchedEffect(dataStore) {
+            dataStore.data
+                .map { it[booleanPreferencesKey("auto_sign")] == true }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { on ->
+                    if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !RunConditions.read(context).notifications) {
+                        requestNotifications()
+                    }
+                }
+        }
         val snackbarHostState = LocalSnackbarHostState.current
         val oneKeyGroup = stringResource(id = R.string.settings_group_sign_mode)
         val autoGroup = stringResource(id = R.string.title_auto_sign)
@@ -194,7 +218,7 @@ fun OKSignSettingsPage(
                             title = stringResource(id = R.string.title_system_notifications),
                             summary = stringResource(id = R.string.summary_auto_sign_notifications),
                             trailingContent = { PrefsExternal(text = if (state.notifications) allowed else notAllowed) },
-                            onClick = { BackgroundSettings.openNotifications(context) },
+                            onClick = { if (state.notifications) BackgroundSettings.openNotifications(context) else requestNotifications() },
                         )
                     }
                 }

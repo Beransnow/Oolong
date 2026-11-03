@@ -425,6 +425,9 @@ class PermissionRequester(val context: Context) {
     var onGranted: (() -> Unit)? = null
     var onDenied: (() -> Unit)? = null
 
+    /** When the system no longer asks, as after the person said no twice; its settings are where to go then. */
+    var onDeniedForever: (() -> Unit)? = null
+
     fun start() {
         if (XXPermissions.isGranted(context, permissions)) {
             onGranted?.invoke()
@@ -447,7 +450,7 @@ class PermissionRequester(val context: Context) {
                     }
 
                     override fun onDenied(permissions: List<String>, never: Boolean) {
-                        onDenied?.invoke()
+                        if (never && onDeniedForever != null) onDeniedForever?.invoke() else onDenied?.invoke()
                     }
                 })
         }
