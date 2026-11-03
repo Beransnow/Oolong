@@ -161,7 +161,7 @@ private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com
 internal const val SPLASH_ICON_MILLIS = 400L
 
 @AndroidEntryPoint
-class MainActivityV2 : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var accountRepository: AccountRepository
 
@@ -478,8 +478,8 @@ class MainActivityV2 : AppCompatActivity() {
         )
         LaunchedEffect(Unit) {
             val crashed = withContext(Dispatchers.IO) {
-                CrashLogs.collectExits(this@MainActivityV2)
-                CrashLogs.takeUnnoticed(this@MainActivityV2) != null
+                CrashLogs.collectExits(this@MainActivity)
+                CrashLogs.takeUnnoticed(this@MainActivity) != null
             }
             if (crashed) crashDialogState.show()
         }

@@ -16,7 +16,7 @@ class LegacyImportTest {
 
     @Test
     fun `class names and paths under the old package point at Oolong`() {
-        assertEquals("oolong.client.MainActivityV2", LegacyImport.rewritePackage("com.huanchengfly.tieba.post.MainActivityV2"))
+        assertEquals("oolong.client.MainActivity", LegacyImport.rewritePackage("com.huanchengfly.tieba.post.MainActivityV2"))
         assertEquals("/data/user/0/oolong.client/files/background_1.jpg", LegacyImport.rewritePackage("/data/user/0/com.huanchengfly.tieba.post/files/background_1.jpg"))
     }
 

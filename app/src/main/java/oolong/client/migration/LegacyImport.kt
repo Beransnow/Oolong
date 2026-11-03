@@ -157,9 +157,11 @@ object LegacyImport {
 
     /**
      * The old app's names in stored text: its package in class names (the launcher icon chosen)
-     * and in absolute paths (the translucent theme's wallpaper). Both forms map to Oolong's.
+     * and in absolute paths (the translucent theme's wallpaper). Both forms map to Oolong's, and
+     * the old main activity to Oolong's, which dropped its "V2".
      */
-    fun rewritePackage(text: String): String = text.replace(PACKAGE, NEW_PACKAGE)
+    fun rewritePackage(text: String): String =
+        text.replace(PACKAGE, NEW_PACKAGE).replace("$NEW_PACKAGE.MainActivityV2", "$NEW_PACKAGE.MainActivity")
 
     private const val NEW_PACKAGE = "oolong.client"
     private const val ROOM_DB = "app.db"

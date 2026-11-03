@@ -7,7 +7,7 @@ import kotlinx.collections.immutable.persistentListOf
 import oolong.client.App
 
 object LauncherIcons {
-    const val NEW_ICON = "oolong.client.MainActivityV2"
+    const val NEW_ICON = "oolong.client.MainActivity"
     const val NEW_ICON_THEMED = "oolong.client.MainActivityIconThemed"
     const val NEW_ICON_INVERT = "oolong.client.MainActivityIconInvert"
     const val OLD_ICON = "oolong.client.MainActivityIconOld"
@@ -20,8 +20,6 @@ object LauncherIcons {
     val THEMED_ICON_MAPPING = mapOf(
         NEW_ICON to NEW_ICON_THEMED,
     )
-
-    const val OLD_LAUNCHER_ICON = "oolong.client.activities.MainActivity"
 }
 
 object AppIconUtil {
@@ -51,12 +49,6 @@ object AppIconUtil {
                 context.packageManager.disableComponent(ComponentName(context, it))
             }
         }
-        context.packageManager.disableComponent(
-            ComponentName(
-                context,
-                LauncherIcons.OLD_LAUNCHER_ICON
-            )
-        )
     }
 
     /**

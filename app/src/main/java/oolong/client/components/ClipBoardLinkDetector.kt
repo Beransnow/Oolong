@@ -10,7 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import oolong.client.MainActivityV2
+import oolong.client.MainActivity
 import oolong.client.utils.QuickPreviewUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
@@ -63,7 +63,7 @@ object ClipBoardLinkDetector {
      * Looks at the clipboard if the app came to the front since it last did. Called once the
      * window has focus, as without it the system gives apps nothing from the clipboard.
      */
-    fun check(activity: MainActivityV2) {
+    fun check(activity: MainActivity) {
         if (!due) return
         due = false
         if (!activity.appPreferences.clipboardLinks) return

@@ -121,7 +121,7 @@
             android:value="true" />
 
         <activity
-            android:name=".MainActivityV2"
+            android:name=".MainActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboard|navigation|keyboardHidden"
             android:enabled="true"
             android:exported="true"
@@ -187,33 +187,15 @@
                 android:resource="@xml/shortcut_new" />
         </activity>
 
-        <!-- Switching the launcher icon disables MainActivityV2 and enables one of these aliases,
-             so every alias must repeat the deep link filters of MainActivityV2. -->
-        <activity-alias
-            android:name=".activities.MainActivity"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_new"
-            android:roundIcon="@mipmap/ic_launcher_new_round"
-            android:targetActivity=".MainActivityV2">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcut_new" />
-        </activity-alias>
-
+        <!-- Switching the launcher icon disables MainActivity and enables one of these aliases,
+             so every alias must repeat the deep link filters of MainActivity. -->
         <activity-alias
             android:name=".MainActivityIconThemed"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_new_themed"
             android:roundIcon="@mipmap/ic_launcher_new_themed_round"
-            android:targetActivity=".MainActivityV2">
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -276,7 +258,7 @@
             android:exported="true"
             android:icon="@mipmap/ic_launcher_new_invert"
             android:roundIcon="@mipmap/ic_launcher_new_invert_round"
-            android:targetActivity=".MainActivityV2">
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -338,7 +320,7 @@
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:targetActivity=".MainActivityV2">
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

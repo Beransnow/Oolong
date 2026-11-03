@@ -2625,7 +2625,7 @@
         errorLine1="import androidx.compose.material.MaterialTheme"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="31"
             column="8"/>
     </issue>
@@ -2636,7 +2636,7 @@
         errorLine1="import androidx.compose.material.ModalBottomSheetValue"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="32"
             column="8"/>
     </issue>
@@ -2647,7 +2647,7 @@
         errorLine1="import androidx.compose.material.Surface"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="33"
             column="8"/>
     </issue>
@@ -2658,7 +2658,7 @@
         errorLine1="import androidx.compose.material.SwipeableDefaults"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="34"
             column="8"/>
     </issue>
@@ -2669,7 +2669,7 @@
         errorLine1="import androidx.compose.material.Text"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="35"
             column="8"/>
     </issue>
@@ -2680,7 +2680,7 @@
         errorLine1="import androidx.compose.material.rememberModalBottomSheetState"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="36"
             column="8"/>
     </issue>
@@ -2691,7 +2691,7 @@
         errorLine1="import androidx.compose.material.navigation.BottomSheetNavigator"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="67"
             column="8"/>
     </issue>
@@ -2702,7 +2702,7 @@
         errorLine1="import androidx.compose.material.navigation.ModalBottomSheetLayout"
         errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="68"
             column="8"/>
     </issue>
@@ -7470,7 +7470,7 @@
         errorLine1="        window.setBackgroundDrawable(ColorDrawable(0))"
         errorLine2="                                     ~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="308"
             column="38"/>
     </issue>
@@ -7481,7 +7481,7 @@
         errorLine1="                myNavController?.navigate(Uri.parse(&quot;tblite://thread/${link.threadId}&quot;))"
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="324"
             column="43"/>
     </issue>
@@ -7492,7 +7492,7 @@
         errorLine1="                myNavController?.navigate(Uri.parse(&quot;tblite://forum/${link.forumName}&quot;))"
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/MainActivityV2.kt"
+            file="src/main/java/oolong/client/MainActivity.kt"
             line="328"
             column="43"/>
     </issue>
