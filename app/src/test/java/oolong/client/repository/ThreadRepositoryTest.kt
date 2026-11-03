@@ -137,6 +137,18 @@ class ThreadRepositoryTest {
     }
 
     @Test
+    fun `no posts newer than the last one is an empty load, not a failure`() = runTest {
+        // What the server answers then: nothing, not even the thread
+        respond(PbPageResponseData())
+
+        val load = repository.load(ThreadQuery(9_000), ThreadCursor.After(70))
+
+        assertNull(load.page)
+        assertTrue(load.posts.items.isEmpty())
+        assertNull(load.posts.next)
+    }
+
+    @Test
     fun `sends each cursor as the page request expects`() = runTest {
         respond(data(listOf(post(2, 2))))
         val query = ThreadQuery(9_000, seeLz = true, forumId = 52, fromStore = true)

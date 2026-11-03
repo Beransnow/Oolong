@@ -63,6 +63,7 @@ import oolong.client.repository.Posts
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.ThreadCursor
 import oolong.client.repository.ThreadHistory
+import oolong.client.repository.ThreadLoad
 import oolong.client.repository.ThreadPage
 import oolong.client.repository.ThreadQuery
 import oolong.client.repository.ThreadRepository
@@ -154,19 +155,20 @@ class ThreadViewModel @AssistedInject constructor(
      */
     private val lists = MutableStateFlow(open(query.value, refreshKey))
 
-    private val posts: QueryPager<ThreadCursor, Post, ThreadPage> get() = lists.value
+    private val posts: QueryPager<ThreadCursor, Post, ThreadLoad> get() = lists.value
 
-    private fun open(query: ThreadQuery, from: ThreadCursor): QueryPager<ThreadCursor, Post, ThreadPage> {
+    private fun open(query: ThreadQuery, from: ThreadCursor): QueryPager<ThreadCursor, Post, ThreadLoad> {
         listJob?.cancel()
         val job = Job(viewModelScope.coroutineContext.job).also { listJob = it }
         return repository.posts.pager(viewModelScope + job, query, from)
     }
 
     /** Takes what the list loaded besides its posts, and scrolls to a post once a page brings it. */
-    private suspend fun onLoads(loads: Loads<ThreadCursor, ThreadPage>) {
+    private suspend fun onLoads(loads: Loads<ThreadCursor, ThreadLoad>) {
         val latest = loads.latest ?: return
-        val page = latest.response
-        val refreshed = loads.refreshed?.response
+        // Asking for newer posts and finding none brings nothing to take
+        val page = latest.response.page ?: return
+        val refreshed = loads.refreshed?.response?.page
         meta.update { meta ->
             meta.copy(
                 page = page.copy(firstPost = page.firstPost ?: refreshed?.firstPost ?: meta.page?.firstPost),

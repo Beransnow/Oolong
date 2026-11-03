@@ -122,6 +122,13 @@ data class FloorPage(
     val tbs: String?,
 )
 
+/**
+ * A page of a thread as its list loads it: the [page], or null when asking for the posts newer
+ * than the last one found none, which the server answers with nothing at all, not even the thread.
+ */
+@Immutable
+data class ThreadLoad(val page: ThreadPage?, val posts: Page<ThreadCursor, Post>)
+
 @Singleton
 class ThreadRepository @Inject constructor(
     private val remote: ThreadRemoteDataSource,
@@ -134,13 +141,13 @@ class ThreadRepository @Inject constructor(
      * The posts of threads as the thread page shows them, kept a little: a thread peeked at and
      * then opened, or opened again soon, shows what was loaded of it at once.
      */
-    val posts = client.infiniteQuery<ThreadQuery, ThreadCursor, ThreadPage, Post>(
+    val posts = client.infiniteQuery<ThreadQuery, ThreadCursor, ThreadLoad, Post>(
         name = "thread",
         itemKey = Post::id,
         page = { it.posts },
         staleTime = 1.minutes,
         normalize = { post(it) },
-    ) { query, cursor -> page(query, cursor) }
+    ) { query, cursor -> load(query, cursor) }
 
     /** Starts loading the start of [query] ahead of opening it. */
     fun prefetch(query: ThreadQuery) = posts.prefetch(query, ThreadCursor.first())
@@ -148,8 +155,21 @@ class ThreadRepository @Inject constructor(
     /** Marks what is kept of thread [threadId], which changed, to be loaded again. */
     fun changed(threadId: Long) = posts.invalidate { it.threadId == threadId }
 
-    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage = withContext(io) {
-        val data = remote.page(
+    suspend fun page(query: ThreadQuery, cursor: ThreadCursor): ThreadPage =
+        fetch(query, cursor).toThreadPage(query.sort, emoticons)
+
+    /** A page for the list of [query]; see [ThreadLoad] for when it has no [ThreadLoad.page]. */
+    suspend fun load(query: ThreadQuery, cursor: ThreadCursor): ThreadLoad {
+        val data = fetch(query, cursor)
+        if (cursor is ThreadCursor.After && data.thread == null && data.post_list.isEmpty()) {
+            return ThreadLoad(page = null, posts = Page(emptyList()))
+        }
+        val page = data.toThreadPage(query.sort, emoticons)
+        return ThreadLoad(page, page.posts)
+    }
+
+    private suspend fun fetch(query: ThreadQuery, cursor: ThreadCursor): PbPageResponseData = withContext(io) {
+        remote.page(
             threadId = query.threadId,
             page = when (cursor) {
                 is ThreadCursor.Number -> cursor.page
@@ -170,7 +190,6 @@ class ThreadRepository @Inject constructor(
             stType = if (query.fromStore) "store_thread" else "",
             mark = if (query.fromStore) 1 else 0,
         )
-        data.toThreadPage(query.sort, emoticons)
     }
 
     /** A page of the replies inside post [postId] of thread [threadId]. */

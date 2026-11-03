@@ -64,7 +64,7 @@ class ReaderViewModel @AssistedInject constructor(
     // The thread page with only the author's posts keeps the same list in the app's cache
     private val pager = repository.posts.pager(viewModelScope, query, ThreadCursor.first())
 
-    private val page = pager.loads.mapNotNull { it.latest?.response }
+    private val page = pager.loads.mapNotNull { it.latest?.response?.page }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val preview = client.get(Threads, args.threadId)
@@ -73,7 +73,7 @@ class ReaderViewModel @AssistedInject constructor(
     private var kinds = emptySet<HeadingKind>()
 
     // Only the first page brings the first floor
-    private val firstPost = pager.loads.map { it.refreshed?.response?.firstPost ?: it.latest?.response?.firstPost }
+    private val firstPost = pager.loads.map { it.refreshed?.response?.page?.firstPost ?: it.latest?.response?.page?.firstPost }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val document = combine(firstPost, pager.state.map { it.items }.distinctUntilChanged()) { first, posts ->
