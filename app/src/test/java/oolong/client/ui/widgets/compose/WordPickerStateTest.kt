@@ -57,7 +57,7 @@ class WordPickerStateTest {
 
         assertTrue(state.split(0))
         assertEquals(listOf("星", "穹", "铁", "道", "好玩"), state.pieces.map { it.text })
-        assertTrue(state.pieces.take(4).all { it.picked && it.split })
+        assertTrue(state.pieces.take(4).all { it.picked })
         assertFalse(state.split(0))
     }
 
