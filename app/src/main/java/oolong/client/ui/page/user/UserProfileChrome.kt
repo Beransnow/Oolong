@@ -304,7 +304,7 @@ private fun ProfileFacts(user: UserProfile, onCopyId: () -> Unit) {
     }
 }
 
-/** The profile's tabs on a glass capsule, each with how many it holds. */
+/** The profile's tabs on a glass capsule across the width, each with how many it holds. */
 @Composable
 internal fun UserProfileTabRow(
     user: UserProfile,
@@ -313,7 +313,7 @@ internal fun UserProfileTabRow(
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState, modifier = modifier) {
+    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState, modifier = modifier, fill = true) {
         pages.forEachIndexed { index, page ->
             GlassTab(
                 selected = pagerState.currentPage == index,

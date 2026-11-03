@@ -348,7 +348,7 @@ private fun UserProfileContentNormal(
                             pages = pages,
                             pagerState = pagerState,
                             modifier = Modifier
-                                .align(Alignment.Start)
+                                .fillMaxWidth()
                                 .sharedHeaderPinned(header)
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
                         )

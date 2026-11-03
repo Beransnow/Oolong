@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -122,7 +123,8 @@ private val LocalTabLens = staticCompositionLocalOf { false }
  * the tabs, scrolling the row near its ends, and picks the tab it is let go on; without, a drag
  * scrolls the row and puts the lens back.
  *
- * Tabs are laid out at the capsule's inner height; [GlassTab]s fill it.
+ * Tabs are laid out at the capsule's inner height; [GlassTab]s fill it. With [fill], the capsule
+ * takes the whole width and the tabs share it equally, for a few tabs that fit, as a profile's.
  */
 @Composable
 fun GlassTabRow(
@@ -130,6 +132,7 @@ fun GlassTabRow(
     modifier: Modifier = Modifier,
     pagerState: PagerState? = null,
     onSelect: ((Int) -> Unit)? = null,
+    fill: Boolean = false,
     tabs: @Composable () -> Unit,
 ) {
     val scroll = rememberScrollState()
@@ -174,6 +177,7 @@ fun GlassTabRow(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
+                .then(if (fill) Modifier.fillMaxWidth() else Modifier)
                 .floatingGlass(TabCapsule)
                 .clip(TabCapsule)
                 // What the lens sees: the tabs and the bubble, which fades from under it
@@ -184,7 +188,7 @@ fun GlassTabRow(
                 Layout(
                     content = tabs,
                     modifier = Modifier
-                        .horizontalScroll(scroll)
+                        .then(if (fill) Modifier.fillMaxWidth() else Modifier.horizontalScroll(scroll))
                         .padding(horizontal = TabInset)
                         .selectableGroup()
                         .drawBehind {
@@ -263,10 +267,12 @@ fun GlassTabRow(
                                 }
                             }
                         ),
-                ) { measurables, _ ->
+                ) { measurables, constraints ->
                     val height = (GlassTabRowHeight - TabInset * 2).roundToPx()
+                    // Shared out equally where the width is known; a tab wider than its share keeps its width
+                    val share = if (fill && constraints.hasBoundedWidth && measurables.isNotEmpty()) constraints.maxWidth / measurables.size else 0
                     val placeables = measurables.map {
-                        it.measure(Constraints(minHeight = height, maxHeight = height))
+                        it.measure(Constraints(minWidth = share, minHeight = height, maxHeight = height))
                     }
                     val starts = IntArray(placeables.size)
                     var x = 0
