@@ -607,14 +607,15 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         val glass: Rect
         val corner: Float
         if (fromButton) {
-            // Starts as a round drop around the button's icon
-            val startSize = anchor.minDimension
+            // Starts as a round drop around the button's icon; out of something wide, such as a
+            // setting's value and its arrows, as a capsule over all of it
+            val start = if (anchor.isWide) anchor.size else Size(anchor.minDimension, anchor.minDimension)
             val m = move.value
             val center = Offset(lerp(anchor.center.x, bounds.center.x, m), lerp(anchor.center.y, bounds.center.y, m))
-            val half = Offset(lerp(startSize, bounds.width, g), lerp(startSize, bounds.height, g)) / 2f
+            val half = Offset(lerp(start.width, bounds.width, g), lerp(start.height, bounds.height, g)) / 2f
             glass = Rect(center - half, center + half)
             // Round while small, like a drop, easing into the menu's corners
-            corner = min(glass.minDimension / 2, lerp(startSize / 2, Radius.lg.toPx(), g.coerceIn(0f, 1f)))
+            corner = min(glass.minDimension / 2, lerp(start.minDimension / 2, Radius.lg.toPx(), g.coerceIn(0f, 1f)))
         } else {
             // Grows evenly out of the point of the menu nearest the finger, or under a preview
             // out of its top edge
@@ -632,7 +633,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         }
         // All the room the glass takes, from a button's drop to the menu, and a little more for
         // the springs carrying it past
-        val area = (if (fromButton) bounds.union(Rect(anchor.center, anchor.minDimension / 2)) else bounds)
+        val area = (if (fromButton) bounds.union(if (anchor.isWide) anchor else Rect(anchor.center, anchor.minDimension / 2)) else bounds)
             .inflate(GlassSlack.toPx())
         geometry.bounds = bounds
         geometry.glass = glass
@@ -1045,6 +1046,9 @@ private class GlassClip(private val geometry: MenuGeometry, private val scale: F
 /** The smallest rectangle holding both. */
 private fun Rect.union(other: Rect) =
     Rect(min(left, other.left), min(top, other.top), max(right, other.right), max(bottom, other.bottom))
+
+/** Whether a menu grows out of this anchor as a capsule over it, rather than a drop at its middle. */
+private val Rect.isWide: Boolean get() = width > height * 1.5f
 
 /** Room around the glass's way for springs to carry it past. */
 private val GlassSlack = 16.dp
