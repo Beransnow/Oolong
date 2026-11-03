@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -45,7 +46,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumTab
@@ -97,6 +97,9 @@ fun ForumScreen(
     // The lists are padded for both, so they start below them.
     var headerHeight by remember { mutableIntStateOf(0) }
     var tabsHeight by remember { mutableIntStateOf(0) }
+    // The header's place is the tabs' shared state: the viewer's scrolling of the open tab's list
+    // moves it, and every other list is kept in line with it (see below)
+    var sharedCollapse by remember { mutableIntStateOf(0) }
     val currentList = state.list(state.selectedTab)
     val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
     val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = { onEvent(ForumEvent.Refresh) })
@@ -113,7 +116,7 @@ fun ForumScreen(
                     onEvent = onEvent,
                     menu = forumMenu(onEvent, liked = forum.liked),
                     title = { ForumBarTitle(forum, onEvent) },
-                    pinnedOffset = { headerHeight - headerCollapsed(pageScroll, headerHeight) },
+                    pinnedOffset = { headerHeight - headerCollapsed(pageScroll, headerHeight, sharedCollapse) },
                     pinnedContent = {
                         ForumTabRow(
                             tabs = tabs,
@@ -160,34 +163,24 @@ fun ForumScreen(
             val listPadding = remember(contentPadding, density) {
                 PaddingAbove(contentPadding) { with(density) { (headerHeight + tabsHeight).toDp() } }
             }
-            // Lists near their top, out of view, follow the header as the one in view is scrolled,
-            // so swiping to them shows it where it was. Ones further down keep their place: the
-            // header is gone over them anyway. Only the viewer's scrolling moves them, not a list
-            // that has just loaded at its top.
+            // Every other list is kept in line with the header as the open one scrolls, so swiping
+            // to another tab neither moves the header nor shows that list at some other place
+            // under it. Lists not loaded yet are put in place too, and load there.
             LaunchedEffect(pageScroll, pagerState) {
                 var wasScrolling = false
                 snapshotFlow {
                     val scrolling = listStates[tabs.getOrNull(pagerState.currentPage)]?.isScrollInProgress == true
-                    scrolling to headerCollapsed(pageScroll, headerHeight)
+                    scrolling to headerCollapsed(pageScroll, headerHeight, sharedCollapse)
                 }.collect { (scrolling, collapsed) ->
-                    // While scrolling, and once more as it stops, for where it stopped
+                    // While scrolling, and once more as it stops, for where it stopped; not when a
+                    // list that has just loaded reports its top
                     val follow = scrolling || wasScrolling
                     wasScrolling = scrolling
                     if (!follow || pagerState.isScrollInProgress) return@collect
+                    sharedCollapse = collapsed
                     tabs.forEachIndexed { index, tab ->
-                        if (index == pagerState.currentPage) return@forEachIndexed
-                        val other = listStates[tab] ?: return@forEachIndexed
-                        val scrolled = other.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.offset?.let { -it }
-                        if (scrolled != null && scrolled < headerHeight && scrolled != collapsed) other.requestScrollToItem(0, collapsed)
+                        if (index != pagerState.currentPage) listStates[tab]?.alignWithHeader(collapsed, headerHeight)
                     }
-                }
-            }
-            // Where the header was when a swipe to another tab began, for a list that only loads
-            // once it is there and would otherwise open the header from the top
-            var keptCollapse by remember { mutableIntStateOf(0) }
-            LaunchedEffect(pageScroll, pagerState) {
-                snapshotFlow { pagerState.isScrollInProgress }.filter { it }.collect {
-                    keptCollapse = headerCollapsed(pageScroll, headerHeight)
                 }
             }
             val accent = LocalForumAccent.current
@@ -201,7 +194,7 @@ fun ForumScreen(
                                 val height = contentPadding.calculateTopPadding().roundToPx() + headerHeight
                                 val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                                 layout(placeable.width, placeable.height) {
-                                    placeable.place(0, -headerCollapsed(pageScroll, headerHeight))
+                                    placeable.place(0, -headerCollapsed(pageScroll, headerHeight, sharedCollapse))
                                 }
                             }
                             .background(
@@ -218,41 +211,44 @@ fun ForumScreen(
                         key = { tabs[it].toString() },
                         verticalAlignment = Alignment.Top,
                     ) { page ->
-                        val tab = tabs[page]
-                        val list = state.list(tab)
-                        val listState = listStates.getValue(tab)
-                        val loaded = list.items.isNotEmpty()
-                        LaunchedEffect(tab, loaded) {
-                            val atTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
-                            if (loaded && page == pagerState.currentPage && atTop && keptCollapse > 0) {
-                                listState.requestScrollToItem(0, keptCollapse)
+                        // Only the open tab's list tells the page how far it has scrolled
+                        CompositionLocalProvider(LocalScrollEdge provides pageScroll.takeIf { page == pagerState.currentPage }) {
+                            val tab = tabs[page]
+                            val list = state.list(tab)
+                            val listState = listStates.getValue(tab)
+                            val loaded = list.items.isNotEmpty()
+                            // A list that loads once its tab is open starts in line with the header too
+                            LaunchedEffect(tab, loaded) {
+                                if (loaded) listState.alignWithHeader(sharedCollapse, headerHeight)
                             }
-                        }
-                        StateScreen(
-                            isEmpty = list.items.isEmpty(),
-                            isError = list.refresh is LoadStatus.Error,
-                            isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
-                            onReload = { onEvent(ForumEvent.Refresh) },
-                            modifier = Modifier.fillMaxSize(),
-                            loadingScreen = {
-                                Column(modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(listPadding)) {
-                                    repeat(4) { FeedCardPlaceholder() }
-                                }
-                            },
-                            errorScreen = {
-                                Box(modifier = Modifier.padding(listPadding)) { DefaultErrorScreen(this@StateScreen) }
-                            },
-                        ) {
-                            ForumThreadList(
-                                tab = tab,
-                                list = list,
-                                onEvent = onEvent,
-                                listState = listState,
-                                contentPadding = listPadding,
-                                ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
-                            )
+                            StateScreen(
+                                isEmpty = list.items.isEmpty(),
+                                isError = list.refresh is LoadStatus.Error,
+                                isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+                                onReload = { onEvent(ForumEvent.Refresh) },
+                                modifier = Modifier.fillMaxSize(),
+                                loadingScreen = {
+                                    // Under the header where it is, not where it is fully open
+                                    Column(modifier = Modifier
+                                        .fillMaxSize()
+                                        .offset { IntOffset(0, -sharedCollapse) }
+                                        .padding(listPadding)) {
+                                        repeat(4) { FeedCardPlaceholder() }
+                                    }
+                                },
+                                errorScreen = {
+                                    Box(modifier = Modifier.padding(listPadding)) { DefaultErrorScreen(this@StateScreen) }
+                                },
+                            ) {
+                                ForumThreadList(
+                                    tab = tab,
+                                    list = list,
+                                    onEvent = onEvent,
+                                    listState = listState,
+                                    contentPadding = listPadding,
+                                    ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
+                                )
+                            }
                         }
                     }
                 }
@@ -262,7 +258,7 @@ fun ForumScreen(
                     onEvent = onEvent,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - headerCollapsed(pageScroll, headerHeight)) }
+                        .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - headerCollapsed(pageScroll, headerHeight, sharedCollapse)) }
                         .onSizeChanged { headerHeight = it.height }
                         .scrollsPageContent(),
                 )
@@ -321,9 +317,12 @@ private fun ForumLoading(state: ForumState, onEvent: (ForumEvent) -> Unit, modif
     }
 }
 
-/** How much of the header has gone under the bar: how far the list in view has scrolled, up to all of it. */
-private fun headerCollapsed(page: ScrollEdgeState?, headerHeight: Int): Int =
-    (page?.scrolled ?: 0).coerceIn(0, headerHeight)
+/**
+ * How much of the header has gone under the bar: how far the open tab's list has scrolled, up to
+ * all of it, or [held] while it has no list to tell, as while it loads.
+ */
+private fun headerCollapsed(page: ScrollEdgeState?, headerHeight: Int, held: Int): Int =
+    (page?.scrolled ?: held).coerceIn(0, headerHeight)
 
 /** [base], with [extra] more room above. */
 private class PaddingAbove(private val base: PaddingValues, private val extra: () -> Dp) : PaddingValues {
@@ -336,3 +335,18 @@ private class PaddingAbove(private val base: PaddingValues, private val extra: (
 /** The forum's colour at the top of its page. */
 private const val ForumWash = 0.18f
 private const val ForumWashNight = 0.28f
+
+/**
+ * Puts this list where it belongs under a header that is [collapsed] of [headerHeight] gone: just
+ * as far down while the header still shows, since a header in view means the top of every tab;
+ * once it has gone, anywhere below it, so a list further down keeps its place.
+ */
+private fun LazyListState.alignWithHeader(collapsed: Int, headerHeight: Int) {
+    if (headerHeight <= 0) return
+    // Item offsets start at the end of the top padding. A list not laid out yet, or out of view,
+    // goes by its own scroll position; past the first item it is far down.
+    val scrolled = layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.offset?.let { -it }
+        ?: if (firstVisibleItemIndex == 0) firstVisibleItemScrollOffset else Int.MAX_VALUE
+    val target = if (collapsed < headerHeight) collapsed else maxOf(scrolled, headerHeight)
+    if (target != scrolled) requestScrollToItem(0, target)
+}
