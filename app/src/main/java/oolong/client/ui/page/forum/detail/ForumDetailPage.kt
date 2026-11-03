@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +48,7 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.HorizontalDivider
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.states.StateScreen
+import oolong.client.ui.widgets.compose.verticalScrollUnderBar
 import oolong.client.utils.StringUtil.getShortNumeralString
 
 @Composable
@@ -111,7 +110,7 @@ private fun ForumDetailContent(
 ) {
     Column(
         modifier = modifier
-            .verticalScroll(rememberScrollState())
+            .verticalScrollUnderBar()
             .padding(contentPadding)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

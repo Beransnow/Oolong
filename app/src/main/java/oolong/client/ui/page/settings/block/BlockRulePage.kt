@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -82,6 +80,7 @@ import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.Stepper
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.rememberDialogState
+import oolong.client.ui.widgets.compose.verticalScrollUnderBar
 
 @Composable
 fun BlockRulePage(
@@ -149,7 +148,7 @@ fun BlockRuleScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScrollUnderBar()
                 .padding(padding)
                 .padding(bottom = Spacing.xxl),
         ) {

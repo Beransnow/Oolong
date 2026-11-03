@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +40,7 @@ import oolong.client.ui.widgets.compose.Stepper
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.TextButton
 import kotlin.math.roundToInt
+import oolong.client.ui.widgets.compose.verticalScrollUnderBar
 
 /**
  * Every control of the design system on one page, in each of its states, to check them together
@@ -62,7 +61,7 @@ fun ControlCatalogPage(
     ) { padding ->
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
+                .verticalScrollUnderBar()
                 .padding(padding)
                 .padding(horizontal = Spacing.md, vertical = Spacing.xs),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),

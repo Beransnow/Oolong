@@ -1,6 +1,8 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
@@ -77,3 +79,8 @@ fun Modifier.scrollEdgeSource(state: LazyGridState): Modifier =
 /** [scrollEdgeSource] for a scrolling column. */
 @Composable
 fun Modifier.scrollEdgeSource(state: ScrollState): Modifier = scrollEdgeSource { state.value }
+
+/** [verticalScroll] that also reports to the top bar's scroll edge. */
+@Composable
+fun Modifier.verticalScrollUnderBar(state: ScrollState = rememberScrollState()): Modifier =
+    scrollEdgeSource(state).verticalScroll(state)
