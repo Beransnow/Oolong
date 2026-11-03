@@ -92,6 +92,7 @@ class ReplyComposerScreenshotTest {
                 editor = editor,
                 state = state,
                 fullScreen = fullScreen,
+                fill = fullScreen,
                 showNotice = showNotice,
                 hasTail = hasTail,
                 canAttachImages = replyTo == null,
