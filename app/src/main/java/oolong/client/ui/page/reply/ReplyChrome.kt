@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,15 +40,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -79,14 +77,15 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import dev.chrisbanes.haze.glass.GlassMemberTransition
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.isGlassAvailable
 import oolong.client.utils.appPreferences
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -314,14 +313,6 @@ fun ReplyChrome(
             )
         }
 
-        // Counts the capsules' returns to rest. Their glass keeps sampling at the scale it last had
-        // while they shrank, so it is made anew once they are back at full size
-        var rests by remember { mutableIntStateOf(0) }
-        LaunchedEffect(Unit) {
-            snapshotFlow { open.value == 0f && grow.value == 0f && move.value == 0f }
-                .drop(1)
-                .collect { atRest -> if (atRest) rests++ }
-        }
         // The capsules at rest. The one that opened hides while its glass is out; the other
         // dissolves in place.
         Row(
@@ -330,51 +321,84 @@ fun ReplyChrome(
                 .fillMaxWidth()
                 .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                 .padding(horizontal = SideMargin, vertical = BottomMargin)
-                .graphicsLayer {
-                    translationY = (ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()
-                },
+                // Moved by placing rather than a layer, which the glass container wouldn't follow
+                .offset { IntOffset(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()).roundToInt()) },
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (replyCapsule != null) key(rests) {
+            if (replyCapsule != null) {
+                // Its glass is the composer's while that is out, and fades where it is while the
+                // menu grows; what it shows dissolves in a layer of its own, as a layer's alpha or
+                // scale would leave the glass, which the glass container draws, as it is
                 Row(
                     modifier = Modifier
                         .weight(1f)
                         .height(ReplyCapsuleHeight)
                         .onGloballyPositioned { replyCapsuleBounds = it.boundsIn(chrome) }
-                        .graphicsLayer {
-                            if (open.value > 0f) {
-                                alpha = 0f
+                        .then(
+                            if (!composing && open.value == 0f) {
+                                Modifier.floatingGlass(
+                                    CapsuleShape,
+                                    memberTransition = GlassMemberTransition.None,
+                                    alpha = 1f - dissolveOf(grow.value),
+                                )
                             } else {
-                                dissolve(dissolveOf(grow.value), TransformOrigin(0f, 0.5f))
+                                Modifier
                             }
-                        }
-                        .floatingGlass(CapsuleShape)
-                        .clickable(onClick = onOpenComposer)
-                        .padding(start = 10.dp, end = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    content = replyCapsule,
-                )
+                        )
+                        .clickable(onClick = onOpenComposer),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                if (open.value > 0f) {
+                                    alpha = 0f
+                                } else {
+                                    dissolve(dissolveOf(grow.value), TransformOrigin(0f, 0.5f))
+                                }
+                            }
+                            .padding(start = 10.dp, end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        content = replyCapsule,
+                    )
+                }
             } else {
                 Box(modifier = Modifier.weight(1f))
             }
-            if (actions != null) key(rests) {
-                Row(
+            if (actions != null) {
+                // The same for the actions: their glass is the menu's while that is out
+                Box(
                     modifier = Modifier
                         .height(ReplyCapsuleHeight)
                         .onGloballyPositioned { actionsBounds = it.boundsIn(chrome) }
-                        .graphicsLayer {
-                            if (grow.value > 0f || move.value > 0f) {
-                                alpha = 0f
+                        .then(
+                            if (!menuOpen && grow.value == 0f && move.value == 0f) {
+                                Modifier.floatingGlass(
+                                    CapsuleShape,
+                                    memberTransition = GlassMemberTransition.None,
+                                    alpha = 1f - dissolveOf(open.value),
+                                )
                             } else {
-                                dissolve(dissolveOf(open.value), TransformOrigin(1f, 0.5f))
+                                Modifier
                             }
-                        }
-                        .floatingGlass(CapsuleShape)
-                        .padding(horizontal = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = actions,
-                )
+                        ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                if (grow.value > 0f || move.value > 0f) {
+                                    alpha = 0f
+                                } else {
+                                    dissolve(dissolveOf(open.value), TransformOrigin(1f, 0.5f))
+                                }
+                            }
+                            .fillMaxHeight()
+                            .padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = actions,
+                    )
+                }
             }
         }
 
@@ -754,20 +778,28 @@ private fun Ghost(size: Size, modifier: Modifier, content: @Composable () -> Uni
 private fun MorphingGlass(bounds: Rect, top: Dp, bottom: Dp, opacity: Float) {
     val density = LocalDensity.current
     val colors = ExtendedTheme.colors
+    val glass = isGlassAvailable()
     if (bounds.isEmpty) return
     val shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
     Box(
         modifier = Modifier
             .offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
             .size(with(density) { bounds.width.toDp() }, with(density) { bounds.height.toDp() })
-            // Grown into a surface, the glass reads as thicker: a deeper shadow under it
-            .shadow(
-                elevation = if (colors.isNightMode) 32.dp else 24.dp,
-                shape = shape,
-                ambientColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.16f else 0.14f),
-                spotColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.26f else 0.22f),
+            // Grown into a surface, frosted or opaque chrome reads as thicker: a deeper shadow under
+            // it. Glass casts none, and in a glass container one cast from here would lie over it.
+            .then(
+                if (glass) {
+                    Modifier
+                } else {
+                    Modifier.shadow(
+                        elevation = if (colors.isNightMode) 32.dp else 24.dp,
+                        shape = shape,
+                        ambientColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.16f else 0.14f),
+                        spotColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.26f else 0.22f),
+                    )
+                }
             )
-            .floatingGlass(shape)
+            .floatingGlass(shape, memberTransition = GlassMemberTransition.None)
             .then(if (opacity > 0f) Modifier.background(colors.sheet.copy(alpha = opacity), shape) else Modifier)
     )
 }

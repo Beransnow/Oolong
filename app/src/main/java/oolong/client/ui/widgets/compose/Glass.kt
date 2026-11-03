@@ -69,6 +69,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.glass.GlassMemberTransition
 import dev.chrisbanes.haze.glass.GlassOptics
 import dev.chrisbanes.haze.glass.GlassStyle
 import dev.chrisbanes.haze.glass.GlassTransformTarget
@@ -389,7 +390,9 @@ internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
 
 /**
  * Background for a floating, rounded piece of chrome such as the navigation pill. Given the
- * [interactionSource] of the control it backs, its glass answers presses itself. The content
+ * [interactionSource] of the control it backs, its glass answers presses itself. In a glass
+ * container it comes and goes by [memberTransition]; none, where its owner animates it itself, and
+ * then fades by [alpha]. The content
  * under it is frosted all over, by [FloatingBlur] at the default clarity, and veiled in the page's
  * colour only on the frosted side of it.
  *
@@ -405,9 +408,11 @@ fun Modifier.floatingGlass(
     shape: RoundedCornerShape,
     barButton: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
+    memberTransition: GlassMemberTransition = GlassMemberTransition.MatchedGeometry,
+    alpha: Float = 1f,
 ): Modifier {
     // On a classic bar the band is the ground
-    if (LocalOnClassicBar.current) return this
+    if (LocalOnClassicBar.current || alpha <= 0f) return this
     val bar = if (barButton) LocalBarButtons.current else null
     val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
@@ -441,7 +446,10 @@ fun Modifier.floatingGlass(
                 clip = true
             }
         } else {
-            shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
+            // Faded by a layer that is always there: one added only while fading would change the
+            // modifiers around the blur as it updates, which froze the page
+            graphicsLayer { this.alpha = alpha }
+                .shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
         }
     } else {
         onSizeChanged { empty = it.width == 0 || it.height == 0 }.pointerInput(Unit) {
@@ -490,7 +498,7 @@ fun Modifier.floatingGlass(
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background, frost, bar, interactionSource != null) {
+            val style = remember(shape, colors.background, frost, bar, interactionSource != null, alpha) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape)
@@ -500,6 +508,8 @@ fun Modifier.floatingGlass(
                     // sharp; here all of it is frosted, evenly
                     optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(FloatingBlur * frost)) }
                     if (frost > 1f) tint(colors.background.copy(alpha = FrostedFloatingTint * (frost - 1f) / (MostFrost - 1f)))
+                    // Faded by its style, which a glass container draws it by, where a layer's alpha would not
+                    if (alpha < 1f) alpha(alpha)
                     if (bar == null && interactionSource != null) {
                         // Pressed, the glass lights up and gives a little, by its own response: a
                         // layer's scale would take it out of a glass container
@@ -529,6 +539,7 @@ fun Modifier.floatingGlass(
                     style = style,
                     interactionSource = if (bar == null) interactionSource else null,
                     interactionTransformTarget = GlassTransformTarget.MaterialAndContent,
+                    memberTransition = memberTransition,
                 )
                 .then(pressVeil)
         }
