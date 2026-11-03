@@ -173,17 +173,27 @@ fun Modifier.topBarGlass(): Modifier {
         return measured.background(brush)
     }
     val blur = TopBarEdgeTuning.blur.dp
-    val style = remember(color, tint, edge, blur) {
+    val curve = TopBarEdgeTuning.curve
+    val style = remember(color, tint, edge, blur, curve) {
         // How far into the fade a point is: 0 above it, 1 at the bottom edge
         fun faded(t: Float) = if (t <= edge) 0f else ((t - edge) / (1f - edge)).coerceIn(0f, 1f)
+        // How much of the veil is gone at t, 0 at the top to 1 at the bottom edge
+        fun gone(t: Float): Float = when (curve) {
+            // Flat, then falling ever faster to the edge
+            0 -> faded(t).let { it * it * it }
+            // Flat, then easing in and out over the fade
+            1 -> faded(t).let { it * it * (3f - 2f * it) }
+            // No flat part: eased over the whole bar, level at both ends
+            else -> t * t * t * (t * (t * 6f - 15f) + 10f)
+        }
         HazeBlurStyle {
             backgroundColor(colors.background)
             blurRadius(blur)
             noiseFactor(0f)
             progressive(
                 HazeProgressive.verticalGradient(
-                    // A smoothstep: content just under the bar only softens
-                    easing = { t -> faded(t).let { it * it * (3f - 2f * it) } },
+                    // The blur thins out along the veil's curve, so neither outlasts the other
+                    easing = { t -> if (curve == 0) faded(t).let { it * it * (3f - 2f * it) } else gone(t) },
                     startIntensity = 1f,
                     endIntensity = 0f,
                 )
@@ -194,8 +204,7 @@ fun Modifier.topBarGlass(): Modifier {
                         Brush.verticalGradient(
                             *Array(TopBarTintStops + 1) { i ->
                                 val t = i / TopBarTintStops.toFloat()
-                                val x = faded(t)
-                                t to color.copy(alpha = tint * (1f - x * x * x))
+                                t to color.copy(alpha = tint * (1f - gone(t)))
                             }
                         )
                     )
@@ -218,12 +227,16 @@ fun Modifier.topBarGlass(): Modifier {
  * out (dp). Temporary; the settled values go back into constants.
  */
 object TopBarEdgeTuning {
-    const val DefaultBlur = 40f
-    const val DefaultTint = 0.8f
+    const val DefaultBlur = 12f
+    const val DefaultTint = 0.5f
     const val DefaultFade = 48f
+    const val DefaultCurve = 2
     var blur by mutableFloatStateOf(DefaultBlur)
     var tint by mutableFloatStateOf(DefaultTint)
     var fade by mutableFloatStateOf(DefaultFade)
+
+    /** 0: flat, then cubic to the edge (before tuning); 1: flat, then eased; 2: eased over the whole bar. */
+    var curve by mutableIntStateOf(DefaultCurve)
 }
 
 /** How far above its bottom edge an opaque top bar fades out, kept short so it stays opaque. */

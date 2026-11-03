@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.collections.immutable.persistentListOf
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
@@ -32,6 +33,7 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.TopBarEdgeTuning
 import kotlin.math.roundToInt
@@ -65,11 +67,21 @@ fun TopBarTuningPage(
                 TuningSlider("模糊半径", "${TopBarEdgeTuning.blur.roundToInt()}dp", TopBarEdgeTuning.blur, 0f..60f) { TopBarEdgeTuning.blur = it }
                 TuningSlider("底色浓度", "${(TopBarEdgeTuning.tint * 100).roundToInt()}%", TopBarEdgeTuning.tint, 0f..1f) { TopBarEdgeTuning.tint = it }
                 TuningSlider("淡出长度", "${TopBarEdgeTuning.fade.roundToInt()}dp", TopBarEdgeTuning.fade, 8f..96f) { TopBarEdgeTuning.fade = it }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "曲线", fontSize = 14.sp, color = ExtendedTheme.colors.text, modifier = Modifier.width(72.dp))
+                    // 淡出长度 shapes only the first two; the third eases over the whole bar
+                    SegmentedControl(
+                        options = CurveNames,
+                        selected = TopBarEdgeTuning.curve,
+                        onSelect = { TopBarEdgeTuning.curve = it },
+                    )
+                }
                 Button(
                     onClick = {
                         TopBarEdgeTuning.blur = TopBarEdgeTuning.DefaultBlur
                         TopBarEdgeTuning.tint = TopBarEdgeTuning.DefaultTint
                         TopBarEdgeTuning.fade = TopBarEdgeTuning.DefaultFade
+                        TopBarEdgeTuning.curve = TopBarEdgeTuning.DefaultCurve
                     },
                     modifier = Modifier.align(Alignment.End),
                 ) { Text(text = "恢复默认") }
@@ -102,6 +114,8 @@ private fun TuningSlider(label: String, value: String, current: Float, range: Cl
         Text(text = value, fontSize = 13.sp, color = ExtendedTheme.colors.textSecondary, modifier = Modifier.width(52.dp).padding(start = 8.dp))
     }
 }
+
+private val CurveNames = persistentListOf("原来", "缓入缓出", "整条渐变")
 
 private val Samples = List(16) { i ->
     (i * 47f) % 360f to listOf("租房无中介费，押金平台先行垫付", "新版本地图太大了，跑图跑到手酸", "二手 4070 现在什么价位合适", "今天在江边拍的晚霞")[i % 4]
