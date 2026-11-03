@@ -139,8 +139,9 @@ fun ForumScreen(
                             onEvent = onEvent,
                             modifier = Modifier
                                 .align(Alignment.Start)
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                                .onSizeChanged { tabsHeight = it.height },
+                                // The room the row takes, its margins too, is what the lists leave for it
+                                .onSizeChanged { tabsHeight = it.height }
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
                         )
                     },
                 )
