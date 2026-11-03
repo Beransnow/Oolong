@@ -84,6 +84,7 @@ import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.isGlassAvailable
 import kotlin.math.roundToInt
 
 /**
@@ -202,6 +203,8 @@ fun MainSearchField(
     if ((atTop || LocalChromeStyle.current == ChromeStyle.Classic) && state.progress.value == 0f) return
     var origin by remember { mutableStateOf(Offset.Zero) }
     val colors = ExtendedTheme.colors
+    val glass = isGlassAvailable()
+    val buttonInteraction = remember { MutableInteractionSource() }
     val bottomInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
     val topInsets = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     val sideInsets = WindowInsets.navigationBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
@@ -243,12 +246,16 @@ fun MainSearchField(
                     lerp(state.buttonBounds.translate(-origin), field, state.progress.value)
                 }
                 .semantics { traversalIndex = -1f }
-                .floatingGlass(CapsuleShape)
+                .then(if (glass) Modifier else Modifier.pressScale(buttonInteraction))
+                .floatingGlass(CapsuleShape, interactionSource = buttonInteraction)
                 .then(
                     if (state.open) {
                         Modifier
                     } else {
                         Modifier.clickable(
+                            interactionSource = buttonInteraction,
+                            // Glass answers the press itself
+                            indication = if (glass) null else PressFeedback.Overlay,
                             onClickLabel = stringResource(id = R.string.title_search),
                             role = Role.Button,
                             onClick = onOpen,
@@ -328,17 +335,14 @@ fun MainSearchField(
                             Rect(right - size, bottom - size, right, bottom)
                         }
                     }
-                    .graphicsLayer {
-                        val p = state.progress.value
-                        alpha = p
-                        scaleX = lerp(0.6f, 1f, p)
-                        scaleY = scaleX
-                    }
-                    .pressScale(interactionSource)
-                    .floatingGlass(CapsuleShape)
+                    // Its glass is there only while search shows, coming and going beside the field;
+                    // a layer's alpha or scale would leave the glass, which a container draws, as it is
+                    .then(if (glass) Modifier else Modifier.pressScale(interactionSource))
+                    .then(if (state.progress.value > 0f) Modifier.floatingGlass(CapsuleShape, interactionSource = interactionSource) else Modifier)
+                    .graphicsLayer { alpha = state.progress.value }
                     .clickable(
                         interactionSource = interactionSource,
-                        indication = PressFeedback.Overlay,
+                        indication = if (glass) null else PressFeedback.Overlay,
                         role = Role.Button,
                         enabled = state.open,
                         onClick = onClose,

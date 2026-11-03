@@ -7,12 +7,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +34,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -34,10 +44,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -53,6 +67,7 @@ import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.glass.GlassOptics
 import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.GlassTransformTarget
 import dev.chrisbanes.haze.glass.OpticalSizeValue
 import dev.chrisbanes.haze.glass.RefractionProfile
 import dev.chrisbanes.haze.glass.hazeGlass
@@ -325,7 +340,8 @@ internal class BarButtons(val shown: () -> Float)
 internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
 
 /**
- * Background for a floating, rounded piece of chrome such as the navigation pill. The content
+ * Background for a floating, rounded piece of chrome such as the navigation pill. Given the
+ * [interactionSource] of the control it backs, its glass answers presses itself. The content
  * under it is frosted all over, by [FloatingBlur] at the default clarity, and veiled in the page's
  * colour only on the frosted side of it.
  *
@@ -337,7 +353,11 @@ internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true): Modifier {
+fun Modifier.floatingGlass(
+    shape: RoundedCornerShape,
+    barButton: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
+): Modifier {
     // On a classic bar the band is the ground
     if (LocalOnClassicBar.current) return this
     val bar = if (barButton) LocalBarButtons.current else null
@@ -422,7 +442,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background, frost, bar) {
+            val style = remember(shape, colors.background, frost, bar, interactionSource != null) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape)
@@ -432,6 +452,17 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
                     // sharp; here all of it is frosted, evenly
                     optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(FloatingBlur * frost)) }
                     if (frost > 1f) tint(colors.background.copy(alpha = FrostedFloatingTint * (frost - 1f) / (MostFrost - 1f)))
+                    if (bar == null && interactionSource != null) {
+                        // Pressed, the glass lights up and gives a little, by its own response: a
+                        // layer's scale would take it out of a glass container
+                        pressed {
+                            animate(toSpec = Motion.press(), fromSpec = Motion.release()) {
+                                lightingIntensity(1f)
+                                whitePointDelta(PressBrighten)
+                                scale(PressedGlassScale)
+                            }
+                        }
+                    }
                     if (bar != null) {
                         // Read here, the glass follows the scroll without being rebuilt
                         alpha(shown())
@@ -444,7 +475,14 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
                     }
                 }
             }
-            chrome.hazeGlass(input = source!!.input, style = style).then(pressVeil)
+            chrome
+                .hazeGlass(
+                    input = source!!.input,
+                    style = style,
+                    interactionSource = if (bar == null) interactionSource else null,
+                    interactionTransformTarget = GlassTransformTarget.MaterialAndContent,
+                )
+                .then(pressVeil)
         }
 
         GlassTier.Blur -> {
@@ -489,6 +527,9 @@ private const val PressSwell = 0.06f
 
 /** How much a press brightens a bar button's glass, besides lighting it where it was touched. */
 private const val PressBrighten = 0.06f
+
+/** How much a pressed glass control gives, about the 2.5dp in from its edges a pressed control shrinks by. */
+private const val PressedGlassScale = 0.92f
 
 /** The veil a press puts on a bar button where its glass does not light up. */
 private const val PressVeil = 0.08f
@@ -573,26 +614,74 @@ private const val TranslucentSolidTint = 0.35f
 @Composable
 fun Modifier.lensTarget(): Modifier {
     val source = currentGlassSource()
-    if (source == null || currentGlassTier() != GlassTier.Glass) return this
+    // In a glass container with a lens host, the container is the target, glass and all
+    if (source == null || currentGlassTier() != GlassTier.Glass || LocalGlassLensHost.current != null) return this
     return hazeSource(source.state, zIndex = LensTargetZIndex, key = source.key)
 }
 
 /**
+ * Where a lens over a glass container's members is drawn: above the container, so it sees the
+ * glass the container draws under them, which a lens among them can't. [GlassScaffold] provides
+ * one with its glass container; a lens's part tells it its [bounds], in the root, [shape] and
+ * [alpha] with [glassLensHere].
+ */
+@Stable
+class GlassLensHost {
+    var bounds by mutableStateOf(Rect.Zero)
+    var shape by mutableStateOf(RoundedCornerShape(percent = 50))
+    var alpha by mutableFloatStateOf(0f)
+}
+
+val LocalGlassLensHost = staticCompositionLocalOf<GlassLensHost?> { null }
+
+/** A [glassLens] at this part's place: drawn by the [LocalGlassLensHost] where there is one, else here. */
+@Composable
+fun Modifier.glassLensHere(shape: RoundedCornerShape, alpha: Float): Modifier {
+    val host = LocalGlassLensHost.current ?: return glassLens(shape, alpha)
+    SideEffect {
+        host.shape = shape
+        host.alpha = alpha
+    }
+    DisposableEffect(host) { onDispose { host.alpha = 0f } }
+    return onGloballyPositioned { host.bounds = it.boundsInRoot() }
+}
+
+/** Draws the lens [host] holds, where it says. */
+@Composable
+internal fun GlassLensLayer(host: GlassLensHost) {
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    val density = LocalDensity.current
+    Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInRoot() }) {
+        val bounds = host.bounds
+        if (host.alpha > 0f && !bounds.isEmpty) {
+            Box(
+                modifier = Modifier
+                    .offset { (bounds.topLeft - origin).round() }
+                    .size(with(density) { bounds.width.toDp() }, with(density) { bounds.height.toDp() })
+                    .glassLens(host.shape, host.alpha)
+            )
+        }
+    }
+}
+
+/**
  * A clear glass lens over chrome marked with [lensTarget], such as the bubble that lifts off the
- * navigation pill while it is pressed. Draws nothing below [GlassTier.Glass].
+ * navigation pill while it is pressed, faded in by [alpha]. Draws nothing below [GlassTier.Glass].
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
+fun Modifier.glassLens(shape: RoundedCornerShape, alpha: Float = 1f): Modifier {
     val source = currentGlassSource()
-    if (source == null || currentGlassTier() != GlassTier.Glass) return this
+    // Faded by its style, which a glass container draws by, where a layer's alpha would not
+    if (source == null || alpha <= 0f || currentGlassTier() != GlassTier.Glass) return this
     val background = ExtendedTheme.colors.background
-    val style = remember(shape, background) {
+    val style = remember(shape, background, alpha) {
         GlassStyle.clear.then {
             shape(shape)
             backgroundColor(background)
             // A lens magnifies what is under it; it does not frost it.
             optics(UnblurredClearOptics)
+            alpha(alpha)
         }
     }
     // Not inside any source of this state, so it sees the content and the lens targets. A lens is
@@ -689,7 +778,7 @@ private val LoupeOptics = GlassOptics.clear.copy(
 )
 
 /** Above the scaffold content, which is captured at the default zIndex of 0. */
-private const val LensTargetZIndex = 1f
+internal const val LensTargetZIndex = 1f
 
 /**
  * Glass follows the light/dark appearance of [LocalConfiguration], but the app picks its own

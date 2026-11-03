@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.HorizontalAlignmentLine
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -41,6 +43,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.glass.hazeGlassContainer
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -53,7 +56,16 @@ import kotlin.math.roundToInt
  */
 val LocalChromePadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
-private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar, Overlay }
+private enum class GlassScaffoldSlot { Content, TopBar, Fab, Snackbar, Floating, Lens }
+
+/** The bottom bar's height, reported by the floating group that holds it with the overlay. */
+private val BottomBarHeightLine = HorizontalAlignmentLine(::maxOf)
+
+/**
+ * How near pieces of floating glass come before they melt together: less than the gaps they keep
+ * at rest, such as between the bottom bar and the search button beside it.
+ */
+private val FloatingGlassMerge = 4.dp
 
 /**
  * A scaffold whose content fills the whole window and scrolls behind its bars.
@@ -76,6 +88,10 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  * [overlay] is chrome over the whole scaffold, above the bars: for chrome that grows out of a bar,
  * such as a reply box opening from the bottom bar, which would move the content if it grew inside
  * the bar's slot. The bar's slot then keeps the bar's resting height and the overlay draws it.
+ * With [glassContainer], the bottom bar and the overlay share one Haze glass container, so their
+ * glass melts together where it meets and comes and goes out of its neighbours'; see
+ * `hazeGlassContainer`. Their glass then draws on the container: a layer's alpha or scale on
+ * them leaves it as it is, so it comes and goes by leaving the composition, or by its style.
  *
  * [sampleContent] false keeps the chrome from sampling the content, for content that can't be
  * drawn twice: a web view drawn into the blur as well alternates between two renders of the page.
@@ -104,6 +120,7 @@ fun GlassScaffold(
     overlay: @Composable () -> Unit = {},
     sampleContent: Boolean = true,
     largeTitle: Boolean = false,
+    glassContainer: Boolean = false,
     pageScroll: PageScrollState = rememberPageScrollState(),
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -141,6 +158,9 @@ fun GlassScaffold(
     val hazeState = wallpaper ?: ownState
     val sourceKey = remember { Any() }
     val glassSource = remember(hazeState) { GlassSource(hazeState, sourceKey.takeIf { wallpaper != null }) }
+    // Only glass draws a lens
+    val glassAvailable = isGlassAvailable()
+    val lensHost = remember(glassContainer, glassAvailable) { if (glassContainer && glassAvailable) GlassLensHost() else null }
     val padding = remember { ScaffoldPadding() }
     val chromePadding = LocalChromePadding.current
     var consumedInsets by remember { mutableStateOf(WindowInsets(0, 0, 0, 0)) }
@@ -179,10 +199,38 @@ fun GlassScaffold(
                     it[GlassTopBarEdge].takeIf { edge -> edge != AlignmentLine.Unspecified } ?: it.height
                 } ?: 0
 
-                val bottomBarPlaceables = subcompose(GlassScaffoldSlot.BottomBar) {
-                    overPage { chrome(bottomBar) }
-                }.map { it.measure(loose) }
-                val bottomBarHeight = bottomBarPlaceables.maxOfOrNull { it.height } ?: 0
+                // The bottom bar and the overlay are one group, in one glass container if asked:
+                // the glass floating along the bottom then draws as one material, melts together
+                // where pieces meet, and a piece that comes and goes grows out of the glass it
+                // leaves from
+                val floatingPlaceables = subcompose(GlassScaffoldSlot.Floating) {
+                    Layout(
+                        contents = listOf(
+                            { CompositionLocalProvider(LocalGlassLensHost provides lensHost) { overPage { chrome(bottomBar) } } },
+                            { CompositionLocalProvider(LocalGlassLensHost provides lensHost) { overPage { chrome(overlay) } } },
+                        ),
+                        modifier = if (glassContainer) {
+                            Modifier
+                                // What a lens over the group sees: the container's glass and all on it
+                                .then(if (lensHost != null) Modifier.hazeSource(hazeState, zIndex = LensTargetZIndex, key = glassSource.key) else Modifier)
+                                .hazeGlassContainer(mergeDistance = FloatingGlassMerge)
+                        } else {
+                            Modifier
+                        },
+                    ) { (bar, over), groupConstraints ->
+                        val barPlaceables = bar.map { it.measure(groupConstraints.copy(minWidth = 0, minHeight = 0)) }
+                        val barHeight = barPlaceables.maxOfOrNull { it.height } ?: 0
+                        val overPlaceables = over.map { it.measure(groupConstraints) }
+                        val groupHeight = groupConstraints.maxHeight
+                        layout(groupConstraints.maxWidth, groupHeight, mapOf(BottomBarHeightLine to barHeight)) {
+                            barPlaceables.forEach { it.place(0, groupHeight - barHeight) }
+                            overPlaceables.forEach { it.place(0, 0) }
+                        }
+                    }
+                }.map { it.measure(constraints) }
+                val bottomBarHeight = floatingPlaceables.maxOfOrNull {
+                    it[BottomBarHeightLine].takeIf { line -> line != AlignmentLine.Unspecified } ?: 0
+                } ?: 0
 
                 val top = if (topBarHeight > 0) topBarHeight else insets.getTop(this)
                 val bottom = if (bottomBarHeight > 0) bottomBarHeight
@@ -221,14 +269,16 @@ fun GlassScaffold(
                 val snackbarHeight = snackbarPlaceables.maxOfOrNull { it.height } ?: 0
                 val fabSpace = if (fabHeight > 0) fabHeight + margin else 0
 
-                val overlayPlaceables = subcompose(GlassScaffoldSlot.Overlay) {
-                    overPage { chrome(overlay) }
-                }.map { it.measure(constraints) }
+                // A lens over the group's glass, drawn above it all
+                val lensPlaceables = if (lensHost != null) {
+                    subcompose(GlassScaffoldSlot.Lens) { chrome { GlassLensLayer(lensHost) } }.map { it.measure(constraints) }
+                } else {
+                    emptyList()
+                }
 
                 layout(width, height) {
                     contentPlaceables.forEach { it.place(0, 0) }
                     topBarPlaceables.forEach { it.place(0, 0) }
-                    bottomBarPlaceables.forEach { it.place(0, height - bottomBarHeight) }
                     fabPlaceables.forEach {
                         val x = if (isLtr) width - right - margin - fabWidth else left + margin
                         it.place(x, height - bottom - margin - fabHeight)
@@ -239,7 +289,8 @@ fun GlassScaffold(
                             height - bottom - fabSpace - snackbarHeight
                         )
                     }
-                    overlayPlaceables.forEach { it.place(0, 0) }
+                    floatingPlaceables.forEach { it.place(0, 0) }
+                    lensPlaceables.forEach { it.place(0, 0) }
                 }
             }
         }

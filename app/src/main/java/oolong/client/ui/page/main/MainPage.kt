@@ -113,6 +113,8 @@ fun MainPage(
         GlassScaffold(
             backgroundColor = Color.Transparent,
             pageScroll = page,
+            // The bar's pill and the search button melt into each other as search opens and closes
+            glassContainer = true,
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
                 if (showBottomNavigation) {
