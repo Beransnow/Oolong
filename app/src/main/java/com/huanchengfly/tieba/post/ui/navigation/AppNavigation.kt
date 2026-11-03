@@ -40,15 +40,12 @@ import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.ui.common.navigation.FramedSinglePaneSceneStrategy
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalIsPop
-import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPageOrigins
 import com.huanchengfly.tieba.post.ui.common.navigation.LocalPagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageBackHandler
 import com.huanchengfly.tieba.post.ui.common.navigation.PageDisplay
-import com.huanchengfly.tieba.post.ui.common.navigation.PageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.PagePeek
 import com.huanchengfly.tieba.post.ui.common.navigation.PageTransitions
-import com.huanchengfly.tieba.post.ui.common.navigation.pageHost
 import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageScenes
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
@@ -248,7 +245,6 @@ fun AppNavDisplay(
                             } else Modifier
                         ),
                 ) {
-                    val pageHost = remember { PageHost() }
                     val pagePeek = remember { PagePeek() }
                     val pageOrigins = LocalPageOrigins.current
                     val entries = rememberDecoratedNavEntries(
@@ -279,16 +275,11 @@ fun AppNavDisplay(
                     )
                     val scenes = rememberPageScenes(entries, strategies)
                     PageBackHandler(scenes, pagePeek, onBack)
-                    CompositionLocalProvider(
-                        LocalPageHost provides pageHost,
-                        LocalPagePeek provides pagePeek,
-                    ) {
+                    CompositionLocalProvider(LocalPagePeek provides pagePeek) {
                         PageDisplay(
                             scenes = scenes,
                             peek = pagePeek,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pageHost(pageHost),
+                            modifier = Modifier.fillMaxSize(),
                         ) { from, to, peek ->
                             PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins)
                         }

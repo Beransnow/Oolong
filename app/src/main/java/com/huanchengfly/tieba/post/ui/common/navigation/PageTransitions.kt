@@ -25,16 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -44,8 +39,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -359,22 +352,6 @@ object PageTransitions {
             content()
         }
     }
-}
-
-/** Where pages slide within: the area the navigation lays them out in, which itself stays put. */
-@Stable
-class PageHost {
-    var left by mutableFloatStateOf(0f)
-    var width by mutableFloatStateOf(0f)
-}
-
-/** The [PageHost] around the pages, which pages measure their slide against. */
-val LocalPageHost = staticCompositionLocalOf<PageHost?> { null }
-
-/** Records where [host] is laid out; apply to the container the pages slide within. */
-fun Modifier.pageHost(host: PageHost): Modifier = onGloballyPositioned {
-    host.left = it.positionInRoot().x
-    host.width = it.size.width.toFloat()
 }
 
 /** Shows the top entry alone, in a [PageTransitions.PageFrame]. */
