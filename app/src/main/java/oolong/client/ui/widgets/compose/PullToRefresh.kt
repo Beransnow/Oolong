@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import oolong.client.R
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.PullToRefreshDefaults.LoadPreUpPostDownNestedScrollConnection
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -108,8 +109,8 @@ fun PullToRefreshLayout(
 
         AnimatedVisibility(
             visible = showIndicator,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(Motion.fadeIn()),
+            exit = fadeOut(Motion.fadeOut()),
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
             indicator(refreshing, swipeableState.targetValue)

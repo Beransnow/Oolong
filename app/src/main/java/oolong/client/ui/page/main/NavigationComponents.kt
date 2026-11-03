@@ -78,6 +78,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.White
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.ContextMenuItem
@@ -190,7 +191,7 @@ private fun NavItemIcon(
     Box {
         if (navigationItem.avatar != null) {
             // Ringed in the selected colour when chosen, as the icons are tinted
-            val ring by animateDpAsState(if (selected) AvatarRing else 0.dp, label = "ring")
+            val ring by animateDpAsState(if (selected) AvatarRing else 0.dp, Motion.snap(), label = "ring")
             Avatar(
                 data = navigationItem.avatar,
                 contentDescription = title,

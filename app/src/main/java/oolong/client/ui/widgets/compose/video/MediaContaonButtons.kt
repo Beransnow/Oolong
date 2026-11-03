@@ -1,8 +1,6 @@
 package oolong.client.ui.widgets.compose.video
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.IconButton
 
@@ -45,10 +44,7 @@ fun MediaControlButtons(
     LaunchedEffect(controlsVisible) {
         appearAlpha.animateTo(
             targetValue = if (controlsVisible) 1f else 0f,
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = LinearEasing
-            )
+            animationSpec = if (controlsVisible) Motion.fadeIn() else Motion.fadeOut()
         )
         setControlsExistOnUITree(controlsVisible)
     }

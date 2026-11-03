@@ -14,6 +14,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import oolong.client.ui.common.theme.compose.Motion
 
 /**
  * Tracks whether chrome should get out of the way: hidden after the content has been scrolled
@@ -65,4 +66,4 @@ fun rememberHideOnScrollState(threshold: Dp = 24.dp): HideOnScrollState {
 /** 0 while shown, 1 while hidden, animated in between. */
 @Composable
 fun HideOnScrollState.animateHiddenFraction(): State<Float> =
-    animateFloatAsState(targetValue = if (hidden) 1f else 0f, label = "HideOnScroll")
+    animateFloatAsState(targetValue = if (hidden) 1f else 0f, animationSpec = Motion.settle(), label = "HideOnScroll")

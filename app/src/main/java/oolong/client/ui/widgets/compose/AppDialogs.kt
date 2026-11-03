@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.first
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.utils.SharedPreferencesUtil
 
 /** A dialog asked for by code outside of Compose, as the web page's callbacks, shown by [AppDialogHost]. */
@@ -134,8 +135,8 @@ fun AppDialogHost() {
         val tip = AppDialogs.shown.filterIsInstance<AppDialog.PermissionTip>().lastOrNull()
         AnimatedVisibility(
             visible = tip != null,
-            enter = slideInVertically { -it } + fadeIn(),
-            exit = slideOutVertically { -it } + fadeOut(),
+            enter = slideInVertically(Motion.settle()) { -it } + fadeIn(Motion.fadeIn()),
+            exit = slideOutVertically(Motion.dismiss()) { -it } + fadeOut(Motion.fadeOut()),
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             // Kept through the exit, when the tip is gone already

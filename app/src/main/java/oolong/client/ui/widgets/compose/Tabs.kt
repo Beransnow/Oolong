@@ -1,10 +1,8 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -69,6 +67,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.Corners
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 
 /**
@@ -132,10 +131,7 @@ private class ScrollableTabData(
 /**
  * [AnimationSpec] used when scrolling to a tab that is not fully visible.
  */
-private val ScrollableTabRowScrollSpec: AnimationSpec<Float> = tween(
-    durationMillis = 250,
-    easing = FastOutSlowInEasing
-)
+private val ScrollableTabRowScrollSpec: AnimationSpec<Float> = Motion.settle()
 
 @Composable
 @UiComposable
@@ -360,11 +356,11 @@ fun Modifier.tabIndicatorOffset(
 ) {
     val currentTabWidth by animateDpAsState(
         targetValue = currentTabPosition.width,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+        animationSpec = Motion.snap()
     )
     val indicatorOffset by animateDpAsState(
         targetValue = currentTabPosition.left,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+        animationSpec = Motion.snap()
     )
     fillMaxWidth()
         .wrapContentSize(Alignment.BottomStart)
@@ -455,7 +451,7 @@ fun TabIndicator(
         val tabIndicatorWidth = 16.dp
         val currentTab = tabPositions[selectedTabIndex]
         val currentTabLeft = currentTab.left + (currentTab.width / 2 - tabIndicatorWidth / 2)
-        val animatedIndicatorOffset by animateDpAsState(targetValue = currentTabLeft)
+        val animatedIndicatorOffset by animateDpAsState(targetValue = currentTabLeft, animationSpec = Motion.snap())
         Box(
             Modifier
                 .fillMaxWidth()
@@ -501,8 +497,12 @@ fun TabClickMenu(
         selectedContentColor = selectedContentColor,
         unselectedContentColor = unselectedContentColor,
     ) {
-        val rotate by animateFloatAsState(targetValue = if (open) 180f else 0f, label = "ArrowIndicatorRotate")
-        val alpha by animateFloatAsState(targetValue = if (selected) 1f else 0f, label = "ArrowIndicatorAlpha")
+        val rotate by animateFloatAsState(targetValue = if (open) 180f else 0f, animationSpec = Motion.snap(), label = "ArrowIndicatorRotate")
+        val alpha by animateFloatAsState(
+            targetValue = if (selected) 1f else 0f,
+            animationSpec = if (selected) Motion.fadeIn() else Motion.fadeOut(),
+            label = "ArrowIndicatorAlpha",
+        )
         val tabTextStyle = MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
         Row(
             verticalAlignment = Alignment.CenterVertically,

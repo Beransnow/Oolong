@@ -51,6 +51,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.glassEdge
@@ -398,7 +399,7 @@ fun Dialog(
                 .widthIn(max = MaxDialogWidth)
                 .fillMaxWidth()
                 .dialogSurface()
-                .animateContentSize(),
+                .animateContentSize(Motion.settle()),
         ) {
             if (title != null) {
                 Box(modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp)) {

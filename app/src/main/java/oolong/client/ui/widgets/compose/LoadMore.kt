@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -205,7 +206,7 @@ fun DefaultIndicator(
             modifier = Modifier
                 .height(IntrinsicSize.Min)
                 .padding(10.dp)
-                .animateContentSize(),
+                .animateContentSize(Motion.settle()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isLoading) {

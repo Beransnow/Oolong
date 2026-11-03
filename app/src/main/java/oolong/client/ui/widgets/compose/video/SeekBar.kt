@@ -2,7 +2,6 @@ package oolong.client.ui.widgets.compose.video
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.video.util.getDurationString
 
 @SuppressLint("ComposableLambdaParameterPosition", "ComposableLambdaParameterNaming")
@@ -60,7 +60,7 @@ fun SeekBar(
     val indicatorSize = if (onGoingDrag) 24.dp else 16.dp
     val animatedIndicatorSize by animateDpAsState(
         targetValue = indicatorSize,
-        animationSpec = tween(durationMillis = 100),
+        animationSpec = if (onGoingDrag) Motion.press() else Motion.release(),
         label = "indicatorSize"
     )
 

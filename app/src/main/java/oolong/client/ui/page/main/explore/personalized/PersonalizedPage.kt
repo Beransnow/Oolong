@@ -62,6 +62,7 @@ import oolong.client.model.DislikeOption
 import oolong.client.model.ThreadSummary
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.main.explore.FeedThreadEvents
 import oolong.client.ui.page.main.explore.rememberFeedThreadEvents
@@ -173,8 +174,8 @@ fun PersonalizedScreen(
 
             AnimatedVisibility(
                 visible = showRefreshTip,
-                enter = fadeIn() + slideInVertically(),
-                exit = slideOutVertically() + fadeOut(),
+                enter = fadeIn(Motion.fadeIn()) + slideInVertically(Motion.settle()),
+                exit = slideOutVertically(Motion.dismiss()) + fadeOut(Motion.fadeOut()),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = contentPadding.calculateTopPadding())
@@ -247,12 +248,12 @@ private fun FeedList(
                 AnimatedVisibility(
                     visible = !isHidden,
                     enter = EnterTransition.None,
-                    exit = shrinkVertically() + fadeOut()
+                    exit = shrinkVertically(Motion.dismiss()) + fadeOut(Motion.fadeOut())
                 ) {
                     Column {
                         AnimatedContent(
                             targetState = threadId in undoable,
-                            transitionSpec = { fadeIn() togetherWith fadeOut() using SizeTransform(clip = true) },
+                            transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = true) },
                             label = "dislike",
                         ) { undo ->
                             if (undo) {

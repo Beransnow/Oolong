@@ -4,6 +4,9 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -74,6 +77,7 @@ import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TonalPalette
@@ -623,10 +627,11 @@ private fun CustomColorDialog(customPrimaryColorDialogState: DialogState) {
         ) {
             AnimatedContent(
                 targetState = useInput,
+                transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) },
                 label = "",
                 modifier = Modifier
                     .wrapContentHeight()
-                    .animateContentSize()
+                    .animateContentSize(Motion.settle())
             ) { input ->
                 if (input) {
                     var inputHexColor by remember { mutableStateOf(customPrimaryColor.toHexString()) }

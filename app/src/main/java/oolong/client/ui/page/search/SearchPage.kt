@@ -70,6 +70,7 @@ import oolong.client.model.SearchOrder
 import oolong.client.model.SearchedPost
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -512,7 +513,7 @@ private fun SearchHistoryList(
         FlowRow(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
-                .animateContentSize(),
+                .animateContentSize(Motion.settle()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             showItem.fastForEach { searchHistory ->

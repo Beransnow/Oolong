@@ -26,6 +26,7 @@ import oolong.client.model.BawuType
 import oolong.client.model.User
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.buildChipInlineContent
@@ -41,6 +42,7 @@ fun PostAgreeBtn(
 ) {
     val animatedColor by animateColorAsState(
         targetValue = if (hasAgreed) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary,
+        animationSpec = Motion.snap(),
         label = "postAgreeBtnColor"
     )
     Button(

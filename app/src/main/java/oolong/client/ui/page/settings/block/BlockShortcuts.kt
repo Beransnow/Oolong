@@ -37,6 +37,7 @@ import oolong.client.model.BlockRule
 import oolong.client.repository.BlockListRepository
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.widgets.compose.SecondaryButton
@@ -120,8 +121,8 @@ fun BlockShortcutsHost(shortcuts: BlockShortcuts) {
         val shown = remember { mutableStateOf(notice) }.apply { if (notice != null) value = notice }.value
         AnimatedVisibility(
             visible = notice != null,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
+            enter = slideInVertically(Motion.settle()) { it } + fadeIn(Motion.fadeIn()),
+            exit = slideOutVertically(Motion.dismiss()) { it } + fadeOut(Motion.fadeOut()),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             if (shown != null) UndoToast(shown, onUndo = { shortcuts.undo(shown) })

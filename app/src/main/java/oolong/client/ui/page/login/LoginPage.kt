@@ -46,6 +46,7 @@ import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.repository.AccountActions
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
@@ -141,7 +142,7 @@ fun LoginPage(
         }
     }
 
-    val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
+    val animatedProgress by animateFloatAsState(targetValue = progress, animationSpec = Motion.settle(), label = "progress")
 
     GlassScaffold(
         topBar = {

@@ -7,11 +7,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -92,6 +89,7 @@ import oolong.client.R
 import oolong.client.components.images.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
 import oolong.client.toastShort
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.utils.ImageUtil
@@ -152,7 +150,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val currentZoom = zoomStates[pagerState.currentPage]
 
         LaunchedEffect(Unit) {
-            progress.animateTo(1f, spring(dampingRatio = 0.86f, stiffness = 420f))
+            progress.animateTo(1f, Motion.present(Motion.ProgressThreshold))
             phase = Phase.Open
         }
         LaunchedEffect(state.currentIndex, pictures.isNotEmpty()) {
@@ -186,7 +184,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             phase = Phase.Closing
             scope.launch {
                 progress.snapTo(1f)
-                progress.animateTo(0f, spring(dampingRatio = 1f, stiffness = 520f, visibilityThreshold = 0.002f))
+                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 viewer.closed()
             }
         }
@@ -319,7 +317,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
 
         val chrome by animateFloatAsState(
             targetValue = if (phase == Phase.Open && !dragging && currentZoom.atRest(edge = false)) 1f else 0f,
-            animationSpec = tween(180),
+            animationSpec = if (phase == Phase.Open && !dragging) Motion.fadeIn() else Motion.fadeOut(),
             label = "chrome",
         )
         if (current != null && chrome > 0f && phase != Phase.Closing) {
@@ -482,7 +480,7 @@ private fun CoilZoomState?.atRest(edge: Boolean = true): Boolean {
 }
 
 private suspend fun release(from: Offset, to: Offset, onFrame: (Offset) -> Unit) {
-    Animatable(from, Offset.VectorConverter).animateTo(to, spring(stiffness = Spring.StiffnessMediumLow)) {
+    Animatable(from, Offset.VectorConverter).animateTo(to, Motion.settle()) {
         onFrame(value)
     }
 }

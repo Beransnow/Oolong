@@ -47,6 +47,7 @@ import oolong.client.R
 import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AboutKey
 import oolong.client.ui.navigation.AppThemeKey
@@ -93,9 +94,9 @@ private fun StatCard(
     account: Account,
     modifier: Modifier = Modifier
 ) {
-    val postNum by animateIntAsState(targetValue = account.postNum?.toIntOrNull() ?: 0)
-    val fansNum by animateIntAsState(targetValue = account.fansNum?.toIntOrNull() ?: 0)
-    val concernNum by animateIntAsState(targetValue = account.concernNum?.toIntOrNull() ?: 0)
+    val postNum by animateIntAsState(targetValue = account.postNum?.toIntOrNull() ?: 0, animationSpec = Motion.settle())
+    val fansNum by animateIntAsState(targetValue = account.fansNum?.toIntOrNull() ?: 0, animationSpec = Motion.settle())
+    val concernNum by animateIntAsState(targetValue = account.concernNum?.toIntOrNull() ?: 0, animationSpec = Motion.settle())
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,

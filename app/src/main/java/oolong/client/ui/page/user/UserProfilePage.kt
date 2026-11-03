@@ -77,6 +77,7 @@ import oolong.client.model.UserProfile
 import oolong.client.models.PhotoViewData
 import oolong.client.models.PicItem
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -250,8 +251,8 @@ private fun UserProfileToolbar(
         title = {
             AnimatedVisibility(
                 visible = showTitle,
-                enter = fadeIn(),
-                exit = fadeOut()
+                enter = fadeIn(Motion.fadeIn()),
+                exit = fadeOut(Motion.fadeOut())
             ) {
                 ToolbarUserTitle(user = user)
             }

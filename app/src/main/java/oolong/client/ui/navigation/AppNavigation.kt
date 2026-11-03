@@ -49,6 +49,7 @@ import oolong.client.ui.common.navigation.PageDisplay
 import oolong.client.ui.common.navigation.PagePeek
 import oolong.client.ui.common.navigation.PageTransitions
 import oolong.client.ui.common.navigation.rememberPageScenes
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowHeightSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -229,8 +230,8 @@ fun AppNavDisplay(
             Row(modifier = modifier.fillMaxSize()) {
                 AnimatedVisibility(
                     visible = showRail,
-                    enter = expandHorizontally(),
-                    exit = shrinkHorizontally(),
+                    enter = expandHorizontally(Motion.settle()),
+                    exit = shrinkHorizontally(Motion.dismiss()),
                 ) {
                     MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
                 }

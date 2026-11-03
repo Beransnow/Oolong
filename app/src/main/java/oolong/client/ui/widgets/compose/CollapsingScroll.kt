@@ -3,10 +3,8 @@ package oolong.client.ui.widgets.compose
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.DecayAnimationSpec
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.animation.core.animateTo
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -21,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
+import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.abs
 
 /**
@@ -134,7 +133,7 @@ fun rememberCollapsingScrollBehavior(state: CollapsingState = rememberCollapsing
         CollapsingScrollBehavior(
             state = state,
             flingAnimationSpec = decay,
-            snapAnimationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            snapAnimationSpec = Motion.settle(),
         )
     }
 }

@@ -80,6 +80,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.LoginKey
@@ -642,7 +643,7 @@ fun HomeScreen(
 
 @Composable
 private fun VisitedForums(visited: ImmutableList<VisitedForum>, expanded: Boolean, onEvent: (HomeEvent) -> Unit) {
-    val rotate by animateFloatAsState(targetValue = if (expanded) 90f else 0f, label = "rotate")
+    val rotate by animateFloatAsState(targetValue = if (expanded) 90f else 0f, animationSpec = Motion.snap(), label = "rotate")
     Column {
         Row(
             verticalAlignment = CenterVertically,

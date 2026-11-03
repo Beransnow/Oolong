@@ -46,6 +46,7 @@ import oolong.client.model.HotCategory
 import oolong.client.model.HotTopic
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.OrangeA700
 import oolong.client.ui.common.theme.compose.RedA700
 import oolong.client.ui.common.theme.compose.Symbols
@@ -379,8 +380,8 @@ private fun ThreadListTab(
     selected: Boolean,
     onSelected: () -> Unit
 ) {
-    val textColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip)
-    val backgroundColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip)
+    val textColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.onAccent else ExtendedTheme.colors.onChip, animationSpec = Motion.snap())
+    val backgroundColor by animateColorAsState(targetValue = if (selected) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.chip, animationSpec = Motion.snap())
     Text(
         text = text,
         textAlign = TextAlign.Center,

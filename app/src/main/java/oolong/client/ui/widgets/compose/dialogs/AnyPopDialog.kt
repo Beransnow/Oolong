@@ -177,18 +177,18 @@ private fun DialogFullScreen(
                     modifier = Modifier.pointerInput(Unit) {},
                     visible = isAnimateLayout,
                     enter = when (properties.direction) {
-                        DirectionState.TOP -> fadeIn() + slideInVertically(initialOffsetY = { -it })
-                        DirectionState.LEFT -> fadeIn() + slideInHorizontally(initialOffsetX = { -it })
-                        DirectionState.RIGHT -> fadeIn() + slideInHorizontally(initialOffsetX = { it })
+                        DirectionState.TOP -> fadeIn(Motion.fadeIn()) + slideInVertically(animationSpec = Motion.present(), initialOffsetY = { -it })
+                        DirectionState.LEFT -> fadeIn(Motion.fadeIn()) + slideInHorizontally(animationSpec = Motion.present(), initialOffsetX = { -it })
+                        DirectionState.RIGHT -> fadeIn(Motion.fadeIn()) + slideInHorizontally(animationSpec = Motion.present(), initialOffsetX = { it })
                         // A centred dialog condenses where it stands (design-system.md §9.3)
                         DirectionState.CENTER -> fadeIn(Motion.fadeIn()) + scaleIn(Motion.morph(), initialScale = 0.9f)
                         // One at the bottom rises from the bottom edge
                         else -> fadeIn(Motion.fadeIn()) + slideInVertically(Motion.present()) { it * 2 / 5 }
                     },
                     exit = when (properties.direction) {
-                        DirectionState.TOP -> fadeOut() + slideOutVertically(targetOffsetY = { -it })
-                        DirectionState.LEFT -> fadeOut() + slideOutHorizontally(targetOffsetX = { -it })
-                        DirectionState.RIGHT -> fadeOut() + slideOutHorizontally(targetOffsetX = { it })
+                        DirectionState.TOP -> fadeOut(Motion.fadeOut()) + slideOutVertically(animationSpec = Motion.dismiss(), targetOffsetY = { -it })
+                        DirectionState.LEFT -> fadeOut(Motion.fadeOut()) + slideOutHorizontally(animationSpec = Motion.dismiss(), targetOffsetX = { -it })
+                        DirectionState.RIGHT -> fadeOut(Motion.fadeOut()) + slideOutHorizontally(animationSpec = Motion.dismiss(), targetOffsetX = { it })
                         DirectionState.CENTER -> fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.94f)
                         else -> fadeOut(Motion.fadeOut()) + slideOutVertically(Motion.dismiss()) { it * 2 / 5 }
                     }

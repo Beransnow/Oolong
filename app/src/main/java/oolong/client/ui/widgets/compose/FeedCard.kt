@@ -85,6 +85,7 @@ import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
@@ -637,7 +638,7 @@ fun ThreadAgreeBtn(
 ) {
     val contentColor =
         if (hasAgree) ExtendedTheme.colors.emphasis else ExtendedTheme.colors.textSecondary
-    val animatedColor by animateColorAsState(contentColor, label = "agreeBtnContentColor")
+    val animatedColor by animateColorAsState(contentColor, Motion.snap(), label = "agreeBtnContentColor")
 
     ActionBtn(
         icon = {

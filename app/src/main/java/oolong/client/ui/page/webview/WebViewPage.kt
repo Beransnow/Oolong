@@ -62,6 +62,7 @@ import oolong.client.arch.onGlobalEvent
 import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.ui.navigation.Navigator
@@ -166,7 +167,7 @@ fun WebViewPage(
         }
     }
 
-    val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
+    val animatedProgress by animateFloatAsState(targetValue = progress, animationSpec = Motion.settle(), label = "progress")
 
     GlassScaffold(
         sampleContent = false,
