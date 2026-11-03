@@ -74,6 +74,8 @@ import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.dataStore
 import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
+import com.huanchengfly.tieba.post.ui.common.navigation.pageOrigin
+import com.huanchengfly.tieba.post.ui.common.navigation.rememberPageOrigin
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
@@ -393,8 +395,10 @@ private fun ForumItem(
     val pin = stringResource(id = if (isTopForum) R.string.menu_top_del else R.string.menu_top)
     val copyName = stringResource(id = R.string.title_copy_forum_name)
     val unfollow = stringResource(id = R.string.button_unfollow)
+    // The forum's page opens out of its item, and closes back into it
+    val origin = rememberPageOrigin()
     Box(
-        modifier = Modifier.longPressMenu(
+        modifier = Modifier.pageOrigin(origin).longPressMenu(
             items = {
                 listOf(
                     ContextMenuItem(if (isTopForum) Symbols.KeepFill else Symbols.Keep, pin) {
@@ -404,7 +408,10 @@ private fun ForumItem(
                     ContextMenuItem(Symbols.HeartBroken, unfollow, startsGroup = true) { onUnfollow(item) },
                 )
             },
-            onClick = { onClick(item) },
+            onClick = {
+                origin.leave()
+                onClick(item)
+            },
         ),
     ) {
         ForumItemContent(item = item, showAvatar = showAvatar)
