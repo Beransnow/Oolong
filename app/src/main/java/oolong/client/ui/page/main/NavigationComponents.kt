@@ -191,7 +191,9 @@ private fun NavItemIcon(
     Box {
         if (navigationItem.avatar != null) {
             // Ringed in the selected colour when chosen, as the icons are tinted
-            val ring by animateDpAsState(if (selected) AvatarRing else 0.dp, Motion.snap(), label = "ring")
+            // The snap spring overshoots: a width going to none would dip below zero
+            val ringAnimated by animateDpAsState(if (selected) AvatarRing else 0.dp, Motion.snap(), label = "ring")
+            val ring = ringAnimated.coerceAtLeast(0.dp)
             Avatar(
                 data = navigationItem.avatar,
                 contentDescription = title,

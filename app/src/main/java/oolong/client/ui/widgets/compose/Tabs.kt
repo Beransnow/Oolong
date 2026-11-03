@@ -505,7 +505,9 @@ fun TabClickMenu(
             label = "ArrowIndicatorAlpha",
         )
         // The arrow takes room only while the tab is chosen, so other tabs keep their usual width
-        val arrowWidth by animateDpAsState(if (selected) ArrowSize else 0.dp, Motion.snap(), label = "ArrowWidth")
+        // The snap spring overshoots: a width going to none would dip below zero
+        val arrowWidthAnimated by animateDpAsState(if (selected) ArrowSize else 0.dp, Motion.snap(), label = "ArrowWidth")
+        val arrowWidth = arrowWidthAnimated.coerceAtLeast(0.dp)
         val tabTextStyle = MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
