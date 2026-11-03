@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -23,9 +22,6 @@ import androidx.compose.ui.unit.dp
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
 import java.util.WeakHashMap
-
-/** The large title's item in a list that has one. */
-private const val LargeTitleKey = "largeTitle"
 
 @Composable
 fun MyLazyColumn(
@@ -43,8 +39,6 @@ fun MyLazyColumn(
     onGlobalEvent<GlobalEvent.ScrollToTop> {
         state.animateScrollToItem(0)
     }
-    val largeTitle = !reverseLayout && rememberShowsLargeTitle(state)
-
     LazyColumn(
         // A list laid out from the bottom has nothing to say about its top
         modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
@@ -55,10 +49,8 @@ fun MyLazyColumn(
         horizontalAlignment = horizontalAlignment,
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled,
-    ) {
-        if (largeTitle) item(key = LargeTitleKey, contentType = LargeTitleKey) { LargeTitleSlot() }
-        content()
-    }
+        content = content,
+    )
 }
 
 @Composable
@@ -78,8 +70,6 @@ fun MyLazyVerticalGrid(
     onGlobalEvent<GlobalEvent.ScrollToTop> {
         state.animateScrollToItem(0)
     }
-    val largeTitle = !reverseLayout && rememberShowsLargeTitle(state)
-
     LazyVerticalGrid(
         columns = columns,
         modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
@@ -90,12 +80,8 @@ fun MyLazyVerticalGrid(
         horizontalArrangement = horizontalArrangement,
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled,
-    ) {
-        if (largeTitle) {
-            item(key = LargeTitleKey, contentType = LargeTitleKey, span = { GridItemSpan(maxLineSpan) }) { LargeTitleSlot() }
-        }
-        content()
-    }
+        content = content,
+    )
 }
 
 /**

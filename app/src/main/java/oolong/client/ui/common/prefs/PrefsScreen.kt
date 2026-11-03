@@ -22,8 +22,6 @@ import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.LargeTitleSlot
-import oolong.client.ui.widgets.compose.rememberShowsLargeTitle
 import oolong.client.ui.widgets.compose.scrollEdgeSource
 
 lateinit var LocalPrefsDataStore: ProvidableCompositionLocal<DataStore<Preferences>>
@@ -52,13 +50,11 @@ fun PrefsScreen(
     CompositionLocalProvider(LocalPrefsDataStore provides dataStore) {
         Container {
             val listState = rememberLazyListState()
-            val largeTitle = rememberShowsLargeTitle(listState)
             LazyColumn(
                 modifier = modifier.fillMaxSize().scrollEdgeSource(listState),
                 state = listState,
                 contentPadding = contentPadding,
             ) {
-                if (largeTitle) item(key = "largeTitle") { LargeTitleSlot() }
                 items(prefsScope.prefsItems.size) { index ->
                     val items = prefsScope.prefsItems
                     val item = items[index]

@@ -26,6 +26,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -118,6 +119,10 @@ fun GlassTopBar(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val largeTitle = LocalLargeTitle.current
+    val scrollEdge = LocalScrollEdge.current
+    if (largeTitle != null && scrollEdge != null) {
+        LaunchedEffect(largeTitle, scrollEdge) { largeTitle.settle(scrollEdge) }
+    }
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
@@ -193,9 +198,8 @@ fun GlassTopBar(
                                                     val position = it.positionInWindow()
                                                     largeTitle.titleTop = position.y
                                                     largeTitle.titleStart = position.x
-                                                    largeTitle.titleHeight = it.size.height
                                                 }
-                                                .graphicsLayer { with(largeTitle) { place() } }
+                                                .graphicsLayer { with(largeTitle) { place(scrollEdge?.scrolled, scrollEdge?.originX ?: 0f) } }
                                         ) { title() }
                                     }
                                 }

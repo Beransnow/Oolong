@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.onConsumedWindowInsetsChanged
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
@@ -29,6 +30,9 @@ import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -70,8 +74,12 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  * [sampleContent] false keeps the chrome from sampling the content, for content that can't be
  * drawn twice: a web view drawn into the blur as well alternates between two renders of the page.
  *
- * [largeTitle] gives the page a large title: the top bar's title, shown big at the top of the
- * content's list and shrinking into the bar as it scrolls up. See [LargeTitleSlot].
+ * [largeTitle] gives the page a large title: the top bar's title, shown big below the bar and
+ * shrinking into it as the content scrolls up. The content is padded down to make room for it.
+ * See [LargeTitleState].
+ *
+ * Only the top bar and the content see the page's [LocalLargeTitle] and [LocalScrollEdge]; the
+ * bottom bar, the overlay and the rest float over the page and have no part in either.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -89,8 +97,31 @@ fun GlassScaffold(
     largeTitle: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val largeTitleState = remember(largeTitle) { if (largeTitle) newLargeTitleState() else null }
+    val density = LocalDensity.current
+    val titleStyle = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+    val measurer = rememberTextMeasurer()
+    val largeTitleState = if (largeTitle) {
+        remember(density, titleStyle) {
+            with(density) {
+                // One line of the bar's title, so the room is right before the bar is laid out
+                LargeTitleState(
+                    lineHeight = measurer.measure("首", titleStyle).size.height,
+                    topPx = LargeTitleTop.toPx(),
+                    bottomPx = LargeTitleBottom.toPx(),
+                    startPx = LargeTitleStart.toPx(),
+                )
+            }
+        }
+    } else null
     val scrollEdge = remember { newScrollEdgeState() }
+    // The page's own parts share its large title and scroll edge; what floats over the page has
+    // none, rather than an enclosing page's
+    val page: @Composable (@Composable () -> Unit) -> Unit = { slot ->
+        CompositionLocalProvider(LocalLargeTitle provides largeTitleState, LocalScrollEdge provides scrollEdge, content = slot)
+    }
+    val overPage: @Composable (@Composable () -> Unit) -> Unit = { slot ->
+        CompositionLocalProvider(LocalLargeTitle provides null, LocalScrollEdge provides null, content = slot)
+    }
     // On the translucent theme the page joins the wallpaper's state, under its own key, so the
     // chrome blurs the wallpaper too but not the other pages sharing that state
     val wallpaper = LocalWallpaperGlass.current
@@ -112,11 +143,7 @@ fun GlassScaffold(
         }
     }
 
-    CompositionLocalProvider(
-        LocalSnackbarHostState provides scaffoldState.snackbarHostState,
-        LocalLargeTitle provides largeTitleState,
-        LocalScrollEdge provides scrollEdge,
-    ) {
+    CompositionLocalProvider(LocalSnackbarHostState provides scaffoldState.snackbarHostState) {
         Surface(
             modifier = modifier
                 .onConsumedWindowInsetsChanged { consumedInsets = it }
@@ -130,14 +157,14 @@ fun GlassScaffold(
                 val loose = constraints.copy(minWidth = 0, minHeight = 0)
 
                 val topBarPlaceables = subcompose(GlassScaffoldSlot.TopBar) {
-                    chrome(topBar)
+                    page { chrome(topBar) }
                 }.map { it.measure(loose) }
                 val topBarHeight = topBarPlaceables.maxOfOrNull {
                     it[GlassTopBarEdge].takeIf { edge -> edge != AlignmentLine.Unspecified } ?: it.height
                 } ?: 0
 
                 val bottomBarPlaceables = subcompose(GlassScaffoldSlot.BottomBar) {
-                    chrome(bottomBar)
+                    overPage { chrome(bottomBar) }
                 }.map { it.measure(loose) }
                 val bottomBarHeight = bottomBarPlaceables.maxOfOrNull { it.height } ?: 0
 
@@ -148,7 +175,7 @@ fun GlassScaffold(
                 val right = insets.getRight(this, layoutDirection)
                 val isLtr = layoutDirection == LayoutDirection.Ltr
                 padding.start = (if (isLtr) left else right).toDp()
-                padding.top = top.toDp()
+                padding.top = (top + (largeTitleState?.height ?: 0)).toDp()
                 padding.end = (if (isLtr) right else left).toDp()
                 padding.bottom = bottom.toDp()
 
@@ -158,25 +185,25 @@ fun GlassScaffold(
                             .fillMaxSize()
                             .then(if (sampleContent) Modifier.hazeSource(hazeState, key = glassSource.key) else Modifier)
                     ) {
-                        content(padding)
+                        page { content(padding) }
                     }
                 }.map { it.measure(constraints) }
 
                 val margin = 16.dp.roundToPx()
                 val fabPlaceables = subcompose(GlassScaffoldSlot.Fab) {
-                    chrome(floatingActionButton)
+                    overPage { chrome(floatingActionButton) }
                 }.map { it.measure(loose) }
                 val fabHeight = fabPlaceables.maxOfOrNull { it.height } ?: 0
                 val fabWidth = fabPlaceables.maxOfOrNull { it.width } ?: 0
 
                 val snackbarPlaceables = subcompose(GlassScaffoldSlot.Snackbar) {
-                    snackbarHost(scaffoldState.snackbarHostState)
+                    overPage { snackbarHost(scaffoldState.snackbarHostState) }
                 }.map { it.measure(loose) }
                 val snackbarHeight = snackbarPlaceables.maxOfOrNull { it.height } ?: 0
                 val fabSpace = if (fabHeight > 0) fabHeight + margin else 0
 
                 val overlayPlaceables = subcompose(GlassScaffoldSlot.Overlay) {
-                    chrome(overlay)
+                    overPage { chrome(overlay) }
                 }.map { it.measure(constraints) }
 
                 layout(width, height) {

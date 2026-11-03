@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -53,6 +54,8 @@ import kotlinx.coroutines.delay
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.scrim
+import oolong.client.ui.widgets.compose.LocalLargeTitle
+import oolong.client.ui.widgets.compose.LocalScrollEdge
 
 @Composable
 fun getDialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
@@ -239,7 +242,8 @@ fun AnyPopDialog(
             modifier = innerModifier
                 .systemBarsPadding()
         ) {
-            content()
+            // A dialog floats over the page; its lists have no part in the page's bar
+            CompositionLocalProvider(LocalLargeTitle provides null, LocalScrollEdge provides null, content = content)
         }
     }
 }

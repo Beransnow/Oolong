@@ -1,6 +1,7 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollState
@@ -27,7 +28,7 @@ import kotlin.math.abs
  */
 @Stable
 class ScrollEdgeState internal constructor() {
-    internal class Source(val scrolled: () -> Int) {
+    internal class Source(val scrolled: () -> Int, val scrollable: ScrollableState?) {
         /** Where the list starts across the page, so the page in view can be told from its neighbours. */
         var start by mutableFloatStateOf(0f)
     }
@@ -41,9 +42,11 @@ class ScrollEdgeState internal constructor() {
 
     internal fun remove(source: Source) = sources.remove(source)
 
+    /** The content in view: on a page of pages, the page nearest the scaffold's start. */
+    internal val inView: Source? get() = sources.minByOrNull { abs(it.start) }
+
     /** Pixels scrolled under the bar, or null when no list reports, so the edge simply shows. */
-    val scrolled: Int?
-        get() = sources.minByOrNull { abs(it.start) }?.scrolled?.invoke()
+    val scrolled: Int? get() = inView?.scrolled?.invoke()
 }
 
 /** The scroll edge a [GlassScaffold] shares between its top bar and its content. */
@@ -53,12 +56,12 @@ internal fun newScrollEdgeState() = ScrollEdgeState()
 
 /**
  * Reports to the page's [ScrollEdgeState] how far this scrolling content is from its top, as
- * [scrolled] pixels; anything past the first item counts as far.
+ * [scrolled] pixels, and the [scrollable] that moves it, which settles a large title left halfway.
  */
 @Composable
-fun Modifier.scrollEdgeSource(scrolled: () -> Int): Modifier {
+fun Modifier.scrollEdgeSource(scrollable: ScrollableState?, scrolled: () -> Int): Modifier {
     val state = LocalScrollEdge.current ?: return this
-    val source = remember(state) { ScrollEdgeState.Source(scrolled) }
+    val source = remember(state, scrollable) { ScrollEdgeState.Source(scrolled, scrollable) }
     DisposableEffect(state, source) {
         state.add(source)
         onDispose { state.remove(source) }
@@ -66,19 +69,26 @@ fun Modifier.scrollEdgeSource(scrolled: () -> Int): Modifier {
     return onGloballyPositioned { source.start = it.positionInRoot().x - state.originX }
 }
 
-/** [scrollEdgeSource] for a lazy list. */
+/**
+ * [scrollEdgeSource] for a lazy list: how far its first item has moved up. Items under the bar
+ * are still laid out, so the first item stays known well past the bar and a large title; once it
+ * is gone the content counts as far.
+ */
 @Composable
-fun Modifier.scrollEdgeSource(state: LazyListState): Modifier =
-    scrollEdgeSource { if (state.firstVisibleItemIndex > 0) Int.MAX_VALUE else state.firstVisibleItemScrollOffset }
+fun Modifier.scrollEdgeSource(state: LazyListState): Modifier = scrollEdgeSource(state) {
+    // Item offsets start at the end of the top padding
+    state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset } ?: Int.MAX_VALUE
+}
 
-/** [scrollEdgeSource] for a lazy grid. */
+/** [scrollEdgeSource] for a lazy grid, as for a lazy list. */
 @Composable
-fun Modifier.scrollEdgeSource(state: LazyGridState): Modifier =
-    scrollEdgeSource { if (state.firstVisibleItemIndex > 0) Int.MAX_VALUE else state.firstVisibleItemScrollOffset }
+fun Modifier.scrollEdgeSource(state: LazyGridState): Modifier = scrollEdgeSource(state) {
+    state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset.y } ?: Int.MAX_VALUE
+}
 
 /** [scrollEdgeSource] for a scrolling column. */
 @Composable
-fun Modifier.scrollEdgeSource(state: ScrollState): Modifier = scrollEdgeSource { state.value }
+fun Modifier.scrollEdgeSource(state: ScrollState): Modifier = scrollEdgeSource(state) { state.value }
 
 /** [verticalScroll] that also reports to the top bar's scroll edge. */
 @Composable

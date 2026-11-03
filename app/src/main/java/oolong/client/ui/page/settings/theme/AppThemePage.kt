@@ -101,8 +101,6 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
-import oolong.client.ui.widgets.compose.LargeTitleSettle
-import oolong.client.ui.widgets.compose.LargeTitleSlot
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
@@ -148,7 +146,6 @@ fun AppThemePage(
         },
     ) { paddingValues ->
         val scroll = rememberScrollState()
-        LargeTitleSettle(scroll)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -157,7 +154,6 @@ fun AppThemePage(
                 .padding(paddingValues)
                 .padding(bottom = 24.dp),
         ) {
-            LargeTitleSlot()
             GroupHeader(title = stringResource(id = R.string.title_appearance))
             ThemeGroup {
                 AppearancePicker(
