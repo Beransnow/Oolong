@@ -39,8 +39,8 @@ import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.Stepper
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.TextButton
-import kotlin.math.roundToInt
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
+import kotlin.math.roundToInt
 
 /**
  * Every control of the design system on one page, in each of its states, to check them together
