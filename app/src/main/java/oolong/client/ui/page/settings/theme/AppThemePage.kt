@@ -100,9 +100,10 @@ import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.LargeTitleSettle
 import oolong.client.ui.widgets.compose.LargeTitleSlot
-import oolong.client.ui.widgets.compose.IconButton
+import oolong.client.ui.widgets.compose.scrollEdgeSource
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
@@ -151,6 +152,7 @@ fun AppThemePage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .scrollEdgeSource(scroll)
                 .verticalScroll(scroll)
                 .padding(paddingValues)
                 .padding(bottom = 24.dp),

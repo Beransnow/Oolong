@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -156,11 +158,26 @@ fun Modifier.topBarGlass(): Modifier {
     val tint = if (colors.isTranslucent) TranslucentTopBarTint else TopBarEdgeTuning.tint
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    // At the top of the page nothing is under the bar, so it stays clear; the edge comes in as
+    // the content scrolls up under it, following the scroll
+    val scrollEdge = LocalScrollEdge.current
+    val revealPx = with(density) { TopBarEdgeTuning.reveal.dp.toPx() }
+    val shown: () -> Float = remember(scrollEdge, revealPx) {
+        { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    }
+    val clear by remember(shown) { derivedStateOf { shown() == 0f } }
     val fadePx = with(LocalDensity.current) { (if (solid) TopBarSolidFade else TopBarEdgeTuning.fade.dp).toPx() }
     // Where the fade starts. The bar can change height, such as a header collapsing inside it,
     // so this follows its size; a bar shorter than the fade fades over all of it.
     val edge = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 0f
+    // The blur comes in over a short stretch above the bottom edge, so content is blurred soon
+    // after it passes under the bar and fully by the title, however the veil is shaped
+    val blurFadePx = with(LocalDensity.current) { TopBarEdgeTuning.blurFade.dp.toPx() }
+    val blurEdge = if (height > 0) (1f - blurFadePx / height).coerceIn(0f, 1f) else 0f
     val measured = onSizeChanged { height = it.height }
+    // Nothing to draw, and no blur to run, while the bar is clear
+    if (clear) return measured
     if (solid) {
         val top = if (colors.isTranslucent) color.copy(alpha = TranslucentTopBarTint) else color
         val brush = remember(top, edge) {
@@ -170,13 +187,14 @@ fun Modifier.topBarGlass(): Modifier {
                 1f to top.copy(alpha = 0f),
             )
         }
-        return measured.background(brush)
+        return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
     val blur = TopBarEdgeTuning.blur.dp
     val curve = TopBarEdgeTuning.curve
-    val style = remember(color, tint, edge, blur, curve) {
+    val style = remember(color, tint, edge, blurEdge, blur, curve) {
         // How far into the fade a point is: 0 above it, 1 at the bottom edge
         fun faded(t: Float) = if (t <= edge) 0f else ((t - edge) / (1f - edge)).coerceIn(0f, 1f)
+
         // How much of the veil is gone at t, 0 at the top to 1 at the bottom edge
         fun gone(t: Float): Float = when (curve) {
             // Flat, then falling ever faster to the edge
@@ -187,13 +205,18 @@ fun Modifier.topBarGlass(): Modifier {
             else -> t * t * t * (t * (t * 6f - 15f) + 10f)
         }
         HazeBlurStyle {
+            // Read here, the style follows the scroll without being rebuilt
+            val strength = shown()
             backgroundColor(colors.background)
-            blurRadius(blur)
+            blurRadius(blur * strength)
             noiseFactor(0f)
             progressive(
                 HazeProgressive.verticalGradient(
-                    // The blur thins out along the veil's curve, so neither outlasts the other
-                    easing = { t -> if (curve == 0) faded(t).let { it * it * (3f - 2f * it) } else gone(t) },
+                    // Full strength down to the short stretch above the edge, then eased out
+                    easing = { t ->
+                        val x = if (t <= blurEdge) 0f else ((t - blurEdge) / (1f - blurEdge)).coerceIn(0f, 1f)
+                        x * x * (3f - 2f * x)
+                    },
                     startIntensity = 1f,
                     endIntensity = 0f,
                 )
@@ -204,7 +227,7 @@ fun Modifier.topBarGlass(): Modifier {
                         Brush.verticalGradient(
                             *Array(TopBarTintStops + 1) { i ->
                                 val t = i / TopBarTintStops.toFloat()
-                                t to color.copy(alpha = tint * (1f - gone(t)))
+                                t to color.copy(alpha = tint * strength * (1f - gone(t)))
                             }
                         )
                     )
@@ -230,10 +253,22 @@ object TopBarEdgeTuning {
     const val DefaultBlur = 12f
     const val DefaultTint = 0.5f
     const val DefaultFade = 48f
+    const val DefaultBlurFade = 40f
+    const val DefaultReveal = 32f
+    const val DefaultExtend = 28f
     const val DefaultCurve = 2
     var blur by mutableFloatStateOf(DefaultBlur)
     var tint by mutableFloatStateOf(DefaultTint)
     var fade by mutableFloatStateOf(DefaultFade)
+
+    /** How far above the bottom edge the blur comes in, independent of the veil's [fade] and [curve]. */
+    var blurFade by mutableFloatStateOf(DefaultBlurFade)
+
+    /** How far the content scrolls before the edge is fully in. */
+    var reveal by mutableFloatStateOf(DefaultReveal)
+
+    /** How far the edge reaches below the bar, over the content, to blur in without a hard line. */
+    var extend by mutableFloatStateOf(DefaultExtend)
 
     /** 0: flat, then cubic to the edge (before tuning); 1: flat, then eased; 2: eased over the whole bar. */
     var curve by mutableIntStateOf(DefaultCurve)
@@ -241,7 +276,6 @@ object TopBarEdgeTuning {
 
 /** How far above its bottom edge an opaque top bar fades out, kept short so it stays opaque. */
 private val TopBarSolidFade = 16.dp
-
 
 /** The translucent theme's lighter tint, which keeps the wallpaper showing through. */
 private const val TranslucentTopBarTint = 0.45f

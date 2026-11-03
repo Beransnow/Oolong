@@ -12,6 +12,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -56,8 +57,12 @@ class LargeTitleState internal constructor() {
     /** The bottom of the bar's title row, where the slot sits with the list at the top. */
     internal var rowBottom by mutableFloatStateOf(0f)
 
-    /** The list that shows the title: the first to ask, so a list in a sheet over it does not. */
-    private var owner: Any? = null
+    /**
+     * The list that shows the title: the first to ask, so a list in a sheet over it does not. State,
+     * so a list that asked while another held it, such as the content after a loading skeleton,
+     * asks again once that one lets go.
+     */
+    private var owner: Any? by mutableStateOf(null)
 
     internal fun claim(list: Any): Boolean {
         if (owner == null) owner = list

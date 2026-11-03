@@ -240,8 +240,11 @@ fun GlassTopBar(
         // them. The glass shrinks rather than slides, so it still covers the status bar and the
         // pinned rows and fades out at their bottom edge.
         val hidden = ((foreground.height - statusBar.getTop(this)) * hiddenFraction()).roundToInt()
+        // The edge reaches a little past the bar, over the content, so the blur comes in before
+        // the bar's edge instead of ending in a line there. It shows only once content is under it.
+        val extend = TopBarEdgeTuning.extend.dp.roundToPx()
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
-            .measure(Constraints.fixed(foreground.width, height - hidden))
+            .measure(Constraints.fixed(foreground.width, height - hidden + extend))
         layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
             background.place(0, 0)
             foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }

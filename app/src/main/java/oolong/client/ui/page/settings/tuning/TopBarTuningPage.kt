@@ -66,10 +66,13 @@ fun TopBarTuningPage(
             ) {
                 TuningSlider("模糊半径", "${TopBarEdgeTuning.blur.roundToInt()}dp", TopBarEdgeTuning.blur, 0f..60f) { TopBarEdgeTuning.blur = it }
                 TuningSlider("底色浓度", "${(TopBarEdgeTuning.tint * 100).roundToInt()}%", TopBarEdgeTuning.tint, 0f..1f) { TopBarEdgeTuning.tint = it }
-                TuningSlider("淡出长度", "${TopBarEdgeTuning.fade.roundToInt()}dp", TopBarEdgeTuning.fade, 8f..96f) { TopBarEdgeTuning.fade = it }
+                TuningSlider("淡入距离", "${TopBarEdgeTuning.reveal.roundToInt()}dp", TopBarEdgeTuning.reveal, 8f..120f) { TopBarEdgeTuning.reveal = it }
+                TuningSlider("延伸长度", "${TopBarEdgeTuning.extend.roundToInt()}dp", TopBarEdgeTuning.extend, 0f..64f) { TopBarEdgeTuning.extend = it }
+                TuningSlider("模糊过渡", "${TopBarEdgeTuning.blurFade.roundToInt()}dp", TopBarEdgeTuning.blurFade, 4f..96f) { TopBarEdgeTuning.blurFade = it }
+                TuningSlider("底色过渡", "${TopBarEdgeTuning.fade.roundToInt()}dp", TopBarEdgeTuning.fade, 8f..96f) { TopBarEdgeTuning.fade = it }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "曲线", fontSize = 14.sp, color = ExtendedTheme.colors.text, modifier = Modifier.width(72.dp))
-                    // 淡出长度 shapes only the first two; the third eases over the whole bar
+                    Text(text = "底色曲线", fontSize = 14.sp, color = ExtendedTheme.colors.text, modifier = Modifier.width(72.dp))
+                    // 底色过渡 shapes only the first two; the third eases over the whole bar
                     SegmentedControl(
                         options = CurveNames,
                         selected = TopBarEdgeTuning.curve,
@@ -81,6 +84,9 @@ fun TopBarTuningPage(
                         TopBarEdgeTuning.blur = TopBarEdgeTuning.DefaultBlur
                         TopBarEdgeTuning.tint = TopBarEdgeTuning.DefaultTint
                         TopBarEdgeTuning.fade = TopBarEdgeTuning.DefaultFade
+                        TopBarEdgeTuning.blurFade = TopBarEdgeTuning.DefaultBlurFade
+                        TopBarEdgeTuning.reveal = TopBarEdgeTuning.DefaultReveal
+                        TopBarEdgeTuning.extend = TopBarEdgeTuning.DefaultExtend
                         TopBarEdgeTuning.curve = TopBarEdgeTuning.DefaultCurve
                     },
                     modifier = Modifier.align(Alignment.End),

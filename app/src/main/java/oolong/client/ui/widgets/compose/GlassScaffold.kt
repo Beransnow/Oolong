@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -88,6 +90,7 @@ fun GlassScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val largeTitleState = remember(largeTitle) { if (largeTitle) newLargeTitleState() else null }
+    val scrollEdge = remember { newScrollEdgeState() }
     // On the translucent theme the page joins the wallpaper's state, under its own key, so the
     // chrome blurs the wallpaper too but not the other pages sharing that state
     val wallpaper = LocalWallpaperGlass.current
@@ -112,9 +115,12 @@ fun GlassScaffold(
     CompositionLocalProvider(
         LocalSnackbarHostState provides scaffoldState.snackbarHostState,
         LocalLargeTitle provides largeTitleState,
+        LocalScrollEdge provides scrollEdge,
     ) {
         Surface(
-            modifier = modifier.onConsumedWindowInsetsChanged { consumedInsets = it },
+            modifier = modifier
+                .onConsumedWindowInsetsChanged { consumedInsets = it }
+                .onGloballyPositioned { scrollEdge.originX = it.positionInRoot().x },
             color = backgroundColor,
             contentColor = contentColor,
         ) {

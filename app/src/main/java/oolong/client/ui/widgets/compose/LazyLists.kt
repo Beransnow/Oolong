@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -17,7 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import oolong.client.arch.GlobalEvent
@@ -46,7 +46,8 @@ fun MyLazyColumn(
     val largeTitle = !reverseLayout && rememberShowsLargeTitle(state)
 
     LazyColumn(
-        modifier = modifier,
+        // A list laid out from the bottom has nothing to say about its top
+        modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
         state = state,
         contentPadding = contentPadding,
         reverseLayout = reverseLayout,
@@ -81,7 +82,7 @@ fun MyLazyVerticalGrid(
 
     LazyVerticalGrid(
         columns = columns,
-        modifier = modifier,
+        modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
         state = state,
         contentPadding = contentPadding,
         reverseLayout = reverseLayout,
