@@ -24,6 +24,7 @@ import android.widget.Toast
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
 import coil3.dispose
 import coil3.load
 import coil3.request.CachePolicy
@@ -163,7 +164,7 @@ object ImageUtil {
     }
 
     fun drawableToBitmap(drawable: Drawable): Bitmap {
-        val bitmap = Bitmap.createBitmap(
+        val bitmap = createBitmap(
             drawable.intrinsicWidth, drawable.intrinsicHeight,
             if (drawable.opacity != PixelFormat.OPAQUE) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
         )

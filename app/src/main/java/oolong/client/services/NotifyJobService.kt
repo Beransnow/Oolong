@@ -9,11 +9,11 @@ import android.app.job.JobService
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.ACTION_VIEW
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.MainScope
@@ -96,7 +96,7 @@ class NotifyJobService : JobService() {
                         ID_REPLY,
                         CHANNEL_REPLY,
                         getString(R.string.title_reply_me),
-                        Intent(ACTION_VIEW, Uri.parse("oolong://notifications/0")).setPackage(packageName)
+                        Intent(ACTION_VIEW, "oolong://notifications/0".toUri()).setPackage(packageName)
                     )
                 }
                 val atCount = message.atMe?.toIntOrNull() ?: 0
@@ -116,7 +116,7 @@ class NotifyJobService : JobService() {
                         ID_AT,
                         CHANNEL_AT,
                         getString(R.string.title_at_me),
-                        Intent(ACTION_VIEW, Uri.parse("oolong://notifications/1")).setPackage(packageName)
+                        Intent(ACTION_VIEW, "oolong://notifications/1".toUri()).setPackage(packageName)
                     )
                 }
                 sendBroadcast(

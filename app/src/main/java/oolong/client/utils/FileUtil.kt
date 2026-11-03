@@ -11,6 +11,7 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.webkit.URLUtil
+import androidx.core.net.toUri
 import oolong.client.R
 import oolong.client.utils.PermissionUtils.PermissionData
 import oolong.client.utils.PermissionUtils.askPermission
@@ -88,7 +89,7 @@ object FileUtil {
                 } else if (isDownloadsDocument(uri)) {
                     val id = DocumentsContract.getDocumentId(uri)
                     val contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"),
+                        "content://downloads/public_downloads".toUri(),
                         java.lang.Long.valueOf(id)
                     )
                     path = getDataColumn(context, contentUri, null, null)
@@ -171,7 +172,7 @@ object FileUtil {
         fileName: String,
     ) {
         // 指定下载地址
-        val request = DownloadManager.Request(Uri.parse(url))
+        val request = DownloadManager.Request(url?.toUri() ?: return)
         // 允许媒体扫描，根据下载的文件类型被加入相册、音乐等媒体库
         request.allowScanningByMediaScanner()
         // 设置通知的显示类型，下载进行时和完成后显示通知

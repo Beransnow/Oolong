@@ -3,7 +3,6 @@ package oolong.client.ui.page.settings.more
 import android.content.Intent
 import android.content.pm.verify.domain.DomainVerificationManager
 import android.content.pm.verify.domain.DomainVerificationUserState
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.annotation.RequiresApi
@@ -26,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -215,7 +215,7 @@ private fun TiebaLinksPref() {
                 context.startActivity(
                     Intent(
                         Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS,
-                        Uri.parse("package:${context.packageName}")
+                        "package:${context.packageName}".toUri()
                     )
                 )
             }

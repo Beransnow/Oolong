@@ -2,7 +2,6 @@ package oolong.client.ui.page.forum
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -10,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -100,7 +100,7 @@ private suspend fun sendToDesktop(context: Context, forum: ForumDetail, showMess
         "forum_${forum.id}",
         forum.avatar,
         context.getString(R.string.title_forum, forum.name),
-        Intent(Intent.ACTION_VIEW).setData(Uri.parse("oolong://forum/${forum.name}")),
+        Intent(Intent.ACTION_VIEW).setData("oolong://forum/${forum.name}".toUri()),
         onSuccess = { succeeded = true },
         onFailure = { failure = it },
     )

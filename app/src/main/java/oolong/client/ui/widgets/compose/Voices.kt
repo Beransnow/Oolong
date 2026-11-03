@@ -1,7 +1,6 @@
 package oolong.client.ui.widgets.compose
 
 import android.content.Context
-import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -37,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -173,7 +173,7 @@ private fun formatTime(millis: Long): String {
 }
 
 private fun saveVoice(context: Context, url: String) {
-    val md5 = Uri.parse(url).getQueryParameter("voice_md5")
+    val md5 = url.toUri().getQueryParameter("voice_md5")
     FileUtil.downloadBySystem(context, FileUtil.FILE_TYPE_AUDIO, url, (md5 ?: System.currentTimeMillis().toString()) + ".mp3")
 }
 

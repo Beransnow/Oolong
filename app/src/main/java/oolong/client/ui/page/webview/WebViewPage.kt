@@ -485,7 +485,7 @@ class MyWebChromeClient(
     ): Boolean {
         val context = view.context ?: context
         if ("ClipboardGuardCopyRequest".equals(message, ignoreCase = true)) {
-            val uri = Uri.parse(url)
+            val uri = url?.toUri()
             if (uri != null && uri.host != null) {
                 AppDialogs.ask(
                     context,

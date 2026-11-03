@@ -1,6 +1,7 @@
 package oolong.client.utils
 
 import android.net.Uri
+import androidx.core.net.toUri
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.Key
 import oolong.client.ui.navigation.ThreadKey
@@ -22,7 +23,7 @@ private fun String.isHostOf(domain: String): Boolean = equals(domain, ignoreCase
  */
 fun Uri.toTiebaKey(): Key? {
     // Some links are written as "scheme://tieba.baidu.com//kw=..."
-    val uri = Uri.parse(toString().replace("://tieba.baidu.com//", "://tieba.baidu.com/?"))
+    val uri = toString().replace("://tieba.baidu.com//", "://tieba.baidu.com/?").toUri()
     val scheme = uri.scheme?.lowercase() ?: return null
     val host = uri.host?.lowercase().orEmpty()
     val path = uri.path?.lowercase().orEmpty()

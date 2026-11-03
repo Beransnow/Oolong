@@ -1,7 +1,7 @@
 package oolong.client.repository
 
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
@@ -67,7 +67,7 @@ class PostRepository @Inject constructor(
      * @param original whether to upload them as they are rather than compressed
      */
     suspend fun uploadPictures(forumName: String, uris: List<String>, original: Boolean): List<String> = withContext(io) {
-        val paths = uris.map { FileUtil.getRealPathFromUri(context, Uri.parse(it)) }
+        val paths = uris.map { FileUtil.getRealPathFromUri(context, it.toUri()) }
         ImageUploader(uploads, forumName).uploadImages(paths, original).first().map { image ->
             // ImageUploader only returns results that carry picId and picInfo
             val originPic = checkNotNull(image.picInfo).originPic

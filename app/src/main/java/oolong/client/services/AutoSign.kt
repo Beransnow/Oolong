@@ -14,6 +14,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import oolong.client.R
 import oolong.client.receivers.AutoSignAlarm
 import oolong.client.utils.appPreferences
@@ -148,10 +149,10 @@ object AutoSign {
     private fun markAttempt(context: Context) {
         val today = day(System.currentTimeMillis())
         val (attemptDay, count) = attempts(context)
-        context.getSharedPreferences(Preferences, Context.MODE_PRIVATE).edit()
-            .putString(AttemptDay, today)
-            .putInt(Attempts, if (attemptDay == today) count + 1 else 1)
-            .apply()
+        context.getSharedPreferences(Preferences, Context.MODE_PRIVATE).edit {
+            putString(AttemptDay, today)
+            putInt(Attempts, if (attemptDay == today) count + 1 else 1)
+        }
     }
 
     private fun attempts(context: Context): Pair<String?, Int> {

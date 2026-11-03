@@ -1,7 +1,7 @@
 package oolong.client.components
 
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.core.graphics.scale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -89,7 +89,7 @@ class ImageUploader(
                     if (scale < 1) {
                         val newWidth = (width * scale).toInt()
                         val newHeight = (height * scale).toInt()
-                        val newBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+                        val newBitmap = bitmap.scale(newWidth, newHeight)
                         tempFile.writeBytes(ImageUtil.compressImage(newBitmap, quality = 95))
                     }
                 }

@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -47,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -311,7 +311,7 @@ class MainActivity : AppCompatActivity() {
             (iconDone - SystemClock.uptimeMillis()).coerceAtLeast(0)
         )
         window.decorView.setBackgroundColor(0)
-        window.setBackgroundDrawable(ColorDrawable(0))
+        window.setBackgroundDrawable(0.toDrawable())
         lifecycleScope.launch {
             ClientUtils.setActiveTimestamp()
         }

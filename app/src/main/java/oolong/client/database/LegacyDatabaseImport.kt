@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+import androidx.core.content.edit
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import oolong.client.model.BlockRule
@@ -169,7 +170,7 @@ class LegacyDatabaseImport(
         val id = db.query("SELECT id FROM accounts WHERE uid = ?", arrayOf(uid)).use {
             if (it.moveToFirst()) it.getInt(0) else null
         } ?: return
-        accountPrefs.edit().putInt(KEY_CURRENT_ACCOUNT, id).apply()
+        accountPrefs.edit { putInt(KEY_CURRENT_ACCOUNT, id) }
     }
 
     private fun SQLiteDatabase.hasTable(name: String): Boolean =

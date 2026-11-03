@@ -3,6 +3,7 @@ package oolong.client.utils
 import android.annotation.SuppressLint
 import android.provider.Settings
 import android.text.TextUtils
+import androidx.core.content.edit
 import oolong.client.App
 import oolong.client.App.Companion.INSTANCE
 import oolong.client.toMD5
@@ -74,9 +75,7 @@ object UIDUtil {
             if (uuid == null) {
                 uuid = UUID.randomUUID().toString()
                 SharedPreferencesUtil.get(INSTANCE, SharedPreferencesUtil.SP_APP_DATA)
-                    .edit()
-                    .putString("uuid", uuid)
-                    .apply()
+                    .edit { putString("uuid", uuid) }
             }
             return uuid
         }

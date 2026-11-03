@@ -2,9 +2,10 @@ package oolong.client.components
 
 import android.content.ClipDescription
 import android.content.Context
-import android.net.Uri
 import android.os.Build
 import android.view.textclassifier.TextClassifier
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,13 +81,13 @@ object ClipBoardLinkDetector {
             description.classificationStatus == ClipDescription.CLASSIFICATION_COMPLETE &&
             description.getConfidenceScore(TextClassifier.TYPE_URL) < UrlConfidence
         if (unlikelyLink && stamp != null) {
-            seen.edit().putString(SeenKey, stamp).apply()
+            seen.edit { putString(SeenKey, stamp) }
             return
         }
         val text = manager.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString() ?: return
         val key = stamp ?: text.hashCode().toString()
         if (stamp == null && seen.getString(SeenKey, null) == key) return
-        seen.edit().putString(SeenKey, key).apply()
+        seen.edit { putString(SeenKey, key) }
         if (unlikelyLink) return
         val url = UrlPattern.matcher(text).takeIf { it.find() }?.group() ?: return
         val link = parseLink(url) ?: return
@@ -104,7 +105,7 @@ object ClipBoardLinkDetector {
     }
 
     private fun parseLink(url: String): ClipBoardLink? {
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         if (!isTiebaDomain(uri.host)) {
             return null
         }

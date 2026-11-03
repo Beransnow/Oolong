@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.browser.customtabs.CustomTabColorSchemeParams
@@ -13,6 +12,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.net.toUri
 import oolong.client.R
 import oolong.client.components.images.loadBitmap
 import oolong.client.toastShort
@@ -27,7 +27,7 @@ fun launchUrl(
     navigator: Navigator,
     url: String,
 ) {
-    val uri = Uri.parse(url)
+    val uri = url.toUri()
     val host = uri.host
     val path = uri.path
     val scheme = uri.scheme
@@ -112,7 +112,7 @@ val Context.powerManager: PowerManager
 fun Context.requestIgnoreBatteryOptimizations() {
     if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-        intent.data = Uri.parse("package:$packageName")
+        intent.data = "package:$packageName".toUri()
         startActivity(intent)
     }
 }

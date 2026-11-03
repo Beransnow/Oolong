@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import oolong.client.R
@@ -118,7 +119,7 @@ object AppDialogs {
     }
 
     internal fun remember(context: Context, dialog: AppDialog.Permission, granted: Boolean) {
-        permissions(context).edit().putInt(dialog.key, if (granted) PERMISSION_ALLOWED else PERMISSION_DENIED).apply()
+        permissions(context).edit { putInt(dialog.key, if (granted) PERMISSION_ALLOWED else PERMISSION_DENIED) }
     }
 
     private fun permissions(context: Context) = SharedPreferencesUtil.get(context, SharedPreferencesUtil.SP_PERMISSION)
