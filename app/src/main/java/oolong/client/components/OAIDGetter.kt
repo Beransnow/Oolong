@@ -6,7 +6,7 @@ import android.os.Bundle
 import com.github.gzuliyujiang.oaid.DeviceID
 import com.github.gzuliyujiang.oaid.IGetter
 import oolong.client.App
-import oolong.client.utils.helios.Base32
+import oolong.client.utils.Base32
 
 object OAIDGetter : Application.ActivityLifecycleCallbacks, IGetter {
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}

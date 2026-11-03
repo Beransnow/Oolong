@@ -6,8 +6,6 @@ import android.text.TextUtils
 import oolong.client.App
 import oolong.client.App.Companion.INSTANCE
 import oolong.client.toMD5
-import oolong.client.utils.helios.Base32
-import oolong.client.utils.helios.Hasher
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
@@ -27,7 +25,7 @@ object UIDUtil {
     fun getOAID(): String {
         if (App.Config.encodedOAID.isBlank()) return ""
         val raw = "A10-${App.Config.encodedOAID}-"
-        val sign = Base32.encode(Hasher.hash(raw.toByteArray()))
+        val sign = Base32.encode(IdCheck.of(raw.toByteArray()))
         return "$raw$sign"
     }
 
@@ -36,7 +34,7 @@ object UIDUtil {
         val bytes = getSHA1(raw)
         val encoded = Base32.encode(bytes)
         val rawAid = "A00-$encoded-"
-        val sign = Base32.encode(Hasher.hash(rawAid.toByteArray()))
+        val sign = Base32.encode(IdCheck.of(rawAid.toByteArray()))
         return "$rawAid$sign"
     }
 
