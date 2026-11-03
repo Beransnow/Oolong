@@ -82,6 +82,7 @@ fun CrashLogsPage(
         title = { Text(text = stringResource(id = R.string.title_dialog_clear_crash_logs)) },
     )
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

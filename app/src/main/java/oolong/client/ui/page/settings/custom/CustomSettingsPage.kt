@@ -80,6 +80,7 @@ fun CustomSettingsPage(
     val textAndIconGroup = stringResource(id = R.string.settings_group_text_and_icon)
     val effectsGroup = stringResource(id = R.string.settings_group_effects)
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

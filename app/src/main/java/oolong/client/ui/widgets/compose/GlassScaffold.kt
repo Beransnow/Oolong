@@ -67,6 +67,9 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  *
  * [sampleContent] false keeps the chrome from sampling the content, for content that can't be
  * drawn twice: a web view drawn into the blur as well alternates between two renders of the page.
+ *
+ * [largeTitle] gives the page a large title: the top bar's title, shown big at the top of the
+ * content's list and shrinking into the bar as it scrolls up. See [LargeTitleSlot].
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -81,8 +84,10 @@ fun GlassScaffold(
     contentColor: Color = contentColorFor(backgroundColor),
     overlay: @Composable () -> Unit = {},
     sampleContent: Boolean = true,
+    largeTitle: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val largeTitleState = remember(largeTitle) { if (largeTitle) newLargeTitleState() else null }
     // On the translucent theme the page joins the wallpaper's state, under its own key, so the
     // chrome blurs the wallpaper too but not the other pages sharing that state
     val wallpaper = LocalWallpaperGlass.current
@@ -104,7 +109,10 @@ fun GlassScaffold(
         }
     }
 
-    CompositionLocalProvider(LocalSnackbarHostState provides scaffoldState.snackbarHostState) {
+    CompositionLocalProvider(
+        LocalSnackbarHostState provides scaffoldState.snackbarHostState,
+        LocalLargeTitle provides largeTitleState,
+    ) {
         Surface(
             modifier = modifier.onConsumedWindowInsetsChanged { consumedInsets = it },
             color = backgroundColor,

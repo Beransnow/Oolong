@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
@@ -21,6 +22,8 @@ import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.LargeTitleSlot
+import oolong.client.ui.widgets.compose.rememberShowsLargeTitle
 
 lateinit var LocalPrefsDataStore: ProvidableCompositionLocal<DataStore<Preferences>>
 
@@ -47,10 +50,14 @@ fun PrefsScreen(
     // Now the dataStore can be accessed by calling LocalPrefsDataStore.current from any child Pref
     CompositionLocalProvider(LocalPrefsDataStore provides dataStore) {
         Container {
+            val listState = rememberLazyListState()
+            val largeTitle = rememberShowsLargeTitle(listState)
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = contentPadding,
             ) {
+                if (largeTitle) item(key = "largeTitle") { LargeTitleSlot() }
                 items(prefsScope.prefsItems.size) { index ->
                     val items = prefsScope.prefsItems
                     val item = items[index]

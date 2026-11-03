@@ -78,6 +78,7 @@ fun BlockSettingsPage(
         Text(text = stringResource(id = R.string.settings_block_spoiler_hint))
     }
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

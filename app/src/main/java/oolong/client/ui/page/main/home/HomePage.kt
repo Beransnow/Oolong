@@ -511,6 +511,7 @@ fun HomeScreen(
     val error = (state.load as? LoadStatus.Error)?.error
 
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

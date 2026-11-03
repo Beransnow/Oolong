@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -80,6 +82,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param hiddenFraction 0 shows the bar, 1 hides it: everything between the status bar and the
  * pinned rows slides away. Glass stays behind the status bar and the pinned rows, so content
  * never scrolls by sharp under them.
+ * The title becomes the page's large title when its [GlassScaffold] has one; see [LargeTitleState].
+ *
  * @param title null leaves out the title row, with [navigationIcon] and [actions], for a bar of
  * [content] alone, such as tabs whose page is named elsewhere.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
@@ -106,6 +110,7 @@ fun GlassTopBar(
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val largeTitle = LocalLargeTitle.current
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
@@ -139,6 +144,13 @@ fun GlassTopBar(
             ) {
                 if (title != null) Row(
                     modifier = Modifier
+                        .then(
+                            if (largeTitle != null) {
+                                Modifier.onGloballyPositioned {
+                                    largeTitle.rowBottom = it.positionInWindow().y + it.size.height
+                                }
+                            } else Modifier
+                        )
                         .fillMaxWidth()
                         .height(GlassTopBarRowHeight)
                         .padding(horizontal = TopBarRowPadding),
@@ -159,7 +171,21 @@ fun GlassTopBar(
                             ProvideTextStyle(
                                 value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
                             ) {
-                                title()
+                                if (largeTitle == null) {
+                                    title()
+                                } else {
+                                    // Measured where the bar puts it, before the move to the slot
+                                    Box(
+                                        modifier = Modifier
+                                            .onGloballyPositioned {
+                                                val position = it.positionInWindow()
+                                                largeTitle.titleTop = position.y
+                                                largeTitle.titleStart = position.x
+                                                largeTitle.titleHeight = it.size.height
+                                            }
+                                            .graphicsLayer { with(largeTitle) { place() } }
+                                    ) { title() }
+                                }
                             }
                         }
                         if (actionsInCapsule) {

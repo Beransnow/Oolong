@@ -60,6 +60,7 @@ fun OKSignSettingsPage(
 ) {
     val coroutineScope = rememberCoroutineScope()
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

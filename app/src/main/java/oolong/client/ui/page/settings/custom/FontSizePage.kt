@@ -95,6 +95,7 @@ fun FontSizePage(
     MyBackHandler(enabled = true) { leave() }
 
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

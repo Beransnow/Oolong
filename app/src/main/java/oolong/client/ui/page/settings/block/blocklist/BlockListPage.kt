@@ -130,6 +130,7 @@ fun BlockListScreen(
     )
 
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

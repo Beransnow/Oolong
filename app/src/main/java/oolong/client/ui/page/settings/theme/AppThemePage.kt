@@ -100,6 +100,8 @@ import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.widgets.compose.LargeTitleSettle
+import oolong.client.ui.widgets.compose.LargeTitleSlot
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.clickMenu
@@ -135,6 +137,7 @@ fun AppThemePage(
     CustomColorDialog(customColorDialogState)
 
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
@@ -143,13 +146,16 @@ fun AppThemePage(
             )
         },
     ) { paddingValues ->
+        val scroll = rememberScrollState()
+        LargeTitleSettle(scroll)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(paddingValues)
                 .padding(bottom = 24.dp),
         ) {
+            LargeTitleSlot()
             GroupHeader(title = stringResource(id = R.string.title_appearance))
             ThemeGroup {
                 AppearancePicker(

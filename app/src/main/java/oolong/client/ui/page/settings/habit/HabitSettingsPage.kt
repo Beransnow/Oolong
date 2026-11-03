@@ -34,6 +34,7 @@ fun HabitSettingsPage(
     val collectedGroup = stringResource(id = R.string.settings_group_collected)
     val imageGroup = stringResource(id = R.string.settings_group_image)
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

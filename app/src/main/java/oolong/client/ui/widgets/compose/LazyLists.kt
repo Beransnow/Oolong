@@ -17,11 +17,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
 import java.util.WeakHashMap
+
+/** The large title's item in a list that has one. */
+private const val LargeTitleKey = "largeTitle"
 
 @Composable
 fun MyLazyColumn(
@@ -39,6 +43,7 @@ fun MyLazyColumn(
     onGlobalEvent<GlobalEvent.ScrollToTop> {
         state.animateScrollToItem(0)
     }
+    val largeTitle = !reverseLayout && rememberShowsLargeTitle(state)
 
     LazyColumn(
         modifier = modifier,
@@ -49,8 +54,10 @@ fun MyLazyColumn(
         horizontalAlignment = horizontalAlignment,
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled,
-        content = content
-    )
+    ) {
+        if (largeTitle) item(key = LargeTitleKey, contentType = LargeTitleKey) { LargeTitleSlot() }
+        content()
+    }
 }
 
 @Composable
@@ -70,6 +77,7 @@ fun MyLazyVerticalGrid(
     onGlobalEvent<GlobalEvent.ScrollToTop> {
         state.animateScrollToItem(0)
     }
+    val largeTitle = !reverseLayout && rememberShowsLargeTitle(state)
 
     LazyVerticalGrid(
         columns = columns,
@@ -81,8 +89,12 @@ fun MyLazyVerticalGrid(
         horizontalArrangement = horizontalArrangement,
         flingBehavior = flingBehavior,
         userScrollEnabled = userScrollEnabled,
-        content = content
-    )
+    ) {
+        if (largeTitle) {
+            item(key = LargeTitleKey, contentType = LargeTitleKey, span = { GridItemSpan(maxLineSpan) }) { LargeTitleSlot() }
+        }
+        content()
+    }
 }
 
 /**

@@ -32,6 +32,7 @@ fun PostSettingsPage(
     val pickerNotSupported = stringResource(id = R.string.summary_photo_picker_not_supported)
 
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

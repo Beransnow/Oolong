@@ -52,6 +52,7 @@ fun AccountManagePage(
     navigator: Navigator = LocalNavigator.current,
 ) {
     GlassScaffold(
+        largeTitle = true,
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(

@@ -99,6 +99,7 @@ fun SettingsPage(
 ) {
     ProvideNavigator(navigator = navigator) {
         GlassScaffold(
+            largeTitle = true,
             backgroundColor = Color.Transparent,
             topBar = {
                 GlassTopBar(
