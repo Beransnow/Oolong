@@ -155,4 +155,42 @@ class UserRemoteDataSourceTest {
         assertEquals("""{"follow":1,"interact":0,"chat":1}""", form.value("perm_list"))
         assertEquals("tbs-value", form.value("tbs"))
     }
+
+    @Test
+    fun `lists a page of whom a user follows`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","has_more":1,"total_follow_num":"2","follow_list":[{"id":7,"name":"n","name_show":"昵称",
+            "portrait":"tb.1.p","intro":"自我介绍","has_concerned":1}]}"""
+        )
+
+        val response = dataSource.follows(uid = 42, page = 2)
+
+        val request = server.takeRequest()
+        assertEquals("/c/u/follow/followList", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("42", form.value("uid"))
+        assertEquals("2", form.value("pn"))
+        assertEquals("1", response.hasMore)
+        assertEquals(ListedUser("7", "n", "昵称", "tb.1.p", "自我介绍", "1"), response.users.single())
+    }
+
+    @Test
+    fun `lists a page of who follows a user`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","page":{"current_page":"1","total_page":"3","has_more":"1"},
+            "user_list":[{"id":"8","name":"m","name_show":"","portrait":"tb.1.q","follow_time":"1700000000","has_concerned":"0"}]}"""
+        )
+
+        val response = dataSource.fans(uid = 42, page = 1)
+
+        val request = server.takeRequest()
+        assertEquals("/c/u/fans/page", request.target)
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("42", form.value("uid"))
+        assertEquals("1", form.value("pn"))
+        assertEquals("1", response.page?.hasMore)
+        assertEquals(ListedUser("8", "m", "", "tb.1.q", null, "0"), response.users.single())
+    }
 }

@@ -7,6 +7,7 @@ import oolong.client.api.models.protos.User
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.model.LikedForum
+import oolong.client.model.ListedUser
 import oolong.client.model.ThreadSummary
 import oolong.client.model.UserPost
 import oolong.client.model.UserProfile
@@ -58,6 +59,18 @@ class UserRepository @Inject constructor(
         Page(forums, next = (page + 1).takeIf { response.hasMore == "1" })
     }
 
+    /** Page [page] (from 1) of the users [uid] follows. */
+    suspend fun follows(uid: Long, page: Int): Page<Int, ListedUser> = withContext(io) {
+        val response = remote.follows(uid, page)
+        Page(response.users.mapNotNull { it.toListedUser() }, next = (page + 1).takeIf { response.hasMore == "1" })
+    }
+
+    /** Page [page] (from 1) of the users who follow [uid]. */
+    suspend fun fans(uid: Long, page: Int): Page<Int, ListedUser> = withContext(io) {
+        val response = remote.fans(uid, page)
+        Page(response.users.mapNotNull { it.toListedUser() }, next = (page + 1).takeIf { response.page?.hasMore == "1" })
+    }
+
     suspend fun follow(user: UserProfile) = withContext(io) { remote.follow(user.portrait) }
 
     suspend fun blackSettings(uid: Long): BlackSettings = withContext(io) {
@@ -94,6 +107,23 @@ class UserRepository @Inject constructor(
 
 /** The upload of a portrait that waits for review, which the server sends as an error. */
 private const val PORTRAIT_IN_REVIEW = 300003
+
+private fun oolong.core.network.user.ListedUser.toListedUser(): ListedUser? {
+    val id = id?.toLongOrNull() ?: return null
+    return ListedUser(
+        user = oolong.client.model.User(
+            id = id,
+            name = name.orEmpty(),
+            nameShow = nameShow.orEmpty().takeIf { it != name }.orEmpty(),
+            portrait = portrait.orEmpty(),
+        ),
+        // Left unwritten, an intro comes as the server's own line, which says nothing of them
+        intro = intro.orEmpty().takeUnless { it.startsWith(DefaultIntro) }.orEmpty(),
+        followed = followed == "1",
+    )
+}
+
+private const val DefaultIntro = "签名是一种态度，我想我可以更酷"
 
 private fun User.toUserProfile() = UserProfile(
     id = id,

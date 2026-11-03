@@ -91,6 +91,18 @@ class UserRemoteDataSource(
         return formService.likedForums(signedFormBody(params, withSig = false))
     }
 
+    /** A page (from 1) of the users [uid] follows, as far as they let others see. */
+    suspend fun follows(uid: Long, page: Int): FollowListResponse {
+        val params = commonParams.form(formProfile) + listOf("uid" to uid.toString(), "pn" to page.toString())
+        return formService.followList(signedFormBody(params, withSig = false))
+    }
+
+    /** A page (from 1) of the users who follow [uid], as far as they let others see. */
+    suspend fun fans(uid: Long, page: Int): FansResponse {
+        val params = commonParams.form(formProfile) + listOf("uid" to uid.toString(), "pn" to page.toString())
+        return formService.fans(signedFormBody(params, withSig = false))
+    }
+
     /** Follows the user of [portrait]; unlike unfollowing, this is sent with `sig`. */
     suspend fun follow(portrait: String, tbs: String? = null) {
         val params = commonParams.form(formProfile, includeTbs = tbs == null) + listOfNotNull(

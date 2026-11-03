@@ -70,6 +70,10 @@ data class ForumSearchPostKey(val forumName: String, val forumId: Long) : Key
 @Serializable
 data class UserProfileKey(val uid: Long) : Key
 
+/** Whom user [uid] follows, or with [fans] who follows them; [name] heads the page. */
+@Serializable
+data class UserFollowsKey(val uid: Long, val fans: Boolean, val name: String) : Key
+
 @Serializable
 data object EditProfileKey : Key
 

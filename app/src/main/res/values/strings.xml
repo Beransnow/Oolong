@@ -878,4 +878,6 @@
     <string name="tip_auto_sign_other">部分系统还会限制后台运行，需要在系统设置中允许 Oolong 在后台运行。</string>
     <string name="title_auto_sign_not_started">今天的自动签到没能启动</string>
     <string name="text_auto_sign_not_started">点按打开 Oolong 即可签到。允许「闹钟和提醒」后可按时自动签到。</string>
+    <string name="follows_empty_follows">还没有关注任何人</string>
+    <string name="follows_empty_fans">还没有粉丝</string>
 </resources>

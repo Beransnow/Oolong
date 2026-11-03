@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,7 @@ import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.navigation.EditProfileKey
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.UserFollowsKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
@@ -833,9 +836,13 @@ private fun UserProfileDetail(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.height(IntrinsicSize.Min)
             ) {
+                // Each count opens the list it counts
+                val navigator = LocalNavigator.current
+                val name = user.nameShow.ifEmpty { user.name }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.clickable(role = Role.Button) { navigator.navigate(UserFollowsKey(user.id, fans = false, name = name)) },
                 ) {
                     Text(
                         text = stringResource(id = R.string.text_stat_follow),
@@ -850,7 +857,8 @@ private fun UserProfileDetail(
                 HorizontalDivider(modifier = Modifier.fillMaxHeight())
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.clickable(role = Role.Button) { navigator.navigate(UserFollowsKey(user.id, fans = true, name = name)) },
                 ) {
                     Text(
                         text = stringResource(id = R.string.text_stat_fans),

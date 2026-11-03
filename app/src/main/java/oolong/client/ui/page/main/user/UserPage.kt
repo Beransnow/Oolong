@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -54,6 +55,7 @@ import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.HistoryKey
 import oolong.client.ui.navigation.SettingsKey
 import oolong.client.ui.navigation.ThreadStoreKey
+import oolong.client.ui.navigation.UserFollowsKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
@@ -92,6 +94,7 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
 @Composable
 private fun StatCard(
     account: Account,
+    onOpenFollows: (fans: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val postNum by animateIntAsState(targetValue = account.postNum?.toIntOrNull() ?: 0, animationSpec = Motion.settle())
@@ -103,11 +106,13 @@ private fun StatCard(
     ) {
         StatCardItem(
             statNum = concernNum,
-            statText = stringResource(id = R.string.text_stat_follow)
+            statText = stringResource(id = R.string.text_stat_follow),
+            onClick = { onOpenFollows(false) },
         )
         StatCardItem(
             statNum = fansNum,
-            statText = stringResource(id = R.string.text_stat_fans)
+            statText = stringResource(id = R.string.text_stat_fans),
+            onClick = { onOpenFollows(true) },
         )
         StatCardItem(
             statNum = postNum,
@@ -173,10 +178,13 @@ private fun InfoCard(
 @Composable
 private fun StatCardItem(
     statNum: Int,
-    statText: String
+    statText: String,
+    onClick: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier.padding(end = 32.dp),
+        modifier = Modifier
+            .padding(end = 32.dp)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
         horizontalAlignment = Alignment.Start,
     ) {
         Text(
@@ -286,7 +294,13 @@ fun UserScreen(
                         userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
                         avatar = StringUtil.getAvatarUrl(account.portrait),
                     )
-                    StatCard(account = account, modifier = StatsPadding)
+                    StatCard(
+                        account = account,
+                        onOpenFollows = { fans ->
+                            navigator.navigate(UserFollowsKey(account.uid.toLong(), fans, account.nameShow ?: account.name))
+                        },
+                        modifier = StatsPadding,
+                    )
                 } else if (isLoading) {
                     InfoCard(
                         modifier = Modifier

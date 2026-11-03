@@ -894,4 +894,6 @@
     <string name="title_import_legacy">Import from Tieba Lite</string>
     <string name="tip_import_legacy_update">Install the last version of Tieba Lite first</string>
     <string name="toast_import_legacy_failed">Couldn’t import the data. Try again later</string>
+    <string name="follows_empty_follows">Not following anyone yet</string>
+    <string name="follows_empty_fans">No followers yet</string>
 </resources>

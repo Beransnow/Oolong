@@ -96,6 +96,7 @@ import oolong.client.ui.page.thread.ThreadPage
 import oolong.client.ui.page.threadstore.ThreadStorePage
 import oolong.client.ui.page.user.UserProfilePage
 import oolong.client.ui.page.user.edit.EditProfilePage
+import oolong.client.ui.page.user.follows.UserFollowsPage
 import oolong.client.ui.page.webview.WebViewPage
 
 /** Whether the entry being composed is the top of the back stack, as opposed to one below a sheet or dialog. */
@@ -115,6 +116,7 @@ private fun KeyContent(key: Key) {
         is ForumRuleDetailKey -> ForumRuleDetailPage(key)
         is ForumSearchPostKey -> ForumSearchPostPage(key)
         is UserProfileKey -> UserProfilePage(key)
+        is UserFollowsKey -> UserFollowsPage(key)
         EditProfileKey -> EditProfilePage()
         is NotificationsKey -> NotificationsPage(initialTab = key.initialTab)
         is SearchKey -> SearchPage(keyword = key.keyword)

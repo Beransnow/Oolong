@@ -35,7 +35,42 @@ interface UserFormService {
 
     @POST("c/c/user/setUserBlack")
     suspend fun setBlack(@Body body: RequestBody): JsonObject
+
+    @POST("c/u/follow/followList")
+    suspend fun followList(@Body body: RequestBody): FollowListResponse
+
+    @POST("c/u/fans/page")
+    suspend fun fans(@Body body: RequestBody): FansResponse
 }
+
+/** A page of the users someone follows. */
+@Serializable
+data class FollowListResponse(
+    @SerialName("has_more") val hasMore: String? = null,
+    @SerialName("follow_list") val users: List<ListedUser> = emptyList(),
+)
+
+/** A page of the users who follow someone. */
+@Serializable
+data class FansResponse(
+    val page: Page? = null,
+    @SerialName("user_list") val users: List<ListedUser> = emptyList(),
+) {
+    @Serializable
+    data class Page(@SerialName("has_more") val hasMore: String? = null)
+}
+
+/** A user as a list of followers or followed shows them. */
+@Serializable
+data class ListedUser(
+    val id: String? = null,
+    val name: String? = null,
+    @SerialName("name_show") val nameShow: String? = null,
+    val portrait: String? = null,
+    val intro: String? = null,
+    /** "1" when the viewer follows them. */
+    @SerialName("has_concerned") val followed: String? = null,
+)
 
 /** What the user has barred another user from; each is "1" when barred. */
 @Serializable
