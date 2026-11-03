@@ -84,6 +84,7 @@ import oolong.client.ui.widgets.compose.Aurora
 import oolong.client.ui.widgets.compose.AuroraState
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.condense
 import oolong.client.utils.appPreferences
 import kotlin.math.PI
 import kotlin.math.roundToInt
@@ -429,40 +430,6 @@ private class LandingState {
         }
     }
 }
-
-/**
- * Comes into focus: from blurred, a little lower and smaller, and transparent, to sharp as
- * [progress] goes from 0 to 1. Blur is drawn from Android 12; before, it only fades and rises.
- * The layer is drawn with room around the content, which the blur spreads into instead of being
- * cut off square at the content's edges; the room takes no space in the layout.
- */
-private fun Modifier.condense(
-    progress: () -> Float,
-    blur: Dp,
-    rise: Dp = 0.dp,
-    scale: Float = 1f,
-    fadeFaster: Float = 1f,
-): Modifier = this
-    .layout { measurable, constraints ->
-        val room = (blur * 2).roundToPx()
-        val placeable = measurable.measure(constraints.offset(room * 2, room * 2))
-        layout((placeable.width - room * 2).coerceAtLeast(0), (placeable.height - room * 2).coerceAtLeast(0)) {
-            placeable.place(-room, -room)
-        }
-    }
-    .graphicsLayer {
-        val p = progress()
-        alpha = (p * fadeFaster).coerceIn(0f, 1f)
-        translationY = (1f - p) * rise.toPx()
-        val s = lerp(scale, 1f, p)
-        scaleX = s
-        scaleY = s
-        val radius = (1f - p.coerceAtMost(1f)) * blur.toPx()
-        renderEffect = if (radius > .5f) BlurEffect(radius, radius, TileMode.Decal) else null
-    }
-    .padding(blur * 2)
-
-private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
 
 /** Critically damped, as slow as [response] seconds: seen once, the page takes its time. */
 private fun <T> slow(response: Float): AnimationSpec<T> {
