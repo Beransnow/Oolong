@@ -209,7 +209,7 @@ fun rememberReplyComposer(
 
 /** The composer's inside, for [ReplyChrome]'s composer slot. */
 @Composable
-fun ReplyComposer.Content(handle: @Composable () -> Unit) {
+fun ReplyComposer.Content(handle: @Composable () -> Unit, fill: Boolean) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -219,6 +219,7 @@ fun ReplyComposer.Content(handle: @Composable () -> Unit) {
         editor = editor,
         state = state,
         fullScreen = chrome.fullScreen,
+        fill = fill,
         showNotice = showNotice,
         hasTail = !context.appPreferences.littleTail.isNullOrBlank(),
         canAttachImages = canAttachImages,

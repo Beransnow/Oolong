@@ -3,7 +3,6 @@ package oolong.client.ui.page.thread
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +38,7 @@ import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -97,16 +97,26 @@ internal fun RowScope.ThreadActions(agree: Agree, onEvent: (ThreadEvent) -> Unit
     MenuButton(open = false, onClick = { onEvent(ThreadEvent.OpenMenu) })
 }
 
-/** The open menu's bottom row, where the actions capsule was: the like stays, "…" turns into ×. */
+/**
+ * The open menu's bottom row: [actions] at its start, and where the actions capsule was the like,
+ * which stays, and "…" turned into ×.
+ */
 @Composable
-internal fun RowScope.ThreadMenuFooter(agree: Agree, onEvent: (ThreadEvent) -> Unit, onClose: () -> Unit) {
+internal fun RowScope.ThreadMenuFooter(
+    agree: Agree,
+    onEvent: (ThreadEvent) -> Unit,
+    onClose: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+) {
+    actions()
+    Spacer(modifier = Modifier.weight(1f))
     ThreadAgreeButton(agree = agree, onClick = { onEvent(ThreadEvent.AgreeThread) })
     MenuButton(open = true, onClick = onClose)
 }
 
 @Composable
 private fun MenuButton(open: Boolean, onClick: () -> Unit) {
-    val turn by animateFloatAsState(if (open) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 500f), label = "menuButton")
+    val turn by animateFloatAsState(if (open) 1f else 0f, Motion.snap(), label = "menuButton")
     Box(
         modifier = Modifier
             .size(40.dp)

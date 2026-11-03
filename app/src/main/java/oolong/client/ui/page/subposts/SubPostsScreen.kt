@@ -127,7 +127,7 @@ fun SubPostsScreen(
                 actions = null,
                 menu = null,
                 menuFooter = {},
-                composer = { handle -> reply?.Content(handle) },
+                composer = { handle, fill -> reply?.Content(handle, fill) },
                 panel = { reply?.Panel() },
                 panelShown = reply?.panelShown() ?: false,
                 onOpenComposer = { handleEvent(SubPostsEvent.ReplyToPost) },

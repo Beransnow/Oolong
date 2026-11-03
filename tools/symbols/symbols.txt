@@ -46,6 +46,7 @@ heart_broken
 image
 keep
 keep fill
+keyboard
 layers
 link
 location_on

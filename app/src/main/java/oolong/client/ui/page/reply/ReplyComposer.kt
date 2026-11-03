@@ -1,5 +1,7 @@
 package oolong.client.ui.page.reply
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,13 +29,21 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -42,6 +53,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -50,12 +62,14 @@ import kotlinx.collections.immutable.ImmutableList
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.utils.Emoticon
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.StringUtil
+import kotlin.math.roundToInt
 
 /** Whom a reply answers, shown as a chip at the top of the composer; null answers the thread. */
 @Immutable
@@ -88,9 +102,12 @@ private val ChipShape = Corners.full
 
 /**
  * The inside of the reply composer: whom it answers, the text, the pictures and what the reply
- * carries along, and the tools above the keyboard. In [fullScreen] the text takes the room left
- * and the words replied to are quoted under the header.
+ * carries along, and the tools above the keyboard. In [fullScreen] the words replied to are
+ * quoted under the header. Lines that come and go open and close on a spring, their content
+ * condensing in.
  *
+ * @param fill whether the composer's height is set from outside, as when full screen or being
+ *   dragged, so the text takes the room left
  * @param handle the drag handle at the top, which the host wires to resize the composer
  * @param hasTail whether a little tail is set in settings, which shows the chip that turns it off
  */
@@ -100,6 +117,7 @@ fun ReplyComposerContent(
     editor: ReplyEditorState,
     state: ReplyState,
     fullScreen: Boolean,
+    fill: Boolean,
     showNotice: Boolean,
     hasTail: Boolean,
     canAttachImages: Boolean,
@@ -111,7 +129,7 @@ fun ReplyComposerContent(
     Column(modifier = modifier) {
         handle()
         // Whom it answers; a reply to the thread needs no line for it
-        if (replyTo != null) {
+        Reveal(replyTo) { replyTo ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,9 +139,9 @@ fun ReplyComposerContent(
                 ReplyToChip(replyTo, onDrop = { onEvent(ReplyComposerEvent.ReplyToThread) })
             }
         }
-        if (fullScreen && replyTo != null && replyTo.quote.isNotBlank()) {
+        Reveal(replyTo?.quote?.takeIf { fullScreen && it.isNotBlank() }) { quote ->
             Text(
-                text = replyTo.quote,
+                text = quote,
                 fontSize = 13.5.sp,
                 lineHeight = 21.sp,
                 color = colors.textSecondary,
@@ -135,9 +153,9 @@ fun ReplyComposerContent(
             )
         }
         val error = state.error
-        when {
-            error != null -> ReplyErrorRow(error, onEvent)
-            showNotice -> NoticeRow(
+        Reveal(error) { ReplyErrorRow(it, onEvent) }
+        Reveal(Unit.takeIf { error == null && showNotice }) {
+            NoticeRow(
                 icon = Symbols.Warning,
                 text = stringResource(id = R.string.reply_notice_risk),
             ) {
@@ -162,16 +180,25 @@ fun ReplyComposerContent(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 4.dp)
                 .fillMaxWidth()
-                .then(if (fullScreen) Modifier.weight(1f) else Modifier.heightIn(min = 26.dp, max = MaxCompactTextHeight)),
+                .then(
+                    if (fill) {
+                        Modifier.weight(1f)
+                    } else {
+                        // A new line opens on a spring, which the composer's glass follows
+                        Modifier
+                            .animateContentSize(Motion.settle())
+                            .heightIn(min = 26.dp, max = MaxCompactTextHeight)
+                    }
+                ),
         )
-        if (state.images.isNotEmpty()) {
+        Reveal(state.images.takeIf { it.isNotEmpty() }) { images ->
             PictureStrip(
-                images = state.images,
+                images = images,
                 onAdd = { onEvent(ReplyComposerEvent.PickImages) },
                 onRemove = { onEvent(ReplyComposerEvent.RemoveImage(it)) },
             )
         }
-        if (state.images.isNotEmpty() || hasTail) {
+        Reveal(Unit.takeIf { state.images.isNotEmpty() || hasTail }) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -200,10 +227,8 @@ fun ReplyComposerContent(
                 .padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ComposerIconButton(
-                icon = Symbols.Mood,
-                contentDescription = stringResource(id = R.string.insert_emotions),
-                selected = state.panel == ReplyPanelType.EMOJI,
+            PanelButton(
+                shown = state.panel == ReplyPanelType.EMOJI,
                 onClick = {
                     onEvent(
                         ReplyComposerEvent.ShowPanel(
@@ -425,6 +450,96 @@ private fun ToggleChip(
     }
 }
 
+/**
+ * Shows [value]'s line while it is not null: the line opens on a spring and its content condenses
+ * in from a blur; going, it blurs away as the line closes, still showing the last value.
+ */
+@Composable
+private fun <T : Any> Reveal(value: T?, content: @Composable (T) -> Unit) {
+    var shown by remember { mutableStateOf(value) }
+    if (value != null) shown = value
+    val progress = remember { Animatable(if (value != null) 1f else 0f, Motion.ProgressThreshold) }
+    LaunchedEffect(value != null) {
+        progress.animateTo(if (value != null) 1f else 0f, Motion.settle(Motion.ProgressThreshold))
+        if (value == null) shown = null
+    }
+    val last = shown ?: return
+    Layout(
+        modifier = Modifier.clipToBounds(),
+        content = {
+            Box(
+                modifier = Modifier
+                    .wrapContentHeight(unbounded = true)
+                    .graphicsLayer {
+                        val f = progress.value.coerceIn(0f, 1f)
+                        alpha = ((f - 0.3f) / 0.7f).coerceIn(0f, 1f)
+                        val scale = 0.96f + 0.04f * f
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0.5f, 0f)
+                        renderEffect = blurEffect(RevealBlur.toPx() * (1f - f))
+                    },
+            ) {
+                content(last)
+            }
+        },
+    ) { measurables, constraints ->
+        val placeable = measurables.single().measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+        val height = (placeable.height * progress.value.coerceIn(0f, 1f)).roundToInt()
+        layout(placeable.width, height) { placeable.place(0, 0) }
+    }
+}
+
+private val RevealBlur = 10.dp
+
+/** The emoticons button, whose icon turns into the keyboard's while the panel shows. */
+@Composable
+private fun PanelButton(shown: Boolean, onClick: () -> Unit) {
+    val colors = ExtendedTheme.colors
+    val turn = remember { Animatable(if (shown) 1f else 0f, Motion.ProgressThreshold) }
+    LaunchedEffect(shown) { turn.animateTo(if (shown) 1f else 0f, Motion.snap(Motion.ProgressThreshold)) }
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Symbols.Mood,
+            contentDescription = if (shown) null else stringResource(id = R.string.insert_emotions),
+            tint = colors.textSecondary,
+            modifier = Modifier
+                .size(ComposerIconSize)
+                .graphicsLayer {
+                    val t = turn.value.coerceIn(0f, 1f)
+                    alpha = 1f - t
+                    val scale = 1f - 0.3f * t
+                    scaleX = scale
+                    scaleY = scale
+                    renderEffect = blurEffect(IconBlur.toPx() * t)
+                },
+        )
+        Icon(
+            imageVector = Symbols.Keyboard,
+            contentDescription = if (shown) stringResource(id = R.string.reply_show_keyboard) else null,
+            tint = colors.textSecondary,
+            modifier = Modifier
+                .size(ComposerIconSize)
+                .graphicsLayer {
+                    val t = turn.value.coerceIn(0f, 1f)
+                    alpha = t
+                    val scale = 0.7f + 0.3f * t
+                    scaleX = scale
+                    scaleY = scale
+                    renderEffect = blurEffect(IconBlur.toPx() * (1f - t))
+                },
+        )
+    }
+}
+
+private val IconBlur = 6.dp
+
 @Composable
 internal fun ComposerIconButton(
     icon: ImageVector,
@@ -504,7 +619,7 @@ private fun SendButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ColumnScope.PictureStrip(
+private fun PictureStrip(
     images: ImmutableList<String>,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,

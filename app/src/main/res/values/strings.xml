@@ -652,6 +652,7 @@
     <string name="reply_floor">%1$dL</string>
     <string name="reply_full_screen">全屏</string>
     <string name="reply_exit_full_screen">退出全屏</string>
+    <string name="reply_show_keyboard">键盘</string>
     <string name="reply_little_tail">小尾巴</string>
     <string name="reply_draft">草稿</string>
     <string name="reply_draft_saved">草稿已保存</string>

@@ -157,26 +157,27 @@ fun ThreadScreen(
                                 seeLz = state.query.seeLz,
                                 stored = thread.isStored,
                                 newestFirst = newestFirst,
-                                canDelete = viewer != null && thread.author.id == viewer.id,
                                 currentPage = state.currentPage,
                                 totalPage = state.totalPage,
-                                onEvent = { event ->
-                                    chrome.close()
-                                    onEvent(event)
-                                },
-                                onJumpToPage = {
-                                    chrome.close()
-                                    jumpDialog.show()
-                                },
-                                onDelete = {
-                                    chrome.close()
-                                    deleting = null
-                                    deleteDialog.show()
-                                },
+                                onEvent = onEvent,
+                                onJumpToPage = jumpDialog::show,
+                                onClose = chrome::close,
                             )
                         },
-                        menuFooter = { ThreadMenuFooter(thread.agree, handleEvent, onClose = chrome::close) },
-                        composer = { handle -> reply?.Content(handle) },
+                        menuFooter = {
+                            ThreadMenuFooter(thread.agree, handleEvent, onClose = chrome::close) {
+                                ThreadMenuActions(
+                                    canDelete = viewer != null && thread.author.id == viewer.id,
+                                    onEvent = onEvent,
+                                    onDelete = {
+                                        deleting = null
+                                        deleteDialog.show()
+                                    },
+                                    onClose = chrome::close,
+                                )
+                            }
+                        },
+                        composer = { handle, fill -> reply?.Content(handle, fill) },
                         panel = { reply?.Panel() },
                         panelShown = reply?.panelShown() ?: false,
                         onOpenComposer = { handleEvent(ThreadEvent.Reply(post = null)) },

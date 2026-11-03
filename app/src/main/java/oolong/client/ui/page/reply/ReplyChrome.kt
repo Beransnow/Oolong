@@ -2,12 +2,6 @@ package oolong.client.ui.page.reply
 
 import android.os.Build
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -43,49 +37,58 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Job
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.SmoothCornerShape
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.utils.appPreferences
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Which of the bottom chrome's surfaces is open: none, the reply composer, or the menu. */
@@ -132,15 +135,18 @@ val ReplyChromeBarHeight = ReplyCapsuleHeight + BottomMargin * 2
  * The bottom chrome of a page one can reply on, drawn over the page: a reply capsule that opens
  * into the composer and, beside it, an actions capsule that may open into a menu.
  *
- * Each open surface is the capsule's own glass growing in place, like Liquid Glass: the glass
- * springs from the capsule's bounds to the surface's, a little past them and back, and what is
- * inside condenses out of a blur once it has room. The other capsule dissolves where it is.
+ * Each open surface is its capsule's glass growing in place, the way a context menu grows out of
+ * its button: the glass swells from the capsule to the surface on one spring, with what the
+ * capsule showed blurring away inside it while the surface's content, small and blurred at
+ * first, grows with it and sharpens at the end. Closing runs it back. The other capsule
+ * dissolves where it is.
  *
  * @param replyCapsule the reply capsule's content at rest, or null when the page offers no reply
  * @param actions the actions capsule's content at rest, or null for none
  * @param menu what the menu holds above its footer, or null when [actions] opens no menu
  * @param menuFooter the menu's bottom row, which sits where [actions] was
- * @param composer the composer's content, given the drag handle to put at its top
+ * @param composer the composer's content, given the drag handle to put at its top and whether it
+ *   fills a height set from outside, as when full screen or being dragged
  * @param panel what shows in place of the keyboard, such as the emoticons
  * @param panelShown whether [panel] shows instead of the keyboard
  * @param hiddenFraction how far the capsules have slid away for scrolling, 0 to 1
@@ -153,7 +159,7 @@ fun ReplyChrome(
     actions: (@Composable RowScope.() -> Unit)?,
     menu: (@Composable ColumnScope.() -> Unit)?,
     menuFooter: @Composable RowScope.() -> Unit,
-    composer: @Composable (handle: @Composable () -> Unit) -> Unit,
+    composer: @Composable (handle: @Composable () -> Unit, fill: Boolean) -> Unit,
     panel: @Composable () -> Unit,
     panelShown: Boolean,
     onOpenComposer: () -> Unit,
@@ -165,6 +171,7 @@ fun ReplyChrome(
 ) {
     val density = LocalDensity.current
     val colors = ExtendedTheme.colors
+    val scope = rememberCoroutineScope()
     val surface = state.surface
     val composing = surface == ChromeSurface.Composer
     val menuOpen = surface == ChromeSurface.Menu
@@ -183,6 +190,13 @@ fun ReplyChrome(
         val imeBottom = WindowInsets.ime.getBottom(density)
         val imeTarget = WindowInsets.imeAnimationTarget.getBottom(density)
         val rememberedImeHeight = rememberImeHeight(imeBottom, imeTarget)
+
+        // How far a finger has pulled the composer down past its resting height, and what that
+        // moves: the keyboard, the panel in its place, or with neither up the composer itself
+        val lowered = remember { Animatable(0f) }
+        val view = LocalView.current
+        val keyboardDrag = remember(view) { KeyboardDrag(view) }
+
         // Leaving a panel for the keyboard, the panel holds its place until the keyboard is all the
         // way up, so the composer does not drop with the panel and then rise with the keyboard
         // Decided in the same frame the panel goes, as a frame without it would let the composer drop.
@@ -205,11 +219,12 @@ fun ReplyChrome(
         // The composer sits on the keyboard, following it frame by frame as it slides, or on the
         // panel that takes its place, which is as tall as the keyboard last was
         val keyboardTop = when {
-            panelUp -> maxOf(rememberedImeHeight, imeBottom, navBottom)
+            panelUp -> maxOf((rememberedImeHeight - lowered.value).roundToInt(), imeBottom, navBottom)
             else -> maxOf(imeBottom, navBottom)
         }
-        // With the keyboard or a panel up, the composer rests on it as one piece with it
-        val docked = composing && keyboardTop > navBottom
+        // From floating over the navigation bar to resting on the keyboard as one piece with it,
+        // over the first stretch of the keyboard's way up
+        val dock = if (composing) ((keyboardTop - navBottom) / with(density) { DockDistance.toPx() }).coerceIn(0f, 1f) else 0f
 
         // Where things are, in this box's pixels: the capsules at rest and the open surfaces
         var replyCapsuleBounds by remember { mutableStateOf<Rect?>(null) }
@@ -217,76 +232,77 @@ fun ReplyChrome(
         var composerBounds by remember { mutableStateOf<Rect?>(null) }
         var menuBounds by remember { mutableStateOf<Rect?>(null) }
 
-        val replyGlass = remember { Animatable(Rect.Zero, Rect.VectorConverter) }
-        val menuGlass = remember { Animatable(Rect.Zero, Rect.VectorConverter) }
-        var replyGlassShown by remember { mutableStateOf(false) }
-        var menuGlassShown by remember { mutableStateOf(false) }
-        val glassSpring = spring<Rect>(dampingRatio = 0.74f, stiffness = 420f)
-        val settle = spring<Rect>(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
-
-        // The composer's glass follows the composer as it opens, grows with its text and moves
-        // with the keyboard; closing, it springs back into the capsule
+        // How far each surface has grown out of its capsule. The composer's glass is drawn
+        // between the capsule and wherever the composer is now, so the keyboard moving the
+        // composer never restarts the spring. The menu also travels: a move ahead of the grow.
+        val open = remember { Animatable(0f, Motion.ProgressThreshold) }
+        val grow = remember { Animatable(0f, Motion.ProgressThreshold) }
+        val move = remember { Animatable(0f, Motion.ProgressThreshold) }
         LaunchedEffect(composing) {
             if (composing) {
-                replyCapsuleBounds?.let { replyGlass.snapTo(it) }
-                replyGlassShown = true
-                // Springs out of the capsule once; after that the glass stays exactly on the composer
-                // as the keyboard slides, the text grows or it goes full screen, which animates the
-                // composer itself
-                var opening: Job? = null
-                snapshotFlow { composerBounds }.filterNotNull().collect { target ->
-                    if (opening == null) {
-                        opening = launch { replyGlass.animateTo(target, glassSpring) }
-                    } else if (opening?.isActive == true) {
-                        opening = launch { replyGlass.animateTo(target, glassSpring) }
-                    } else {
-                        replyGlass.snapTo(target)
-                    }
-                }
-            } else if (replyGlassShown) {
-                // The capsule takes over once the glass is nearly its size, so its words fade in
-                // while the glass settles instead of after
-                replyCapsuleBounds?.let { target ->
-                    launch { replyGlass.animateTo(target, settle) }
-                    snapshotFlow { replyGlass.value.height }.first { it <= target.height * HandBackRatio }
-                }
-                replyGlassShown = false
+                lowered.snapTo(0f)
+                open.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
+            } else {
+                open.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                lowered.snapTo(0f)
             }
         }
         LaunchedEffect(menuOpen) {
             if (menuOpen) {
-                actionsBounds?.let { menuGlass.snapTo(it) }
-                menuGlassShown = true
-                snapshotFlow { menuBounds }.filterNotNull().collect { target ->
-                    launch { menuGlass.animateTo(target, glassSpring) }
-                }
-            } else if (menuGlassShown) {
-                actionsBounds?.let { target ->
-                    launch { menuGlass.animateTo(target, settle) }
-                    snapshotFlow { menuGlass.value.height }.first { it <= target.height * HandBackRatio }
-                }
-                menuGlassShown = false
+                launch { move.animateTo(1f, Motion.morph(Motion.ProgressThreshold)) }
+                delay(GrowDelay)
+                grow.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
+            } else {
+                // Shrinks first, then flies home
+                val shrink = launch { grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
+                delay(GrowDelay)
+                move.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                shrink.join()
             }
         }
+        val composerShown by remember { derivedStateOf { open.value > 0f } }
+        val menuShown by remember { derivedStateOf { grow.value > 0f || move.value > 0f } }
 
-        // Behind a full-screen composer or the menu, the page dims; tapping it closes them
-        val scrim by animateFloatAsState(if (menuOpen || full) 1f else 0f, tween(300), label = "scrim")
-        if (scrim > 0f) {
+        val replyGlass: () -> Rect = {
+            val capsule = replyCapsuleBounds ?: Rect.Zero
+            lerpRect(capsule, composerBounds ?: capsule, open.value)
+        }
+        val menuGlass: () -> Rect = {
+            val capsule = actionsBounds ?: Rect.Zero
+            val bounds = menuBounds ?: capsule
+            val center = lerp(capsule.center, bounds.center, move.value)
+            val size = Size(lerp(capsule.width, bounds.width, grow.value), lerp(capsule.height, bounds.height, grow.value))
+            Rect(center.x - size.width / 2, center.y - size.height / 2, center.x + size.width / 2, center.y + size.height / 2)
+        }
+
+        // Going full screen and back, the composer grows and shrinks on a spring; the glass,
+        // following it exactly, goes with it
+        val fullProgress = remember { Animatable(0f, Motion.ProgressThreshold) }
+        // A release of the handle starts the change at the finger's speed; a tap from rest
+        var fullVelocity by remember { mutableFloatStateOf(0f) }
+        LaunchedEffect(full) {
+            fullProgress.animateTo(if (full) 1f else 0f, Motion.snap(Motion.ProgressThreshold), fullVelocity)
+            fullVelocity = 0f
+        }
+
+        // Behind a full-screen composer the page dims; tapping it goes back to the compact one.
+        // Menus take no scrim.
+        if (composerShown && fullProgress.value > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer { alpha = scrim }
+                    .graphicsLayer { alpha = fullProgress.value.coerceIn(0f, 1f) }
                     .background(Color.Black.copy(alpha = if (colors.isNightMode) 0.5f else 0.28f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = { if (full) onExitFullScreen() else onDismiss() },
+                        onClick = onExitFullScreen,
                     )
             )
         }
 
-        // Tapping the page beside a composer that is not full screen puts it away, keeping the draft
-        if (composing && !full) {
+        // Tapping the page beside an open surface puts it away, keeping the draft
+        if ((composing && !full) || menuOpen) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -298,18 +314,16 @@ fun ReplyChrome(
             )
         }
 
-        // The capsules at rest
-        val capsuleShown = surface == ChromeSurface.None && !replyGlassShown && !menuGlassShown
-        val restAlpha by animateFloatAsState(if (capsuleShown) 1f else 0f, tween(if (capsuleShown) 220 else 60), label = "rest")
-        val dissolve by animateFloatAsState(if (surface == ChromeSurface.None) 0f else 1f, spring(stiffness = 500f), label = "dissolve")
         // Counts the capsules' returns to rest. Their glass keeps sampling at the scale it last had
         // while they shrank, so it is made anew once they are back at full size
         var rests by remember { mutableIntStateOf(0) }
         LaunchedEffect(Unit) {
-            snapshotFlow { surface == ChromeSurface.None && dissolve == 0f }
+            snapshotFlow { open.value == 0f && grow.value == 0f && move.value == 0f }
                 .drop(1)
                 .collect { atRest -> if (atRest) rests++ }
         }
+        // The capsules at rest. The one that opened hides while its glass is out; the other
+        // dissolves in place.
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -328,27 +342,18 @@ fun ReplyChrome(
                         .height(ReplyCapsuleHeight)
                         .onGloballyPositioned { replyCapsuleBounds = it.boundsIn(chrome) }
                         .graphicsLayer {
-                            alpha = if (composing || replyGlassShown) 0f else 1f - dissolve * 0.999f
-                            scaleX = 1f - 0.3f * if (menuOpen) dissolve else 0f
-                            scaleY = scaleX
-                            transformOrigin = TransformOrigin(0f, 0.5f)
-                            if (menuOpen) renderEffect = blur(dissolve * 6.dp.toPx())
+                            if (open.value > 0f) {
+                                alpha = 0f
+                            } else {
+                                dissolve(dissolveOf(grow.value), TransformOrigin(0f, 0.5f))
+                            }
                         }
                         .floatingGlass(CapsuleShape)
                         .clickable(onClick = onOpenComposer)
                         .padding(start = 10.dp, end = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    content = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer { alpha = restAlpha },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            content = replyCapsule,
-                        )
-                    },
+                    content = replyCapsule,
                 )
             } else {
                 Box(modifier = Modifier.weight(1f))
@@ -359,11 +364,11 @@ fun ReplyChrome(
                         .height(ReplyCapsuleHeight)
                         .onGloballyPositioned { actionsBounds = it.boundsIn(chrome) }
                         .graphicsLayer {
-                            alpha = if (menuOpen || menuGlassShown) 0f else 1f - dissolve * 0.999f
-                            scaleX = 1f - 0.3f * if (composing) dissolve else 0f
-                            scaleY = scaleX
-                            transformOrigin = TransformOrigin(1f, 0.5f)
-                            if (composing) renderEffect = blur(dissolve * 6.dp.toPx())
+                            if (grow.value > 0f || move.value > 0f) {
+                                alpha = 0f
+                            } else {
+                                dissolve(dissolveOf(open.value), TransformOrigin(1f, 0.5f))
+                            }
                         }
                         .floatingGlass(CapsuleShape)
                         .padding(horizontal = 6.dp),
@@ -373,50 +378,79 @@ fun ReplyChrome(
             }
         }
 
-        // The glass of an open surface, springing between the capsule and the surface
-        if (replyGlassShown || replyGlass.isRunning) {
-            val radius by animateDpAsState(
-                when {
-                    !composing -> ReplyCapsuleHeight / 2
-                    full -> 0.dp
-                    else -> ComposerRadius
-                },
-                spring(stiffness = 420f),
-                label = "composerRadius",
+        // The composer
+        if (composerShown || composing) {
+            val capsuleRadius = ReplyCapsuleHeight / 2
+            val topRadius = ComposerRadius * (1f - fullProgress.value.coerceIn(0f, 1f))
+            val bottomRadius = ComposerRadius * (1f - dock)
+            val progress = open.value.coerceIn(0f, 1f)
+            val glassTop = androidx.compose.ui.unit.lerp(capsuleRadius, topRadius, progress)
+            val glassBottom = androidx.compose.ui.unit.lerp(capsuleRadius, bottomRadius, progress)
+            MorphingGlass(
+                bounds = replyGlass(),
+                top = glassTop,
+                bottom = glassBottom,
+                opacity = maxOf(dock, fullProgress.value).coerceIn(0f, 1f) * progress,
             )
-            MorphingGlass(replyGlass.value, radius, opaque = full || docked, squareBottom = docked)
-        }
-        if (menuGlassShown || menuGlass.isRunning) {
-            val radius by animateDpAsState(
-                if (menuOpen) ComposerRadius else ReplyCapsuleHeight / 2,
-                spring(stiffness = 420f),
-                label = "menuRadius",
-            )
-            MorphingGlass(menuGlass.value, radius, opaque = false, squareBottom = false)
-        }
+            // What the capsule showed, swallowed by the glass from its bottom left
+            if (replyCapsule != null) {
+                val capsule = replyCapsuleBounds
+                if (capsule != null) {
+                    Ghost(
+                        size = capsule.size,
+                        modifier = Modifier.graphicsLayer {
+                            val glass = replyGlass()
+                            translationX = glass.left
+                            translationY = glass.bottom - capsule.height
+                            swallowed(open.value, TransformOrigin(0f, 1f))
+                        },
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(start = 10.dp, end = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            content = replyCapsule,
+                        )
+                    }
+                }
+            }
 
-        // What an open surface holds, condensing in once the glass has room for it
-        val composerContent by animateFloatAsState(
-            if (composing) 1f else 0f,
-            if (composing) tween(220, delayMillis = 40) else tween(120),
-            label = "composerContent",
-        )
-        if (composing || composerContent > 0f) {
             var dragHeight by remember { mutableStateOf<Float?>(null) }
             // How tall the composer is when neither dragged nor full, the point drags are judged from
-            var compactHeight by remember { mutableStateOf(0f) }
-            val bottom = if (full || docked) keyboardTop.toFloat() else keyboardTop + with(density) { ComposerMargin.toPx() }
+            var compactHeight by remember { mutableFloatStateOf(0f) }
+            val marginPx = with(density) { ComposerMargin.toPx() } * (1f - dock)
+            val bottom = keyboardTop + marginPx
             val fullHeight = maxHeightPx - statusTop - keyboardTop
-            val dragState = rememberDraggableState { delta ->
-                val start = dragHeight ?: composerBounds?.height ?: return@rememberDraggableState
-                dragHeight = (start - delta).coerceIn(with(density) { 120.dp.toPx() }, fullHeight)
+            // How the pull is shared out: above the compact height it grows the composer, below it
+            // it lowers what the composer rests on
+            val keyboardUp = imeBottom > navBottom && !panelUp
+            var pull by remember { mutableFloatStateOf(0f) }
+            fun pullTo(value: Float) {
+                pull = value
+                if (value >= 0f) {
+                    dragHeight = (compactHeight + value).coerceAtMost(fullHeight)
+                    if (lowered.value != 0f) scope.launch { lowered.snapTo(0f) }
+                    if (keyboardDrag.controlled) keyboardDrag.lower(0f)
+                } else {
+                    dragHeight = null
+                    if (keyboardUp || keyboardDrag.controlled) {
+                        keyboardDrag.start()
+                        keyboardDrag.lower(-value)
+                    } else {
+                        scope.launch { lowered.snapTo(-value) }
+                    }
+                }
             }
+            val dragState = rememberDraggableState { delta -> pullTo(pull - delta) }
+            val closeDistance = with(density) { CloseDistance.toPx() }
+            val flingVelocity = with(density) { FlingVelocity.toPx() }
             val handle: @Composable () -> Unit = {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (full) 28.dp else 18.dp)
-                        // Tapping the handle goes to full screen and back; dragging it resizes
+                        .height(if (full) 28.dp else 20.dp)
+                        // Tapping the handle goes to full screen and back; dragging it resizes,
+                        // and down past the compact size closes
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -427,16 +461,48 @@ fun ReplyChrome(
                         .draggable(
                             state = dragState,
                             orientation = Orientation.Vertical,
-                            onDragStarted = { dragHeight = composerBounds?.height },
-                            onDragStopped = {
-                                val released = dragHeight
-                                dragHeight = null
-                                val compact = compactHeight
-                                when {
-                                    released == null -> Unit
-                                    !full && released < compact - with(density) { 60.dp.toPx() } -> onDismiss()
-                                    released > compact + (fullHeight - compact) * 0.35f -> onEnterFullScreen()
-                                    else -> onExitFullScreen()
+                            onDragStarted = {
+                                val height = composerBounds?.height ?: compactHeight
+                                pull = height - compactHeight
+                            },
+                            onDragStopped = { velocity ->
+                                val released = pull
+                                pull = 0f
+                                if (released < 0f) {
+                                    val close = -released > closeDistance || velocity > flingVelocity
+                                    when {
+                                        keyboardDrag.controlled -> {
+                                            keyboardDrag.release(show = !close, velocity = velocity)
+                                            if (close) onDismiss()
+                                        }
+                                        close && panelUp -> {
+                                            lowered.animateTo(rememberedImeHeight.toFloat(), Motion.dismiss(), velocity)
+                                            onDismiss()
+                                        }
+                                        // The composer goes back into its capsule from where the finger left it
+                                        close -> onDismiss()
+                                        else -> {
+                                            keyboardDrag.release(show = true, velocity = velocity)
+                                            lowered.animateTo(0f, Motion.settle(), -velocity)
+                                        }
+                                    }
+                                } else {
+                                    val height = dragHeight ?: compactHeight
+                                    val span = (fullHeight - compactHeight).coerceAtLeast(1f)
+                                    val fraction = ((height - compactHeight) / span).coerceIn(0f, 1f)
+                                    val goFull = velocity < -flingVelocity ||
+                                        (abs(velocity) < flingVelocity && fraction > FullThreshold)
+                                    fullProgress.snapTo(fraction)
+                                    dragHeight = null
+                                    fullVelocity = -velocity / span
+                                    if (goFull == full) {
+                                        fullProgress.animateTo(if (goFull) 1f else 0f, Motion.snap(Motion.ProgressThreshold), fullVelocity)
+                                        fullVelocity = 0f
+                                    } else if (goFull) {
+                                        onEnterFullScreen()
+                                    } else {
+                                        onExitFullScreen()
+                                    }
                                 }
                             },
                         ),
@@ -444,84 +510,119 @@ fun ReplyChrome(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(width = 34.dp, height = 4.dp)
+                            .size(width = 36.dp, height = 4.dp)
                             .background(colors.textDisabled.copy(alpha = 0.5f), CapsuleShape)
                     )
                 }
             }
-            // Going full screen and back, the composer grows and shrinks on a spring; the glass,
-            // following it exactly, goes with it
-            val fullProgress by animateFloatAsState(
-                if (full) 1f else 0f,
-                spring(dampingRatio = 0.82f, stiffness = 380f),
-                label = "fullScreen",
-            )
-            val heightModifier = when {
-                dragHeight != null -> Modifier.height(with(density) { dragHeight!!.toDp() })
-                fullProgress > 0f && compactHeight > 0f -> Modifier.height(
-                    with(density) { (compactHeight + (fullHeight - compactHeight) * fullProgress).coerceAtLeast(0f).toDp() }
-                )
-                else -> Modifier
+            val fullNow = fullProgress.value
+            val heightPx = when {
+                dragHeight != null -> dragHeight
+                fullNow > 0f && compactHeight > 0f -> (compactHeight + (fullHeight - compactHeight) * fullNow).coerceAtLeast(0f)
+                else -> null
             }
+            // Pulled down with nothing under it, the composer itself moves
+            val ownDrop = if (!panelUp && !keyboardUp && !keyboardDrag.controlled) lowered.value else 0f
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset { IntOffset(0, -bottom.roundToInt()) }
+                    .offset { IntOffset(0, (-bottom + ownDrop).roundToInt()) }
                     .windowInsetsPadding(bars.only(WindowInsetsSides.Horizontal))
-                    .padding(horizontal = if (full || docked) 0.dp else ComposerMargin)
+                    .padding(horizontal = with(density) { marginPx.toDp() })
                     .fillMaxWidth()
-                    .then(heightModifier)
+                    .then(if (heightPx != null) Modifier.height(with(density) { heightPx.toDp() }) else Modifier)
                     .onGloballyPositioned {
-                        if (!composing) return@onGloballyPositioned
                         val bounds = it.boundsIn(chrome)
                         composerBounds = bounds
-                        if (!full && fullProgress == 0f && dragHeight == null) compactHeight = bounds.height
+                        if (composing && fullProgress.value == 0f && dragHeight == null) compactHeight = bounds.height
                     }
-                    .clipToGlass(glass = { replyGlass.value }, own = { composerBounds }, radius = { ComposerRadius.toPx() })
+                    // At its own size, scaled into the glass from its bottom left and clipped by it
                     .graphicsLayer {
-                        alpha = composerContent
-                        scaleX = 0.96f + 0.04f * composerContent
-                        scaleY = scaleX
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                        if (composerContent < 1f) renderEffect = blur((1f - composerContent) * 8.dp.toPx())
+                        val own = composerBounds
+                        if (own == null) {
+                            alpha = 0f
+                            return@graphicsLayer
+                        }
+                        val glass = replyGlass()
+                        val scale = if (own.width > 0f) glass.width / own.width else 1f
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0f, 1f)
+                        translationX = glass.left - own.left
+                        translationY = glass.bottom - own.bottom
+                        shape = GlassCut(
+                            top = (own.height - glass.height / scale).coerceAtLeast(0f),
+                            topRadius = glassTop.toPx() / scale,
+                            bottomRadius = glassBottom.toPx() / scale,
+                        )
+                        clip = true
+                        condensed(open.value)
                     },
             ) {
-                composer(handle)
+                composer(handle, heightPx != null)
             }
         }
 
-        if (menu != null && (menuOpen || menuGlassShown)) {
-            val menuContent by animateFloatAsState(
-                if (menuOpen) 1f else 0f,
-                if (menuOpen) tween(220, delayMillis = 40) else tween(120),
-                label = "menuContent",
-            )
+        // The menu
+        if (menu != null && (menuShown || menuOpen)) {
+            val capsule = actionsBounds
+            MorphingGlass(bounds = menuGlass(), top = ReplyCapsuleHeight / 2, bottom = ReplyCapsuleHeight / 2, opacity = 0f)
+            // The capsule's buttons, swallowed by the glass from its bottom right, where the
+            // footer takes their place
+            if (actions != null && capsule != null) {
+                Ghost(
+                    size = capsule.size,
+                    modifier = Modifier.graphicsLayer {
+                        val glass = menuGlass()
+                        translationX = glass.right - capsule.width
+                        translationY = glass.bottom - capsule.height
+                        swallowed(grow.value, TransformOrigin(1f, 1f))
+                    },
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = actions,
+                    )
+                }
+            }
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                     .padding(horizontal = SideMargin, vertical = BottomMargin)
                     .width(MenuWidth.coerceAtMost(maxWidth - SideMargin * 2))
-                    .onGloballyPositioned { if (menuOpen) menuBounds = it.boundsIn(chrome) }
-                    // The menu shows only as far as its glass has grown, so it opens out of the capsule
-                    .clipToGlass(glass = { menuGlass.value }, own = { menuBounds }, radius = { ComposerRadius.toPx() }),
-            ) {
-                Column(
-                    modifier = Modifier.graphicsLayer {
-                        alpha = menuContent
-                        scaleX = 0.9f + 0.1f * menuContent
-                        scaleY = scaleX
+                    .onGloballyPositioned { menuBounds = it.boundsIn(chrome) }
+                    // At its own size, scaled into the glass from its bottom right and clipped by it
+                    .graphicsLayer {
+                        val own = menuBounds
+                        if (own == null) {
+                            alpha = 0f
+                            return@graphicsLayer
+                        }
+                        val glass = menuGlass()
+                        val scale = if (own.width > 0f) glass.width / own.width else 1f
+                        scaleX = scale
+                        scaleY = scale
                         transformOrigin = TransformOrigin(1f, 1f)
-                        if (menuContent < 1f) renderEffect = blur((1f - menuContent) * 8.dp.toPx())
+                        translationX = glass.right - own.right
+                        translationY = glass.bottom - own.bottom
+                        val radius = (ReplyCapsuleHeight / 2).toPx() / scale
+                        shape = GlassCut(
+                            top = (own.height - glass.height / scale).coerceAtLeast(0f),
+                            topRadius = radius,
+                            bottomRadius = radius,
+                        )
+                        clip = true
+                        condensed(grow.value)
                     },
-                    content = menu,
-                )
+            ) {
+                menu()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(ReplyCapsuleHeight)
-                        .padding(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.End,
+                        .padding(start = 12.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     content = menuFooter,
                 )
@@ -530,71 +631,178 @@ fun ReplyChrome(
 
         // In place of the keyboard
         if (panelUp) {
+            val shown = remember { Animatable(0f, Motion.ProgressThreshold) }
+            LaunchedEffect(panelShown) {
+                if (panelShown) {
+                    shown.snapTo(0f)
+                    shown.animateTo(1f, Motion.snap(Motion.ProgressThreshold))
+                }
+            }
+            val fadeSpan = with(density) { PanelFadeSpan.toPx() }
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(with(density) { keyboardTop.toDp() })
+                    .graphicsLayer {
+                        // Held for the keyboard, it fades as the keyboard arrives under it
+                        if (!panelShown && imeTarget > 0) {
+                            alpha = (1f - (imeBottom - (imeTarget - fadeSpan)) / fadeSpan).coerceIn(0f, 1f)
+                        }
+                    }
                     .background(colors.sheet)
                     .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
             ) {
-                panel()
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        val s = shown.value
+                        alpha = (s / 0.6f).coerceIn(0f, 1f)
+                        val scale = lerp(0.94f, 1f, s)
+                        scaleX = scale
+                        scaleY = scale
+                        renderEffect = blurEffect(PanelBlur.toPx() * (1f - s).coerceIn(0f, 1f))
+                    },
+                ) {
+                    panel()
+                }
             }
         }
     }
 }
 
-/** How close to the capsule's height the glass gets, closing, before the capsule takes over. */
-private const val HandBackRatio = 1.6f
-
-/**
- * Draws this surface's content only inside its glass, [glass] and [own] both in the chrome's
- * pixels, so while the glass grows out of a capsule or back into it the content is revealed or
- * covered with it rather than floating outside.
- */
-private fun Modifier.clipToGlass(glass: () -> Rect, own: () -> Rect?, radius: Density.() -> Float): Modifier =
-    drawWithContent {
-        val bounds = own()
-        val g = glass()
-        if (bounds == null || g.isEmpty || g == bounds) {
-            drawContent()
-            return@drawWithContent
-        }
-        val local = Rect(g.left - bounds.left, g.top - bounds.top, g.right - bounds.left, g.bottom - bounds.top)
-        val r = radius().coerceAtMost(minOf(local.width, local.height) / 2f)
-        val path = Path().apply { addRoundRect(RoundRect(local, CornerRadius(r))) }
-        clipPath(path) { this@drawWithContent.drawContent() }
-    }
-
 /** How long a panel waits for a keyboard asked for in its place before it gives way anyway. */
 private const val KeyboardWaitMillis = 600L
+
+/** How long the menu's glass travels before it starts to grow. */
+private const val GrowDelay = 40L
 
 /** The menu's width on a wide window; on a phone it spans the window. */
 private val MenuWidth = 420.dp
 
+/** How far the keyboard rises before the composer rests on it as one piece. */
+private val DockDistance = 40.dp
+
+/** How far below its compact size the composer is pulled before letting go closes it. */
+private val CloseDistance = 64.dp
+
+/** A release at least this fast closes, opens full screen or leaves it, whatever the distance. */
+private val FlingVelocity = 700.dp
+
+/** How much of the way to full screen a release must have come to go on there. */
+private const val FullThreshold = 0.4f
+
+/** The last stretch of the keyboard's way up, over which a panel held for it fades. */
+private val PanelFadeSpan = 60.dp
+
+/** How blurred what a capsule showed gets as its glass swallows it, and a surface's content before it sharpens. */
+private val SwallowBlur = 20.dp
+
+private val PanelBlur = 12.dp
+
+private val DissolveBlur = 6.dp
+
+/** How much of a surface's growth it takes for the other capsule to dissolve. */
+private fun dissolveOf(progress: Float) = (progress * 1.4f).coerceIn(0f, 1f)
+
+/** The other capsule, dissolving in place [by] 0 to 1. */
+private fun GraphicsLayerScope.dissolve(by: Float, origin: TransformOrigin) {
+    if (by == 0f) return
+    alpha = 1f - by * 0.999f
+    val scale = 1f - 0.25f * by
+    scaleX = scale
+    scaleY = scale
+    transformOrigin = origin
+    renderEffect = blurEffect(DissolveBlur.toPx() * by)
+}
+
+/** What a capsule showed, as its glass grows [progress] of the way: swelling, blurring away. */
+private fun GraphicsLayerScope.swallowed(progress: Float, origin: TransformOrigin) {
+    val fade = ((progress - 0.05f) / 0.3f).coerceIn(0f, 1f)
+    val scale = lerp(1f, 1.5f, progress.coerceIn(0f, 1f))
+    scaleX = scale
+    scaleY = scale
+    transformOrigin = origin
+    alpha = 1f - fade
+    renderEffect = blurEffect(SwallowBlur.toPx() * fade)
+}
+
+/** A surface's content as its glass grows [progress] of the way: in after a fifth, sharp near the end. */
+private fun GraphicsLayerScope.condensed(progress: Float) {
+    alpha = ((progress - 0.2f) / 0.3f).coerceIn(0f, 1f)
+    renderEffect = blurEffect(SwallowBlur.toPx() * (1f - ((progress - 0.45f) / 0.4f).coerceIn(0f, 1f)))
+}
+
+/** A copy of a capsule's content, only to be seen: it takes no touches and says nothing. */
 @Composable
-private fun MorphingGlass(bounds: Rect, radius: Dp, opaque: Boolean, squareBottom: Boolean) {
+private fun Ghost(size: Size, modifier: Modifier, content: @Composable () -> Unit) {
+    val density = LocalDensity.current
+    Box(
+        modifier = modifier
+            .size(with(density) { size.width.toDp() }, with(density) { size.height.toDp() })
+            .clearAndSetSemantics {}
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            },
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun MorphingGlass(bounds: Rect, top: Dp, bottom: Dp, opacity: Float) {
     val density = LocalDensity.current
     val colors = ExtendedTheme.colors
     if (bounds.isEmpty) return
-    val shape = if (squareBottom) RoundedCornerShape(topStart = radius, topEnd = radius) else RoundedCornerShape(radius)
+    val shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
     Box(
         modifier = Modifier
             .offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
             .size(with(density) { bounds.width.toDp() }, with(density) { bounds.height.toDp() })
             // Grown into a surface, the glass reads as thicker: a deeper shadow under it
-            .shadow(elevation = 18.dp, shape = shape, ambientColor = Color.Black.copy(alpha = 0.18f), spotColor = Color.Black.copy(alpha = 0.22f))
+            .shadow(
+                elevation = if (colors.isNightMode) 32.dp else 24.dp,
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.16f else 0.14f),
+                spotColor = Color.Black.copy(alpha = if (colors.isNightMode) 0.26f else 0.22f),
+            )
             .floatingGlass(shape)
-            .then(if (opaque) Modifier.background(colors.sheet, shape) else Modifier)
+            .then(if (opacity > 0f) Modifier.background(colors.sheet.copy(alpha = opacity), shape) else Modifier)
     )
 }
+
+/**
+ * The part of a surface inside its glass, in the surface's own pixels: all but the [top] of it,
+ * which the glass has not grown over yet, with the glass's corners.
+ */
+private class GlassCut(
+    private val top: Float,
+    private val topRadius: Float,
+    private val bottomRadius: Float,
+) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val rect = Rect(0f, top, size.width, size.height)
+        val max = minOf(rect.width, rect.height).coerceAtLeast(0f) / 2f
+        val t = CornerRadius(topRadius.coerceAtMost(max))
+        val b = CornerRadius(bottomRadius.coerceAtMost(max))
+        return Outline.Generic(Path().apply { addRoundRect(RoundRect(rect, t, t, b, b)) })
+    }
+}
+
+private fun lerpRect(from: Rect, to: Rect, fraction: Float) = Rect(
+    lerp(from.left, to.left, fraction),
+    lerp(from.top, to.top, fraction),
+    lerp(from.right, to.right, fraction),
+    lerp(from.bottom, to.bottom, fraction),
+)
 
 /** These bounds in [container]'s pixels, where the chrome places its glass. */
 private fun LayoutCoordinates.boundsIn(container: LayoutCoordinates?): Rect =
     if (container == null || !container.isAttached || !isAttached) Rect.Zero
     else container.localBoundingBoxOf(this, clipBounds = false)
 
-private fun blur(radius: Float) =
+internal fun blurEffect(radius: Float) =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && radius > 0.5f) {
         BlurEffect(radius, radius)
     } else null

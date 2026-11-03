@@ -3,202 +3,204 @@ package oolong.client.ui.page.thread
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import oolong.client.R
-import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.client.ui.common.theme.compose.pressScale
 
 /**
- * The thread menu, as it opens out of the actions capsule: how to read the thread, the common
- * actions on it, then the rest. Its bottom row, with the like and the close button, belongs to
- * the capsule and is not part of it.
+ * The thread menu, as it opens out of the actions capsule: one grid of tiles, how to read the
+ * thread on the first row and what to do with it on the second. Its bottom row, with the like
+ * and the close button, belongs to the capsule and is not part of it.
+ *
+ * Tiles that switch something leave the menu open, so the change is seen; the rest close it
+ * through [onClose].
  */
 @Composable
 internal fun ColumnScope.ThreadMenu(
     seeLz: Boolean,
     stored: Boolean,
     newestFirst: Boolean,
-    canDelete: Boolean,
     currentPage: Int,
     totalPage: Int,
     onEvent: (ThreadEvent) -> Unit,
     onJumpToPage: () -> Unit,
-    onDelete: () -> Unit,
+    onClose: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Column(
+        modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        MenuToggle(
-            text = stringResource(id = R.string.title_see_lz),
-            icon = Symbols.Person,
-            checked = seeLz,
-            onClick = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
-        )
-        MenuToggle(
-            text = stringResource(id = R.string.title_sort),
-            icon = Symbols.Sort,
-            checked = newestFirst,
-            onClick = { onEvent(ThreadEvent.ToggleSort) },
-        )
-        MenuToggle(
-            text = stringResource(id = R.string.title_pure_read),
-            icon = Symbols.ChromeReaderMode,
-            checked = false,
-            role = Role.Button,
-            onClick = { onEvent(ThreadEvent.OpenReader) },
-        )
-    }
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 12.dp)
-            .fillMaxWidth(),
-    ) {
-        MenuAction(
-            text = stringResource(id = if (stored) R.string.title_collected else R.string.title_collect),
-            icon = if (stored) Symbols.StarFill else Symbols.Star,
-            on = stored,
-            onClick = { onEvent(if (stored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) },
-        )
-        MenuAction(stringResource(id = R.string.title_share), Symbols.Share) { onEvent(ThreadEvent.Share) }
-        MenuAction(stringResource(id = R.string.title_copy_link), Symbols.Link) { onEvent(ThreadEvent.CopyLink) }
-        MenuAction(stringResource(id = R.string.reply_official_client), Symbols.OpenInNew) {
-            onEvent(ThreadEvent.OpenInOfficialClient)
-        }
-    }
-    Divider(color = ExtendedTheme.colors.divider, modifier = Modifier.padding(horizontal = 16.dp))
-    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-        if (!newestFirst) {
-            MenuRow(
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MenuTile(
+                text = stringResource(id = R.string.title_see_lz),
+                icon = Symbols.Person,
+                checked = seeLz,
+                role = Role.Switch,
+                onClick = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
+            )
+            MenuTile(
+                text = stringResource(id = R.string.title_sort),
+                icon = Symbols.Sort,
+                checked = newestFirst,
+                role = Role.Switch,
+                onClick = { onEvent(ThreadEvent.ToggleSort) },
+            )
+            MenuTile(
+                text = stringResource(id = R.string.title_pure_read),
+                icon = Symbols.ChromeReaderMode,
+                onClick = {
+                    onClose()
+                    onEvent(ThreadEvent.OpenReader)
+                },
+            )
+            // Pages run the other way when the newest come first, where there is nothing to jump to
+            MenuTile(
                 text = stringResource(id = R.string.title_jump_page),
                 icon = Symbols.SwitchAccessShortcut,
-                trailing = stringResource(id = R.string.tip_jump_page, currentPage, totalPage),
-                onClick = onJumpToPage,
+                detail = "$currentPage / $totalPage",
+                enabled = !newestFirst,
+                onClick = {
+                    onClose()
+                    onJumpToPage()
+                },
             )
         }
-        MenuRow(stringResource(id = R.string.title_report), Symbols.Flag) { onEvent(ThreadEvent.ReportThread) }
-        if (canDelete) {
-            MenuRow(
-                text = stringResource(id = R.string.title_delete),
-                icon = Symbols.Delete,
-                danger = true,
-                onClick = onDelete,
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MenuTile(
+                text = stringResource(id = if (stored) R.string.title_collected else R.string.title_collect),
+                icon = if (stored) Symbols.StarFill else Symbols.Star,
+                checked = stored,
+                role = Role.Switch,
+                onClick = { onEvent(if (stored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) },
             )
+            MenuTile(stringResource(id = R.string.title_share), Symbols.Share) {
+                onClose()
+                onEvent(ThreadEvent.Share)
+            }
+            MenuTile(stringResource(id = R.string.title_copy_link), Symbols.Link) {
+                onClose()
+                onEvent(ThreadEvent.CopyLink)
+            }
+            MenuTile(stringResource(id = R.string.reply_official_client), Symbols.OpenInNew) {
+                onClose()
+                onEvent(ThreadEvent.OpenInOfficialClient)
+            }
         }
     }
 }
 
-/** A way of reading the thread, filled while it is on. */
+/** One tile of the menu: its icon over its name, filled while what it switches is on. */
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.MenuToggle(
+private fun RowScope.MenuTile(
     text: String,
     icon: ImageVector,
-    checked: Boolean,
-    role: Role = Role.Switch,
+    checked: Boolean = false,
+    detail: String? = null,
+    enabled: Boolean = true,
+    role: Role = Role.Button,
     onClick: () -> Unit,
 ) {
     val colors = ExtendedTheme.colors
-    val background by animateColorAsState(if (checked) colors.text else colors.chip, label = "toggleBackground")
-    val content by animateColorAsState(if (checked) colors.sheet else colors.textSecondary, label = "toggleContent")
+    val background by animateColorAsState(if (checked) colors.text else colors.chip, Motion.snap(), label = "tileBackground")
+    val content by animateColorAsState(if (checked) colors.sheet else colors.text, Motion.snap(), label = "tileContent")
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
             .weight(1f)
-            .height(64.dp)
-            .clip(SmoothCornerShape(14.dp))
+            .height(TileHeight)
+            .alpha(if (enabled) 1f else DisabledAlpha)
+            .pressScale(interactionSource)
+            .clip(TileShape)
             .background(background)
-            .clickable(role = role, onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = PressFeedback.Overlay,
+                enabled = enabled,
+                role = role,
+                onClick = onClick,
+            )
+            .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = content)
-        Text(text = text, fontSize = 12.5.sp, color = content, maxLines = 1)
-    }
-}
-
-/** One of the common actions: a round icon over its name. */
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.MenuAction(
-    text: String,
-    icon: ImageVector,
-    on: Boolean = false,
-    onClick: () -> Unit,
-) {
-    val colors = ExtendedTheme.colors
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .clip(Corners.md)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(if (on) colors.text else colors.chip),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = if (on) colors.sheet else colors.text)
+        Text(text = text, style = TextStyles.footnote, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (detail != null) {
+            Text(
+                text = detail,
+                style = TextStyles.micro,
+                color = content.copy(alpha = 0.6f),
+                maxLines = 1,
+            )
         }
-        Text(text = text, fontSize = 12.sp, color = colors.textSecondary, maxLines = 1)
+    }
+}
+
+/** The menu's lower row beside the like and the close button: reporting the thread, or deleting one's own. */
+@Composable
+internal fun RowScope.ThreadMenuActions(canDelete: Boolean, onEvent: (ThreadEvent) -> Unit, onDelete: () -> Unit, onClose: () -> Unit) {
+    FooterButton(stringResource(id = R.string.title_report)) {
+        onClose()
+        onEvent(ThreadEvent.ReportThread)
+    }
+    if (canDelete) {
+        FooterButton(stringResource(id = R.string.title_delete), danger = true) {
+            onClose()
+            onDelete()
+        }
     }
 }
 
 @Composable
-private fun MenuRow(
-    text: String,
-    icon: ImageVector,
-    trailing: String? = null,
-    danger: Boolean = false,
-    onClick: () -> Unit,
-) {
+private fun FooterButton(text: String, danger: Boolean = false, onClick: () -> Unit) {
     val colors = ExtendedTheme.colors
-    val color = if (danger) DangerColor else colors.text
-    Row(
+    val interactionSource = remember { MutableInteractionSource() }
+    Text(
+        text = text,
+        style = TextStyles.label,
+        color = if (danger) DangerColor else colors.textSecondary,
         modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .clip(SmoothCornerShape(10.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = if (danger) DangerColor else colors.textSecondary)
-        Text(text = text, fontSize = 14.5.sp, color = color)
-        Spacer(modifier = Modifier.weight(1f))
-        if (trailing != null) Text(text = trailing, fontSize = 12.5.sp, color = colors.textSecondary)
-    }
+            .pressScale(interactionSource)
+            .clip(TileShape)
+            .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    )
 }
+
+private val TileHeight = 72.dp
+
+/** Concentric with the menu's corners, 12dp inside them. */
+private val TileShape = SmoothCornerShape(14.dp)
+
+private const val DisabledAlpha = 0.38f
 
 private val DangerColor = Color(0xFFD23B3B)
