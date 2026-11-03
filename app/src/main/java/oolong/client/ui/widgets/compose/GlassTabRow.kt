@@ -185,7 +185,7 @@ fun GlassTabRow(
             modifier = Modifier
                 .fillMaxHeight()
                 .then(if (fill) Modifier.fillMaxWidth() else Modifier)
-                .floatingGlass(TabCapsule)
+                .floatingGlass(TabCapsule, barButton = false)
                 .clip(TabCapsule)
                 // What the lens sees: the tabs and the bubble, which fades from under it
                 .hazeSource(glassState),

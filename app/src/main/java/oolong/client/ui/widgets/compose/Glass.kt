@@ -2,8 +2,11 @@ package oolong.client.ui.widgets.compose
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,18 +14,26 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -49,6 +60,7 @@ import dev.chrisbanes.haze.hazeSource
 import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.ShadowAmbient
 import oolong.client.ui.common.theme.compose.ShadowSpot
 import oolong.client.utils.ThemeUtil
@@ -285,7 +297,7 @@ private val TopBarBlur = 12.dp
 private val TopBarBlurFade = 48.dp
 
 /** How far the content scrolls before the scroll edge is fully in. */
-private val TopBarEdgeReveal = 32.dp
+internal val TopBarEdgeReveal = 32.dp
 
 /** How far the scroll edge reaches below the bar, over the content. */
 internal val TopBarEdgeExtend = 24.dp
@@ -303,37 +315,96 @@ private const val TranslucentTopBarTint = 0.45f
 private const val TopBarTintStops = 32
 
 /**
+ * What a floating top bar tells the glass of the buttons in its row: how far it has come in, from
+ * bare at the top of a page to full once content is under the bar.
+ */
+@Immutable
+internal class BarButtons(val shown: () -> Float)
+
+/** The top bar's buttons' glass, while drawing them; null elsewhere. */
+internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
+
+/**
  * Background for a floating, rounded piece of chrome such as the navigation pill. The content
  * under it is frosted all over, by [FloatingBlur] at the default clarity, and veiled in the page's
  * colour only on the frosted side of it.
+ *
+ * As a [barButton] in a floating top bar's row, the glass and its shadow come in as content
+ * scrolls under the bar, so at the top of a page the button is bare, and the glass answers a press
+ * as one piece: it swells a little towards the finger and settles back, lit from where it was
+ * touched. Its buttons then leave their own press feedback to it. A control with its own, such as
+ * a tab row, passes false.
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
+fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true): Modifier {
     // On a classic bar the band is the ground
     if (LocalOnClassicBar.current) return this
+    val bar = if (barButton) LocalBarButtons.current else null
     val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
     val frost = glassFrost()
-    val shadowed = shadow(
-        elevation = 12.dp,
-        shape = shape,
-        ambientColor = ShadowAmbient,
-        spotColor = ShadowSpot,
-    )
+    val shown: () -> Float = bar?.shown ?: FullyShown
     val edge = if (colors.isNightMode) Color.White.copy(alpha = 0.10f)
     else Color.Black.copy(alpha = 0.06f)
+    // A bar button swells under the finger and settles back, with the light where it was touched
+    var pressed by remember { mutableStateOf(false) }
+    var pressedAt by remember { mutableStateOf(Offset.Unspecified) }
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = if (pressed) Motion.press() else Motion.release(),
+        label = "barButtonPress",
+    )
+    val chrome = if (bar == null) {
+        shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
+    } else {
+        pointerInput(Unit) {
+            // Watches without taking: the buttons inside still get their clicks
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                pressedAt = down.position
+                pressed = true
+                do {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                } while (event.changes.any { it.pressed })
+                pressed = false
+            }
+        }.graphicsLayer {
+            val scale = 1f + PressSwell * press
+            scaleX = scale
+            scaleY = scale
+            transformOrigin = if (pressedAt.isSpecified && size.width > 0f) {
+                TransformOrigin(pressedAt.x / size.width, pressedAt.y / size.height)
+            } else TransformOrigin.Center
+            shadowElevation = FloatingElevation.toPx() * shown()
+            this.shape = shape
+            ambientShadowColor = ShadowAmbient
+            spotShadowColor = ShadowSpot
+        }
+    }
+    // Where the glass does not light up a press itself, or is not in yet, a veil shows it
+    val veil = ExtendedTheme.colors.text
+    val pressVeil: Modifier = if (bar == null) Modifier else Modifier.drawBehind {
+        val lit = if (tier == GlassTier.Glass && !colors.isTranslucent) 1f - shown() else 1f
+        val alpha = PressVeil * press * lit
+        if (alpha > 0f) drawOutline(shape.createOutline(size, layoutDirection, this), veil.copy(alpha = alpha))
+    }
+    val edged: Modifier = if (bar == null) Modifier.border(0.5.dp, edge, shape) else Modifier.drawBehind {
+        drawOutline(shape.createOutline(size, layoutDirection, this), edge.copy(alpha = edge.alpha * shown()), style = Stroke(0.5.dp.toPx()))
+    }
     if (colors.isTranslucent && tier != GlassTier.Solid) {
         // Over a wallpaper only a light blur, untinted, so the wallpaper still shows through
-        return shadowed
+        val style = if (bar == null) TranslucentFloatingStyle else remember(shown) { TranslucentFloatingStyle.then { alpha(shown()) } }
+        return chrome
             .clip(shape)
-            .hazeBlur(input = source!!.input, style = TranslucentFloatingStyle)
-            .border(0.5.dp, edge, shape)
+            .hazeBlur(input = source!!.input, style = style)
+            .then(pressVeil)
+            .then(edged)
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background, frost) {
+            val style = remember(shape, colors.background, frost, bar) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape)
@@ -343,32 +414,66 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
                     // sharp; here all of it is frosted, evenly
                     optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(FloatingBlur * frost)) }
                     if (frost > 1f) tint(colors.background.copy(alpha = FrostedFloatingTint * (frost - 1f) / (MostFrost - 1f)))
+                    if (bar != null) {
+                        // Read here, the glass follows the scroll without being rebuilt
+                        alpha(bar.shown())
+                        pressed {
+                            animate(toSpec = Motion.press(), fromSpec = Motion.release()) {
+                                lightingIntensity(1f)
+                                whitePointDelta(PressBrighten)
+                            }
+                        }
+                    }
                 }
             }
-            shadowed.hazeGlass(input = source!!.input, style = style)
+            chrome.hazeGlass(input = source!!.input, style = style).then(pressVeil)
         }
 
         GlassTier.Blur -> {
-            val style = remember(colors.background, frost) {
+            val style = remember(colors.background, frost, bar) {
                 HazeBlurStyle {
                     backgroundColor(colors.background)
                     blurRadius(20.dp * frost)
                     noiseFactor(0f)
                     colorEffects(listOf(HazeColorEffect.tint(colors.background.copy(alpha = (0.72f * frost).coerceAtMost(MaxTint)))))
+                    if (bar != null) alpha(bar.shown())
                 }
             }
-            shadowed
+            chrome
                 .clip(shape)
                 .hazeBlur(input = source!!.input, style = style)
-                .border(0.5.dp, edge, shape)
+                .then(pressVeil)
+                .then(edged)
         }
 
-        GlassTier.Solid -> shadowed
-            .clip(shape)
-            .background(if (colors.isTranslucent) colors.chromeTint.copy(alpha = TranslucentSolidTint) else colors.background)
-            .border(0.5.dp, edge, shape)
+        GlassTier.Solid -> {
+            val fill = if (colors.isTranslucent) colors.chromeTint.copy(alpha = TranslucentSolidTint) else colors.background
+            chrome
+                .clip(shape)
+                .then(
+                    if (bar == null) Modifier.background(fill) else Modifier.drawBehind {
+                        drawOutline(shape.createOutline(size, layoutDirection, this), fill.copy(alpha = fill.alpha * shown()))
+                    }
+                )
+                .then(pressVeil)
+                .then(edged)
+        }
     }
 }
+
+private val FullyShown: () -> Float = { 1f }
+
+/** How high floating glass stands over the content, by its shadow. */
+private val FloatingElevation = 12.dp
+
+/** How much a bar button's glass swells under a press. */
+private const val PressSwell = 0.06f
+
+/** How much a press brightens a bar button's glass, besides lighting it where it was touched. */
+private const val PressBrighten = 0.06f
+
+/** The veil a press puts on a bar button where its glass does not light up. */
+private const val PressVeil = 0.08f
 
 /**
  * The band behind a classic bar, across the window: the chosen material, with a hairline on its

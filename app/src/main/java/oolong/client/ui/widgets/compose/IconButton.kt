@@ -20,7 +20,8 @@ import oolong.client.ui.common.theme.compose.pressScale
 
 /**
  * A 48dp round button around an icon, with the app's press feedback instead of Material's
- * unbounded ripple. Same parameters as Material's `IconButton`.
+ * unbounded ripple. Same parameters as Material's `IconButton`. In a floating top bar's row the
+ * glass it sits on answers the press (see [floatingGlass]), so it gives none of its own.
  */
 @Composable
 fun IconButton(
@@ -31,9 +32,10 @@ fun IconButton(
     content: @Composable () -> Unit,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    val onBarGlass = LocalBarButtons.current != null
     Box(
         modifier = modifier
-            .pressScale(source)
+            .then(if (onBarGlass) Modifier else Modifier.pressScale(source))
             .size(Dimens.MinTouchTarget)
             .clip(CircleShape)
             .clickable(
@@ -41,7 +43,7 @@ fun IconButton(
                 enabled = enabled,
                 role = Role.Button,
                 interactionSource = source,
-                indication = PressFeedback.Overlay,
+                indication = if (onBarGlass) null else PressFeedback.Overlay,
             ),
         contentAlignment = Alignment.Center,
     ) {

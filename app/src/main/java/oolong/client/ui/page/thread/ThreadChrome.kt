@@ -66,7 +66,8 @@ internal fun ThreadTopBar(
                         .height(GlassTopBarItemHeight)
                         .floatingGlass(ForumCapsule)
                         .clip(ForumCapsule)
-                        .clickable { onEvent(ThreadEvent.OpenForum) }
+                        // The glass answers the press
+                        .clickable(interactionSource = null, indication = null) { onEvent(ThreadEvent.OpenForum) }
                         .padding(start = 10.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

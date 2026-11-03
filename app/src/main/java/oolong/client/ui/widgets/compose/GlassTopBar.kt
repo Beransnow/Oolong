@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -124,6 +125,11 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     // A classic bar is a band, its buttons bare on it
     val classic = LocalChromeStyle.current == ChromeStyle.Classic
+    // The buttons are bare at the top of a page, and float on glass once content is under the bar
+    val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
+    val barButtons = remember(scrollEdge, revealPx) {
+        BarButtons { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    }
     Layout(
         content = {
             Box(
@@ -185,38 +191,41 @@ fun GlassTopBar(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             ProvideContentColor(color = ExtendedTheme.colors.text) {
-                                if (navigationIcon != null) {
-                                    Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        // What docks into the title passes under the bar's buttons on its way
-                                        .zIndex(-1f)
-                                        .weight(1f)
-                                        .padding(
-                                            start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
-                                            end = TitlePadding,
-                                        ),
-                                ) {
-                                    if (!centerTitle) ProvideTextStyle(
-                                        value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                                CompositionLocalProvider(LocalBarButtons provides barButtons) {
+                                    if (navigationIcon != null) {
+                                        Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            // What docks into the title passes under the bar's buttons on its way
+                                            .zIndex(-1f)
+                                            .weight(1f)
+                                            .padding(
+                                                start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
+                                                end = TitlePadding,
+                                            ),
                                     ) {
-                                        if (largeTitleProgress == null) {
-                                            title()
-                                        } else {
-                                            Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
+                                        if (!centerTitle) ProvideTextStyle(
+                                            value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                                        ) {
+                                            if (largeTitleProgress == null) {
+                                                title()
+                                            } else {
+                                                Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
+                                            }
                                         }
                                     }
-                                }
-                                if (actionsInCapsule) {
-                                    // With no actions the row measures nothing, so no glass shows
-                                    Row(
-                                        modifier = Modifier.floatingGlass(TopBarCapsule),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        content = actions,
-                                    )
-                                } else {
-                                    actions()
+                                    if (actionsInCapsule) {
+                                        // With no actions the row measures nothing, so no glass shows
+                                        Row(
+                                            modifier = Modifier.floatingGlass(TopBarCapsule),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            content = actions,
+                                        )
+                                    } else {
+                                        // Bare, with no glass to answer for them
+                                        CompositionLocalProvider(LocalBarButtons provides null) { actions() }
+                                    }
                                 }
                             }
                         }
