@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -40,13 +42,27 @@ class MainActivity : ComponentActivity() {
             val colors = helperColors()
             val context = LocalContext.current
             val px = with(LocalDensity.current) { 72.dp.roundToPx() }
-            val icon = remember { context.packageManager.getApplicationIcon(context.packageName).toImageBitmap(px) }
+            val drawable = remember { context.packageManager.getApplicationIcon(context.packageName) }
+            val icon = remember { drawable.toImageBitmap(px) }
+            val shape = remember { drawable.iconShape() }
             Box(Modifier.fillMaxSize().background(colors.page)) {
                 Column(
                     modifier = Modifier.align(Alignment.Center).padding(horizontal = Spacing.xl),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Image(icon, null, Modifier.size(72.dp))
+                    // Its white card runs to its edge; the shadow keeps that edge from melting into a white page
+                    Image(
+                        icon,
+                        null,
+                        Modifier
+                            .size(72.dp)
+                            .shadow(
+                                elevation = 16.dp,
+                                shape = shape,
+                                ambientColor = if (colors.night) Color.Black.copy(alpha = .5f) else IconShadow.copy(alpha = .5f),
+                                spotColor = if (colors.night) Color.Black.copy(alpha = .7f) else IconShadow.copy(alpha = 1f),
+                            ),
+                    )
                     BasicText(
                         stringResource(R.string.moved_title),
                         Modifier.padding(top = 18.dp),
@@ -75,6 +91,9 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        // The old icon's own blue
+        private val IconShadow = Color(0xFF2F57B0)
+
         // Where Oolong is published
         const val GET_OOLONG_URL = "https://t.me/astral_studio_discuss"
     }

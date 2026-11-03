@@ -2,13 +2,17 @@ package oolong.migration
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.LocalContentColor
 import androidx.compose.runtime.Composable
@@ -20,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -113,4 +119,17 @@ fun Drawable.toImageBitmap(size: Int): ImageBitmap {
     setBounds(0, 0, size, size)
     draw(Canvas(bitmap))
     return bitmap.asImageBitmap()
+}
+
+/**
+ * The outline the launcher gives this icon, so a shadow under it follows its edge whatever shape
+ * the phone masks icons to; a circle for icons that are not adaptive.
+ */
+fun Drawable.iconShape(): Shape {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || this !is AdaptiveIconDrawable) return CircleShape
+    val icon = this
+    return GenericShape { size, _ ->
+        icon.setBounds(0, 0, size.width.toInt(), size.height.toInt())
+        addPath(icon.iconMask.asComposePath())
+    }
 }
