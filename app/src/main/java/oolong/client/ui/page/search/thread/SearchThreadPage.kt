@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,8 +18,10 @@ import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchedPost
 import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SearchThreadList
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -51,40 +50,25 @@ fun SearchThreadResults(
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
     ) {
-        val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
         val lazyListState = rememberLazyListState()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        PullRefresh(
+            refreshing = refreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicatorTop = contentPadding.calculateTopPadding(),
+            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
         ) {
-            LoadMoreLayout(
-                isLoading = list.append == LoadStatus.Loading,
-                onLoadMore = onLoadMore,
-                loadEnd = !list.hasMore,
+            SearchThreadList(
+                data = list.items,
                 lazyListState = lazyListState,
-            ) {
-                SearchThreadList(
-                    data = list.items,
-                    lazyListState = lazyListState,
-                    onItemClick = onOpen,
-                    onItemUserClick = onOpenUser,
-                    onItemForumClick = onOpenForum,
-                    searchKeyword = keyword,
-                    contentPadding = contentPadding,
-                    blockOf = { blocks[it.key] },
-                    footer = { loadMoreFooter(list.append, onLoadMore) },
-                )
-            }
-
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
+                onItemClick = onOpen,
+                onItemUserClick = onOpenUser,
+                onItemForumClick = onOpenForum,
+                searchKeyword = keyword,
+                contentPadding = contentPadding,
+                blockOf = { blocks[it.key] },
+                footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
             )
         }
     }

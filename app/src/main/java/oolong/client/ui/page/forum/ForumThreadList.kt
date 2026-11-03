@@ -38,7 +38,7 @@ import oolong.client.ui.page.main.explore.rememberThreadPeeker
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.FeedCard
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
@@ -67,80 +67,73 @@ internal fun ForumThreadList(
     val items = list.items
     val peeker = rememberThreadPeeker()
     Box(modifier = modifier.fillMaxSize()) {
-        LoadMoreLayout(
-            isLoading = list.append == LoadStatus.Loading,
-            onLoadMore = { onEvent(ForumEvent.LoadMore) },
-            loadEnd = !list.hasMore,
-            lazyListState = listState,
-            isEmpty = items.isEmpty(),
+        LoadMoreEffect(listState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = { onEvent(ForumEvent.LoadMore) })
+        MyLazyColumn(
+            state = listState,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = contentPadding,
         ) {
-            MyLazyColumn(
-                state = listState,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = contentPadding,
-            ) {
-                if (!ruleTitle.isNullOrEmpty()) {
-                    item(key = "ForumRule") {
-                        TopThreadItem(
-                            title = ruleTitle,
-                            onClick = { onEvent(ForumEvent.OpenRule) },
-                            modifier = Modifier.fillMaxWidth(),
-                            type = stringResource(id = R.string.desc_forum_rule)
-                        )
-                    }
+            if (!ruleTitle.isNullOrEmpty()) {
+                item(key = "ForumRule") {
+                    TopThreadItem(
+                        title = ruleTitle,
+                        onClick = { onEvent(ForumEvent.OpenRule) },
+                        modifier = Modifier.fillMaxWidth(),
+                        type = stringResource(id = R.string.desc_forum_rule)
+                    )
                 }
-                itemsIndexed(
-                    items = items,
-                    key = { _, item -> item.thread.id },
-                    contentType = { _, item ->
-                        val thread = item.thread
-                        when {
-                            thread.isTop == true -> ItemType.Top
-                            thread.images.size == 1 -> ItemType.SingleMedia
-                            thread.images.isNotEmpty() -> ItemType.MultiMedia
-                            thread.video != null -> ItemType.Video
-                            else -> ItemType.PlainText
-                        }
-                    }
-                ) { index, item ->
-                    BlockableContent(
-                        block = item.block,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp, horizontal = 16.dp),
-                    ) {
-                        val thread = item.thread
-                        Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
-                            if (thread.isTop == true) {
-                                TopThreadItem(
-                                    title = thread.title.takeUnless { it.isBlank() } ?: thread.abstract,
-                                    onClick = { onEvent(ForumEvent.OpenThread(thread)) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            } else {
-                                if (index > 0) {
-                                    if (items[index - 1].thread.isTop == true) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                    }
-                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                }
-                                FeedCard(
-                                    thread = item.thread,
-                                    onClick = { onEvent(ForumEvent.OpenThread(it)) },
-                                    onClickReply = { onEvent(ForumEvent.OpenReplies(it)) },
-                                    onAgree = { onEvent(ForumEvent.Agree(tab, it.id)) },
-                                    onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
-                                    onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
-                                    showForum = false,
-                                    onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
-                                )
-                            }
-                        }
-                    }
-                }
-                loadMoreFooter(list.append) { onEvent(ForumEvent.LoadMore) }
             }
+            itemsIndexed(
+                items = items,
+                key = { _, item -> item.thread.id },
+                contentType = { _, item ->
+                    val thread = item.thread
+                    when {
+                        thread.isTop == true -> ItemType.Top
+                        thread.images.size == 1 -> ItemType.SingleMedia
+                        thread.images.isNotEmpty() -> ItemType.MultiMedia
+                        thread.video != null -> ItemType.Video
+                        else -> ItemType.PlainText
+                    }
+                }
+            ) { index, item ->
+                BlockableContent(
+                    block = item.block,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                ) {
+                    val thread = item.thread
+                    Column(modifier = Modifier.fillMaxWidth(itemFraction)) {
+                        if (thread.isTop == true) {
+                            TopThreadItem(
+                                title = thread.title.takeUnless { it.isBlank() } ?: thread.abstract,
+                                onClick = { onEvent(ForumEvent.OpenThread(thread)) },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        } else {
+                            if (index > 0) {
+                                if (items[index - 1].thread.isTop == true) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                                VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
+                            FeedCard(
+                                thread = item.thread,
+                                onClick = { onEvent(ForumEvent.OpenThread(it)) },
+                                onClickReply = { onEvent(ForumEvent.OpenReplies(it)) },
+                                onAgree = { onEvent(ForumEvent.Agree(tab, it.id)) },
+                                onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
+                                onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
+                                showForum = false,
+                                onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
+                            )
+                        }
+                    }
+                }
+            }
+            loadMoreFooter(list.append, list.hasMore, onRetry = { onEvent(ForumEvent.LoadMore) })
         }
     }
 }

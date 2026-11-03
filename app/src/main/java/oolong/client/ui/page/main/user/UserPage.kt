@@ -19,9 +19,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +58,7 @@ import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassStatusBar
 import oolong.client.ui.widgets.compose.ListMenuItem
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -267,13 +265,11 @@ fun UserScreen(
         topBar = { GlassStatusBar() },
         modifier = Modifier.fillMaxSize()
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(
+        PullRefresh(
             refreshing = isLoading,
-            onRefresh = onRefresh)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState),
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicatorTop = contentPaddings.calculateTopPadding(),
         ) {
             Column(
                 modifier = Modifier
@@ -381,16 +377,6 @@ fun UserScreen(
                     onClick = { navigator.navigate(AboutKey) },
                 )
             }
-
-            PullRefreshIndicator(
-                refreshing = isLoading,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
         }
     }
 }

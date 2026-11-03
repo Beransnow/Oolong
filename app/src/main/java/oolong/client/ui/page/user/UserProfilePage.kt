@@ -107,7 +107,7 @@ import oolong.client.ui.widgets.compose.MenuIconButton
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.PagerTabIndicator
 import oolong.client.ui.widgets.compose.ProvideContentColor
-import oolong.client.ui.widgets.compose.PullToRefreshLayout
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.ScrollableTabRow
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
@@ -347,12 +347,13 @@ private fun UserProfileContentNormal(
             }
         }
 
-        PullToRefreshLayout(
+        PullRefresh(
             refreshing = isFakeRefreshing,
             onRefresh = {
                 onRefresh()
                 isFakeRefreshing = true
-            }
+            },
+            indicatorTop = paddingValues.calculateTopPadding(),
         ) {
             val headerNestedScrollConnection = remember {
                 object : NestedScrollConnection {

@@ -19,9 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -54,12 +51,14 @@ import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.Card
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.FeedCardPlaceholder
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.loadMoreFooter
@@ -159,79 +158,63 @@ fun UserPostPage(
             }
         },
     ) {
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = list.refresh == LoadStatus.Loading,
-            onRefresh = onRefresh
-        )
-
         val lazyListState = rememberLazyListState()
 
-        val pullRefreshModifier =
-            if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
-
-        Box(modifier = pullRefreshModifier) {
-            LoadMoreLayout(
-                isLoading = list.append == LoadStatus.Loading,
-                onLoadMore = onLoadMore,
-                loadEnd = !list.hasMore,
-                lazyListState = lazyListState
-            ) {
-                UserPostList(
-                    data = posts,
-                    fluid = fluid,
-                    lazyListState = lazyListState,
-                    onClickItem = { threadId, postId, isSubPost ->
-                        if (postId == null) {
-                            navigator.navigate(ThreadKey(threadId))
-                        } else {
-                            if (isSubPost) {
-                                navigator.navigate(
-                                    SubPostsKey(
-                                        threadId = threadId,
-                                        subPostId = postId,
-                                        loadFromSubPost = true
-                                    )
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        PullRefresh(
+            refreshing = list.refresh == LoadStatus.Loading,
+            onRefresh = onRefresh,
+            enabled = enablePullRefresh,
+            indicatorTop = LocalChromePadding.current.calculateTopPadding(),
+            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+        ) {
+            UserPostList(
+                data = posts,
+                fluid = fluid,
+                lazyListState = lazyListState,
+                onClickItem = { threadId, postId, isSubPost ->
+                    if (postId == null) {
+                        navigator.navigate(ThreadKey(threadId))
+                    } else {
+                        if (isSubPost) {
+                            navigator.navigate(
+                                SubPostsKey(
+                                    threadId = threadId,
+                                    subPostId = postId,
+                                    loadFromSubPost = true
                                 )
-                            } else {
-                                navigator.navigate(
-                                    ThreadKey(
-                                        threadId,
-                                        postId = postId,
-                                        scrollToReply = true
-                                    )
-                                )
-                            }
-                        }
-                    },
-                    onAgreeItem = onAgree,
-                    onClickReply = {
-                        navigator.navigate(
-                            ThreadKey(
-                                it.id,
-                                it.forum.id,
-                                scrollToReply = true
                             )
+                        } else {
+                            navigator.navigate(
+                                ThreadKey(
+                                    threadId,
+                                    postId = postId,
+                                    scrollToReply = true
+                                )
+                            )
+                        }
+                    }
+                },
+                onAgreeItem = onAgree,
+                onClickReply = {
+                    navigator.navigate(
+                        ThreadKey(
+                            it.id,
+                            it.forum.id,
+                            scrollToReply = true
                         )
-                    },
-                    onClickUser = {
-                        navigator.navigate(UserProfileKey(it))
-                    },
-                    onClickForum = {
-                        navigator.navigate(ForumKey(it))
-                    },
-                    onClickOriginThread = {
-                        navigator.navigate(ThreadKey(it))
-                    },
-                    footer = { loadMoreFooter(list.append, onLoadMore) },
-                )
-            }
-
-            PullRefreshIndicator(
-                refreshing = list.refresh == LoadStatus.Loading,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
+                    )
+                },
+                onClickUser = {
+                    navigator.navigate(UserProfileKey(it))
+                },
+                onClickForum = {
+                    navigator.navigate(ForumKey(it))
+                },
+                onClickOriginThread = {
+                    navigator.navigate(ThreadKey(it))
+                },
+                footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
             )
         }
     }

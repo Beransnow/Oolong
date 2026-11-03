@@ -29,7 +29,7 @@ import oolong.client.ui.page.history.HistoryList
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
@@ -51,34 +51,27 @@ fun <T : HistoryEntry> HistoryListContent(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        LoadMoreLayout(
-            isLoading = false,
-            onLoadMore = onLoadMore,
-            loadEnd = !list.hasMore,
-            lazyListState = lazyListState,
-            isEmpty = list.isEmpty
+        LoadMoreEffect(lazyListState, enabled = list.hasMore, onLoadMore = onLoadMore)
+        MyLazyColumn(
+            modifier = Modifier
+                .fillMaxSize(),
+            state = lazyListState,
+            contentPadding = contentPadding,
         ) {
-            MyLazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
-                state = lazyListState,
-                contentPadding = contentPadding,
-            ) {
-                if (list.today.isNotEmpty()) {
-                    paddedStickyHeader(lazyListState, key = "TodayHistoryHeader") {
-                        HistoryHeader(text = stringResource(id = R.string.title_history_today), invert = true)
-                    }
-                    items(items = list.today, key = { it.id }) { entry ->
-                        HistoryItem(entry, onDelete = { onDelete(entry) }, onClick = { onOpen(entry) })
-                    }
+            if (list.today.isNotEmpty()) {
+                paddedStickyHeader(lazyListState, key = "TodayHistoryHeader") {
+                    HistoryHeader(text = stringResource(id = R.string.title_history_today), invert = true)
                 }
-                if (list.before.isNotEmpty()) {
-                    paddedStickyHeader(lazyListState, key = "BeforeHistoryHeader") {
-                        HistoryHeader(text = stringResource(id = R.string.title_history_before), invert = false)
-                    }
-                    items(items = list.before, key = { it.id }) { entry ->
-                        HistoryItem(entry, onDelete = { onDelete(entry) }, onClick = { onOpen(entry) })
-                    }
+                items(items = list.today, key = { it.id }) { entry ->
+                    HistoryItem(entry, onDelete = { onDelete(entry) }, onClick = { onOpen(entry) })
+                }
+            }
+            if (list.before.isNotEmpty()) {
+                paddedStickyHeader(lazyListState, key = "BeforeHistoryHeader") {
+                    HistoryHeader(text = stringResource(id = R.string.title_history_before), invert = false)
+                }
+                items(items = list.before, key = { it.id }) { entry ->
+                    HistoryItem(entry, onDelete = { onDelete(entry) }, onClick = { onOpen(entry) })
                 }
             }
         }

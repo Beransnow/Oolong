@@ -14,9 +14,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,10 +28,12 @@ import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -58,38 +57,22 @@ fun UserLikeForumPage(
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
     ) {
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = list.refresh == LoadStatus.Loading,
-            onRefresh = onRefresh
-        )
-
         val lazyListState = rememberLazyListState()
 
-        val pullRefreshModifier =
-            if (enablePullRefresh) Modifier.pullRefresh(pullRefreshState) else Modifier
-
-        Box(modifier = pullRefreshModifier) {
-            LoadMoreLayout(
-                isLoading = list.append == LoadStatus.Loading,
-                onLoadMore = onLoadMore,
-                loadEnd = !list.hasMore,
-                lazyListState = lazyListState
-            ) {
-                UserLikeForumList(
-                    data = forums,
-                    fluid = fluid,
-                    onClickForum = { navigator.navigate(ForumKey(it.name)) },
-                    lazyListState = lazyListState,
-                    footer = { loadMoreFooter(list.append, onLoadMore) },
-                )
-            }
-
-            PullRefreshIndicator(
-                refreshing = list.refresh == LoadStatus.Loading,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        PullRefresh(
+            refreshing = list.refresh == LoadStatus.Loading,
+            onRefresh = onRefresh,
+            enabled = enablePullRefresh,
+            indicatorTop = LocalChromePadding.current.calculateTopPadding(),
+            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+        ) {
+            UserLikeForumList(
+                data = forums,
+                fluid = fluid,
+                onClickForum = { navigator.navigate(ForumKey(it.name)) },
+                lazyListState = lazyListState,
+                footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
             )
         }
     }

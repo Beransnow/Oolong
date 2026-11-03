@@ -18,9 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.ScaffoldState
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -51,11 +48,13 @@ import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.FeedCardPlaceholder
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LocalPageScroll
 import oolong.client.ui.widgets.compose.PageScrollState
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.rememberPageScrollState
 import oolong.client.ui.widgets.compose.rememberScrollProgress
 import oolong.client.ui.widgets.compose.scrollsPageContent
@@ -112,7 +111,6 @@ fun ForumScreen(
     )
     val currentList = state.list(state.selectedTab)
     val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
-    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = { onEvent(ForumEvent.Refresh) })
 
     val accent = rememberForumAccent(forum.avatar)
     CompositionLocalProvider(LocalForumAccent provides accent) {
@@ -195,7 +193,7 @@ fun ForumScreen(
                 }
             }
             val accent = LocalForumAccent.current
-            Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+            Box {
                 // The forum's colour from the top of the page down the header, behind everything
                 if (accent.isSpecified) {
                     Box(
@@ -215,73 +213,72 @@ fun ForumScreen(
                             )
                     )
                 }
-                Box {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        key = { tabs[it].toString() },
-                        verticalAlignment = Alignment.Top,
-                    ) { page ->
-                        // Only the open tab's list tells the page how far it has scrolled
-                        CompositionLocalProvider(LocalPageScroll provides forumScroll.takeIf { page == pagerState.currentPage }) {
-                            val tab = tabs[page]
-                            val list = state.list(tab)
-                            val listState = listStates.getValue(tab)
-                            val loaded = list.items.isNotEmpty()
-                            // A list that loads once its tab is open starts in line with the header too
-                            LaunchedEffect(tab, loaded) {
-                                if (loaded) listState.alignWithHeader(sharedCollapse, headerHeight)
-                            }
-                            StateScreen(
-                                isEmpty = list.items.isEmpty(),
-                                isError = list.refresh is LoadStatus.Error,
-                                isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
-                                onReload = { onEvent(ForumEvent.Refresh) },
-                                modifier = Modifier.fillMaxSize(),
-                                loadingScreen = {
-                                    // Under the header where it is, not where it is fully open
-                                    Column(modifier = Modifier
-                                        .fillMaxSize()
-                                        .offset { IntOffset(0, -sharedCollapse) }
-                                        .padding(listPadding)) {
-                                        repeat(4) { FeedCardPlaceholder() }
-                                    }
-                                },
-                                errorScreen = {
-                                    Box(modifier = Modifier.padding(listPadding)) { DefaultErrorScreen(this@StateScreen) }
-                                },
-                            ) {
-                                ForumThreadList(
-                                    tab = tab,
-                                    list = list,
-                                    onEvent = onEvent,
-                                    listState = listState,
-                                    contentPadding = listPadding,
-                                    ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
-                                )
+                // The header and the lists follow a pull; the colour behind them stays
+                PullRefresh(
+                    refreshing = refreshing,
+                    onRefresh = { onEvent(ForumEvent.Refresh) },
+                    indicatorTop = contentPadding.calculateTopPadding(),
+                    endPull = if (currentList.hasMore) EndPull.None else EndPull.Tease,
+                ) {
+                    Box {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            key = { tabs[it].toString() },
+                            verticalAlignment = Alignment.Top,
+                        ) { page ->
+                            // Only the open tab's list tells the page how far it has scrolled
+                            CompositionLocalProvider(LocalPageScroll provides forumScroll.takeIf { page == pagerState.currentPage }) {
+                                val tab = tabs[page]
+                                val list = state.list(tab)
+                                val listState = listStates.getValue(tab)
+                                val loaded = list.items.isNotEmpty()
+                                // A list that loads once its tab is open starts in line with the header too
+                                LaunchedEffect(tab, loaded) {
+                                    if (loaded) listState.alignWithHeader(sharedCollapse, headerHeight)
+                                }
+                                StateScreen(
+                                    isEmpty = list.items.isEmpty(),
+                                    isError = list.refresh is LoadStatus.Error,
+                                    isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+                                    onReload = { onEvent(ForumEvent.Refresh) },
+                                    modifier = Modifier.fillMaxSize(),
+                                    loadingScreen = {
+                                        // Under the header where it is, not where it is fully open
+                                        Column(modifier = Modifier
+                                            .fillMaxSize()
+                                            .offset { IntOffset(0, -sharedCollapse) }
+                                            .padding(listPadding)) {
+                                            repeat(4) { FeedCardPlaceholder() }
+                                        }
+                                    },
+                                    errorScreen = {
+                                        Box(modifier = Modifier.padding(listPadding)) { DefaultErrorScreen(this@StateScreen) }
+                                    },
+                                ) {
+                                    ForumThreadList(
+                                        tab = tab,
+                                        list = list,
+                                        onEvent = onEvent,
+                                        listState = listState,
+                                        contentPadding = listPadding,
+                                        ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
+                                    )
+                                }
                             }
                         }
                     }
+                    ForumHeader(
+                        forum = forum,
+                        loggedIn = state.loggedIn,
+                        onEvent = onEvent,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - headerCollapsed(forumScroll, headerHeight, sharedCollapse)) }
+                            .onSizeChanged { headerHeight = it.height }
+                            .scrollsPageContent(),
+                    )
                 }
-                ForumHeader(
-                    forum = forum,
-                    loggedIn = state.loggedIn,
-                    onEvent = onEvent,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset { IntOffset(0, contentPadding.calculateTopPadding().roundToPx() - headerCollapsed(forumScroll, headerHeight, sharedCollapse)) }
-                        .onSizeChanged { headerHeight = it.height }
-                        .scrollsPageContent(),
-                )
-                PullRefreshIndicator(
-                    refreshing = refreshing,
-                    state = pullRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = listPadding.calculateTopPadding()),
-                    backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                    contentColor = ExtendedTheme.colors.emphasis,
-                )
             }
         }
     }

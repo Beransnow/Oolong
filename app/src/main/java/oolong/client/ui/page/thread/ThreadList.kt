@@ -22,9 +22,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,11 +53,13 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
@@ -117,10 +116,6 @@ internal fun ThreadContent(
     // The first load shows its own indicator in the list
     val pullRefreshing = !loadingFirstTime &&
         (if (newestFirst) posts.prepend == LoadStatus.Loading else posts.refresh == LoadStatus.Loading)
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = pullRefreshing,
-        onRefresh = { onEvent(if (newestFirst) ThreadEvent.LoadPrevious else ThreadEvent.Refresh) },
-    )
     val options = PostCardOptions(
         threadAuthorId = state.thread?.author?.id ?: firstPost?.author?.id ?: 0L,
         hideBlocked = preferences.hideBlocked,
@@ -129,74 +124,63 @@ internal fun ThreadContent(
     val viewerId = state.viewer.user?.id
     val photoViewData = rememberPhotoViewData(state)
 
-    Box(modifier = Modifier.pullRefresh(pullRefreshState, enabled = posts.hasPrevious || newestFirst)) {
-        LoadMoreLayout(
-            isLoading = posts.append == LoadStatus.Loading,
-            onLoadMore = { onEvent(if (posts.hasMore) ThreadEvent.LoadMore else ThreadEvent.LoadLatest) },
-            loadEnd = !posts.hasMore && newestFirst,
-            indicator = { isLoading, loadEnd, willLoad ->
-                LoadMorePill(isLoading, loadEnd, willLoad, posts.hasMore)
-            },
-            lazyListState = listState,
-            isEmpty = posts.items.isEmpty(),
-            preloadCount = if (posts.hasMore) 1 else 0,
+    LoadMoreEffect(listState, enabled = posts.hasMore && posts.append == LoadStatus.Idle, onLoadMore = { onEvent(ThreadEvent.LoadMore) })
+    PullRefresh(
+        refreshing = pullRefreshing,
+        onRefresh = { onEvent(if (newestFirst) ThreadEvent.LoadPrevious else ThreadEvent.Refresh) },
+        enabled = posts.hasPrevious || newestFirst,
+        indicatorTop = padding.calculateTopPadding(),
+        endPull = when {
+            posts.hasMore -> EndPull.None
+            newestFirst -> EndPull.Tease
+            else -> EndPull.Action { onEvent(ThreadEvent.LoadLatest) }
+        },
+    ) {
+        MyLazyColumn(
+            state = listState,
+            contentPadding = padding.plus(PaddingValues(bottom = 8.dp)),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            MyLazyColumn(
-                state = listState,
-                contentPadding = padding.plus(PaddingValues(bottom = 8.dp)),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                item(key = FIRST_POST_KEY) {
-                    if (firstPost != null) {
-                        FirstPost(state, firstPost, options, viewerId, photoViewData, onEvent)
-                    }
+            item(key = FIRST_POST_KEY) {
+                if (firstPost != null) {
+                    FirstPost(state, firstPost, options, viewerId, photoViewData, onEvent)
                 }
-                if (state.thread != null) {
-                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
+            }
+            if (state.thread != null) {
+                item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
+            }
+            if (posts.hasPrevious && !newestFirst) {
+                item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
+            }
+            itemsIndexed(
+                items = posts.items,
+                key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
+            ) { index, item ->
+                Container {
+                    ThreadFloor(
+                        item = item,
+                        options = options,
+                        onEvent = onEvent,
+                        listState = listState,
+                        key = "$POST_KEY_PREFIX${item.post.id}",
+                        stickBelow = chromeEnd,
+                        startsRule = index == 0,
+                        isStoreMark = item.post.id == state.thread?.storeMarkPostId,
+                        // The thread's author may delete anyone's reply in it
+                        canDelete = viewerId != null && (item.post.author.id == viewerId || options.threadAuthorId == viewerId),
+                        photoViewData = { photoViewData(item.post, it) },
+                    )
                 }
-                if (posts.hasPrevious && !newestFirst) {
-                    item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
-                }
-                itemsIndexed(
-                    items = posts.items,
-                    key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
-                ) { index, item ->
-                    Container {
-                        ThreadFloor(
-                            item = item,
-                            options = options,
-                            onEvent = onEvent,
-                            listState = listState,
-                            key = "$POST_KEY_PREFIX${item.post.id}",
-                            stickBelow = chromeEnd,
-                            startsRule = index == 0,
-                            isStoreMark = item.post.id == state.thread?.storeMarkPostId,
-                            // The thread's author may delete anyone's reply in it
-                            canDelete = viewerId != null && (item.post.author.id == viewerId || options.threadAuthorId == viewerId),
-                            photoViewData = { photoViewData(item.post, it) },
-                        )
-                    }
-                }
-                loadMoreFooter(posts.append) { onEvent(if (posts.hasMore) ThreadEvent.LoadMore else ThreadEvent.LoadLatest) }
-                if (loadingFirstTime) {
-                    item(key = "Loading") {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
-                        }
+            }
+            loadMoreFooter(posts.append, posts.hasMore, pullToLoadLatest = !newestFirst, onRetry = { onEvent(if (posts.hasMore) ThreadEvent.LoadMore else ThreadEvent.LoadLatest) })
+            if (loadingFirstTime) {
+                item(key = "Loading") {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
                     }
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = pullRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = padding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.refreshIndicator,
-            contentColor = ExtendedTheme.colors.emphasis,
-        )
     }
 }
 

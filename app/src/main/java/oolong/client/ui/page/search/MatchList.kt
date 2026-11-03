@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +19,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.states.StateScreen
 
@@ -50,11 +48,11 @@ fun <T> MatchList(
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
     ) {
-        val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+        PullRefresh(
+            refreshing = refreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicatorTop = contentPadding.calculateTopPadding(),
         ) {
             val listState = rememberLazyListState()
             MyLazyColumn(
@@ -72,16 +70,6 @@ fun <T> MatchList(
                     items(fuzzy) { itemContent(it) }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
         }
     }
 }

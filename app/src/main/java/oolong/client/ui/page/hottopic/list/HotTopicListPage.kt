@@ -17,9 +17,6 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -55,6 +52,7 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.NetworkImage
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.utils.StringUtil.getShortNumString
@@ -189,14 +187,11 @@ fun HotTopicListScreen(
             )
         },
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(
+        PullRefresh(
             refreshing = isRefreshing,
-            onRefresh = onRefresh
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicatorTop = contentPaddings.calculateTopPadding(),
         ) {
             MyLazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -226,16 +221,6 @@ fun HotTopicListScreen(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
         }
     }
 }

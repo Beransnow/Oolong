@@ -31,9 +31,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,10 +68,12 @@ import oolong.client.ui.page.main.explore.rememberThreadPeeker
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.FeedCard
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -116,7 +115,6 @@ fun PersonalizedScreen(
     val list = state.list
     val refreshing = list.refresh == LoadStatus.Loading
     val error = (list.refresh as? LoadStatus.Error)?.error
-    val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
     var showRefreshTip by remember { mutableStateOf(false) }
     // Saved, so coming back from another page neither shows the tip again nor scrolls to the top
@@ -142,13 +140,13 @@ fun PersonalizedScreen(
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
     ) {
-        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-            LoadMoreLayout(
-                isLoading = list.append == LoadStatus.Loading,
-                onLoadMore = onLoadMore,
-                loadEnd = !list.hasMore,
-                lazyListState = lazyListState,
-                isEmpty = list.items.isEmpty()
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        Box {
+            PullRefresh(
+                refreshing = refreshing,
+                onRefresh = onRefresh,
+                indicatorTop = contentPadding.calculateTopPadding(),
+                endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
             ) {
                 FeedList(
                     state = lazyListState,
@@ -161,19 +159,9 @@ fun PersonalizedScreen(
                     onDislike = onDislike,
                     onUndoDislike = onUndoDislike,
                     onRefresh = onRefresh,
-                    footer = { loadMoreFooter(list.append, onLoadMore) },
+                    footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
                 )
             }
-
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
 
             AnimatedVisibility(
                 visible = showRefreshTip,

@@ -371,6 +371,8 @@
     <string name="settings_group_image">Images</string>
     <string name="title_dialog_modify_little_tail">Edit signature</string>
     <string name="no_more">No more</string>
+    <string name="no_more_really">Really, that\'s all</string>
+    <string name="no_more_bottom_line">Stop pulling. Even I have a bottom line</string>
     <string name="desc_comment">Comment</string>
     <string name="desc_share">Share</string>
     <string name="desc_like">Like</string>
@@ -637,8 +639,6 @@
         <item quantity="one">%d comment</item>
         <item quantity="other">%d comments</item>
     </plurals>
-    <string name="pull_to_load">Pull up to load more</string>
-    <string name="release_to_load">Release to load</string>
     <string name="title_block_list">Hidden words</string>
     <string name="settings_hide_blocked_content">Leave out hidden content entirely</string>
     <string name="desc_image">Image</string>
@@ -711,8 +711,6 @@
     <string name="title_forum_intro">About this forum</string>
     <string name="title_forum_rule">Forum rules</string>
     <string name="desc_forum_rule">Rules</string>
-    <string name="pull_down_to_refresh">Pull down to refresh</string>
-    <string name="release_to_refresh">Release to refresh</string>
     <string name="text_stat_agrees">Likes</string>
     <string name="text_profile_ip_location">IP location: %s</string>
     <string name="text_profile_tb_age">Years on Tieba: %s</string>

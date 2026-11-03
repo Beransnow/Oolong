@@ -14,9 +14,6 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -57,12 +54,14 @@ import oolong.client.ui.page.thread.ThreadSortType
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.loadMoreFooter
@@ -139,42 +138,29 @@ fun ThreadStoreScreen(
             onReload = onRefresh,
             errorScreen = { ErrorScreen(error = error) }
         ) {
-            val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = onRefresh)
-
             val lazyListState = rememberLazyListState()
 
-            Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-                LoadMoreLayout(
-                    isLoading = list.append == LoadStatus.Loading,
-                    onLoadMore = onLoadMore,
-                    loadEnd = !list.hasMore,
-                    lazyListState = lazyListState
-                ) {
-                    MyLazyColumn(state = lazyListState, contentPadding = contentPaddings) {
-                        items(
-                            items = list.items,
-                            key = { it.threadId }
-                        ) { thread ->
-                            StoreItem(
-                                info = thread,
-                                onUserClick = { thread.author?.let(onOpenUser) },
-                                onClick = { onOpen(thread) },
-                                onDelete = { onRemove(thread) }
-                            )
-                        }
-                        loadMoreFooter(list.append, onLoadMore)
+            LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+            PullRefresh(
+                refreshing = isRefreshing,
+                onRefresh = onRefresh,
+                indicatorTop = contentPaddings.calculateTopPadding(),
+                endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+            ) {
+                MyLazyColumn(state = lazyListState, contentPadding = contentPaddings) {
+                    items(
+                        items = list.items,
+                        key = { it.threadId }
+                    ) { thread ->
+                        StoreItem(
+                            info = thread,
+                            onUserClick = { thread.author?.let(onOpenUser) },
+                            onClick = { onOpen(thread) },
+                            onDelete = { onRemove(thread) }
+                        )
                     }
+                    loadMoreFooter(list.append, list.hasMore, onLoadMore)
                 }
-
-                PullRefreshIndicator(
-                    refreshing = isRefreshing,
-                    state = pullRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = contentPaddings.calculateTopPadding()),
-                    backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                    contentColor = ExtendedTheme.colors.emphasis,
-                )
             }
         }
     }

@@ -51,12 +51,14 @@ import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.loadMoreFooter
@@ -168,17 +170,13 @@ private fun UserList(
         },
     ) {
         val lazyListState = rememberLazyListState()
-        LoadMoreLayout(
-            isLoading = list.append == LoadStatus.Loading,
-            onLoadMore = onLoadMore,
-            loadEnd = !list.hasMore,
-            lazyListState = lazyListState,
-        ) {
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        PullRefresh(refreshing = false, onRefresh = {}, enabled = false, endPull = if (list.hasMore) EndPull.None else EndPull.Tease) {
             MyLazyColumn(state = lazyListState, contentPadding = contentPadding) {
                 items(list.items, key = { it.user.id }) { item ->
                     UserRow(item = item, onClick = { onOpen(item) })
                 }
-                loadMoreFooter(list.append, onLoadMore)
+                loadMoreFooter(list.append, list.hasMore, onLoadMore)
             }
         }
     }

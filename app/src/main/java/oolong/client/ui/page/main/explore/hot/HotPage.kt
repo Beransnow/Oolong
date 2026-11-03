@@ -19,9 +19,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +59,7 @@ import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.ProvideContentColor
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.VerticalGrid
 import oolong.client.ui.widgets.compose.items
@@ -105,8 +103,11 @@ fun HotScreen(
     val tabList = state.categories
     val currentTabCode = state.category
     val isLoadingThreadList = state.switching
-    val pullRefreshState = rememberPullRefreshState(refreshing = isLoading, onRefresh = onRefresh)
-    Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+    PullRefresh(
+        refreshing = isLoading,
+        onRefresh = onRefresh,
+        indicatorTop = contentPadding.calculateTopPadding(),
+    ) {
         MyLazyColumn(
             contentPadding = contentPadding,
             modifier = Modifier
@@ -297,16 +298,6 @@ fun HotScreen(
                 }
             }
         }
-
-        PullRefreshIndicator(
-            refreshing = isLoading,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.refreshIndicator,
-            contentColor = ExtendedTheme.colors.emphasis,
-        )
     }
 }
 

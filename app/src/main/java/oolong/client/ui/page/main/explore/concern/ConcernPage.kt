@@ -10,9 +10,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,10 +31,12 @@ import oolong.client.ui.page.main.explore.rememberFeedThreadEvents
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.FeedCard
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -78,59 +77,46 @@ fun ConcernScreen(
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
     ) {
-        val refreshing = list.refresh == LoadStatus.Loading
-        val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
         val lazyListState = rememberLazyListState()
-        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-            LoadMoreLayout(
-                isLoading = list.append == LoadStatus.Loading,
-                onLoadMore = onLoadMore,
-                loadEnd = !list.hasMore,
-                lazyListState = lazyListState,
+        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        PullRefresh(
+            refreshing = list.refresh == LoadStatus.Loading,
+            onRefresh = onRefresh,
+            indicatorTop = contentPadding.calculateTopPadding(),
+            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+        ) {
+            MyLazyColumn(
+                state = lazyListState,
+                contentPadding = contentPadding,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                MyLazyColumn(
-                    state = lazyListState,
-                    contentPadding = contentPadding,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    itemsIndexed(items = list.items, key = { _, item -> item.thread.id }) { index, item ->
-                        Container {
-                            BlockableContent(
-                                block = item.block,
-                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
-                            ) {
-                                Column {
-                                    FeedCard(
-                                        thread = item.thread,
-                                        onClick = events.onOpen,
-                                        onClickReply = events.onOpenReplies,
-                                        onAgree = events.onAgree,
-                                        onClickForum = events.onOpenForum,
-                                        onClickUser = events.onOpenUser,
-                                        onClickShared = events.onOpenOrigin,
-                                        onLongPress = events.onPeek,
-                                    )
-                                    if (index < list.items.size - 1) {
-                                        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    }
+                itemsIndexed(items = list.items, key = { _, item -> item.thread.id }) { index, item ->
+                    Container {
+                        BlockableContent(
+                            block = item.block,
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                        ) {
+                            Column {
+                                FeedCard(
+                                    thread = item.thread,
+                                    onClick = events.onOpen,
+                                    onClickReply = events.onOpenReplies,
+                                    onAgree = events.onAgree,
+                                    onClickForum = events.onOpenForum,
+                                    onClickUser = events.onOpenUser,
+                                    onClickShared = events.onOpenOrigin,
+                                    onLongPress = events.onPeek,
+                                )
+                                if (index < list.items.size - 1) {
+                                    VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                 }
                             }
                         }
                     }
-                    loadMoreFooter(list.append, onLoadMore)
                 }
+                loadMoreFooter(list.append, list.hasMore, onLoadMore)
             }
-
-            PullRefreshIndicator(
-                refreshing = refreshing,
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPadding.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
         }
     }
 }

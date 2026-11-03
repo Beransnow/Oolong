@@ -61,14 +61,16 @@ import oolong.client.ui.page.thread.ThreadEvent
 import oolong.client.ui.page.thread.ThreadFloor
 import oolong.client.ui.page.thread.ThreadPreferences
 import oolong.client.ui.widgets.compose.ConfirmDialog
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.MyScaffold
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.TitleCentredToolbar
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.paddedStickyHeader
@@ -240,13 +242,8 @@ private fun SubPostsContent(
             else -> Unit
         }
     }
-    LoadMoreLayout(
-        isLoading = subPosts.append == LoadStatus.Loading,
-        onLoadMore = { onEvent(SubPostsEvent.LoadMore) },
-        loadEnd = !subPosts.hasMore,
-        lazyListState = listState,
-        isEmpty = subPosts.items.isEmpty(),
-    ) {
+    LoadMoreEffect(listState, enabled = subPosts.hasMore && subPosts.append == LoadStatus.Idle, onLoadMore = { onEvent(SubPostsEvent.LoadMore) })
+    PullRefresh(refreshing = false, onRefresh = {}, enabled = false, endPull = if (subPosts.hasMore) EndPull.None else EndPull.Tease) {
         MyLazyColumn(
             state = listState,
             contentPadding = padding.plus(PaddingValues(bottom = 8.dp)),
@@ -305,7 +302,7 @@ private fun SubPostsContent(
                     onEvent = onEvent,
                 )
             }
-            loadMoreFooter(subPosts.append) { onEvent(SubPostsEvent.LoadMore) }
+            loadMoreFooter(subPosts.append, subPosts.hasMore, onRetry = { onEvent(SubPostsEvent.LoadMore) })
         }
     }
 }

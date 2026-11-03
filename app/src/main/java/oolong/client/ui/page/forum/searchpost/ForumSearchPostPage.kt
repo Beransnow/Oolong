@@ -28,9 +28,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,11 +73,13 @@ import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.HorizontalDivider
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.LoadMoreEffect
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.SearchThreadList
 import oolong.client.ui.widgets.compose.choiceMenuItems
@@ -268,7 +267,6 @@ fun ForumSearchPostScreen(
         if (state.keyword.isNotEmpty()) inputKeyword = state.keyword
     }
 
-    val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -347,118 +345,104 @@ fun ForumSearchPostScreen(
                     onReload = onRefresh,
                     errorScreen = { ErrorScreen(error = error) }
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pullRefresh(pullRefreshState)
+                    LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+                    PullRefresh(
+                        refreshing = isRefreshing,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize(),
+                        indicatorTop = paddingValues.calculateTopPadding(),
+                        endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
                     ) {
-                        LoadMoreLayout(
-                            isLoading = list.append == LoadStatus.Loading,
-                            onLoadMore = onLoadMore,
-                            loadEnd = !list.hasMore,
+                        SearchThreadList(
+                            data = list.items,
                             lazyListState = lazyListState,
+                            onItemClick = onOpen,
+                            onItemUserClick = onOpenUser,
+                            onItemForumClick = {},
+                            onQuotePostClick = onOpenQuoted,
+                            onMainPostClick = onOpenThread,
+                            hideForum = true,
+                            searchKeyword = state.keyword,
+                            contentPadding = paddingValues,
+                            footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
                         ) {
-                            SearchThreadList(
-                                data = list.items,
-                                lazyListState = lazyListState,
-                                onItemClick = onOpen,
-                                onItemUserClick = onOpenUser,
-                                onItemForumClick = {},
-                                onQuotePostClick = onOpenQuoted,
-                                onMainPostClick = onOpenThread,
-                                hideForum = true,
-                                searchKeyword = state.keyword,
-                                contentPadding = paddingValues,
-                                footer = { loadMoreFooter(list.append, onLoadMore) },
-                            ) {
-                                paddedStickyHeader(lazyListState, key = "Sort&Filter") {
+                            paddedStickyHeader(lazyListState, key = "Sort&Filter") {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .background(ExtendedTheme.colors.background)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                            onClick = {}
+                                        )
+                                ) {
+                                    val sortMenu = rememberMenuTriggerState()
+                                    val rotate by animateFloatAsState(
+                                        targetValue = if (sortMenu.open) 180f else 0f,
+                                        animationSpec = Motion.snap(),
+                                        label = "ArrowIndicatorRotate"
+                                    )
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .background(ExtendedTheme.colors.background)
-                                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                onClick = {}
-                                            )
+                                        modifier = Modifier.clickMenu(
+                                            items = { choiceMenuItems(sortTypeMapping.toList(), state.order, onSetOrder) },
+                                            indication = null,
+                                            state = sortMenu,
+                                        ),
                                     ) {
-                                        val sortMenu = rememberMenuTriggerState()
-                                        val rotate by animateFloatAsState(
-                                            targetValue = if (sortMenu.open) 180f else 0f,
-                                            animationSpec = Motion.snap(),
-                                            label = "ArrowIndicatorRotate"
+                                        Text(
+                                            text = sortTypeMapping[state.order]
+                                                ?: "",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.clickMenu(
-                                                items = { choiceMenuItems(sortTypeMapping.toList(), state.order, onSetOrder) },
-                                                indication = null,
-                                                state = sortMenu,
-                                            ),
-                                        ) {
-                                            Text(
-                                                text = sortTypeMapping[state.order]
-                                                    ?: "",
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Icon(
-                                                imageVector = Symbols.ArrowDropDown,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(16.dp)
-                                                    .rotate(rotate)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.height(IntrinsicSize.Min)
-                                        ) {
-                                            filterTypeMapping.keys.map<Boolean, @Composable () -> Unit> { type ->
-                                                {
-                                                    Text(
-                                                        text = filterTypeMapping[type] ?: "",
-                                                        fontSize = 13.sp,
-                                                        fontWeight = if (type == state.onlyThreads) {
-                                                            FontWeight.Bold
-                                                        } else {
-                                                            FontWeight.Normal
-                                                        },
-                                                        modifier = Modifier.clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null,
-                                                            role = Role.RadioButton,
-                                                            onClick = { onSetOnlyThreads(type) }
-                                                        )
+                                        Icon(
+                                            imageVector = Symbols.ArrowDropDown,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .rotate(rotate)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.height(IntrinsicSize.Min)
+                                    ) {
+                                        filterTypeMapping.keys.map<Boolean, @Composable () -> Unit> { type ->
+                                            {
+                                                Text(
+                                                    text = filterTypeMapping[type] ?: "",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (type == state.onlyThreads) {
+                                                        FontWeight.Bold
+                                                    } else {
+                                                        FontWeight.Normal
+                                                    },
+                                                    modifier = Modifier.clickable(
+                                                        interactionSource = remember { MutableInteractionSource() },
+                                                        indication = null,
+                                                        role = Role.RadioButton,
+                                                        onClick = { onSetOnlyThreads(type) }
                                                     )
-                                                }
-                                            }.forEachIndexed { index, composable ->
-                                                composable()
-                                                if (index < filterTypeMapping.size - 1) {
-                                                    HorizontalDivider(
-                                                        modifier = Modifier.padding(
-                                                            horizontal = 8.dp
-                                                        )
+                                                )
+                                            }
+                                        }.forEachIndexed { index, composable ->
+                                            composable()
+                                            if (index < filterTypeMapping.size - 1) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 8.dp
                                                     )
-                                                }
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-
-                        PullRefreshIndicator(
-                            refreshing = isRefreshing,
-                            state = pullRefreshState,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = paddingValues.calculateTopPadding()),
-                            backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                            contentColor = ExtendedTheme.colors.emphasis,
-                        )
                     }
                 }
             } else {

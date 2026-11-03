@@ -32,9 +32,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -97,6 +94,7 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyLazyVerticalGrid
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.longPressMenu
@@ -531,10 +529,6 @@ fun HomeScreen(
         },
         modifier = modifier.fillMaxSize(),
     ) { contentPaddings ->
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = isLoading && forums.isNotEmpty(),
-            onRefresh = { onEvent(HomeEvent.Refresh) }
-        )
         // On a phone search opens from the button beside the bottom bar, or from [searchField]
         // where the user keeps it at the top
         val searchBox: @Composable () -> Unit = {
@@ -549,7 +543,11 @@ fun HomeScreen(
             }
         }
         val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
-        Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
+        PullRefresh(
+            refreshing = isLoading && forums.isNotEmpty(),
+            onRefresh = { onEvent(HomeEvent.Refresh) },
+            indicatorTop = contentPaddings.calculateTopPadding(),
+        ) {
             StateScreen(
                 isEmpty = forums.isEmpty(),
                 isError = error != null,
@@ -628,16 +626,6 @@ fun HomeScreen(
                     }
                 }
             }
-
-            PullRefreshIndicator(
-                refreshing = isLoading && forums.isNotEmpty(),
-                state = pullRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = contentPaddings.calculateTopPadding()),
-                backgroundColor = ExtendedTheme.colors.refreshIndicator,
-                contentColor = ExtendedTheme.colors.emphasis,
-            )
         }
     }
 }

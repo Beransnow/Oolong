@@ -12,9 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,9 +44,11 @@ import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EmoticonText
-import oolong.client.ui.widgets.compose.LoadMoreLayout
+import oolong.client.ui.widgets.compose.EndPull
+import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MetaText
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.VerticalDivider
@@ -112,51 +111,40 @@ fun NotificationList(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val refreshing = list.refresh == LoadStatus.Loading
-    val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = onRefresh)
     val lazyListState = rememberLazyListState()
-    Box(modifier = modifier.pullRefresh(pullRefreshState)) {
-        LoadMoreLayout(
-            isLoading = list.append == LoadStatus.Loading,
-            onLoadMore = onLoadMore,
-            loadEnd = !list.hasMore,
-            lazyListState = lazyListState,
+    LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+    PullRefresh(
+        refreshing = refreshing,
+        onRefresh = onRefresh,
+        modifier = modifier,
+        indicatorTop = contentPadding.calculateTopPadding(),
+        endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+    ) {
+        MyLazyColumn(
+            contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
+            state = lazyListState,
         ) {
-            MyLazyColumn(
-                contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
-                state = lazyListState,
-            ) {
-                itemsIndexed(
-                    items = list.items,
-                    key = { _, (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
-                ) { index, (notification, blocked) ->
-                    Container {
-                        Column {
-                            BlockableContent(
-                                block = blocked,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                            ) {
-                                NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
-                            }
-                            // Divided like feed cards
-                            if (index < list.items.lastIndex) {
-                                VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            }
+            itemsIndexed(
+                items = list.items,
+                key = { _, (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
+            ) { index, (notification, blocked) ->
+                Container {
+                    Column {
+                        BlockableContent(
+                            block = blocked,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
+                        }
+                        // Divided like feed cards
+                        if (index < list.items.lastIndex) {
+                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         }
                     }
                 }
-                loadMoreFooter(list.append, onLoadMore)
             }
+            loadMoreFooter(list.append, list.hasMore, onLoadMore)
         }
-
-        PullRefreshIndicator(
-            refreshing = refreshing,
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = contentPadding.calculateTopPadding()),
-            backgroundColor = ExtendedTheme.colors.refreshIndicator,
-            contentColor = ExtendedTheme.colors.emphasis,
-        )
     }
 }
 
