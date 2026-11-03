@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -472,25 +473,30 @@ fun FloatingNavBar(
                     }
                 }
                 // Lifts off the pill while it is pressed: drawn above it, so it magnifies the pill too.
-                // Grows by layout rather than a layer scale so the glass samples the area it covers.
+                // Grows by layout rather than a layer scale so the glass samples the area it covers,
+                // but outside the pill's size, which would otherwise grow with it and push the
+                // search button down.
                 val lensScale = lerpFloat(1f, LensScale, press.value)
                 val lensWidth = itemWidth * lensScale
                 val lensHeight = itemHeight * lensScale
-                Box(
-                    modifier = Modifier
-                        .offset {
-                            val padding = NavPillPadding.roundToPx()
-                            val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
-                            val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
-                            IntOffset(
-                                (indicator.value * itemWidthPx).roundToInt() + padding - grownX,
-                                padding - grownY,
-                            )
-                        }
-                        .size(width = lensWidth, height = lensHeight)
-                        .graphicsLayer { alpha = press.value }
-                        .glassLens(NavPillShape)
-                )
+                Box(modifier = Modifier.matchParentSize()) {
+                    Box(
+                        modifier = Modifier
+                            .wrapContentSize(Alignment.TopStart, unbounded = true)
+                            .offset {
+                                val padding = NavPillPadding.roundToPx()
+                                val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
+                                val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
+                                IntOffset(
+                                    (indicator.value * itemWidthPx).roundToInt() + padding - grownX,
+                                    padding - grownY,
+                                )
+                            }
+                            .size(width = lensWidth, height = lensHeight)
+                            .graphicsLayer { alpha = press.value }
+                            .glassLens(NavPillShape)
+                    )
+                }
             }
             if (onSearchButtonPlaced != null) {
                 Spacer(modifier = Modifier.width(SearchButtonGap))
