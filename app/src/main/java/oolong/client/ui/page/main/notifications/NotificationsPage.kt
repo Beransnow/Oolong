@@ -51,6 +51,7 @@ fun NotificationsPage(
             topBar = {
                 GlassTopBar(
                     title = { NotificationTabs(pagerState, pages.map { it.first }) },
+                    centerTitle = true,
                     navigationIcon = {
                         BackNavigationIcon {
                             navigator.navigateUp()
@@ -97,6 +98,7 @@ fun NotificationsTab(
         topBar = {
             GlassTopBar(
                 title = { NotificationTabs(pagerState, pages.map { it.first }) },
+                centerTitle = true,
             )
         },
         modifier = Modifier.fillMaxSize(),

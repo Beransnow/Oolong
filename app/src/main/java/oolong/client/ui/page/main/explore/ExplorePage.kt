@@ -127,7 +127,7 @@ fun ExplorePage() {
         backgroundColor = Color.Transparent,
         topBar = {
             // The tabs are the page's title; the bottom bar already names the page
-            GlassTopBar(title = { ExplorePageTab(pagerState = pagerState, pages = pages) })
+            GlassTopBar(title = { ExplorePageTab(pagerState = pagerState, pages = pages) }, centerTitle = true)
         },
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
