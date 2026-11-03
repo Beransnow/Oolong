@@ -3,6 +3,7 @@ package oolong.client.ui.page.main.notifications
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
@@ -16,20 +17,15 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.NotificationType
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
-import oolong.client.ui.navigation.SearchKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.main.notifications.list.NotificationsListPage
-import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
-import oolong.client.ui.widgets.compose.PagerTabIndicator
-import oolong.client.ui.widgets.compose.TabRow
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -54,36 +50,10 @@ fun NotificationsPage(
             backgroundColor = Color.Transparent,
             topBar = {
                 GlassTopBar(
-                    title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
+                    title = { NotificationTabs(pagerState, pages.map { it.first }) },
                     navigationIcon = {
                         BackNavigationIcon {
                             navigator.navigateUp()
-                        }
-                    },
-                    content = {
-                        TabRow(
-                            selectedTabIndex = pagerState.currentPage,
-                            indicator = { tabPositions ->
-                                PagerTabIndicator(
-                                    pagerState = pagerState,
-                                    tabPositions = tabPositions
-                                )
-                            },
-                            divider = {},
-                            backgroundColor = Color.Transparent,
-                            contentColor = ExtendedTheme.colors.topBarContent,
-                        ) {
-                            pages.forEachIndexed { index, pair ->
-                                Tab(
-                                    text = { Text(text = pair.first) },
-                                    selected = pagerState.currentPage == index,
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            pagerState.animateScrollToPage(index)
-                                        }
-                                    },
-                                )
-                            }
                         }
                     },
                 )
@@ -126,41 +96,7 @@ fun NotificationsTab(
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
-                actions = {
-                    ActionItem(
-                        icon = Symbols.Search,
-                        contentDescription = stringResource(id = R.string.title_search)
-                    ) {
-                        navigator.navigate(SearchKey())
-                    }
-                },
-                content = {
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        indicator = { tabPositions ->
-                            PagerTabIndicator(
-                                pagerState = pagerState,
-                                tabPositions = tabPositions
-                            )
-                        },
-                        divider = {},
-                        backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.topBarContent,
-                    ) {
-                        pages.forEachIndexed { index, pair ->
-                            Tab(
-                                text = { Text(text = pair.first) },
-                                selected = pagerState.currentPage == index,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                },
-                            )
-                        }
-                    }
-                },
+                title = { NotificationTabs(pagerState, pages.map { it.first }) },
             )
         },
         modifier = Modifier.fillMaxSize(),
@@ -173,6 +109,23 @@ fun NotificationsTab(
             userScrollEnabled = true,
         ) {
             pages[it].second(paddingValues)
+        }
+    }
+}
+
+/** The pages' names on a tab capsule in the bar's title row: on these pages the tabs are the title. */
+@Composable
+private fun NotificationTabs(pagerState: PagerState, names: List<String>) {
+    val coroutineScope = rememberCoroutineScope()
+    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
+        names.forEachIndexed { index, name ->
+            Tab(
+                text = { Text(text = name) },
+                selected = pagerState.currentPage == index,
+                selectedContentColor = ExtendedTheme.colors.text,
+                unselectedContentColor = ExtendedTheme.colors.textSecondary,
+                onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+            )
         }
     }
 }

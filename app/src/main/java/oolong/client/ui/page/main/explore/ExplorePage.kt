@@ -1,10 +1,8 @@
 package oolong.client.ui.page.main.explore
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.MaterialTheme
@@ -20,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import kotlinx.collections.immutable.ImmutableList
@@ -32,19 +29,14 @@ import oolong.client.arch.emitGlobalEvent
 import oolong.client.arch.onGlobalEvent
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Symbols
-import oolong.client.ui.navigation.SearchKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.main.explore.concern.ConcernPage
 import oolong.client.ui.page.main.explore.hot.HotPage
 import oolong.client.ui.page.main.explore.personalized.PersonalizedPage
-import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
-import oolong.client.ui.widgets.compose.PagerTabIndicator
-import oolong.client.ui.widgets.compose.TabRow
 
 @Immutable
 data class ExplorePageItem(
@@ -55,31 +47,19 @@ data class ExplorePageItem(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ColumnScope.ExplorePageTab(
+private fun ExplorePageTab(
     pagerState: PagerState,
     pages: ImmutableList<ExplorePageItem>
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    TabRow(
-        selectedTabIndex = pagerState.currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(
-                pagerState = pagerState,
-                tabPositions = tabPositions
-            )
-        },
-        divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.topBarContent,
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .width(76.dp * pages.size),
-    ) {
+    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
         pages.fastForEachIndexed { index, item ->
             Tab(
                 text = { item.name(pagerState.currentPage == index) },
                 selected = pagerState.currentPage == index,
+                selectedContentColor = ExtendedTheme.colors.text,
+                unselectedContentColor = ExtendedTheme.colors.textSecondary,
                 onClick = {
                     coroutineScope.launch {
                         if (pagerState.currentPage == index) {
@@ -146,19 +126,8 @@ fun ExplorePage() {
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_explore)) },
-                actions = {
-                    ActionItem(
-                        icon = Symbols.Search,
-                        contentDescription = stringResource(id = R.string.title_search)
-                    ) {
-                        navigator.navigate(SearchKey())
-                    }
-                },
-            ) {
-                ExplorePageTab(pagerState = pagerState, pages = pages)
-            }
+            // The tabs are the page's title; the bottom bar already names the page
+            GlassTopBar(title = { ExplorePageTab(pagerState = pagerState, pages = pages) })
         },
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
