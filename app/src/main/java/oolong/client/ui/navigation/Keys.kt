@@ -140,3 +140,7 @@ data object MoreSettingsKey : Key
 
 @Serializable
 data object AboutKey : Key
+
+/** The design system's controls on one page; debug builds only. */
+@Serializable
+data object ControlCatalogKey : Key

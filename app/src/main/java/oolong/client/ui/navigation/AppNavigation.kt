@@ -76,6 +76,7 @@ import oolong.client.ui.page.settings.account.AccountManagePage
 import oolong.client.ui.page.settings.block.BlockRulePage
 import oolong.client.ui.page.settings.block.BlockSettingsPage
 import oolong.client.ui.page.settings.block.blocklist.BlockListPage
+import oolong.client.ui.page.settings.catalog.ControlCatalogPage
 import oolong.client.ui.page.settings.custom.CustomSettingsPage
 import oolong.client.ui.page.settings.custom.FontSizePage
 import oolong.client.ui.page.settings.custom.SearchPlacementPage
@@ -133,6 +134,7 @@ private fun KeyContent(key: Key) {
         OKSignSettingsKey -> OKSignSettingsPage()
         MoreSettingsKey -> MoreSettingsPage()
         AboutKey -> AboutPage()
+        ControlCatalogKey -> ControlCatalogPage()
     }
 }
 

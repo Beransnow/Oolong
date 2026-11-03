@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import oolong.client.BuildConfig
 import oolong.client.R
 import oolong.client.dataStore
 import oolong.client.models.database.Account
@@ -23,6 +24,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AccountManageKey
 import oolong.client.ui.navigation.BlockSettingsKey
+import oolong.client.ui.navigation.ControlCatalogKey
 import oolong.client.ui.navigation.CustomSettingsKey
 import oolong.client.ui.navigation.HabitSettingsKey
 import oolong.client.ui.navigation.LoginKey
@@ -166,6 +168,17 @@ fun SettingsPage(
                             leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.MoreHoriz, contentDescription = null) } },
                             onClick = { navigator.navigate(MoreSettingsKey) }
                         )
+                    }
+                }
+                if (BuildConfig.DEBUG) {
+                    prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                        prefsItem {
+                            TextPref(
+                                title = "控件目录",
+                                leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Category, contentDescription = null) } },
+                                onClick = { navigator.navigate(ControlCatalogKey) }
+                            )
+                        }
                     }
                 }
             }
