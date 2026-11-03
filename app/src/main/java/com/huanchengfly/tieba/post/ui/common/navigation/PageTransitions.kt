@@ -249,24 +249,21 @@ object PageTransitions {
 
         val underPageDim = if (ExtendedTheme.colors.isNightMode) UnderPageDimNight else UnderPageDim
         val transition = LocalNavAnimatedContentScope.current.transition
-        // A pane of a wider scene dims as its own content changes. Not a page framed alone: it
-        // goes by where it is, and an animation of its own would throw out the fraction the
-        // display plays its transition by ([seeked])
-        val dim = if (key == null) {
-            // Entering on a pop means coming back from underneath; leaving on a push means being covered
-            val isPop = LocalIsPop.current
-            transition.animateFloat(
-                transitionSpec = { spec() },
-                label = "PageDim",
-            ) { state ->
-                when (state) {
-                    EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
-                    EnterExitState.Visible -> 0f
-                    EnterExitState.PostExit -> if (isPop) 0f else underPageDim
-                }
+        // How covered the page is by the one coming or going over it. A pane of a wider scene
+        // dims by this as its own content changes. A page framed alone mostly goes by where it is,
+        // but stays put under a page growing out of one of its origins, and dims by this then; it
+        // follows the display's fraction ([seeked]), as any of its animations must
+        // Entering on a pop means coming back from underneath; leaving on a push means being covered
+        val isPop = LocalIsPop.current
+        val dim = transition.animateFloat(
+            transitionSpec = { if (key == null) spec() else seeked() },
+            label = "PageDim",
+        ) { state ->
+            when (state) {
+                EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
+                EnterExitState.Visible -> 0f
+                EnterExitState.PostExit -> if (isPop) 0f else underPageDim
             }
-        } else {
-            null
         }
         // Where the page is, against the host that pages slide within
         val host = LocalPageHost.current
@@ -294,6 +291,17 @@ object PageTransitions {
                 onDispose {
                     if (peek.restingKey == key) peek.restingKey = null
                     if (peek.topKey == key) peek.reset()
+                }
+            }
+            // How far the page on top has gone, by its transition rather than where it is: a page
+            // morphing back into what it opened from shrinks in place instead of sliding out, and
+            // the dim underneath has to go with it all the same
+            val gone = transition.animateFloat(transitionSpec = { seeked() }, label = "PageGone") { state ->
+                if (state == EnterExitState.PostExit) 1f else 0f
+            }
+            LaunchedEffect(peek, key) {
+                snapshotFlow { if (peek.topKey == key) gone.value else null }.collect { value ->
+                    if (value != null) peek.exit = maxOf(peek.exit, value)
                 }
             }
         }
@@ -371,10 +379,12 @@ object PageTransitions {
                         val towardStart = (host.left - pageX.floatValue) * (if (layoutDirection == LayoutDirection.Rtl) -1f else 1f)
                         val underneath = towardStart > 0f
                         val distance = abs(towardStart)
-                        if (underneath) underPageDim * (distance / (width * UnderPageOffset)).coerceIn(0f, 1f) else 0f
+                        val slid = if (underneath) underPageDim * (distance / (width * UnderPageOffset)).coerceIn(0f, 1f) else 0f
+                        // Under a page growing out of it or shrinking back, it doesn't move
+                        if (moving) maxOf(slid, dim.value) else slid
                     } else if (moving) {
                         // A pane of a wider scene: its own animation, only while pages move
-                        dim?.value ?: 0f
+                        dim.value
                     } else {
                         0f
                     }
