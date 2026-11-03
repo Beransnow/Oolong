@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <queries>
+        <package android:name="oolong.client" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Migration">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Oolong starts this for a result; it checks who is asking before anything else -->
+        <activity
+            android:name=".ExportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Migration.Dialog">
+            <intent-filter>
+                <action android:name="com.huanchengfly.tieba.post.action.EXPORT_DATA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Serves the one export file, only to whom a result grants it -->
+        <provider
+            android:name=".ExportProvider"
+            android:authorities="com.huanchengfly.tieba.post.export"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

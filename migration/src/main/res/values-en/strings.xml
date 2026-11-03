@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tieba Lite</string>
+    <string name="moved_title">Tieba Lite is now Oolong</string>
+    <string name="moved_body">Once Oolong has imported your data, you can uninstall this app</string>
+    <string name="open_oolong">Open Oolong</string>
+    <string name="get_oolong">Get Oolong</string>
+    <string name="consent_title">Import this data into Oolong?</string>
+    <string name="consent_accounts">Accounts and sign-ins</string>
+    <string name="consent_settings">Settings and theme</string>
+    <string name="consent_records">History, hide rules and drafts</string>
+    <string name="cancel">Cancel</string>
+    <string name="export">Import</string>
+    <string name="exporting">Preparing</string>
+    <string name="export_failed">Couldn’t read the data. Try again later</string>
+</resources>

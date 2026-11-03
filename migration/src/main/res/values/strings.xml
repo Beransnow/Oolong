@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">贴吧 Lite</string>
+    <string name="moved_title">贴吧 Lite 已更名为 Oolong</string>
+    <string name="moved_body">在 Oolong 中导入数据后，可卸载本应用</string>
+    <string name="open_oolong">打开 Oolong</string>
+    <string name="get_oolong">获取 Oolong</string>
+    <string name="consent_title">将以下数据导入 Oolong？</string>
+    <string name="consent_accounts">账号与登录状态</string>
+    <string name="consent_settings">设置与主题</string>
+    <string name="consent_records">浏览记录、屏蔽规则与草稿</string>
+    <string name="cancel">取消</string>
+    <string name="export">导入</string>
+    <string name="exporting">正在准备</string>
+    <string name="export_failed">无法读取数据，稍后重试</string>
+</resources>

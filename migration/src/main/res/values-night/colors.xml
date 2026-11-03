@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="page">#FF0B0F1A</color>
+    <color name="surface">#FF1A1F2B</color>
+    <color name="text">#FFF2F5FC</color>
+    <color name="text_secondary">#FFAAB2C5</color>
+    <color name="emphasis">#FFF2F5FC</color>
+    <color name="on_emphasis">#FF10182B</color>
+    <color name="soft">#1FFFFFFF</color>
+    <color name="scrim">#73000000</color>
+</resources>
