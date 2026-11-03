@@ -81,6 +81,7 @@ switch_access_shortcut
 task_alt
 text_fields
 title
+toc
 tune
 unfold_less
 unfold_more

@@ -22,6 +22,10 @@ data class ThreadKey(
     val scrollToReply: Boolean = false,
 ) : Key
 
+/** 沉浸阅读 of a thread: its author's floors as one text. */
+@Serializable
+data class ReaderKey(val threadId: Long, val forumId: Long? = null) : Key
+
 @Serializable
 data class SubPostsKey(
     val threadId: Long,

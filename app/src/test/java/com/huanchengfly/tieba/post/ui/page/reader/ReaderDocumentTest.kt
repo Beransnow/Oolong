@@ -111,6 +111,12 @@ class ReaderDocumentTest {
     }
 
     @Test
+    fun picturesStayWhereTheyStand() {
+        val doc = buildReaderDocument(listOf(post(1, "第一段$long", images = 1)))
+        assertEquals(listOf(ReaderBlock.Paragraph::class, ReaderBlock.Media::class, ReaderBlock.Foot::class), doc.blocks.drop(1).map { it::class })
+    }
+
+    @Test
     fun aLongPauseStartsAnUpdate() {
         val day = 86_400L
         val posts = listOf(post(1, long, time = 0), post(2, long, time = 3600), post(3, long, time = 30 * day))

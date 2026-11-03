@@ -63,7 +63,13 @@ sealed interface ReaderBlock {
     /** A scene break the author wrote as a column of lone "。". */
     data class Break(override val key: String, override val floor: Int, override val time: Long) : ReaderBlock
 
-    data class Media(override val key: String, override val floor: Int, override val time: Long, val content: PostContent) : ReaderBlock
+    data class Media(
+        override val key: String,
+        override val floor: Int,
+        override val time: Long,
+        val postId: Long,
+        val content: PostContent,
+    ) : ReaderBlock
 
     /** The author's short floors between two chapters, folded. */
     data class Notes(override val key: String, override val floor: Int, override val time: Long, val notes: List<Note>) : ReaderBlock
@@ -235,19 +241,28 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
         }
         lastTime = post.time
 
-        val lines = post.lines().toMutableList()
-        val media = post.content.filter { it !is PostContent.Text && it !is PostContent.Voice }
+        // The floor in order: its lines, and pictures and videos where they stand between them
+        val pieces = post.content.flatMapTo(mutableListOf<Any>()) { content ->
+            when (content) {
+                is PostContent.Text -> listOf(content).wordText.split('\n').map { it.trim() }
+                is PostContent.Voice -> emptyList()
+                else -> listOf(content)
+            }
+        }
         val heads = mutableListOf<Pair<HeadingLine, HeadingKind>>()
-        while (heads.size < HEADINGS_PER_FLOOR && lines.isNotEmpty()) {
-            val kind = kinds.firstOrNull { it.read(lines[0]) != null } ?: break
-            val heading = kind.read(lines.removeAt(0))!!
+        while (heads.size < HEADINGS_PER_FLOOR) {
+            val at = pieces.indexOfFirst { it is String && it.isNotEmpty() }
+            if (at < 0) break
+            val kind = kinds.firstOrNull { it.read(pieces[at] as String) != null } ?: break
+            val heading = kind.read(pieces.removeAt(at) as String)!!
             heads += heading to kind
             if (heading.rest.isNotEmpty()) {
-                lines.add(0, heading.rest)
+                pieces.add(at, heading.rest)
                 break
             }
-            while (lines.isNotEmpty() && lines[0].isEmpty()) lines.removeAt(0)
         }
+        val lines = pieces.filterIsInstance<String>().dropWhile { it.isEmpty() }
+        val media = pieces.filterIsInstance<PostContent>()
 
         val length = post.content.wordText.trim().length
         if (heads.isEmpty() && media.isEmpty() && length < NOTE_LENGTH) {
@@ -272,8 +287,20 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
             blocks += ReaderBlock.Heading(key(), post.floor, post.time, heading.title, kind.level)
             if (kind.level == 1) lastChapter = heading.title
         }
-        media.forEach { blocks += ReaderBlock.Media(key(), post.floor, post.time, it) }
-        typeset(lines) { make -> blocks += make(key(), post.floor, post.time) }
+        var run = mutableListOf<String>()
+        fun flushRun() {
+            typeset(run) { make -> blocks += make(key(), post.floor, post.time) }
+            run = mutableListOf()
+        }
+        pieces.forEach { piece ->
+            if (piece is String) {
+                run += piece
+            } else {
+                flushRun()
+                blocks += ReaderBlock.Media(key(), post.floor, post.time, post.id, piece as PostContent)
+            }
+        }
+        flushRun()
         blocks += ReaderBlock.Foot("f${post.id}", post.floor, post.time, post.id, post.subPostCount)
     }
     flushNotes()

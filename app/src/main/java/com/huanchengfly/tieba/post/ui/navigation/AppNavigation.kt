@@ -69,6 +69,7 @@ import com.huanchengfly.tieba.post.ui.page.main.NavigationRail
 import com.huanchengfly.tieba.post.ui.page.main.notifications.NotificationsPage
 import com.huanchengfly.tieba.post.ui.page.main.rememberMainTabItems
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewerHost
+import com.huanchengfly.tieba.post.ui.page.reader.ReaderPage
 import com.huanchengfly.tieba.post.ui.page.search.SearchPage
 import com.huanchengfly.tieba.post.ui.page.settings.SettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.about.AboutPage
@@ -103,6 +104,7 @@ private fun KeyContent(key: Key) {
     when (key) {
         MainKey -> MainPage()
         is ThreadKey -> ThreadPage(key)
+        is ReaderKey -> ReaderPage(key)
         is SubPostsKey -> SubPostsPage(key)
         is SubPostsSheetKey -> SubPostsSheetPage(key)
         is ForumKey -> ForumPage(key)

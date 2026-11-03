@@ -809,4 +809,45 @@
     <string name="rule_group_close">)</string>
     <string name="rule_in_forum">"in %1$s"</string>
     <string name="rule_not_in_forum">"not in %1$s"</string>
+    <string name="reader_beginning">Beginning</string>
+    <string name="reader_contents">Contents</string>
+    <string name="reader_chapters">Chapters</string>
+    <string name="reader_updates">Updates</string>
+    <string name="reader_text">Text</string>
+    <string name="reader_font_size">Size</string>
+    <string name="reader_line_spacing">Spacing</string>
+    <string name="reader_spacing_tight">Tight</string>
+    <string name="reader_spacing_normal">Normal</string>
+    <string name="reader_spacing_loose">Loose</string>
+    <string name="reader_font">Font</string>
+    <string name="reader_font_sans">Sans</string>
+    <string name="reader_font_serif">Serif</string>
+    <string name="reader_page">Page</string>
+    <string name="reader_page_white">White</string>
+    <string name="reader_page_paper">Paper</string>
+    <string name="reader_page_green">Green</string>
+    <string name="reader_updated">Updated %1$s</string>
+    <string name="reader_updated_after">Updated %1$s · %2$s later</string>
+    <plurals name="reader_months">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <plurals name="reader_weeks">
+        <item quantity="one">%d week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+    <plurals name="reader_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="reader_notes">
+        <item quantity="one">%d note from the author</item>
+        <item quantity="other">%d notes from the author</item>
+    </plurals>
+    <plurals name="reader_floors">
+        <item quantity="one">%d post</item>
+        <item quantity="other">%d posts</item>
+    </plurals>
+    <string name="reader_pictures">Pictures</string>
+    <string name="reader_up_to_date">You\'re up to date</string>
 </resources>
