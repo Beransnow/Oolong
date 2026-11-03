@@ -19,7 +19,7 @@ data class UpdateState(
     val check: UpdateCheck = UpdateCheck.Idle,
     val download: UpdateDownload = UpdateDownload.Idle,
     val autoCheck: Boolean = true,
-    val channel: UpdateChannel = UpdateChannel.Stable,
+    val channel: UpdateChannel = UpdateChannel.default,
 ) {
     /** The newer release to offer, if the last check found one. */
     val offered: Release? get() = (check as? UpdateCheck.Done)?.latest?.takeIf { it.isNewer }

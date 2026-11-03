@@ -26,11 +26,35 @@ val keystoreFile = keystoreProperties.getProperty("keystore.file", "")
 val sha: String? = System.getenv("GITHUB_SHA")
 val isCI: String? = System.getenv("CI")
 val isSelfBuild = isCI.isNullOrEmpty() || !isCI.equals("true", ignoreCase = true)
-val applicationVersionCode = applicationProperties.getProperty("versionCode").toInt()
 var applicationVersionName: String = applicationProperties.getProperty("versionName")
 val isPreRelease = applicationProperties.getProperty("isPreRelease").toBoolean()
+val preReleaseName: String = applicationProperties.getProperty("preReleaseName")
+val preReleaseVer = applicationProperties.getProperty("preReleaseVer").toInt()
+
+/**
+ * The version code follows from the name, so releases always order as their names do: major ×
+ * 1,000,000 + minor × 10,000 + patch × 100 + stage, where alpha.n is 10 + n, beta.n 30 + n, rc.n
+ * 60 + n and the release itself 99. So 1.0.0-alpha.1 < 1.0.0-beta.2 < 1.0.0 < 1.0.1.
+ */
+val applicationVersionCode: Int = run {
+    val (major, minor, patch) = applicationVersionName.split(".").map { it.toInt() }
+    require(minor in 0..99 && patch in 0..99) { "minor and patch must be 0–99: $applicationVersionName" }
+    val stage = if (!isPreRelease) {
+        99
+    } else {
+        require(preReleaseVer in 1..19) { "preReleaseVer must be 1–19: $preReleaseVer" }
+        val base = when (preReleaseName) {
+            "alpha" -> 10
+            "beta" -> 30
+            "rc" -> 60
+            else -> error("preReleaseName must be alpha, beta or rc: $preReleaseName")
+        }
+        base + preReleaseVer
+    }
+    major * 1_000_000 + minor * 10_000 + patch * 100 + stage
+}
 if (isPreRelease) {
-    applicationVersionName += "-${applicationProperties.getProperty("preReleaseName")}.${applicationProperties.getProperty("preReleaseVer")}"
+    applicationVersionName += "-$preReleaseName.$preReleaseVer"
 }
 if (!isSelfBuild && !sha.isNullOrEmpty()) {
     applicationVersionName += "+${sha.substring(0, 7)}"

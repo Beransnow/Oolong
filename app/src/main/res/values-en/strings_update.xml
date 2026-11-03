@@ -17,6 +17,7 @@
     <string name="update_settings">Settings</string>
     <string name="update_auto_check">Check automatically</string>
     <string name="update_channel">Channel</string>
+    <string name="update_channel_stable_note">This is a pre-release. No update comes until a release is newer than it</string>
     <string name="update_channel_stable">Stable</string>
     <string name="update_channel_beta">Beta</string>
     <string name="update_hint">Version %1$s is available</string>

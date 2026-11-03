@@ -68,7 +68,23 @@ data class Release(
         notes[locale.language] ?: notes["zh"] ?: notes.values.firstOrNull().orEmpty()
 }
 
-enum class UpdateChannel(val key: String) { Stable("stable"), Beta("beta") }
+/**
+ * Stable has releases only; beta has the alpha, beta and rc builds too, and always offers the newest
+ * of everything, a release included.
+ */
+enum class UpdateChannel(val key: String) {
+    Stable("stable"),
+    Beta("beta"),
+    ;
+
+    companion object {
+        /** A pre-release build (named 1.0.0-alpha.1 and the like) is on beta until the user says otherwise. */
+        val default: UpdateChannel get() = if (InstalledIsPreRelease) Beta else Stable
+    }
+}
+
+/** Whether the build installed is a pre-release, which stable releases may be older than. */
+val InstalledIsPreRelease: Boolean = BuildConfig.VERSION_NAME.substringBefore('+').contains('-')
 
 sealed interface UpdateCheck {
     data object Idle : UpdateCheck
@@ -125,7 +141,7 @@ class UpdateRepository @Inject constructor(
     private val prefs = context.dataStore
     val autoCheck: Flow<Boolean> = prefs.data.map { it[AutoCheckKey] ?: true }
     val channel: Flow<UpdateChannel> = prefs.data.map { prefs ->
-        UpdateChannel.entries.firstOrNull { it.key == prefs[ChannelKey] } ?: UpdateChannel.Stable
+        UpdateChannel.entries.firstOrNull { it.key == prefs[ChannelKey] } ?: UpdateChannel.default
     }
 
     /** A newer release the user hasn't skipped, for the About page's row and the launch hint. */
@@ -178,7 +194,18 @@ class UpdateRepository @Inject constructor(
         }
     }
 
-    private suspend fun fetch(channel: UpdateChannel): Release = withContext(io) {
+    /** The channel's latest release; on beta, the newer of beta's and stable's. */
+    private suspend fun fetch(channel: UpdateChannel): Release = when (channel) {
+        UpdateChannel.Stable -> fetchManifest(UpdateChannel.Stable)
+        UpdateChannel.Beta -> {
+            val found = UpdateChannel.entries.map { runCatching { fetchManifest(it) } }
+            // Either manifest may be missing, as stable is before the first release
+            found.mapNotNull { it.getOrNull() }.maxByOrNull { it.versionCode }
+                ?: throw found.first().exceptionOrNull()!!
+        }
+    }
+
+    private suspend fun fetchManifest(channel: UpdateChannel): Release = withContext(io) {
         val request = Request.Builder()
             .url("$UpdateHost/update/${channel.key}.json")
             // The manifest changes in place: never take it from a cache on the way

@@ -86,6 +86,10 @@ def main():
         sys.exit(f"not Oolong: {package}")
     if RELEASE_CERT_SHA256 not in signer_digests(args.apk):
         sys.exit("not signed with the Oolong release key (Astral Studio); refusing to publish")
+    # Pre-releases go to beta, releases to stable; beta offers releases too, by reading both
+    pre_release = "-" in version_name.split("+")[0]
+    if pre_release != (args.channel == "beta"):
+        sys.exit(f"{version_name} is {'a pre-release' if pre_release else 'a release'}: publish it to {'beta' if pre_release else 'stable'}")
     with open(args.notes, encoding="utf-8") as f:
         notes = json.load(f)
 

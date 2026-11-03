@@ -47,6 +47,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import oolong.client.BuildConfig
 import oolong.client.R
+import oolong.client.repository.InstalledIsPreRelease
 import oolong.client.repository.Release
 import oolong.client.repository.UpdateChannel
 import oolong.client.repository.UpdateCheck
@@ -257,6 +258,14 @@ private fun Settings(state: UpdateState, onAutoCheck: (Boolean) -> Unit, onChann
             ProvideTextStyle(TextStyles.bodyCompact.copy(color = colors.textSecondary)) {
                 PrefsChoiceValue(text = stringResource(id = state.channel.label), modifier = Modifier.menuAnchor(menu))
             }
+        }
+        // Android can't go back to an older version, so stable has nothing for a pre-release until it passes it
+        if (state.channel == UpdateChannel.Stable && InstalledIsPreRelease) {
+            Text(
+                text = stringResource(id = R.string.update_channel_stable_note),
+                style = TextStyles.caption.copy(color = colors.textSecondary),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+            )
         }
     }
 }

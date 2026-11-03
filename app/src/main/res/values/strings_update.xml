@@ -17,6 +17,7 @@
     <string name="update_settings">设置</string>
     <string name="update_auto_check">自动检查更新</string>
     <string name="update_channel">更新通道</string>
+    <string name="update_channel_stable_note">当前为测试版，正式版超过当前版本之前不会收到更新</string>
     <string name="update_channel_stable">正式版</string>
     <string name="update_channel_beta">测试版</string>
     <string name="update_hint">发现新版本 %1$s</string>
