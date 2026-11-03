@@ -21,6 +21,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.pendingIntentFlagImmutable
+import oolong.client.repository.AccountRepository
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.core.network.message.MessageRemoteDataSource
 import javax.inject.Inject
@@ -29,6 +30,9 @@ import javax.inject.Inject
 class NotifyJobService : JobService() {
     @Inject
     lateinit var messages: MessageRemoteDataSource
+
+    @Inject
+    lateinit var accounts: AccountRepository
 
     private val scope = MainScope()
     var notificationManager: NotificationManager? = null
@@ -58,6 +62,8 @@ class NotifyJobService : JobService() {
                 createChannel(CHANNEL_AT, getString(R.string.title_at_me))
             }
         }
+        // Logged out, the server answers with no counts at all
+        if (accounts.current.value == null) return false
         scope.launch {
             val message = try {
                 messages.reminder().message
@@ -73,11 +79,9 @@ class NotifyJobService : JobService() {
             }
             if (notificationManager != null) {
                 var total = 0
-                if ("0" != message.replyMe) {
-                    val replyCount = message.replyMe?.let { Integer.valueOf(it) }
-                    if (replyCount != null) {
-                        total += replyCount
-                    }
+                val replyCount = message.replyMe?.toIntOrNull() ?: 0
+                if (replyCount > 0) {
+                    total += replyCount
                     sendBroadcast(
                         Intent()
                             .setAction(ACTION_NEW_MESSAGE)
@@ -87,7 +91,7 @@ class NotifyJobService : JobService() {
                     updateNotification(
                         getString(
                             R.string.tips_message_reply,
-                            message.replyMe
+                            replyCount.toString()
                         ),
                         ID_REPLY,
                         CHANNEL_REPLY,
@@ -95,21 +99,19 @@ class NotifyJobService : JobService() {
                         Intent(ACTION_VIEW, Uri.parse("oolong://notifications/0")).setPackage(packageName)
                     )
                 }
-                if ("0" != message.atMe) {
-                    val atCount = message.atMe?.let { Integer.valueOf(it) }
-                    if (atCount != null) {
-                        total += atCount
-                    }
+                val atCount = message.atMe?.toIntOrNull() ?: 0
+                if (atCount > 0) {
+                    total += atCount
                     sendBroadcast(
                         Intent()
                             .setAction(ACTION_NEW_MESSAGE)
                             .putExtra("channel", CHANNEL_AT)
-                            .putExtra("count", message.atMe)
+                            .putExtra("count", atCount)
                     )
                     updateNotification(
                         getString(
                             R.string.tips_message_at,
-                            message.atMe
+                            atCount.toString()
                         ),
                         ID_AT,
                         CHANNEL_AT,
