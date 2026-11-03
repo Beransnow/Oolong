@@ -55,12 +55,14 @@ fun ReaderPage(
     var fontSize by rememberPreferenceAsMutableState(intPreferencesKey("reader_font_size"), ReaderStyle.DEFAULT_FONT_SIZE)
     var spacing by rememberPreferenceAsMutableState(intPreferencesKey("reader_spacing"), 1)
     var serif by rememberPreferenceAsMutableState(booleanPreferencesKey("reader_serif"), false)
+    var weight by rememberPreferenceAsMutableState(intPreferencesKey("reader_weight"), 0)
     var paper by rememberPreferenceAsMutableState(stringPreferencesKey("reader_paper"), ReaderPaper.White.name)
     val style = ReaderStyle(
         fontSize = fontSize,
         spacing = spacing,
         serif = serif,
         page = ReaderPaper.entries.firstOrNull { it.name == paper } ?: ReaderPaper.White,
+        weight = weight,
     )
     val thread = state.thread
     val photoViewData = remember(thread?.id, thread?.forum) {
@@ -101,6 +103,7 @@ fun ReaderPage(
             spacing = it.spacing
             serif = it.serif
             paper = it.page.name
+            weight = it.weight
         },
         onBack = navigator::navigateUp,
         onLoadMore = viewModel::loadMore,

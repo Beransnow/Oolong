@@ -811,6 +811,10 @@
     <string name="reader_spacing_tight">紧凑</string>
     <string name="reader_spacing_normal">适中</string>
     <string name="reader_spacing_loose">宽松</string>
+    <string name="reader_weight">字重</string>
+    <string name="reader_weight_regular">常规</string>
+    <string name="reader_weight_medium">中等</string>
+    <string name="reader_weight_bold">较粗</string>
     <string name="reader_font">字体</string>
     <string name="reader_font_sans">黑体</string>
     <string name="reader_font_serif">宋体</string>

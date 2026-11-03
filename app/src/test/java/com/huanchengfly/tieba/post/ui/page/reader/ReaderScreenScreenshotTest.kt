@@ -104,4 +104,11 @@ class ReaderScreenScreenshotTest {
     @Test
     @Config(qualifiers = "+en")
     fun chromeEnglish() = capture(chrome = true)
+
+    @Test
+    fun mediumWeight() = capture(chrome = false, style = ReaderStyle(weight = 1))
+
+    @Test
+    @Config(qualifiers = "+w1280dp-h800dp-land-xhdpi")
+    fun tablet() = capture(chrome = true)
 }

@@ -822,6 +822,10 @@
     <string name="reader_spacing_tight">Tight</string>
     <string name="reader_spacing_normal">Normal</string>
     <string name="reader_spacing_loose">Loose</string>
+    <string name="reader_weight">Weight</string>
+    <string name="reader_weight_regular">Regular</string>
+    <string name="reader_weight_medium">Medium</string>
+    <string name="reader_weight_bold">Bold</string>
     <string name="reader_font">Font</string>
     <string name="reader_font_sans">Sans</string>
     <string name="reader_font_serif">Serif</string>

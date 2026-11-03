@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +36,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -108,6 +111,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.pressScale
 import com.huanchengfly.tieba.post.ui.common.theme.compose.scrim
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.LocalWindowSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
+import com.huanchengfly.tieba.post.ui.navigation.MaxReadingWidth
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -128,7 +132,10 @@ data class ReaderStyle(
     val spacing: Int = 1,
     val serif: Boolean = false,
     val page: ReaderPaper = ReaderPaper.White,
+    val weight: Int = 0,
 ) {
+    val fontWeight: FontWeight get() = WEIGHTS[weight.coerceIn(WEIGHTS.indices)]
+
     val lineHeight: Float get() = LINE_HEIGHTS[spacing.coerceIn(LINE_HEIGHTS.indices)]
     val fontFamily: FontFamily get() = if (serif) FontFamily.Serif else FontFamily.Default
 
@@ -136,12 +143,16 @@ data class ReaderStyle(
         const val DEFAULT_FONT_SIZE = 17
         val FONT_SIZES = listOf(15, 17, 19, 21)
         val LINE_HEIGHTS = listOf(1.6f, 30f / 17, 2f)
+
+        /** Body weights the design allows: regular to semibold. */
+        val WEIGHTS = listOf(FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold)
     }
 }
 
 /** The body text: indented, justified, with paired punctuation squeezed by the font. */
 private fun ReaderStyle.paragraph() = TextStyle(
     fontFamily = fontFamily,
+    fontWeight = fontWeight,
     fontSize = fontSize.sp,
     lineHeight = fontSize.sp * lineHeight,
     letterSpacing = 0.01.em,
@@ -204,7 +215,46 @@ fun ReaderScreen(
 ) {
     val colors = ExtendedTheme.colors.onPaper(style.page)
     CompositionLocalProvider(LocalExtendedColors provides colors) {
-        ReaderContent(state, style, onStyleChange, onBack, onLoadMore, onRetry, onOpenSubPosts, onReadUpTo, photoViewData, modifier, listState, initialChrome)
+        BoxWithConstraints(modifier = modifier) {
+            // Wide enough, the contents stay open beside the text
+            if (maxWidth >= TwoPaneMinWidth && maxHeight >= TwoPaneMinHeight) {
+                val scope = rememberCoroutineScope()
+                val current by remember(listState) { derivedStateOf { (listState.firstVisibleItemIndex - 1).coerceAtLeast(0) } }
+                Row(modifier = Modifier.background(colors.background)) {
+                    ContentsPane(
+                        document = state.document,
+                        current = current,
+                        loading = state.hasMore,
+                        onGo = { index -> scope.launch { listState.scrollToItem(index + 1) } },
+                    )
+                    Box(Modifier.fillMaxHeight().width(1.dp).background(colors.divider))
+                    ReaderContent(
+                        state, style, onStyleChange, onBack, onLoadMore, onRetry, onOpenSubPosts, onReadUpTo, photoViewData,
+                        Modifier.weight(1f), listState, initialChrome, contentsOpen = true,
+                    )
+                }
+            } else {
+                ReaderContent(
+                    state, style, onStyleChange, onBack, onLoadMore, onRetry, onOpenSubPosts, onReadUpTo, photoViewData,
+                    Modifier, listState, initialChrome, contentsOpen = false,
+                )
+            }
+        }
+    }
+}
+
+/** The contents, open beside the text on a wide window: on paper, like the text. */
+@Composable
+private fun ContentsPane(document: ReaderDocument, current: Int, loading: Boolean, onGo: (block: Int) -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(ContentsPaneWidth)
+            .fillMaxHeight()
+            .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
+            .padding(horizontal = Spacing.md)
+            .padding(top = Spacing.md),
+    ) {
+        Contents(document, current, loading, onGo, listModifier = Modifier.weight(1f))
     }
 }
 
@@ -224,6 +274,7 @@ private fun ReaderContent(
     modifier: Modifier,
     listState: LazyListState,
     initialChrome: Boolean,
+    contentsOpen: Boolean,
 ) {
     val colors = ExtendedTheme.colors
     val document = state.document
@@ -249,8 +300,8 @@ private fun ReaderContent(
             .collect { last -> if (last >= listState.layoutInfo.totalItemsCount - PRELOAD_BLOCKS) onLoadMore() }
     }
     // The contents list what has loaded, so while it is open the rest loads
-    LaunchedEffect(sheet, document, state.hasMore) {
-        if (sheet == ReaderSheet.Contents && state.hasMore) onLoadMore()
+    LaunchedEffect(sheet, contentsOpen, document, state.hasMore) {
+        if ((sheet == ReaderSheet.Contents || contentsOpen) && state.hasMore) onLoadMore()
     }
     LaunchedEffect(listState, document) {
         snapshotFlow { current }
@@ -298,7 +349,7 @@ private fun ReaderContent(
                     modifier = Modifier.align(Alignment.BottomCenter),
                 ) {
                     ReaderBottomBar(
-                        onContents = { sheet = ReaderSheet.Contents },
+                        onContents = if (contentsOpen) null else ({ sheet = ReaderSheet.Contents }),
                         onText = { sheet = ReaderSheet.Text },
                     )
                 }
@@ -329,10 +380,12 @@ private fun ReaderContent(
         ) {
             val typesetting = rememberTypesetting(style.paragraph())
             // The text column a whole number of characters wide, so lines of plain Chinese end flush
+            // Centred and at most the reading width on wide windows
             val margin = with(LocalDensity.current) {
-                val text = constraints.maxWidth - 2 * pageMargin.toPx()
+                val width = constraints.maxWidth.toFloat()
+                val text = minOf(width, MaxReadingWidth.toPx()) - 2 * pageMargin.toPx()
                 val snapped = if (typesetting.advance > 0f) (text / typesetting.advance).toInt() * typesetting.advance else text
-                pageMargin + ((text - snapped) / 2).coerceAtLeast(0f).toDp()
+                ((width - snapped) / 2).coerceAtLeast(0f).toDp()
             }
             LazyColumn(
                 state = listState,
@@ -510,6 +563,7 @@ private fun ReaderBlockView(
                         fontSize = chatSize,
                         lineHeight = chatSize * 1.65f,
                         fontFamily = style.fontFamily,
+                        fontWeight = style.fontWeight,
                         style = TextStyle(fontFeatureSettings = PUNCTUATION_SQUEEZE),
                         color = colors.text,
                         modifier = Modifier.padding(start = Spacing.xs),
@@ -615,7 +669,7 @@ private fun ReaderEnd(loading: LoadStatus, hasMore: Boolean, empty: Boolean, onR
 
 /** The tools, in a capsule like the navigation bar's: icons with short labels. */
 @Composable
-private fun ReaderBottomBar(onContents: () -> Unit, onText: () -> Unit) {
+private fun ReaderBottomBar(onContents: (() -> Unit)?, onText: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -628,7 +682,7 @@ private fun ReaderBottomBar(onContents: () -> Unit, onText: () -> Unit) {
                 .floatingGlass(BarShape)
                 .padding(Spacing.xxs),
         ) {
-            BarTool(Symbols.Toc, stringResource(R.string.reader_contents), onContents)
+            if (onContents != null) BarTool(Symbols.Toc, stringResource(R.string.reader_contents), onContents)
             BarTool(Symbols.TextFields, stringResource(R.string.reader_text), onText)
         }
     }
@@ -657,7 +711,7 @@ private val BarShape = RoundedCornerShape(percent = 50)
 /** A sheet over the reader that closes when swiped down, the scrim is tapped or back is pressed. */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun ReaderSheetLayout(onDismiss: () -> Unit, content: @Composable (close: () -> Unit) -> Unit) {
+private fun ReaderSheetLayout(onDismiss: () -> Unit, content: @Composable ColumnScope.(close: () -> Unit) -> Unit) {
     val colors = ExtendedTheme.colors
     val scope = rememberCoroutineScope()
     val state = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, animationSpec = Motion.settle(), skipHalfExpanded = true)
@@ -696,58 +750,73 @@ private fun ReaderSheetLayout(onDismiss: () -> Unit, content: @Composable (close
 
 @Composable
 private fun ContentsSheet(document: ReaderDocument, current: Int, loading: Boolean, onGo: (block: Int) -> Unit, onDismiss: () -> Unit) {
+    ReaderSheetLayout(onDismiss) { close ->
+        Contents(
+            document = document,
+            current = current,
+            loading = loading,
+            onGo = { block ->
+                onGo(block)
+                close()
+            },
+            listModifier = Modifier.heightIn(max = 480.dp),
+        )
+    }
+}
+
+/** The chapters, when the thread numbers them, and the updates, with where the reader is marked. */
+@Composable
+private fun ColumnScope.Contents(
+    document: ReaderDocument,
+    current: Int,
+    loading: Boolean,
+    onGo: (block: Int) -> Unit,
+    listModifier: Modifier,
+) {
     val colors = ExtendedTheme.colors
     val hasChapters = document.chapters.isNotEmpty()
     var chapters by rememberSaveable { mutableStateOf(hasChapters) }
-    ReaderSheetLayout(onDismiss) { close ->
-        Text(text = stringResource(R.string.reader_contents), style = TextStyles.title, color = colors.text)
-        if (hasChapters) {
-            SegmentedControl(
-                options = persistentListOf(stringResource(R.string.reader_chapters), stringResource(R.string.reader_updates)),
-                selected = if (chapters) 0 else 1,
-                onSelect = { chapters = it == 0 },
-                modifier = Modifier.padding(top = Spacing.sm).fillMaxWidth(),
-            )
-        }
-        val currentChapter = document.chapterAt(current)
-        val currentUpdate = document.updateAt(current)
-        val listState = rememberLazyListState(initialFirstVisibleItemIndex = ((if (chapters) currentChapter else currentUpdate) - 3).coerceAtLeast(0))
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .padding(top = Spacing.sm)
-                .heightIn(max = 480.dp),
-        ) {
-            if (chapters) {
-                itemsIndexed(document.chapters, key = { i, _ -> "c$i" }) { i, chapter ->
-                    ContentsRow(
-                        title = chapter.title,
-                        detail = formatDate(chapter.time),
-                        indent = chapter.level > 1,
-                        selected = i == currentChapter,
-                    ) {
-                        onGo(chapter.block)
-                        close()
-                    }
-                }
-            } else {
-                itemsIndexed(document.updates, key = { i, _ -> "u$i" }) { i, update ->
-                    ContentsRow(
-                        title = formatDate(update.time),
-                        subtitle = update.preview ?: stringResource(R.string.reader_pictures),
-                        detail = pluralStringResource(R.plurals.reader_floors, update.floors, update.floors),
-                        selected = i == currentUpdate,
-                    ) {
-                        onGo(update.block)
-                        close()
-                    }
-                }
+    Text(text = stringResource(R.string.reader_contents), style = TextStyles.title, color = colors.text)
+    if (hasChapters) {
+        SegmentedControl(
+            options = persistentListOf(stringResource(R.string.reader_chapters), stringResource(R.string.reader_updates)),
+            selected = if (chapters) 0 else 1,
+            onSelect = { chapters = it == 0 },
+            modifier = Modifier.padding(top = Spacing.sm).fillMaxWidth(),
+        )
+    }
+    val currentChapter = document.chapterAt(current)
+    val currentUpdate = document.updateAt(current)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = ((if (chapters) currentChapter else currentUpdate) - 3).coerceAtLeast(0))
+    LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .padding(top = Spacing.sm)
+            .then(listModifier),
+    ) {
+        if (chapters) {
+            itemsIndexed(document.chapters, key = { i, _ -> "c$i" }) { i, chapter ->
+                ContentsRow(
+                    title = chapter.title,
+                    detail = formatDate(chapter.time),
+                    indent = chapter.level > 1,
+                    selected = i == currentChapter,
+                ) { onGo(chapter.block) }
             }
-            if (loading) {
-                item(key = "loading") {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(Spacing.md)) {
-                        CircularProgressIndicator(color = colors.textSecondary, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                    }
+        } else {
+            itemsIndexed(document.updates, key = { i, _ -> "u$i" }) { i, update ->
+                ContentsRow(
+                    title = formatDate(update.time),
+                    subtitle = update.preview ?: stringResource(R.string.reader_pictures),
+                    detail = pluralStringResource(R.plurals.reader_floors, update.floors, update.floors),
+                    selected = i == currentUpdate,
+                ) { onGo(update.block) }
+            }
+        }
+        if (loading) {
+            item(key = "loading") {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(Spacing.md)) {
+                    CircularProgressIndicator(color = colors.textSecondary, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -809,6 +878,13 @@ private fun TextSheet(style: ReaderStyle, onChange: (ReaderStyle) -> Unit, onDis
                 listOf(R.string.reader_spacing_tight, R.string.reader_spacing_normal, R.string.reader_spacing_loose).forEachIndexed { i, label ->
                     Option(selected = style.spacing == i, onClick = { onChange(style.copy(spacing = i)) }) {
                         Text(text = stringResource(label), style = TextStyles.caption, color = it)
+                    }
+                }
+            }
+            OptionRow(stringResource(R.string.reader_weight)) {
+                listOf(R.string.reader_weight_regular, R.string.reader_weight_medium, R.string.reader_weight_bold).forEachIndexed { i, label ->
+                    Option(selected = style.weight == i, onClick = { onChange(style.copy(weight = i)) }) {
+                        Text(text = stringResource(label), style = TextStyles.caption, fontWeight = ReaderStyle.WEIGHTS[i], color = it)
                     }
                 }
             }
@@ -908,3 +984,8 @@ private const val LONG_PAUSE = 14 * DAY
 private const val PRELOAD_BLOCKS = 60
 
 private val RunningHeadHeight = 36.dp
+
+/** The window size from which the contents stay open beside the text, as two panes elsewhere. */
+private val TwoPaneMinWidth = 840.dp
+private val TwoPaneMinHeight = 480.dp
+private val ContentsPaneWidth = 320.dp

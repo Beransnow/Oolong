@@ -145,7 +145,8 @@ internal val Key.paneRole: PaneRole?
         MainKey, is ForumKey, is SearchKey, HistoryKey, ThreadStoreKey, HotTopicListKey,
         is ForumSearchPostKey, SettingsKey, is NotificationsKey -> PaneRole.List
 
-        LoginKey, TranslucentThemeKey -> PaneRole.Full
+        // The reader takes the whole window, laying out its own contents beside the text when wide
+        LoginKey, TranslucentThemeKey, is ReaderKey -> PaneRole.Full
         is SubPostsSheetKey -> null
         else -> PaneRole.Detail
     }
