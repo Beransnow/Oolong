@@ -109,31 +109,45 @@ fun <T : Any> PageDisplay(
         }
         when (wanted) {
             // Going on, or settled with the scene recalculated
-            to -> if (from != to) state.play(wanted, segment.drive, fraction)
+            to -> {
+                segment.turningRound = false
+                if (from != to) state.play(wanted, segment.drive, fraction)
+            }
             // Turning round: driven, from where it is and as fast as it moves, so it carries on a
             // moment before it comes back
             from -> {
+                segment.turningRound = true
                 state.driveTo(0f, segment.drive, fraction)
                 state.snapTo(wanted)
+                segment.turningRound = false
             }
-            // Somewhere new, from where things are
+            // Somewhere new, from where things are going: a move still under way ends there at
+            // once, as only two scenes can move at a time. Left to carry on, the scene it was
+            // leaving would move as if it were the one being gone from, the scene it was going
+            // to stranded beside it. One being turned round is going back where it came from
             else -> {
-                val fromScene = known[to] ?: known[from]
+                val landing = if (segment.turningRound) from else to
+                segment.turningRound = false
+                if (from != to) {
+                    state.snapTo(landing)
+                    // A frame for the scenes to take up where they landed, or the next move
+                    // starts them from where they were part way
+                    withFrameNanos { }
+                }
+                val fromScene = known[landing]
                 val toScene = known.getValue(wanted)
                 val next = fromScene?.let { transitionFor(it, toScene, peeking) }
                 segment.transform = next?.transform
                 segment.drive = next?.drive ?: segment.drive
                 // A page coming in goes over every page still showing, and one coming back under them
-                val shownZ = listOf(from, to).mapNotNull { zIndices[it] }
+                val shownZ = listOf(landing).mapNotNull { zIndices[it] }
                 zIndices[wanted] = when {
-                    next == null || next.zIndex == 0f -> zIndices[to] ?: 0f
+                    next == null || next.zIndex == 0f -> zIndices[landing] ?: 0f
                     next.zIndex > 0f -> (shownZ.maxOrNull() ?: 0f) + next.zIndex
                     else -> (shownZ.minOrNull() ?: 0f) + next.zIndex
                 }
                 fraction.value = 0f
                 fraction.velocity = 0f
-                // Pages still moving to another scene carry on to the end on their own springs,
-                // alongside the new move
                 if (peeking) {
                     // A peek waits at 0 for the finger to let go
                     state.seekTo(0f, wanted)
@@ -254,8 +268,8 @@ private class Fraction {
 }
 
 /**
- * Plays the transition on to [target] by [spec]. Played, not driven: a move interrupted by another
- * then carries on to its end on its own spring, alongside the new one.
+ * Plays the transition on to [target] by [spec], its pace sampled into [fraction] so that turning
+ * it round can take up from where it is and how fast it moves.
  */
 private suspend fun <S> SeekableTransitionState<S>.play(target: S, spec: FiniteAnimationSpec<Float>, fraction: Fraction) {
     fraction.played = true
@@ -298,4 +312,7 @@ private const val FrameNanos = 16_666_667L
 private class Segment {
     var transform: (AnimatedContentTransitionScope<SceneKey>.() -> ContentTransform)? = null
     var drive: FiniteAnimationSpec<Float> = PageTransitions.drive()
+
+    /** Being turned round, so going back to the scene it started from rather than on to its target. */
+    var turningRound = false
 }
