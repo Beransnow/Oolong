@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data-extraction-rules xmlns:tools="http://schemas.android.com/tools">
+<!--
+  Never backed up: what belongs to this install on this device, the identity the app reports to
+  the server and the crash logs. A cloud backup also leaves out the accounts, which live in the
+  database with the history, and the web view's login cookies; a transfer between phones carries
+  them, so the new phone stays signed in.
+-->
+<data-extraction-rules>
     <cloud-backup>
-        <exclude
-            domain="sharedpref"
-            path="crash.xml" />
-        <exclude
-            domain="file"
-            path="error"
-            tools:ignore="FullBackupContent" />
+        <exclude domain="sharedpref" path="appData.xml" />
+        <exclude domain="sharedpref" path="crash_logs.xml" />
+        <exclude domain="file" path="crashes" />
+        <exclude domain="database" path="app.db" />
+        <exclude domain="database" path="app.db-shm" />
+        <exclude domain="database" path="app.db-wal" />
+        <exclude domain="root" path="app_webview" />
     </cloud-backup>
     <device-transfer>
-        <exclude
-            domain="sharedpref"
-            path="crash.xml" />
-        <exclude
-            domain="file"
-            path="error"
-            tools:ignore="FullBackupContent" />
+        <exclude domain="sharedpref" path="appData.xml" />
+        <exclude domain="sharedpref" path="crash_logs.xml" />
+        <exclude domain="file" path="crashes" />
     </device-transfer>
 </data-extraction-rules>

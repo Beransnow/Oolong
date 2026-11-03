@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content xmlns:tools="http://schemas.android.com/tools">
-    <exclude
-        domain="sharedpref"
-        path="crash.xml" />
-    <exclude
-        domain="file"
-        path="error"
-        tools:ignore="FullBackupContent" />
+<!-- Before Android 12, as a cloud backup in data_extraction_rules.xml: no install identity, crash
+     logs, accounts or login cookies -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="appData.xml" />
+    <exclude domain="sharedpref" path="crash_logs.xml" />
+    <exclude domain="file" path="crashes" />
+    <exclude domain="database" path="app.db" />
+    <exclude domain="database" path="app.db-shm" />
+    <exclude domain="database" path="app.db-wal" />
+    <exclude domain="root" path="app_webview" />
 </full-backup-content>
