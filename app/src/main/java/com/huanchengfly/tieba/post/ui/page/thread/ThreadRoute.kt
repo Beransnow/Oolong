@@ -30,6 +30,7 @@ import com.huanchengfly.tieba.post.repository.ReplyTarget
 import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.ReaderKey
 import com.huanchengfly.tieba.post.ui.navigation.SubPostsSheetKey
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
@@ -139,7 +140,7 @@ fun ThreadRoute(
                 if (state.query.sort == ThreadSort.NewestFirst) ThreadSort.OldestFirst else ThreadSort.NewestFirst
             )
 
-            ThreadEvent.ToggleImmersive -> viewModel.toggleImmersive()
+            ThreadEvent.OpenReader -> navigator.navigate(ReaderKey(state.query.threadId, thread?.forum?.id ?: state.query.forumId))
             is ThreadEvent.JumpToPage -> viewModel.jumpToPage(event.page)
             ThreadEvent.OpenMenu -> Unit
             ThreadEvent.AgreeThread -> viewModel.agreeThread()

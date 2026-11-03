@@ -430,23 +430,6 @@ class ThreadViewModelTest {
     }
 
     @Test
-    fun `leaving immersive reading shows all posts again`() = runTest {
-        respond(data(listOf(post(2))), data(listOf(post(5, lz))), data(listOf(post(2))))
-        val viewModel = createViewModel()
-        runCurrent()
-
-        viewModel.toggleImmersive()
-        runCurrent()
-        assertTrue(viewModel.state.value.immersive)
-        assertTrue(viewModel.state.value.query.seeLz)
-
-        viewModel.toggleImmersive()
-        runCurrent()
-        assertFalse(viewModel.state.value.immersive)
-        assertFalse(viewModel.state.value.query.seeLz)
-    }
-
-    @Test
     fun `jumping to a page is only possible oldest first`() = runTest {
         respond(data(listOf(post(70))), data(listOf(post(31))))
         val viewModel = createViewModel(sortType = ThreadSort.NewestFirst.value)

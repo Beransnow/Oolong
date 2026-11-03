@@ -14,7 +14,7 @@ sealed interface ThreadEvent {
     data object LoadPrevious : ThreadEvent
     data class SetSeeLz(val seeLz: Boolean) : ThreadEvent
     data object ToggleSort : ThreadEvent
-    data object ToggleImmersive : ThreadEvent
+    data object OpenReader : ThreadEvent
     data class JumpToPage(val page: Int) : ThreadEvent
     data object OpenMenu : ThreadEvent
     data object AgreeThread : ThreadEvent

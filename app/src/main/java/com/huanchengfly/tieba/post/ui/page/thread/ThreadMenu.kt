@@ -43,7 +43,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 internal fun ColumnScope.ThreadMenu(
     seeLz: Boolean,
     stored: Boolean,
-    immersive: Boolean,
     newestFirst: Boolean,
     canDelete: Boolean,
     currentPage: Int,
@@ -73,8 +72,9 @@ internal fun ColumnScope.ThreadMenu(
         MenuToggle(
             text = stringResource(id = R.string.title_pure_read),
             icon = Symbols.ChromeReaderMode,
-            checked = immersive,
-            onClick = { onEvent(ThreadEvent.ToggleImmersive) },
+            checked = false,
+            role = Role.Button,
+            onClick = { onEvent(ThreadEvent.OpenReader) },
         )
     }
     Row(
@@ -122,6 +122,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuToggle(
     text: String,
     icon: ImageVector,
     checked: Boolean,
+    role: Role = Role.Switch,
     onClick: () -> Unit,
 ) {
     val colors = ExtendedTheme.colors
@@ -133,7 +134,7 @@ private fun androidx.compose.foundation.layout.RowScope.MenuToggle(
             .height(64.dp)
             .clip(SmoothCornerShape(14.dp))
             .background(background)
-            .clickable(role = Role.Switch, onClick = onClick),
+            .clickable(role = role, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {

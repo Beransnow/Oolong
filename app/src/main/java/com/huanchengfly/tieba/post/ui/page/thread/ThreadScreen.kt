@@ -156,7 +156,6 @@ fun ThreadScreen(
                             ThreadMenu(
                                 seeLz = state.query.seeLz,
                                 stored = thread.isStored,
-                                immersive = state.immersive,
                                 newestFirst = newestFirst,
                                 canDelete = viewer != null && thread.author.id == viewer.id,
                                 currentPage = state.currentPage,

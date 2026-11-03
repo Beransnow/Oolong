@@ -93,8 +93,6 @@ data class ThreadState(
     /** The furthest page loaded, and the number of pages, for jumping to a page. */
     val currentPage: Int = 0,
     val totalPage: Int = 0,
-    /** Only the thread author's posts, without replies inside posts or blocked content. */
-    val immersive: Boolean = false,
 )
 
 sealed interface ThreadEffect {
@@ -127,7 +125,6 @@ class ThreadViewModel @AssistedInject constructor(
     private data class Meta(
         val page: ThreadPage? = null,
         val maxPage: Int = 0,
-        val immersive: Boolean = false,
     )
 
     /** The thread as the list it was opened from showed it, if it was. */
@@ -221,7 +218,6 @@ class ThreadViewModel @AssistedInject constructor(
             viewer = page?.viewer ?: Viewer(null),
             currentPage = meta.maxPage,
             totalPage = page?.totalPage ?: 0,
-            immersive = meta.immersive,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ThreadState(query.value))
 
@@ -282,21 +278,6 @@ class ThreadViewModel @AssistedInject constructor(
         if (query.value.sort == sort) return
         query.update { it.copy(sort = sort) }
         show(ThreadCursor.first())
-    }
-
-    /** Whether only the author's posts were shown before immersive reading turned that on. */
-    private var seeLzBeforeImmersive = false
-
-    /** Immersive reading shows only the author's posts; leaving it shows what was shown before. */
-    fun toggleImmersive() {
-        val immersive = !meta.value.immersive
-        meta.update { it.copy(immersive = immersive) }
-        if (immersive) {
-            seeLzBeforeImmersive = query.value.seeLz
-            setSeeLz(true)
-        } else {
-            setSeeLz(seeLzBeforeImmersive)
-        }
     }
 
     fun agreeThread() = actions.launch("agree-thread") {

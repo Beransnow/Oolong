@@ -125,7 +125,6 @@ internal fun ThreadContent(
     )
     val options = PostCardOptions(
         threadAuthorId = state.thread?.author?.id ?: firstPost?.author?.id ?: 0L,
-        immersive = state.immersive,
         hideBlocked = preferences.hideBlocked,
         hideReply = preferences.hideReply,
     )
@@ -165,29 +164,18 @@ internal fun ThreadContent(
                     key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
                 ) { index, item ->
                     Container {
-                        if (options.immersive) {
-                            ThreadPostCard(
-                                item = item,
-                                options = options,
-                                onEvent = onEvent,
-                                isStoreMark = item.post.id == state.thread?.storeMarkPostId,
-                                canDelete = viewerId != null && item.post.author.id == viewerId,
-                                photoViewData = { photoViewData(item.post, it) },
-                            )
-                        } else {
-                            ThreadFloor(
-                                item = item,
-                                options = options,
-                                onEvent = onEvent,
-                                listState = listState,
-                                key = "$POST_KEY_PREFIX${item.post.id}",
-                                stickBelow = chromeEnd,
-                                startsRule = index == 0,
-                                isStoreMark = item.post.id == state.thread?.storeMarkPostId,
-                                canDelete = viewerId != null && item.post.author.id == viewerId,
-                                photoViewData = { photoViewData(item.post, it) },
-                            )
-                        }
+                        ThreadFloor(
+                            item = item,
+                            options = options,
+                            onEvent = onEvent,
+                            listState = listState,
+                            key = "$POST_KEY_PREFIX${item.post.id}",
+                            stickBelow = chromeEnd,
+                            startsRule = index == 0,
+                            isStoreMark = item.post.id == state.thread?.storeMarkPostId,
+                            canDelete = viewerId != null && item.post.author.id == viewerId,
+                            photoViewData = { photoViewData(item.post, it) },
+                        )
                     }
                 }
                 if (loadingFirstTime) {
@@ -223,25 +211,14 @@ private fun FirstPost(
 ) {
     Container {
         Column {
-            if (!options.immersive) {
-                ThreadFirstPost(
-                    post = post,
-                    state = state,
-                    options = options,
-                    isStoreMark = post.id == state.thread?.storeMarkPostId,
-                    canDelete = viewerId != null && post.author.id == viewerId,
-                    photoViewData = { photoViewData(post, it) },
-                    onEvent = onEvent,
-                )
-            } else ThreadPostCard(
-                item = PostItem(post),
+            ThreadFirstPost(
+                post = post,
+                state = state,
                 options = options,
-                // Replying to the first floor replies to the thread; it shows no replies inside it to reply to
-                onEvent = { event -> if (event is ThreadEvent.Reply) onEvent(ThreadEvent.Reply(null)) else onEvent(event) },
                 isStoreMark = post.id == state.thread?.storeMarkPostId,
                 canDelete = viewerId != null && post.author.id == viewerId,
-                showSubPosts = false,
                 photoViewData = { photoViewData(post, it) },
+                onEvent = onEvent,
             )
             state.thread?.shared?.let { shared ->
                 SharedThreadCard(
@@ -255,14 +232,6 @@ private fun FirstPost(
                             onEvent(ThreadEvent.OpenOriginThread(shared.id, shared.forumId))
                         }
                         .padding(16.dp)
-                )
-            }
-            if (options.immersive) {
-                VerticalDivider(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp),
-                    thickness = 2.dp
                 )
             }
         }
