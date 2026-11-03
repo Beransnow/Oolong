@@ -35,7 +35,10 @@ import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.chromePadding
 import oolong.client.ui.widgets.compose.loadMoreFooter
+import oolong.client.ui.widgets.compose.states.DefaultEmptyScreen
+import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -55,7 +58,9 @@ fun UserLikeForumPage(
         isError = error != null,
         isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
         onReload = onRefresh,
-        errorScreen = { ErrorScreen(error = error) },
+        errorScreen = { ErrorScreen(error = error, modifier = Modifier.chromePadding()) },
+        loadingScreen = { Box(modifier = Modifier.chromePadding()) { DefaultLoadingScreen() } },
+        emptyScreen = { Box(modifier = Modifier.chromePadding()) { DefaultEmptyScreen() } },
     ) {
         val lazyListState = rememberLazyListState()
 

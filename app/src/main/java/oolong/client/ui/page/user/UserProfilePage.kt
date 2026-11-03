@@ -1,20 +1,12 @@
 package oolong.client.ui.page.user
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,72 +14,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Tab
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.model.UserProfile
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
 import oolong.client.ui.common.navigation.openedWithHero
 import oolong.client.ui.common.navigation.pageHeroTarget
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.navigation.EditProfileKey
 import oolong.client.ui.navigation.Navigator
-import oolong.client.ui.navigation.UserFollowsKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
@@ -95,33 +52,33 @@ import oolong.client.ui.page.user.likeforum.UserLikeForumPage
 import oolong.client.ui.page.user.post.UserPostPage
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
-import oolong.client.ui.widgets.compose.Button
-import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
+import oolong.client.ui.widgets.compose.LocalPageAccent
 import oolong.client.ui.widgets.compose.MenuIconButton
-import oolong.client.ui.widgets.compose.NetworkImage
-import oolong.client.ui.widgets.compose.PagerTabIndicator
 import oolong.client.ui.widgets.compose.ProvideContentColor
 import oolong.client.ui.widgets.compose.PullRefresh
-import oolong.client.ui.widgets.compose.ScrollableTabRow
+import oolong.client.ui.widgets.compose.SharedHeaderPager
 import oolong.client.ui.widgets.compose.Sizes
-import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.pageWash
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
+import oolong.client.ui.widgets.compose.rememberAvatarAccent
+import oolong.client.ui.widgets.compose.rememberPageScrollState
+import oolong.client.ui.widgets.compose.rememberScrollProgress
+import oolong.client.ui.widgets.compose.rememberSharedHeaderState
+import oolong.client.ui.widgets.compose.sharedHeaderPinned
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
 import oolong.client.utils.TiebaUtil
-import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
 
 @Composable
 fun UserProfilePage(
@@ -250,26 +207,24 @@ private fun UserProfileContent(
     }
 }
 
+/**
+ * The bar: back, and blocking someone else; [title], and [pinnedContent] below it, [pinnedOffset]
+ * further down while the header above them is still in view.
+ */
 @Composable
 private fun UserProfileToolbar(
-    user: UserProfile,
     isSelf: Boolean,
-    showTitle: Boolean,
     onBack: () -> Unit,
     onAddToList: (allow: Boolean) -> Unit,
     /** Opens the blacklist settings; null when no one is logged in. */
     onBlack: (() -> Unit)?,
+    title: @Composable () -> Unit = {},
+    hiddenFraction: () -> Float = { 0f },
+    pinnedOffset: () -> Int = { 0 },
+    pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     GlassTopBar(
-        title = {
-            AnimatedVisibility(
-                visible = showTitle,
-                enter = fadeIn(Motion.fadeIn()),
-                exit = fadeOut(Motion.fadeOut())
-            ) {
-                ToolbarUserTitle(user = user)
-            }
-        },
+        title = title,
         navigationIcon = {
             BackNavigationIcon(onBackPressed = onBack)
         },
@@ -291,10 +246,66 @@ private fun UserProfileToolbar(
                 )
             }
         },
+        hiddenFraction = hiddenFraction,
+        pinnedOffset = pinnedOffset,
+        pinnedContent = pinnedContent,
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+/** The profile's tabs: what they started, their replies to the user themselves, and the forums they follow. */
+@Composable
+private fun rememberProfilePages(
+    isSelf: Boolean,
+    listContent: @Composable (UserTab, Boolean) -> Unit,
+): ImmutableList<UserProfilePageData> = remember(isSelf) {
+    listOfNotNull(
+        UserProfilePageData(
+            id = "threads",
+            tab = UserTab.Threads,
+            title = { stringResource(id = R.string.title_profile_threads_tab, it.threadCount.getShortNumString()) },
+            content = { tab, expanded -> listContent(tab, expanded) },
+        ),
+        UserProfilePageData(
+            id = "posts",
+            tab = UserTab.Posts,
+            title = { stringResource(id = R.string.title_profile_posts_tab, it.postCount.getShortNumString()) },
+            content = { tab, expanded -> listContent(tab, expanded) },
+        ).takeIf { isSelf },
+        UserProfilePageData(
+            id = "concern_forums",
+            tab = UserTab.Forums,
+            title = { stringResource(id = R.string.title_profile_concern_forums_tab, it.forumCount.toString()) },
+            content = { tab, expanded -> listContent(tab, expanded) },
+        ),
+    ).toImmutableList()
+}
+
+/** What the header's button does: edit one's own profile, or follow or unfollow someone else. */
+@Composable
+private fun profileButton(
+    user: UserProfile,
+    isSelf: Boolean,
+    showActionBtn: Boolean,
+    disableButton: Boolean,
+    onFollow: () -> Unit,
+    onUnfollow: () -> Unit,
+): (() -> Unit)? {
+    if (!showActionBtn) return null
+    val navigator = LocalNavigator.current
+    return {
+        when {
+            disableButton -> Unit
+            isSelf -> navigator.navigate(EditProfileKey)
+            !user.followed -> onFollow()
+            else -> onUnfollow()
+        }
+    }
+}
+
+/**
+ * The profile on a phone: the header over the tabs' lists, going up under the bar as they scroll,
+ * the avatar and name docking in the bar, and the tabs staying under it.
+ */
 @Composable
 private fun UserProfileContentNormal(
     user: UserProfile,
@@ -309,207 +320,78 @@ private fun UserProfileContentNormal(
     /** Opens the blacklist settings; null when no one is logged in. */
     onBlack: (() -> Unit)?,
     listContent: @Composable (UserTab, Boolean) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
-    val density = LocalDensity.current
-
-    var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
-    // Unknown until the header has been measured, and it is not cut down till then: a guess
-    // shorter than it showed only its bottom, without the avatar, as the page came in
-    var headerHeight by rememberSaveable { mutableFloatStateOf(HeaderUnmeasured) }
-
-    val isShowHeaderArea by remember {
-        derivedStateOf {
-            headerHeight == HeaderUnmeasured || heightOffset.absoluteValue < headerHeight
-        }
-    }
-
-    GlassScaffold(
-        topBar = {
-            UserProfileToolbar(
-                user = user,
-                isSelf = isSelf,
-                showTitle = !isShowHeaderArea,
-                onBack = onBack,
-                onAddToList = onAddToList,
-                onBlack = onBlack,
-            )
-        }
-    ) { paddingValues ->
-        var isFakeRefreshing by remember { mutableStateOf(false) }
-
-        LaunchedEffect(isFakeRefreshing) {
-            if (isFakeRefreshing) {
-                delay(1000)
-                isFakeRefreshing = false
-            }
-        }
-
-        PullRefresh(
-            refreshing = isFakeRefreshing,
-            onRefresh = {
-                onRefresh()
-                isFakeRefreshing = true
+    val pages = rememberProfilePages(isSelf, listContent)
+    val pagerState = rememberPagerState { pages.size }
+    val pageScroll = rememberPageScrollState()
+    val header = rememberSharedHeaderState(pageScroll)
+    // Once the header has gone, the bar's row follows the scroll away and back; the tabs stay
+    val away = rememberScrollProgress(away = GlassTopBarRowHeight, enabled = { header.gone }, page = pageScroll)
+    val accent = rememberAvatarAccent(StringUtil.getAvatarUrl(user.portrait))
+    CompositionLocalProvider(LocalPageAccent provides accent) {
+        GlassScaffold(
+            backgroundColor = Color.Transparent,
+            pageScroll = pageScroll,
+            topBar = {
+                UserProfileToolbar(
+                    isSelf = isSelf,
+                    onBack = onBack,
+                    onAddToList = onAddToList,
+                    onBlack = onBlack,
+                    title = { UserProfileBarTitle(user) },
+                    hiddenFraction = { away.value },
+                    pinnedOffset = { header.pinnedOffset },
+                    pinnedContent = {
+                        UserProfileTabRow(
+                            user = user,
+                            pages = pages,
+                            pagerState = pagerState,
+                            modifier = Modifier
+                                .align(Alignment.Start)
+                                .sharedHeaderPinned(header)
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    },
+                )
             },
-            indicatorTop = paddingValues.calculateTopPadding(),
-        ) {
-            val headerNestedScrollConnection = remember {
-                object : NestedScrollConnection {
-                    override fun onPreScroll(
-                        available: Offset,
-                        source: NestedScrollSource,
-                    ): Offset {
-                        if (available.y < 0) {
-                            val prevHeightOffset = heightOffset
-                            if (headerHeight == HeaderUnmeasured) return Offset.Zero
-                            heightOffset = max(heightOffset + available.y, -headerHeight)
-                            if (prevHeightOffset != heightOffset) {
-                                return available.copy(x = 0f)
-                            }
-                        }
-
-                        return Offset.Zero
-                    }
-
-                    override fun onPostScroll(
-                        consumed: Offset,
-                        available: Offset,
-                        source: NestedScrollSource,
-                    ): Offset {
-                        if (available.y > 0f) {
-                            // Adjust the height offset in case the consumed delta Y is less than what was
-                            // recorded as available delta Y in the pre-scroll.
-                            val prevHeightOffset = heightOffset
-                            heightOffset = min(heightOffset + available.y, 0f)
-                            if (prevHeightOffset != heightOffset) {
-                                return available.copy(x = 0f)
-                            }
-                        }
-
-                        return Offset.Zero
-                    }
+        ) { contentPadding ->
+            var isFakeRefreshing by remember { mutableStateOf(false) }
+            LaunchedEffect(isFakeRefreshing) {
+                if (isFakeRefreshing) {
+                    delay(1000)
+                    isFakeRefreshing = false
                 }
             }
-
             ProvideContentColor(color = ExtendedTheme.colors.text) {
-                // The header collapses under the bar; the tab lists scroll to the screen bottom.
-                Column(
-                    modifier = Modifier
-                        .padding(top = paddingValues.calculateTopPadding())
-                        .nestedScroll(headerNestedScrollConnection)
-                ) {
-                    val pages = remember {
-                        listOfNotNull(
-                            UserProfilePageData(
-                                id = "threads",
-                                tab = UserTab.Threads,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_threads_tab,
-                                        it.threadCount.getShortNumString()
-                                    )
-                                },
-                                content = { tab, fluid -> listContent(tab, fluid) }
-                            ),
-                            UserProfilePageData(
-                                id = "posts",
-                                tab = UserTab.Posts,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_posts_tab,
-                                        it.postCount.getShortNumString()
-                                    )
-                                },
-                                content = { tab, fluid -> listContent(tab, fluid) }
-                            ).takeIf { isSelf },
-                            UserProfilePageData(
-                                id = "concern_forums",
-                                tab = UserTab.Forums,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_concern_forums_tab,
-                                        it.forumCount.toString()
-                                    )
-                                },
-                                content = { tab, fluid -> listContent(tab, fluid) }
-                            ),
-                        ).toImmutableList()
-                    }
-                    val pagerState = rememberPagerState { pages.size }
-
-                    val containerHeight by remember {
-                        derivedStateOf {
-                            with(density) {
-                                (headerHeight + heightOffset).toDp()
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .then(if (headerHeight == HeaderUnmeasured) Modifier else Modifier.height(containerHeight))
-                            .clipToBounds()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .wrapContentHeight(
-                                    align = Alignment.Bottom,
-                                    unbounded = true
-                                )
-                                .onSizeChanged {
-                                    headerHeight = it.height.toFloat()
-                                }
-                        ) {
-                            UserProfileDetail(
-                                user = user,
-                                modifier = Modifier
-                                    .padding(16.dp)
-                                    .padding(top = 8.dp),
-                                showBtn = showActionBtn,
-                                isSelf = isSelf,
-                                onBtnClick = {
-                                    if (disableButton || !showActionBtn) {
-                                        return@UserProfileDetail
-                                    }
-                                    if (isSelf) {
-                                        navigator.navigate(EditProfileKey)
-                                    } else if (!user.followed) {
-                                        onFollow()
-                                    } else {
-                                        onUnfollow()
-                                    }
-                                },
-                                onCopyIdClick = {
-                                    TiebaUtil.copyText(
-                                        context,
-                                        user.id.toString()
-                                    )
-                                }
-                            )
-                        }
-                    }
-
-                    UserProfileTabRow(
-                        user = user,
-                        pages = pages,
-                        pagerState = pagerState,
-//                                    modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-
-                    CompositionLocalProvider(
-                        LocalChromePadding provides
-                            PaddingValues(bottom = paddingValues.calculateBottomPadding())
-                    ) {
-                        LazyLoadHorizontalPager(
-                            state = pagerState,
-                            key = { pages[it].id },
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            pages[it].content(pages[it].tab, false)
-                        }
-                    }
+                SharedHeaderPager(
+                    state = header,
+                    pagerState = pagerState,
+                    contentPadding = contentPadding,
+                    key = { pages[it].id },
+                    wash = pageWash(),
+                    // The header and the lists follow a pull; the colour behind them stays
+                    frame = { content ->
+                        PullRefresh(
+                            refreshing = isFakeRefreshing,
+                            onRefresh = {
+                                onRefresh()
+                                isFakeRefreshing = true
+                            },
+                            indicatorTop = contentPadding.calculateTopPadding(),
+                        ) { content() }
+                    },
+                    header = {
+                        UserProfileHeader(
+                            user = user,
+                            isSelf = isSelf,
+                            onButton = profileButton(user, isSelf, showActionBtn, disableButton, onFollow, onUnfollow),
+                            onCopyId = { TiebaUtil.copyText(context, user.tiebaUid) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                ) { page ->
+                    pages[page].content(pages[page].tab, false)
                 }
             }
         }
@@ -533,14 +415,11 @@ private fun UserProfileContentExpanded(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.current
 
     GlassScaffold(
         topBar = {
             UserProfileToolbar(
-                user = user,
                 isSelf = isSelf,
-                showTitle = false,
                 onBack = onBack,
                 onAddToList = onAddToList,
                 onBlack = onBlack,
@@ -559,70 +438,18 @@ private fun UserProfileContentExpanded(
                         .align(Alignment.TopCenter),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val pages = remember {
-                        listOfNotNull(
-                            UserProfilePageData(
-                                id = "threads",
-                                tab = UserTab.Threads,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_threads_tab,
-                                        it.threadCount.getShortNumString()
-                                    )
-                                },
-                                content = { tab, expanded -> listContent(tab, expanded) }
-                            ),
-                            UserProfilePageData(
-                                id = "posts",
-                                tab = UserTab.Posts,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_posts_tab,
-                                        it.postCount.getShortNumString()
-                                    )
-                                },
-                                content = { tab, expanded -> listContent(tab, expanded) }
-                            ).takeIf { isSelf },
-                            UserProfilePageData(
-                                id = "concern_forums",
-                                tab = UserTab.Forums,
-                                title = {
-                                    stringResource(
-                                        id = R.string.title_profile_concern_forums_tab,
-                                        it.forumCount.toString()
-                                    )
-                                },
-                                content = { tab, expanded -> listContent(tab, expanded) }
-                            ),
-                        ).toImmutableList()
-                    }
+                    val pages = rememberProfilePages(isSelf, listContent)
                     val pagerState = rememberPagerState { pages.size }
 
-                    UserProfileDetail(
+                    UserProfileHeader(
                         user = user,
+                        isSelf = isSelf,
+                        onButton = profileButton(user, isSelf, showActionBtn, disableButton, onFollow, onUnfollow),
+                        onCopyId = { TiebaUtil.copyText(context, user.tiebaUid) },
                         modifier = Modifier
                             .weight(1f)
                             .align(Alignment.Top),
-                        showBtn = showActionBtn,
-                        isSelf = isSelf,
-                        onBtnClick = {
-                            if (disableButton || !showActionBtn) {
-                                return@UserProfileDetail
-                            }
-                            if (isSelf) {
-                                navigator.navigate(EditProfileKey)
-                            } else if (!user.followed) {
-                                onFollow()
-                            } else {
-                                onUnfollow()
-                            }
-                        },
-                        onCopyIdClick = {
-                            TiebaUtil.copyText(
-                                context,
-                                user.id.toString()
-                            )
-                        }
+                        docking = false,
                     )
 
                     Column(
@@ -661,310 +488,6 @@ data class UserProfilePageData(
     val content: @Composable (UserTab, Boolean) -> Unit,
 )
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun UserProfileTabRow(
-    user: UserProfile,
-    pages: ImmutableList<UserProfilePageData>,
-    pagerState: PagerState,
-    modifier: Modifier = Modifier,
-) {
-    val coroutineScope = rememberCoroutineScope()
-
-    val tabTextStyle = MaterialTheme.typography.button.copy(
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        letterSpacing = 0.sp
-    )
-
-    ScrollableTabRow(
-        selectedTabIndex = pagerState.currentPage,
-        indicator = { tabPositions ->
-            PagerTabIndicator(
-                pagerState = pagerState,
-                tabPositions = tabPositions
-            )
-        },
-        divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = ExtendedTheme.colors.emphasis,
-        edgePadding = 0.dp,
-        modifier = modifier.wrapContentWidth(align = Alignment.Start),
-    ) {
-        pages.fastForEachIndexed { i, pageData ->
-            Tab(
-                selected = pagerState.currentPage == i,
-                onClick = {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(i)
-                    }
-                },
-                selectedContentColor = ExtendedTheme.colors.emphasis,
-                unselectedContentColor = ExtendedTheme.colors.textSecondary,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .height(48.dp)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Text(text = pageData.title(user), style = tabTextStyle)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ToolbarUserTitle(
-    user: UserProfile,
-    modifier: Modifier = Modifier,
-) {
-    UserHeader(
-        avatar = {
-            Avatar(
-                data = StringUtil.getAvatarUrl(user.portrait),
-                size = Sizes.Small,
-                contentDescription = null
-            )
-        },
-        name = {
-            Text(
-                text = StringUtil.getUsernameAnnotatedString(
-                    LocalContext.current,
-                    user.name,
-                    user.displayName,
-                    LocalContentColor.current
-                )
-            )
-        },
-        modifier = modifier
-    )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun UserProfileDetail(
-    user: UserProfile,
-    modifier: Modifier = Modifier,
-    showBtn: Boolean = true,
-    isSelf: Boolean = false,
-    onBtnClick: () -> Unit = {},
-    onCopyIdClick: () -> Unit = {},
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val avatar = StringUtil.getBigAvatarUrl(user.portrait)
-            // Over the small avatar lists show, already at hand, until the big one loads; where
-            // an avatar a profile was opened from lands
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .pageHeroTarget()
-                    .size(ProfileAvatarSize)
-                    .clip(CircleShape),
-            ) {
-                Avatar(data = StringUtil.getAvatarUrl(user.portrait), contentDescription = null, modifier = Modifier.matchParentSize(), decodedAt = Sizes.Small)
-                // Opens in the picture viewer, where it can be saved
-                NetworkImage(
-                    imageUri = avatar,
-                    contentDescription = null,
-                    modifier = Modifier.matchParentSize(),
-                    photoViewData = remember(avatar) {
-                        PhotoViewData(
-                            picItems = listOf(
-                                PicItem(picId = "avatar:${user.portrait}", picIndex = 1, url = avatar, originUrl = avatar, showOriginBtn = false, originSize = 0),
-                            ),
-                        )
-                    },
-                    contentScale = ContentScale.Crop,
-                    skipNetworkCheck = true,
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            if (showBtn) {
-                Button(
-                    onClick = onBtnClick,
-                    colors = if (!user.followed || isSelf) {
-                        ButtonDefaults.buttonColors()
-                    } else {
-                        ButtonDefaults.outlinedButtonColors()
-                    },
-                    border = if (!user.followed || isSelf) {
-                        null
-                    } else {
-                        ButtonDefaults.outlinedBorder
-                    },
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (isSelf) {
-                            Icon(imageVector = Symbols.Edit, contentDescription = null)
-                            Text(text = stringResource(id = R.string.menu_edit_info))
-                        } else if (!user.followed) {
-                            Icon(imageVector = Symbols.Add, contentDescription = null)
-                            Text(text = stringResource(id = R.string.button_follow))
-                        } else {
-                            Text(text = stringResource(id = R.string.button_unfollow))
-                        }
-                    }
-                }
-            }
-        }
-        Text(
-            text = StringUtil.getUsernameAnnotatedString(
-                LocalContext.current,
-                user.name,
-                user.displayName,
-                LocalContentColor.current
-            ),
-            style = MaterialTheme.typography.h6,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = FontWeight.Bold
-        )
-        ProvideTextStyle(value = MaterialTheme.typography.body2) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.height(IntrinsicSize.Min)
-            ) {
-                // Each count opens the list it counts
-                val navigator = LocalNavigator.current
-                val name = user.nameShow.ifEmpty { user.name }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.clickable(role = Role.Button) { navigator.navigate(UserFollowsKey(user.id, fans = false, name = name)) },
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.text_stat_follow),
-                        color = ExtendedTheme.colors.textSecondary
-                    )
-                    Text(
-                        text = user.followCount.getShortNumString(),
-                        color = ExtendedTheme.colors.text,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                HorizontalDivider(modifier = Modifier.fillMaxHeight())
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.clickable(role = Role.Button) { navigator.navigate(UserFollowsKey(user.id, fans = true, name = name)) },
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.text_stat_fans),
-                        color = ExtendedTheme.colors.textSecondary
-                    )
-                    Text(
-                        text = user.fanCount.getShortNumString(),
-                        color = ExtendedTheme.colors.text,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                HorizontalDivider(modifier = Modifier.fillMaxHeight())
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.text_stat_agrees),
-                        color = ExtendedTheme.colors.textSecondary
-                    )
-                    Text(
-                        text = user.agreeCount.getShortNumString(),
-                        color = ExtendedTheme.colors.text,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-        Text(
-            text = user.intro.takeIf { it.isNotEmpty() }
-                ?: stringResource(id = R.string.tip_no_intro),
-            style = MaterialTheme.typography.body2,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        val verifiedText = user.bazhuTitle ?: user.godField?.let { stringResource(id = R.string.text_god_verify, it) }
-        if (verifiedText != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Symbols.Verified,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = ExtendedTheme.colors.emphasis,
-                )
-                Text(
-                    text = verifiedText,
-                    style = MaterialTheme.typography.body2,
-                    color = ExtendedTheme.colors.emphasis,
-                )
-            }
-        }
-        val sexEmoji = when (user.sex) {
-            1 -> "♂"
-            2 -> "♀"
-            else -> "?"
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Chip(text = sexEmoji, invertColor = true)
-            Chip(
-                text = stringResource(
-                    id = R.string.text_profile_user_id,
-                    user.tiebaUid
-                ),
-                appendIcon = {
-                    Icon(
-                        imageVector = Symbols.ContentCopy,
-                        contentDescription = null
-                    )
-                },
-                onClick = onCopyIdClick
-            )
-            if (user.ipLocation.isNotEmpty()) {
-                Chip(
-                    text = stringResource(
-                        id = R.string.text_profile_ip_location,
-                        user.ipLocation
-                    ),
-                )
-            }
-            Chip(
-                text = stringResource(
-                    id = R.string.text_profile_tb_age,
-                    user.tbAge
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun HorizontalDivider(modifier: Modifier = Modifier) {
-    Box(
-        modifier = Modifier
-            .background(ExtendedTheme.colors.divider)
-            .width(1.dp)
-            .then(modifier)
-    )
-}
-
 /**
  * A profile while it loads, opened from an avatar: the bar and the avatar where the header will
  * show it, so the avatar has somewhere to land; the rest stands in grey.
@@ -977,19 +500,17 @@ private fun UserProfileSkeleton(avatar: String?, onBack: () -> Unit) {
         },
     ) { paddingValues ->
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
-                .padding(16.dp)
-                .padding(top = 8.dp),
+                .padding(HeaderPadding),
         ) {
             // At the size lists show it, so it is the copy at hand, there from the start
             Avatar(
                 data = avatar,
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(bottom = 16.dp)
                     .pageHeroTarget()
                     .size(ProfileAvatarSize),
                 decodedAt = Sizes.Small,
@@ -999,8 +520,3 @@ private fun UserProfileSkeleton(avatar: String?, onBack: () -> Unit) {
         }
     }
 }
-
-private val ProfileAvatarSize = 96.dp
-
-/** A header height not yet measured. */
-private const val HeaderUnmeasured = -1f

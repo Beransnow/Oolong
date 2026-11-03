@@ -61,6 +61,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.chromePadding
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
@@ -89,7 +90,9 @@ fun UserPostPage(
         onReload = onRefresh,
         loadingScreen = {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .chromePadding(),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Column {
@@ -99,11 +102,12 @@ fun UserPostPage(
                 }
             }
         },
-        errorScreen = { ErrorScreen(error = error) },
+        errorScreen = { ErrorScreen(error = error, modifier = Modifier.chromePadding()) },
         emptyScreen = {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .chromePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.TopCenter
