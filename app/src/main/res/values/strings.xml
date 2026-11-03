@@ -880,4 +880,14 @@
     <string name="text_auto_sign_not_started">点按打开 Oolong 即可签到。允许「闹钟和提醒」后可按时自动签到。</string>
     <string name="follows_empty_follows">还没有关注任何人</string>
     <string name="follows_empty_fans">还没有粉丝</string>
+    <string name="landing_slogan">清爽逛吧</string>
+    <string name="landing_import_hint">可从贴吧 Lite 导入账号与设置</string>
+    <string name="landing_import">导入数据</string>
+    <string name="landing_skip_import">暂不导入</string>
+    <string name="landing_skip_login">暂不登录</string>
+    <string name="landing_importing">正在导入</string>
+    <string name="landing_imported">导入完成</string>
+    <string name="landing_imported_body">账号与设置已导入</string>
+    <string name="landing_start">开始使用</string>
+    <string name="landing_uninstall_legacy">卸载旧版</string>
 </resources>

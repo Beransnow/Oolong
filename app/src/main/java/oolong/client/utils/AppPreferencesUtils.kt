@@ -48,6 +48,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var ignoreBatteryOptimizationsDialog by DataStoreDelegates.boolean(defaultValue = false)
 
+    /** Whether the first-launch landing page has been seen through. */
+    var landingShown by DataStoreDelegates.boolean(defaultValue = false, key = "landing_shown")
+
     var appIcon by DataStoreDelegates.string(
         defaultValue = LauncherIcons.DEFAULT_ICON,
         key = AppIconUtil.PREF_KEY_APP_ICON

@@ -105,6 +105,7 @@ import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.navigation.rememberAppBackStack
 import oolong.client.ui.navigation.toDeepLinkKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.landing.LandingHost
 import oolong.client.ui.page.settings.block.BlockShortcuts
 import oolong.client.ui.page.settings.block.BlockShortcutsHost
 import oolong.client.ui.page.settings.block.LocalBlockShortcuts
@@ -157,7 +158,7 @@ val LocalDevicePosture =
 private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "tbfrs", "tbpb", "com.baidu.tieba")
 
 // Length of the splash icon animation in ic_splash_screen_anim
-private const val SPLASH_ICON_MILLIS = 400L
+internal const val SPLASH_ICON_MILLIS = 400L
 
 @AndroidEntryPoint
 class MainActivityV2 : AppCompatActivity() {
@@ -510,6 +511,8 @@ class MainActivityV2 : AppCompatActivity() {
                         BlockShortcutsHost(blockShortcuts)
                         CopySheetHost(copySheets)
                         AppDialogHost()
+                        // Over everything, on first launch and after an import
+                        LandingHost()
                     }
                 }
 

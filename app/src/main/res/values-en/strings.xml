@@ -896,4 +896,14 @@
     <string name="toast_import_legacy_failed">Couldn’t import the data. Try again later</string>
     <string name="follows_empty_follows">Not following anyone yet</string>
     <string name="follows_empty_fans">No followers yet</string>
+    <string name="landing_slogan">Tieba, refreshed</string>
+    <string name="landing_import_hint">You can bring your accounts and settings over from Tieba Lite</string>
+    <string name="landing_import">Import data</string>
+    <string name="landing_skip_import">Not now</string>
+    <string name="landing_skip_login">Not now</string>
+    <string name="landing_importing">Importing</string>
+    <string name="landing_imported">Import complete</string>
+    <string name="landing_imported_body">Your accounts and settings are here</string>
+    <string name="landing_start">Get started</string>
+    <string name="landing_uninstall_legacy">Uninstall the old app</string>
 </resources>
