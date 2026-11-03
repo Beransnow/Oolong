@@ -39,7 +39,7 @@ import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.TextStyles
-import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.blockReason
 import oolong.client.ui.widgets.compose.floatingGlass
 import javax.inject.Inject
@@ -164,7 +164,7 @@ private fun UndoToast(notice: BlockShortcuts.Notice, onUndo: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )
-        TextButton(onClick = onUndo) {
+        SecondaryButton(onClick = onUndo) {
             Text(text = stringResource(id = R.string.button_undo), style = TextStyles.label, color = colors.accent)
         }
     }

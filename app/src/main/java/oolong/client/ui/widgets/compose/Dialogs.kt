@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.ProvideTextStyle
@@ -51,7 +50,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -71,13 +69,7 @@ fun DialogScope.DialogPositiveButton(
             onClick()
             dismiss()
         },
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = Corners.full,
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = ExtendedTheme.colors.emphasis,
-            contentColor = ExtendedTheme.colors.onEmphasis
-        ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
             text = text,
@@ -92,19 +84,12 @@ fun DialogScope.DialogNegativeButton(
     text: String,
     onClick: (() -> Unit)? = null
 ) {
-    Button(
+    SecondaryButton(
         onClick = {
             dismiss()
             onClick?.invoke()
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = Corners.full,
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = ExtendedTheme.colors.text.copy(
-                alpha = 0.1f
-            ),
-            contentColor = ExtendedTheme.colors.text
-        ),
     ) {
         Text(
             text = text,

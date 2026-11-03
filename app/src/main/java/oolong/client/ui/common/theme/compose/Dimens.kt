@@ -56,6 +56,9 @@ object Dimens {
     /** The smallest touch target; smaller visuals pad out to it. */
     val MinTouchTarget = 48.dp
 
+    /** The height of a button. */
+    val ButtonHeight = 40.dp
+
     /** The smallest height of a settings row. */
     val SettingsRowMinHeight = 52.dp
 

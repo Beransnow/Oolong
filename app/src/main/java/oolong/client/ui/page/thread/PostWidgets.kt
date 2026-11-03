@@ -46,6 +46,7 @@ fun PostAgreeBtn(
     Button(
         onClick = onClick,
         shape = Corners.xs,
+        minHeight = 0.dp,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.background,

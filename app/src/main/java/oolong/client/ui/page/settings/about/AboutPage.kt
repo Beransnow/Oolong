@@ -29,7 +29,7 @@ import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.utils.launchUrl
 
 @Composable
@@ -68,7 +68,7 @@ fun AboutPage(
                     modifier = Modifier.fillMaxWidth(0.5f)
                 ) {
                     val context = LocalContext.current
-                    TextButton(
+                    SecondaryButton(
                         shape = Corners.full,
                         onClick = {
                             launchUrl(context, navigator, "https://github.com/HuanCheng65/TiebaLite")

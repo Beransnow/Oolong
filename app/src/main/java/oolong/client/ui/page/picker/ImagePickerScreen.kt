@@ -56,7 +56,7 @@ import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.clickMenu
 
@@ -257,7 +257,7 @@ private fun SelectedOnlyBanner(onSelectMore: () -> Unit) {
             style = MaterialTheme.typography.body2,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onSelectMore, color = ExtendedTheme.colors.emphasis) {
+        SecondaryButton(onClick = onSelectMore, color = ExtendedTheme.colors.emphasis) {
             Text(text = stringResource(id = R.string.button_picker_select_more))
         }
     }

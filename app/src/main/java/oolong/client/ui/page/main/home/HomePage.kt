@@ -96,7 +96,7 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyLazyVerticalGrid
-import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -805,7 +805,7 @@ fun EmptyScreen(
                 }
             }
             if (canOpenExplore) {
-                TextButton(
+                SecondaryButton(
                     onClick = onOpenExplore,
                     modifier = Modifier
                         .fillMaxWidth()

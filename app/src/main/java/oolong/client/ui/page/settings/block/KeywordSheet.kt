@@ -58,7 +58,7 @@ import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.scrim
 import oolong.client.ui.widgets.compose.Button
-import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.WordPicker
 import oolong.client.ui.widgets.compose.rememberWordPickerState
 
@@ -117,7 +117,7 @@ fun KeywordSheet(text: String, onBlock: (List<String>) -> Unit, onDismiss: () ->
                         modifier = Modifier.weight(1f),
                     )
                     if (text.isNotBlank()) {
-                        TextButton(
+                        SecondaryButton(
                             onClick = {
                                 if (!typing) typed = picker.words.joinToString(" ")
                                 typing = !typing
@@ -156,7 +156,7 @@ fun KeywordSheet(text: String, onBlock: (List<String>) -> Unit, onDismiss: () ->
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier = Modifier.padding(top = Spacing.lg),
                 ) {
-                    TextButton(onClick = { close() }, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
+                    SecondaryButton(onClick = { close() }, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
                         Text(text = stringResource(id = R.string.button_cancel), style = TextStyles.label)
                     }
                     Button(

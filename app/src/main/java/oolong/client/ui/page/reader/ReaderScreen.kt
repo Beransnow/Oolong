@@ -119,8 +119,8 @@ import oolong.client.ui.navigation.MaxReadingWidth
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.SegmentedControl
-import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.utils.ThemeUtil
 import java.util.Calendar
@@ -657,7 +657,7 @@ private fun ReaderEnd(loading: LoadStatus, hasMore: Boolean, empty: Boolean, onR
             .padding(vertical = Spacing.xl),
     ) {
         when {
-            loading is LoadStatus.Error -> TextButton(onClick = onRetry) {
+            loading is LoadStatus.Error -> SecondaryButton(onClick = onRetry) {
                 Text(text = stringResource(R.string.button_retry), style = TextStyles.label)
             }
             loading == LoadStatus.Loading || hasMore || empty ->

@@ -149,7 +149,7 @@ private fun CopySheet(content: List<PostContent>, onDismiss: () -> Unit) {
                         modifier = Modifier.weight(1f),
                     )
                     val all = picker.allPicked
-                    TextButton(onClick = { picker.pickAll(!all) }, color = colors.accent) {
+                    SecondaryButton(onClick = { picker.pickAll(!all) }, color = colors.accent) {
                         Text(
                             text = stringResource(id = if (all) R.string.button_deselect_all else R.string.button_select_all),
                             style = TextStyles.label,
@@ -169,7 +169,7 @@ private fun CopySheet(content: List<PostContent>, onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier = Modifier.padding(top = Spacing.lg),
                 ) {
-                    TextButton(
+                    SecondaryButton(
                         onClick = {
                             val keyword = picker.copied.replace(Whitespace, " ")
                             close { navigator.navigate(SearchKey(keyword)) }
