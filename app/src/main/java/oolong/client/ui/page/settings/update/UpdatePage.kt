@@ -380,5 +380,3 @@ private val Name = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = 
 
 /** As settings groups are drawn. */
 private val CardShape = SmoothCornerShape(Radius.md)
-
-/** Room left under the page for the button and the fade over it. */
