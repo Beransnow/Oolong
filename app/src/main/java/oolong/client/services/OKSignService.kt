@@ -2,6 +2,7 @@ package oolong.client.services
 
 import android.Manifest
 import android.app.IntentService
+import android.app.Notification
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -60,10 +61,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         if (intent?.action == ACTION_START_SIGN) {
             startForeground(
                 NOTIFICATION_ID,
-                buildNotification(
-                    getString(R.string.title_loading_data),
-                    getString(R.string.text_please_wait)
-                ).build()
+                progressNotification(getString(R.string.title_loading_data), getString(R.string.text_please_wait), 0, 0)
             )
         }
         return super.onStartCommand(intent, flags, startId)
@@ -166,12 +164,26 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
+    private fun progressNotification(title: String, text: String?, done: Int, total: Int): Notification =
+        signProgress(buildNotification(title, text), done, total)
+
+    private fun updateProgress(title: String, text: String?, done: Int, total: Int) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        notificationManager.notify(NOTIFICATION_ID, progressNotification(title, text, done, total))
+    }
+
     private fun clearNotification() {
         notificationManager.cancel(NOTIFICATION_ID)
     }
 
     override fun onStart(total: Int) {
-        updateNotification(getString(R.string.title_start_sign), null)
+        updateProgress(getString(R.string.title_start_sign), null, 0, total)
         if (total > 0) Toast.makeText(
             this,
             R.string.toast_oksign_start,
@@ -190,7 +202,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     override fun onProgressStart(signDataBean: SignDataBean, current: Int, total: Int) {
         lastSignData = signDataBean
-        updateNotification(
+        updateProgress(
             getString(
                 R.string.title_signing_progress,
                 signDataBean.userName,
@@ -200,7 +212,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             getString(
                 R.string.title_forum_name,
                 signDataBean.forumName
-            )
+            ),
+            current,
+            total,
         )
     }
 
@@ -210,7 +224,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         current: Int,
         total: Int
     ) {
-        updateNotification(
+        updateProgress(
             getString(
                 R.string.title_signing_progress,
                 signDataBean.userName,
@@ -219,7 +233,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             ),
             signResultBean.userInfo?.signBonusPoint?.let {
                 getString(R.string.text_singing_progress_exp, signDataBean.forumName, it)
-            } ?: getString(R.string.text_singing_progress, signDataBean.forumName)
+            } ?: getString(R.string.text_singing_progress, signDataBean.forumName),
+            current + 1,
+            total,
         )
     }
 
@@ -247,14 +263,16 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
                 updateNotification(getString(R.string.title_oksign_fail), errorMsg)
             } else {
-                updateNotification(
+                updateProgress(
                     getString(
                         R.string.title_signing_progress,
                         it.userName,
                         current + 1,
                         total
                     ),
-                    getString(R.string.text_singing_progress_fail, it.forumName, errorMsg)
+                    getString(R.string.text_singing_progress_fail, it.forumName, errorMsg),
+                    current + 1,
+                    total,
                 )
             }
         }
@@ -274,4 +292,26 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
             "oolong.client.service.action.SIGN_SUCCESS_ALL"
         const val ACTION_START_SIGN = "oolong.client.service.action.ACTION_SIGN_START"
     }
+}
+
+/**
+ * The signing under way as a live update: kept at the top of the shade and on the lock screen,
+ * with how far it has come in a chip in the status bar, where the system shows them. Before the
+ * forums are known, [total] is 0 and the bar runs without an end.
+ */
+private fun signProgress(builder: NotificationCompat.Builder, done: Int, total: Int): Notification {
+    // Not apply {}: a style has an apply of its own
+    val progress = NotificationCompat.ProgressStyle()
+    if (total > 0) {
+        progress.addProgressSegment(NotificationCompat.ProgressStyle.Segment(total)).setProgress(done)
+    } else {
+        progress.setProgressIndeterminate(true)
+    }
+    return builder
+        .setStyle(progress)
+        .setOngoing(true)
+        .setOnlyAlertOnce(true)
+        .setRequestPromotedOngoing(true)
+        .apply { if (total > 0) setShortCriticalText("$done/$total") }
+        .build()
 }
