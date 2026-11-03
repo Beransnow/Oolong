@@ -314,8 +314,10 @@ object PageTransitions {
                     pageX.floatValue = it.positionInRoot().x
                     pageWidth.floatValue = it.size.width.toFloat()
                     if (peek != null && peek.topKey == key && host != null && host.width > 0f) {
+                        // Only ever further: a page laid out again while it shrinks back into its
+                        // origin, without sliding, would otherwise take back how far it has gone
                         val slid = (pageX.floatValue - host.left) * (if (ltr) 1f else -1f)
-                        peek.exit = (slid / host.width).coerceIn(0f, 1f)
+                        peek.exit = maxOf(peek.exit, (slid / host.width).coerceIn(0f, 1f))
                     }
                 }
                 .then(
