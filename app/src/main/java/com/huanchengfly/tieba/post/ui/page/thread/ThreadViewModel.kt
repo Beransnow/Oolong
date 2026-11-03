@@ -35,6 +35,7 @@ import com.huanchengfly.tieba.post.repository.ThreadSort
 import com.huanchengfly.tieba.post.repository.Threads
 import com.huanchengfly.tieba.post.repository.check
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.page.reader.ReaderPositions
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -116,6 +117,7 @@ class ThreadViewModel @AssistedInject constructor(
     private val history: ThreadHistory,
     private val messages: MessageController,
     @ApplicationScope private val applicationScope: CoroutineScope,
+    readerPositions: ReaderPositions,
 ) : ViewModel() {
     private val query = MutableStateFlow(args.query())
 
@@ -223,6 +225,8 @@ class ThreadViewModel @AssistedInject constructor(
 
     init {
         lists.flatMapLatest { it.loads }.onEach(::onLoads).launchIn(viewModelScope)
+        // Back from the reader, the page follows to where the reading stopped
+        readerPositions.left(args.threadId).onEach(::showPost).launchIn(viewModelScope)
         combine(meta.map { it.page?.thread }.filterNotNull(), readUpTo) { thread, postId -> thread to postId }
             .debounce(HISTORY_DELAY)
             .onEach { (thread, postId) -> history.save(thread, query.value.seeLz, findPost(postId)) }
@@ -261,6 +265,19 @@ class ThreadViewModel @AssistedInject constructor(
     fun jumpToPage(page: Int) {
         if (query.value.sort == ThreadSort.NewestFirst) return
         refreshFrom(ThreadCursor.Number(page), scrollToFirstReply = true)
+    }
+
+    /** The floor on screen, where the reader opens. */
+    fun readingFloor(): Int = findPost(readUpTo.value)?.floor ?: 0
+
+    /** Scrolls to post [postId], loading the thread from it unless it is loaded. */
+    private fun showPost(postId: Long) {
+        if (postId == readUpTo.value) return
+        if (findPost(postId) != null) {
+            effects.trySend(ThreadEffect.ScrollToPost(postId))
+        } else {
+            jumpToPost(postId)
+        }
     }
 
     fun jumpToPost(postId: Long) {

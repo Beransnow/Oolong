@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -64,11 +65,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -135,6 +138,23 @@ data class ReaderStyle(
         val LINE_HEIGHTS = listOf(1.6f, 30f / 17, 2f)
     }
 }
+
+/** The body text: indented, justified, with paired punctuation squeezed by the font. */
+private fun ReaderStyle.paragraph() = TextStyle(
+    fontFamily = fontFamily,
+    fontSize = fontSize.sp,
+    lineHeight = fontSize.sp * lineHeight,
+    letterSpacing = 0.01.em,
+    textIndent = TextIndent(firstLine = 2.em),
+    textAlign = TextAlign.Justify,
+    fontFeatureSettings = PUNCTUATION_SQUEEZE,
+)
+
+/**
+ * Contextual half-width spacing: punctuation next to punctuation, as "”。", takes half its width.
+ * A font without the feature ignores it, and asking for it twice changes nothing.
+ */
+private const val PUNCTUATION_SQUEEZE = "chws"
 
 /** The page's colour in a light appearance; a dark appearance reads on the theme's own. */
 enum class ReaderPaper(
@@ -302,15 +322,25 @@ private fun ReaderContent(
         val insets = WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
         val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val top = insets.asPaddingValues().calculateTopPadding()
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) { detectTapGestures { chrome = !chrome } },
         ) {
+            val typesetting = rememberTypesetting(style.paragraph())
+            // The text column a whole number of characters wide, so lines of plain Chinese end flush
+            val margin = with(LocalDensity.current) {
+                val text = constraints.maxWidth - 2 * pageMargin.toPx()
+                val snapped = if (typesetting.advance > 0f) (text / typesetting.advance).toInt() * typesetting.advance else text
+                pageMargin + ((text - snapped) / 2).coerceAtLeast(0f).toDp()
+            }
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(start = pageMargin, end = pageMargin, top = top + RunningHeadHeight, bottom = bottom + 96.dp),
-                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = margin, end = margin, top = top + RunningHeadHeight, bottom = bottom + 96.dp),
+                // Hidden while loading on to where it opens, so it doesn't show the start first
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(if (state.seeking) 0f else 1f),
             ) {
                 item(key = "cover") {
                     ReaderCover(
@@ -324,6 +354,7 @@ private fun ReaderContent(
                     ReaderBlockView(
                         block = block,
                         style = style,
+                        addSpace = typesetting.addSpace,
                         notesOpen = block.key in openNotes,
                         onToggleNotes = { if (!openNotes.remove(block.key)) openNotes += block.key },
                         onOpenSubPosts = onOpenSubPosts,
@@ -334,32 +365,50 @@ private fun ReaderContent(
                     ReaderEnd(state.loading, state.hasMore, empty = document.blocks.isEmpty(), onRetry = onRetry)
                 }
             }
+            if (state.seeking) {
+                CircularProgressIndicator(
+                    color = colors.textSecondary,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(24.dp),
+                )
+            }
             // A quiet running head while the chrome is away: where in the text, and how far through
             AnimatedVisibility(
                 visible = !chrome,
                 enter = fadeIn(Motion.fadeIn()),
                 exit = fadeOut(Motion.fadeOut()),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Brush.verticalGradient(0.6f to colors.background, 1f to colors.background.copy(alpha = 0f)))
-                        .padding(top = top)
-                        .height(RunningHeadHeight)
-                        .padding(horizontal = pageMargin),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = chapter ?: title,
-                        style = TextStyles.footnote,
-                        color = colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (block != null) {
-                        Text(text = "$progress%", style = TextStyles.footnote, color = colors.textSecondary)
+                // Opaque behind its own line, so the text never runs under it, then fading out below
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colors.background)
+                            .padding(top = top)
+                            .height(RunningHeadHeight)
+                            .padding(horizontal = margin),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = chapter ?: title,
+                            style = TextStyles.footnote,
+                            color = colors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (block != null) {
+                            Text(text = "$progress%", style = TextStyles.footnote, color = colors.textSecondary)
+                        }
                     }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(Spacing.md)
+                            .background(Brush.verticalGradient(listOf(colors.background, colors.background.copy(alpha = 0f)))),
+                    )
                 }
             }
         }
@@ -395,6 +444,7 @@ private fun ReaderCover(forum: String, title: String, author: String, start: Lon
 private fun ReaderBlockView(
     block: ReaderBlock,
     style: ReaderStyle,
+    addSpace: Boolean,
     notesOpen: Boolean,
     onToggleNotes: () -> Unit,
     onOpenSubPosts: (Long) -> Unit,
@@ -434,15 +484,8 @@ private fun ReaderBlockView(
         )
 
         is ReaderBlock.Paragraph -> Text(
-            text = block.text,
-            style = TextStyle(
-                fontFamily = style.fontFamily,
-                fontSize = size,
-                lineHeight = size * style.lineHeight,
-                letterSpacing = 0.01.em,
-                textIndent = TextIndent(firstLine = 2.em),
-                textAlign = TextAlign.Justify,
-            ),
+            text = if (addSpace) remember(block.text) { spaced(block.text) } else block.text,
+            style = style.paragraph(),
             color = colors.text,
             modifier = Modifier.padding(bottom = size.value.dp * 0.75f),
         )
@@ -467,6 +510,7 @@ private fun ReaderBlockView(
                         fontSize = chatSize,
                         lineHeight = chatSize * 1.65f,
                         fontFamily = style.fontFamily,
+                        style = TextStyle(fontFeatureSettings = PUNCTUATION_SQUEEZE),
                         color = colors.text,
                         modifier = Modifier.padding(start = Spacing.xs),
                     )
@@ -509,7 +553,7 @@ private fun ReaderBlockView(
                 ) {
                     block.notes.forEach { note ->
                         Row {
-                            Text(text = "#${note.floor}", style = TextStyles.caption, color = colors.textSecondary.copy(alpha = 0.7f))
+                            Text(text = "#${note.floor} · ${formatDate(note.time)}", style = TextStyles.caption, color = colors.textSecondary.copy(alpha = 0.7f))
                             Text(
                                 text = note.text.ifEmpty { "…" },
                                 style = TextStyles.caption,

@@ -31,6 +31,7 @@ import com.huanchengfly.tieba.post.testing.MainDispatcherRule
 import com.huanchengfly.tieba.post.testing.queryClient
 import com.huanchengfly.tieba.post.testing.threadActions
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
+import com.huanchengfly.tieba.post.ui.page.reader.ReaderPositions
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -59,6 +60,8 @@ import com.huanchengfly.tieba.post.api.models.protos.SubPostList as ProtoSubPost
 import com.huanchengfly.tieba.post.api.models.protos.User as ProtoUser
 
 class ThreadViewModelTest {
+    private val readerPositions = ReaderPositions()
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -120,6 +123,7 @@ class ThreadViewModelTest {
                 }
             },
             applicationScope = appScope,
+            readerPositions = readerPositions,
         )
     }
 
@@ -427,6 +431,20 @@ class ThreadViewModelTest {
         runCurrent()
 
         assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToPost(400)), effects)
+    }
+
+    @Test
+    fun `back from the reader the page scrolls to where the reading stopped`() = runTest {
+        respond(data(listOf(post(2), post(3), post(4))))
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ThreadEffect>()
+        backgroundScope.launchCollect(viewModel, effects)
+        runCurrent()
+
+        readerPositions.leave(threadId = 9_000L, postId = 4)
+        runCurrent()
+
+        assertEquals(listOf<ThreadEffect>(ThreadEffect.ScrollToPost(4)), effects)
     }
 
     @Test

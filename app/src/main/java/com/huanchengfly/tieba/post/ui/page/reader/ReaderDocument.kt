@@ -88,7 +88,7 @@ sealed interface ReaderBlock {
 data class ChatLine(val name: String, val text: String)
 
 @Immutable
-data class Note(val postId: Long, val floor: Int, val text: String)
+data class Note(val postId: Long, val floor: Int, val time: Long, val text: String)
 
 @Immutable
 data class ReaderChapter(val title: String, val level: Int, val block: Int, val floor: Int, val time: Long)
@@ -222,6 +222,11 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
     var notes = mutableListOf<Note>()
     var notesStart: Post? = null
     var lastTime: Long? = null
+
+    // An update is marked only once it brings more than notes, so notes posted on their own,
+    // after one pause or several, fold together until the text goes on
+    var updateStart: Post? = null
+    var lastTextTime: Long? = null
     var lastChapter = ""
 
     fun flushNotes() {
@@ -233,12 +238,7 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
 
     for (post in posts) {
         val previous = lastTime
-        if (previous == null || post.time - previous > UPDATE_GAP) {
-            flushNotes()
-            val gap = previous?.let { post.time - it }
-            updates += ReaderUpdate(blocks.size, post.time, gap, floors = 0, chars = 0, preview = null)
-            blocks += ReaderBlock.UpdateMark("u${post.id}", post.floor, post.time, gap)
-        }
+        if (previous == null || post.time - previous > UPDATE_GAP) updateStart = post
         lastTime = post.time
 
         // The floor in order: its lines, and pictures and videos where they stand between them
@@ -267,10 +267,17 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
         val length = post.content.wordText.trim().length
         if (heads.isEmpty() && media.isEmpty() && length < NOTE_LENGTH) {
             if (notesStart == null) notesStart = post
-            notes += Note(post.id, post.floor, lines.joinToString(" ").trim())
+            notes += Note(post.id, post.floor, post.time, lines.joinToString(" ").trim())
             continue
         }
         flushNotes()
+        updateStart?.let { start ->
+            val gap = lastTextTime?.let { start.time - it }
+            updates += ReaderUpdate(blocks.size, start.time, gap, floors = 0, chars = 0, preview = null)
+            blocks += ReaderBlock.UpdateMark("u${start.id}", start.floor, start.time, gap)
+            updateStart = null
+        }
+        lastTextTime = post.time
 
         val update = updates.last()
         updates[updates.lastIndex] = update.copy(
@@ -305,7 +312,7 @@ fun buildReaderDocument(posts: List<Post>, known: Set<HeadingKind> = emptySet())
     }
     flushNotes()
 
-    return ReaderDocument(blocks, chapters, updates.filter { it.floors > 0 }, kinds)
+    return ReaderDocument(blocks, chapters, updates, kinds)
 }
 
 /** Splits [lines] into paragraphs, chat passages of three lines or more, and scene breaks. */

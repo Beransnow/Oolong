@@ -140,7 +140,9 @@ fun ThreadRoute(
                 if (state.query.sort == ThreadSort.NewestFirst) ThreadSort.OldestFirst else ThreadSort.NewestFirst
             )
 
-            ThreadEvent.OpenReader -> navigator.navigate(ReaderKey(state.query.threadId, thread?.forum?.id ?: state.query.forumId))
+            ThreadEvent.OpenReader -> navigator.navigate(
+                ReaderKey(state.query.threadId, thread?.forum?.id ?: state.query.forumId, floor = viewModel.readingFloor())
+            )
             is ThreadEvent.JumpToPage -> viewModel.jumpToPage(event.page)
             ThreadEvent.OpenMenu -> Unit
             ThreadEvent.AgreeThread -> viewModel.agreeThread()

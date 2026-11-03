@@ -133,6 +133,28 @@ class ReaderDocumentTest {
     }
 
     @Test
+    fun notesPostedAfterSeveralPausesFoldTogether() {
+        val day = 86_400L
+        val posts = listOf(
+            post(1, long, time = 0),
+            post(2, "明天更", time = 3 * day),
+            post(3, "再等等", time = 4 * day),
+            post(4, long, time = 10 * day),
+        )
+        val doc = buildReaderDocument(posts)
+        assertEquals(listOf(2, 3), doc.blocks.filterIsInstance<ReaderBlock.Notes>().single().notes.map { it.floor })
+        val marks = doc.blocks.filterIsInstance<ReaderBlock.UpdateMark>()
+        assertEquals(listOf(null, 10 * day), marks.map { it.gap })
+        assertEquals(listOf(1, 4), marks.map { it.floor })
+    }
+
+    @Test
+    fun chineseIsSpacedFromLatinAndDigits() {
+        assertEquals("用\u2005Kotlin\u2005写了\u20053\u2005天", spaced("用Kotlin写了3天"))
+        assertEquals("用 Kotlin 写", spaced("用 Kotlin 写"))
+    }
+
+    @Test
     fun threeChatLinesMakeAChat() {
         val text = "【死党群】\n小明：在吗\n小红：在\n小明：出来玩\n然后他们出去了。$long"
         val chat = buildReaderDocument(listOf(post(1, text))).blocks.filterIsInstance<ReaderBlock.Chat>().single()
