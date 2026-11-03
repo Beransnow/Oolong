@@ -440,15 +440,6 @@
                 android:resource="@xml/file_paths_share_img" />
         </provider>
 
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="oolong.client.components.WindowInitializer"
-                android:value="androidx.startup" />
-        </provider>
         <!-- Keeps the language chosen for the app where the system cannot (before Android 13) -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
