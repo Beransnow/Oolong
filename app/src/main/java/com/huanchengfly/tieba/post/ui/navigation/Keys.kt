@@ -33,6 +33,8 @@ data class SubPostsKey(
     val postId: Long = 0L,
     val subPostId: Long = 0L,
     val loadFromSubPost: Boolean = false,
+    /** Opens at the replies rather than the post, for a post long enough to hide them. */
+    val atReplies: Boolean = false,
 ) : Key
 
 /** [SubPostsKey] shown as a sheet over the thread. */
@@ -43,8 +45,9 @@ data class SubPostsSheetKey(
     val postId: Long = 0L,
     val subPostId: Long = 0L,
     val loadFromSubPost: Boolean = false,
+    val atReplies: Boolean = false,
 ) : Key {
-    fun asPage() = SubPostsKey(threadId, forumId, postId, subPostId, loadFromSubPost)
+    fun asPage() = SubPostsKey(threadId, forumId, postId, subPostId, loadFromSubPost, atReplies)
 }
 
 @Serializable

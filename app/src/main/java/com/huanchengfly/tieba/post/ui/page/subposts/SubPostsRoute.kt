@@ -54,6 +54,8 @@ fun SubPostsRoute(
                 SubPostsEffect.NavigateUp -> navigator.navigateUp()
                 is SubPostsEffect.ScrollToSubPost -> viewModel.state.value.indexOfSubPost(effect.subPostId)
                     ?.let { listState.scrollToItem(it) }
+                // The reply count header, under the post
+                SubPostsEffect.ScrollToReplies -> listState.scrollToItem(1)
             }
         }
     }

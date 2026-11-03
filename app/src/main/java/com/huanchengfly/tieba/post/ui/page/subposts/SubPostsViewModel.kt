@@ -71,6 +71,9 @@ sealed interface SubPostsEffect {
 
     /** Scroll to a reply that has just been loaded. */
     data class ScrollToSubPost(val subPostId: Long) : SubPostsEffect
+
+    /** Scroll past the post to the replies, once they first show. */
+    data object ScrollToReplies : SubPostsEffect
 }
 
 /**
@@ -104,6 +107,8 @@ class SubPostsViewModel @AssistedInject constructor(
     /** A reply to scroll to as soon as a page containing it loads. */
     private var scrollToSubPost: Long? = firstKey.subPostId.takeIf { it != 0L }
 
+    private var scrollToReplies = key.atReplies
+
     private val subPosts = client.pager(
         scope = viewModelScope,
         initialKey = firstKey,
@@ -114,6 +119,10 @@ class SubPostsViewModel @AssistedInject constructor(
         postId = page.post.id
         forumId = page.forum.id
         floor.value = page
+        if (scrollToReplies && page.subPosts.items.isNotEmpty()) {
+            scrollToReplies = false
+            effects.send(SubPostsEffect.ScrollToReplies)
+        }
         scrollToSubPost?.let { id ->
             if (page.subPosts.items.any { it.id == id }) {
                 scrollToSubPost = null
