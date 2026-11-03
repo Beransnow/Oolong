@@ -1,0 +1,298 @@
+package oolong.client.api.models.protos
+
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withAnnotation
+import androidx.compose.ui.text.withStyle
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import oolong.client.App
+import oolong.client.R
+import oolong.client.ui.common.PbContentRender
+import oolong.client.ui.common.PicContentRender
+import oolong.client.ui.common.TextContentRender.Companion.appendText
+import oolong.client.ui.common.VideoContentRender
+import oolong.client.ui.common.VoiceContentRender
+import oolong.client.ui.common.theme.compose.currentColors
+import oolong.client.utils.EmoticonManager
+import oolong.client.utils.EmoticonUtil.emoticonString
+import oolong.client.utils.ImageUtil
+
+val List<Abstract>.abstractText: String
+    get() = joinToString(separator = "") {
+        when (it.type) {
+            0 -> it.text.replace(Regex(" {2,}"), " ")
+            4 -> it.text
+
+            else -> ""
+        }
+    }
+
+private val TEXT_ABSTRACT_TYPES = setOf(0, 40)
+
+val ThreadInfo.abstractText: String
+    get() = richAbstract.joinToString(separator = "") {
+        when (it.type) {
+            in TEXT_ABSTRACT_TYPES -> it.text.replace(Regex(" {2,}"), " ")
+            2 -> {
+                EmoticonManager.registerEmoticon(it.text, it.c)
+                "#(${it.c})"
+            }
+
+            else -> ""
+        }
+    }
+
+val PostInfoList.abstractText: String
+    get() = rich_abstract.joinToString(separator = "") {
+        when (it.type) {
+            in TEXT_ABSTRACT_TYPES -> it.text.replace(Regex(" {2,}"), " ")
+            2 -> {
+                EmoticonManager.registerEmoticon(it.text, it.c)
+                "#(${it.c})"
+            }
+
+            else -> ""
+        }
+    }
+
+/**
+ * Some responses leave author_id as 0 and only fill author.id.
+ */
+val Post.resolvedAuthorId: Long
+    get() = author_id.takeIf { it != 0L } ?: author?.id ?: 0L
+
+/**
+ * Some responses leave author_id as 0 and only fill author.id.
+ */
+val SubPostList.resolvedAuthorId: Long
+    get() = author_id.takeIf { it != 0L } ?: author?.id ?: 0L
+
+val ThreadInfo.hasAgree: Int
+    get() = agree?.hasAgree ?: 0
+val ThreadInfo.hasAgreed: Boolean
+    get() = hasAgree == 1
+val ThreadInfo.hasAbstract: Boolean
+    get() = richAbstract.any { (it.type in TEXT_ABSTRACT_TYPES && it.text.isNotBlank()) || it.type == 2 }
+
+fun ThreadInfo.updateAgreeStatus(
+    hasAgree: Int
+) = if (agree != null) {
+    if (hasAgree != agree!!.hasAgree) {
+        if (hasAgree == 1) {
+            copy(
+                agreeNum = agreeNum + 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
+                    hasAgree = 1
+                )
+            )
+        } else {
+            copy(
+                agreeNum = agreeNum - 1,
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
+                    hasAgree = 0
+                )
+            )
+        }
+    } else {
+        this
+    }
+} else {
+    copy(
+        agreeNum = if (hasAgree == 1) agreeNum + 1 else agreeNum - 1
+    )
+}
+
+fun ThreadInfo.updateCollectStatus(
+    newStatus: Int,
+    markPostId: Long
+) = if (collectStatus != newStatus) {
+    this.copy(
+        collectStatus = newStatus,
+        collectMarkPid = markPostId.toString()
+    )
+} else {
+    this
+}
+
+fun PostInfoList.updateAgreeStatus(
+    hasAgree: Int,
+) = if (agree != null) {
+    if (hasAgree != agree!!.hasAgree) {
+        if (hasAgree == 1) {
+            copy(
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum + 1,
+                    diffAgreeNum = agree!!.diffAgreeNum + 1,
+                    hasAgree = 1
+                ),
+                agree_num = agree_num + 1
+            )
+        } else {
+            copy(
+                agree = agree!!.copy(
+                    agreeNum = agree!!.agreeNum - 1,
+                    diffAgreeNum = agree!!.diffAgreeNum - 1,
+                    hasAgree = 0
+                ),
+                agree_num = agree_num - 1
+            )
+        }
+    } else {
+        this
+    }
+} else {
+    this
+}
+
+private val PbContent.picUrl: String
+    get() =
+        ImageUtil.getUrl(
+            App.INSTANCE,
+            true,
+            originSrc,
+            bigCdnSrc,
+            bigSrc,
+            dynamic_,
+            cdnSrc,
+            cdnSrcActive,
+            src
+        )
+
+val List<PbContent>.plainText: String
+    get() = renders.joinToString("\n") { it.toString() }
+
+@OptIn(ExperimentalTextApi::class)
+val List<PbContent>.renders: ImmutableList<PbContentRender>
+    get() {
+        val renders = mutableListOf<PbContentRender>()
+
+        forEach {
+            when (it.type) {
+                // 35: ad-like text, 40: keyword links in replies; both are shown as plain text
+                0, 9, 27, 35, 40 -> {
+                    renders.appendText(it.text)
+                }
+
+                1 -> {
+                    val text = buildAnnotatedString {
+                        appendInlineContent("link_icon", alternateText = "🔗")
+                        withAnnotation(tag = "url", annotation = it.link) {
+                            withStyle(
+                                SpanStyle(
+                                    color = currentColors(App.INSTANCE).accent
+                                )
+                            ) {
+                                append(it.text)
+                            }
+                        }
+                    }
+                    renders.appendText(text)
+                }
+
+                2 -> {
+                    EmoticonManager.registerEmoticon(
+                        it.text,
+                        it.c
+                    )
+                    val emoticonText = "#(${it.c})".emoticonString
+                    renders.appendText(emoticonText)
+                }
+
+                3 -> {
+                    val width = it.bsize.split(",")[0].toInt()
+                    val height = it.bsize.split(",")[1].toInt()
+                    renders.add(
+                        PicContentRender(
+                            picUrl = it.picUrl,
+                            originUrl = it.originSrc,
+                            showOriginBtn = it.showOriginalBtn == 1,
+                            originSize = it.originSize,
+                            picId = ImageUtil.getPicId(it.originSrc),
+                            width = width,
+                            height = height
+                        )
+                    )
+                }
+
+                4 -> {
+                    val text = buildAnnotatedString {
+                        withAnnotation(tag = "user", annotation = "${it.uid}") {
+                            withStyle(
+                                SpanStyle(
+                                    color = currentColors(App.INSTANCE).accent
+                                )
+                            ) {
+                                append(it.text)
+                            }
+                        }
+                    }
+                    renders.appendText(text)
+                }
+
+                5 -> {
+                    if (it.src.isNotBlank()) {
+                        val width = it.bsize.split(",")[0].toInt()
+                        val height = it.bsize.split(",")[1].toInt()
+                        renders.add(
+                            VideoContentRender(
+                                videoUrl = it.link,
+                                picUrl = it.src,
+                                webUrl = it.text,
+                                width = width,
+                                height = height
+                            )
+                        )
+                    } else {
+                        val text = buildAnnotatedString {
+                            appendInlineContent("video_icon", alternateText = "🎥")
+                            withAnnotation(tag = "url", annotation = it.text) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = currentColors(App.INSTANCE).accent
+                                    )
+                                ) {
+                                    append(App.INSTANCE.getString(R.string.tag_video))
+                                    append(it.text)
+                                }
+                            }
+                        }
+                        renders.appendText(text)
+                    }
+                }
+
+                10 -> {
+                    renders.add(VoiceContentRender(it.voiceMD5, it.duringTime))
+                }
+
+                20 -> {
+                    val width = it.bsize.split(",")[0].toInt()
+                    val height = it.bsize.split(",")[1].toInt()
+                    renders.add(
+                        PicContentRender(
+                            picUrl = it.src,
+                            originUrl = it.src,
+                            showOriginBtn = it.showOriginalBtn == 1,
+                            originSize = it.originSize,
+                            picId = ImageUtil.getPicId(it.src),
+                            width = width,
+                            height = height
+                        )
+                    )
+                }
+            }
+        }
+
+        return renders.toImmutableList()
+    }
+
+val User.bawuType: String?
+    get() = if (is_bawu == 1) {
+        if (bawu_type == "manager") "吧主" else "小吧主"
+    } else null

@@ -1,0 +1,178 @@
+package oolong.client.ui.page.main.notifications
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.Tab
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
+import oolong.client.R
+import oolong.client.model.NotificationType
+import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.SearchKey
+import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.ProvideNavigator
+import oolong.client.ui.page.main.notifications.list.NotificationsListPage
+import oolong.client.ui.widgets.compose.ActionItem
+import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
+import oolong.client.ui.widgets.compose.PagerTabIndicator
+import oolong.client.ui.widgets.compose.TabRow
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun NotificationsPage(
+    navigator: Navigator = LocalNavigator.current,
+    initialTab: Int = 0,
+) {
+    val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
+        stringResource(id = R.string.title_reply_me) to @Composable {
+            NotificationsListPage(type = NotificationType.ReplyMe, contentPadding = it)
+        },
+        stringResource(id = R.string.title_at_me) to @Composable {
+            NotificationsListPage(type = NotificationType.AtMe, contentPadding = it)
+        }
+    )
+    val pagerState = rememberPagerState(
+        initialPage = initialTab,
+    ) { pages.size }
+    val coroutineScope = rememberCoroutineScope()
+    ProvideNavigator(navigator = navigator) {
+        GlassScaffold(
+            backgroundColor = Color.Transparent,
+            topBar = {
+                GlassTopBar(
+                    title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
+                    navigationIcon = {
+                        BackNavigationIcon {
+                            navigator.navigateUp()
+                        }
+                    },
+                    content = {
+                        TabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            indicator = { tabPositions ->
+                                PagerTabIndicator(
+                                    pagerState = pagerState,
+                                    tabPositions = tabPositions
+                                )
+                            },
+                            divider = {},
+                            backgroundColor = Color.Transparent,
+                            contentColor = ExtendedTheme.colors.topBarContent,
+                        ) {
+                            pages.forEachIndexed { index, pair ->
+                                Tab(
+                                    text = { Text(text = pair.first) },
+                                    selected = pagerState.currentPage == index,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) { paddingValues ->
+            LazyLoadHorizontalPager(
+                state = pagerState,
+                key = { pages[it].first },
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Top,
+                userScrollEnabled = true,
+            ) {
+                pages[it].second(paddingValues)
+            }
+        }
+    }
+}
+
+/** The notifications tab of the main page; [NotificationsPage] is the page links open. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun NotificationsTab(
+    initialTab: Int = 0,
+) {
+    val navigator = LocalNavigator.current
+    val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
+        stringResource(id = R.string.title_reply_me) to @Composable {
+            NotificationsListPage(type = NotificationType.ReplyMe, contentPadding = it)
+        },
+        stringResource(id = R.string.title_at_me) to @Composable {
+            NotificationsListPage(type = NotificationType.AtMe, contentPadding = it)
+        }
+    )
+    val pagerState = rememberPagerState(
+        initialPage = initialTab,
+    ) { pages.size }
+    val coroutineScope = rememberCoroutineScope()
+    GlassScaffold(
+        backgroundColor = Color.Transparent,
+        topBar = {
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_notifications)) },
+                actions = {
+                    ActionItem(
+                        icon = Symbols.Search,
+                        contentDescription = stringResource(id = R.string.title_search)
+                    ) {
+                        navigator.navigate(SearchKey())
+                    }
+                },
+                content = {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        indicator = { tabPositions ->
+                            PagerTabIndicator(
+                                pagerState = pagerState,
+                                tabPositions = tabPositions
+                            )
+                        },
+                        divider = {},
+                        backgroundColor = Color.Transparent,
+                        contentColor = ExtendedTheme.colors.topBarContent,
+                    ) {
+                        pages.forEachIndexed { index, pair ->
+                            Tab(
+                                text = { Text(text = pair.first) },
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
+                            )
+                        }
+                    }
+                },
+            )
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { paddingValues ->
+        LazyLoadHorizontalPager(
+            state = pagerState,
+            key = { pages[it].first },
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.Top,
+            userScrollEnabled = true,
+        ) {
+            pages[it].second(paddingValues)
+        }
+    }
+}

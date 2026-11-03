@@ -5,7 +5,7 @@ import "FrsPage/Classify.proto";
 
 package tieba.frsPage;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.frsPage";
+option java_package = "oolong.client.api.models.protos.frsPage";
 
 message ForumInfo {
   int64 id = 1;

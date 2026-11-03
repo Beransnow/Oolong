@@ -11,42 +11,42 @@
         "mode": "1",
         "activityPairs": [
           {
-            "from": "com.huanchengfly.tieba.post.activities.MainActivity",
+            "from": "oolong.client.activities.MainActivity",
             "to": "*"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.NewSearchActivity",
+            "from": "oolong.client.activities.NewSearchActivity",
             "to": "*"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.ForumActivity",
+            "from": "oolong.client.activities.ForumActivity",
             "to": "*"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.ThreadActivity",
+            "from": "oolong.client.activities.ThreadActivity",
             "to": "*"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.MessageActivity",
-            "to": "com.huanchengfly.tieba.post.activities.FloorActivity"
+            "from": "oolong.client.activities.MessageActivity",
+            "to": "oolong.client.activities.FloorActivity"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.UserCollectActivity",
-            "to": "com.huanchengfly.tieba.post.activities.ThreadActivity"
+            "from": "oolong.client.activities.UserCollectActivity",
+            "to": "oolong.client.activities.ThreadActivity"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.UserCollectActivity",
-            "to": "com.huanchengfly.tieba.post.activities.UserActivity"
+            "from": "oolong.client.activities.UserCollectActivity",
+            "to": "oolong.client.activities.UserActivity"
           },
           {
-            "from": "com.huanchengfly.tieba.post.activities.UserActivity",
-            "to": "com.huanchengfly.tieba.post.activities.ThreadActivity"
+            "from": "oolong.client.activities.UserActivity",
+            "to": "oolong.client.activities.ThreadActivity"
           }
         ],
         "transActivities": [],
         "Activities": [
           {
-            "name": "com.huanchengfly.tieba.post.activities.MainActivity",
+            "name": "oolong.client.activities.MainActivity",
             "defaultFullScreen": "true"
           }
         ],

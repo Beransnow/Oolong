@@ -8,8 +8,8 @@
         android:shortcutLongLabel="@string/shortcut_oksign"
         android:shortcutShortLabel="@string/shortcut_oksign">
         <intent
-            android:action="com.huanchengfly.tieba.post.action.OKSIGN"
-            android:targetClass="com.huanchengfly.tieba.post.activities.OKSignActivity"
+            android:action="oolong.client.action.OKSIGN"
+            android:targetClass="oolong.client.activities.OKSignActivity"
             android:targetPackage="com.huanchengfly.tieba.post" />
     </shortcut>
     <shortcut

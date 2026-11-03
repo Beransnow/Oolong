@@ -5,7 +5,7 @@ import "FrsTabInfo.proto";
 
 package tieba.forumRecommend;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumRecommend";
+option java_package = "oolong.client.api.models.protos.forumRecommend";
 
 message LikeForum {
   int64 forum_id = 1;

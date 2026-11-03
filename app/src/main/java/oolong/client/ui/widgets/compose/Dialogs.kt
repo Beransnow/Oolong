@@ -1,0 +1,538 @@
+package oolong.client.ui.widgets.compose
+
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import oolong.client.R
+import oolong.client.ui.common.theme.compose.Corners
+import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Radius
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
+import oolong.client.ui.common.theme.compose.glassEdge
+import oolong.client.ui.widgets.compose.dialogs.AnyPopDialog
+import oolong.client.ui.widgets.compose.dialogs.AnyPopDialogProperties
+import oolong.client.ui.widgets.compose.dialogs.DirectionState
+import oolong.client.ui.widgets.compose.picker.TimePicker
+
+@Composable
+fun DialogScope.DialogPositiveButton(
+    text: String,
+    onClick: () -> Unit = {}
+) {
+    Button(
+        onClick = {
+            onClick()
+            dismiss()
+        },
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = Corners.full,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = ExtendedTheme.colors.emphasis,
+            contentColor = ExtendedTheme.colors.onEmphasis
+        ),
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+fun DialogScope.DialogNegativeButton(
+    text: String,
+    onClick: (() -> Unit)? = null
+) {
+    Button(
+        onClick = {
+            dismiss()
+            onClick?.invoke()
+        },
+        modifier = Modifier.fillMaxWidth(),
+        shape = Corners.full,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = ExtendedTheme.colors.text.copy(
+                alpha = 0.1f
+            ),
+            contentColor = ExtendedTheme.colors.text
+        ),
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    title: @Composable (DialogScope.() -> Unit),
+    currentTime: String,
+    onConfirm: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    onValueChange: ((String) -> Unit)? = null,
+    onCancel: (() -> Unit)? = null,
+    is24TimeFormat: Boolean = true,
+    confirmText: String = stringResource(id = R.string.button_sure_default),
+    cancelText: String = stringResource(id = R.string.button_cancel),
+    content: @Composable (DialogScope.() -> Unit) = {},
+) {
+    var timeVal by remember { mutableStateOf(currentTime) }
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onCancel,
+        title = title,
+        buttons = {
+            DialogPositiveButton(text = confirmText, onClick = { onConfirm.invoke(timeVal) })
+            DialogNegativeButton(text = cancelText, onClick = onCancel)
+        },
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            ProvideTextStyle(value = MaterialTheme.typography.body1) {
+                ProvideContentColor(color = ExtendedTheme.colors.text) {
+                    content()
+                }
+            }
+            TimePicker(
+                currentTime = timeVal,
+                onTimeChanged = {
+                    timeVal = it
+                    onValueChange?.invoke(it)
+                },
+                is24TimeFormat = is24TimeFormat,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun AlertDialog(
+    dialogState: DialogState,
+    modifier: Modifier = Modifier,
+    onDismiss: (() -> Unit)? = null,
+    confirmText: String = stringResource(id = R.string.button_ok),
+    title: @Composable (DialogScope.() -> Unit) = {},
+    content: @Composable (DialogScope.() -> Unit) = {},
+) {
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onDismiss,
+        title = title,
+        buttons = {
+            DialogPositiveButton(text = confirmText)
+        },
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            ProvideTextStyle(value = MaterialTheme.typography.body1) {
+                ProvideContentColor(color = ExtendedTheme.colors.text) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AlertDialog(
+    dialogState: DialogState,
+    modifier: Modifier = Modifier,
+    onDismiss: (() -> Unit)? = null,
+    title: @Composable (DialogScope.() -> Unit) = {},
+    content: @Composable (DialogScope.() -> Unit) = {},
+    buttons: @Composable (DialogScope.() -> Unit) = {},
+) {
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onDismiss,
+        title = title,
+        buttons = buttons,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            ProvideTextStyle(value = MaterialTheme.typography.body1) {
+                ProvideContentColor(color = ExtendedTheme.colors.text) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ConfirmDialog(
+    dialogState: DialogState,
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
+    onCancel: (() -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null,
+    confirmText: String = stringResource(id = R.string.button_sure_default),
+    cancelText: String = stringResource(id = R.string.button_cancel),
+    title: @Composable (DialogScope.() -> Unit)? = null,
+    content: @Composable (DialogScope.() -> Unit) = {},
+) {
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onDismiss,
+        title = title,
+        buttons = {
+            DialogPositiveButton(text = confirmText, onClick = onConfirm)
+            DialogNegativeButton(text = cancelText, onClick = onCancel)
+        },
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            ProvideTextStyle(value = MaterialTheme.typography.body1) {
+                ProvideContentColor(color = ExtendedTheme.colors.text) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 带输入框的对话框
+ *
+ * @param onValueChange 输入框内容变化时的回调，返回true表示允许变化，false表示不允许变化
+ */
+@Composable
+fun PromptDialog(
+    onConfirm: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    initialValue: String = "",
+    onValueChange: (newVal: String, oldVal: String) -> Boolean = { _, _ -> true },
+    onCancel: (() -> Unit)? = null,
+    confirmText: String = stringResource(id = R.string.button_sure_default),
+    cancelText: String = stringResource(id = R.string.button_cancel),
+    title: @Composable (DialogScope.() -> Unit)? = null,
+    content: @Composable (DialogScope.() -> Unit) = {},
+) {
+    var textVal by remember { mutableStateOf(initialValue) }
+    // 每次显示时重置输入框内容
+    LaunchedEffect(dialogState.show) {
+        textVal = initialValue
+    }
+    Dialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onCancel,
+        title = title,
+        buttons = {
+            DialogPositiveButton(text = confirmText, onClick = { onConfirm.invoke(textVal) })
+            DialogNegativeButton(text = cancelText, onClick = onCancel)
+        },
+    ) {
+        val focusRequester = remember { FocusRequester() }
+        val softwareKeyboardController = LocalSoftwareKeyboardController.current
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            ProvideTextStyle(value = MaterialTheme.typography.body1) {
+                ProvideContentColor(color = ExtendedTheme.colors.text) {
+                    content()
+                }
+            }
+            OutlinedTextField(
+                value = textVal,
+                onValueChange = {
+                    if (onValueChange.invoke(it, textVal)) textVal = it
+                },
+                maxLines = 1,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = { softwareKeyboardController?.hide() }
+                ),
+                modifier = Modifier
+                    .focusRequester(focusRequester)
+                    .fillMaxWidth(),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    cursorColor = ExtendedTheme.colors.emphasis,
+                    focusedBorderColor = ExtendedTheme.colors.emphasis,
+                    focusedLabelColor = ExtendedTheme.colors.emphasis
+                )
+            )
+            LaunchedEffect(focusRequester) {
+                focusRequester.requestFocus()
+                launch {
+                    delay(300)
+                    softwareKeyboardController?.show()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BaseDialog(
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    onDismiss: (() -> Unit)? = null,
+    direction: DirectionState = DirectionState.BOTTOM,
+    cancelable: Boolean = true,
+    cancelableOnTouchOutside: Boolean = true,
+    imePadding: Boolean = true,
+    content: @Composable (DialogScope.() -> Unit),
+) {
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
+    var isActiveClose by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(dialogState.show) {
+        if (dialogState.show) {
+            showDialog = true
+            isActiveClose = false
+        } else {
+            isActiveClose = true
+        }
+    }
+    if (showDialog) {
+        val dialogScope = DialogScope(
+            onDismiss = {
+                isActiveClose = true
+            },
+        )
+        AnyPopDialog(
+            isActiveClose = isActiveClose,
+            onDismiss = {
+                onDismiss?.invoke()
+                dialogState.show = false
+                showDialog = false
+            },
+            properties = AnyPopDialogProperties(
+                direction = direction,
+                dismissOnBackPress = cancelable,
+                dismissOnClickOutside = cancelableOnTouchOutside,
+                imePadding = imePadding
+            )
+        ) {
+            ProvideContentColor(color = ExtendedTheme.colors.text) {
+                dialogScope.content()
+            }
+        }
+    }
+}
+
+/** Below this the window is a phone's, where dialogs rise from the bottom edge. */
+private val CompactWindowMaxWidth = 600.dp
+
+/** Wider, a dialog's few lines and buttons spread too far apart. */
+private val MaxDialogWidth = 560.dp
+
+@Composable
+fun Dialog(
+    modifier: Modifier = Modifier,
+    dialogState: DialogState = rememberDialogState(),
+    onDismiss: (() -> Unit)? = null,
+    cancelable: Boolean = true,
+    cancelableOnTouchOutside: Boolean = true,
+    title: @Composable (DialogScope.() -> Unit)? = null,
+    buttons: @Composable (DialogScope.() -> Unit) = {},
+    content: @Composable (DialogScope.() -> Unit),
+) {
+    // A dialog covers the whole window, whatever pane opened it
+    val compactWindow = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width.toDp() < CompactWindowMaxWidth
+    }
+    BaseDialog(
+        modifier = modifier,
+        dialogState = dialogState,
+        onDismiss = onDismiss,
+        direction = if (compactWindow) {
+            DirectionState.BOTTOM
+        } else {
+            DirectionState.CENTER
+        },
+        cancelable = cancelable,
+        cancelableOnTouchOutside = cancelableOnTouchOutside,
+    ) {
+        Column(
+            modifier = modifier
+                .padding(horizontal = DialogMargin)
+                .padding(bottom = if (compactWindow) DialogMargin else 0.dp)
+                .widthIn(max = MaxDialogWidth)
+                .fillMaxWidth()
+                .dialogSurface()
+                .animateContentSize(),
+        ) {
+            if (title != null) {
+                Box(modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp)) {
+                    ProvideTextStyle(value = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)) {
+                        title()
+                    }
+                }
+            }
+            Column(modifier = Modifier.padding(top = if (title != null) 8.dp else 24.dp)) {
+                content()
+            }
+            DialogButtonRow {
+                buttons()
+            }
+        }
+    }
+}
+
+/** Space between a dialog and the window's edges, and above the navigation bar on phones. */
+private val DialogMargin = 16.dp
+
+/** The radius of dialogs; buttons [ButtonInset] in from it sit concentric. */
+private val DialogShape = SmoothCornerShape(Radius.xl)
+
+/** How far buttons sit from the dialog's edges. */
+private val ButtonInset = 14.dp
+
+/** A dialog's panel (design-system.md §2.5): the temporary layer, opaque in its own window. */
+@Composable
+private fun Modifier.dialogSurface(): Modifier {
+    val colors = ExtendedTheme.colors
+    val night = colors.isNightMode
+    return this
+        .shadow(
+            elevation = if (night) 32.dp else 24.dp,
+            shape = DialogShape,
+            ambientColor = Color.Black.copy(alpha = if (night) 0.16f else 0.14f),
+            spotColor = Color.Black.copy(alpha = if (night) 0.26f else 0.22f),
+        )
+        .clip(DialogShape)
+        .background(colors.sheet)
+        .border(0.5.dp, colors.glassEdge, DialogShape)
+}
+
+/**
+ * Lays out a dialog's buttons: two short ones side by side, cancel on the left and confirm on the
+ * right (they are given confirm first); otherwise one per line, as given.
+ */
+@Composable
+private fun DialogButtonRow(content: @Composable () -> Unit) {
+    Layout(content = content) { measurables, constraints ->
+        if (measurables.isEmpty()) return@Layout layout(0, 0) {}
+        val inset = ButtonInset.roundToPx()
+        val top = 6.dp.roundToPx()
+        val gap = 10.dp.roundToPx()
+        val width = constraints.maxWidth - inset * 2
+        val half = (width - gap) / 2
+        val sideBySide = measurables.size == 2 && measurables.all { it.maxIntrinsicWidth(Int.MAX_VALUE) <= half }
+        if (sideBySide) {
+            val placeables = measurables.map { it.measure(Constraints.fixedWidth(half)) }
+            val height = placeables.maxOf { it.height }
+            layout(constraints.maxWidth, inset * 2 + top + height) {
+                placeables[1].placeRelative(inset, inset + top)
+                placeables[0].placeRelative(inset + half + gap, inset + top)
+            }
+        } else {
+            val lineGap = 8.dp.roundToPx()
+            val placeables = measurables.map { it.measure(Constraints.fixedWidth(width)) }
+            val height = placeables.sumOf { it.height } + lineGap * (placeables.size - 1)
+            layout(constraints.maxWidth, inset * 2 + top + height) {
+                var y = inset + top
+                placeables.forEach {
+                    it.placeRelative(inset, y)
+                    y += it.height + lineGap
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun rememberDialogState(): DialogState {
+    return rememberSaveable(saver = DialogState.Saver) {
+        DialogState()
+    }
+}
+
+@Stable
+class DialogState private constructor(
+    show: Boolean
+) {
+    constructor() : this(show = false)
+
+    var show by mutableStateOf(show)
+
+    fun show() {
+        show = true
+    }
+
+    companion object {
+        val Saver: Saver<DialogState, *> = listSaver(
+            save = {
+                listOf<Any>(
+                    it.show,
+                )
+            },
+            restore = {
+                DialogState(
+                    show = it[0] as Boolean
+                )
+            }
+        )
+    }
+}
+
+class DialogScope(
+    private val onDismiss: () -> Unit,
+) {
+    fun dismiss() {
+        onDismiss()
+    }
+}

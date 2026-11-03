@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.forumRecommend;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.forumRecommend";
+option java_package = "oolong.client.api.models.protos.forumRecommend";
 
 import "CommonRequest.proto";
 import "Error.proto";

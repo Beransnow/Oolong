@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.threadList;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.threadList";
+option java_package = "oolong.client.api.models.protos.threadList";
 
 message AdParam {
   int32 load_count = 1;

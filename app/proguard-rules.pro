@@ -115,8 +115,8 @@
 
 # Gson models. Wire protos share the package but are not reflected on beyond
 # their ADAPTER field, which converter-wire's consumer rules already keep.
--keep class com.huanchengfly.tieba.post.models.** { *; }
--keep class !com.huanchengfly.tieba.post.api.models.protos.**, com.huanchengfly.tieba.post.api.models.** { *; }
+-keep class oolong.client.models.** { *; }
+-keep class !oolong.client.api.models.protos.**, oolong.client.api.models.** { *; }
 
 -keep class * implements com.google.gson.JsonDeserializer {
     *;
@@ -143,8 +143,8 @@
 # Retrofit reads what a suspend call returns from the generic signature of its Continuation.
 # When nothing reads a response, R8 deletes its class and rewrites that signature to Object,
 # which no converter takes, so the call fails; the services' response classes are kept.
--keep,allowobfuscation,allowoptimization class com.huanchengfly.tieba.core.network.**.*Response
--keep,allowobfuscation,allowoptimization class com.huanchengfly.tieba.post.api.models.protos.**Response
+-keep,allowobfuscation,allowoptimization class oolong.core.network.**.*Response
+-keep,allowobfuscation,allowoptimization class oolong.client.api.models.protos.**Response
 
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
@@ -211,8 +211,8 @@
 -keep,allowobfuscation,allowshrinking class kotlinx.coroutines.Deferred
 -keep,allowobfuscation,allowshrinking class * extends kotlinx.coroutines.Deferred
 
--keep,allowobfuscation,allowshrinking class com.huanchengfly.tieba.post.api.retrofit.ApiResult
--keep,allowobfuscation,allowshrinking class * extends com.huanchengfly.tieba.post.api.retrofit.ApiResult
+-keep,allowobfuscation,allowshrinking class oolong.client.api.retrofit.ApiResult
+-keep,allowobfuscation,allowshrinking class * extends oolong.client.api.retrofit.ApiResult
 
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response

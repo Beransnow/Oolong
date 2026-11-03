@@ -18,7 +18,7 @@ wire {
 }
 
 android {
-    namespace = "com.huanchengfly.tieba.core.network"
+    namespace = "oolong.core.network"
     compileSdk = 37
     defaultConfig {
         minSdk = 24

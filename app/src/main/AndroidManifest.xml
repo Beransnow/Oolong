@@ -390,7 +390,7 @@
             android:excludeFromRecents="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.huanchengfly.tieba.post.action.OKSIGN" />
+                <action android:name="oolong.client.action.OKSIGN" />
             </intent-filter>
         </activity>
 
@@ -434,7 +434,7 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="com.huanchengfly.tieba.post.components.WindowInitializer"
+                android:name="oolong.client.components.WindowInitializer"
                 android:value="androidx.startup" />
         </provider>
         <!-- Keeps the language chosen for the app where the system cannot (before Android 13) -->

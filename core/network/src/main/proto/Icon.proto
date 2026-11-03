@@ -5,7 +5,7 @@ import "Terminal.proto";
 
 package tieba;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos";
+option java_package = "oolong.client.api.models.protos";
 
 message Icon {
   string name = 1;

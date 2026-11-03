@@ -25,7 +25,7 @@ import "UserPostPerm.proto";
 
 package tieba;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos";
+option java_package = "oolong.client.api.models.protos";
 
 message PostInfoList {
   uint64 forum_id = 1;

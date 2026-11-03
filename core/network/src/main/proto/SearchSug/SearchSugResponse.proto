@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.searchSug;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.searchSug";
+option java_package = "oolong.client.api.models.protos.searchSug";
 
 import "Error.proto";
 import "SearchSug/SearchSugResponseData.proto";

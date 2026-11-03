@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.getBawuInfo;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.getBawuInfo";
+option java_package = "oolong.client.api.models.protos.getBawuInfo";
 
 import "BawuTeam.proto";
 import "GetBawuInfo/ManagerApplyInfo.proto";

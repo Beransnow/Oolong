@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.topicList;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.topicList";
+option java_package = "oolong.client.api.models.protos.topicList";
 
 import "CommonRequest.proto";
 import "ThreadInfo.proto";

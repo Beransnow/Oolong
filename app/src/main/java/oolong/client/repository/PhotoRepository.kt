@@ -1,0 +1,52 @@
+package oolong.client.repository
+
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import oolong.client.arch.IoDispatcher
+import oolong.client.model.PicturePage
+import oolong.client.model.ThreadPicture
+import oolong.client.models.LoadPicPageData
+import oolong.core.network.thread.ThreadRemoteDataSource
+import javax.inject.Inject
+
+/** The pictures of a thread, loaded around the one the user is looking at. */
+class PhotoRepository @Inject constructor(
+    private val remote: ThreadRemoteDataSource,
+    @IoDispatcher private val io: CoroutineDispatcher,
+) {
+    /**
+     * The pictures after [picId], or with [previous] those before it, of the thread [source] names.
+     *
+     * @param picIndex the position of [picId] among all the thread's pictures, from 1
+     */
+    suspend fun pictures(source: LoadPicPageData, picId: String, picIndex: Int, previous: Boolean): PicturePage =
+        withContext(io) {
+            val response = remote.picPage(
+                forumId = source.forumId,
+                forumName = source.forumName,
+                threadId = source.threadId,
+                picId = picId,
+                picIndex = picIndex,
+                objType = source.objType,
+                previous = previous,
+                seeLz = source.seeLz,
+                postId = source.postId,
+            )
+            PicturePage(
+                total = response.picAmount.toIntOrNull() ?: 0,
+                pictures = response.picList.map {
+                    ThreadPicture(
+                        picId = it.img.original.id,
+                        originUrl = it.img.original.originalSrc,
+                        url = it.img.original.bigCdnSrc.takeIf { _ -> it.showOriginalBtn == "1" },
+                        overallIndex = it.overallIndex.toIntOrNull() ?: 0,
+                        postId = it.postId?.toLongOrNull(),
+                        author = it.author?.let { author -> author.nameShow ?: author.name },
+                        text = it.descr.joinToString("") { part -> part.text }.trim().takeIf(String::isNotEmpty),
+                        width = it.img.original.width,
+                        height = it.img.original.height,
+                    )
+                },
+            )
+        }
+}

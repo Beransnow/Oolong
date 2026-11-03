@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.pbPage;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.pbPage";
+option java_package = "oolong.client.api.models.protos.pbPage";
 
 message PbFollowTip {
   uint32 is_toast_tip = 1;

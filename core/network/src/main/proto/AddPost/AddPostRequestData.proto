@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.addPost;
 
-option java_package = "com.huanchengfly.tieba.post.api.models.protos.addPost";
+option java_package = "oolong.client.api.models.protos.addPost";
 
 import "CommonRequest.proto";
 
