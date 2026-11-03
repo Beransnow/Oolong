@@ -46,7 +46,7 @@ class ForumScreenScreenshotTest {
     /** Held part way up: the avatar and name on their way into the bar, the rest sliding under it. */
     @Test
     fun collapsing() {
-        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.loaded, onEvent = {}) } }
+        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.long, onEvent = {}) } }
         composeRule.onRoot().performTouchInput {
             down(center)
             moveBy(Offset(0f, -viewConfiguration.touchSlop - 1f))
@@ -58,7 +58,7 @@ class ForumScreenScreenshotTest {
     /** Collapsed: the avatar and name are the bar's title. */
     @Test
     fun collapsed() {
-        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.loaded, onEvent = {}) } }
+        composeRule.setContent { ScreenshotFrame { ForumScreen(state = ForumPreviewData.long, onEvent = {}) } }
         composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top + 1f, durationMillis = 1_000) }
         composeRule.onRoot().captureRoboImage()
     }

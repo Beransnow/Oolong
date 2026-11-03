@@ -80,6 +80,13 @@ internal object ForumPreviewData {
 
     val notFollowed = loaded.copy(forum = forum.copy(liked = false, signedIn = false))
 
+    /** Enough threads to scroll the header away. */
+    val long = loaded.copy(
+        lists = persistentMapOf(
+            ForumTab.Latest to PagerState(items = (threads + (5L..10L).map { thread(it, "第 ${it - 1} 个帖子") }).toImmutableList(), hasMore = true),
+        ),
+    )
+
     val loading = ForumState(forumName = "测试", lists = persistentMapOf(ForumTab.Latest to PagerState(refresh = LoadStatus.Loading)))
 
     val error = ForumState(
