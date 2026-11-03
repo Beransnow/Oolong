@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -285,6 +286,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifie
                 GlassStyle.regular.then {
                     shape(shape)
                     backgroundColor(colors.background)
+                    lightPosition(LightAbove)
                     // Regular blurs a compact control only partly, keeping the content under it
                     // sharp; with a blur, all of it is frosted, by that much
                     if (blur != null) optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(blur)) }
@@ -314,6 +316,14 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifie
             .border(0.5.dp, edge, shape)
     }
 }
+
+/**
+ * The one light, straight above (design-system.md §2.2), far enough that it falls evenly along a
+ * capsule's top. Haze's default, the middle of each shape, lights a capsule's long edges at their
+ * middles and leaves its ends dark, pinching it in. Its highlight falls on the edge away from the
+ * light's bias, so the bias points down to light the top.
+ */
+private val LightAbove = BiasAlignment(horizontalBias = 0f, verticalBias = 8f)
 
 @OptIn(ExperimentalHazeApi::class)
 private val TranslucentFloatingStyle = HazeBlurStyle {
