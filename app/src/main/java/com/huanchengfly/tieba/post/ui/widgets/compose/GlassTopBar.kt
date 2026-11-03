@@ -71,6 +71,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param hiddenFraction 0 shows the bar, 1 hides it: everything between the status bar and the
  * pinned rows slides away. Glass stays behind the status bar and the pinned rows, so content
  * never scrolls by sharp under them.
+ * @param title null leaves out the title row, with [navigationIcon] and [actions], for a bar of
+ * [content] alone, such as tabs whose page is named elsewhere.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
  * header. They share the bar's background and float over the content: the scaffold does not pad
@@ -81,7 +83,7 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GlassTopBar(
-    title: @Composable () -> Unit,
+    title: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
@@ -118,7 +120,7 @@ fun GlassTopBar(
                         statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
                     )
             ) {
-                Row(
+                if (title != null) Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(GlassTopBarRowHeight)

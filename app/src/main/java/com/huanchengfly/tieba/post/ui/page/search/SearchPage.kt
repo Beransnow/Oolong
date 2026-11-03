@@ -79,8 +79,8 @@ import com.huanchengfly.tieba.post.ui.page.search.user.SearchUserList
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassStatusBar
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
-import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
@@ -166,7 +166,7 @@ fun SearchPage(
 /**
  * The search page: the history and suggestions while the user types a keyword, then the forums,
  * threads and users found, in tabs. Without [showField] the field is elsewhere, such as above
- * the keyboard on the main page, and the top bar carries only the title and the tabs.
+ * the keyboard on the main page, and the top bar carries only the tabs.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -248,11 +248,9 @@ fun SearchScreen(
     val pagerState = rememberPagerState { pages.size }
     GlassScaffold(
         topBar = {
-            GlassTopBar(
-                title = {
-                    if (!showField) {
-                        GlassTopBarTitle(text = stringResource(id = R.string.title_search))
-                    } else {
+            when {
+                showField -> GlassTopBar(
+                    title = {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -269,12 +267,19 @@ fun SearchScreen(
                                 )
                             }
                         }
+                    },
+                ) {
+                    if (searching) {
+                        SearchTabRow(pagerState = pagerState, pages = pages)
                     }
-                },
-            ) {
-                if (searching) {
+                }
+
+                // The field is elsewhere: only the tabs, and before there are any, the status bar
+                searching -> GlassTopBar(title = null) {
                     SearchTabRow(pagerState = pagerState, pages = pages)
                 }
+
+                else -> GlassStatusBar()
             }
         }
     ) { paddingValues ->
