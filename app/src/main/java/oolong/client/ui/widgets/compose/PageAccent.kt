@@ -1,4 +1,4 @@
-package oolong.client.ui.page.forum
+package oolong.client.ui.widgets.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,18 +17,18 @@ import oolong.client.components.images.loadBitmap
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 
 /**
- * The forum's own colour on its page, taken from its avatar: the header's wash, the sign-in
- * button, the tab indicator, the pinned threads' labels and the floating button use it. Leaving
- * the forum's page leaves the colour behind.
+ * A page's own colour, taken from the avatar of whom or what it is about, such as a forum's or a
+ * user's: the header's wash, its button, labels and the floating button use it. Leaving the page
+ * leaves the colour behind.
  */
-val LocalForumAccent = staticCompositionLocalOf { Color.Unspecified }
+val LocalPageAccent = staticCompositionLocalOf { Color.Unspecified }
 
 /**
- * The forum's colour, or [Color.Unspecified] until it is known or when the avatar has none, in
+ * The colour of [avatar], or [Color.Unspecified] until it is known or when the avatar has none, in
  * which case the page keeps the theme's colours.
  */
 @Composable
-fun rememberForumAccent(avatar: String): Color {
+fun rememberAvatarAccent(avatar: String): Color {
     val context = LocalContext.current
     val night = ExtendedTheme.colors.isNightMode
     val swatch by produceState<Int?>(initialValue = null, avatar) {
@@ -47,14 +47,14 @@ fun rememberForumAccent(avatar: String): Color {
     return remember(swatch, night) { swatch?.let { toned(it, night) } ?: Color.Unspecified }
 }
 
-/** The forum's colour where there is one, the theme's primary colour otherwise. */
+/** The page's colour where there is one, the theme's primary colour otherwise. */
 @Composable
-fun forumAccentOrPrimary(): Color = LocalForumAccent.current.takeOrElse { ExtendedTheme.colors.emphasis }
+fun pageAccentOrPrimary(): Color = LocalPageAccent.current.takeOrElse { ExtendedTheme.colors.emphasis }
 
-/** Text and icons on [forumAccentOrPrimary]. */
+/** Text and icons on [pageAccentOrPrimary]. */
 @Composable
-fun onForumAccent(): Color = when {
-    LocalForumAccent.current.isUnspecified -> ExtendedTheme.colors.onAccent
+fun onPageAccent(): Color = when {
+    LocalPageAccent.current.isUnspecified -> ExtendedTheme.colors.onAccent
     ExtendedTheme.colors.isNightMode -> Color.Black
     else -> Color.White
 }

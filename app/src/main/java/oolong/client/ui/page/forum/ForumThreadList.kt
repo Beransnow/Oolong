@@ -42,6 +42,7 @@ import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
+import oolong.client.ui.widgets.compose.pageAccentOrPrimary
 
 private enum class ItemType { Top, PlainText, SingleMedia, MultiMedia, Video }
 
@@ -152,7 +153,7 @@ private fun TopThreadItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val accent = forumAccentOrPrimary()
+        val accent = pageAccentOrPrimary()
         Text(
             text = type,
             fontSize = 11.sp,

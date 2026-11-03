@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -52,14 +51,19 @@ import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.FeedCardPlaceholder
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
+import oolong.client.ui.widgets.compose.LocalPageAccent
 import oolong.client.ui.widgets.compose.LocalPageScroll
 import oolong.client.ui.widgets.compose.PageScrollState
 import oolong.client.ui.widgets.compose.PullRefresh
+import oolong.client.ui.widgets.compose.onPageAccent
+import oolong.client.ui.widgets.compose.pageAccentOrPrimary
+import oolong.client.ui.widgets.compose.rememberAvatarAccent
 import oolong.client.ui.widgets.compose.rememberPageScrollState
 import oolong.client.ui.widgets.compose.rememberScrollProgress
 import oolong.client.ui.widgets.compose.scrollsPageContent
 import oolong.client.ui.widgets.compose.states.DefaultErrorScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
+import kotlinx.coroutines.launch
 
 /** What the floating button does, as set in the settings. */
 enum class ForumFab { Refresh, BackToTop, Hidden }
@@ -112,8 +116,8 @@ fun ForumScreen(
     val currentList = state.list(state.selectedTab)
     val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
 
-    val accent = rememberForumAccent(forum.avatar)
-    CompositionLocalProvider(LocalForumAccent provides accent) {
+    val accent = rememberAvatarAccent(forum.avatar)
+    CompositionLocalProvider(LocalPageAccent provides accent) {
         GlassScaffold(
             scaffoldState = scaffoldState,
             backgroundColor = Color.Transparent,
@@ -150,7 +154,7 @@ fun ForumScreen(
                         modifier = Modifier
                             .size(56.dp)
                             .shadow(elevation = 8.dp, shape = CircleShape)
-                            .background(forumAccentOrPrimary(), CircleShape)
+                            .background(pageAccentOrPrimary(), CircleShape)
                             .clickable {
                                 coroutineScope.launch {
                                     listStates[state.selectedTab]?.animateScrollToItem(0)
@@ -160,7 +164,7 @@ fun ForumScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            tint = onForumAccent(),
+                            tint = onPageAccent(),
                             imageVector = if (fab == ForumFab.Refresh) Symbols.Refresh else Symbols.VerticalAlignTop,
                             contentDescription = null
                         )
@@ -192,7 +196,7 @@ fun ForumScreen(
                     }
                 }
             }
-            val accent = LocalForumAccent.current
+            val accent = LocalPageAccent.current
             Box {
                 // The forum's colour from the top of the page down the header, behind everything
                 if (accent.isSpecified) {

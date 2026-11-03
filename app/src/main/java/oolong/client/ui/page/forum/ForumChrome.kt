@@ -61,6 +61,8 @@ import oolong.client.ui.widgets.compose.TabClickMenu
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
+import oolong.client.ui.widgets.compose.onPageAccent
+import oolong.client.ui.widgets.compose.pageAccentOrPrimary
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -173,7 +175,7 @@ private fun ForumHeaderDetails(
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accent = forumAccentOrPrimary()
+    val accent = pageAccentOrPrimary()
     Column(modifier = modifier) {
         // Figures on the left, the viewer's level on the right, on one baseline
         Row(verticalAlignment = Alignment.Bottom) {
@@ -219,7 +221,7 @@ private fun ForumHeaderDetails(
                     },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (done) accent else onForumAccent(),
+                    color = if (done) accent else onPageAccent(),
                 )
             }
         }
