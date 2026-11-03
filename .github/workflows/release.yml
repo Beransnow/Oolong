@@ -41,6 +41,13 @@ jobs:
         with:
           cache-read-only: true
 
+      # The runners of a private repository have about 8 GB, less than the project's own settings
+      # ask for; past that the runner is killed mid-build and the run shows as canceled
+      - name: Fit Gradle to the runner
+        run: |
+          mkdir -p ~/.gradle
+          printf '%s\n' 'org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' 'kotlin.daemon.jvmargs=-Xmx2g' >> ~/.gradle/gradle.properties
+
       - name: Test and build
         run: ./gradlew testDebugUnitTest :app:assembleRelease
 
