@@ -3,7 +3,16 @@ package oolong.client.ui.page.main
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -39,6 +48,7 @@ import oolong.client.ui.page.main.notifications.NotificationsTab
 import oolong.client.ui.page.main.user.UserPage
 import oolong.client.ui.page.search.SearchViewModel
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyBackHandler
@@ -91,7 +101,9 @@ fun MainPage(
         }
     }
     val searchShown by remember { derivedStateOf { search.progress.value > 0f } }
-    val searchAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
+    val searchKeptAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
+    // Beside the rail there is no bar to put it by: it stands at the top of the list
+    val searchAtTop = searchKeptAtTop || !showBottomNavigation
 
     ProvideNavigator(navigator = navigator) {
         val navBarState = rememberHideOnScrollState()
@@ -120,24 +132,22 @@ fun MainPage(
                 }
             },
             overlay = {
-                if (showBottomNavigation) {
-                    MainSearchField(
-                        state = search,
-                        atTop = searchAtTop,
-                        input = searchInput,
-                        onInputChange = {
-                            searchInput = it
-                            searchViewModel.onInputChange(it)
-                        },
-                        onSearch = {
-                            searchInput = it
-                            focusManager.clearFocus()
-                            searchViewModel.search(it)
-                        },
-                        onOpen = openSearch,
-                        onClose = closeSearch,
-                    )
-                }
+                MainSearchField(
+                    state = search,
+                    atTop = searchAtTop,
+                    input = searchInput,
+                    onInputChange = {
+                        searchInput = it
+                        searchViewModel.onInputChange(it)
+                    },
+                    onSearch = {
+                        searchInput = it
+                        focusManager.clearFocus()
+                        searchViewModel.search(it)
+                    },
+                    onOpen = openSearch,
+                    onClose = closeSearch,
+                )
             },
         ) { paddingValues ->
             val chromePadding = if (showBottomNavigation) {
@@ -146,20 +156,47 @@ fun MainPage(
                 PaddingValues(0.dp)
             }
             CompositionLocalProvider(LocalChromePadding provides chromePadding) {
+                // Beside the rail, the field stands over every tab, at the top of the list they
+                // show in, and the tabs take the room under it
+                if (!showBottomNavigation) {
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
+                            .height(GlassTopBarRowHeight)
+                            .padding(horizontal = NavPillMargin)
+                            .graphicsLayer { alpha = 1f - search.progress.value },
+                    ) {
+                        TopSearchField(state = search, onOpen = openSearch)
+                    }
+                }
                 LazyLoadHorizontalPager(
                     state = pagerState,
                     key = { navigationItems[it].id },
                     // Gives way to search, which on the translucent theme has no ground of its own
-                    modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 1f - search.progress.value },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (showBottomNavigation) {
+                                Modifier
+                            } else {
+                                Modifier
+                                    .padding(top = GlassTopBarRowHeight)
+                                    .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
+                                    .consumeWindowInsets(WindowInsets.statusBars)
+                            }
+                        )
+                        .graphicsLayer { alpha = 1f - search.progress.value },
                     verticalAlignment = Alignment.Top,
                     userScrollEnabled = false
                 ) {
                     when (navigationItems[it].id) {
                         MainTabs.HOME -> HomePage(
                             canOpenExplore = navigationItems.any { item -> item.id == MainTabs.EXPLORE },
-                            showSearchBox = !showBottomNavigation,
+                            showSearchBox = false,
                             searchField = if (showBottomNavigation && searchAtTop) {
-                                { HomeSearchField(state = search, onOpen = openSearch) }
+                                { TopSearchField(state = search, onOpen = openSearch) }
                             } else {
                                 null
                             },

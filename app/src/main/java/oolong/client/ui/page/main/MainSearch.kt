@@ -89,8 +89,8 @@ import kotlin.math.roundToInt
  * stretches into a field above the keyboard, and the search page's history and results show over
  * the tabs. Closing shrinks the field back into the button, on the tab it was opened from.
  *
- * Where the user keeps search at the top ([SearchAtTopKey]), it opens from the field under the home
- * page's title instead, which moves up into the top bar.
+ * Where the user keeps search at the top ([SearchAtTopKey]), and beside the rail, it opens from a
+ * field at the top instead ([TopSearchField]), which moves up into the top bar.
  */
 @Stable
 class MainSearchState(open: Boolean) {
@@ -146,12 +146,12 @@ fun mainSearchPadding(atTop: Boolean): PaddingValues =
     }
 
 /**
- * The field under the home page's title, where search is kept at the top: what the search field
- * grows out of, in its shape. It reports where it is to [state] and gives way to that field while
- * search shows.
+ * The field search opens from where it is at the top: under the home page's title on a phone where
+ * the user keeps it there, over the tabs beside the rail. What the search field grows out of, in
+ * its shape; it reports where it is to [state] and gives way to that field while search shows.
  */
 @Composable
-fun HomeSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val colors = ExtendedTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     Row(
