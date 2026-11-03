@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenuItem
@@ -58,6 +57,7 @@ import oolong.client.R
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumSort
 import oolong.client.model.ForumTab
+import oolong.client.model.GoodClass
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
@@ -66,13 +66,12 @@ import oolong.client.ui.widgets.compose.AvatarPlaceholder
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.CollapsingState
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.GlassTopBarTitleStart
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MenuIconButton
-import oolong.client.ui.widgets.compose.PagerTabIndicator
-import oolong.client.ui.widgets.compose.ScrollableTabRow
 import oolong.client.ui.widgets.compose.TabClickMenu
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.picker.ListSinglePicker
@@ -458,29 +457,39 @@ private fun tabTextStyle() = MaterialTheme.typography.button.copy(
     letterSpacing = 0.sp,
 )
 
-/** The forum's tabs; tapping the selected latest tab again picks how its threads are ordered. */
+/**
+ * The forum's tabs on a glass capsule. Tapping the selected tab again opens its choices: how the
+ * latest threads are ordered, or which class of the good threads shows, which then joins the
+ * tab's name.
+ */
 @Composable
 internal fun ForumTabRow(
     tabs: ImmutableList<ForumTab>,
     pagerState: PagerState,
     sortType: Int,
+    goodClasses: ImmutableList<GoodClass>,
+    goodClassId: Int,
     onSelect: (Int) -> Unit,
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val selectedIndex = pagerState.currentPage.coerceIn(0, max(0, tabs.lastIndex))
-    ScrollableTabRow(
-        selectedTabIndex = selectedIndex,
-        indicator = { tabPositions -> PagerTabIndicator(pagerState = pagerState, tabPositions = tabPositions) },
-        divider = {},
-        backgroundColor = Color.Transparent,
-        contentColor = forumAccentOrPrimary(),
-        edgePadding = 0.dp,
-        modifier = modifier.wrapContentWidth(align = Alignment.Start),
-    ) {
+    GlassTabRow(selectedTabIndex = selectedIndex, pagerState = pagerState, modifier = modifier) {
         tabs.forEachIndexed { index, tab ->
             val selected = index == selectedIndex
-            if (tab == ForumTab.Latest) {
+            if (tab == ForumTab.Good && goodClasses.isNotEmpty()) {
+                // The class shows only while the tab is chosen, and not for the first, "all"
+                val goodClass = goodClasses.firstOrNull { it.id == goodClassId }?.takeIf { it != goodClasses.first() }
+                val name = if (selected && goodClass != null) stringResource(R.string.tab_forum_good_class, tab.title(), goodClass.name) else tab.title()
+                TabClickMenu(
+                    selected = selected,
+                    onClick = { onSelect(index) },
+                    text = { Text(text = name, style = tabTextStyle()) },
+                    items = { choiceMenuItems(goodClasses.map { it.id to it.name }, goodClassId) { onEvent(ForumEvent.SetGoodClass(it)) } },
+                    selectedContentColor = ExtendedTheme.colors.text,
+                    unselectedContentColor = ExtendedTheme.colors.textSecondary
+                )
+            } else if (tab == ForumTab.Latest) {
                 val sorts = SortTypes.zip(
                     listOf(stringResource(id = R.string.title_sort_by_reply), stringResource(id = R.string.title_sort_by_send)),
                 )

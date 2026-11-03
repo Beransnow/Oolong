@@ -107,9 +107,13 @@ fun ForumScreen(
                             tabs = tabs,
                             pagerState = pagerState,
                             sortType = state.sortType,
+                            goodClasses = forum.goodClasses,
+                            goodClassId = state.goodClassId,
                             onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
                             onEvent = onEvent,
-                            modifier = Modifier.align(Alignment.Start),
+                            modifier = Modifier
+                                .align(Alignment.Start)
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
                         )
                     },
                 )
@@ -173,8 +177,6 @@ fun ForumScreen(
                                 listState = listStates.getValue(tab),
                                 contentPadding = contentPadding,
                                 ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
-                                goodClasses = forum.goodClasses.takeIf { tab == ForumTab.Good },
-                                goodClassId = state.goodClassId,
                             )
                         }
                     }

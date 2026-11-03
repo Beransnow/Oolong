@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -29,18 +28,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.collections.immutable.ImmutableList
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.model.ForumTab
-import oolong.client.model.GoodClass
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.page.main.explore.rememberThreadPeeker
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
-import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
@@ -62,8 +58,6 @@ internal fun ForumThreadList(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
     ruleTitle: String? = null,
-    goodClasses: ImmutableList<GoodClass>? = null,
-    goodClassId: Int = 0,
 ) {
     val itemFraction = when (LocalWindowSizeClass.current.widthSizeClass) {
         WindowWidthSizeClass.Expanded -> 0.5f
@@ -85,11 +79,6 @@ internal fun ForumThreadList(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = contentPadding,
             ) {
-                if (!goodClasses.isNullOrEmpty()) {
-                    item(key = "GoodClasses") {
-                        GoodClassChips(goodClasses, goodClassId) { onEvent(ForumEvent.SetGoodClass(it)) }
-                    }
-                }
                 if (!ruleTitle.isNullOrEmpty()) {
                     item(key = "ForumRule") {
                         TopThreadItem(
@@ -150,20 +139,6 @@ internal fun ForumThreadList(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun GoodClassChips(classes: ImmutableList<GoodClass>, selected: Int, onSelect: (Int) -> Unit) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(items = classes, key = { "${it.id}_${it.name}" }) {
-            Chip(text = it.name, invertColor = selected == it.id, onClick = { onSelect(it.id) })
         }
     }
 }

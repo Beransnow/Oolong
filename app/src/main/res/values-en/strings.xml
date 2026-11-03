@@ -85,6 +85,7 @@
     <string name="toast_like_success">Followed. You\'re follower #%s.</string>
     <string name="tab_forum_latest">Latest</string>
     <string name="tab_forum_good">Featured</string>
+    <string name="tab_forum_good_class">%1$s · %2$s</string>
     <string name="tab_forum_hot">Hot</string>
     <string name="tip_good">Featured</string>
     <string name="button_no">No</string>

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
@@ -503,12 +504,14 @@ fun TabClickMenu(
             animationSpec = if (selected) Motion.fadeIn() else Motion.fadeOut(),
             label = "ArrowIndicatorAlpha",
         )
+        // The arrow takes room only while the tab is chosen, so other tabs keep their usual width
+        val arrowWidth by animateDpAsState(if (selected) ArrowSize else 0.dp, Motion.snap(), label = "ArrowWidth")
         val tabTextStyle = MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(48.dp)
-                .padding(start = 16.dp)
+                .padding(start = 16.dp, end = 16.dp - arrowWidth * 0.75f)
         ) {
             ProvideTextStyle(value = tabTextStyle) {
                 text()
@@ -517,10 +520,13 @@ fun TabClickMenu(
                 imageVector = Symbols.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(16.dp)
+                    .requiredWidth(arrowWidth)
+                    .height(ArrowSize)
                     .rotate(rotate)
                     .alpha(alpha)
             )
         }
     }
 }
+
+private val ArrowSize = 16.dp
