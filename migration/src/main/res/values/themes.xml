@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.Migration" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/page</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">@bool/light_bars</item>
-        <item name="android:windowLightNavigationBar">@bool/light_bars</item>
+        <!-- Light navigation bar icons from Android 8.1; earlier ones keep their own -->
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/light_bars</item>
     </style>
 
     <!-- Over whatever is behind; the dialog draws its own scrim -->
