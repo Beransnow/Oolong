@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -173,10 +175,13 @@ fun CrashLogPage(
                         .background(ExtendedTheme.colors.card)
                         .padding(Spacing.md),
                 ) {
+                    // Unwrapped, so each frame of a stack trace keeps to its line
                     Text(
                         text = record,
                         style = TextStyles.footnote.copy(fontFamily = FontFamily.Monospace),
                         color = ExtendedTheme.colors.text,
+                        softWrap = false,
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
                     )
                 }
             }
@@ -187,7 +192,7 @@ fun CrashLogPage(
 /** What went down: the exception's name for a crash, or what kind of end it was. */
 @Composable
 private fun CrashLogs.Entry.label(): String = when (kind) {
-    CrashLogs.Kind.Crash -> title.substringBefore(':').substringAfterLast('.').ifBlank { stringResource(id = R.string.crash_kind_crash) }
+    CrashLogs.Kind.Crash -> title.substringBefore(':').substringAfterLast('.').substringAfterLast('$').ifBlank { stringResource(id = R.string.crash_kind_crash) }
     CrashLogs.Kind.Freeze -> stringResource(id = R.string.crash_kind_freeze)
     CrashLogs.Kind.Native -> stringResource(id = R.string.crash_kind_native)
 }

@@ -71,6 +71,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.arch.AppContent
 import oolong.client.arch.GlobalEvent
@@ -474,7 +477,12 @@ class MainActivityV2 : AppCompatActivity() {
                 val backStack = rememberAppBackStack(linked = linkedKey)
                 LaunchedEffect(backStack) {
                     snapshotFlow { (backStack.lastOrNull() as? Page)?.key }.collect { key ->
-                        CrashLogs.page = key?.let { it::class.simpleName }
+                        // By its serial name, which shrinking leaves as written
+                        CrashLogs.page = key?.let {
+                            runCatching {
+                                Json.encodeToJsonElement(Key.serializer(), it).jsonObject["type"]?.jsonPrimitive?.content?.substringAfterLast('.')
+                            }.getOrNull()
+                        }
                     }
                 }
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
