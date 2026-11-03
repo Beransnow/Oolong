@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import oolong.client.dataStore
 import oolong.client.ui.widgets.compose.ProvideChromeStyle
+import oolong.client.ui.widgets.compose.ProvideGlassChoice
 import oolong.client.utils.ColorStyle
 import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
@@ -302,7 +303,7 @@ fun TiebaLiteTheme(
         ) {
             // Inside MaterialTheme, which provides its own ripple
             CompositionLocalProvider(LocalIndication provides PressFeedback.Overlay) {
-                ProvideChromeStyle(content)
+                ProvideChromeStyle { ProvideGlassChoice(content) }
             }
         }
     }

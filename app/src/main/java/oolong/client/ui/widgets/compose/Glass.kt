@@ -19,6 +19,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -49,10 +51,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.util.lerp
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -72,7 +76,10 @@ import dev.chrisbanes.haze.glass.OpticalSizeValue
 import dev.chrisbanes.haze.glass.RefractionProfile
 import dev.chrisbanes.haze.glass.hazeGlass
 import dev.chrisbanes.haze.hazeSource
-import oolong.client.rememberPreferenceAsState
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import oolong.client.dataStore
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -124,13 +131,36 @@ const val DefaultGlassClarity = 0.5f
 val GlassTier.Companion.available: List<GlassTier>
     get() = GlassTier.entries.drop(GlassTier.entries.indexOf(GlassTier.forDevice()))
 
+/** The material and clarity chosen for chrome, as stored. */
+@Immutable
+private data class GlassChoice(val material: String, val reduceTransparency: Boolean, val clarity: Float)
+
+private fun Preferences.toGlassChoice() = GlassChoice(
+    material = this[GlassMaterialKey] ?: "",
+    reduceTransparency = this[ReduceTransparencyKey] ?: false,
+    clarity = this[GlassClarityKey] ?: DefaultGlassClarity,
+)
+
+private val LocalGlassChoice = compositionLocalOf { GlassChoice("", false, DefaultGlassClarity) }
+
+/** Provides the chosen material and clarity to [content], read once for all of it. */
+@Composable
+fun ProvideGlassChoice(content: @Composable () -> Unit) {
+    val dataStore = LocalContext.current.dataStore
+    // Read before the first frame. Chrome first drawn in the device's best material and redrawn in
+    // the chosen one swaps its effect in place as the rest of its modifiers change around it, which
+    // the effect does not survive: the page froze
+    val initial = remember { runBlocking { dataStore.data.first() }.toGlassChoice() }
+    val choice by remember { dataStore.data.map { it.toGlassChoice() } }.collectAsState(initial)
+    CompositionLocalProvider(LocalGlassChoice provides choice, content = content)
+}
+
 /** The material chosen for chrome, as far as the device draws it. */
 @Composable
 fun chosenGlassTier(): GlassTier {
-    val chosen by rememberPreferenceAsState(GlassMaterialKey, "")
-    val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
-    val tier = GlassTier.entries.firstOrNull { it.name == chosen }
-        ?: if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    val choice = LocalGlassChoice.current
+    val tier = GlassTier.entries.firstOrNull { it.name == choice.material }
+        ?: if (choice.reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
     return maxOf(tier, GlassTier.forDevice())
 }
 
@@ -142,10 +172,7 @@ internal fun currentGlassTier(): GlassTier = LocalGlassTier.current ?: chosenGla
  * frosted, less towards clear.
  */
 @Composable
-internal fun glassFrost(): Float {
-    val clarity by rememberPreferenceAsState(GlassClarityKey, DefaultGlassClarity)
-    return frostAt(clarity)
-}
+internal fun glassFrost(): Float = frostAt(LocalGlassChoice.current.clarity)
 
 private fun frostAt(clarity: Float): Float = if (clarity < DefaultGlassClarity) {
     lerp(MostFrost, 1f, clarity / DefaultGlassClarity)
