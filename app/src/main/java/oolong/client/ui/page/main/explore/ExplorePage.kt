@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -34,6 +33,7 @@ import oolong.client.ui.page.main.explore.concern.ConcernPage
 import oolong.client.ui.page.main.explore.hot.HotPage
 import oolong.client.ui.page.main.explore.personalized.PersonalizedPage
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
@@ -55,7 +55,7 @@ private fun ExplorePageTab(
 
     GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
         pages.fastForEachIndexed { index, item ->
-            Tab(
+            GlassTab(
                 text = { item.name(pagerState.currentPage == index) },
                 selected = pagerState.currentPage == index,
                 selectedContentColor = ExtendedTheme.colors.text,

@@ -22,7 +22,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -53,6 +52,7 @@ import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.AvatarPlaceholder
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.IconButton
@@ -444,7 +444,7 @@ internal fun ForumTabRow(
                     unselectedContentColor = ExtendedTheme.colors.textSecondary
                 )
             } else {
-                Tab(
+                GlassTab(
                     selected = selected,
                     onClick = { onSelect(index) },
                     selectedContentColor = ExtendedTheme.colors.text,

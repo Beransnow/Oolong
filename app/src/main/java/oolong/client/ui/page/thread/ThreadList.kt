@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -60,6 +59,7 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.ErrorScreen
+import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
@@ -405,7 +405,7 @@ internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
             .graphicsLayer { alpha = docking.fraction(0f..FilterCrossfade) },
     ) {
         listOf(R.string.text_all, R.string.title_see_lz).forEachIndexed { index, label ->
-            Tab(
+            GlassTab(
                 selected = index == selected,
                 onClick = { if (index != selected) onEvent(ThreadEvent.SetSeeLz(index == 1)) },
                 selectedContentColor = ExtendedTheme.colors.text,

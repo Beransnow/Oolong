@@ -1,15 +1,27 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.LocalContentColor
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ProvideTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,13 +33,17 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.pressScale
 import kotlin.math.floor
 
 /** A [GlassTabRow]'s height, the same as the top bar's buttons. */
@@ -50,8 +66,7 @@ private class TabSpans {
  * when they don't fit, keeping the chosen one in view. With [pagerState] the bubble follows the
  * pages as they are swiped.
  *
- * Tabs are laid out at the capsule's inner height, so ordinary [androidx.compose.material.Tab]s
- * fit as they are.
+ * Tabs are laid out at the capsule's inner height; [GlassTab]s fill it.
  */
 @Composable
 fun GlassTabRow(
@@ -128,3 +143,63 @@ fun GlassTabRow(
 
 /** How much of the bottom bar's emphasis the bubble takes, as the bottom bar's chosen item does. */
 private const val BubbleAlpha = 0.12f
+
+/**
+ * A tab for [GlassTabRow]. Pressed, it shrinks a little under a veil the shape of the bubble, as
+ * the app's other controls do, instead of rippling. [content] is centred in a row.
+ */
+@Composable
+fun GlassTab(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    selectedContentColor: Color = ExtendedTheme.colors.text,
+    unselectedContentColor: Color = ExtendedTheme.colors.textSecondary,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val color by animateColorAsState(if (selected) selectedContentColor else unselectedContentColor, label = "tabColor")
+    CompositionLocalProvider(LocalContentColor provides color, LocalContentAlpha provides 1f) {
+        Row(
+            modifier = modifier
+                .pressScale(interactionSource)
+                .clip(TabCapsule)
+                .selectable(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    indication = PressFeedback.Overlay,
+                    enabled = enabled,
+                    role = Role.Tab,
+                    onClick = onClick,
+                )
+                .fillMaxHeight(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+    }
+}
+
+/** A [GlassTab] of [text], set and spaced as a Material tab's text is. */
+@Composable
+fun GlassTab(
+    selected: Boolean,
+    onClick: () -> Unit,
+    text: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    selectedContentColor: Color = ExtendedTheme.colors.text,
+    unselectedContentColor: Color = ExtendedTheme.colors.textSecondary,
+) {
+    GlassTab(
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier,
+        selectedContentColor = selectedContentColor,
+        unselectedContentColor = unselectedContentColor,
+    ) {
+        ProvideTextStyle(MaterialTheme.typography.button) {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) { text() }
+        }
+    }
+}

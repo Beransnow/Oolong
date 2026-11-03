@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -23,6 +22,7 @@ import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.main.notifications.list.NotificationsListPage
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
@@ -121,7 +121,7 @@ private fun NotificationTabs(pagerState: PagerState, names: List<String>) {
     val coroutineScope = rememberCoroutineScope()
     GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
         names.forEachIndexed { index, name ->
-            Tab(
+            GlassTab(
                 text = { Text(text = name) },
                 selected = pagerState.currentPage == index,
                 selectedContentColor = ExtendedTheme.colors.text,
