@@ -136,6 +136,7 @@ fun BlockRuleScreen(
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = if (state.isNew) R.string.title_new_rule else R.string.title_edit_rule)) },
                 navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                actionsInCapsule = false,
                 actions = {
                     Button(onClick = onSave, enabled = state.canSave, modifier = Modifier.padding(end = Spacing.xs)) {
                         Text(text = stringResource(id = R.string.button_save), style = TextStyles.label)

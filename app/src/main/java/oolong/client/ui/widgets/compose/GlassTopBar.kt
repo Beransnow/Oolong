@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -46,8 +47,14 @@ import kotlin.math.roundToInt
 /** The height of a [GlassTopBar]'s row of icons and title, below the status bar. */
 internal val GlassTopBarRowHeight = 56.dp
 
-private val TopBarRowPadding = 4.dp
+private val TopBarRowPadding = 12.dp
 private val TitlePadding = 8.dp
+
+/** The navigation icon's and the actions' glass. */
+private val TopBarCapsule = RoundedCornerShape(percent = 50)
+
+/** Where the title starts without a navigation icon, past the row's padding. */
+private val BareTitlePadding = 4.dp
 
 /**
  * Where the title starts in a [GlassTopBar] with a navigation icon, for things that move into the
@@ -65,8 +72,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
  * Its background blurs the content behind it, strongest at the top, and fades out within the
  * bar to nothing at its bottom edge instead of ending at a hard line. The glass takes no space of
- * its own below the rows. Double-tapping it scrolls the page to
- * the top.
+ * its own below the rows. The navigation icon and the actions float on their own glass: a round
+ * button and a capsule. Double-tapping the bar scrolls the page to the top.
  *
  * @param hiddenFraction 0 shows the bar, 1 hides it: everything between the status bar and the
  * pinned rows slides away. Glass stays behind the status bar and the pinned rows, so content
@@ -77,6 +84,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
  * header. They share the bar's background and float over the content: the scaffold does not pad
  * the content for them.
+ * @param actionsInCapsule false leaves [actions] off the capsule, for an action that is a button
+ * of its own, such as Save.
  * @param wash a colour washed over the glass, strongest at the top and gone at the bottom edge,
  * such as a forum's own colour on its page.
  */
@@ -87,6 +96,7 @@ fun GlassTopBar(
     modifier: Modifier = Modifier,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    actionsInCapsule: Boolean = true,
     hiddenFraction: () -> Float = { 0f },
     wash: Color = Color.Unspecified,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
@@ -128,11 +138,16 @@ fun GlassTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ProvideContentColor(color = ExtendedTheme.colors.text) {
-                        navigationIcon?.invoke()
+                        if (navigationIcon != null) {
+                            Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
+                        }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = if (navigationIcon != null) TitlePadding else 12.dp),
+                                .padding(
+                                    start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
+                                    end = TitlePadding,
+                                ),
                         ) {
                             ProvideTextStyle(
                                 value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
@@ -140,7 +155,16 @@ fun GlassTopBar(
                                 title()
                             }
                         }
-                        actions()
+                        if (actionsInCapsule) {
+                            // With no actions the row measures nothing, so no glass shows
+                            Row(
+                                modifier = Modifier.floatingGlass(TopBarCapsule),
+                                verticalAlignment = Alignment.CenterVertically,
+                                content = actions,
+                            )
+                        } else {
+                            actions()
+                        }
                     }
                 }
                 content?.invoke(this)

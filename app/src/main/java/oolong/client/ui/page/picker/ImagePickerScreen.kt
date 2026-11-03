@@ -100,6 +100,7 @@ fun ImagePickerScreen(
                     )
                 },
                 navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
+                actionsInCapsule = false,
                 actions = {
                     if (state.multiple && readable) {
                         Button(
