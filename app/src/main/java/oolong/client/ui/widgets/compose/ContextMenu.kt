@@ -284,6 +284,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     // A preview grows out of what was pressed, and its menu follows a moment later
     val lift = remember { Animatable(0f) }
     var closing by remember { mutableStateOf(false) }
+    // Once it is closing, taps go through to the page again while it shrinks away
+    var letGo by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (preview != null) {
             launch { lift.animateTo(1f, Motion.morph(Motion.ProgressThreshold)) }
@@ -300,6 +302,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     fun dismiss() {
         if (closing) return
         closing = true
+        letGo = true
         scope.launch {
             if (fromButton) {
                 val shrink = launch { grow.animateTo(0f, ShrinkSpring) }
@@ -399,7 +402,9 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 .previewBackdrop(backdrop),
         )
     }
-    Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { if (opened != null) foldChildren() else dismiss() } })
+    if (!letGo) {
+        Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { if (opened != null) foldChildren() else dismiss() } })
+    }
 
     val insets = WindowInsets.safeDrawing
     val anchor = request.anchor.translate(-origin)
