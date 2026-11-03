@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +60,7 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.ErrorScreen
+import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SharedThreadCard
@@ -79,10 +82,11 @@ private const val THREAD_HEADER_KEY = "ThreadHeader"
  * bar should show it instead. [pinnedAbove] is how far above the end of the list's top padding
  * the pinned header sits, in pixels.
  */
-internal fun LazyListState.isThreadHeaderPinned(pinnedAbove: Int): Boolean {
+internal fun LazyListState.isThreadFilterDocked(rowCenter: Int): Boolean {
     val header = layoutInfo.visibleItemsInfo.firstOrNull { it.key == THREAD_HEADER_KEY }
-    // Item offsets start at the end of the top padding
-    return if (header != null) header.offset <= -pinnedAbove else firstVisibleItemIndex > FIRST_REPLY_INDEX
+    // Item offsets start at the end of the top padding, which is where the bar ends. The filter is
+    // centred in the header, so it docks where its own centre meets the bar's row: no jump.
+    return if (header != null) header.offset + header.size / 2 <= -rowCenter else firstVisibleItemIndex > FIRST_REPLY_INDEX
 }
 
 /** The posts of the thread, or the first load or its error in their place. */
@@ -95,6 +99,7 @@ internal fun ThreadContent(
     padding: PaddingValues,
     onEvent: (ThreadEvent) -> Unit,
     chromeEnd: () -> Int = { 0 },
+    filterDocked: () -> Boolean = { false },
 ) {
     val posts = state.posts
     val firstPost = state.firstPost ?: state.preview?.knownFirstFloor()
@@ -154,7 +159,7 @@ internal fun ThreadContent(
                     }
                 }
                 if (state.thread != null) {
-                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
+                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent, filterDocked = filterDocked()) }
                 }
                 if (posts.hasPrevious && !newestFirst) {
                     item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
@@ -239,20 +244,21 @@ private fun FirstPost(
 }
 
 /**
- * The reply count and the switch between all posts and the thread author's. Shown in the list
- * above the replies, and pinned in the top bar, on its glass, once the list scrolls past it.
+ * The reply count and the switch between all posts and the thread author's, above the replies.
+ * The count is content and scrolls away; the switch docks in the top bar as it meets the bar's
+ * row (see [ThreadFilter]), and [filterDocked] hides it here meanwhile.
  */
 @Composable
 internal fun ThreadHeader(
     state: ThreadState,
     onEvent: (ThreadEvent) -> Unit,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = ExtendedTheme.colors.background,
+    filterDocked: Boolean = false,
 ) {
     Container(modifier = modifier) {
         Row(
             modifier = Modifier
-                .background(backgroundColor)
+                .background(ExtendedTheme.colors.background)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -266,6 +272,7 @@ internal fun ThreadHeader(
             // A segmented switch: the selected side is a pill on the track
             Row(
                 modifier = Modifier
+                    .graphicsLayer { alpha = if (filterDocked) 0f else 1f }
                     .clip(CircleShape)
                     .background(ExtendedTheme.colors.chip)
                     .padding(3.dp),
@@ -385,6 +392,29 @@ private fun rememberPhotoViewData(state: ThreadState): (Post, PostContent.Image)
                             postId = post.id,
                         )
                     ),
+                )
+            }
+        }
+    }
+}
+
+/** The switch between all posts and the thread author's, docked in the top bar on a glass capsule. */
+@Composable
+internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
+    val selected = if (seeLz) 1 else 0
+    GlassTabRow(selectedTabIndex = selected) {
+        listOf(R.string.text_all, R.string.title_see_lz).forEachIndexed { index, label ->
+            Tab(
+                selected = index == selected,
+                onClick = { if (index != selected) onEvent(ThreadEvent.SetSeeLz(index == 1)) },
+                selectedContentColor = ExtendedTheme.colors.text,
+                unselectedContentColor = ExtendedTheme.colors.textSecondary,
+            ) {
+                Text(
+                    text = stringResource(label),
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                    fontSize = 14.sp,
+                    fontWeight = if (index == selected) FontWeight.SemiBold else FontWeight.Normal,
                 )
             }
         }

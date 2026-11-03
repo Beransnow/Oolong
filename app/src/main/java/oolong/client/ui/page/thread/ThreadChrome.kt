@@ -1,13 +1,16 @@
 package oolong.client.ui.page.thread
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -24,12 +28,14 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,37 +49,43 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
+import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.utils.StringUtil.getShortNumString
 
-/** Back, and the forum the thread is in, which opens the forum. */
+/**
+ * Back, the forum the thread is in, which opens the forum, and the reply [filter] once it has
+ * docked in the bar.
+ */
 @Composable
 internal fun ThreadTopBar(
     forum: ForumSummary?,
     onEvent: (ThreadEvent) -> Unit,
-    pinnedContent: (@Composable ColumnScope.() -> Unit)?,
+    filter: (@Composable () -> Unit)?,
     hiddenFraction: () -> Float,
 ) {
     GlassTopBar(
         title = {
             if (forum != null && forum.name.isNotBlank()) {
+                // The forum's name is a button, so it floats on glass like the bar's other buttons
                 Row(
                     modifier = Modifier
-                        .height(IntrinsicSize.Min)
-                        .clip(Corners.full)
-                        .background(ExtendedTheme.colors.chip)
+                        .height(GlassTopBarItemHeight)
+                        .floatingGlass(ForumCapsule)
+                        .clip(ForumCapsule)
                         .clickable { onEvent(ThreadEvent.OpenForum) }
-                        .padding(4.dp),
+                        .padding(start = 10.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // As tall as the name's line, at any font size; the image's own size would stretch the chip
                     Avatar(
                         data = forum.avatar,
-                        size = with(LocalDensity.current) { 20.sp.toDp() },
+                        size = 28.dp,
                         contentDescription = forum.name,
                     )
                     Text(
                         text = stringResource(id = R.string.title_forum, forum.name),
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = ExtendedTheme.colors.text,
                         modifier = Modifier.padding(horizontal = 8.dp),
                         maxLines = 1,
@@ -83,10 +95,24 @@ internal fun ThreadTopBar(
             }
         },
         navigationIcon = { BackNavigationIcon { onEvent(ThreadEvent.Back) } },
+        actions = {
+            AnimatedVisibility(visible = filter != null, enter = DockEnter, exit = DockExit) {
+                // Kept while it leaves, so it can fade out
+                val shown = remember { mutableStateOf(filter) }
+                if (filter != null) shown.value = filter
+                shown.value?.invoke()
+            }
+        },
+        actionsInCapsule = false,
         hiddenFraction = hiddenFraction,
-        pinnedContent = pinnedContent,
     )
 }
+
+private val ForumCapsule = RoundedCornerShape(percent = 50)
+
+/** The filter grows into the bar from about its size in the list, and shrinks back as it leaves. */
+private val DockEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.snap(), initialScale = 0.7f)
+private val DockExit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.snap(), targetScale = 0.7f)
 
 private val CapsuleShape = Corners.full
 

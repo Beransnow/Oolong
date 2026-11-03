@@ -30,9 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import oolong.client.R
@@ -50,6 +48,7 @@ import oolong.client.ui.page.reply.panelShown
 import oolong.client.ui.page.reply.rememberReplyChromeState
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.PromptDialog
 import oolong.client.ui.widgets.compose.animateHiddenFraction
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -93,10 +92,10 @@ fun ThreadScreen(
         val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
         var contentTop by remember { mutableIntStateOf(0) }
-        var pinnedHeaderHeight by remember { mutableIntStateOf(0) }
-        val headerPinned by remember(listState, statusBarTop) {
+        val rowHalf = with(LocalDensity.current) { (GlassTopBarRowHeight / 2).roundToPx() }
+        val filterDocked by remember(listState, statusBarTop, rowHalf) {
             derivedStateOf {
-                listState.isThreadHeaderPinned(((contentTop - statusBarTop) * hiddenFraction).roundToInt())
+                listState.isThreadFilterDocked(rowHalf + ((contentTop - statusBarTop) * hiddenFraction).roundToInt())
             }
         }
         // A thread that can't scroll the bar's height away would leave an empty band where the bar was
@@ -117,15 +116,8 @@ fun ThreadScreen(
                 ThreadTopBar(
                     forum = state.thread?.forum,
                     onEvent = handleEvent,
-                    pinnedContent = if (state.thread != null && headerPinned) {
-                        {
-                            ThreadHeader(
-                                state,
-                                handleEvent,
-                                backgroundColor = Color.Transparent,
-                                modifier = Modifier.onSizeChanged { pinnedHeaderHeight = it.height },
-                            )
-                        }
+                    filter = if (state.thread != null && filterDocked) {
+                        { ThreadFilter(state.query.seeLz, handleEvent) }
                     } else null,
                 ) { hiddenFraction }
             },
@@ -191,13 +183,9 @@ fun ThreadScreen(
         ) { padding ->
             val density = LocalDensity.current
             SideEffect { contentTop = with(density) { padding.calculateTopPadding().roundToPx() } }
-            // Where the visible chrome ends, from the end of the top padding: the bar slides up as it
-            // hides, and the pinned header hangs below it
-            val chromeEnd = {
-                val barHiddenBy = ((contentTop - statusBarTop) * hiddenFraction).roundToInt()
-                -barHiddenBy + if (headerPinned) pinnedHeaderHeight else 0
-            }
-            ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd)
+            // Where the visible chrome ends, from the end of the top padding: the bar slides up as it hides
+            val chromeEnd = { -((contentTop - statusBarTop) * hiddenFraction).roundToInt() }
+            ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd, filterDocked = { filterDocked })
         }
     }
 

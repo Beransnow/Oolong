@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
@@ -50,6 +51,9 @@ import kotlin.math.roundToInt
 
 /** The height of a [GlassTopBar]'s row of icons and title, below the status bar. */
 internal val GlassTopBarRowHeight = 56.dp
+
+/** The height of everything floating in that row: buttons, capsules, a title that is a button. */
+val GlassTopBarItemHeight = 48.dp
 
 private val TopBarRowPadding = 12.dp
 private val TitlePadding = 8.dp
@@ -90,6 +94,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
  * header. They share the bar's background and float over the content: the scaffold does not pad
  * the content for them.
+ * @param centerTitle centres the title on the whole row rather than starting it after the
+ * navigation icon, for tabs that are the page's title. It does not take part in a large title.
  * @param actionsInCapsule false leaves [actions] off the capsule, for an action that is a button
  * of its own, such as Save.
  * @param wash a colour washed over the glass, strongest at the top and gone at the bottom edge,
@@ -103,6 +109,7 @@ fun GlassTopBar(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     actionsInCapsule: Boolean = true,
+    centerTitle: Boolean = false,
     hiddenFraction: () -> Float = { 0f },
     wash: Color = Color.Unspecified,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
@@ -142,7 +149,7 @@ fun GlassTopBar(
                         statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
                     )
             ) {
-                if (title != null) Row(
+                if (title != null) Box(
                     modifier = Modifier
                         .then(
                             if (largeTitle != null) {
@@ -152,51 +159,63 @@ fun GlassTopBar(
                             } else Modifier
                         )
                         .fillMaxWidth()
-                        .height(GlassTopBarRowHeight)
-                        .padding(horizontal = TopBarRowPadding),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .height(GlassTopBarRowHeight),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    ProvideContentColor(color = ExtendedTheme.colors.text) {
-                        if (navigationIcon != null) {
-                            Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(
-                                    start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
-                                    end = TitlePadding,
-                                ),
-                        ) {
-                            ProvideTextStyle(
-                                value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = TopBarRowPadding),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ProvideContentColor(color = ExtendedTheme.colors.text) {
+                            if (navigationIcon != null) {
+                                Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(
+                                        start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
+                                        end = TitlePadding,
+                                    ),
                             ) {
-                                if (largeTitle == null) {
-                                    title()
-                                } else {
-                                    // Measured where the bar puts it, before the move to the slot
-                                    Box(
-                                        modifier = Modifier
-                                            .onGloballyPositioned {
-                                                val position = it.positionInWindow()
-                                                largeTitle.titleTop = position.y
-                                                largeTitle.titleStart = position.x
-                                                largeTitle.titleHeight = it.size.height
-                                            }
-                                            .graphicsLayer { with(largeTitle) { place() } }
-                                    ) { title() }
+                                if (!centerTitle) ProvideTextStyle(
+                                    value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                                ) {
+                                    if (largeTitle == null) {
+                                        title()
+                                    } else {
+                                        // Measured where the bar puts it, before the move to the slot
+                                        Box(
+                                            modifier = Modifier
+                                                .onGloballyPositioned {
+                                                    val position = it.positionInWindow()
+                                                    largeTitle.titleTop = position.y
+                                                    largeTitle.titleStart = position.x
+                                                    largeTitle.titleHeight = it.size.height
+                                                }
+                                                .graphicsLayer { with(largeTitle) { place() } }
+                                        ) { title() }
+                                    }
                                 }
                             }
+                            if (actionsInCapsule) {
+                                // With no actions the row measures nothing, so no glass shows
+                                Row(
+                                    modifier = Modifier.floatingGlass(TopBarCapsule),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    content = actions,
+                                )
+                            } else {
+                                actions()
+                            }
                         }
-                        if (actionsInCapsule) {
-                            // With no actions the row measures nothing, so no glass shows
-                            Row(
-                                modifier = Modifier.floatingGlass(TopBarCapsule),
-                                verticalAlignment = Alignment.CenterVertically,
-                                content = actions,
-                            )
-                        } else {
-                            actions()
+                    }
+                    // Centred on the whole row, whatever buttons sit at either end
+                    if (centerTitle) {
+                        ProvideContentColor(color = ExtendedTheme.colors.text) {
+                            ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold), content = title)
                         }
                     }
                 }
