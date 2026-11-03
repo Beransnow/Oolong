@@ -16,11 +16,4 @@
         android:height="288dp"
         android:drawable="@drawable/ic_splash_screen"
         android:gravity="center" />
-    <item
-        android:width="200dp"
-        android:height="80dp"
-        android:bottom="35dp"
-        android:gravity="bottom|center_horizontal">
-        <bitmap android:src="@drawable/ic_splash_text" />
-    </item>
 </layer-list>
