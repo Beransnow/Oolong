@@ -12,7 +12,6 @@ tieba onChip                 FF808080
 tieba onEmphasis             FFFFFFFF
 tieba onInvertChip           FFFFFFFF
 tieba onSearchField          FFBFBFBF
-tieba refreshIndicator       FFFFFFFF
 tieba searchField            FFF8F8F8
 tieba sheet                  FFFFFFFF
 tieba text                   DE000000
@@ -43,7 +42,6 @@ black onChip                 FF808080
 black onEmphasis             FFFFFFFF
 black onInvertChip           FFFFFFFF
 black onSearchField          FFBFBFBF
-black refreshIndicator       FFFFFFFF
 black searchField            FFF8F8F8
 black sheet                  FFFFFFFF
 black text                   DE000000
@@ -74,7 +72,6 @@ blue onChip                 FF808080
 blue onEmphasis             FFFFFFFF
 blue onInvertChip           FFFFFFFF
 blue onSearchField          FFBFBFBF
-blue refreshIndicator       FFFFFFFF
 blue searchField            FFF8F8F8
 blue sheet                  FFFFFFFF
 blue text                   DE000000
@@ -105,7 +102,6 @@ purple onChip                 FF808080
 purple onEmphasis             FFFFFFFF
 purple onInvertChip           FFFFFFFF
 purple onSearchField          FFBFBFBF
-purple refreshIndicator       FFFFFFFF
 purple searchField            FFF8F8F8
 purple sheet                  FFFFFFFF
 purple text                   DE000000
@@ -136,7 +132,6 @@ pink onChip                 FF808080
 pink onEmphasis             FFFFFFFF
 pink onInvertChip           FFFFFFFF
 pink onSearchField          FFBFBFBF
-pink refreshIndicator       FFFFFFFF
 pink searchField            FFF8F8F8
 pink sheet                  FFFFFFFF
 pink text                   DE000000
@@ -167,7 +162,6 @@ red onChip                 FF808080
 red onEmphasis             FFFFFFFF
 red onInvertChip           FFFFFFFF
 red onSearchField          FFBFBFBF
-red refreshIndicator       FFFFFFFF
 red searchField            FFF8F8F8
 red sheet                  FFFFFFFF
 red text                   DE000000
@@ -198,7 +192,6 @@ custom onChip                 FF808080
 custom onEmphasis             FFFFFFFF
 custom onInvertChip           FFFFFFFF
 custom onSearchField          FFBFBFBF
-custom refreshIndicator       FFFFFFFF
 custom searchField            FFF8F8F8
 custom sheet                  FFFFFFFF
 custom text                   DE000000
@@ -229,7 +222,6 @@ blue_dark onChip                 FF68737E
 blue_dark onEmphasis             FFFFFFFF
 blue_dark onInvertChip           FF5588D7
 blue_dark onSearchField          FF626C79
-blue_dark refreshIndicator       FF202B37
 blue_dark searchField            FF242F3D
 blue_dark sheet                  FF17212B
 blue_dark text                   DEEEEEEE
@@ -260,7 +252,6 @@ grey_dark onChip                 FF808080
 grey_dark onEmphasis             FFFFFFFF
 grey_dark onInvertChip           FF5588D7
 grey_dark onSearchField          FF5C5C5C
-grey_dark refreshIndicator       FF252525
 grey_dark searchField            FF2C2C2C
 grey_dark sheet                  FF202020
 grey_dark text                   DEEEEEEE
@@ -291,7 +282,6 @@ amoled_dark onChip                 FF808080
 amoled_dark onEmphasis             FFFFFFFF
 amoled_dark onInvertChip           FF5588D7
 amoled_dark onSearchField          FF5C5C5C
-amoled_dark refreshIndicator       FF1C1C1C
 amoled_dark searchField            FF1E1E1E
 amoled_dark sheet                  FF000000
 amoled_dark text                   DEEEEEEE
@@ -322,7 +312,6 @@ translucent_light onChip                 FF808080
 translucent_light onEmphasis             FFFFFFFF
 translucent_light onInvertChip           FFFFFFFF
 translucent_light onSearchField          FFBFBFBF
-translucent_light refreshIndicator       FF202020
 translucent_light searchField            10FFFFFF
 translucent_light sheet                  FF202020
 translucent_light text                   DEFFFFFF
@@ -353,7 +342,6 @@ translucent_dark onChip                 FF808080
 translucent_dark onEmphasis             FFFFFFFF
 translucent_dark onInvertChip           FF212121
 translucent_dark onSearchField          FF5C5C5C
-translucent_dark refreshIndicator       FFF8F8F8
 translucent_dark searchField            20000000
 translucent_dark sheet                  FFF8F8F8
 translucent_dark text                   DE000000
@@ -384,7 +372,6 @@ custom_picked onChip                 FF808080
 custom_picked onEmphasis             FFFFFFFF
 custom_picked onInvertChip           FFFFFFFF
 custom_picked onSearchField          FFBFBFBF
-custom_picked refreshIndicator       FFFFFFFF
 custom_picked searchField            FFF8F8F8
 custom_picked sheet                  FFFFFFFF
 custom_picked text                   DE000000
@@ -415,7 +402,6 @@ translucent_light_picked onChip                 FF808080
 translucent_light_picked onEmphasis             FFFFFFFF
 translucent_light_picked onInvertChip           FFFFFFFF
 translucent_light_picked onSearchField          FFBFBFBF
-translucent_light_picked refreshIndicator       FF202020
 translucent_light_picked searchField            10FFFFFF
 translucent_light_picked sheet                  FF202020
 translucent_light_picked text                   DEFFFFFF
@@ -446,7 +432,6 @@ translucent_dark_picked onChip                 FF808080
 translucent_dark_picked onEmphasis             FFFFFFFF
 translucent_dark_picked onInvertChip           FF212121
 translucent_dark_picked onSearchField          FF5C5C5C
-translucent_dark_picked refreshIndicator       FFF8F8F8
 translucent_dark_picked searchField            20000000
 translucent_dark_picked sheet                  FFF8F8F8
 translucent_dark_picked text                   DE000000
@@ -477,7 +462,6 @@ dynamic_light onChip                 FF5C5E67
 dynamic_light onEmphasis             FFFFFFFF
 dynamic_light onInvertChip           FFFFFFFF
 dynamic_light onSearchField          FF44464F
-dynamic_light refreshIndicator       FFF0F0FA
 dynamic_light searchField            FFF0F0FA
 dynamic_light sheet                  FFFEFBFF
 dynamic_light text                   FF191B23
@@ -508,7 +492,6 @@ dynamic_dark onChip                 FF8F9099
 dynamic_dark onEmphasis             FFFFFFFF
 dynamic_dark onInvertChip           FF001945
 dynamic_dark onSearchField          FFA9ABB4
-dynamic_dark refreshIndicator       FF191B23
 dynamic_dark searchField            FF2E3038
 dynamic_dark sheet                  FF191B23
 dynamic_dark text                   FFE1E2EC
@@ -539,7 +522,6 @@ dynamic_amoled onChip                 FF757780
 dynamic_amoled onEmphasis             FFFFFFFF
 dynamic_amoled onInvertChip           FF001945
 dynamic_amoled onSearchField          FFA9ABB4
-dynamic_amoled refreshIndicator       FF191B23
 dynamic_amoled searchField            FF191B23
 dynamic_amoled sheet                  FF000000
 dynamic_amoled text                   FFE1E2EC
@@ -570,7 +552,6 @@ pink_dark onChip                 FF808080
 pink_dark onEmphasis             FF000000
 pink_dark onInvertChip           FFFF7F9F
 pink_dark onSearchField          FF5C5C5C
-pink_dark refreshIndicator       FF1C1C1C
 pink_dark searchField            FF1E1E1E
 pink_dark sheet                  FF000000
 pink_dark text                   DEEEEEEE
@@ -601,7 +582,6 @@ black_dark onChip                 FF808080
 black_dark onEmphasis             FF202020
 black_dark onInvertChip           FFCCCCCC
 black_dark onSearchField          FF5C5C5C
-black_dark refreshIndicator       FF252525
 black_dark searchField            FF2C2C2C
 black_dark sheet                  FF202020
 black_dark text                   DEEEEEEE
@@ -632,7 +612,6 @@ purple_dark onChip                 FF68737E
 purple_dark onEmphasis             FF17212B
 purple_dark onInvertChip           FFBB97FF
 purple_dark onSearchField          FF626C79
-purple_dark refreshIndicator       FF202B37
 purple_dark searchField            FF242F3D
 purple_dark sheet                  FF17212B
 purple_dark text                   DEEEEEEE
@@ -663,7 +642,6 @@ custom_picked_dark onChip                 FF68737E
 custom_picked_dark onEmphasis             FF17212B
 custom_picked_dark onInvertChip           FF82AFE8
 custom_picked_dark onSearchField          FF626C79
-custom_picked_dark refreshIndicator       FF202B37
 custom_picked_dark searchField            FF242F3D
 custom_picked_dark sheet                  FF17212B
 custom_picked_dark text                   DEEEEEEE
@@ -694,7 +672,6 @@ tieba_monet onChip                 FF5C5E67
 tieba_monet onEmphasis             FFFFFFFF
 tieba_monet onInvertChip           FFFFFFFF
 tieba_monet onSearchField          FF44464F
-tieba_monet refreshIndicator       FFEFF0FA
 tieba_monet searchField            FFEFF0FA
 tieba_monet sheet                  FFFEFBFF
 tieba_monet text                   FF191B23
@@ -725,7 +702,6 @@ tieba_monet_dark onChip                 FF757780
 tieba_monet_dark onEmphasis             FFFFFFFF
 tieba_monet_dark onInvertChip           FF001945
 tieba_monet_dark onSearchField          FFA9ABB4
-tieba_monet_dark refreshIndicator       FF191B23
 tieba_monet_dark searchField            FF191B23
 tieba_monet_dark sheet                  FF000000
 tieba_monet_dark text                   FFE1E2EC
@@ -756,7 +732,6 @@ pink_vibrant onChip                 FF70585C
 pink_vibrant onEmphasis             FFFFFFFF
 pink_vibrant onInvertChip           FFFFFFFF
 pink_vibrant onSearchField          FF574145
-pink_vibrant refreshIndicator       FFFFECEE
 pink_vibrant searchField            FFFFECEE
 pink_vibrant sheet                  FFFFFBFF
 pink_vibrant text                   FF28171A
@@ -787,7 +762,6 @@ red_rainbow onChip                 FF5E5E5E
 red_rainbow onEmphasis             FFFFFFFF
 red_rainbow onInvertChip           FFFFFFFF
 red_rainbow onSearchField          FF474747
-red_rainbow refreshIndicator       FFF1F1F1
 red_rainbow searchField            FFF1F1F1
 red_rainbow sheet                  FFFCFCFC
 red_rainbow text                   FF1B1B1B
@@ -818,7 +792,6 @@ dynamic_expressive onChip                 FF5D5D6C
 dynamic_expressive onEmphasis             FFFFFFFF
 dynamic_expressive onInvertChip           FFFFFFFF
 dynamic_expressive onSearchField          FF464554
-dynamic_expressive refreshIndicator       FFF1EFFF
 dynamic_expressive searchField            FFF1EFFF
 dynamic_expressive sheet                  FFFFFBFF
 dynamic_expressive text                   FF1A1A27
@@ -849,7 +822,6 @@ translucent_night onChip                 FF808080
 translucent_night onEmphasis             FFFFFFFF
 translucent_night onInvertChip           FFFFFFFF
 translucent_night onSearchField          FFBFBFBF
-translucent_night refreshIndicator       FF202020
 translucent_night searchField            10FFFFFF
 translucent_night sheet                  FF202020
 translucent_night text                   DEFFFFFF

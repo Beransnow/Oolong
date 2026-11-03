@@ -68,7 +68,6 @@ data class ExtendedColors(
     val searchField: Color = Color.Unspecified,
     val onSearchField: Color = Color.Unspecified,
     /** Behind the pull-to-refresh and load-more spinners. */
-    val refreshIndicator: Color = Color.Unspecified,
     val menu: Color = Color.Unspecified,
     /** A chip that stands out, as the thread store mark. */
     val invertChip: Color = Color.Unspecified,
@@ -152,7 +151,6 @@ private fun getLightDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
         topBarContentSecondary = tonalPalette.neutralVariant40,
         searchField = tonalPalette.neutralVariant95,
         onSearchField = tonalPalette.neutralVariant30,
-        refreshIndicator = tonalPalette.neutralVariant95,
         menu = tonalPalette.neutralVariant99,
         invertChip = emphasis,
         onInvertChip = tonalPalette.primary100,
@@ -181,7 +179,6 @@ private fun getDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors {
         topBarContentSecondary = tonalPalette.neutralVariant70,
         searchField = tonalPalette.neutralVariant20,
         onSearchField = tonalPalette.neutralVariant70,
-        refreshIndicator = tonalPalette.neutralVariant10,
         menu = tonalPalette.neutralVariant20,
         invertChip = emphasis,
         onInvertChip = tonalPalette.primary10,
@@ -210,7 +207,6 @@ private fun getBlackDarkDynamicColor(tonalPalette: TonalPalette): ExtendedColors
         topBarContentSecondary = tonalPalette.neutralVariant70,
         searchField = tonalPalette.neutralVariant10,
         onSearchField = tonalPalette.neutralVariant70,
-        refreshIndicator = tonalPalette.neutralVariant10,
         menu = tonalPalette.neutralVariant10,
         invertChip = emphasis,
         onInvertChip = tonalPalette.primary10,

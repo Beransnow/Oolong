@@ -31,7 +31,6 @@ private fun light(theme: String, accent: Color, emphasis: Color = accent) = Exte
     topBarContentSecondary = Color(0xDD545967),
     searchField = Color(0xFFF8F8F8),
     onSearchField = Color(0xFFBFBFBF),
-    refreshIndicator = Color.White,
     menu = Color.White,
     invertChip = emphasis,
     onInvertChip = Color.White,
@@ -48,7 +47,6 @@ private fun night(
     divider: Color,
     searchField: Color,
     onSearchField: Color,
-    refreshIndicator: Color,
 ) = ExtendedColors(
     theme = theme,
     isNightMode = true,
@@ -69,7 +67,6 @@ private fun night(
     topBarContentSecondary = Color(0xCCEEEEEE),
     searchField = searchField,
     onSearchField = onSearchField,
-    refreshIndicator = refreshIndicator,
     menu = card,
     invertChip = NightBlue.copy(alpha = 0.3f),
     onInvertChip = NightBlue,
@@ -85,7 +82,6 @@ private val BlueDark = night(
     divider = Color(0xFF242F3D),
     searchField = Color(0xFF242F3D),
     onSearchField = Color(0xFF626C79),
-    refreshIndicator = Color(0xFF202B37),
 )
 
 private val GreyDark = night(
@@ -98,7 +94,6 @@ private val GreyDark = night(
     divider = Color(0xFF1E1E1E),
     searchField = Color(0xFF2C2C2C),
     onSearchField = Color(0xFF5C5C5C),
-    refreshIndicator = Color(0xFF252525),
 )
 
 private val AmoledDark = night(
@@ -111,7 +106,6 @@ private val AmoledDark = night(
     divider = Color(0xFF1E1E1E),
     searchField = Color(0xFF1E1E1E),
     onSearchField = Color(0xFF5C5C5C),
-    refreshIndicator = Color(0xFF1C1C1C),
 )
 
 /** This dark theme with [accent], lifted to read on it, in place of the blue. */
@@ -169,7 +163,6 @@ private fun translucentLight(accent: Color) = ExtendedColors(
     topBarContentSecondary = Color(0x8AFFFFFF),
     searchField = Color(0x10FFFFFF),
     onSearchField = Color(0xFFBFBFBF),
-    refreshIndicator = Color(0xFF202020),
     menu = Color(0xFF202020),
     invertChip = accent,
     onInvertChip = Color.White,
@@ -196,7 +189,6 @@ private fun translucentDark(accent: Color) = ExtendedColors(
     topBarContentSecondary = Color(0xB3000000),
     searchField = Color(0x20000000),
     onSearchField = Color(0xFF5C5C5C),
-    refreshIndicator = Color(0xFFF8F8F8),
     menu = Color(0xFFF8F8F8),
     invertChip = accent,
     onInvertChip = Color(0xFF212121),
