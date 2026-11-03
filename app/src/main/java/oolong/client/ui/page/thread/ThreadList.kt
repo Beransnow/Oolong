@@ -178,7 +178,8 @@ internal fun ThreadContent(
                             stickBelow = chromeEnd,
                             startsRule = index == 0,
                             isStoreMark = item.post.id == state.thread?.storeMarkPostId,
-                            canDelete = viewerId != null && item.post.author.id == viewerId,
+                            // The thread's author may delete anyone's reply in it
+                            canDelete = viewerId != null && (item.post.author.id == viewerId || options.threadAuthorId == viewerId),
                             photoViewData = { photoViewData(item.post, it) },
                         )
                     }

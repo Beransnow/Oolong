@@ -260,7 +260,7 @@ private fun SubPostsContent(
                     listState = listState,
                     key = "Post",
                     startsRule = true,
-                    canDelete = state.viewerId != null && post.author.id == state.viewerId,
+                    canDelete = state.viewerId != null && (post.author.id == state.viewerId || state.threadAuthorId == state.viewerId),
                     canStore = false,
                 )
             }
@@ -298,7 +298,7 @@ private fun SubPostsContent(
                     post = post,
                     item = item,
                     threadAuthorId = state.threadAuthorId,
-                    canDelete = state.viewerId != null && item.subPost.author.id == state.viewerId,
+                    canDelete = state.viewerId != null && (item.subPost.author.id == state.viewerId || state.threadAuthorId == state.viewerId),
                     hideReply = preferences.hideReply,
                     last = index == subPosts.items.lastIndex && !subPosts.hasMore,
                     onEvent = onEvent,
