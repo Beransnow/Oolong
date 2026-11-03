@@ -20,12 +20,7 @@
 
 
 
-    <color name="default_color_primary">#FF4477E0</color>
-    <color name="default_color_accent">#FF4477E0</color>
     <color name="default_color_toolbar_item">#FF474B54</color>
-    <color name="default_color_background">#FFFFFFFF</color>
-    <color name="default_color_card">#FFFFFFFF</color>
-    <color name="default_color_divider">#FFF7FBFE</color>
 
 
 

@@ -251,7 +251,6 @@
     <string name="title_post_or_reply_warning">Posting risks</string>
     <string name="title_ignore_battery_optimization">Battery optimization</string>
     <string name="summary_battery_optimization_ignored">Off</string>
-    <string name="button_redo">Redo</string>
     <string name="common_permission_calendar">Calendar</string>
     <string name="common_permission_camera">Camera</string>
     <string name="common_permission_contacts">Contacts</string>

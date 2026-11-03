@@ -1,7 +1,5 @@
 <resources>
 
-    <style name="Widget" />
-
     <style name="Widget.Button.Flat.Dense" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">0dp</item>
@@ -35,8 +33,6 @@
         <item name="paddingStart">0dp</item>
     </style>
 
-    <style name="TextAppearance" />
-
     <style name="Toolbar" parent="Widget.AppCompat.Toolbar">
         <item name="android:titleTextAppearance">@style/Toolbar.Title</item>
         <item name="titleTextAppearance">@style/Toolbar.Title</item>
@@ -52,8 +48,6 @@
         <item name="actionMenuTextColor">@color/default_color_toolbar_item</item>
         <item name="android:textColorSecondary">@color/default_color_toolbar_item</item>
     </style>
-
-    <style name="Base" />
 
     <style name="Theme.NewAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>

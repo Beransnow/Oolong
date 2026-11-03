@@ -247,7 +247,6 @@
     <string name="title_post_or_reply_warning">发帖与回帖风险提示</string>
     <string name="title_ignore_battery_optimization">电池优化</string>
     <string name="summary_battery_optimization_ignored">已忽略</string>
-    <string name="button_redo">重做</string>
     <string name="common_permission_calendar">日历</string>
     <string name="common_permission_camera">相机</string>
     <string name="common_permission_contacts">通讯录</string>
