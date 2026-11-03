@@ -1,16 +1,13 @@
 package oolong.client.api.models
 
-import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UploadPictureResultBean(
     @SerialName("error_code")
-    @SerializedName("error_code")
     val errorCode: String,
     @SerialName("error_msg")
-    @SerializedName("error_msg")
     val errorMsg: String,
     // Only the response to the last chunk carries the picture fields
     val resourceId: String? = null,

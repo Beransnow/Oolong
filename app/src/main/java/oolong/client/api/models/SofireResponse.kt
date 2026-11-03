@@ -1,6 +1,5 @@
 package oolong.client.api.models
 
-import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -8,7 +7,6 @@ import kotlinx.serialization.Serializable
 data class SofireResponse(
     val data: String,
     @SerialName("request_id")
-    @SerializedName("request_id")
     val requestId: Long,
     val skey: String
 )

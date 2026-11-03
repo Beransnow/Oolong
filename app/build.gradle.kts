@@ -321,8 +321,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.wire)
 
-    implementation(libs.gson)
-
     implementation(libs.xxpermissions)
 
     implementation(libs.ucrop)

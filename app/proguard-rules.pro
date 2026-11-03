@@ -111,14 +111,9 @@
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 
 
-# Gson models. Wire protos share the package but are not reflected on beyond
-# their ADAPTER field, which converter-wire's consumer rules already keep.
--keep class oolong.client.models.** { *; }
+# Retrofit looks up the serializers of the JSON it reads by reflection. Wire protos share the
+# package, but their ADAPTER field is kept by converter-wire's own rules.
 -keep class !oolong.client.api.models.protos.**, oolong.client.api.models.** { *; }
-
--keep class * implements com.google.gson.JsonDeserializer {
-    *;
-}
 
 # uCrop
 -dontwarn com.yalantis.ucrop**
@@ -216,13 +211,6 @@
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
  -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
-# Retain generic signatures of TypeToken and its subclasses with R8 version 3.0 and higher.
--keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
--keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
-
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface <1>
 
--keepclassmembers,allowobfuscation class * {
- @com.google.gson.annotations.SerializedName <fields>;
-}

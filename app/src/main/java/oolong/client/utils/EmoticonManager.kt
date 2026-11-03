@@ -27,14 +27,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import oolong.client.App
 import oolong.client.R
 import oolong.client.components.images.loadBitmap
-import oolong.client.fromJson
 import oolong.client.models.EmoticonCache
 import oolong.client.pxToDp
 import oolong.client.pxToSp
-import oolong.client.toJson
 import java.io.File
 import java.lang.ref.WeakReference
 
@@ -181,7 +180,7 @@ object EmoticonManager {
             if (emoticonDataCacheFile.exists() || emoticonDataCacheFile.createNewFile()) {
                 FileUtil.writeFile(
                     emoticonDataCacheFile,
-                    EmoticonCache(emoticonIds, emoticonMapping).toJson(),
+                    Json.encodeToString(EmoticonCache(emoticonIds, emoticonMapping)),
                     false
                 )
             }
@@ -195,7 +194,7 @@ object EmoticonManager {
     private fun getEmoticonDataCache(): EmoticonCache {
         return runCatching {
             File(getEmoticonCacheDir(), "emoticon_data_cache").takeIf { it.exists() }
-                ?.fromJson<EmoticonCache>()
+                ?.let { Json.decodeFromString<EmoticonCache>(it.readText()) }
         }.getOrNull() ?: EmoticonCache()
     }
 

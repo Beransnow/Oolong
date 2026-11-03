@@ -90,7 +90,6 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version = "5.5.1" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter-wire = { module = "com.squareup.retrofit2:converter-wire", version.ref = "retrofit" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
-gson = { module = "com.google.code.gson:gson", version = "2.15.0" }
 
 # Image
 coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
