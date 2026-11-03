@@ -76,6 +76,8 @@ import oolong.client.arch.LoadStatus
 import oolong.client.model.UserProfile
 import oolong.client.models.PhotoViewData
 import oolong.client.models.PicItem
+import oolong.client.ui.common.navigation.openedWithHero
+import oolong.client.ui.common.navigation.pageHeroTarget
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
@@ -106,6 +108,10 @@ import oolong.client.ui.widgets.compose.PullToRefreshLayout
 import oolong.client.ui.widgets.compose.ScrollableTabRow
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
+import oolong.client.ui.widgets.compose.placeholder.fade
+import oolong.client.ui.widgets.compose.placeholder.placeholder
+import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
@@ -139,7 +145,11 @@ fun UserProfilePage(
             isError = state.load is LoadStatus.Error,
             isLoading = state.load == LoadStatus.Loading,
             onReload = viewModel::refreshProfile,
-            errorScreen = { ErrorScreen(error = (state.load as? LoadStatus.Error)?.error) }
+            errorScreen = { ErrorScreen(error = (state.load as? LoadStatus.Error)?.error) },
+            loadingScreen = {
+                val hero = openedWithHero()
+                if (hero != null) UserProfileSkeleton(avatar = hero.image, onBack = { navigator.navigateUp() }) else DefaultLoadingScreen()
+            },
         ) {
             state.profile?.let {
                 UserProfileContent(
@@ -303,17 +313,13 @@ private fun UserProfileContentNormal(
     val density = LocalDensity.current
 
     var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
-    var headerHeight by rememberSaveable {
-        mutableFloatStateOf(
-            with(density) {
-                (96.dp + 16.dp).toPx()
-            }
-        )
-    }
+    // Unknown until the header has been measured, and it is not cut down till then: a guess
+    // shorter than it showed only its bottom, without the avatar, as the page came in
+    var headerHeight by rememberSaveable { mutableFloatStateOf(HeaderUnmeasured) }
 
     val isShowHeaderArea by remember {
         derivedStateOf {
-            heightOffset.absoluteValue < headerHeight
+            headerHeight == HeaderUnmeasured || heightOffset.absoluteValue < headerHeight
         }
     }
 
@@ -353,6 +359,7 @@ private fun UserProfileContentNormal(
                     ): Offset {
                         if (available.y < 0) {
                             val prevHeightOffset = heightOffset
+                            if (headerHeight == HeaderUnmeasured) return Offset.Zero
                             heightOffset = max(heightOffset + available.y, -headerHeight)
                             if (prevHeightOffset != heightOffset) {
                                 return available.copy(x = 0f)
@@ -438,7 +445,7 @@ private fun UserProfileContentNormal(
 
                     Box(
                         modifier = Modifier
-                            .height(containerHeight)
+                            .then(if (headerHeight == HeaderUnmeasured) Modifier else Modifier.height(containerHeight))
                             .clipToBounds()
                     ) {
                         Box(
@@ -750,24 +757,32 @@ private fun UserProfileDetail(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val avatar = StringUtil.getBigAvatarUrl(user.portrait)
-            // Opens in the picture viewer, where it can be saved
-            NetworkImage(
-                imageUri = avatar,
-                contentDescription = null,
+            // Over the small avatar lists show, already at hand, until the big one loads; where
+            // an avatar a profile was opened from lands
+            Box(
                 modifier = Modifier
                     .padding(bottom = 16.dp)
-                    .size(96.dp)
+                    .pageHeroTarget()
+                    .size(ProfileAvatarSize)
                     .clip(CircleShape),
-                photoViewData = remember(avatar) {
-                    PhotoViewData(
-                        picItems = listOf(
-                            PicItem(picId = "avatar:${user.portrait}", picIndex = 1, url = avatar, originUrl = avatar, showOriginBtn = false, originSize = 0),
-                        ),
-                    )
-                },
-                contentScale = ContentScale.Crop,
-                skipNetworkCheck = true,
-            )
+            ) {
+                Avatar(data = StringUtil.getAvatarUrl(user.portrait), contentDescription = null, modifier = Modifier.matchParentSize(), decodedAt = Sizes.Small)
+                // Opens in the picture viewer, where it can be saved
+                NetworkImage(
+                    imageUri = avatar,
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                    photoViewData = remember(avatar) {
+                        PhotoViewData(
+                            picItems = listOf(
+                                PicItem(picId = "avatar:${user.portrait}", picIndex = 1, url = avatar, originUrl = avatar, showOriginBtn = false, originSize = 0),
+                            ),
+                        )
+                    },
+                    contentScale = ContentScale.Crop,
+                    skipNetworkCheck = true,
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             if (showBtn) {
                 Button(
@@ -940,3 +955,43 @@ private fun HorizontalDivider(modifier: Modifier = Modifier) {
             .then(modifier)
     )
 }
+
+/**
+ * A profile while it loads, opened from an avatar: the bar and the avatar where the header will
+ * show it, so the avatar has somewhere to land; the rest stands in grey.
+ */
+@Composable
+private fun UserProfileSkeleton(avatar: String?, onBack: () -> Unit) {
+    GlassScaffold(
+        topBar = {
+            GlassTopBar(title = {}, navigationIcon = { BackNavigationIcon(onBackPressed = onBack) })
+        },
+    ) { paddingValues ->
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .padding(16.dp)
+                .padding(top = 8.dp),
+        ) {
+            // At the size lists show it, so it is the copy at hand, there from the start
+            Avatar(
+                data = avatar,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .pageHeroTarget()
+                    .size(ProfileAvatarSize),
+                decodedAt = Sizes.Small,
+            )
+            Box(modifier = Modifier.size(width = 160.dp, height = 24.dp).placeholder(visible = true, highlight = PlaceholderHighlight.fade()))
+            Box(modifier = Modifier.size(width = 220.dp, height = 16.dp).placeholder(visible = true, highlight = PlaceholderHighlight.fade()))
+        }
+    }
+}
+
+private val ProfileAvatarSize = 96.dp
+
+/** A header height not yet measured. */
+private const val HeaderUnmeasured = -1f

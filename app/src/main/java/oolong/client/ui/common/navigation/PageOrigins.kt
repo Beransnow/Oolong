@@ -18,6 +18,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,6 +46,16 @@ class PageOrigins {
     /** The origin the next page opened leaves from, set just before it opens. */
     private var pending: PageOriginKey? = null
 
+    /** The image the next page opened takes along, set just before it opens. */
+    private var pendingHero: PageHero? = null
+
+    /** The image each page opened with one took along, by the page's content key. */
+    private val heroes = mutableStateMapOf<Any, PageHero>()
+
+    /** The page whose image flies in the transition under way, to it or back. */
+    internal var flight by mutableStateOf<Any?>(null)
+        private set
+
     /** The origin of each page opened from one, by the page's content key. */
     private val opened = mutableMapOf<Any, PageOriginKey>()
 
@@ -55,6 +66,16 @@ class PageOrigins {
     internal fun leave(key: PageOriginKey) {
         pending = key
     }
+
+    internal fun leaveWith(hero: PageHero) {
+        pendingHero = hero
+    }
+
+    /** The image the page with content [key] was opened with, if one was taken along. */
+    internal fun heroOf(key: Any): PageHero? = heroes[key]
+
+    /** Whether [hero] flies in the transition under way. */
+    internal fun flies(hero: PageHeroKey): Boolean = flight?.let { heroes[it]?.key } == hero
 
     /**
      * Whether the transition from page [from] to page [to], each framed alone, is a morph:
@@ -71,6 +92,16 @@ class PageOrigins {
         }
         if (!peek) opened.keys.retainAll(kept)
         if (opening && origin != null) opened[to] = origin
+        // An image taken along flies with the page sliding in, and back with it going, but not
+        // past a peek: the page shrinks as a whole there, and the image would come away from it
+        val hero = pendingHero.also { pendingHero = null }
+        if (opening && hero != null) heroes[to] = hero
+        flight = when {
+            peek -> null
+            opening -> to.takeIf { hero != null }
+            else -> from.takeIf { heroes.containsKey(from) }
+        }
+        if (!peek) heroes.keys.retainAll(kept + listOfNotNull(flight))
         return morph != null
     }
 
@@ -78,6 +109,8 @@ class PageOrigins {
     internal fun clear() {
         pending = null
         morph = null
+        pendingHero = null
+        flight = null
     }
 }
 
@@ -87,6 +120,14 @@ internal data class Morph(val page: Any, val origin: PageOriginKey)
 /** The morph under way, if any. */
 @Composable
 private fun currentMorph(): Morph? = LocalPageOrigins.current?.morph
+
+/** An image a page is opened with, which flies from where it was into the page and back: its [key] and what it shows. */
+@Immutable
+data class PageHero(val key: PageHeroKey, val image: String?)
+
+/** One image pages may be opened with, kept across leaving and coming back to the page that shows it. */
+@Immutable
+data class PageHeroKey(val id: Long)
 
 /** One origin, kept across leaving and coming back to the page that shows it. */
 @Immutable
@@ -188,6 +229,71 @@ fun Modifier.pageOriginStandIn(origin: PageOrigin): Modifier {
     return morphing(origin.key, visibility, enabled = currentMorph()?.origin == origin.key)
 }
 
+/**
+ * An image pages open with, such as a forum's avatar on a chip: the page slides in as usual and
+ * only the image flies, from here into the page and back. Call [leave] just before opening a
+ * page, and give the image here [pageHero] and the one in the page [pageHeroTarget].
+ */
+@Stable
+class PageHeroSource internal constructor(private val origins: PageOrigins?, val key: PageHeroKey) {
+    /** The page about to open takes [image] along. */
+    fun leave(image: String?) {
+        origins?.leaveWith(PageHero(key, image))
+    }
+}
+
+/** A source of an image pages open with, the same one each time this is shown again. */
+@Composable
+fun rememberPageHero(): PageHeroSource {
+    val origins = LocalPageOrigins.current
+    val id = rememberSaveable { Random.nextLong() }
+    return remember(origins, id) { PageHeroSource(origins, PageHeroKey(id)) }
+}
+
+/** The content key of the page framed alone around here; null within a wider scene. */
+val LocalFramedPage = staticCompositionLocalOf<Any?> { null }
+
+/** The image the page around here was opened with, to show until it has its own. */
+@Composable
+fun openedWithHero(): PageHero? {
+    val page = LocalFramedPage.current ?: return null
+    return LocalPageOrigins.current?.heroOf(page)
+}
+
+/** Has the image [source] stands for fly into the page opened from it, and back. Always in place. */
+@Composable
+fun Modifier.pageHero(source: PageHeroSource): Modifier {
+    val origins = LocalPageOrigins.current ?: return this
+    return heroing(source.key, enabled = origins.flies(source.key))
+}
+
+/** Where the image the page around here was opened with lands; nothing if it was opened without one. */
+@Composable
+fun Modifier.pageHeroTarget(): Modifier {
+    val origins = LocalPageOrigins.current ?: return this
+    val page = LocalFramedPage.current ?: return this
+    val hero = origins.heroOf(page) ?: return this
+    return heroing(hero.key, enabled = origins.flight == page)
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun Modifier.heroing(key: PageHeroKey, enabled: Boolean): Modifier {
+    val scope = LocalPageSharedTransitionScope.current ?: return this
+    // Both ends show on the way, one fading into the other, so the image is the one already
+    // shown from the start, while the other end may still be loading its own
+    return with(scope) {
+        this@heroing.sharedBounds(
+            sharedContentState = rememberSharedContentState(key, if (enabled) Enabled else Disabled),
+            animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+            enter = if (enabled) fadeIn(PageTransitions.seeked(end = HeroFade)) else EnterTransition.None,
+            exit = if (enabled) fadeOut(PageTransitions.seeked(end = HeroFade)) else ExitTransition.None,
+            boundsTransform = { _, _ -> PageTransitions.seeked() },
+            resizeMode = scaleToBounds(ContentScale.Crop, Alignment.Center),
+        )
+    }
+}
+
 /** Has the page framed alone with content [key] turn into the origin it opened from, and back. */
 @Composable
 internal fun Modifier.pageMorph(key: Any): Modifier {
@@ -219,6 +325,9 @@ private class MorphConfig(private val enabled: Boolean) : SharedTransitionScope.
 
 private val Enabled = MorphConfig(enabled = true)
 private val Disabled = MorphConfig(enabled = false)
+
+/** How far into a flight one end of an image has faded into the other. */
+private const val HeroFade = 0.6f
 
 /** How far into a morph the page has faded in, and its origin out. */
 internal const val MorphFade = 0.4f

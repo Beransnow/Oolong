@@ -80,7 +80,9 @@ import oolong.client.model.User
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.navigation.PageOrigin
+import oolong.client.ui.common.navigation.pageHero
 import oolong.client.ui.common.navigation.pageOrigin
+import oolong.client.ui.common.navigation.rememberPageHero
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.theme.compose.Corners
@@ -138,12 +140,16 @@ fun UserHeader(
     val nameShow = remember(nameShowProvider) { nameShowProvider() }
     val portrait = remember(portraitProvider) { portraitProvider() }
     val time = remember(timeProvider) { timeProvider?.invoke() }
+    // The avatar flies into the profile it opens, which fades in around it
+    val hero = rememberPageHero()
+    val avatar = StringUtil.getAvatarUrl(portrait)
     UserHeader(
         avatar = {
             Avatar(
-                data = StringUtil.getAvatarUrl(portrait),
+                data = avatar,
                 size = Sizes.Small,
-                contentDescription = null
+                contentDescription = null,
+                modifier = Modifier.pageHero(hero),
             )
         },
         name = {
@@ -156,7 +162,10 @@ fun UserHeader(
                 )
             )
         },
-        onClick = onClick,
+        onClick = {
+            hero.leave(avatar)
+            onClick()
+        },
         desc = time?.let { time ->
             @Composable { MetaText(text = relativeTime(time.toLong())) }
         },

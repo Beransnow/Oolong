@@ -11,6 +11,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -18,10 +19,12 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
@@ -115,16 +118,31 @@ fun Avatar(
     )
 }
 
+/**
+ * An avatar from [data]. With [decodedAt] it is decoded at that size whatever size it shows at,
+ * so it can be the copy a list already has at hand rather than a new one, shown at once.
+ */
 @Composable
 fun Avatar(
     data: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
+    decodedAt: Dp? = null,
 ) {
     val placeholder = rememberImagePlaceholder()
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val model = if (decodedAt == null) {
+        data
+    } else {
+        remember(data, decodedAt, density) {
+            val px = with(density) { decodedAt.roundToPx() }
+            ImageRequest.Builder(context).data(data).size(px, px).build()
+        }
+    }
     AsyncImage(
-        model = data,
+        model = model,
         placeholder = placeholder,
         error = placeholder,
         contentDescription = contentDescription,

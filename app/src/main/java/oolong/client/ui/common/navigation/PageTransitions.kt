@@ -22,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -174,6 +175,8 @@ object PageTransitions {
                 kept = (to.previousEntries + to.entries).mapTo(mutableSetOf()) { it.contentKey },
             )
         }
+        // Worked out alongside the morph, above
+        val heroFlies = origins?.flight != null
         return when {
             relayout -> PageTransition(
                 { fadeIn(seeked()) togetherWith fadeOut(seeked()) },
@@ -198,6 +201,18 @@ object PageTransitions {
             // Fading as well, in case its origin has gone meanwhile
             morph -> PageTransition(
                 { EnterTransition.None togetherWith fadeOut(seeked(end = MorphFade)) },
+                drive = drive(),
+                zIndex = -1f,
+            )
+            // An image taken along flies on its own, so the page only fades in and out around
+            // it, in place: sliding as well would send the eye two ways at once
+            heroFlies && toDepth > fromDepth -> PageTransition(
+                { fadeIn(seeked()) togetherWith ExitTransition.KeepUntilTransitionsFinished },
+                drive = drive(),
+                zIndex = 1f,
+            )
+            heroFlies -> PageTransition(
+                { EnterTransition.None togetherWith fadeOut(seeked()) },
                 drive = drive(),
                 zIndex = -1f,
             )
@@ -349,7 +364,7 @@ object PageTransitions {
                 }
                 .background(ExtendedTheme.colors.background)
         ) {
-            content()
+            CompositionLocalProvider(LocalFramedPage provides key) { content() }
         }
     }
 }
