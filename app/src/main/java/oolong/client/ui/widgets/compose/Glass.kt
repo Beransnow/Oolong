@@ -345,7 +345,10 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
     val frost = glassFrost()
-    val shown: () -> Float = bar?.shown ?: FullyShown
+    // A row with nothing in it, as a bar without actions, has no glass: at no size its edge
+    // would still draw as a dot
+    var empty by remember { mutableStateOf(false) }
+    val shown: () -> Float = if (bar == null) FullyShown else remember(bar) { { if (empty) 0f else bar.shown() } }
     val edge = if (colors.isNightMode) Color.White.copy(alpha = 0.10f)
     else Color.Black.copy(alpha = 0.06f)
     // A bar button swells under the finger and settles back, with the light where it was touched
@@ -359,7 +362,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
     val chrome = if (bar == null) {
         shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
     } else {
-        pointerInput(Unit) {
+        onSizeChanged { empty = it.width == 0 || it.height == 0 }.pointerInput(Unit) {
             // Watches without taking: the buttons inside still get their clicks
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -377,8 +380,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
             transformOrigin = if (pressedAt.isSpecified && size.width > 0f) {
                 TransformOrigin(pressedAt.x / size.width, pressedAt.y / size.height)
             } else TransformOrigin.Center
-            // A row with nothing in it, as a bar without actions, has no glass, not even a dot of shadow
-            shadowElevation = if (size.minDimension > 0f) FloatingElevation.toPx() * shown() else 0f
+            shadowElevation = FloatingElevation.toPx() * shown()
             this.shape = shape
             ambientShadowColor = ShadowAmbient
             spotShadowColor = ShadowSpot
@@ -392,7 +394,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
         if (alpha > 0f) drawOutline(shape.createOutline(size, layoutDirection, this), veil.copy(alpha = alpha))
     }
     val edged: Modifier = if (bar == null) Modifier.border(0.5.dp, edge, shape) else Modifier.drawBehind {
-        if (size.minDimension > 0f) drawOutline(shape.createOutline(size, layoutDirection, this), edge.copy(alpha = edge.alpha * shown()), style = Stroke(0.5.dp.toPx()))
+        drawOutline(shape.createOutline(size, layoutDirection, this), edge.copy(alpha = edge.alpha * shown()), style = Stroke(0.5.dp.toPx()))
     }
     if (colors.isTranslucent && tier != GlassTier.Solid) {
         // Over a wallpaper only a light blur, untinted, so the wallpaper still shows through
@@ -417,7 +419,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
                     if (frost > 1f) tint(colors.background.copy(alpha = FrostedFloatingTint * (frost - 1f) / (MostFrost - 1f)))
                     if (bar != null) {
                         // Read here, the glass follows the scroll without being rebuilt
-                        alpha(bar.shown())
+                        alpha(shown())
                         pressed {
                             animate(toSpec = Motion.press(), fromSpec = Motion.release()) {
                                 lightingIntensity(1f)
@@ -437,7 +439,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
                     blurRadius(20.dp * frost)
                     noiseFactor(0f)
                     colorEffects(listOf(HazeColorEffect.tint(colors.background.copy(alpha = (0.72f * frost).coerceAtMost(MaxTint)))))
-                    if (bar != null) alpha(bar.shown())
+                    if (bar != null) alpha(shown())
                 }
             }
             chrome
