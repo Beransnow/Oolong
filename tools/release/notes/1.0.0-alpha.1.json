@@ -1,0 +1,136 @@
+{
+  "zh": {
+    "全新设计": [
+      "视野更开阔\n内容铺满整个屏幕，顶栏与底栏化为半透明的玻璃，不再挡住内容",
+      "阅读空间更大\n页面在顶部时没有多余的遮挡，浏览时底栏自动收起",
+      "来去更清楚\n页面从你点按的地方展开，返回时收回原处，始终知道自己从哪里来",
+      "切换更连贯\n搜索从底栏旁自然展开，进出都不打断浏览",
+      "反馈更明确\n按住标签、滑块等控件时，都有清晰的反馈，操作更有把握",
+      "操作更跟手\n动效跟随手指，随时可以打断；拖动返回时，可以先看一眼上一页再决定",
+      "通透度可调\n玻璃的通透程度可以按喜好调整，也可以换回不透明的经典样式",
+      "图标更统一\n界面图标统一为圆润的线条风格，更易辨认"
+    ],
+    "帖子": [
+      "重新排版\n楼层与楼中楼层次分明，阅读更舒适",
+      "长按预览\n长按帖子卡片即可预览，预览过的帖子打开时无需重新加载",
+      "投票\n帖子中的投票可直接查看结果并参与",
+      "语音\n播放时进度沿胶囊填满，拖动即可跳转",
+      "图片\n从缩略图中放大打开，长按可保存、分享等",
+      "链接\n链接文字与实际地址不符时，注明实际指向",
+      "楼主管理\n楼主可以删除自己帖子中的回复",
+      "点赞同步\n在一处点赞，其他地方同步显示"
+    ],
+    "沉浸阅读": [
+      "连载整理成正文\n楼主的更新按章节整理成连贯的正文，追更更方便",
+      "阅读设置\n可调整字号与字重，平板上目录常驻一侧"
+    ],
+    "吧": [
+      "吧页焕新\n吧页采用该吧的主题色，向上滑动时，吧头像与吧名收进顶栏",
+      "分类标签\n标签悬浮在玻璃上，精品分类收进「精品」标签中",
+      "今日签到\n显示该吧今天的签到人数",
+      "记住位置\n每个标签各自记住浏览位置"
+    ],
+    "首页与动态": [
+      "常逛的吧\n关注的吧以两列显示，并附吧头像",
+      "搜索\n搜索按钮位于底栏旁，也可以改为放在首页顶部",
+      "动态卡片\n推荐帖子的操作收进「⋯」，一次点按即可完成",
+      "消息\n回复与 @ 采用和动态一致的卡片样式"
+    ],
+    "屏蔽": [
+      "长按屏蔽\n在帖子或回复上长按，即可屏蔽用户、吧或关键词",
+      "更灵活的规则\n条件可以组合，也可以限定生效的吧和有效期，并统计命中次数",
+      "折叠并注明原因\n被屏蔽的内容会折叠起来，点按即可查看原因；搜索结果同样生效",
+      "导出与导入\n屏蔽规则可以导出备份，换机后再导入",
+      "过滤低等级用户\n可按等级分档设置"
+    ],
+    "签到": [
+      "准时自动签到\n自动签到按设定的时间进行；错过时间时，会尽快补上",
+      "实时通知\n签到进度以实时通知显示",
+      "更可靠\n一个吧签到失败，不影响其他吧继续签到"
+    ],
+    "主题与语言": [
+      "自选主题色\n任选一种颜色，自动生成整套配色，白天和夜间都协调",
+      "壁纸主题\n背景柔和虚化，文字颜色随壁纸明暗自动调整；夜间同样可用",
+      "降低透明度\n需要时可降低界面的透明度",
+      "英文界面\n可在外观设置中切换语言"
+    ],
+    "账号与隐私": [
+      "切换账号\n点按底栏头像即可切换",
+      "关注与粉丝\n可查看用户的关注与粉丝列表",
+      "拉黑\n在用户主页即可拉黑，并可分别禁止关注、互动与私信",
+      "剪贴板\n复制的链接只提示一次，尽量少读取剪贴板",
+      "备份\n账号信息不再随系统云备份上传"
+    ],
+    "大屏": [
+      "双栏显示\n平板与折叠屏上，列表与内容左右并排",
+      "侧边栏\n宽屏使用侧边导航栏，正文保持舒适的阅读宽度"
+    ]
+  },
+  "en": {
+    "A new design": [
+      "More to see\nContent fills the whole screen, and the bars turn to translucent glass that no longer hides it",
+      "More room to read\nNothing covers the top of a page, and the bottom bar tucks away as you scroll",
+      "Always know where you are\nPages open out of what you tapped and close back into it",
+      "Smoother transitions\nSearch opens right out of the bottom bar, without breaking your browsing",
+      "Clearer feedback\nTabs, sliders and other controls respond plainly when you hold them",
+      "More responsive\nAnimations follow your finger and can be interrupted at any time; drag back to glance at the previous page before you go",
+      "Adjustable clarity\nSet how clear the glass is, or switch back to the solid classic bars",
+      "Consistent icons\nIcons share one rounded line style and are easier to recognise"
+    ],
+    "Threads": [
+      "A new layout\nReplies and comments are clearly set apart and easier to read",
+      "Peek\nTouch and hold a thread card to preview it; a thread you peeked at opens without loading again",
+      "Polls\nSee results and vote right in the thread",
+      "Voice\nThe capsule fills as it plays; drag along it to seek",
+      "Photos\nPhotos open out of their thumbnails; touch and hold to save or share",
+      "Links\nLinks say where they really go when their text names another site",
+      "OP tools\nOPs can delete replies in their own threads",
+      "Likes in sync\nA like shows everywhere the post appears"
+    ],
+    "Reader": [
+      "Serials as one text\nAn OP’s updates are arranged into chapters you read straight through",
+      "Reading settings\nAdjust size and weight; on tablets, the contents stay open beside the text"
+    ],
+    "Forums": [
+      "A refreshed forum page\nEach forum wears its own colour, and its avatar and name move into the top bar as you scroll",
+      "Tabs\nTabs float on glass, with featured categories inside the Featured tab",
+      "Checked in today\nSee how many people checked in to the forum today",
+      "Your place, kept\nEach tab remembers where you were"
+    ],
+    "Home and feed": [
+      "Your forums\nFollowed forums show in two columns with their avatars",
+      "Search\nThe search button sits beside the bottom bar, or at the top of Home if you prefer",
+      "Feed cards\nActions on recommended threads sit behind “⋯”, each one tap away",
+      "Messages\nReplies and mentions use the same cards as the feed"
+    ],
+    "Hiding": [
+      "Touch and hold to hide\nHide a user, a forum or keywords right from a thread or reply",
+      "More flexible rules\nCombine conditions, limit a rule to certain forums or a time, and see how often it applies",
+      "Folded with a reason\nHidden content folds away; tap it to see why. Search results are covered too",
+      "Export and import\nBack up your rules and bring them to a new device",
+      "Hide low-level users\nChoose the cut-off level in steps"
+    ],
+    "Check-in": [
+      "On time\nAutomatic check-in runs at the time you set, and catches up as soon as it can if that time was missed",
+      "Live progress\nCheck-in progress shows as a live update",
+      "More reliable\nOne forum failing no longer stops the rest"
+    ],
+    "Theme and language": [
+      "Your colour\nPick any colour for a full palette that works by day and by night",
+      "Wallpaper theme\nThe background is softly blurred, and text adapts to how light the wallpaper is, at night too",
+      "Reduce transparency\nMake the interface less see-through when you need to",
+      "English\nChoose the language in Appearance"
+    ],
+    "Accounts and privacy": [
+      "Switch accounts\nTap your avatar on the bottom bar",
+      "Following and followers\nSee whom a user follows and who follows them",
+      "Block\nBlock a user from their profile, choosing whether they may follow, interact or message you",
+      "Clipboard\nA copied link is offered once, and the clipboard is read as little as possible",
+      "Backups\nAccounts are no longer uploaded with system cloud backups"
+    ],
+    "Large screens": [
+      "Two panes\nOn tablets and foldables, lists and content sit side by side",
+      "Navigation rail\nWide windows use a side rail and keep text at a comfortable width"
+    ]
+  }
+}
