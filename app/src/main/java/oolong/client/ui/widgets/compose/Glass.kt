@@ -377,7 +377,8 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
             transformOrigin = if (pressedAt.isSpecified && size.width > 0f) {
                 TransformOrigin(pressedAt.x / size.width, pressedAt.y / size.height)
             } else TransformOrigin.Center
-            shadowElevation = FloatingElevation.toPx() * shown()
+            // A row with nothing in it, as a bar without actions, has no glass, not even a dot of shadow
+            shadowElevation = if (size.minDimension > 0f) FloatingElevation.toPx() * shown() else 0f
             this.shape = shape
             ambientShadowColor = ShadowAmbient
             spotShadowColor = ShadowSpot
@@ -391,7 +392,7 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
         if (alpha > 0f) drawOutline(shape.createOutline(size, layoutDirection, this), veil.copy(alpha = alpha))
     }
     val edged: Modifier = if (bar == null) Modifier.border(0.5.dp, edge, shape) else Modifier.drawBehind {
-        drawOutline(shape.createOutline(size, layoutDirection, this), edge.copy(alpha = edge.alpha * shown()), style = Stroke(0.5.dp.toPx()))
+        if (size.minDimension > 0f) drawOutline(shape.createOutline(size, layoutDirection, this), edge.copy(alpha = edge.alpha * shown()), style = Stroke(0.5.dp.toPx()))
     }
     if (colors.isTranslucent && tier != GlassTier.Solid) {
         // Over a wallpaper only a light blur, untinted, so the wallpaper still shows through
