@@ -103,6 +103,9 @@ data object CustomSettingsKey : Key
 data object FontSizeKey : Key
 
 @Serializable
+data object SearchPlacementKey : Key
+
+@Serializable
 data object TranslucentThemeKey : Key
 
 @Serializable

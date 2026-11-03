@@ -36,7 +36,9 @@ import com.huanchengfly.tieba.post.ui.common.prefs.widgets.TextPref
 import com.huanchengfly.tieba.post.ui.navigation.AppThemeKey
 import com.huanchengfly.tieba.post.ui.navigation.FontSizeKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
+import com.huanchengfly.tieba.post.ui.navigation.SearchPlacementKey
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.main.SearchAtTopKey
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
@@ -105,6 +107,16 @@ fun CustomSettingsPage(
             }
             prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
                 prefsItem { LanguagePref() }
+                prefsItem {
+                    val atTop by rememberPreferenceAsState(SearchAtTopKey, false)
+                    TextPref(
+                        title = stringResource(id = R.string.title_search_placement),
+                        onClick = { navigator.navigate(SearchPlacementKey) },
+                        trailingContent = {
+                            PrefsLinkValue(text = stringResource(id = if (atTop) R.string.search_place_top else R.string.search_place_bottom))
+                        },
+                    )
+                }
             }
             prefsGroup(textAndIconGroup) {
                 prefsItem {

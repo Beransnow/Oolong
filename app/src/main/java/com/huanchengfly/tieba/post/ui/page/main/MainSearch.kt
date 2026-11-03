@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,6 +52,7 @@ import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -60,6 +64,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
@@ -70,10 +75,12 @@ import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
 import com.huanchengfly.tieba.post.ui.navigation.UserProfileKey
+import com.huanchengfly.tieba.post.ui.page.search.SearchFieldPlace
 import com.huanchengfly.tieba.post.ui.page.search.SearchScreen
 import com.huanchengfly.tieba.post.ui.page.search.SearchState
 import com.huanchengfly.tieba.post.ui.page.search.SearchViewModel
 import com.huanchengfly.tieba.post.ui.widgets.compose.BaseTextField
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarRowHeight
 import com.huanchengfly.tieba.post.ui.widgets.compose.floatingGlass
 import kotlin.math.roundToInt
 
@@ -81,6 +88,9 @@ import kotlin.math.roundToInt
  * Search on the main page, opened from the round button beside the floating bar: the button
  * stretches into a field above the keyboard, and the search page's history and results show over
  * the tabs. Closing shrinks the field back into the button, on the tab it was opened from.
+ *
+ * Where the user keeps search at the top ([SearchAtTopKey]), it opens from the field under the home
+ * page's title instead, which moves up into the top bar.
  */
 @Stable
 class MainSearchState(open: Boolean) {
@@ -90,7 +100,10 @@ class MainSearchState(open: Boolean) {
     /** 0 the button, 1 the field. */
     val progress = Animatable(if (open) 1f else 0f, visibilityThreshold = Motion.ProgressThreshold)
 
-    /** Where the bar left room for the button, in the root's pixels; empty while it has none. */
+    /**
+     * What search opens out of, in the root's pixels: the bar's room for the button, or the home
+     * page's field; empty while there is none.
+     */
     var buttonBounds by mutableStateOf(Rect.Zero)
 
     val focusRequester = FocusRequester()
@@ -118,21 +131,64 @@ fun rememberMainSearchState(): MainSearchState {
     return state
 }
 
+/** Search kept at the top of the home page rather than beside the bottom bar. */
+val SearchAtTopKey = booleanPreferencesKey("searchAtTop")
+
 /** Room the field takes at the bottom, for the search content to keep clear of. */
 @Composable
-fun mainSearchPadding(): PaddingValues =
-    WindowInsets.ime.union(WindowInsets.navigationBars)
-        .add(WindowInsets(bottom = FieldHeight + NavPillMargin * 2))
-        .asPaddingValues()
+fun mainSearchPadding(atTop: Boolean): PaddingValues =
+    if (atTop) {
+        WindowInsets.ime.union(WindowInsets.navigationBars).asPaddingValues()
+    } else {
+        WindowInsets.ime.union(WindowInsets.navigationBars)
+            .add(WindowInsets(bottom = FieldHeight + NavPillMargin * 2))
+            .asPaddingValues()
+    }
+
+/**
+ * The field under the home page's title, where search is kept at the top: what the search field
+ * grows out of, in its shape. It reports where it is to [state] and gives way to that field while
+ * search shows.
+ */
+@Composable
+fun HomeSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = ExtendedTheme.colors
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(FieldHeight)
+            .onGloballyPositioned { state.buttonBounds = it.boundsInRoot() }
+            .graphicsLayer { alpha = if (state.progress.value > 0f) 0f else 1f }
+            .pressScale(interactionSource)
+            // The same glass as the field it turns into; over the page it can't see through, so
+            // it shows as the glass's solid form
+            .floatingGlass(CapsuleShape)
+            .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onOpen)
+            .padding(start = (FieldHeight - IconSize) / 2),
+    ) {
+        Icon(imageVector = Symbols.Search, contentDescription = null, tint = colors.text, modifier = Modifier.size(IconSize))
+        Spacer(modifier = Modifier.width(FieldIconGap))
+        Text(
+            text = stringResource(id = R.string.hint_search),
+            color = colors.text.copy(alpha = ContentAlpha.medium),
+            maxLines = 1,
+        )
+    }
+}
 
 /**
  * The button and the field it stretches into, one piece of glass between the bar's room for it
  * and the bottom of the window above the keyboard. Before the bar for screen readers, so search
- * is found without passing the tabs.
+ * is found without passing the tabs. [atTop], it grows from the home page's field into the top
+ * bar instead, and shows only while search does; the button that closes it is then a back
+ * button at the start, where the search page's was.
  */
 @Composable
 fun MainSearchField(
     state: MainSearchState,
+    atTop: Boolean,
     input: String,
     onInputChange: (String) -> Unit,
     onSearch: (String) -> Unit,
@@ -140,9 +196,11 @@ fun MainSearchField(
     onClose: () -> Unit,
 ) {
     if (state.buttonBounds.isEmpty) return
+    if (atTop && state.progress.value == 0f) return
     var origin by remember { mutableStateOf(Offset.Zero) }
     val colors = ExtendedTheme.colors
     val bottomInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
+    val topInsets = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     val sideInsets = WindowInsets.navigationBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     Box(
         modifier = Modifier
@@ -157,15 +215,26 @@ fun MainSearchField(
             layout(placeable.width, placeable.height) { placeable.place(rect.left.roundToInt(), rect.top.roundToInt()) }
         }
         val margin = NavPillMargin
+
+        // Where the field and the close button beside it end up: above the keyboard, or in the
+        // top bar's row under the status bar
+        fun MeasureScope.fieldBottom(height: Int): Float = if (atTop) {
+            topInsets.getTop(this) + (GlassTopBarRowHeight + FieldHeight).toPx() / 2
+        } else {
+            height - bottomInsets.getBottom(this) - margin.toPx()
+        }
         Box(
             modifier = Modifier
                 .placedAt { width, height ->
                     val m = margin.toPx()
-                    val bottom = height - bottomInsets.getBottom(this) - m
+                    val bottom = fieldBottom(height)
+                    val left = sideInsets.getLeft(this, layoutDirection) + m
+                    val right = width - sideInsets.getRight(this, layoutDirection) - m
+                    val closeSpace = FieldHeight.toPx() + CloseGap.toPx()
                     val field = Rect(
-                        left = sideInsets.getLeft(this, layoutDirection) + m,
+                        left = if (atTop) left + closeSpace else left,
                         top = bottom - FieldHeight.toPx(),
-                        right = width - sideInsets.getRight(this, layoutDirection) - m - FieldHeight.toPx() - CloseGap.toPx(),
+                        right = if (atTop) right else right - closeSpace,
                         bottom = bottom,
                     )
                     lerp(state.buttonBounds.translate(-origin), field, state.progress.value)
@@ -203,7 +272,7 @@ fun MainSearchField(
                                 state.wantsFocus = false
                             }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(FieldIconGap))
                         BaseTextField(
                             value = input,
                             onValueChange = onInputChange,
@@ -221,7 +290,8 @@ fun MainSearchField(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .graphicsLayer { alpha = ((state.progress.value - 0.4f) / 0.6f).coerceIn(0f, 1f) }
+                                // Grown from the home page's field, the hint is already there
+                                .graphicsLayer { alpha = if (atTop) 1f else ((state.progress.value - 0.4f) / 0.6f).coerceIn(0f, 1f) }
                                 .focusRequester(state.focusRequester),
                         )
                         if (input.isNotEmpty() && state.open) {
@@ -246,9 +316,14 @@ fun MainSearchField(
                     .placedAt { width, height ->
                         val m = margin.toPx()
                         val size = FieldHeight.toPx()
-                        val bottom = height - bottomInsets.getBottom(this) - m
-                        val right = width - sideInsets.getRight(this, layoutDirection) - m
-                        Rect(right - size, bottom - size, right, bottom)
+                        val bottom = fieldBottom(height)
+                        if (atTop) {
+                            val left = sideInsets.getLeft(this, layoutDirection) + m
+                            Rect(left, bottom - size, left + size, bottom)
+                        } else {
+                            val right = width - sideInsets.getRight(this, layoutDirection) - m
+                            Rect(right - size, bottom - size, right, bottom)
+                        }
                     }
                     .graphicsLayer {
                         val p = state.progress.value
@@ -267,8 +342,8 @@ fun MainSearchField(
                     ),
             ) {
                 Icon(
-                    imageVector = Symbols.Close,
-                    contentDescription = stringResource(id = R.string.button_close_search),
+                    imageVector = if (atTop) Symbols.ArrowBack else Symbols.Close,
+                    contentDescription = stringResource(id = if (atTop) R.string.button_back else R.string.button_close_search),
                     tint = colors.text,
                     modifier = Modifier.size(IconSize),
                 )
@@ -298,12 +373,14 @@ private fun FieldButton(icon: ImageVector, label: String, onClick: () -> Unit) {
 private val CapsuleShape = RoundedCornerShape(percent = 50)
 private val FieldHeight = 48.dp
 private val CloseGap = 8.dp
+private val FieldIconGap = 10.dp
 private val IconSize = 24.dp
 
-/** The search page's history, suggestions and results, for the field at the bottom. */
+/** The search page's history, suggestions and results, for the field over them. */
 @Composable
 fun MainSearchContent(
     state: SearchState,
+    atTop: Boolean,
     input: String,
     viewModel: SearchViewModel,
     navigator: Navigator,
@@ -324,6 +401,6 @@ fun MainSearchContent(
         onOpenForum = { navigator.navigate(ForumKey(it)) },
         onOpenUser = { navigator.navigate(UserProfileKey(it)) },
         onOpenThread = { navigator.navigate(ThreadKey(threadId = it.threadId)) },
-        showField = false,
+        fieldPlace = if (atTop) SearchFieldPlace.TopBar else SearchFieldPlace.Elsewhere,
     )
 }

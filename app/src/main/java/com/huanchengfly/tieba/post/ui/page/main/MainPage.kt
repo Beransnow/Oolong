@@ -27,6 +27,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -90,6 +91,7 @@ fun MainPage(
         }
     }
     val searchShown by remember { derivedStateOf { search.progress.value > 0f } }
+    val searchAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
 
     ProvideNavigator(navigator = navigator) {
         val navBarState = rememberHideOnScrollState()
@@ -112,7 +114,7 @@ fun MainPage(
                         modifier = Modifier
                             .graphicsLayer { alpha = 1f - search.progress.value }
                             .then(if (search.open) Modifier.clearAndSetSemantics {} else Modifier),
-                        onSearchButtonPlaced = { search.buttonBounds = it },
+                        onSearchButtonPlaced = if (searchAtTop) null else { bounds -> search.buttonBounds = bounds },
                         searching = searchShown,
                     )
                 }
@@ -121,6 +123,7 @@ fun MainPage(
                 if (showBottomNavigation) {
                     MainSearchField(
                         state = search,
+                        atTop = searchAtTop,
                         input = searchInput,
                         onInputChange = {
                             searchInput = it
@@ -155,6 +158,11 @@ fun MainPage(
                         MainTabs.HOME -> HomePage(
                             canOpenExplore = navigationItems.any { item -> item.id == MainTabs.EXPLORE },
                             showSearchBox = !showBottomNavigation,
+                            searchField = if (showBottomNavigation && searchAtTop) {
+                                { HomeSearchField(state = search, onOpen = openSearch) }
+                            } else {
+                                null
+                            },
                         ) {
                             tabs.selected = MainTabs.EXPLORE
                         }
@@ -165,10 +173,11 @@ fun MainPage(
                     }
                 }
                 if (searchShown) {
-                    CompositionLocalProvider(LocalChromePadding provides mainSearchPadding()) {
+                    CompositionLocalProvider(LocalChromePadding provides mainSearchPadding(searchAtTop)) {
                         Box(modifier = Modifier.graphicsLayer { alpha = search.progress.value }) {
                             MainSearchContent(
                                 state = searchUiState,
+                                atTop = searchAtTop,
                                 input = searchInput,
                                 viewModel = searchViewModel,
                                 navigator = navigator,

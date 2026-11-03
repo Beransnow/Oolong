@@ -356,6 +356,9 @@
     <string name="settings_group_theme">主题</string>
     <string name="settings_group_text_and_icon">字体与图标</string>
     <string name="settings_group_effects">界面效果</string>
+    <string name="title_search_placement">搜索栏</string>
+    <string name="search_place_bottom">底栏旁</string>
+    <string name="search_place_top">首页顶部</string>
     <string name="settings_group_home">首页</string>
     <string name="settings_group_forum">吧</string>
     <string name="settings_group_thread">帖子</string>

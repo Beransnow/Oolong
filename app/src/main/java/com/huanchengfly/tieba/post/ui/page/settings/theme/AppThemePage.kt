@@ -248,7 +248,7 @@ private val LowerRightHalf = GenericShape { size, _ ->
 }
 
 @Composable
-private fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick: () -> Unit, preview: @Composable BoxScope.() -> Unit) {
+internal fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick: () -> Unit, preview: @Composable BoxScope.() -> Unit) {
     val colors = ExtendedTheme.colors
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -339,7 +339,7 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
 }
 
 @Composable
-private fun Bar(color: Color, width: Float, height: Dp) {
+internal fun Bar(color: Color, width: Float, height: Dp) {
     Box(modifier = Modifier.fillMaxWidth(width).height(height).background(color, CircleShape))
 }
 

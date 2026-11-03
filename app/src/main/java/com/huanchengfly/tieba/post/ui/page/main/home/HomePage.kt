@@ -436,6 +436,7 @@ sealed interface HomeEvent {
 fun HomePage(
     canOpenExplore: Boolean = false,
     showSearchBox: Boolean = true,
+    searchField: (@Composable () -> Unit)? = null,
     viewModel: HomeViewModel = hiltViewModel(),
     onOpenExplore: () -> Unit = {},
 ) {
@@ -465,6 +466,7 @@ fun HomePage(
         showHistory = showHistory,
         canOpenExplore = canOpenExplore,
         showSearchBox = showSearchBox,
+        searchField = searchField,
         onOpenExplore = onOpenExplore,
         onToggleListSingle = { context.appPreferences.listSingle = !listSingle },
         onEvent = { event ->
@@ -496,6 +498,7 @@ fun HomeScreen(
     showHistory: Boolean = true,
     canOpenExplore: Boolean = false,
     showSearchBox: Boolean = true,
+    searchField: (@Composable () -> Unit)? = null,
     onOpenExplore: () -> Unit = {},
     onToggleListSingle: () -> Unit = {},
 ) {
@@ -530,9 +533,18 @@ fun HomeScreen(
             refreshing = isLoading && forums.isNotEmpty(),
             onRefresh = { onEvent(HomeEvent.Refresh) }
         )
-        // On a phone search opens from the button beside the bottom bar instead
+        // On a phone search opens from the button beside the bottom bar, or from [searchField]
+        // where the user keeps it at the top
         val searchBox: @Composable () -> Unit = {
-            if (showSearchBox) SearchBox(modifier = Modifier.padding(bottom = 4.dp)) { onEvent(HomeEvent.Search) }
+            when {
+                searchField != null -> Box(
+                    modifier = Modifier
+                        .background(ExtendedTheme.colors.background)
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
+                ) { searchField() }
+
+                showSearchBox -> SearchBox(modifier = Modifier.padding(bottom = 4.dp)) { onEvent(HomeEvent.Search) }
+            }
         }
         val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
         Box(modifier = Modifier.pullRefresh(pullRefreshState)) {

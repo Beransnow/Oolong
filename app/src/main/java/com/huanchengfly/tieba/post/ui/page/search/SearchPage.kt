@@ -163,10 +163,21 @@ fun SearchPage(
     }
 }
 
+/** Where the search field is, against the search page's top bar. */
+enum class SearchFieldPlace {
+    /** The page's own, in its top bar. */
+    Own,
+
+    /** Someone else's, laid over the top bar's row, which is kept clear for it. */
+    TopBar,
+
+    /** Someone else's, away from the top bar, such as above the keyboard; the bar carries only the tabs. */
+    Elsewhere,
+}
+
 /**
  * The search page: the history and suggestions while the user types a keyword, then the forums,
- * threads and users found, in tabs. Without [showField] the field is elsewhere, such as above
- * the keyboard on the main page, and the top bar carries only the tabs.
+ * threads and users found, in tabs. [fieldPlace] says where the field is.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -185,7 +196,7 @@ fun SearchScreen(
     onOpenForum: (forumName: String) -> Unit,
     onOpenUser: (uid: Long) -> Unit,
     onOpenThread: (SearchedPost) -> Unit,
-    showField: Boolean = true,
+    fieldPlace: SearchFieldPlace = SearchFieldPlace.Own,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val searching = state.keyword.isNotEmpty()
@@ -249,7 +260,7 @@ fun SearchScreen(
     GlassScaffold(
         topBar = {
             when {
-                showField -> GlassTopBar(
+                fieldPlace == SearchFieldPlace.Own -> GlassTopBar(
                     title = {
                         Box(
                             modifier = Modifier
@@ -269,6 +280,12 @@ fun SearchScreen(
                         }
                     },
                 ) {
+                    if (searching) {
+                        SearchTabRow(pagerState = pagerState, pages = pages)
+                    }
+                }
+
+                fieldPlace == SearchFieldPlace.TopBar -> GlassTopBar(title = {}) {
                     if (searching) {
                         SearchTabRow(pagerState = pagerState, pages = pages)
                     }

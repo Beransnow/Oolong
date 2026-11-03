@@ -360,6 +360,9 @@
     <string name="settings_group_theme">Theme</string>
     <string name="settings_group_text_and_icon">Text and icons</string>
     <string name="settings_group_effects">Effects</string>
+    <string name="title_search_placement">Search bar</string>
+    <string name="search_place_bottom">Beside the tab bar</string>
+    <string name="search_place_top">Top of home</string>
     <string name="settings_group_home">Home</string>
     <string name="settings_group_forum">Forums</string>
     <string name="settings_group_thread">Threads</string>

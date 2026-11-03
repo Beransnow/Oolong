@@ -79,6 +79,7 @@ import com.huanchengfly.tieba.post.ui.page.settings.block.BlockSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.block.blocklist.BlockListPage
 import com.huanchengfly.tieba.post.ui.page.settings.custom.CustomSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.custom.FontSizePage
+import com.huanchengfly.tieba.post.ui.page.settings.custom.SearchPlacementPage
 import com.huanchengfly.tieba.post.ui.page.settings.habit.HabitSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.more.MoreSettingsPage
 import com.huanchengfly.tieba.post.ui.page.settings.oksign.OKSignSettingsPage
@@ -126,6 +127,7 @@ private fun KeyContent(key: Key) {
         TranslucentThemeKey -> TranslucentThemePage()
         CustomSettingsKey -> CustomSettingsPage()
         FontSizeKey -> FontSizePage()
+        SearchPlacementKey -> SearchPlacementPage()
         HabitSettingsKey -> HabitSettingsPage()
         PostSettingsKey -> PostSettingsPage()
         BlockSettingsKey -> BlockSettingsPage()
