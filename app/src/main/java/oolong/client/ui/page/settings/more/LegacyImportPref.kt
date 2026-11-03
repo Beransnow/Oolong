@@ -23,13 +23,14 @@ fun LegacyImportPref(source: LegacyImport.Source) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = LocalSnackbarHostState.current
+    val failed = stringResource(id = R.string.toast_import_legacy_failed)
     val export = rememberLauncherForActivityResult(LegacyImport.Export) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             if (LegacyImport.receive(context, uri)) {
                 context.findActivity()?.let(LegacyImport::restart)
             } else {
-                snackbar.showSnackbar(context.getString(R.string.toast_import_legacy_failed))
+                snackbar.showSnackbar(failed)
             }
         }
     }

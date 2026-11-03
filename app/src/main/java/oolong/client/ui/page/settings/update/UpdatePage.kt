@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -77,7 +78,6 @@ import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
-import java.util.Locale
 
 /**
  * Software update, a page of its own (design-system.md §9.5): the app and where its version stands,
@@ -127,15 +127,16 @@ fun UpdatePage(
                 Hero(lens, state)
                 // The new version's notes when there is one; else what this version brought
                 val context = LocalContext.current
+                val locale = LocalConfiguration.current.locales[0]
                 val offered = state.offered
                 if (offered != null) {
                     Notes(
                         version = offered.versionName,
                         details = "${Formatter.formatShortFileSize(context, offered.size)} · ${offered.publishedAt}",
-                        groups = offered.notesFor(Locale.getDefault()),
+                        groups = offered.notesFor(locale),
                     )
                 } else if (state.installedNotes.isNotEmpty()) {
-                    Notes(version = BuildConfig.VERSION_NAME, groups = state.installedNotes.notesFor(Locale.getDefault()))
+                    Notes(version = BuildConfig.VERSION_NAME, groups = state.installedNotes.notesFor(locale))
                 }
                 val busy = state.download is UpdateDownload.Running || state.download is UpdateDownload.Ready
                 if (offered != null && !offered.required && !busy) {
