@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -52,6 +50,7 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyBackHandler
+import oolong.client.ui.widgets.compose.Slider
 import oolong.client.utils.appPreferences
 import kotlin.math.roundToInt
 
@@ -209,13 +208,6 @@ private fun FontSizeSlider(step: Int, onStepChange: (Int) -> Unit) {
                 onValueChange = { onStepChange(it.roundToInt()) },
                 valueRange = 0f..FontScale.STEPS.toFloat(),
                 steps = FontScale.STEPS - 1,
-                colors = SliderDefaults.colors(
-                    thumbColor = ExtendedTheme.colors.accent,
-                    activeTrackColor = ExtendedTheme.colors.accent,
-                    inactiveTrackColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.24f),
-                    activeTickColor = Color.Transparent,
-                    inactiveTickColor = Color.Transparent,
-                ),
                 modifier = Modifier.weight(1f),
             )
             Text(text = "A", color = ExtendedTheme.colors.textSecondary, fontSize = 20.sp, fontWeight = FontWeight.Bold)

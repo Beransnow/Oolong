@@ -35,8 +35,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -101,6 +99,7 @@ import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.Dialog
 import oolong.client.ui.widgets.compose.DialogNegativeButton
 import oolong.client.ui.widgets.compose.DialogPositiveButton
+import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.PickMediasContract
 import oolong.client.utils.PickMediasRequest
@@ -473,11 +472,6 @@ private fun SliderRow(
             onValueChange = onChange,
             onValueChangeFinished = onChangeFinished,
             valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor = ExtendedTheme.colors.accent,
-                activeTrackColor = ExtendedTheme.colors.accent,
-                inactiveTrackColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.24f),
-            ),
         )
     }
 }
