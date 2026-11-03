@@ -44,8 +44,8 @@ import com.huanchengfly.tieba.post.dpToPxFloat
 import com.huanchengfly.tieba.post.model.StoredThread
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.pxToSp
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.Navigator
 import com.huanchengfly.tieba.post.ui.navigation.ThreadKey
@@ -260,7 +260,7 @@ private fun StoreItem(
                                     .fillMaxSize()
                                     .background(
                                         color = ExtendedTheme.colors.chip,
-                                        shape = SmoothCornerShape(3.dp)
+                                        shape = Corners.xs
                                     )
                                     .padding(vertical = 4.dp, horizontal = 12.dp)
                             ) {

@@ -211,7 +211,7 @@ private fun ThemeGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(SmoothCornerShape(16.dp))
+            .clip(Corners.md)
             .background(ExtendedTheme.colors.chip)
             .padding(vertical = 4.dp),
         content = content,

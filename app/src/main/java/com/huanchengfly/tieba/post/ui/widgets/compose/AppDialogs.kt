@@ -51,7 +51,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -257,7 +256,7 @@ private fun LoadingDialog() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(SmoothCornerShape(20.dp))
+                .clip(Corners.xl)
                 .background(colors.sheet)
                 .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
@@ -277,8 +276,8 @@ private fun PermissionTipBanner(tip: AppDialog.PermissionTip) {
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(16.dp)
             .fillMaxWidth()
-            .shadow(12.dp, SmoothCornerShape(20.dp))
-            .clip(SmoothCornerShape(20.dp))
+            .shadow(12.dp, Corners.xl)
+            .clip(Corners.xl)
             .background(colors.sheet)
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {

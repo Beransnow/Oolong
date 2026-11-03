@@ -76,7 +76,6 @@ import com.huanchengfly.tieba.post.model.FollowedForum
 import com.huanchengfly.tieba.post.model.VisitedForum
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.navigation.ForumKey
 import com.huanchengfly.tieba.post.ui.navigation.LoginKey
@@ -221,7 +220,7 @@ private fun ForumItemPlaceholder(
                 .width(54.dp)
                 .background(
                     color = ExtendedTheme.colors.chip,
-                    shape = SmoothCornerShape(3.dp)
+                    shape = Corners.xs
                 )
                 .padding(vertical = 4.dp)
                 .align(CenterVertically)
@@ -295,7 +294,7 @@ private fun ForumItemContent(
                 .width(54.dp)
                 .background(
                     color = ExtendedTheme.colors.chip,
-                    shape = SmoothCornerShape(3.dp)
+                    shape = Corners.xs
                 )
                 .padding(vertical = 4.dp)
                 .align(CenterVertically)

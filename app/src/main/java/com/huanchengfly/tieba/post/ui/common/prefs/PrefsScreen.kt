@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
@@ -81,4 +82,4 @@ fun PrefsScreen(
     }
 }
 
-private val CardRadius = 16.dp
+private val CardRadius = Radius.md

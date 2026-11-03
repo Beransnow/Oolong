@@ -79,8 +79,10 @@ import com.huanchengfly.tieba.post.model.TextSpan
 import com.huanchengfly.tieba.post.model.User
 import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.ui.common.LocalAccount
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Corners
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.LocalExtendedColors
+import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Symbols
 import com.huanchengfly.tieba.post.ui.common.theme.compose.colorOf
@@ -319,7 +321,7 @@ private fun BoxScope.SettingsPanel(modifier: Modifier = Modifier, content: @Comp
         modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 520.dp)
-            .clip(SmoothCornerShape(24.dp, bottom = false))
+            .clip(SmoothCornerShape(Radius.xl, bottom = false))
             .background(ExtendedTheme.colors.sheet)
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -336,7 +338,7 @@ private fun SettingsBlock(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(SmoothCornerShape(16.dp))
+            .clip(Corners.md)
             .background(ExtendedTheme.colors.chip)
             .padding(vertical = 4.dp),
         content = content,
