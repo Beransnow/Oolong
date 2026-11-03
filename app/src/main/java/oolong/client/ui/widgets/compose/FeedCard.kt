@@ -948,7 +948,8 @@ fun VideoPlayer(
     )
 
     val fullScreen by (videoPlayerController as DefaultVideoPlayerController).collect { isFullScreen }
-    val videoPlayerContent =
+    // Remembered, so going full screen moves the player there instead of making a new one
+    val videoPlayerContent = remember(videoPlayerController) {
         movableContentOf { isFullScreen: Boolean, playerModifier: Modifier ->
             oolong.client.ui.widgets.compose.video.VideoPlayer(
                 videoPlayerController = videoPlayerController,
@@ -956,6 +957,7 @@ fun VideoPlayer(
                 backgroundColor = if (isFullScreen) Color.Black else Color.Transparent
             )
         }
+    }
 
     if (fullScreen) {
         Spacer(
