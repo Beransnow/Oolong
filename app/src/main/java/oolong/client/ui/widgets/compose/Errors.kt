@@ -26,7 +26,6 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import oolong.client.R
 import oolong.client.api.retrofit.exception.NoConnectivityException
-import oolong.client.api.retrofit.exception.TiebaApiException
 import oolong.client.api.retrofit.exception.TiebaNotLoggedInException
 import oolong.client.api.retrofit.exception.getErrorCode
 import oolong.client.api.retrofit.exception.getErrorMessage
@@ -34,6 +33,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.widgets.compose.states.StateScreenScope
+import oolong.core.network.TiebaServerException
 
 @Composable
 fun TipScreen(
@@ -124,7 +124,7 @@ fun ErrorTipScreen(
 ) {
     val errorType = when (error) {
         is NoConnectivityException -> ErrorType.NETWORK
-        is TiebaApiException -> ErrorType.SERVER
+        is TiebaServerException -> ErrorType.SERVER
         is TiebaNotLoggedInException -> ErrorType.NOT_LOGGED_IN
         else -> ErrorType.UNKNOWN
     }
