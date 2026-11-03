@@ -96,7 +96,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.navigation.pageOriginStandIn
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -969,15 +968,16 @@ private class RectClip(
 @Composable
 private fun Modifier.menuGlass(backdrop: HazeState): Modifier {
     val colors = ExtendedTheme.colors
-    val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
-    val tier = LocalGlassTier.current ?: if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    val tier = currentGlassTier()
     if (tier == GlassTier.Solid) return background(colors.sheet)
-    val style = remember(colors.sheet, colors.isNightMode) {
+    // Clearer or more frosted with the chrome, always thicker than it
+    val frost = glassFrost()
+    val style = remember(colors.sheet, colors.isNightMode, frost) {
         HazeBlurStyle {
             backgroundColor(colors.sheet)
-            blurRadius(MenuBlur)
+            blurRadius(MenuBlur * frost)
             noiseFactor(0f)
-            colorEffects(listOf(HazeColorEffect.tint(colors.sheet.copy(alpha = if (colors.isNightMode) 0.7f else 0.4f))))
+            colorEffects(listOf(HazeColorEffect.tint(colors.sheet.copy(alpha = ((if (colors.isNightMode) 0.7f else 0.4f) * frost).coerceAtMost(0.95f)))))
         }
     }
     return hazeBlur(input = HazeInput.Sources(backdrop), style = style, performanceMode = BigBlurPerformance)
@@ -989,8 +989,7 @@ private fun Modifier.menuGlass(backdrop: HazeState): Modifier {
 private fun Modifier.previewBackdrop(backdrop: HazeState): Modifier {
     val colors = ExtendedTheme.colors
     val dim = Color.Black.copy(alpha = if (colors.isNightMode) PreviewDimNight else PreviewDim)
-    val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
-    val tier = LocalGlassTier.current ?: if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    val tier = currentGlassTier()
     if (tier == GlassTier.Solid) return background(colors.scrim)
     val style = remember(colors.background, dim) {
         HazeBlurStyle {

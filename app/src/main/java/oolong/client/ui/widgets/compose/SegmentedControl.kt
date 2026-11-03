@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -68,6 +69,7 @@ fun SegmentedControl(
     selected: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    trackColor: Color = ExtendedTheme.colors.chip,
 ) {
     val colors = ExtendedTheme.colors
     // Where the pill is, in options; follows the finger while held
@@ -99,7 +101,7 @@ fun SegmentedControl(
             modifier = Modifier
                 .onSizeChanged { trackSize = it }
                 .clip(Corners.full)
-                .background(colors.chip)
+                .background(trackColor)
                 // What the held pill sees: the labels, and the pill as it fades. The track shows
                 // through the glass as it is
                 .hazeSource(glassState)

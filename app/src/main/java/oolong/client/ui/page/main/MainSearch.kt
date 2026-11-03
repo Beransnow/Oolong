@@ -240,7 +240,7 @@ fun MainSearchField(
                     lerp(state.buttonBounds.translate(-origin), field, state.progress.value)
                 }
                 .semantics { traversalIndex = -1f }
-                .floatingGlass(CapsuleShape, blur = BottomChromeBlur)
+                .floatingGlass(CapsuleShape)
                 .then(
                     if (state.open) {
                         Modifier

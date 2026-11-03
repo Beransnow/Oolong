@@ -24,9 +24,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazePerformanceMode
@@ -75,15 +77,55 @@ enum class GlassTier {
 /** Forces a tier, for previews and screenshot tests. */
 val LocalGlassTier = staticCompositionLocalOf<GlassTier?> { null }
 
-/** Preference that renders all chrome as [GlassTier.Solid]. */
+/** The old switch that rendered all chrome as [GlassTier.Solid], still read until a material is chosen. */
 val ReduceTransparencyKey = booleanPreferencesKey("reduceTransparency")
 
+/** The material chosen for chrome, a [GlassTier]'s name; unset, the best the device draws. */
+val GlassMaterialKey = stringPreferencesKey("glassMaterial")
+
+/**
+ * How clear glass is, from 0, frosted, to 1, clear; [DefaultGlassClarity] in the middle. It moves
+ * how much glass blurs and how much of the page's colour it lays over what it shows.
+ */
+val GlassClarityKey = floatPreferencesKey("glassClarity")
+
+const val DefaultGlassClarity = 0.5f
+
+/** The tiers this device can draw, best first. */
+val GlassTier.Companion.available: List<GlassTier>
+    get() = GlassTier.entries.drop(GlassTier.entries.indexOf(GlassTier.forDevice()))
+
+/** The material chosen for chrome, as far as the device draws it. */
 @Composable
-private fun currentGlassTier(): GlassTier {
-    LocalGlassTier.current?.let { return it }
+fun chosenGlassTier(): GlassTier {
+    val chosen by rememberPreferenceAsState(GlassMaterialKey, "")
     val reduceTransparency by rememberPreferenceAsState(ReduceTransparencyKey, false)
-    return if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    val tier = GlassTier.entries.firstOrNull { it.name == chosen }
+        ?: if (reduceTransparency) GlassTier.Solid else GlassTier.forDevice()
+    return maxOf(tier, GlassTier.forDevice())
 }
+
+@Composable
+internal fun currentGlassTier(): GlassTier = LocalGlassTier.current ?: chosenGlassTier()
+
+/**
+ * How much more than at [DefaultGlassClarity] glass blurs and tints: 1 there, more towards
+ * frosted, less towards clear.
+ */
+@Composable
+internal fun glassFrost(): Float {
+    val clarity by rememberPreferenceAsState(GlassClarityKey, DefaultGlassClarity)
+    return frostAt(clarity)
+}
+
+private fun frostAt(clarity: Float): Float = if (clarity < DefaultGlassClarity) {
+    lerp(MostFrost, 1f, clarity / DefaultGlassClarity)
+} else {
+    lerp(1f, LeastFrost, (clarity - DefaultGlassClarity) / (1f - DefaultGlassClarity))
+}
+
+private const val MostFrost = 2f
+private const val LeastFrost = 0.25f
 
 /**
  * What floating chrome samples: the sources in [state] keyed [key], plus the translucent theme's
@@ -160,7 +202,8 @@ fun Modifier.topBarGlass(): Modifier {
     val tier = currentGlassTier()
     val colors = ExtendedTheme.colors
     val color = colors.chromeTint
-    val tint = if (colors.isTranslucent) TranslucentTopBarTint else TopBarTint
+    val frost = glassFrost()
+    val tint = ((if (colors.isTranslucent) TranslucentTopBarTint else TopBarTint) * frost).coerceAtMost(MaxTint)
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
@@ -190,12 +233,12 @@ fun Modifier.topBarGlass(): Modifier {
         }
         return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
-    val style = remember(color, tint, blurEdge) {
+    val style = remember(color, tint, blurEdge, frost) {
         HazeBlurStyle {
             // Read here, the style follows the scroll without being rebuilt
             val strength = shown()
             backgroundColor(colors.background)
-            blurRadius(TopBarBlur * strength)
+            blurRadius(TopBarBlur * frost * strength)
             noiseFactor(0f)
             progressive(
                 HazeProgressive.verticalGradient(
@@ -258,14 +301,17 @@ private const val TranslucentTopBarTint = 0.45f
 private const val TopBarTintStops = 32
 
 /**
- * Background for a floating, rounded piece of chrome such as the navigation pill.
+ * Background for a floating, rounded piece of chrome such as the navigation pill. The content
+ * under it is frosted all over, by [FloatingBlur] at the default clarity, and veiled in the page's
+ * colour only on the frosted side of it.
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifier {
+fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
     val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
+    val frost = glassFrost()
     val shadowed = shadow(
         elevation = 12.dp,
         shape = shape,
@@ -283,27 +329,28 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifie
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background, blur) {
+            val style = remember(shape, colors.background, frost) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape)
                     backgroundColor(colors.background)
                     lightPosition(LightAbove)
                     // Regular blurs a compact control only partly, keeping the content under it
-                    // sharp; with a blur, all of it is frosted, by that much
-                    if (blur != null) optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(blur)) }
+                    // sharp; here all of it is frosted, evenly
+                    optics { copy(depth = OpticalSizeValue.Fixed(1f), blurRadius = OpticalSizeValue.Fixed(FloatingBlur * frost)) }
+                    if (frost > 1f) tint(colors.background.copy(alpha = FrostedFloatingTint * (frost - 1f) / (MostFrost - 1f)))
                 }
             }
             shadowed.hazeGlass(input = source!!.input, style = style)
         }
 
         GlassTier.Blur -> {
-            val style = remember(colors.background) {
+            val style = remember(colors.background, frost) {
                 HazeBlurStyle {
                     backgroundColor(colors.background)
-                    blurRadius(20.dp)
+                    blurRadius(20.dp * frost)
                     noiseFactor(0f)
-                    colorEffects(listOf(HazeColorEffect.tint(colors.background.copy(alpha = 0.72f))))
+                    colorEffects(listOf(HazeColorEffect.tint(colors.background.copy(alpha = (0.72f * frost).coerceAtMost(MaxTint)))))
                 }
             }
             shadowed
@@ -318,6 +365,15 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifie
             .border(0.5.dp, edge, shape)
     }
 }
+
+/** How much floating glass blurs what is under it at the default clarity. */
+private val FloatingBlur = 4.dp
+
+/** The veil floating glass lays over what it shows at its most frosted, of the page's colour. */
+private const val FrostedFloatingTint = 0.5f
+
+/** No veil hides what is under the glass entirely. */
+private const val MaxTint = 0.95f
 
 /**
  * The one light, straight above (design-system.md §2.2), far enough that it falls evenly along a
