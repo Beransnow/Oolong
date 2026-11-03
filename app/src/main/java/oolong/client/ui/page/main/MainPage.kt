@@ -128,6 +128,7 @@ fun MainPage(
                             .then(if (search.open) Modifier.clearAndSetSemantics {} else Modifier),
                         onSearchButtonPlaced = if (searchAtTop) null else { bounds -> search.buttonBounds = bounds },
                         searching = searchShown,
+                        onSearch = openSearch,
                     )
                 }
             },

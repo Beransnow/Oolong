@@ -52,12 +52,14 @@ import oolong.client.repository.ThreadSort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.LoadMoreEffect
+import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SegmentedControl
@@ -357,6 +359,19 @@ private fun rememberPhotoViewData(state: ThreadState): (Post, PostContent.Image)
 internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
     val selected = if (seeLz) 1 else 0
     val docking = rememberScrollProgress(ReplyFilter)
+    if (LocalChromeStyle.current == ChromeStyle.Classic) {
+        // On a classic bar it stays the switch it is in the list, rather than becoming tabs
+        SegmentedControl(
+            options = persistentListOf(stringResource(R.string.text_all), stringResource(R.string.title_see_lz)),
+            selected = selected,
+            onSelect = { onEvent(ThreadEvent.SetSeeLz(it == 1)) },
+            modifier = Modifier
+                .matchedGeometry(ReplyFilter, docking)
+                .graphicsLayer { alpha = docking.fraction(0f..FilterCrossfade) }
+                .width(IntrinsicSize.Max),
+        )
+        return
+    }
     GlassTabRow(
         selectedTabIndex = selected,
         onSelect = { onEvent(ThreadEvent.SetSeeLz(it == 1)) },

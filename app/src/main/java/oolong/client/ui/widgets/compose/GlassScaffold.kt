@@ -110,7 +110,8 @@ fun GlassScaffold(
     val density = LocalDensity.current
     val titleStyle = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
     val measurer = rememberTextMeasurer()
-    val largeTitleState = if (largeTitle) {
+    // A classic bar holds its title itself
+    val largeTitleState = if (largeTitle && LocalChromeStyle.current == ChromeStyle.Floating) {
         remember(density, titleStyle) {
             with(density) {
                 // One line of the bar's title, so the room is right before the bar is laid out

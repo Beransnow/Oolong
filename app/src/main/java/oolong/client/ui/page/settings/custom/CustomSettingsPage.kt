@@ -5,13 +5,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -29,7 +27,6 @@ import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import oolong.client.R
 import oolong.client.dataStore
 import oolong.client.rememberPreferenceAsMutableState
@@ -41,7 +38,6 @@ import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.ListPref
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
-import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.FontSizeKey
 import oolong.client.ui.navigation.Navigator
@@ -49,6 +45,8 @@ import oolong.client.ui.navigation.SearchPlacementKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.main.SearchAtTopKey
 import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.ChromeStyle
+import oolong.client.ui.widgets.compose.ChromeStyleKey
 import oolong.client.ui.widgets.compose.DefaultGlassClarity
 import oolong.client.ui.widgets.compose.GlassClarityKey
 import oolong.client.ui.widgets.compose.GlassMaterialKey
@@ -56,7 +54,6 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTier
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.available
@@ -228,6 +225,7 @@ fun CustomSettingsPage(
                 }
             }
             prefsGroup(effectsGroup) {
+                prefsItem { ChromeStylePref() }
                 // Where the device draws only one material, there is nothing to choose
                 if (glassTiers.size > 1) {
                     prefsItem { GlassMaterialPref(glassTiers, glassTier) }
@@ -246,35 +244,55 @@ fun CustomSettingsPage(
     }
 }
 
+/** How the bars are laid out: floating glass, or the classic bands. */
+@Composable
+private fun ChromeStylePref() {
+    var chosen by rememberPreferenceAsMutableState(ChromeStyleKey, ChromeStyle.Floating.name)
+    ChoicePref(
+        title = stringResource(id = R.string.title_chrome_style),
+        options = listOf(
+            ChromeStyle.Floating.name to stringResource(id = R.string.chrome_style_floating),
+            ChromeStyle.Classic.name to stringResource(id = R.string.chrome_style_classic),
+        ),
+        current = chosen,
+        onSelect = { chosen = it },
+    )
+}
+
 /** The material chrome is drawn in, of those the device draws: glass, frosted, or opaque. */
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun GlassMaterialPref(tiers: List<GlassTier>, chosen: GlassTier) {
     var material by rememberPreferenceAsMutableState(GlassMaterialKey, "")
-    val names = tiers.map {
-        stringResource(
-            id = when (it) {
-                GlassTier.Glass -> R.string.glass_material_glass
-                GlassTier.Blur -> R.string.glass_material_blur
-                GlassTier.Solid -> R.string.glass_material_solid
-            }
-        )
-    }
-    TextPref(
+    ChoicePref(
         title = stringResource(id = R.string.title_glass_material),
-        darkenOnDisable = false,
-        trailingContent = {
-            SegmentedControl(
-                options = names.toImmutableList(),
-                selected = tiers.indexOf(chosen).coerceAtLeast(0),
-                onSelect = { material = tiers[it].name },
-                // All as wide as the widest
-                modifier = Modifier.width(IntrinsicSize.Max),
-                // On the settings' grey block, which is the track's usual colour
-                trackColor = ExtendedTheme.colors.text.copy(alpha = 0.06f),
+        options = tiers.map {
+            it.name to stringResource(
+                id = when (it) {
+                    GlassTier.Glass -> R.string.glass_material_glass
+                    GlassTier.Blur -> R.string.glass_material_blur
+                    GlassTier.Solid -> R.string.glass_material_solid
+                }
             )
         },
+        current = chosen.name,
+        onSelect = { material = it },
     )
+}
+
+/** A setting with a few [options], keys to names, picked from a menu out of its value. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun ChoicePref(title: String, options: List<Pair<String, String>>, current: String, onSelect: (String) -> Unit) {
+    val menu = rememberMenuTriggerState()
+    Box(modifier = Modifier.clickMenu(state = menu, items = { choiceMenuItems(options, current, onSelect) })) {
+        TextPref(
+            title = title,
+            enabled = true,
+            trailingContent = {
+                PrefsChoiceValue(text = options.firstOrNull { it.first == current }?.second.orEmpty(), modifier = Modifier.menuAnchor(menu))
+            },
+        )
+    }
 }
 
 /** How clear the glass is, from frosted to clear; the chrome on the page shows it as it moves. */

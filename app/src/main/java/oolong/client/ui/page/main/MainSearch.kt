@@ -80,7 +80,9 @@ import oolong.client.ui.page.search.SearchScreen
 import oolong.client.ui.page.search.SearchState
 import oolong.client.ui.page.search.SearchViewModel
 import oolong.client.ui.widgets.compose.BaseTextField
+import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
+import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.floatingGlass
 import kotlin.math.roundToInt
 
@@ -196,7 +198,8 @@ fun MainSearchField(
     onClose: () -> Unit,
 ) {
     if (state.buttonBounds.isEmpty) return
-    if (atTop && state.progress.value == 0f) return
+    // At rest the button is drawn where it sits: at the top, or as a classic bar's item
+    if ((atTop || LocalChromeStyle.current == ChromeStyle.Classic) && state.progress.value == 0f) return
     var origin by remember { mutableStateOf(Offset.Zero) }
     val colors = ExtendedTheme.colors
     val bottomInsets = WindowInsets.ime.union(WindowInsets.navigationBars)

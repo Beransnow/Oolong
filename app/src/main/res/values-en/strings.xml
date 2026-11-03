@@ -758,6 +758,9 @@
     <string name="release_to_load_latest_posts">Release to load newest replies</string>
     <string name="pull_to_load_latest_posts">Pull up to load newest replies</string>
     <string name="settings_home_page_show_history_forum">Show recently viewed forums</string>
+    <string name="title_chrome_style">Style</string>
+    <string name="chrome_style_floating">Floating</string>
+    <string name="chrome_style_classic">Classic</string>
     <string name="title_glass_material">Material</string>
     <string name="glass_material_glass">Liquid glass</string>
     <string name="glass_material_blur">Frosted</string>

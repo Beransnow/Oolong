@@ -25,6 +25,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -56,6 +58,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -135,6 +138,10 @@ fun GlassTabRow(
     fill: Boolean = false,
     tabs: @Composable () -> Unit,
 ) {
+    if (LocalChromeStyle.current == ChromeStyle.Classic) {
+        ClassicTabRow(selectedTabIndex, modifier, pagerState, tabs)
+        return
+    }
     val scroll = rememberScrollState()
     val currentOnSelect by rememberUpdatedState(onSelect)
     val selectedTabIndexState by rememberUpdatedState(selectedTabIndex)
@@ -357,13 +364,16 @@ fun GlassTab(
     content: @Composable RowScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val classic = LocalClassicTabs.current
     val color by animateColorAsState(if (selected) selectedContentColor else unselectedContentColor, label = "tabColor")
     val lens = LocalTabLens.current
-    CompositionLocalProvider(LocalContentColor provides color, LocalContentAlpha provides 1f) {
+    // A classic tab shows it is chosen in bold, over its line
+    val textStyle = if (classic) LocalTextStyle.current.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) else LocalTextStyle.current
+    CompositionLocalProvider(LocalContentColor provides color, LocalContentAlpha provides 1f, LocalTextStyle provides textStyle) {
         Row(
             modifier = modifier
-                .then(if (lens) Modifier else Modifier.pressScale(interactionSource))
-                .clip(TabCapsule)
+                .then(if (lens || classic) Modifier else Modifier.pressScale(interactionSource))
+                .clip(if (classic) RectangleShape else TabCapsule)
                 .selectable(
                     selected = selected,
                     interactionSource = interactionSource,
@@ -397,7 +407,8 @@ fun GlassTab(
         selectedContentColor = selectedContentColor,
         unselectedContentColor = unselectedContentColor,
     ) {
-        ProvideTextStyle(MaterialTheme.typography.button) {
+        val button = MaterialTheme.typography.button
+        ProvideTextStyle(if (LocalClassicTabs.current) button.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) else button) {
             Box(modifier = Modifier.padding(horizontal = 16.dp)) { text() }
         }
     }

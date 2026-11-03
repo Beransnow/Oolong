@@ -17,7 +17,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -308,6 +310,8 @@ private const val TopBarTintStops = 32
 @OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
+    // On a classic bar the band is the ground
+    if (LocalOnClassicBar.current) return this
     val source = currentGlassSource()
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
@@ -365,6 +369,51 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape): Modifier {
             .border(0.5.dp, edge, shape)
     }
 }
+
+/**
+ * The band behind a classic bar, across the window: the chosen material, with a hairline on its
+ * edge towards the page. The top bar's comes in only once content has scrolled under it, so at
+ * the top of a page the bar is the page's own ground, such as a forum's coloured header.
+ */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+fun Modifier.classicBarGlass(top: Boolean): Modifier {
+    val source = currentGlassSource()
+    val tier = if (source == null) GlassTier.Solid else currentGlassTier()
+    val colors = ExtendedTheme.colors
+    val frost = glassFrost()
+    val scrollEdge = LocalPageScroll.current
+    val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
+    val line = colors.divider
+    // A page that doesn't say how far it has scrolled keeps its bar
+    val shown: () -> Float = { if (!top) 1f else scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    val edged = graphicsLayer { alpha = shown() }.drawWithContent {
+        drawContent()
+        val y = if (top) size.height - ClassicBarLine.toPx() / 2 else ClassicBarLine.toPx() / 2
+        drawLine(line, Offset(0f, y), Offset(size.width, y), ClassicBarLine.toPx())
+    }
+    return when {
+        tier == GlassTier.Solid -> edged.background(
+            if (colors.isTranslucent) colors.chromeTint.copy(alpha = TranslucentSolidTint) else colors.background
+        )
+        colors.isTranslucent -> edged.hazeBlur(input = source!!.input, style = TranslucentFloatingStyle)
+        else -> {
+            val style = remember(colors.background, frost) {
+                HazeBlurStyle {
+                    backgroundColor(colors.background)
+                    blurRadius(ClassicBarBlur * frost)
+                    noiseFactor(0f)
+                    colorEffects(listOf(HazeColorEffect.tint(colors.background.copy(alpha = (ClassicBarTint * frost).coerceAtMost(MaxTint)))))
+                }
+            }
+            edged.hazeBlur(input = source!!.input, style = style)
+        }
+    }
+}
+
+private val ClassicBarBlur = 20.dp
+private const val ClassicBarTint = 0.8f
+private val ClassicBarLine = 0.5.dp
 
 /** How much floating glass blurs what is under it at the default clarity. */
 private val FloatingBlur = 4.dp

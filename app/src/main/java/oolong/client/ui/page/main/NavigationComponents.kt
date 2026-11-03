@@ -3,19 +3,24 @@ package oolong.client.ui.page.main
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -34,6 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
@@ -50,6 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -63,6 +71,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
@@ -77,13 +86,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.White
+import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.Avatar
+import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.LocalContextMenus
+import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
 import oolong.client.ui.widgets.compose.lensTarget
@@ -278,7 +293,12 @@ fun FloatingNavBar(
     themeColors: ExtendedColors = ExtendedTheme.colors,
     onSearchButtonPlaced: ((boundsInRoot: Rect) -> Unit)? = null,
     searching: Boolean = false,
+    onSearch: () -> Unit = {},
 ) {
+    if (LocalChromeStyle.current == ChromeStyle.Classic) {
+        ClassicNavBar(currentPosition, onChangePosition, onReselected, navigationItems, modifier, themeColors, onSearchButtonPlaced, onSearch)
+        return
+    }
     val coroutineScope = rememberCoroutineScope()
     val indicator = remember { Animatable(currentPosition.toFloat()) }
     val press = remember { Animatable(0f) }
@@ -509,6 +529,115 @@ fun FloatingNavBar(
         }
     }
 }
+
+/**
+ * The main navigation as a classic bar: a band along the bottom of the window, above and behind
+ * the system navigation bar, its items sharing it, the chosen one's icon on a pill. With
+ * [onSearchButtonPlaced], search is the last item, and the field grows out of its pill.
+ */
+@Composable
+private fun ClassicNavBar(
+    currentPosition: Int,
+    onChangePosition: (position: Int) -> Unit,
+    onReselected: (position: Int) -> Unit,
+    navigationItems: ImmutableList<NavigationItem>,
+    modifier: Modifier,
+    themeColors: ExtendedColors,
+    onSearchButtonPlaced: ((boundsInRoot: Rect) -> Unit)?,
+    onSearch: () -> Unit,
+) {
+    val menus = LocalContextMenus.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .classicBarGlass(top = false)
+            .windowInsetsPadding(
+                WindowInsets.navigationBars.union(WindowInsets.displayCutout)
+                    .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+            )
+            .height(ClassicNavBarHeight)
+            .selectableGroup(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        navigationItems.fastForEachIndexed { index, item ->
+            val selected = index == currentPosition
+            val title = item.title(selected)
+            var bounds by remember { mutableStateOf(Rect.Zero) }
+            val menu = item.menu
+            ClassicNavItem(
+                selected = selected,
+                title = title,
+                color = if (selected) ExtendedTheme.colors.emphasis else themeColors.textSecondary,
+                onClick = {
+                    if (selected) onReselected(index) else onChangePosition(index)
+                    item.onClick?.invoke()
+                },
+                onLongClick = if (menu != null && menus != null) {
+                    { menus.show(menu(), anchor = bounds) }
+                } else null,
+                modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() },
+            ) { tint -> NavItemIcon(item, selected, title, tint) }
+        }
+        if (onSearchButtonPlaced != null) {
+            val title = stringResource(id = R.string.title_search)
+            ClassicNavItem(
+                selected = false,
+                title = title,
+                color = themeColors.textSecondary,
+                onClick = onSearch,
+                onLongClick = null,
+                pillModifier = Modifier.onGloballyPositioned { onSearchButtonPlaced(it.boundsInRoot()) },
+            ) { tint -> Icon(imageVector = Symbols.Search, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp)) }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun RowScope.ClassicNavItem(
+    selected: Boolean,
+    title: String,
+    color: Color,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    pillModifier: Modifier = Modifier,
+    icon: @Composable (tint: Color) -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pill by animateFloatAsState(if (selected) 1f else 0f, Motion.snap(), label = "classicPill")
+    val emphasis = ExtendedTheme.colors.emphasis
+    Column(
+        modifier = modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Tab,
+                onClickLabel = title,
+                onLongClick = onLongClick,
+                onClick = onClick,
+            )
+            .semantics { this.selected = selected },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .then(pillModifier)
+                .pressScale(interactionSource)
+                .size(width = ClassicPillWidth, height = ClassicPillHeight)
+                .drawBehind { drawRoundRect(emphasis.copy(alpha = 0.12f * pill), cornerRadius = CornerRadius(size.height / 2)) },
+            contentAlignment = Alignment.Center,
+        ) { icon(color) }
+        Text(text = title, color = color, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1)
+    }
+}
+
+private val ClassicNavBarHeight = 64.dp
+private val ClassicPillWidth = 56.dp
+private val ClassicPillHeight = 30.dp
 
 private val IndicatorSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 380f)
 private val PressSpring = spring<Float>(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)

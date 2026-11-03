@@ -752,6 +752,9 @@
     <string name="release_to_load_latest_posts">松开加载最新回复</string>
     <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>
     <string name="settings_home_page_show_history_forum">显示最近浏览的吧</string>
+    <string name="title_chrome_style">界面风格</string>
+    <string name="chrome_style_floating">悬浮</string>
+    <string name="chrome_style_classic">经典</string>
     <string name="title_glass_material">材质</string>
     <string name="glass_material_glass">液态玻璃</string>
     <string name="glass_material_blur">磨砂</string>

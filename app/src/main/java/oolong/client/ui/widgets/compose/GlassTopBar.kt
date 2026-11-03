@@ -26,6 +26,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -121,110 +122,121 @@ fun GlassTopBar(
     val scrollEdge = LocalPageScroll.current
     val largeTitleProgress = largeTitle?.let { rememberScrollProgress(0f..it.height.toFloat(), snapping = true) }
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
+    // A classic bar is a band, its buttons bare on it
+    val classic = LocalChromeStyle.current == ChromeStyle.Classic
     Layout(
         content = {
             Box(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Background)
-                    // The buttons' glass sees the bar's blur too, so it never shows the content
-                    // sharper than the bar around it. The blur renders once into its own layer,
-                    // which the buttons reuse instead of blurring the content again.
-                    .lensTarget()
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .topBarGlass()
+                    .then(
+                        if (classic) {
+                            Modifier.classicBarGlass(top = true)
+                        } else {
+                            // The buttons' glass sees the bar's blur too, so it never shows the
+                            // content sharper than the bar around it. The blur renders once into its
+                            // own layer, which the buttons reuse instead of blurring the content again.
+                            Modifier
+                                .lensTarget()
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                .topBarGlass()
+                        }
+                    )
                     .then(
                         if (wash.isSpecified) {
                             Modifier.background(Brush.verticalGradient(listOf(wash, wash.copy(alpha = 0f))))
                         } else Modifier
                     )
             )
-            Column(
-                modifier = Modifier
-                    .layoutId(TopBarLayer.Foreground)
-                    .combinedClickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onDoubleClick = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) },
-                        onClick = {},
-                    )
-                    .windowInsetsPadding(
-                        statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-                    )
-            ) {
-                if (title != null) Box(
-                    modifier = Modifier
-                        .then(
-                            if (scrollEdge != null) {
-                                // Published for what docks in the bar as it scrolls up to it
-                                Modifier.onGloballyPositioned {
-                                    val top = it.positionInWindow().y
-                                    scrollEdge.barRowTop = top
-                                    scrollEdge.barRowBottom = top + it.size.height
-                                }
-                            } else Modifier
-                        )
-                        .fillMaxWidth()
-                        .height(GlassTopBarRowHeight),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = TopBarRowPadding),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProvideContentColor(color = ExtendedTheme.colors.text) {
-                            if (navigationIcon != null) {
-                                Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
-                            }
-                            Box(
-                                modifier = Modifier
-                                    // What docks into the title passes under the bar's buttons on its way
-                                    .zIndex(-1f)
-                                    .weight(1f)
-                                    .padding(
-                                        start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
-                                        end = TitlePadding,
-                                    ),
-                            ) {
-                                if (!centerTitle) ProvideTextStyle(
-                                    value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
-                                ) {
-                                    if (largeTitleProgress == null) {
-                                        title()
-                                    } else {
-                                        Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
-                                    }
-                                }
-                            }
-                            if (actionsInCapsule) {
-                                // With no actions the row measures nothing, so no glass shows
-                                Row(
-                                    modifier = Modifier.floatingGlass(TopBarCapsule),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    content = actions,
-                                )
-                            } else {
-                                actions()
-                            }
-                        }
-                    }
-                    // Centred on the whole row, whatever buttons sit at either end
-                    if (centerTitle) {
-                        ProvideContentColor(color = ExtendedTheme.colors.text) {
-                            ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold), content = title)
-                        }
-                    }
-                }
-                content?.invoke(this)
-            }
-            if (pinnedContent != null) {
+            CompositionLocalProvider(LocalOnClassicBar provides classic) {
                 Column(
                     modifier = Modifier
-                        .layoutId(TopBarLayer.Pinned)
-                        .windowInsetsPadding(statusBar.only(WindowInsetsSides.Horizontal)),
-                    content = pinnedContent,
-                )
+                        .layoutId(TopBarLayer.Foreground)
+                        .combinedClickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onDoubleClick = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) },
+                            onClick = {},
+                        )
+                        .windowInsetsPadding(
+                            statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                        )
+                ) {
+                    if (title != null) Box(
+                        modifier = Modifier
+                            .then(
+                                if (scrollEdge != null) {
+                                    // Published for what docks in the bar as it scrolls up to it
+                                    Modifier.onGloballyPositioned {
+                                        val top = it.positionInWindow().y
+                                        scrollEdge.barRowTop = top
+                                        scrollEdge.barRowBottom = top + it.size.height
+                                    }
+                                } else Modifier
+                            )
+                            .fillMaxWidth()
+                            .height(GlassTopBarRowHeight),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = TopBarRowPadding),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ProvideContentColor(color = ExtendedTheme.colors.text) {
+                                if (navigationIcon != null) {
+                                    Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        // What docks into the title passes under the bar's buttons on its way
+                                        .zIndex(-1f)
+                                        .weight(1f)
+                                        .padding(
+                                            start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
+                                            end = TitlePadding,
+                                        ),
+                                ) {
+                                    if (!centerTitle) ProvideTextStyle(
+                                        value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
+                                    ) {
+                                        if (largeTitleProgress == null) {
+                                            title()
+                                        } else {
+                                            Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
+                                        }
+                                    }
+                                }
+                                if (actionsInCapsule) {
+                                    // With no actions the row measures nothing, so no glass shows
+                                    Row(
+                                        modifier = Modifier.floatingGlass(TopBarCapsule),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        content = actions,
+                                    )
+                                } else {
+                                    actions()
+                                }
+                            }
+                        }
+                        // Centred on the whole row, whatever buttons sit at either end
+                        if (centerTitle) {
+                            ProvideContentColor(color = ExtendedTheme.colors.text) {
+                                ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold), content = title)
+                            }
+                        }
+                    }
+                    content?.invoke(this)
+                }
+                if (pinnedContent != null) {
+                    Column(
+                        modifier = Modifier
+                            .layoutId(TopBarLayer.Pinned)
+                            .windowInsetsPadding(statusBar.only(WindowInsetsSides.Horizontal)),
+                        content = pinnedContent,
+                    )
+                }
             }
         },
         modifier = modifier,
@@ -239,7 +251,7 @@ fun GlassTopBar(
         val hidden = ((foreground.height - statusBar.getTop(this)) * hiddenFraction()).roundToInt()
         // The edge reaches a little past the bar, over the content, so the blur comes in before
         // the bar's edge instead of ending in a line there. It shows only once content is under it.
-        val extend = TopBarEdgeExtend.roundToPx()
+        val extend = if (classic) 0 else TopBarEdgeExtend.roundToPx()
         val offset = pinnedOffset().coerceAtLeast(0)
         val uncovered = minOf(offset, pinned?.height ?: 0)
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
