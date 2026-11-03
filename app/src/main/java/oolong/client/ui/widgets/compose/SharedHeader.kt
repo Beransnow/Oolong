@@ -20,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -86,9 +88,16 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
     val pinnedOffset: Int get() = headerHeight - collapsed + pull().roundToInt()
 }
 
-/** A [SharedHeaderState] following [page], the [PageScrollState] given to the page's scaffold. */
+/**
+ * A [SharedHeaderState] following [page], the [PageScrollState] given to the page's scaffold.
+ * Where the header was is saved: back from a page opened on top, the lists are put in line with
+ * it again, and a header taken for back at the top would take them there too.
+ */
 @Composable
-fun rememberSharedHeaderState(page: PageScrollState): SharedHeaderState = remember(page) { SharedHeaderState(page) }
+fun rememberSharedHeaderState(page: PageScrollState): SharedHeaderState = rememberSaveable(
+    page,
+    saver = Saver(save = { it.held }, restore = { held -> SharedHeaderState(page).apply { this.held = held } }),
+) { SharedHeaderState(page) }
 
 /** Marks the bar's pinned rows, its margins included, which the pages' lists leave room for. */
 fun Modifier.sharedHeaderPinned(state: SharedHeaderState): Modifier = onSizeChanged { state.pinnedHeight = it.height }
