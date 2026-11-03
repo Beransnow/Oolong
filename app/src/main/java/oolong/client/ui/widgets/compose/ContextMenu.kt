@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
@@ -108,6 +109,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.addSmoothRect
 import oolong.client.ui.common.theme.compose.glassEdge
 import oolong.client.ui.common.theme.compose.scrim
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -412,7 +414,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 modifier = Modifier
                     .graphicsLayer {
                         val g = grow.value.coerceIn(0f, 1f)
-                        shape = SmoothCornerShape((geometry.corner / density).dp)
+                        shape = geometry.glassClip()
                         clip = true
                         shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * g
                         // A button has no backing of its own, so the drop condenses out of nothing
@@ -424,7 +426,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     .menuGlass(backdrop)
                     .drawWithContent {
                         drawContent()
-                        val edge = SmoothCornerShape((geometry.corner / density).dp).createOutline(size, layoutDirection, this)
+                        val edge = geometry.glassClip().createOutline(size, layoutDirection, this)
                         drawOutline(edge, colors.glassEdge, style = Stroke(width = 0.5.dp.toPx() * 2))
                     },
             )
@@ -630,15 +632,20 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             )
             corner = Radius.lg.toPx() * g.coerceAtLeast(0f)
         }
+        // All the room the glass takes, from a button's drop to the menu, and a little more for
+        // the springs carrying it past
+        val area = (if (fromButton) bounds.union(Rect(anchor.center, anchor.minDimension / 2)) else bounds)
+            .inflate(GlassSlack.toPx())
         geometry.bounds = bounds
         geometry.glass = glass
         geometry.corner = corner
+        geometry.area = area
         val glassPlaceable = glassMeasurable.measure(
-            Constraints.fixed(glass.width.roundToInt().coerceAtLeast(0), glass.height.roundToInt().coerceAtLeast(0)),
+            Constraints.fixed(area.width.roundToInt().coerceAtLeast(0), area.height.roundToInt().coerceAtLeast(0)),
         )
         val icon = iconMeasurable.measure(Constraints())
         layout(constraints.maxWidth, constraints.maxHeight) {
-            glassPlaceable.place(glass.left.roundToInt(), glass.top.roundToInt())
+            glassPlaceable.place(area.left.roundToInt(), area.top.roundToInt())
             icon.place(
                 (anchor.center.x - icon.width / 2f).roundToInt(),
                 (anchor.center.y - icon.height / 2f).roundToInt(),
@@ -813,13 +820,15 @@ private fun ChildMenu(
     var final by remember { mutableStateOf(Rect.Zero) }
     var now by remember { mutableStateOf(Rect.Zero) }
     var corner by remember { mutableFloatStateOf(0f) }
+    // All the room the glass takes on its way, where it is laid out
+    var area by remember { mutableStateOf(Rect.Zero) }
     Layout(
         modifier = modifier.fillMaxSize(),
         content = {
             Box(
                 modifier = Modifier
                     .graphicsLayer {
-                        shape = SmoothCornerShape((corner / density).dp)
+                        shape = RectClip(now.left - area.left, now.top - area.top, now.width, now.height, corner)
                         clip = true
                         shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * progress().coerceIn(0f, 1f)
                         ambientShadowColor = ShadowAmbient
@@ -828,7 +837,8 @@ private fun ChildMenu(
                     .menuGlass(backdrop)
                     .drawWithContent {
                         drawContent()
-                        val edge = SmoothCornerShape((corner / density).dp).createOutline(size, layoutDirection, this)
+                        val edge = RectClip(now.left - area.left, now.top - area.top, now.width, now.height, corner)
+                            .createOutline(size, layoutDirection, this)
                         drawOutline(edge, colors.glassEdge, style = Stroke(width = 0.5.dp.toPx() * 2))
                     },
             )
@@ -841,7 +851,7 @@ private fun ChildMenu(
                         val head = ChildPadding.toPx()
                         translationX = lerp(from.left - final.left, 0f, p)
                         translationY = lerp(from.top - head - final.top, 0f, p)
-                        shape = ChildClip(
+                        shape = RectClip(
                             left = now.left - final.left - translationX,
                             top = now.top - final.top - translationY,
                             width = now.width,
@@ -920,18 +930,23 @@ private fun ChildMenu(
             lerp(from.bottom, final.bottom, p),
         )
         corner = lerp(12.dp.toPx(), Radius.lg.toPx(), p.coerceIn(0f, 1f))
+        area = from.union(final).inflate(GlassSlack.toPx())
         val glass = glassMeasurable.measure(
-            Constraints.fixed(now.width.roundToInt().coerceAtLeast(0), now.height.roundToInt().coerceAtLeast(0)),
+            Constraints.fixed(area.width.roundToInt().coerceAtLeast(0), area.height.roundToInt().coerceAtLeast(0)),
         )
         layout(constraints.maxWidth, constraints.maxHeight) {
-            glass.place(now.left.roundToInt(), now.top.roundToInt())
+            glass.place(area.left.roundToInt(), area.top.roundToInt())
             items.place(final.left.roundToInt(), final.top.roundToInt())
         }
     }
 }
 
-/** A child menu's glass as its items see it: [width] by [height] at [left], [top] of them. */
-private class ChildClip(
+/**
+ * [width] by [height] at [left], [top], with smooth corners; the rest is cut off. Glass is laid
+ * out once over all the room it takes and cut down to where it is now, so its blur is worked out
+ * at one size rather than again at every size it passes through.
+ */
+private class RectClip(
     private val left: Float,
     private val top: Float,
     private val width: Float,
@@ -966,7 +981,7 @@ private fun Modifier.menuGlass(backdrop: HazeState): Modifier {
             colorEffects(listOf(HazeColorEffect.tint(colors.sheet.copy(alpha = if (colors.isNightMode) 0.7f else 0.4f))))
         }
     }
-    return hazeBlur(input = HazeInput.Sources(backdrop), style = style)
+    return hazeBlur(input = HazeInput.Sources(backdrop), style = style, performanceMode = BigBlurPerformance)
 }
 
 /** Behind a preview: the page blurred and dimmed; dimmed only where glass is off or unsupported. */
@@ -986,7 +1001,7 @@ private fun Modifier.previewBackdrop(backdrop: HazeState): Modifier {
             colorEffects(listOf(HazeColorEffect.tint(dim)))
         }
     }
-    return hazeBlur(input = HazeInput.Sources(backdrop), style = style)
+    return hazeBlur(input = HazeInput.Sources(backdrop), style = style, performanceMode = BigBlurPerformance)
 }
 
 /**
@@ -997,6 +1012,11 @@ private class MenuGeometry {
     var bounds by mutableStateOf(Rect.Zero)
     var glass by mutableStateOf(Rect.Zero)
     var corner by mutableFloatStateOf(0f)
+
+    /** Where the glass is laid out, over all the room it takes; it shows only at [glass]. */
+    var area by mutableStateOf(Rect.Zero)
+
+    fun glassClip() = RectClip(glass.left - area.left, glass.top - area.top, glass.width, glass.height, corner)
 
     /** Where a preview ends up, and where it is now. */
     var preview by mutableStateOf(Rect.Zero)
@@ -1023,6 +1043,13 @@ private class GlassClip(private val geometry: MenuGeometry, private val scale: F
         )
     }
 }
+
+/** The smallest rectangle holding both. */
+private fun Rect.union(other: Rect) =
+    Rect(min(left, other.left), min(top, other.top), max(right, other.right), max(bottom, other.bottom))
+
+/** Room around the glass's way for springs to carry it past. */
+private val GlassSlack = 16.dp
 
 /** The drop's way to the menu's place, which runs ahead of its growing. */
 private val MoveSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 500f, visibilityThreshold = Motion.ProgressThreshold)
@@ -1065,6 +1092,12 @@ private val ChildPadding = 6.dp
 
 /** How much wider than its menu a child menu is, on each side. */
 private val ChildWiden = 10.dp
+
+/**
+ * The menu's and a preview's backdrop blurs are wide, so drawn at half resolution they look the
+ * same for a quarter of the pixels.
+ */
+private val BigBlurPerformance = HazePerformanceMode.Performance
 
 /** A menu under its open children: faded and blurred. */
 private const val UnderAlpha = 0.55f
