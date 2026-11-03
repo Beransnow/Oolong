@@ -1,9 +1,13 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlin.math.abs
@@ -52,8 +57,22 @@ class ScrollEdgeState internal constructor() {
     /** The content in view: on a page of pages, the page nearest the scaffold's start. */
     internal val inView: Source? get() = sources.minByOrNull { abs(it.start) }
 
-    /** Pixels scrolled under the bar, or null when no list reports, so the edge simply shows. */
-    val scrolled: Int? get() = inView?.scrolled?.invoke()
+    /**
+     * Pixels scrolled under the bar, or null when no list reports, so the edge simply shows. While
+     * a page of pages is swiped, it blends between the two pages by how far the swipe has gone, so
+     * what follows it, such as a header the pages share, moves smoothly from one to the other.
+     */
+    val scrolled: Int?
+        get() {
+            val near = sources.sortedBy { abs(it.start) }
+            val a = near.getOrNull(0) ?: return null
+            val b = near.getOrNull(1)
+            val aScrolled = a.scrolled().coerceAtMost(FarScroll)
+            if (b == null || a.start == 0f) return aScrolled
+            val span = abs(a.start) + abs(b.start)
+            if (span <= 0f) return aScrolled
+            return lerp(aScrolled.toFloat(), b.scrolled().coerceAtMost(FarScroll).toFloat(), abs(a.start) / span).toInt()
+        }
 
     /** The top bar's row, in window coordinates, for things that dock into it; NaN before it is laid out. */
     internal var barRowTop by mutableFloatStateOf(Float.NaN)
@@ -85,6 +104,9 @@ class ScrollEdgeState internal constructor() {
         }
     }
 }
+
+/** Far enough that nothing driven by the scroll is still moving, but small enough to blend. */
+private const val FarScroll = 1 shl 14
 
 /** How firmly a snap carries the content to the end of its range. */
 private const val SnapStiffness = 600f
@@ -134,3 +156,28 @@ fun Modifier.scrollEdgeSource(state: ScrollState): Modifier = scrollEdgeSource(s
 @Composable
 fun Modifier.verticalScrollUnderBar(state: ScrollState = rememberScrollState()): Modifier =
     scrollEdgeSource(state).verticalScroll(state)
+
+/**
+ * Lets dragging this scroll the page's content in view, for something drawn over the content
+ * rather than in it, such as a header the pages of a page share, so it scrolls like the content
+ * under it would.
+ */
+@Composable
+fun Modifier.scrollsPageContent(): Modifier {
+    val page = LocalScrollEdge.current ?: return this
+    val forwarding = remember(page) { PageContentScrollable(page) }
+    return scrollable(forwarding, Orientation.Vertical, reverseDirection = true)
+}
+
+/** Passes scrolling on to whichever content is in view. */
+private class PageContentScrollable(private val page: ScrollEdgeState) : ScrollableState {
+    private val target: ScrollableState? get() = page.inView?.scrollable
+
+    override suspend fun scroll(scrollPriority: MutatePriority, block: suspend ScrollScope.() -> Unit) {
+        target?.scroll(scrollPriority, block)
+    }
+
+    override fun dispatchRawDelta(delta: Float): Float = target?.dispatchRawDelta(delta) ?: 0f
+
+    override val isScrollInProgress: Boolean get() = target?.isScrollInProgress ?: false
+}

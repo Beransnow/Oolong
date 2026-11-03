@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -64,12 +65,6 @@ private val TopBarCapsule = RoundedCornerShape(percent = 50)
 
 /** Where the title starts without a navigation icon, past the row's padding. */
 private val BareTitlePadding = 4.dp
-
-/**
- * Where the title starts in a [GlassTopBar] with a navigation icon, for things that move into the
- * title's place: past the row's padding, the 48dp icon button and the title's own padding.
- */
-internal val GlassTopBarTitleStart = TopBarRowPadding + 48.dp + TitlePadding
 
 /**
  * The bottom edge of a top bar's rows, without its pinned rows. [GlassScaffold] pads its content
@@ -92,6 +87,9 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * @param title null leaves out the title row, with [navigationIcon] and [actions], for a bar of
  * [content] alone, such as tabs whose page is named elsewhere.
  * @param content extra rows under the bar, such as tabs. They share the bar's background.
+ * @param pinnedOffset how far below the bar's rows the pinned rows sit, in pixels, for rows that
+ * float below something on the page until it scrolls away, such as tabs under a forum's header.
+ * The bar's glass reaches down over them only as they come up to it.
  * @param pinnedContent rows below [content] that stay when the bar hides, such as a list's sticky
  * header. They share the bar's background and float over the content: the scaffold does not pad
  * the content for them.
@@ -112,6 +110,7 @@ fun GlassTopBar(
     actionsInCapsule: Boolean = true,
     centerTitle: Boolean = false,
     hiddenFraction: () -> Float = { 0f },
+    pinnedOffset: () -> Int = { 0 },
     wash: Color = Color.Unspecified,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
     // Last, so a trailing lambda passes the bar's rows, which the content is padded for
@@ -180,6 +179,8 @@ fun GlassTopBar(
                             }
                             Box(
                                 modifier = Modifier
+                                    // What docks into the title passes under the bar's buttons on its way
+                                    .zIndex(-1f)
                                     .weight(1f)
                                     .padding(
                                         start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
@@ -239,12 +240,14 @@ fun GlassTopBar(
         // The edge reaches a little past the bar, over the content, so the blur comes in before
         // the bar's edge instead of ending in a line there. It shows only once content is under it.
         val extend = TopBarEdgeExtend.roundToPx()
+        val offset = pinnedOffset().coerceAtLeast(0)
+        val uncovered = minOf(offset, pinned?.height ?: 0)
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
-            .measure(Constraints.fixed(foreground.width, height - hidden + extend))
+            .measure(Constraints.fixed(foreground.width, height - hidden - uncovered + extend))
         layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
             background.place(0, 0)
             foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }
-            pinned?.place(0, foreground.height - hidden)
+            pinned?.place(0, foreground.height - hidden + offset)
         }
     }
 }
