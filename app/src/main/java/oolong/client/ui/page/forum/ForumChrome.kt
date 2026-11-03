@@ -349,6 +349,7 @@ internal fun ForumTopBar(
     canSearch: Boolean = true,
     menu: (() -> List<ContextMenuItem>)? = null,
     title: @Composable () -> Unit = {},
+    hiddenFraction: () -> Float = { 0f },
     pinnedOffset: () -> Int = { 0 },
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
@@ -372,6 +373,7 @@ internal fun ForumTopBar(
                 )
             }
         },
+        hiddenFraction = hiddenFraction,
         pinnedOffset = pinnedOffset,
         pinnedContent = pinnedContent,
     )

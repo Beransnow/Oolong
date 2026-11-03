@@ -162,7 +162,7 @@ fun Modifier.topBarGlass(): Modifier {
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val scrollEdge = LocalScrollEdge.current
+    val scrollEdge = LocalPageScroll.current
     val revealPx = with(density) { TopBarEdgeReveal.toPx() }
     val shown: () -> Float = remember(scrollEdge, revealPx) {
         { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }

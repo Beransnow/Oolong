@@ -28,6 +28,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
@@ -83,7 +84,10 @@ private enum class GlassScaffoldSlot { Content, TopBar, BottomBar, Fab, Snackbar
  * shrinking into it as the content scrolls up. The content is padded down to make room for it.
  * See [LargeTitleState].
  *
- * Only the top bar and the content see the page's [LocalLargeTitle] and [LocalScrollEdge]; the
+ * [pageScroll] is how the page's content is scrolling; hoist it with [rememberPageScrollState]
+ * to read it outside the scaffold.
+ *
+ * Only the top bar and the content see the page's [LocalLargeTitle] and [LocalPageScroll]; the
  * bottom bar, the overlay and the rest float over the page and have no part in either.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -100,6 +104,7 @@ fun GlassScaffold(
     overlay: @Composable () -> Unit = {},
     sampleContent: Boolean = true,
     largeTitle: Boolean = false,
+    pageScroll: PageScrollState = rememberPageScrollState(),
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val density = LocalDensity.current
@@ -118,15 +123,14 @@ fun GlassScaffold(
             }
         }
     } else null
-    val scrollEdge = remember { newScrollEdgeState() }
-    LaunchedEffect(scrollEdge) { scrollEdge.settle() }
+    LaunchedEffect(pageScroll) { pageScroll.settle() }
     // The page's own parts share its large title and scroll edge; what floats over the page has
     // none, rather than an enclosing page's
     val page: @Composable (@Composable () -> Unit) -> Unit = { slot ->
-        CompositionLocalProvider(LocalLargeTitle provides largeTitleState, LocalScrollEdge provides scrollEdge, content = slot)
+        CompositionLocalProvider(LocalLargeTitle provides largeTitleState, LocalPageScroll provides pageScroll, content = slot)
     }
     val overPage: @Composable (@Composable () -> Unit) -> Unit = { slot ->
-        CompositionLocalProvider(LocalLargeTitle provides null, LocalScrollEdge provides null, content = slot)
+        CompositionLocalProvider(LocalLargeTitle provides null, LocalPageScroll provides null, content = slot)
     }
     // On the translucent theme the page joins the wallpaper's state, under its own key, so the
     // chrome blurs the wallpaper too but not the other pages sharing that state
@@ -153,7 +157,9 @@ fun GlassScaffold(
         Surface(
             modifier = modifier
                 .onConsumedWindowInsetsChanged { consumedInsets = it }
-                .onGloballyPositioned { scrollEdge.originX = it.positionInRoot().x },
+                .onGloballyPositioned { pageScroll.originX = it.positionInRoot().x }
+                // Which way the content is going, for what follows that rather than where it is
+                .nestedScroll(pageScroll.scrollWatcher),
             color = backgroundColor,
             contentColor = contentColor,
         ) {
@@ -193,7 +199,7 @@ fun GlassScaffold(
                     ) {
                         page {
                             content(padding)
-                            if (largeTitleState != null) LargeTitleAnchorBox(largeTitleState, scrollEdge, padding)
+                            if (largeTitleState != null) LargeTitleAnchorBox(largeTitleState, pageScroll, padding)
                         }
                     }
                 }.map { it.measure(constraints) }
@@ -285,7 +291,7 @@ fun PaddingValues.plus(other: PaddingValues): PaddingValues {
  * bar's title to be matched to. It draws nothing.
  */
 @Composable
-private fun LargeTitleAnchorBox(state: LargeTitleState, page: ScrollEdgeState, padding: ScaffoldPadding) {
+private fun LargeTitleAnchorBox(state: LargeTitleState, page: PageScrollState, padding: ScaffoldPadding) {
     Box(
         modifier = Modifier
             .layout { measurable, _ ->

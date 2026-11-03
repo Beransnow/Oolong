@@ -2,11 +2,17 @@ package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
@@ -16,6 +22,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import oolong.client.ui.common.theme.compose.Motion
 
 /*
  * Scroll-driven motion. The content scrolls as it always does; what reacts to it reads how far it
@@ -48,16 +58,23 @@ class ScrollProgress internal constructor(private val read: () -> Float) {
  * the nearer end.
  */
 @Composable
-fun rememberScrollProgress(range: ClosedRange<Dp>, snapping: Boolean = false): ScrollProgress {
+fun rememberScrollProgress(
+    range: ClosedRange<Dp>,
+    snapping: Boolean = false,
+    page: PageScrollState? = LocalPageScroll.current,
+): ScrollProgress {
     val start = with(LocalDensity.current) { range.start.toPx() }
     val end = with(LocalDensity.current) { range.endInclusive.toPx() }
-    return rememberScrollProgress(start..end, snapping)
+    return rememberScrollProgress(start..end, snapping, page)
 }
 
 /** [rememberScrollProgress] over a range in pixels. */
 @Composable
-internal fun rememberScrollProgress(range: ClosedFloatingPointRange<Float>, snapping: Boolean): ScrollProgress {
-    val page = LocalScrollEdge.current
+internal fun rememberScrollProgress(
+    range: ClosedFloatingPointRange<Float>,
+    snapping: Boolean,
+    page: PageScrollState? = LocalPageScroll.current,
+): ScrollProgress {
     if (snapping && page != null) {
         DisposableEffect(page, range) {
             page.addSnapRange(range)
@@ -79,8 +96,7 @@ internal fun rememberScrollProgress(range: ClosedFloatingPointRange<Float>, snap
  * that docks in the bar as it scrolls up to it, wherever it is on the page.
  */
 @Composable
-fun rememberScrollProgress(anchor: Any): ScrollProgress {
-    val page = LocalScrollEdge.current
+fun rememberScrollProgress(anchor: Any, page: PageScrollState? = LocalPageScroll.current): ScrollProgress {
     return remember(page, anchor) {
         ScrollProgress {
             val bounds = page?.anchors?.get(anchor) ?: return@ScrollProgress 0f
@@ -100,7 +116,7 @@ fun rememberScrollProgress(anchor: Any): ScrollProgress {
  */
 @Composable
 fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
-    val page = LocalScrollEdge.current ?: return this
+    val page = LocalPageScroll.current ?: return this
     return onGloballyPositioned { page.anchors[key] = it.boundsInWindow() }
 }
 
@@ -112,7 +128,7 @@ fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
  */
 @Composable
 fun Modifier.matchedGeometry(key: Any, progress: ScrollProgress): Modifier {
-    val page = LocalScrollEdge.current ?: return this
+    val page = LocalPageScroll.current ?: return this
     val own = remember { mutableStateOf(Rect.Zero) }
     return onGloballyPositioned { own.value = it.boundsInWindow() }
         .graphicsLayer {
@@ -130,4 +146,96 @@ fun Modifier.matchedGeometry(key: Any, progress: ScrollProgress): Modifier {
             translationX = lerp(anchor.left - self.left, 0f, p)
             translationY = lerp(anchor.top - self.top, 0f, p)
         }
+}
+
+/**
+ * Progress that follows which way the page's content is scrolling rather than where it is: it
+ * goes towards 1 as the content scrolls on and back towards 0 as it scrolls back, and back to 0
+ * when it is pulled past its top. For chrome that leaves as the content goes on and returns as
+ * soon as it comes back.
+ *
+ * Over [away] of scroll it follows the scroll, and with [snapping] settles at whichever end is
+ * nearer once the scroll stops. With [toggle], it instead flips to 1 once the content has gone on
+ * by [away], and back once it has come back by as much, animating between: for a change that
+ * should not stop halfway, like a bar folding to its icons. While [enabled] is false it stays at
+ * 0, and it starts over at 0 whenever [resetKey] changes. [page] is the page to follow, by default
+ * the one this is part of; hoist it with [rememberPageScrollState] to use it outside the page.
+ */
+@Composable
+fun rememberScrollProgress(
+    away: Dp,
+    snapping: Boolean = true,
+    toggle: Boolean = false,
+    enabled: () -> Boolean = { true },
+    resetKey: Any? = null,
+    page: PageScrollState? = LocalPageScroll.current,
+): ScrollProgress {
+    val distance = with(LocalDensity.current) { away.toPx() }
+    val scope = rememberCoroutineScope()
+    val currentEnabled by rememberUpdatedState(enabled)
+    val progress = remember(page, distance, snapping, toggle, resetKey) {
+        DirectedProgress(distance, snapping, toggle, scope) { currentEnabled() }
+    }
+    if (page != null) {
+        DisposableEffect(page, progress) {
+            page.add(progress)
+            onDispose { page.remove(progress) }
+        }
+    }
+    return remember(progress) { ScrollProgress { progress.value } }
+}
+
+/** The state behind a [rememberScrollProgress] that follows the scroll's direction. */
+internal class DirectedProgress(
+    private val distance: Float,
+    private val snapping: Boolean,
+    private val toggle: Boolean,
+    private val scope: CoroutineScope,
+    private val enabled: () -> Boolean,
+) {
+    private var offset by mutableFloatStateOf(0f)
+    private var animating: Job? = null
+
+    /** Scroll gone on (negative) or back (positive) since the last flip, in toggle mode. */
+    private var run = 0f
+
+    val value: Float get() = if (distance > 0f) offset / distance else 0f
+
+    private fun animateTo(target: Float) {
+        animating?.cancel()
+        if (offset == target) return
+        animating = scope.launch {
+            animate(offset, target, animationSpec = Motion.settle()) { value, _ -> offset = value }
+        }
+    }
+
+    fun onScroll(consumed: Float, available: Float) {
+        if (!enabled()) {
+            run = 0f
+            animateTo(0f)
+            return
+        }
+        if (consumed == 0f) {
+            // Pulled on past the content's top
+            if (available > 0f) {
+                run = 0f
+                animateTo(0f)
+            }
+            return
+        }
+        if (toggle) {
+            if ((consumed > 0f) != (run > 0f)) run = 0f
+            run += consumed
+            if (run < -distance) animateTo(distance) else if (run > distance) animateTo(0f)
+        } else {
+            animating?.cancel()
+            offset = (offset - consumed).coerceIn(0f, distance)
+        }
+    }
+
+    fun onScrollEnd() {
+        if (!toggle && snapping && offset > 0f && offset < distance) {
+            animateTo(if (offset > distance / 2) distance else 0f)
+        }
+    }
 }

@@ -22,7 +22,7 @@ import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.scrollEdgeSource
+import oolong.client.ui.widgets.compose.pageScroll
 
 lateinit var LocalPrefsDataStore: ProvidableCompositionLocal<DataStore<Preferences>>
 
@@ -51,7 +51,7 @@ fun PrefsScreen(
         Container {
             val listState = rememberLazyListState()
             LazyColumn(
-                modifier = modifier.fillMaxSize().scrollEdgeSource(listState),
+                modifier = modifier.fillMaxSize().pageScroll(listState),
                 state = listState,
                 contentPadding = contentPadding,
             ) {

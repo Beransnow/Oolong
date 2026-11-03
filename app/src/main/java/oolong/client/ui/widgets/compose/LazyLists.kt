@@ -41,7 +41,7 @@ fun MyLazyColumn(
     }
     LazyColumn(
         // A list laid out from the bottom has nothing to say about its top
-        modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
+        modifier = if (reverseLayout) modifier else modifier.pageScroll(state),
         state = state,
         contentPadding = contentPadding,
         reverseLayout = reverseLayout,
@@ -72,7 +72,7 @@ fun MyLazyVerticalGrid(
     }
     LazyVerticalGrid(
         columns = columns,
-        modifier = if (reverseLayout) modifier else modifier.scrollEdgeSource(state),
+        modifier = if (reverseLayout) modifier else modifier.pageScroll(state),
         state = state,
         contentPadding = contentPadding,
         reverseLayout = reverseLayout,

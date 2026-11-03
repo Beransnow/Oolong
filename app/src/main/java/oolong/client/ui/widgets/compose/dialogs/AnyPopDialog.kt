@@ -55,7 +55,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.scrim
 import oolong.client.ui.widgets.compose.LocalLargeTitle
-import oolong.client.ui.widgets.compose.LocalScrollEdge
+import oolong.client.ui.widgets.compose.LocalPageScroll
 
 @Composable
 fun getDialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
@@ -243,7 +243,7 @@ fun AnyPopDialog(
                 .systemBarsPadding()
         ) {
             // A dialog floats over the page; its lists have no part in the page's bar
-            CompositionLocalProvider(LocalLargeTitle provides null, LocalScrollEdge provides null, content = content)
+            CompositionLocalProvider(LocalLargeTitle provides null, LocalPageScroll provides null, content = content)
         }
     }
 }

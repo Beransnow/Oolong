@@ -48,10 +48,11 @@ import oolong.client.ui.page.reply.panelShown
 import oolong.client.ui.page.reply.rememberReplyChromeState
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.PromptDialog
-import oolong.client.ui.widgets.compose.animateHiddenFraction
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.ui.widgets.compose.rememberHideOnScrollState
+import oolong.client.ui.widgets.compose.rememberPageScrollState
+import oolong.client.ui.widgets.compose.rememberScrollProgress
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -87,8 +88,6 @@ fun ThreadScreen(
     }
 
     Box(modifier = modifier) {
-        val hide = rememberHideOnScrollState()
-        val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
         var contentTop by remember { mutableIntStateOf(0) }
         // A thread that can't scroll the bar's height away would leave an empty band where the bar was
@@ -99,11 +98,11 @@ fun ThreadScreen(
                     listState.firstVisibleItemScrollOffset < contentTop
             }
         }
-        LaunchedEffect(hide) {
-            snapshotFlow { hide.hidden && tooShortToHide }.collect { if (it) hide.show() }
-        }
+        // The bars follow the scroll away and back
+        val page = rememberPageScrollState()
+        val hide = rememberScrollProgress(away = GlassTopBarRowHeight, enabled = { !tooShortToHide }, page = page)
         GlassScaffold(
-            modifier = Modifier.nestedScroll(hide.nestedScrollConnection),
+            pageScroll = page,
             scaffoldState = scaffoldState,
             topBar = {
                 ThreadTopBar(
@@ -112,7 +111,7 @@ fun ThreadScreen(
                     filter = if (state.thread != null) {
                         { ThreadFilter(state.query.seeLz, handleEvent) }
                     } else null,
-                ) { hiddenFraction }
+                ) { hide.value }
             },
             // The capsules are drawn by the overlay, so the composer and the menu can grow out of
             // them; this keeps the content clear of them at rest
@@ -169,7 +168,7 @@ fun ThreadScreen(
                         onDismiss = { if (reply != null && chrome.surface == ChromeSurface.Composer) reply.close() else chrome.close() },
                         onExitFullScreen = { chrome.fullScreen = false },
                         onEnterFullScreen = { chrome.fullScreen = true },
-                        hiddenFraction = { hiddenFraction },
+                        hiddenFraction = { hide.value },
                     )
                 }
             },
@@ -177,7 +176,7 @@ fun ThreadScreen(
             val density = LocalDensity.current
             SideEffect { contentTop = with(density) { padding.calculateTopPadding().roundToPx() } }
             // Where the visible chrome ends, from the end of the top padding: the bar slides up as it hides
-            val chromeEnd = { -((contentTop - statusBarTop) * hiddenFraction).roundToInt() }
+            val chromeEnd = { -((contentTop - statusBarTop) * hide.value).roundToInt() }
             ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd)
         }
     }

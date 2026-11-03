@@ -52,8 +52,8 @@ import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyBackHandler
-import oolong.client.ui.widgets.compose.animateHiddenFraction
-import oolong.client.ui.widgets.compose.rememberHideOnScrollState
+import oolong.client.ui.widgets.compose.rememberPageScrollState
+import oolong.client.ui.widgets.compose.rememberScrollProgress
 
 /**
  * The four tabs. On a phone their navigation is the floating bar at the bottom; on wider windows
@@ -106,14 +106,14 @@ fun MainPage(
     val searchAtTop = searchKeptAtTop || !showBottomNavigation
 
     ProvideNavigator(navigator = navigator) {
-        val navBarState = rememberHideOnScrollState()
-        val navBarCollapsedFraction by navBarState.animateHiddenFraction()
-        LaunchedEffect(pagerState.currentPage) { navBarState.show() }
+        // The bar folds to its icons as a tab's content goes on, and unfolds as it comes back or
+        // another tab opens
+        val page = rememberPageScrollState()
+        val navBarCompact = rememberScrollProgress(away = 24.dp, toggle = true, resetKey = pagerState.currentPage, page = page)
         GlassScaffold(
             backgroundColor = Color.Transparent,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(navBarState.nestedScrollConnection),
+            pageScroll = page,
+            modifier = Modifier.fillMaxSize(),
             bottomBar = {
                 if (showBottomNavigation) {
                     FloatingNavBar(
@@ -121,7 +121,7 @@ fun MainPage(
                         onChangePosition = { tabs.selected = navigationItems[it].id },
                         onReselected = onReselected,
                         navigationItems = navigationItems,
-                        collapsedFraction = { navBarCollapsedFraction },
+                        collapsedFraction = { navBarCompact.value },
                         themeColors = themeColors,
                         modifier = Modifier
                             .graphicsLayer { alpha = 1f - search.progress.value }

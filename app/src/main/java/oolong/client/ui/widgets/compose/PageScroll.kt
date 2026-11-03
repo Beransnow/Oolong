@@ -24,28 +24,53 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlin.math.abs
 
 /**
- * How far a page's content has scrolled under its top bar, which shows the bar's scroll edge only
- * once something is under it: at the top of the page the bar is clear, and the edge comes in as
- * the content scrolls up. Lists report themselves with [scrollEdgeSource]; on a page of pages the
- * one in view counts.
+ * How a page's content is scrolling, for everything on the page that changes with it (see
+ * [ScrollProgress]): how far it is from its top, which lists report with [pageScroll], on a page
+ * of pages the one in view; and which way it is going, which the [GlassScaffold] it is given to
+ * watches for. Hoist it with [rememberPageScrollState] to read it outside the scaffold, as for a
+ * bottom bar that a page's tabs share.
  */
 @Stable
-class ScrollEdgeState internal constructor() {
+class PageScrollState internal constructor() {
     internal class Source(val scrolled: () -> Int, val scrollable: ScrollableState?) {
         /** Where the list starts across the page, so the page in view can be told from its neighbours. */
         var start by mutableFloatStateOf(0f)
     }
 
     private val sources = mutableStateListOf<Source>()
+
+    /** What follows which way the content goes, rather than where it is. */
+    private val directed = mutableListOf<DirectedProgress>()
+
+    internal fun add(progress: DirectedProgress) = directed.add(progress)
+
+    internal fun remove(progress: DirectedProgress) = directed.remove(progress)
+
+    /** Watches every scroll on the page, taking none of it. */
+    internal val scrollWatcher = object : NestedScrollConnection {
+        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+            directed.forEach { it.onScroll(consumed.y, available.y) }
+            return Offset.Zero
+        }
+
+        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+            directed.forEach { it.onScrollEnd() }
+            return Velocity.Zero
+        }
+    }
 
     /** Where the scaffold starts, so a page in a pane beside another still counts as in view. */
     internal var originX by mutableFloatStateOf(0f)
@@ -112,18 +137,20 @@ private const val FarScroll = 1 shl 14
 private const val SnapStiffness = 600f
 
 /** The scroll edge a [GlassScaffold] shares between its top bar and its content. */
-val LocalScrollEdge = compositionLocalOf<ScrollEdgeState?> { null }
+val LocalPageScroll = compositionLocalOf<PageScrollState?> { null }
 
-internal fun newScrollEdgeState() = ScrollEdgeState()
+/** A [PageScrollState] to give a [GlassScaffold], for reading the page's scroll outside it. */
+@Composable
+fun rememberPageScrollState(): PageScrollState = remember { PageScrollState() }
 
 /**
- * Reports to the page's [ScrollEdgeState] how far this scrolling content is from its top, as
+ * Reports to the page's [PageScrollState] how far this scrolling content is from its top, as
  * [scrolled] pixels, and the [scrollable] that moves it, which settles a large title left halfway.
  */
 @Composable
-fun Modifier.scrollEdgeSource(scrollable: ScrollableState?, scrolled: () -> Int): Modifier {
-    val state = LocalScrollEdge.current ?: return this
-    val source = remember(state, scrollable) { ScrollEdgeState.Source(scrolled, scrollable) }
+fun Modifier.pageScroll(scrollable: ScrollableState?, scrolled: () -> Int): Modifier {
+    val state = LocalPageScroll.current ?: return this
+    val source = remember(state, scrollable) { PageScrollState.Source(scrolled, scrollable) }
     DisposableEffect(state, source) {
         state.add(source)
         onDispose { state.remove(source) }
@@ -132,30 +159,30 @@ fun Modifier.scrollEdgeSource(scrollable: ScrollableState?, scrolled: () -> Int)
 }
 
 /**
- * [scrollEdgeSource] for a lazy list: how far its first item has moved up. Items under the bar
+ * [pageScroll] for a lazy list: how far its first item has moved up. Items under the bar
  * are still laid out, so the first item stays known well past the bar and a large title; once it
  * is gone the content counts as far.
  */
 @Composable
-fun Modifier.scrollEdgeSource(state: LazyListState): Modifier = scrollEdgeSource(state) {
+fun Modifier.pageScroll(state: LazyListState): Modifier = pageScroll(state) {
     // Item offsets start at the end of the top padding
     state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset } ?: Int.MAX_VALUE
 }
 
-/** [scrollEdgeSource] for a lazy grid, as for a lazy list. */
+/** [pageScroll] for a lazy grid, as for a lazy list. */
 @Composable
-fun Modifier.scrollEdgeSource(state: LazyGridState): Modifier = scrollEdgeSource(state) {
+fun Modifier.pageScroll(state: LazyGridState): Modifier = pageScroll(state) {
     state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset.y } ?: Int.MAX_VALUE
 }
 
-/** [scrollEdgeSource] for a scrolling column. */
+/** [pageScroll] for a scrolling column. */
 @Composable
-fun Modifier.scrollEdgeSource(state: ScrollState): Modifier = scrollEdgeSource(state) { state.value }
+fun Modifier.pageScroll(state: ScrollState): Modifier = pageScroll(state) { state.value }
 
 /** [verticalScroll] that also reports to the top bar's scroll edge. */
 @Composable
 fun Modifier.verticalScrollUnderBar(state: ScrollState = rememberScrollState()): Modifier =
-    scrollEdgeSource(state).verticalScroll(state)
+    pageScroll(state).verticalScroll(state)
 
 /**
  * Lets dragging this scroll the page's content in view, for something drawn over the content
@@ -164,13 +191,13 @@ fun Modifier.verticalScrollUnderBar(state: ScrollState = rememberScrollState()):
  */
 @Composable
 fun Modifier.scrollsPageContent(): Modifier {
-    val page = LocalScrollEdge.current ?: return this
+    val page = LocalPageScroll.current ?: return this
     val forwarding = remember(page) { PageContentScrollable(page) }
     return scrollable(forwarding, Orientation.Vertical, reverseDirection = true)
 }
 
 /** Passes scrolling on to whichever content is in view. */
-private class PageContentScrollable(private val page: ScrollEdgeState) : ScrollableState {
+private class PageContentScrollable(private val page: PageScrollState) : ScrollableState {
     private val target: ScrollableState? get() = page.inView?.scrollable
 
     override suspend fun scroll(scrollPriority: MutatePriority, block: suspend ScrollScope.() -> Unit) {

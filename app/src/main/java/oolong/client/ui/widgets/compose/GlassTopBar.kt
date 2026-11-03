@@ -118,7 +118,7 @@ fun GlassTopBar(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val largeTitle = LocalLargeTitle.current
-    val scrollEdge = LocalScrollEdge.current
+    val scrollEdge = LocalPageScroll.current
     val largeTitleProgress = largeTitle?.let { rememberScrollProgress(0f..it.height.toFloat(), snapping = true) }
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
