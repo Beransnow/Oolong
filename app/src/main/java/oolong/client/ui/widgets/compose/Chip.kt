@@ -3,6 +3,7 @@ package oolong.client.ui.widgets.compose
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.pressScale
 
 @Composable
 fun Chip(
@@ -36,18 +41,26 @@ fun Chip(
     val backgroundColor =
         if (invertColor) ExtendedTheme.colors.invertChip else ExtendedTheme.colors.chip
 
-    val animatedColor by animateColorAsState(targetValue = color, label = "ChipColor")
+    val interactionSource = remember { MutableInteractionSource() }
+    val animatedColor by animateColorAsState(targetValue = color, animationSpec = Motion.snap(), label = "ChipColor")
     val animatedBackgroundColor by animateColorAsState(
         targetValue = backgroundColor,
+        animationSpec = Motion.snap(),
         label = "ChipBackgroundColor"
     )
 
     ProvideContentColor(color = animatedColor) {
         Row(
             modifier = modifier
+                // Pressed, a tappable chip draws its edges in, as buttons do
+                .then(if (onClick != null) Modifier.pressScale(interactionSource) else Modifier)
                 .clip(shape)
                 .background(color = animatedBackgroundColor)
-                .clickable(enabled = onClick != null) {
+                .clickable(
+                    enabled = onClick != null,
+                    interactionSource = interactionSource,
+                    indication = PressFeedback.Overlay,
+                ) {
                     onClick?.invoke()
                 }
                 .padding(horizontal = 16.dp, vertical = 4.dp),
