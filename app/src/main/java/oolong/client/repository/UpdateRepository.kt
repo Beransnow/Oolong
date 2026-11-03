@@ -44,7 +44,7 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.days
 
 /** Where releases are published: each channel's manifest under `update/`, the APKs under `apk/`. */
-private const val UpdateHost = "https://dl.example.com"
+private const val UpdateHost = "https://oolong.huanchengfly.top"
 
 /** A release as a channel's manifest describes it. */
 @Serializable
