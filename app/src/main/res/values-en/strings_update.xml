@@ -13,7 +13,6 @@
     <string name="update_download_failed">Couldn\'t download. Check your connection and try again</string>
     <string name="update_verify_failed">The package failed verification and was deleted</string>
     <string name="update_install_failed">Couldn\'t install the update</string>
-    <string name="update_this_version">This version</string>
     <string name="update_settings">Settings</string>
     <string name="update_auto_check">Check automatically</string>
     <string name="update_channel">Channel</string>

@@ -71,9 +71,12 @@ data class Release(
     val required: Boolean get() = BuildConfig.VERSION_CODE < minSupported
 
     /** The notes in the language the app is shown in, else Chinese. */
-    fun notesFor(locale: Locale): Map<String, List<String>> =
-        notes[locale.language] ?: notes["zh"] ?: notes.values.firstOrNull().orEmpty()
+    fun notesFor(locale: Locale): Map<String, List<String>> = notes.notesFor(locale)
 }
+
+/** Release notes by language: those in [locale]'s language, else Chinese. */
+fun Map<String, Map<String, List<String>>>.notesFor(locale: Locale): Map<String, List<String>> =
+    this[locale.language] ?: this["zh"] ?: values.firstOrNull().orEmpty()
 
 /**
  * Stable has releases only; beta has the alpha, beta and rc builds too, and always offers the newest
@@ -148,6 +151,15 @@ class UpdateRepository @Inject constructor(
     val installing: StateFlow<Boolean> = _installing.asStateFlow()
 
     private var checkJob: Job? = null
+
+    /** What changed in the version installed, from the release notes it was built with; empty when none were written. */
+    suspend fun installedNotes(): Map<String, Map<String, List<String>>> = withContext(io) {
+        try {
+            context.assets.open("release-notes.json").use { json.decodeFromString(it.readBytes().decodeToString()) }
+        } catch (_: IOException) {
+            emptyMap()
+        }
+    }
     private var downloadJob: Job? = null
 
     private val prefs = context.dataStore

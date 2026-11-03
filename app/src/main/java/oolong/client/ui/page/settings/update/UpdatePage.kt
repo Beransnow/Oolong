@@ -52,6 +52,7 @@ import oolong.client.repository.UpdateChannel
 import oolong.client.repository.UpdateCheck
 import oolong.client.repository.UpdateDownload
 import oolong.client.repository.UpdateVerificationException
+import oolong.client.repository.notesFor
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
@@ -124,11 +125,18 @@ fun UpdatePage(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Hero(lens, state)
-                val shown = state.offered ?: (state.check as? UpdateCheck.Done)?.latest
-                if (shown != null) {
-                    Notes(shown, isNew = state.offered != null)
-                }
+                // The new version's notes when there is one; else what this version brought
+                val context = LocalContext.current
                 val offered = state.offered
+                if (offered != null) {
+                    Notes(
+                        version = offered.versionName,
+                        details = "${Formatter.formatShortFileSize(context, offered.size)} · ${offered.publishedAt}",
+                        groups = offered.notesFor(Locale.getDefault()),
+                    )
+                } else if (state.installedNotes.isNotEmpty()) {
+                    Notes(version = BuildConfig.VERSION_NAME, groups = state.installedNotes.notesFor(Locale.getDefault()))
+                }
                 val busy = state.download is UpdateDownload.Running || state.download is UpdateDownload.Ready
                 if (offered != null && !offered.required && !busy) {
                     TextButton(onClick = { viewModel.skip(offered) }, color = ExtendedTheme.colors.textSecondary) {
@@ -185,9 +193,8 @@ private fun Hero(lens: MarkLens, state: UpdateState) {
 
 /** What [release] changes, grouped as its manifest groups it. */
 @Composable
-private fun Notes(release: Release, isNew: Boolean) {
+private fun Notes(version: String, groups: Map<String, List<String>>, details: String? = null) {
     val colors = ExtendedTheme.colors
-    val context = LocalContext.current
     Column(
         modifier = Modifier
             .widthIn(max = 600.dp)
@@ -198,16 +205,13 @@ private fun Notes(release: Release, isNew: Boolean) {
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
             Text(
-                text = if (isNew) release.versionName else stringResource(id = R.string.update_this_version),
+                text = version,
                 style = TextStyles.caption.copy(color = colors.textSecondary),
                 modifier = Modifier.weight(1f),
             )
-            Text(
-                text = "${Formatter.formatShortFileSize(context, release.size)} · ${release.publishedAt}",
-                style = TextStyles.caption.copy(color = colors.textSecondary),
-            )
+            if (details != null) Text(text = details, style = TextStyles.caption.copy(color = colors.textSecondary))
         }
-        release.notesFor(Locale.getDefault()).forEach { (group, items) ->
+        groups.forEach { (group, items) ->
             // Above its items, which may have titles of their own
             Text(text = group, style = TextStyles.name.copy(color = colors.text))
             Column(modifier = Modifier.padding(top = 2.dp, bottom = 20.dp)) {

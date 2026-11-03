@@ -137,8 +137,31 @@ android {
     namespace = "oolong.client"
 }
 
+/** Puts this version's release notes, when written, among the app's assets as release-notes.json. */
+abstract class BundleReleaseNotes : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val notes: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun bundle() {
+        val dir = outputDir.get().asFile
+        dir.deleteRecursively()
+        dir.mkdirs()
+        notes.files.firstOrNull { it.isFile }?.copyTo(File(dir, "release-notes.json"))
+    }
+}
+
+val bundleReleaseNotes = tasks.register<BundleReleaseNotes>("bundleReleaseNotes") {
+    notes.from(rootProject.file("tools/release/notes/$applicationVersionName.json"))
+}
+
 androidComponents {
     onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(bundleReleaseNotes, BundleReleaseNotes::outputDir)
         // The builds the baseline profile is generated on install beside the app itself, so
         // installing and clearing them never touches a device's own install
         if (variant.name == "nonMinifiedRelease" || variant.name == "benchmarkRelease") {
