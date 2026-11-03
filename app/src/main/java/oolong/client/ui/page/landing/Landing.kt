@@ -39,7 +39,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -57,6 +56,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -67,8 +67,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -85,14 +83,8 @@ import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.settings.about.LensCenter
 import oolong.client.ui.page.settings.about.LensRadius
-import oolong.client.ui.page.settings.about.drawLensShadow
-import oolong.client.ui.page.settings.about.drawMark
-import oolong.client.ui.page.settings.about.drawPaintedLens
-import oolong.client.ui.page.settings.about.drawRim
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.TextButton
-import oolong.client.ui.widgets.compose.controlLens
-import oolong.client.ui.widgets.compose.isGlassAvailable
 import oolong.client.utils.appPreferences
 import kotlin.math.PI
 import kotlin.math.cos
@@ -141,9 +133,8 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
     val navigator = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val dark = ExtendedTheme.colors.isNightMode
-    val glass = isGlassAvailable()
+    val paper = painterResource(R.drawable.ic_mark_paper)
     val state = remember { LandingState() }
-    val page = rememberHazeState()
 
     var source by remember { mutableStateOf(LegacyImport.source(context)) }
     // Back from the system's uninstall screen, the old app may be gone
@@ -216,7 +207,7 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
                 }
             },
     ) {
-        Box(Modifier.fillMaxSize().hazeSource(page)) {
+        Box(Modifier.fillMaxSize()) {
             Aurora(state, dark, Modifier.fillMaxSize())
             Column(
                 modifier = Modifier
@@ -239,8 +230,7 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
                             spotColor = if (dark) Color.Black.copy(alpha = .7f) else MarkShadow.copy(alpha = .8f),
                         ),
                 ) {
-                    // The launcher icon without its lens, which is drawn over it as glass
-                    drawMark(size.width / 100f, withLens = false)
+                    with(paper) { draw(size) }
                 }
                 // At least as tall as the name and the line under it, so the mark stays put between stages
                 Box(Modifier.heightIn(min = TextsHeight).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -315,58 +305,56 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
                 }
             }
         }
-        Lens(state, glass, page)
+        Lens(state)
     }
 }
 
-/** The mark's lens, over the light and the paper, which it bends as glass where glass is drawn. */
+/**
+ * The mark's lens, the launcher icon's own, over the paper. It is drawn apart from the paper so it
+ * can come in on its own.
+ */
 @Composable
-private fun Lens(state: LandingState, glass: Boolean, page: dev.chrisbanes.haze.HazeState) {
+private fun Lens(state: LandingState) {
     val density = LocalDensity.current
+    val painter = painterResource(R.drawable.ic_mark_lens)
     val root = remember { mutableStateOf<LayoutCoordinates?>(null) }
     Box(Modifier.fillMaxSize().onGloballyPositioned { root.value = it })
-    val diameter = MarkSize * (LensRadius * 2 / 100f)
     Box(
         modifier = Modifier
             .offset {
                 val mark = state.mark
                 val parent = root.value
                 if (mark == null || parent == null || !mark.isAttached || !parent.isAttached) return@offset IntOffset.Zero
-                val center = parent.localPositionOf(mark, LensCenter * (mark.size.width / 100f))
-                val half = with(density) { diameter.toPx() } / 2
+                val origin = parent.localPositionOf(mark, Offset.Zero)
                 // It settles onto the paper from a little way up and to the right
                 val drift = (1f - state.lens.value) * with(density) { 10.dp.toPx() }
-                IntOffset((center.x - half + drift).roundToInt(), (center.y - half - drift).roundToInt())
+                IntOffset((origin.x + drift).roundToInt(), (origin.y - drift).roundToInt())
             }
-            .size(diameter)
+            .size(MarkSize)
             .condense({ state.lens.value }, blur = 20.dp, fadeFaster = 1.2f)
-            .drawBehind { drawLensShadow(size.width / 2) }
-            .controlLens(page, CircleShape, alpha = 1f)
-            .drawWithContent {
-                drawContent()
-                val radius = size.width / 2
-                val center = Offset(radius, radius)
-                // While importing, the glass fills like a cup, white as the paper
+            .drawBehind {
+                val unit = size.width / 100f
+                val center = LensCenter * unit
+                val radius = LensRadius * unit
+                // While importing, the glass fills like a cup, white as the paper, under its surface
                 val fill = state.fill.value
                 if (fill > 0f) {
                     clipPath(Path().apply { addOval(Rect(center, radius)) }) {
-                        val top = size.height * (1f - fill)
+                        val top = center.y + radius - radius * 2 * fill
                         val wave = sin(state.time * 4f) * radius * .06f
+                        val left = center.x - radius
+                        val right = center.x + radius
                         val surface = Path().apply {
-                            moveTo(0f, top + wave)
-                            quadraticTo(size.width / 2, top - wave * 2, size.width, top - wave)
-                            lineTo(size.width, size.height)
-                            lineTo(0f, size.height)
+                            moveTo(left, top + wave)
+                            quadraticTo(center.x, top - wave * 2, right, top - wave)
+                            lineTo(right, center.y + radius)
+                            lineTo(left, center.y + radius)
                             close()
                         }
-                        drawPath(surface, Brush.verticalGradient(listOf(Color(0xE6FFFFFF), Color(0xB3DCE7F8)), startY = top, endY = size.height))
+                        drawPath(surface, Brush.verticalGradient(listOf(Color(0xE6FFFFFF), Color(0xB3DCE7F8)), startY = top, endY = center.y + radius))
                     }
                 }
-                if (glass) {
-                    drawRim(center, radius, strokeWidth = radius * .045f, alpha = 1f)
-                } else {
-                    drawPaintedLens(radius, 1f)
-                }
+                with(painter) { draw(size) }
             },
     )
 }

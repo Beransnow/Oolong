@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher icon without its lens: the blue disc and the paper. Drawn as ic_splash_screen draws them -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:pathData="M0,50a50,50 0,1 0,100,0a50,50 0,1 0,-100,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="50" android:startY="0" android:endX="50" android:endY="100">
+                <item android:color="#FF5B8FE6" android:offset="0" />
+                <item android:color="#FF2F57B0" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <group
+        android:name="disc"
+        android:pivotX="41.75"
+        android:pivotY="58.25">
+        <path
+            android:pathData="M11.750,60.450a30.000,30.000 0 1,0 60.000,0a30.000,30.000 0 1,0 -60.000,0Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial" android:centerX="41.750" android:centerY="60.450" android:gradientRadius="30.000">
+                    <item android:color="#4C163A80" android:offset="0.0000" />
+                    <item android:color="#33163A80" android:offset="0.7333" />
+                    <item android:color="#00163A80" android:offset="1.0000" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path
+            android:pathData="M16.750,58.250a25.000,25.000 0 1,0 50.000,0a25.000,25.000 0 1,0 -50.000,0Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial" android:centerX="33.000" android:centerY="47.000" android:gradientRadius="38.750">
+                    <item android:color="#FFFFFFFF" android:offset="0.0000" />
+                    <item android:color="#FFF3F7FE" android:offset="0.5500" />
+                    <item android:color="#FFD6E2F6" android:offset="1.0000" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path
+            android:fillColor="#FF3F6FC8"
+            android:pathData="M31.550,52.250h16.400a2.800,2.800 0 0,1 0,5.600h-16.400a2.800,2.800 0 0,1 0,-5.600Z" />
+        <path
+            android:fillColor="#FF3F6FC8"
+            android:pathData="M31.550,62.250h7.400a2.800,2.800 0 0,1 0,5.600h-7.400a2.800,2.800 0 0,1 0,-5.600Z" />
+    </group>
+</vector>

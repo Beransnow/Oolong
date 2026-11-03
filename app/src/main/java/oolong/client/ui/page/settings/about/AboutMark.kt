@@ -22,28 +22,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
+import oolong.client.R
 import oolong.client.ui.widgets.compose.isGlassAvailable
 import oolong.client.ui.widgets.compose.loupeLens
 import kotlin.math.roundToInt
@@ -71,11 +70,13 @@ class MarkLens {
 }
 
 /**
- * The app's mark, [size] across, drawn as the launcher icon is: a blue disc, the white bubble on
- * it, and the glass lens over the bubble's corner, which can be picked up with [lens].
+ * The app's mark, [size] across: the launcher icon's own drawing, a blue disc, the white paper on
+ * it and the glass lens over the paper's corner, which can be picked up with [lens].
  */
 @Composable
 fun AboutMark(lens: MarkLens, size: Dp, modifier: Modifier = Modifier) {
+    val paper = painterResource(R.drawable.ic_mark_paper)
+    val glass = painterResource(R.drawable.ic_mark_lens)
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     Canvas(
@@ -116,17 +117,18 @@ fun AboutMark(lens: MarkLens, size: Dp, modifier: Modifier = Modifier) {
                 }
             },
     ) {
-        val unit = this.size.width / 100f
-        drawMark(unit, withLens = !lens.lifted)
+        with(paper) { draw(this@Canvas.size) }
+        if (!lens.lifted) with(glass) { draw(this@Canvas.size) }
     }
 }
 
 /**
  * The lens while it is off the mark, over the page captured in [page], which must not contain
- * this. Where glass is not drawn, it is the mark's own pale lens, grown.
+ * this. Where glass is not drawn, it is the mark's own lens, grown.
  */
 @Composable
 fun BoxScope.LensOverlay(lens: MarkLens, page: HazeState, markSize: Dp) {
+    val painter = painterResource(R.drawable.ic_mark_lens)
     val density = LocalDensity.current
     val glass = isGlassAvailable()
     Box(
@@ -141,7 +143,7 @@ fun BoxScope.LensOverlay(lens: MarkLens, page: HazeState, markSize: Dp) {
     val grown = lens.grown.coerceAtLeast(0f)
     val diameter = lerp(markSize * (LensRadius * 2 / 100f), LiftedDiameter, grown)
     val center = lens.home + lens.moved
-    // The mark's painted lens shows while small, so it lands back on the mark unchanged
+    // The mark's own lens shows while small, so it lands back on the mark unchanged
     val painted = if (glass) (1f - grown * 2f).coerceIn(0f, 1f) else 1f
     Box(
         modifier = Modifier
@@ -150,11 +152,12 @@ fun BoxScope.LensOverlay(lens: MarkLens, page: HazeState, markSize: Dp) {
                 IntOffset((center.x - half).roundToInt(), (center.y - half).roundToInt())
             }
             .size(diameter)
-            .drawBehind { drawLensShadow(this.size.width / 2) }
+            // The mark's lens brings its own shadow
+            .drawBehind { drawLensShadow(this.size.width / 2, alpha = 1f - painted) }
             .loupeLens(page, CircleShape)
             .drawWithContent {
                 drawContent()
-                drawPaintedLens(this.size.width / 2, painted)
+                drawMarkLens(painter, painted)
             },
     )
 }
@@ -166,82 +169,21 @@ private fun MarkLens.updateHome() {
     home = overlay.localPositionOf(mark, LensCenter * (mark.size.width / 100f))
 }
 
-/** The mark in units of a hundredth of its width, as the launcher icon's vector draws it. */
-internal fun DrawScope.drawMark(unit: Float, withLens: Boolean) {
-    drawCircle(
-        brush = Brush.verticalGradient(listOf(Color(0xFF5B8FE6), Color(0xFF2F57B0))),
-        radius = 50 * unit,
-        center = Offset(50 * unit, 50 * unit),
-    )
-    if (withLens) drawMarkLensShadow(unit)
-    drawMarkPaper(unit)
-    if (withLens) {
-        drawCircle(
-            brush = Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x2EFFFFFF)), startY = 15 * unit, endY = 55 * unit),
-            radius = LensRadius * unit,
-            center = LensCenter * unit,
-        )
-        // Where the lens lies over the paper, the paper shows through it tinted
-        val paper = Path().apply { addOval(Rect(PaperCenter * unit, PaperRadius * unit)) }
-        clipPath(paper) {
-            drawCircle(
-                brush = Brush.verticalGradient(listOf(Color(0xFFD3E3FA), Color(0xFFAFCAF1)), startY = 15 * unit, endY = 55 * unit),
-                radius = LensRadius * unit,
-                center = LensCenter * unit,
-            )
-        }
-        drawRim(LensCenter * unit, LensRadius * unit, strokeWidth = 0.9f * unit, alpha = 1f)
+/**
+ * The mark's lens ([R.drawable.ic_mark_lens], drawn in the mark's hundredths) at [alpha], scaled
+ * so its glass fills this, which is the lens's size.
+ */
+private fun DrawScope.drawMarkLens(painter: Painter, alpha: Float) {
+    if (alpha <= 0f) return
+    val unit = size.width / (LensRadius * 2)
+    translate(-(LensCenter.x - LensRadius) * unit, -(LensCenter.y - LensRadius) * unit) {
+        with(painter) { draw(Size(100 * unit, 100 * unit), alpha = alpha) }
     }
 }
 
-/** The lens's shadow where it lies in the mark, a little below it. */
-private fun DrawScope.drawMarkLensShadow(unit: Float) {
-    val center = LensCenter * unit + Offset(0f, 1.6f * unit)
-    drawCircle(
-        brush = Brush.radialGradient(
-            0.7f to Color(0x26163A80),
-            0.84f to Color(0x1A163A80),
-            1f to Color(0x00163A80),
-            center = center,
-            radius = 23.9f * unit,
-        ),
-        radius = 23.9f * unit,
-        center = center,
-    )
-}
-
-/** The mark's white paper with its two lines, and its shadow. */
-private fun DrawScope.drawMarkPaper(unit: Float) {
-    fun at(x: Float, y: Float) = Offset(x * unit, y * unit)
-    drawCircle(
-        brush = Brush.radialGradient(
-            0.7f to Color(0x4C163A80),
-            0.84f to Color(0x33163A80),
-            1f to Color(0x00163A80),
-            center = at(41.75f, 60.45f),
-            radius = 30 * unit,
-        ),
-        radius = 30 * unit,
-        center = at(41.75f, 60.45f),
-    )
-    drawCircle(
-        brush = Brush.radialGradient(
-            0f to Color.White,
-            0.55f to Color(0xFFF3F7FE),
-            1f to Color(0xFFD6E2F6),
-            center = at(33f, 47f),
-            radius = 38.75f * unit,
-        ),
-        radius = PaperRadius * unit,
-        center = PaperCenter * unit,
-    )
-    val lines = Color(0xFF3F6FC8)
-    drawRoundRect(lines, topLeft = at(28.75f, 52.25f), size = Size(22f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
-    drawRoundRect(lines, topLeft = at(28.75f, 62.25f), size = Size(13f * unit, 5.6f * unit), cornerRadius = CornerRadius(2.8f * unit))
-}
-
 /** The lens's soft shadow, a little below it, for a lens of [radius]. */
-internal fun DrawScope.drawLensShadow(radius: Float) {
+private fun DrawScope.drawLensShadow(radius: Float, alpha: Float) {
+    if (alpha <= 0f) return
     val center = Offset(size.width / 2, size.height / 2 + radius * 0.06f)
     drawCircle(
         brush = Brush.radialGradient(
@@ -252,41 +194,11 @@ internal fun DrawScope.drawLensShadow(radius: Float) {
         ),
         radius = radius * 1.12f,
         center = center,
-    )
-}
-
-/** The mark's pale lens, of [radius], at [alpha]: what shows where there is no glass. */
-internal fun DrawScope.drawPaintedLens(radius: Float, alpha: Float) {
-    if (alpha <= 0f) return
-    val center = Offset(size.width / 2, size.height / 2)
-    drawCircle(
-        brush = Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x2EFFFFFF))),
-        radius = radius,
-        center = center,
-        alpha = alpha,
-    )
-    drawRim(center, radius, strokeWidth = radius * 0.045f, alpha = alpha)
-}
-
-internal fun DrawScope.drawRim(center: Offset, radius: Float, strokeWidth: Float, alpha: Float) {
-    drawCircle(
-        brush = Brush.linearGradient(
-            0f to Color(0xF2FFFFFF),
-            0.5f to Color(0x1FFFFFFF),
-            1f to Color(0x80FFFFFF),
-            start = center + Offset(-radius * 0.6f, -radius),
-            end = center + Offset(radius * 0.6f, radius),
-        ),
-        radius = radius - strokeWidth / 2,
-        center = center,
-        style = Stroke(strokeWidth),
         alpha = alpha,
     )
 }
 
-/** The paper's and the lens's places and sizes in the mark, in hundredths of its width. */
-internal val PaperCenter = Offset(41.75f, 58.25f)
-internal const val PaperRadius = 25f
+/** The lens's place and size in the mark, in hundredths of its width. */
 internal val LensCenter = Offset(64.75f, 35.25f)
 internal const val LensRadius = 20f
 
