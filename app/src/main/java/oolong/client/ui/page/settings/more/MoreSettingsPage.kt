@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.dataStore
+import oolong.client.migration.LegacyImport
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.PrefsScreen
@@ -76,6 +77,7 @@ fun MoreSettingsPage(
         val linksGroup = stringResource(id = R.string.settings_group_links)
         val storageGroup = stringResource(id = R.string.settings_group_storage)
         val troubleshootingGroup = stringResource(id = R.string.settings_group_troubleshooting)
+        val legacySource = remember { LegacyImport.source(context) }
         var cacheSize by remember { mutableStateOf("0.0B") }
         LaunchedEffect(Unit) {
             thread {
@@ -106,6 +108,9 @@ fun MoreSettingsPage(
                 prefsFooter { stringResource(id = R.string.tip_tieba_links) }
             }
             prefsGroup(storageGroup) {
+                if (legacySource != LegacyImport.Source.None) {
+                    prefsItem { LegacyImportPref(legacySource) }
+                }
                 prefsItem {
                     TextPref(
                         enabled = true,

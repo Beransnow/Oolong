@@ -844,6 +844,9 @@
     <string name="reader_up_to_date">已读到最新</string>
     <string name="title_crash_logs">崩溃日志</string>
     <string name="settings_group_troubleshooting">问题排查</string>
+    <string name="title_import_legacy">从贴吧 Lite 导入</string>
+    <string name="tip_import_legacy_update">需先安装贴吧 Lite 的最后一个版本</string>
+    <string name="toast_import_legacy_failed">无法导入数据，稍后重试</string>
     <string name="crash_logs_empty">没有崩溃记录</string>
     <string name="crash_logs_clear">清除全部</string>
     <string name="title_dialog_clear_crash_logs">清除全部崩溃日志？</string>

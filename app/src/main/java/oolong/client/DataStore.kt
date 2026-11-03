@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import oolong.client.migration.LegacyPackageMigration
 import oolong.client.utils.ThemeSettings
 
 object DataStoreConst {
@@ -35,6 +36,7 @@ private val dataStoreInstance by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) 
         produceMigrations = { context ->
             listOf(
                 SharedPreferencesMigration(context, "settings"),
+                LegacyPackageMigration,
                 object : DataMigration<Preferences> {
                     override suspend fun cleanUp() {}
 

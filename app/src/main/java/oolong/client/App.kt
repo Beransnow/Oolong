@@ -23,6 +23,7 @@ import dagger.hilt.android.HiltAndroidApp
 import oolong.client.components.CrashLogs
 import oolong.client.components.OAIDGetter
 import oolong.client.components.images.newAppImageLoader
+import oolong.client.migration.LegacyImport
 import oolong.client.ui.widgets.compose.VoicePlayback
 import oolong.client.utils.AppIconUtil
 import oolong.client.utils.ClientUtils
@@ -52,6 +53,12 @@ class App : Application(), SingletonImageLoader.Factory {
             }
         }
         return null
+    }
+
+    override fun attachBaseContext(base: Context) {
+        // Before content providers, Hilt and anything else opens a database or preferences file
+        LegacyImport.applyStaged(base)
+        super.attachBaseContext(base)
     }
 
     override fun onCreate() {

@@ -41,6 +41,8 @@
         android:smallScreens="true" />
 
     <queries>
+        <!-- The old app, to bring its data over -->
+        <package android:name="com.huanchengfly.tieba.post" />
         <intent>
             <data
                 android:host="unidispatch"
