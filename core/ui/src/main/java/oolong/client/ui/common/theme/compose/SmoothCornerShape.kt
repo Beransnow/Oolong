@@ -67,7 +67,7 @@ class SmoothCornerShape(
 private fun Size.toRect() = androidx.compose.ui.geometry.Rect(Offset.Zero, this)
 
 /** Adds a [width] × [height] rectangle at the origin with smooth corners, going clockwise. */
-internal fun Path.addSmoothRect(width: Float, height: Float, radius: Float, smoothing: Float) {
+fun Path.addSmoothRect(width: Float, height: Float, radius: Float, smoothing: Float) {
     val budget = min(width, height) / 2
     smoothCorner(Offset(width, 0f), Offset(1f, 0f), Offset(0f, 1f), radius, smoothing, budget, first = true)
     smoothCorner(Offset(width, height), Offset(0f, 1f), Offset(-1f, 0f), radius, smoothing, budget, first = false)

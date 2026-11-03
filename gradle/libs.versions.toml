@@ -34,6 +34,8 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.
 # Compose
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-animation = { module = "androidx.compose.animation:animation" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-ui = { module = "androidx.compose.ui:ui" }
 compose-animation-graphics = { module = "androidx.compose.animation:animation-graphics" }
 compose-material = { module = "androidx.compose.material:material" }
 compose-ui-util = { module = "androidx.compose.ui:ui-util" }
