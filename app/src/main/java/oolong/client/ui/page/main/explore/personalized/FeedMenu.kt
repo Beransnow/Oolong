@@ -63,14 +63,14 @@ fun FeedMenu(
             val items = dislikes + shareMenuItems(shareLabels, context, thread.id, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
             } + shortcuts?.let { blockMenuItems(blockLabels, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
-            menuId = menus.show(items, anchor = bounds, icon = Symbols.MoreHoriz)
+            menuId = menus.show(items, anchor = bounds, icon = Symbols.MoreVert)
         },
         modifier = Modifier
             .size(24.dp)
             .onGloballyPositioned { bounds = it.boundsInWindow() },
     ) {
         Icon(
-            imageVector = Symbols.MoreHoriz,
+            imageVector = Symbols.MoreVert,
             contentDescription = stringResource(id = R.string.btn_more),
             tint = ExtendedTheme.colors.textSecondary,
             modifier = Modifier.graphicsLayer { alpha = if (open) 0f else 1f },

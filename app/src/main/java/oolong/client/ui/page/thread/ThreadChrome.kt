@@ -99,7 +99,7 @@ internal fun RowScope.ThreadActions(agree: Agree, onEvent: (ThreadEvent) -> Unit
 
 /**
  * The open menu's bottom row: [actions] at its start, and where the actions capsule was the like,
- * which stays, and "…" turned into ×.
+ * which stays, and ⋮ turned into ×.
  */
 @Composable
 internal fun RowScope.ThreadMenuFooter(
@@ -126,7 +126,7 @@ private fun MenuButton(open: Boolean, onClick: () -> Unit) {
     ) {
         val tint = ExtendedTheme.colors.textSecondary
         Icon(
-            imageVector = Symbols.MoreHoriz,
+            imageVector = Symbols.MoreVert,
             contentDescription = if (open) null else stringResource(id = R.string.btn_more),
             tint = tint,
             modifier = Modifier.graphicsLayer {

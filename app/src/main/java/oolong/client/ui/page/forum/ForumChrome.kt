@@ -436,7 +436,7 @@ internal fun ForumTopBar(
     )
 }
 
-/** The forum's ⋯ menu: sharing it, putting it on the home screen and, if followed, unfollowing it. */
+/** The forum's ⋮ menu: sharing it, putting it on the home screen and, if followed, unfollowing it. */
 @Composable
 internal fun forumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean): () -> List<ContextMenuItem> {
     val share = stringResource(id = R.string.title_share)
