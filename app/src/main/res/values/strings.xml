@@ -842,4 +842,15 @@
     </plurals>
     <string name="reader_pictures">图片</string>
     <string name="reader_up_to_date">已读到最新</string>
+    <string name="title_crash_logs">崩溃日志</string>
+    <string name="settings_group_troubleshooting">问题排查</string>
+    <string name="crash_logs_empty">没有崩溃记录</string>
+    <string name="crash_logs_clear">清除全部</string>
+    <string name="title_dialog_clear_crash_logs">清除全部崩溃日志？</string>
+    <string name="crash_kind_crash">崩溃</string>
+    <string name="crash_kind_freeze">应用无响应</string>
+    <string name="crash_kind_native">原生崩溃</string>
+    <string name="title_dialog_crashed">上次异常退出</string>
+    <string name="message_dialog_crashed">崩溃日志已保存在本机，反馈问题时可以附上。</string>
+    <string name="button_view_crash_log">查看</string>
 </resources>

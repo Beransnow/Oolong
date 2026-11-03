@@ -141,6 +141,12 @@ data object MoreSettingsKey : Key
 @Serializable
 data object AboutKey : Key
 
+@Serializable
+data object CrashLogsKey : Key
+
+@Serializable
+data class CrashLogKey(val id: String) : Key
+
 /** The design system's controls on one page; debug builds only. */
 @Serializable
 data object ControlCatalogKey : Key

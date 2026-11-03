@@ -20,6 +20,7 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.github.gzuliyujiang.oaid.DeviceID
 import dagger.hilt.android.HiltAndroidApp
+import oolong.client.components.CrashLogs
 import oolong.client.components.OAIDGetter
 import oolong.client.components.images.newAppImageLoader
 import oolong.client.ui.widgets.compose.VoicePlayback
@@ -56,6 +57,7 @@ class App : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         INSTANCE = this
         super.onCreate()
+        CrashLogs.install(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setWebViewPath(this)
         }

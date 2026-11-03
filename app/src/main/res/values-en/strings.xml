@@ -858,4 +858,15 @@
     </plurals>
     <string name="reader_pictures">Pictures</string>
     <string name="reader_up_to_date">You\'re up to date</string>
+    <string name="title_crash_logs">Crash logs</string>
+    <string name="settings_group_troubleshooting">Troubleshooting</string>
+    <string name="crash_logs_empty">No crashes recorded</string>
+    <string name="crash_logs_clear">Clear all</string>
+    <string name="title_dialog_clear_crash_logs">Clear all crash logs?</string>
+    <string name="crash_kind_crash">Crash</string>
+    <string name="crash_kind_freeze">App not responding</string>
+    <string name="crash_kind_native">Native crash</string>
+    <string name="title_dialog_crashed">The app closed unexpectedly</string>
+    <string name="message_dialog_crashed">A crash log is kept on this device. You can attach it when reporting the problem.</string>
+    <string name="button_view_crash_log">View</string>
 </resources>

@@ -38,6 +38,7 @@ import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
+import oolong.client.ui.navigation.CrashLogsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -73,6 +74,7 @@ fun MoreSettingsPage(
         val context = LocalContext.current
         val linksGroup = stringResource(id = R.string.settings_group_links)
         val storageGroup = stringResource(id = R.string.settings_group_storage)
+        val troubleshootingGroup = stringResource(id = R.string.settings_group_troubleshooting)
         var cacheSize by remember { mutableStateOf("0.0B") }
         LaunchedEffect(Unit) {
             thread {
@@ -115,6 +117,14 @@ fun MoreSettingsPage(
                             }
                         },
                         trailingContent = { Text(text = cacheSize) },
+                    )
+                }
+            }
+            prefsGroup(troubleshootingGroup) {
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_crash_logs),
+                        onClick = { navigator.navigate(CrashLogsKey) },
                     )
                 }
             }

@@ -1,0 +1,206 @@
+package oolong.client.ui.page.settings.crash
+
+import android.content.Context
+import android.content.Intent
+import android.text.format.DateFormat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import oolong.client.R
+import oolong.client.components.CrashLogs
+import oolong.client.dataStore
+import oolong.client.ui.common.prefs.PrefsScreen
+import oolong.client.ui.common.prefs.widgets.TextPref
+import oolong.client.ui.common.theme.compose.Corners
+import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Spacing
+import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.client.ui.navigation.CrashLogKey
+import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.ConfirmDialog
+import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.widgets.compose.IconButton
+import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.rememberDialogState
+import oolong.client.utils.TiebaUtil
+import java.text.SimpleDateFormat
+import java.util.Date
+
+/** The crashes kept on the device, newest first; each opens to its full record. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun CrashLogsPage(
+    navigator: Navigator = LocalNavigator.current,
+) {
+    val context = LocalContext.current
+    var cleared by remember { mutableIntStateOf(0) }
+    val entries by produceState<List<CrashLogs.Entry>?>(initialValue = null, cleared) {
+        value = withContext(Dispatchers.IO) { CrashLogs.list(context) }
+    }
+    val clearDialog = rememberDialogState()
+    ConfirmDialog(
+        dialogState = clearDialog,
+        onConfirm = {
+            CrashLogs.clear(context)
+            cleared++
+        },
+        confirmText = stringResource(id = R.string.button_clear),
+        title = { Text(text = stringResource(id = R.string.title_dialog_clear_crash_logs)) },
+    )
+    GlassScaffold(
+        backgroundColor = Color.Transparent,
+        topBar = {
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_crash_logs)) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
+            )
+        },
+    ) { padding ->
+        val list = entries
+        when {
+            list == null -> Unit
+            list.isEmpty() -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(id = R.string.crash_logs_empty),
+                    style = TextStyles.label,
+                    color = ExtendedTheme.colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            else -> PrefsScreen(
+                dataStore = context.dataStore,
+                dividerThickness = 0.dp,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = padding,
+            ) {
+                prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
+                    list.forEach { entry ->
+                        prefsItem {
+                            TextPref(
+                                title = entry.label(),
+                                summary = formatTime(entry.time),
+                                onClick = { navigator.navigate(CrashLogKey(entry.id)) },
+                            )
+                        }
+                    }
+                }
+                prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.crash_logs_clear),
+                            textColor = MaterialTheme.colors.error,
+                            trailingContent = null,
+                            onClick = { clearDialog.show() },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One crash's full record, to read, copy or share. */
+@Composable
+fun CrashLogPage(
+    key: CrashLogKey,
+    navigator: Navigator = LocalNavigator.current,
+) {
+    val context = LocalContext.current
+    val text by produceState<String?>(initialValue = null, key.id) {
+        value = withContext(Dispatchers.IO) { CrashLogs.read(context, key.id) }
+    }
+    val entry = remember(key.id) { CrashLogs.list(context).firstOrNull { it.id == key.id } }
+    GlassScaffold(
+        backgroundColor = Color.Transparent,
+        topBar = {
+            GlassTopBar(
+                title = { GlassTopBarTitle(text = entry?.label() ?: stringResource(id = R.string.title_crash_logs)) },
+                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
+                actions = {
+                    val record = text
+                    if (record != null) {
+                        IconButton(onClick = { TiebaUtil.copyText(context, record) }) {
+                            Icon(Symbols.ContentCopy, contentDescription = stringResource(id = R.string.title_copy))
+                        }
+                        IconButton(onClick = { share(context, record) }) {
+                            Icon(Symbols.Share, contentDescription = stringResource(id = R.string.title_share))
+                        }
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        val record = text ?: return@GlassScaffold
+        MyLazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+            item {
+                SelectionContainer(
+                    modifier = Modifier
+                        .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+                        .fillMaxWidth()
+                        .clip(Corners.md)
+                        .background(ExtendedTheme.colors.card)
+                        .padding(Spacing.md),
+                ) {
+                    Text(
+                        text = record,
+                        style = TextStyles.footnote.copy(fontFamily = FontFamily.Monospace),
+                        color = ExtendedTheme.colors.text,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** What went down: the exception's name for a crash, or what kind of end it was. */
+@Composable
+private fun CrashLogs.Entry.label(): String = when (kind) {
+    CrashLogs.Kind.Crash -> title.substringBefore(':').substringAfterLast('.').ifBlank { stringResource(id = R.string.crash_kind_crash) }
+    CrashLogs.Kind.Freeze -> stringResource(id = R.string.crash_kind_freeze)
+    CrashLogs.Kind.Native -> stringResource(id = R.string.crash_kind_native)
+}
+
+@Composable
+private fun formatTime(time: Long): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(time, locale) {
+        SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "yMMMdHHmmss"), locale).format(Date(time))
+    }
+}
+
+private fun share(context: Context, text: String) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}

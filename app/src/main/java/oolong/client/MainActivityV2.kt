@@ -58,6 +58,7 @@ import coil3.compose.AsyncImage
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -69,6 +70,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.arch.AppContent
 import oolong.client.arch.GlobalEvent
@@ -78,6 +80,7 @@ import oolong.client.components.ClipBoardForumLink
 import oolong.client.components.ClipBoardLink
 import oolong.client.components.ClipBoardLinkDetector
 import oolong.client.components.ClipBoardThreadLink
+import oolong.client.components.CrashLogs
 import oolong.client.repository.AccountRepository
 import oolong.client.services.NotifyJobService
 import oolong.client.ui.common.LocalNow
@@ -87,9 +90,11 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.navigation.AppNavDisplay
 import oolong.client.ui.navigation.BackStackNavigator
+import oolong.client.ui.navigation.CrashLogsKey
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.Key
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.Page
 import oolong.client.ui.navigation.ThreadKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.navigation.rememberAppBackStack
@@ -443,9 +448,35 @@ class MainActivityV2 : AppCompatActivity() {
                 okSignAlertDialogState.show()
             }
         }
+        // After the app went down, once: what happened is kept and can be read
+        val crashDialogState = rememberDialogState()
+        AlertDialog(
+            dialogState = crashDialogState,
+            title = { Text(text = stringResource(id = R.string.title_dialog_crashed)) },
+            content = { Text(text = stringResource(id = R.string.message_dialog_crashed)) },
+            buttons = {
+                DialogPositiveButton(
+                    text = stringResource(id = R.string.button_view_crash_log),
+                    onClick = { navigator?.navigate(CrashLogsKey) },
+                )
+                DialogNegativeButton(text = stringResource(id = R.string.btn_close))
+            },
+        )
+        LaunchedEffect(Unit) {
+            val crashed = withContext(Dispatchers.IO) {
+                CrashLogs.collectExits(this@MainActivityV2)
+                CrashLogs.takeUnnoticed(this@MainActivityV2) != null
+            }
+            if (crashed) crashDialogState.show()
+        }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {
                 val backStack = rememberAppBackStack(linked = linkedKey)
+                LaunchedEffect(backStack) {
+                    snapshotFlow { (backStack.lastOrNull() as? Page)?.key }.collect { key ->
+                        CrashLogs.page = key?.let { it::class.simpleName }
+                    }
+                }
                 val navigator = remember(backStack) { BackStackNavigator(backStack) }
                 val copySheets = remember { CopySheets() }
                 val now = rememberMinuteClock()
