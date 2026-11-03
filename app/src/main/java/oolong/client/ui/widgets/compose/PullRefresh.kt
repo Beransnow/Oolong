@@ -69,6 +69,9 @@ sealed interface EndPull {
 /** How far the list is pulled up past its end, in pixels, for the end row to answer. */
 internal val LocalEndPull = compositionLocalOf<() -> Float> { { 0f } }
 
+/** How far the content is pulled down from its place, for what moves with it outside it. */
+internal val LocalPullOffset = compositionLocalOf<() -> Float> { { 0f } }
+
 /**
  * Pull down to refresh: at its top the list follows the finger down, and the loader comes out in
  * the gap it leaves below [indicatorTop], usually the list's top padding. Pulled far enough and
@@ -159,7 +162,10 @@ fun PullRefresh(
             .nestedScroll(connection),
     ) {
         Box(modifier = Modifier.graphicsLayer { translationY = state.offset }) {
-            CompositionLocalProvider(LocalEndPull provides { (-state.offset).coerceAtLeast(0f) }) {
+            CompositionLocalProvider(
+                LocalEndPull provides { (-state.offset).coerceAtLeast(0f) },
+                LocalPullOffset provides { state.offset.coerceAtLeast(0f) },
+            ) {
                 content()
             }
         }

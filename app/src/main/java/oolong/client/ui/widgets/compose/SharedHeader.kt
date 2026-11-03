@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.flow.first
+import kotlin.math.roundToInt
 
 /*
  * A header shared by the pages of a pager, such as a forum's or a user's above their tabs. It is
@@ -59,6 +61,9 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
      */
     internal var held by mutableIntStateOf(0)
 
+    /** How far a pull to refresh has taken the header down, which the pinned rows follow. */
+    internal var pull: () -> Float = { 0f }
+
     /** Each page's list, by page, to keep in line with the header. */
     internal val lists = mutableStateMapOf<Int, LazyListState>()
 
@@ -69,7 +74,7 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
     val gone: Boolean get() = headerHeight > 0 && held >= headerHeight
 
     /** How far below the bar's rows its pinned rows sit: under the header, as much of it as shows. */
-    val pinnedOffset: Int get() = headerHeight - collapsed
+    val pinnedOffset: Int get() = headerHeight - collapsed + pull().roundToInt()
 }
 
 /** A [SharedHeaderState] following [page], the [PageScrollState] given to the page's scaffold. */
@@ -146,6 +151,8 @@ fun SharedHeaderPager(
             )
         }
         frame {
+            val pull = LocalPullOffset.current
+            SideEffect { state.pull = pull }
             Box {
                 HorizontalPager(
                     state = pagerState,
