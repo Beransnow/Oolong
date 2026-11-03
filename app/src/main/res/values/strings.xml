@@ -214,6 +214,7 @@
         <item quantity="other">%d 分钟前</item>
     </plurals>
     <string name="title_oksign_finish">签到完成</string>
+    <string name="sign_done_chip">已完成</string>
     <string name="title_oksign_fail">无法签到</string>
     <string name="text_login_first">登录后才能签到</string>
     <string name="title_history_today">今天早些时候</string>

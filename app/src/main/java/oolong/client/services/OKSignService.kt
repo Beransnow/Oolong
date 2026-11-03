@@ -178,6 +178,29 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         notificationManager.notify(NOTIFICATION_ID, progressNotification(title, text, done, total))
     }
 
+    /**
+     * The live update, finished: it stays where the progress was for a while, then goes; tapping
+     * it opens the app and clears it.
+     */
+    private fun showDone(text: String, total: Int, intent: Intent?) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val builder = buildNotification(getString(R.string.title_oksign_finish), text)
+            .setTimeoutAfter(DONE_SHOWN_MILLIS)
+        if (intent != null) {
+            builder.setContentIntent(PendingIntent.getActivity(this, 0, intent, pendingIntentFlagImmutable()))
+        }
+        notificationManager.notify(
+            NOTIFICATION_ID,
+            signProgress(builder, done = total, total = total, chip = getString(R.string.sign_done_chip)),
+        )
+    }
+
     private fun clearNotification() {
         notificationManager.cancel(NOTIFICATION_ID)
     }
@@ -241,19 +264,16 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     override fun onFinish(success: Boolean, signedCount: Int, total: Int) {
         AutoSign.record(this, signedCount, total, success)
-        updateNotification(
-            getString(R.string.title_oksign_finish),
-            if (total > 0) resources.getQuantityString(
-                R.plurals.text_oksign_done,
-                signedCount,
-                signedCount
-            ) else getString(R.string.text_oksign_no_signable),
-            packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
-        )
-        sendBroadcast(Intent(ACTION_SIGN_SUCCESS_ALL))
+        val launch = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
+        if (total > 0) {
+            showDone(resources.getQuantityString(R.plurals.text_oksign_done, signedCount, signedCount), total, launch)
+        } else {
+            updateNotification(getString(R.string.title_oksign_finish), getString(R.string.text_oksign_no_signable), launch)
+        }
+        sendBroadcast(Intent(ACTION_SIGN_SUCCESS_ALL))
     }
 
     override fun onFailure(current: Int, total: Int, errorCode: Int, errorMsg: String) {
@@ -288,6 +308,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
         const val TAG = "OKSignService"
         const val NOTIFICATION_CHANNEL_ID = "1"
         const val NOTIFICATION_ID = 1
+        private const val DONE_SHOWN_MILLIS = 30 * 60 * 1000L
         const val ACTION_SIGN_SUCCESS_ALL =
             "oolong.client.service.action.SIGN_SUCCESS_ALL"
         const val ACTION_START_SIGN = "oolong.client.service.action.ACTION_SIGN_START"
@@ -296,10 +317,10 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
 /**
  * The signing under way as a live update: kept at the top of the shade and on the lock screen,
- * with how far it has come in a chip in the status bar, where the system shows them. Before the
- * forums are known, [total] is 0 and the bar runs without an end.
+ * with how far it has come in a chip in the status bar, where the system shows them, or [chip] in
+ * its place. Before the forums are known, [total] is 0 and the bar runs without an end.
  */
-private fun signProgress(builder: NotificationCompat.Builder, done: Int, total: Int): Notification {
+private fun signProgress(builder: NotificationCompat.Builder, done: Int, total: Int, chip: String? = null): Notification {
     // Not apply {}: a style has an apply of its own
     val progress = NotificationCompat.ProgressStyle()
     if (total > 0) {
@@ -312,6 +333,9 @@ private fun signProgress(builder: NotificationCompat.Builder, done: Int, total: 
         .setOngoing(true)
         .setOnlyAlertOnce(true)
         .setRequestPromotedOngoing(true)
-        .apply { if (total > 0) setShortCriticalText("$done/$total") }
+        .apply {
+            val text = chip ?: "$done/$total".takeIf { total > 0 }
+            if (text != null) setShortCriticalText(text)
+        }
         .build()
 }
