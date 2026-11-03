@@ -344,12 +344,12 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
             )
         }
     }
-    // Full resolution draws the blur at a radius that really shrinks down the bar. At lower
-    // resolutions Haze fades a blurred copy over the sharp content instead, which shows both.
+    // At the lowest resolution: at full resolution this blur alone took about half a frame of an
+    // older phone's GPU, and on a phone's screen the edge where it fades out looks the same
     return measured.hazeBlur(
         input = source!!.input,
         style = style,
-        performanceMode = HazePerformanceMode.Quality,
+        performanceMode = HazePerformanceMode.Performance,
     )
 }
 
