@@ -65,6 +65,7 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
 import oolong.client.ui.widgets.compose.plus
@@ -177,6 +178,7 @@ internal fun ThreadContent(
                         )
                     }
                 }
+                loadMoreFooter(posts.append) { onEvent(if (posts.hasMore) ThreadEvent.LoadMore else ThreadEvent.LoadLatest) }
                 if (loadingFirstTime) {
                     item(key = "Loading") {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {

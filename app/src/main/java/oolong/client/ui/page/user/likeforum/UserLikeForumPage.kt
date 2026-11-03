@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,6 +36,7 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -77,7 +79,8 @@ fun UserLikeForumPage(
                     data = forums,
                     fluid = fluid,
                     onClickForum = { navigator.navigate(ForumKey(it.name)) },
-                    lazyListState = lazyListState
+                    lazyListState = lazyListState,
+                    footer = { loadMoreFooter(list.append, onLoadMore) },
                 )
             }
 
@@ -98,6 +101,7 @@ private fun UserLikeForumList(
     onClickForum: (LikedForum) -> Unit,
     fluid: Boolean = false,
     lazyListState: LazyListState = rememberLazyListState(),
+    footer: LazyListScope.() -> Unit = {},
 ) {
     MyLazyColumn(state = lazyListState, contentPadding = LocalChromePadding.current) {
         items(
@@ -116,6 +120,7 @@ private fun UserLikeForumList(
                 )
             }
         }
+        footer()
     }
 }
 

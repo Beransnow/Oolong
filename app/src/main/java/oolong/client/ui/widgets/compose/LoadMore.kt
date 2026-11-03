@@ -2,20 +2,24 @@ package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +53,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.api.retrofit.exception.NoConnectivityException
+import oolong.client.arch.LoadStatus
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -56,6 +62,43 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val LoadDistance = 70.dp
+
+private const val LoadMoreFooterKey = "LoadMoreFooter"
+
+/**
+ * The end of a list while its next page loads, or why it could not load with a way to retry.
+ * Goes after the list's items; the one key keeps the row in place from a failure to its retry.
+ */
+fun LazyListScope.loadMoreFooter(append: LoadStatus, onRetry: () -> Unit) {
+    if (append == LoadStatus.Idle) return
+    item(key = LoadMoreFooterKey, contentType = LoadMoreFooterKey) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (append is LoadStatus.Error) {
+                val message = if (append.error is NoConnectivityException) R.string.title_no_internet_connectivity else R.string.title_api_error
+                Text(
+                    text = stringResource(id = message),
+                    color = ExtendedTheme.colors.textSecondary,
+                    style = MaterialTheme.typography.body2,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onRetry) { Text(text = stringResource(id = R.string.button_retry)) }
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = ExtendedTheme.colors.emphasis,
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterialApi::class, FlowPreview::class)
 @Composable
@@ -119,7 +162,7 @@ fun LoadMoreLayout(
             snapshotFlow {
                 val shouldPreload =
                     !curIsEmpty && curCanLoadMore && !curIsLoading && curPreloadCount > 0
-                val totalItemsCount = state.layoutInfo.totalItemsCount
+                val totalItemsCount = state.loadedItemsCount
                 val isInPreloadRange =
                     state.firstVisibleItemIndex + state.layoutInfo.visibleItemsInfo.size - 1 >= totalItemsCount - curPreloadCount
                 shouldPreload && isInPreloadRange && totalItemsCount != autoLoadedAtCount
@@ -127,7 +170,7 @@ fun LoadMoreLayout(
                 .distinctUntilChanged()
                 .collect {
                     if (it) {
-                        autoLoadedAtCount = state.layoutInfo.totalItemsCount
+                        autoLoadedAtCount = state.loadedItemsCount
                         val curTime = System.currentTimeMillis()
                         coroutineScope.launch {
                             loadMoreFlow.emit(curTime)
@@ -185,6 +228,10 @@ fun LoadMoreLayout(
         }
     }
 }
+
+/** Items in the list, without the [loadMoreFooter] that comes and goes with each load. */
+private val LazyListState.loadedItemsCount: Int
+    get() = layoutInfo.totalItemsCount - if (layoutInfo.visibleItemsInfo.lastOrNull()?.key == LoadMoreFooterKey) 1 else 0
 
 @Composable
 fun DefaultIndicator(

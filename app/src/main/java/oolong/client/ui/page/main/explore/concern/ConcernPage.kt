@@ -39,6 +39,7 @@ import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -117,6 +118,7 @@ fun ConcernScreen(
                             }
                         }
                     }
+                    loadMoreFooter(list.append, onLoadMore)
                 }
             }
 

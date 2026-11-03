@@ -70,6 +70,7 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.MyScaffold
 import oolong.client.ui.widgets.compose.TitleCentredToolbar
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -304,6 +305,7 @@ private fun SubPostsContent(
                     onEvent = onEvent,
                 )
             }
+            loadMoreFooter(subPosts.append) { onEvent(SubPostsEvent.LoadMore) }
         }
     }
 }

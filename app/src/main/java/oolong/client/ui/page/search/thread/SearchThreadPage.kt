@@ -24,6 +24,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.SearchThreadList
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 /** Threads and replies a search found, which pull down to search again and load more at their end. */
@@ -72,6 +73,7 @@ fun SearchThreadResults(
                     searchKeyword = keyword,
                     contentPadding = contentPadding,
                     blockOf = { blocks[it.key] },
+                    footer = { loadMoreFooter(list.append, onLoadMore) },
                 )
             }
 

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -75,6 +76,7 @@ import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 @Composable
@@ -159,6 +161,7 @@ fun PersonalizedScreen(
                     onDislike = onDislike,
                     onUndoDislike = onUndoDislike,
                     onRefresh = onRefresh,
+                    footer = { loadMoreFooter(list.append, onLoadMore) },
                 )
             }
 
@@ -218,6 +221,7 @@ private fun FeedList(
     onDislike: (ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) -> Unit,
     onUndoDislike: (threadId: Long) -> Unit,
     onRefresh: () -> Unit,
+    footer: LazyListScope.() -> Unit,
 ) {
     val peeker = rememberThreadPeeker()
     MyLazyColumn(
@@ -302,6 +306,7 @@ private fun FeedList(
                 }
             }
         }
+        footer()
     }
 }
 

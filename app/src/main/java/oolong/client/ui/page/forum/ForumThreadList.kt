@@ -41,6 +41,7 @@ import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.loadMoreFooter
 
 private enum class ItemType { Top, PlainText, SingleMedia, MultiMedia, Video }
 
@@ -138,6 +139,7 @@ internal fun ForumThreadList(
                         }
                     }
                 }
+                loadMoreFooter(list.append) { onEvent(ForumEvent.LoadMore) }
             }
         }
     }

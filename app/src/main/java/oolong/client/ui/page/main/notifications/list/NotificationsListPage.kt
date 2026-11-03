@@ -53,6 +53,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.utils.StringUtil
 
@@ -143,6 +144,7 @@ fun NotificationList(
                         }
                     }
                 }
+                loadMoreFooter(list.append, onLoadMore)
             }
         }
 

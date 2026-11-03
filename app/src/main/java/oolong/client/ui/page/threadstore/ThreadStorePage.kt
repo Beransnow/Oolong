@@ -65,6 +65,7 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
@@ -161,6 +162,7 @@ fun ThreadStoreScreen(
                                 onDelete = { onRemove(thread) }
                             )
                         }
+                        loadMoreFooter(list.append, onLoadMore)
                     }
                 }
 

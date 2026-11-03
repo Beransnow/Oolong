@@ -59,6 +59,7 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 
@@ -177,6 +178,7 @@ private fun UserList(
                 items(list.items, key = { it.user.id }) { item ->
                     UserRow(item = item, onClick = { onOpen(item) })
                 }
+                loadMoreFooter(list.append, onLoadMore)
             }
         }
     }

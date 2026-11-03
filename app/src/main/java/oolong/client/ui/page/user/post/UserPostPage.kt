@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -61,6 +62,7 @@ import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -220,6 +222,7 @@ fun UserPostPage(
                     onClickOriginThread = {
                         navigator.navigate(ThreadKey(it))
                     },
+                    footer = { loadMoreFooter(list.append, onLoadMore) },
                 )
             }
 
@@ -245,6 +248,7 @@ private fun UserPostList(
     onClickUser: (id: Long) -> Unit = {},
     onClickForum: (name: String) -> Unit = {},
     onClickOriginThread: (threadId: Long) -> Unit = {},
+    footer: LazyListScope.() -> Unit = {},
 ) {
     MyLazyColumn(state = lazyListState, contentPadding = LocalChromePadding.current) {
         items(
@@ -263,6 +267,7 @@ private fun UserPostList(
                 )
             }
         }
+        footer()
     }
 }
 

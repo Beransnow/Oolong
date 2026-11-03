@@ -85,6 +85,7 @@ import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.SearchThreadList
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
+import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.picker.ListSinglePicker
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
@@ -368,6 +369,7 @@ fun ForumSearchPostScreen(
                                 hideForum = true,
                                 searchKeyword = state.keyword,
                                 contentPadding = paddingValues,
+                                footer = { loadMoreFooter(list.append, onLoadMore) },
                             ) {
                                 paddedStickyHeader(lazyListState, key = "Sort&Filter") {
                                     Row(

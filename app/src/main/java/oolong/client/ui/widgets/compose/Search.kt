@@ -166,6 +166,7 @@ fun SearchThreadList(
     searchKeyword: String? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     blockOf: (SearchedPost) -> BlockVerdict? = { null },
+    footer: LazyListScope.() -> Unit = {},
     header: LazyListScope.() -> Unit = {},
 ) {
     MyLazyColumn(
@@ -191,6 +192,7 @@ fun SearchThreadList(
                 )
             }
         }
+        footer()
     }
 }
 
