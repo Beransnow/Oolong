@@ -245,7 +245,7 @@ internal val NavPillMargin = 12.dp
 private val SearchButtonGap = 8.dp
 
 /** How much the bottom bar and the search button beside it frost what is under them. */
-internal val BottomChromeBlur = 8.dp
+internal val BottomChromeBlur = 5.dp
 
 /** Height the pill and its margins take above the navigation bar, expanded. */
 val FloatingNavBarHeight = NavItemHeight + NavPillPadding * 2 + NavPillMargin
