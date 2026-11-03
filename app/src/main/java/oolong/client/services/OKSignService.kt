@@ -224,6 +224,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     }
 
     override fun onFinish(success: Boolean, signedCount: Int, total: Int) {
+        AutoSign.record(this, signedCount, total, success)
         updateNotification(
             getString(R.string.title_oksign_finish),
             if (total > 0) resources.getQuantityString(
@@ -242,6 +243,7 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     override fun onFailure(current: Int, total: Int, errorCode: Int, errorMsg: String) {
         lastSignData.let {
             if (it == null) {
+                AutoSign.record(this, 0, total, success = false)
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
                 updateNotification(getString(R.string.title_oksign_fail), errorMsg)
             } else {

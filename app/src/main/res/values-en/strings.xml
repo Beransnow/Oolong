@@ -123,7 +123,6 @@
     <string name="title_report">Report</string>
     <string name="tip_empty">Nothing here</string>
     <string name="title_auto_sign">Auto check-in</string>
-    <string name="tip_auto_sign">Auto check-in runs on time only if Oolong is allowed to start automatically. On MIUI and similar systems, also allow it in system settings.</string>
     <string name="title_forum">%1$s</string>
     <string name="menu_edit_info">Edit profile</string>
     <string name="button_allow">Allow</string>
@@ -869,4 +868,26 @@
     <string name="title_dialog_crashed">The app closed unexpectedly</string>
     <string name="message_dialog_crashed">A crash log is kept on this device. You can attach it when reporting the problem.</string>
     <string name="button_view_crash_log">View</string>
+    <string name="settings_group_auto_sign_conditions">Running on time</string>
+    <string name="value_allowed">Allowed</string>
+    <string name="value_not_allowed">Not allowed</string>
+    <string name="title_auto_sign_last">Last check-in</string>
+    <string name="value_auto_sign_never">None yet</string>
+    <string name="value_auto_sign_failed">%1$s · Failed</string>
+    <string name="value_auto_sign_done">%1$s · %2$d/%3$d</string>
+    <string name="title_exact_alarms">Alarms &amp; reminders</string>
+    <string name="title_auto_start">Autostart</string>
+    <string name="title_system_notifications">Notifications</string>
+    <string name="summary_auto_sign_notifications">Check-in results are shown as notifications</string>
+    <string name="title_auto_sign_test">Test run</string>
+    <string name="summary_auto_sign_test">Checks in once two minutes from now. You can lock the screen while you wait</string>
+    <string name="toast_auto_sign_test_scheduled">Checking in at %s</string>
+    <string name="title_background_guide">Settings for other phones</string>
+    <string name="tip_auto_sign_xiaomi">Tap Battery optimization to open the battery saver and choose No restrictions.</string>
+    <string name="tip_auto_sign_huawei">In App launch in the system settings, set Oolong to Manage manually and turn on every switch.</string>
+    <string name="tip_auto_sign_oppo">Allow background activity under Battery usage in the app info, and turn off Sleep standby optimization, or set the check-in time outside your sleep hours.</string>
+    <string name="tip_auto_sign_vivo">Allow high background power use for Oolong under Background power consumption, or set the check-in time outside your sleep hours.</string>
+    <string name="tip_auto_sign_other">Some systems also limit apps in the background. Allow Oolong to run in the background in the system settings.</string>
+    <string name="title_auto_sign_not_started">Today\'s auto check-in didn\'t start</string>
+    <string name="text_auto_sign_not_started">Tap to open Oolong and check in. Allow Alarms &amp; reminders to check in on time.</string>
 </resources>

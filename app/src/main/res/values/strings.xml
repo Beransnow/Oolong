@@ -121,7 +121,6 @@
     <string name="title_report">举报</string>
     <string name="tip_empty">暂无内容</string>
     <string name="title_auto_sign">自动签到</string>
-    <string name="tip_auto_sign">允许 Oolong 自启动后，才能按时自动签到。MIUI 等系统还需在系统设置中开启相应权限。</string>
     <string name="title_forum">%1$s吧</string>
     <string name="menu_edit_info">编辑资料</string>
     <string name="button_allow">允许</string>
@@ -853,4 +852,26 @@
     <string name="title_dialog_crashed">上次异常退出</string>
     <string name="message_dialog_crashed">崩溃日志已保存在本机，反馈问题时可以附上。</string>
     <string name="button_view_crash_log">查看</string>
+    <string name="settings_group_auto_sign_conditions">按时运行</string>
+    <string name="value_allowed">已允许</string>
+    <string name="value_not_allowed">未允许</string>
+    <string name="title_auto_sign_last">上次签到</string>
+    <string name="value_auto_sign_never">暂无</string>
+    <string name="value_auto_sign_failed">%1$s · 失败</string>
+    <string name="value_auto_sign_done">%1$s · %2$d/%3$d</string>
+    <string name="title_exact_alarms">闹钟和提醒</string>
+    <string name="title_auto_start">自启动</string>
+    <string name="title_system_notifications">通知</string>
+    <string name="summary_auto_sign_notifications">签到结果以通知告知</string>
+    <string name="title_auto_sign_test">试运行</string>
+    <string name="summary_auto_sign_test">两分钟后自动签到一次，可以锁屏等待</string>
+    <string name="toast_auto_sign_test_scheduled">将在 %s 签到</string>
+    <string name="title_background_guide">其他机型的设置方法</string>
+    <string name="tip_auto_sign_xiaomi">点按「电池优化」进入省电策略，选择「无限制」。</string>
+    <string name="tip_auto_sign_huawei">在系统设置的「应用启动管理」中将 Oolong 改为手动管理，并打开全部开关。</string>
+    <string name="tip_auto_sign_oppo">在应用详情的「耗电管理」中允许后台行为，并关闭系统的「睡眠待机优化」，或把签到时间设在非睡眠时段。</string>
+    <string name="tip_auto_sign_vivo">在系统设置的「后台耗电管理」中允许 Oolong 后台高耗电，或把签到时间设在非睡眠时段。</string>
+    <string name="tip_auto_sign_other">部分系统还会限制后台运行，需要在系统设置中允许 Oolong 在后台运行。</string>
+    <string name="title_auto_sign_not_started">今天的自动签到没能启动</string>
+    <string name="text_auto_sign_not_started">点按打开 Oolong 即可签到。允许「闹钟和提醒」后可按时自动签到。</string>
 </resources>

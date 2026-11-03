@@ -10,6 +10,7 @@
         android:name="android.permission.READ_PHONE_STATE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -82,9 +83,11 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
-                <category android:name="android.intent.category.LAUNCHER" />
-
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -416,7 +419,14 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
 
-        <receiver android:name=".receivers.AutoSignAlarm" />
+        <receiver
+            android:name=".receivers.AutoSignAlarm"
+            android:exported="false" />
+
+        <service
+            android:name=".services.AutoSignCheckJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -85,6 +85,7 @@ import oolong.client.components.ClipBoardLinkDetector
 import oolong.client.components.ClipBoardThreadLink
 import oolong.client.components.CrashLogs
 import oolong.client.repository.AccountRepository
+import oolong.client.services.AutoSign
 import oolong.client.services.NotifyJobService
 import oolong.client.ui.common.LocalNow
 import oolong.client.ui.common.navigation.PageMorphHost
@@ -258,9 +259,11 @@ class MainActivityV2 : AppCompatActivity() {
         }
     }
 
+    // A day whose alarm never went off is signed now, while the app can start the signing itself
     private fun initAutoSign() {
         runCatching {
-            TiebaUtil.initAutoSign(this)
+            AutoSign.schedule(this)
+            AutoSign.catchUp(this, foreground = true)
         }
     }
 

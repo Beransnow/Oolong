@@ -1,48 +1,20 @@
 package oolong.client.receivers
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import oolong.client.pendingIntentFlagMutable
-import oolong.client.utils.TiebaUtil
-import oolong.client.utils.Util
-import oolong.client.utils.appPreferences
-import java.util.Calendar
+import oolong.client.services.AutoSign
 
+/**
+ * Sets the daily alarm again whenever it may have been lost or put at the wrong time: after the
+ * phone starts, the app is updated, the clock or time zone changes, or the app is allowed exact
+ * alarms. After a start, a day the phone was off for is caught up.
+ */
 class BootCompleteSignReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
-            val autoSign = context.appPreferences.autoSign
-            if (autoSign) {
-                val autoSignTimeStr = context.appPreferences.autoSignTime
-                if (Util.getTimeInMillis(autoSignTimeStr) > System.currentTimeMillis()) {
-                    TiebaUtil.initAutoSign(context)
-                } else {
-                    val signDay = context.appPreferences.signDay
-                    if (signDay != Calendar.getInstance()[Calendar.DAY_OF_MONTH]) {
-                        TiebaUtil.startSign(context)
-                    }
-                    val alarmManager =
-                        context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                    val time = Util.time2Calendar(autoSignTimeStr).apply {
-                        add(Calendar.DAY_OF_MONTH, 1)
-                    }.timeInMillis
-                    val pendingIntent = PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        Intent(context, AutoSignAlarm::class.java),
-                        pendingIntentFlagMutable()
-                    )
-                    alarmManager.setRepeating(
-                        AlarmManager.RTC_WAKEUP,
-                        time,
-                        AlarmManager.INTERVAL_DAY,
-                        pendingIntent
-                    )
-                }
-            }
+        runCatching {
+            AutoSign.schedule(context)
+            if (intent.action == Intent.ACTION_BOOT_COMPLETED) AutoSign.catchUp(context, foreground = false)
         }
     }
 }
