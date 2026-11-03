@@ -76,6 +76,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         // Where Oolong is published
-        const val GET_OOLONG_URL = "https://t.me/tblite_discuss"
+        const val GET_OOLONG_URL = "https://t.me/astral_studio_discuss"
     }
 }
