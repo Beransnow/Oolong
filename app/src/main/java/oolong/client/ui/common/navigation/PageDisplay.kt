@@ -13,10 +13,14 @@ import androidx.compose.animation.core.rememberTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -27,6 +31,7 @@ import androidx.lifecycle.compose.rememberLifecycleOwner
 import androidx.navigation3.scene.OverlayScene
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 
@@ -83,19 +88,21 @@ fun <T : Any> PageDisplay(
     val segment = remember { Segment() }
     val zIndices = remember { mutableStateMapOf(wanted to 0f) }
 
-    // How fast the transition moves while it plays by itself, for turning it round from that pace
+    // How fast the transition moves while it plays by itself, for turning it round from that pace.
+    // Sampled only then: waiting on every frame keeps the frame clock, and the CPU, awake
     LaunchedEffect(state) {
-        var last = state.fraction
-        var lastTime = withFrameNanos { it }
-        while (true) {
-            val time = withFrameNanos { it }
-            if (fraction.played) {
+        snapshotFlow { fraction.played }.collectLatest { playing ->
+            if (!playing) return@collectLatest
+            var last = state.fraction
+            var lastTime = withFrameNanos { it }
+            while (true) {
+                val time = withFrameNanos { it }
                 val now = state.fraction
                 val dt = (time - lastTime) / 1_000_000_000f
                 if (dt > 0f && state.currentState != state.targetState) fraction.velocity = (now - last) / dt
                 last = now
+                lastTime = time
             }
-            lastTime = time
         }
     }
     // Keyed on the peek too: letting go of one wants the same scene, now to be gone through
@@ -264,7 +271,7 @@ private class Fraction {
     var velocity = 0f
 
     /** Whether the transition plays by itself, so [value] is out of date and [velocity] sampled. */
-    var played = false
+    var played by mutableStateOf(false)
 }
 
 /**
