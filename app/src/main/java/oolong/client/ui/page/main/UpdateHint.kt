@@ -1,24 +1,14 @@
 package oolong.client.ui.page.main
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -35,13 +25,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.repository.Release
 import oolong.client.repository.UpdateRepository
-import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Motion
-import oolong.client.ui.common.theme.compose.Spacing
-import oolong.client.ui.common.theme.compose.TextStyles
-import oolong.client.ui.widgets.compose.SecondaryButton
-import oolong.client.ui.widgets.compose.condense
-import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.GlassToast
 import javax.inject.Inject
 
 /**
@@ -92,64 +76,22 @@ fun UpdateHint(hidden: Boolean, onOpen: () -> Unit, viewModel: UpdateHintViewMod
         }
     }
     // Kept through the exit, when the hint is gone already
-    val shown = remember { mutableStateOf(hint) }.apply { if (hint != null) value = hint }.value
-    val visible = hint != null && !hidden
-    // Condenses where it stands, and comes apart there again (design-system.md §7.2)
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(visible) {
-        progress.animateTo(
-            targetValue = if (visible) 1f else 0f,
-            animationSpec = if (visible) Motion.morph(Motion.ProgressThreshold) else Motion.dismiss(Motion.ProgressThreshold),
-        )
+    val shown = remember { mutableStateOf(hint) }.apply { if (hint != null) value = hint }.value ?: return
+    val open = {
+        viewModel.dismiss()
+        onOpen()
     }
-    if (shown != null && (visible || progress.value > 0f)) {
-        HintToast(
-            release = shown,
-            onOpen = {
-                viewModel.dismiss()
-                onOpen()
-            },
-            modifier = Modifier.condense({ progress.value }, blur = HintBlur, rise = HintRise, scale = HintScale, fadeFaster = 3f),
-        )
-    }
+    GlassToast(
+        visible = hint != null && !hidden,
+        text = stringResource(id = R.string.update_hint, shown.versionName),
+        action = stringResource(id = R.string.update_hint_view),
+        onAction = open,
+        onClick = open,
+        modifier = Modifier.padding(bottom = HintGap),
+    )
 }
-
-@Composable
-private fun HintToast(release: Release, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = ExtendedTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .padding(horizontal = Spacing.md)
-            .padding(bottom = HintGap)
-            .widthIn(max = 480.dp)
-            .heightIn(min = 48.dp)
-            .floatingGlass(HintShape, interactionSource = interactionSource)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onOpen)
-            .padding(start = Spacing.lg, end = Spacing.xxs),
-    ) {
-        Text(
-            text = stringResource(id = R.string.update_hint, release.versionName),
-            style = TextStyles.label,
-            color = colors.text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        SecondaryButton(onClick = onOpen) {
-            Text(text = stringResource(id = R.string.update_hint_view), style = TextStyles.label, color = colors.accent)
-        }
-    }
-}
-
-private val HintShape = RoundedCornerShape(percent = 50)
 
 /** Between the hint and the bottom bar the scaffold sets it on. */
 private val HintGap = 12.dp
-
-private val HintBlur = 8.dp
-private val HintRise = 12.dp
-private const val HintScale = 0.9f
 
 private const val HintMillis = 6_000L
