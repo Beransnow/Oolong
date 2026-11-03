@@ -53,7 +53,11 @@ private fun ExplorePageTab(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
+    GlassTabRow(
+        selectedTabIndex = pagerState.currentPage,
+        pagerState = pagerState,
+        onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
+    ) {
         pages.fastForEachIndexed { index, item ->
             GlassTab(
                 text = { item.name(pagerState.currentPage == index) },

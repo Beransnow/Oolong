@@ -119,7 +119,11 @@ fun NotificationsTab(
 @Composable
 private fun NotificationTabs(pagerState: PagerState, names: List<String>) {
     val coroutineScope = rememberCoroutineScope()
-    GlassTabRow(selectedTabIndex = pagerState.currentPage, pagerState = pagerState) {
+    GlassTabRow(
+        selectedTabIndex = pagerState.currentPage,
+        pagerState = pagerState,
+        onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
+    ) {
         names.forEachIndexed { index, name ->
             GlassTab(
                 text = { Text(text = name) },

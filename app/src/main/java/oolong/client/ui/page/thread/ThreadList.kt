@@ -402,6 +402,7 @@ internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
     val docking = rememberScrollProgress(ReplyFilter)
     GlassTabRow(
         selectedTabIndex = selected,
+        onSelect = { onEvent(ThreadEvent.SetSeeLz(it == 1)) },
         modifier = Modifier
             .matchedGeometry(ReplyFilter, docking)
             .graphicsLayer { alpha = docking.fraction(0f..FilterCrossfade) },

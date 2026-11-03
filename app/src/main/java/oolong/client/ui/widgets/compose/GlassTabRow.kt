@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.PagerState
@@ -31,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -43,14 +46,17 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import dev.chrisbanes.haze.hazeSource
@@ -90,6 +96,16 @@ private class TabSpans {
     }
 
     fun indexAt(x: Float): Int? = starts.indices.firstOrNull { x >= starts[it] && x < starts[it] + widths[it] }
+
+    /** Where the bubble is with its middle at [x], fractional between two tabs' middles. */
+    fun positionAt(x: Float): Float {
+        val last = starts.size - 1
+        fun middle(i: Int) = starts[i] + widths[i] / 2f
+        if (x <= middle(0)) return 0f
+        if (x >= middle(last)) return last.toFloat()
+        val i = (0 until last).first { x < middle(it + 1) }
+        return i + (x - middle(i)) / (middle(i + 1) - middle(i))
+    }
 }
 
 /** Whether the tabs are pressed through a lens, which then stands in for their own press feedback. */
@@ -102,7 +118,9 @@ private val LocalTabLens = staticCompositionLocalOf { false }
  * pages as they are swiped.
  *
  * Pressing a tab lifts the bubble off as clear glass, a little larger than the tab, as a switch's
- * knob does, and carries it to that tab; dragging, which scrolls the tabs, puts it back.
+ * knob does, and carries it to that tab. With [onSelect], the lens then follows the finger across
+ * the tabs, scrolling the row near its ends, and picks the tab it is let go on; without, a drag
+ * scrolls the row and puts the lens back.
  *
  * Tabs are laid out at the capsule's inner height; [GlassTab]s fill it.
  */
@@ -111,9 +129,13 @@ fun GlassTabRow(
     selectedTabIndex: Int,
     modifier: Modifier = Modifier,
     pagerState: PagerState? = null,
+    onSelect: ((Int) -> Unit)? = null,
     tabs: @Composable () -> Unit,
 ) {
     val scroll = rememberScrollState()
+    val currentOnSelect by rememberUpdatedState(onSelect)
+    val selectedTabIndexState by rememberUpdatedState(selectedTabIndex)
+    val haptics = LocalHapticFeedback.current
     val spans = remember { TabSpans() }
     val animated by animateFloatAsState(selectedTabIndex.toFloat(), Motion.snap(), label = "tabBubble")
     val bubble = ExtendedTheme.colors.emphasis.copy(alpha = BubbleAlpha)
@@ -181,9 +203,11 @@ fun GlassTabRow(
                             } else {
                                 // Watches presses without taking them: the tabs still get their clicks
                                 // and the row its scrolling
+                                // Ahead of the tabs and the row's scrolling: once the lens is dragged it takes
+                                // the moves, so the row doesn't scroll and the tab under the press isn't clicked
                                 Modifier.pointerInput(Unit) {
                                     awaitEachGesture {
-                                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Final)
+                                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                                         val index = spans.indexAt(down.position.x) ?: return@awaitEachGesture
                                         val from = position()
                                         lensActive = true
@@ -193,14 +217,45 @@ fun GlassTabRow(
                                             lens.animateTo(index.toFloat(), Motion.snap())
                                         }
                                         var released = false
+                                        var dragging = false
+                                        var last = index
                                         while (true) {
-                                            val change = awaitPointerEvent(PointerEventPass.Final).changes
+                                            val change = awaitPointerEvent(PointerEventPass.Initial).changes
                                                 .firstOrNull { it.id == down.id } ?: break
                                             if (!change.pressed) {
                                                 released = true
+                                                if (dragging) {
+                                                    change.consume()
+                                                    val target = lens.value.roundToInt()
+                                                    if (target != selectedTabIndexState) currentOnSelect?.invoke(target)
+                                                    scope.launch { lens.animateTo(target.toFloat(), Motion.snap()) }
+                                                }
                                                 break
                                             }
-                                            if (change.isConsumed || (change.position - down.position).getDistance() > touchSlop) break
+                                            if (change.isConsumed) break
+                                            val moved = change.position - down.position
+                                            if (!dragging && (abs(moved.x) > touchSlop || abs(moved.y) > touchSlop)) {
+                                                // Up and down is the page's to scroll; with nothing to pick from a
+                                                // drag, the row keeps its own scrolling
+                                                if (abs(moved.y) > abs(moved.x) || currentOnSelect == null) break
+                                                dragging = true
+                                            }
+                                            if (dragging) {
+                                                change.consume()
+                                                val x = change.position.x
+                                                scope.launch { lens.snapTo(spans.positionAt(x)) }
+                                                if (spans.positionAt(x).roundToInt() != last) {
+                                                    last = spans.positionAt(x).roundToInt()
+                                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                                }
+                                                // Near an end of a row that scrolls, the row moves under the lens
+                                                val inView = x - scroll.value
+                                                val edge = LensScrollEdge.toPx()
+                                                when {
+                                                    inView < edge -> scope.launch { scroll.scrollBy(-LensScrollStep.toPx()) }
+                                                    inView > scroll.viewportSize - edge -> scope.launch { scroll.scrollBy(LensScrollStep.toPx()) }
+                                                }
+                                            }
                                         }
                                         holding = false
                                         scope.launch { letGo(released) }
@@ -233,21 +288,22 @@ fun GlassTabRow(
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
+                        .offset {
+                            if (spans.starts.isEmpty()) return@offset IntOffset.Zero
+                            val (start, _) = spans.at(lens.value)
+                            IntOffset(
+                                (inset + start - scroll.value - HeldGrowthWidth.toPx() * held / 2).roundToInt(),
+                                (inset - HeldGrowthHeight.toPx() * held / 2).roundToInt(),
+                            )
+                        }
                         .layout { measurable, _ ->
                             if (spans.starts.isEmpty()) return@layout layout(0, 0) {}
-                            val (start, width) = spans.at(lens.value)
-                            val growWidth = HeldGrowthWidth.toPx() * held
-                            val growHeight = HeldGrowthHeight.toPx() * held
+                            val (_, width) = spans.at(lens.value)
                             val tabHeight = GlassTabRowHeight.toPx() - inset * 2
-                            val w = (width + growWidth).roundToInt()
-                            val h = (tabHeight + growHeight).roundToInt()
+                            val w = (width + HeldGrowthWidth.toPx() * held).roundToInt()
+                            val h = (tabHeight + HeldGrowthHeight.toPx() * held).roundToInt()
                             val placeable = measurable.measure(Constraints.fixed(w, h))
-                            layout(w, h) {
-                                placeable.place(
-                                    (inset + start - scroll.value - growWidth / 2).roundToInt(),
-                                    (inset - growHeight / 2).roundToInt(),
-                                )
-                            }
+                            layout(w, h) { placeable.place(0, 0) }
                         }
                         .controlLens(glassState, TabCapsule, held)
                 )
@@ -268,6 +324,10 @@ fun GlassTabRow(
 /** How much the bubble grows as it lifts off, as a switch's knob does. */
 private val HeldGrowthWidth = 16.dp
 private val HeldGrowthHeight = 14.dp
+
+/** How near an end of the row the dragged lens scrolls it, and by how much a move. */
+private val LensScrollEdge = 32.dp
+private val LensScrollStep = 12.dp
 
 /** How long the lens keeps the bubble after a tap, at most, for the chosen tab to get there. */
 private const val LensHandOverMillis = 800L

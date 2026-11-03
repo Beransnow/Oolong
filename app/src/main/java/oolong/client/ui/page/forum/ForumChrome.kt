@@ -418,7 +418,7 @@ internal fun ForumTabRow(
     modifier: Modifier = Modifier,
 ) {
     val selectedIndex = pagerState.currentPage.coerceIn(0, max(0, tabs.lastIndex))
-    GlassTabRow(selectedTabIndex = selectedIndex, pagerState = pagerState, modifier = modifier) {
+    GlassTabRow(selectedTabIndex = selectedIndex, pagerState = pagerState, onSelect = onSelect, modifier = modifier) {
         tabs.forEachIndexed { index, tab ->
             val selected = index == selectedIndex
             if (tab == ForumTab.Good && goodClasses.isNotEmpty()) {
