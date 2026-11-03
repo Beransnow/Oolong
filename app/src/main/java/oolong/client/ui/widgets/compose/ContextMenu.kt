@@ -100,10 +100,9 @@ import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.navigation.pageOriginStandIn
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.MenuShadow
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Radius
-import oolong.client.ui.common.theme.compose.ShadowAmbient
-import oolong.client.ui.common.theme.compose.ShadowSpot
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.addSmoothRect
@@ -420,8 +419,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         // A button has no backing of its own, so the drop condenses out of nothing
                         // around its icon, and melts back into it
                         alpha = if (fromButton) (g / DropFadeIn).coerceIn(0f, 1f) else 1f
-                        ambientShadowColor = ShadowAmbient
-                        spotShadowColor = ShadowSpot
+                        ambientShadowColor = MenuShadow
+                        spotShadowColor = MenuShadow
                     }
                     .menuGlass(backdrop)
                     .drawWithContent {
@@ -521,8 +520,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     shape = PreviewClip(now.height / scale, corner)
                     clip = true
                     shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * lift.value.coerceIn(0f, 1f)
-                    ambientShadowColor = ShadowAmbient
-                    spotShadowColor = ShadowSpot
+                    ambientShadowColor = MenuShadow
+                    spotShadowColor = MenuShadow
                     // Comes out of the card blurred and clears as it grows, so neither the card
                     // giving way nor the preview taking its place is a cut
                     val l = lift.value
@@ -831,8 +830,8 @@ private fun ChildMenu(
                         shape = RectClip(now.left - area.left, now.top - area.top, now.width, now.height, corner)
                         clip = true
                         shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * progress().coerceIn(0f, 1f)
-                        ambientShadowColor = ShadowAmbient
-                        spotShadowColor = ShadowSpot
+                        ambientShadowColor = MenuShadow
+                        spotShadowColor = MenuShadow
                     }
                     .menuGlass(backdrop)
                     .drawWithContent {

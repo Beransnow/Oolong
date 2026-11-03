@@ -13,3 +13,10 @@ val ExtendedColors.scrim: Color
 /** Shadow colours for glass (design-system.md §3). */
 val ShadowAmbient = Color.Black.copy(alpha = 0.10f)
 val ShadowSpot = Color.Black.copy(alpha = 0.16f)
+
+/**
+ * The shadow colour for menus, the thickest glass (design-system.md §2.5, L3). Android scales a
+ * shadow colour's alpha by the theme's, about 4% ambient and 19% spot, so the L3 values can only
+ * be reached as nearly as solid black gets.
+ */
+val MenuShadow = Color.Black
