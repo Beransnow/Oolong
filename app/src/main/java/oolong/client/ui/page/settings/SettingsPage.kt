@@ -32,6 +32,7 @@ import oolong.client.ui.navigation.MoreSettingsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.navigation.PostSettingsKey
+import oolong.client.ui.navigation.TopBarTuningKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.Avatar
@@ -168,6 +169,16 @@ fun SettingsPage(
                             title = stringResource(id = R.string.title_settings_more),
                             leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.MoreHoriz, contentDescription = null) } },
                             onClick = { navigator.navigate(MoreSettingsKey) }
+                        )
+                    }
+                }
+                // Temporary, also in release builds, while the top bar's scroll edge is tuned on a phone
+                prefsGroup(header = { Spacer(modifier = Modifier.height(8.dp)) }) {
+                    prefsItem {
+                        TextPref(
+                            title = "顶栏边缘（调试）",
+                            leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Tune, contentDescription = null) } },
+                            onClick = { navigator.navigate(TopBarTuningKey) }
                         )
                     }
                 }

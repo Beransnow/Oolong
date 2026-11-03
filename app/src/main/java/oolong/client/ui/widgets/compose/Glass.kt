@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -139,7 +140,7 @@ private val ExtendedColors.isTranslucent: Boolean
 
 /**
  * Background for a bar pinned to the top edge, like iOS's scroll edge: a strong blur under a tint
- * of the page's background, both easing out over the bar's last [TopBarGlassFade] and gone at its
+ * of the page's background, both easing out over the bar's last [TopBarEdgeTuning.fade] and gone at its
  * bottom edge. The tint eases out more slowly than the blur, so content scrolling under the bar
  * is first veiled and then blurred, instead of showing through clear glass.
  *
@@ -152,10 +153,10 @@ fun Modifier.topBarGlass(): Modifier {
     val tier = currentGlassTier()
     val colors = ExtendedTheme.colors
     val color = colors.chromeTint
-    val tint = if (colors.isTranslucent) TranslucentTopBarTint else TopBarTint
+    val tint = if (colors.isTranslucent) TranslucentTopBarTint else TopBarEdgeTuning.tint
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
-    val fadePx = with(LocalDensity.current) { (if (solid) TopBarSolidFade else TopBarGlassFade).toPx() }
+    val fadePx = with(LocalDensity.current) { (if (solid) TopBarSolidFade else TopBarEdgeTuning.fade.dp).toPx() }
     // Where the fade starts. The bar can change height, such as a header collapsing inside it,
     // so this follows its size; a bar shorter than the fade fades over all of it.
     val edge = if (height > 0) (1f - fadePx / height).coerceIn(0f, 1f) else 0f
@@ -171,12 +172,13 @@ fun Modifier.topBarGlass(): Modifier {
         }
         return measured.background(brush)
     }
-    val style = remember(color, tint, edge) {
+    val blur = TopBarEdgeTuning.blur.dp
+    val style = remember(color, tint, edge, blur) {
         // How far into the fade a point is: 0 above it, 1 at the bottom edge
         fun faded(t: Float) = if (t <= edge) 0f else ((t - edge) / (1f - edge)).coerceIn(0f, 1f)
         HazeBlurStyle {
             backgroundColor(colors.background)
-            blurRadius(40.dp)
+            blurRadius(blur)
             noiseFactor(0f)
             progressive(
                 HazeProgressive.verticalGradient(
@@ -210,14 +212,23 @@ fun Modifier.topBarGlass(): Modifier {
     )
 }
 
-/** How far above its bottom edge a top bar's blur and tint ease out. */
-private val TopBarGlassFade = 48.dp
+/**
+ * The top bar's scroll edge, adjustable while it is being tuned on a device: how strongly it blurs
+ * (dp), how strongly it veils in the page's colour, and how far above its bottom edge both ease
+ * out (dp). Temporary; the settled values go back into constants.
+ */
+object TopBarEdgeTuning {
+    const val DefaultBlur = 40f
+    const val DefaultTint = 0.8f
+    const val DefaultFade = 48f
+    var blur by mutableFloatStateOf(DefaultBlur)
+    var tint by mutableFloatStateOf(DefaultTint)
+    var fade by mutableFloatStateOf(DefaultFade)
+}
 
 /** How far above its bottom edge an opaque top bar fades out, kept short so it stays opaque. */
 private val TopBarSolidFade = 16.dp
 
-/** The tint above the fade, of the page's background colour. */
-private const val TopBarTint = 0.8f
 
 /** The translucent theme's lighter tint, which keeps the wallpaper showing through. */
 private const val TranslucentTopBarTint = 0.45f

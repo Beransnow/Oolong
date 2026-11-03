@@ -113,6 +113,10 @@ data object FontSizeKey : Key
 @Serializable
 data object SearchPlacementKey : Key
 
+/** Temporary: the top bar's scroll edge tuning page. */
+@Serializable
+data object TopBarTuningKey : Key
+
 @Serializable
 data object TranslucentThemeKey : Key
 
