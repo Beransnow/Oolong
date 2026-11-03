@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
@@ -110,6 +112,11 @@ fun GlassTopBar(
             Box(
                 modifier = Modifier
                     .layoutId(TopBarLayer.Background)
+                    // The buttons' glass sees the bar's blur too, so it never shows the content
+                    // sharper than the bar around it. The blur renders once into its own layer,
+                    // which the buttons reuse instead of blurring the content again.
+                    .lensTarget()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .topBarGlass()
                     .then(
                         if (wash.isSpecified) {

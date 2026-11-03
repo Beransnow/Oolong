@@ -294,8 +294,9 @@ private val TranslucentFloatingStyle = HazeBlurStyle {
 private const val TranslucentSolidTint = 0.35f
 
 /**
- * Lets a [glassLens] drawn above this chrome magnify it along with the content behind it. Apply
- * before the chrome's own material so the material is part of what the lens sees.
+ * Lets glass drawn above this chrome see it along with the content behind it: a [glassLens] that
+ * magnifies it, or buttons floating on a top bar. Apply before the chrome's own material so the
+ * material is part of what that glass sees.
  */
 @Composable
 fun Modifier.lensTarget(): Modifier {
