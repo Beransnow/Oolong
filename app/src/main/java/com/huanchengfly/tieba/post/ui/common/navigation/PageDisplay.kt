@@ -17,6 +17,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
@@ -184,10 +185,12 @@ fun <T : Any> PageDisplay(
         val owner = rememberLifecycleOwner(
             maxLifecycle = if (settled && overlays.isEmpty()) Lifecycle.State.RESUMED else Lifecycle.State.STARTED,
         )
+        val cover = remember(sceneKey) { { state.coverOf(sceneKey, known) } }
         CompositionLocalProvider(
             LocalLifecycleOwner provides owner,
             LocalNavAnimatedContentScope provides this,
             LocalEntriesShownElsewhere provides (elsewhere[sceneKey] ?: emptySet()),
+            LocalPageCover provides cover,
         ) {
             scene.content()
         }
@@ -215,6 +218,31 @@ fun <T : Any> PageDisplay(
         }
     }
 }
+
+/**
+ * How far the scene of [key] is covered by the one going over it, 0 to 1, by the one fraction
+ * every transition plays on: covered as a deeper scene comes, uncovered as the one over it goes,
+ * and back again as a transition turned round goes back. Nothing covers it otherwise, as when the
+ * scenes cross-fade at the same depth.
+ */
+private fun SeekableTransitionState<SceneKey>.coverOf(key: SceneKey, known: Map<SceneKey, Scene<*>>): Float {
+    val from = currentState
+    val to = targetState
+    if (from == to) return 0f
+    val fromDepth = known[from]?.previousEntries?.size ?: return 0f
+    val toDepth = known[to]?.previousEntries?.size ?: return 0f
+    return when {
+        key == from && toDepth > fromDepth -> fraction
+        key == to && toDepth < fromDepth -> 1f - fraction
+        else -> 0f
+    }
+}
+
+/**
+ * How far the scene shown here is covered by the one going over it, 0 to 1; read while drawing.
+ * See [PageTransitions.PageFrame], which dims a page by it.
+ */
+val LocalPageCover = staticCompositionLocalOf<() -> Float> { { 0f } }
 
 /** Where the transition under way is, and how fast it moves, kept across interruptions. */
 private class Fraction {

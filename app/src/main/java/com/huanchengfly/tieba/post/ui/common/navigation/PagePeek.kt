@@ -64,10 +64,6 @@ class PagePeek {
     var committed by mutableStateOf(false)
         internal set
 
-    /** How far the page on top has slid out once back goes ahead, 0 to 1; recorded by its frame. */
-    var exit by mutableFloatStateOf(0f)
-        internal set
-
     /** The page on top while it rests with nothing moving; only such a page can be peeked past. */
     internal var restingKey: Any? by mutableStateOf(null)
 
@@ -80,7 +76,6 @@ class PagePeek {
         committed = false
         edge = if (swipeEdge == NavigationEvent.EDGE_RIGHT) NavigationEvent.EDGE_RIGHT else NavigationEvent.EDGE_LEFT
         amount = 0f
-        exit = 0f
     }
 
     /** Lets the page underneath go once a peek called off has settled back. */
@@ -94,7 +89,6 @@ class PagePeek {
         topKey = null
         underKey = null
         amount = 0f
-        exit = 0f
     }
 
     internal companion object {

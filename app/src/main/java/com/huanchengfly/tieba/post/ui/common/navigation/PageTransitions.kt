@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -61,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.Motion
 import com.huanchengfly.tieba.post.ui.common.theme.compose.Radius
 import com.huanchengfly.tieba.post.ui.common.theme.compose.SmoothCornerShape
 import com.huanchengfly.tieba.post.utils.ThemeUtil
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Whether the latest change to the back stack removed pages, as opposed to adding them. */
@@ -249,26 +247,25 @@ object PageTransitions {
 
         val underPageDim = if (ExtendedTheme.colors.isNightMode) UnderPageDimNight else UnderPageDim
         val transition = LocalNavAnimatedContentScope.current.transition
-        // How covered the page is by the one coming or going over it. A pane of a wider scene
-        // dims by this as its own content changes. A page framed alone mostly goes by where it is,
-        // but stays put under a page growing out of one of its origins, and dims by this then; it
-        // follows the display's fraction ([seeked]), as any of its animations must
-        // Entering on a pop means coming back from underneath; leaving on a push means being covered
-        val isPop = LocalIsPop.current
-        val dim = transition.animateFloat(
-            transitionSpec = { if (key == null) spec() else seeked() },
-            label = "PageDim",
-        ) { state ->
-            when (state) {
-                EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
-                EnterExitState.Visible -> 0f
-                EnterExitState.PostExit -> if (isPop) 0f else underPageDim
+        // A pane of a wider scene dims as its own content changes. A page framed alone dims by
+        // how far the display has it covered ([LocalPageCover])
+        val dim = if (key == null) {
+            // Entering on a pop means coming back from underneath; leaving on a push means being covered
+            val isPop = LocalIsPop.current
+            transition.animateFloat(
+                transitionSpec = { spec() },
+                label = "PageDim",
+            ) { state ->
+                when (state) {
+                    EnterExitState.PreEnter -> if (isPop) underPageDim else 0f
+                    EnterExitState.Visible -> 0f
+                    EnterExitState.PostExit -> if (isPop) 0f else underPageDim
+                }
             }
+        } else {
+            null
         }
-        // Where the page is, against the host that pages slide within
-        val host = LocalPageHost.current
-        val pageX = remember { mutableFloatStateOf(0f) }
-        val pageWidth = remember { mutableFloatStateOf(0f) }
+        val covered = LocalPageCover.current
         val peek = if (key != null) LocalPagePeek.current else null
         if (peek != null) {
             // Rests once the scenes are still and this page is the one shown
@@ -293,33 +290,11 @@ object PageTransitions {
                     if (peek.topKey == key) peek.reset()
                 }
             }
-            // How far the page on top has gone, by its transition rather than where it is: a page
-            // morphing back into what it opened from shrinks in place instead of sliding out, and
-            // the dim underneath has to go with it all the same
-            val gone = transition.animateFloat(transitionSpec = { seeked() }, label = "PageGone") { state ->
-                if (state == EnterExitState.PostExit) 1f else 0f
-            }
-            LaunchedEffect(peek, key) {
-                snapshotFlow { if (peek.topKey == key) gone.value else null }.collect { value ->
-                    if (value != null) peek.exit = maxOf(peek.exit, value)
-                }
-            }
         }
-        val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (key != null) Modifier.pageMorph(key) else Modifier)
-                .onGloballyPositioned {
-                    pageX.floatValue = it.positionInRoot().x
-                    pageWidth.floatValue = it.size.width.toFloat()
-                    if (peek != null && peek.topKey == key && host != null && host.width > 0f) {
-                        // Only ever further: a page laid out again while it shrinks back into its
-                        // origin, without sliding, would otherwise take back how far it has gone
-                        val slid = (pageX.floatValue - host.left) * (if (ltr) 1f else -1f)
-                        peek.exit = maxOf(peek.exit, (slid / host.width).coerceIn(0f, 1f))
-                    }
-                }
                 .then(
                     if (peek != null) {
                         Modifier.graphicsLayer {
@@ -367,28 +342,13 @@ object PageTransitions {
                         )
                     }
                     drawContent()
-                    val width = pageWidth.floatValue
-                    val alpha = if (peek != null && peek.underKey == key) {
-                        // Underneath a peek: lifting a little as the peek grows, and going as the
-                        // page on top slides out
-                        underPageDim * (1f - PeekDimRelief * peek.amount) * (1f - peek.exit)
-                    } else if (host != null && width > 0f && abs(width - host.width) < 1f) {
-                        // The page underneath sits to the start side of where it rests, covered on
-                        // a push and coming back on a pop, while the page on top comes and goes on
-                        // the end side and is never dimmed. How dim follows how far it is from
-                        // rest, so the dim eases with the slide and turns back with it when the
-                        // transition is interrupted
-                        val towardStart = (host.left - pageX.floatValue) * (if (layoutDirection == LayoutDirection.Rtl) -1f else 1f)
-                        val underneath = towardStart > 0f
-                        val distance = abs(towardStart)
-                        val slid = if (underneath) underPageDim * (distance / (width * UnderPageOffset)).coerceIn(0f, 1f) else 0f
-                        // Under a page growing out of it or shrinking back, it doesn't move
-                        if (moving) maxOf(slid, dim.value) else slid
-                    } else if (moving) {
+                    val alpha = if (dim != null) {
                         // A pane of a wider scene: its own animation, only while pages move
-                        dim.value
+                        if (moving) dim.value else 0f
                     } else {
-                        0f
+                        // Under a peek it lifts a little as the peek grows, before the page on top goes
+                        val relief = if (peek != null && peek.underKey == key) 1f - PeekDimRelief * peek.amount else 1f
+                        underPageDim * covered() * relief
                     }
                     if (alpha > 0f) {
                         drawRect(Color.Black.copy(alpha = alpha))
