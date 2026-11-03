@@ -45,6 +45,8 @@ import dev.chrisbanes.haze.hazeSource
 import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.ShadowAmbient
+import oolong.client.ui.common.theme.compose.ShadowSpot
 import oolong.client.utils.ThemeUtil
 
 /**
@@ -267,8 +269,8 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, blur: Dp? = null): Modifie
     val shadowed = shadow(
         elevation = 12.dp,
         shape = shape,
-        ambientColor = Color.Black.copy(alpha = 0.10f),
-        spotColor = Color.Black.copy(alpha = 0.16f),
+        ambientColor = ShadowAmbient,
+        spotColor = ShadowSpot,
     )
     val edge = if (colors.isNightMode) Color.White.copy(alpha = 0.10f)
     else Color.Black.copy(alpha = 0.06f)

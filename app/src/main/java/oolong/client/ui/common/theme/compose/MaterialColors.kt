@@ -10,13 +10,22 @@ val ExtendedColors.glassEdge: Color
 val ExtendedColors.scrim: Color
     get() = Color.Black.copy(alpha = if (isNightMode) 0.40f else 0.28f)
 
-/** Shadow colours for glass (design-system.md §3). */
-val ShadowAmbient = Color.Black.copy(alpha = 0.10f)
-val ShadowSpot = Color.Black.copy(alpha = 0.16f)
+/**
+ * Android scales a shadow colour's alpha by the theme's, by default these, so a shadow is drawn
+ * at a given strength by dividing it by them, as far as solid black allows.
+ */
+private const val SystemAmbientShadowAlpha = 0.039f
+private const val SystemSpotShadowAlpha = 0.19f
+
+private fun ambientShadow(strength: Float) = Color.Black.copy(alpha = (strength / SystemAmbientShadowAlpha).coerceAtMost(1f))
+private fun spotShadow(strength: Float) = Color.Black.copy(alpha = (strength / SystemSpotShadowAlpha).coerceAtMost(1f))
+
+/** Shadow colours for floating glass, drawn at its strengths (design-system.md §2.5, L2). */
+val ShadowAmbient = ambientShadow(0.10f)
+val ShadowSpot = spotShadow(0.16f)
 
 /**
- * The shadow colour for menus, the thickest glass (design-system.md §2.5, L3). Android scales a
- * shadow colour's alpha by the theme's, about 4% ambient and 19% spot, so the L3 values can only
- * be reached as nearly as solid black gets.
+ * The shadow colour for menus, the thickest glass (design-system.md §2.5, L3), whose strengths are
+ * past what the system draws: solid black, as near as it gets.
  */
 val MenuShadow = Color.Black
