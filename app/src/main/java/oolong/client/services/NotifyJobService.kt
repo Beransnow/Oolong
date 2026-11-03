@@ -92,7 +92,7 @@ class NotifyJobService : JobService() {
                         ID_REPLY,
                         CHANNEL_REPLY,
                         getString(R.string.title_reply_me),
-                        Intent(ACTION_VIEW, Uri.parse("tblite://notifications/0")).setPackage(packageName)
+                        Intent(ACTION_VIEW, Uri.parse("oolong://notifications/0")).setPackage(packageName)
                     )
                 }
                 if ("0" != message.atMe) {
@@ -114,7 +114,7 @@ class NotifyJobService : JobService() {
                         ID_AT,
                         CHANNEL_AT,
                         getString(R.string.title_at_me),
-                        Intent(ACTION_VIEW, Uri.parse("tblite://notifications/1")).setPackage(packageName)
+                        Intent(ACTION_VIEW, Uri.parse("oolong://notifications/1")).setPackage(packageName)
                     )
                 }
                 sendBroadcast(

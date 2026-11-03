@@ -49,6 +49,6 @@ class AppDialogsScreenshotTest {
 
     @Test
     fun permissionTip() {
-        capture(AppDialog.PermissionTip("贴吧 Lite 正在请求“位置信息”权限", "授权后，将允许网页获取你的位置"))
+        capture(AppDialog.PermissionTip("Oolong 正在请求“位置信息”权限", "授权后，将允许网页获取你的位置"))
     }
 }

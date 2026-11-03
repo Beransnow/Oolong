@@ -23,7 +23,7 @@ import java.util.Calendar
 
 object TiebaUtil {
     /** The label of what the app copies, so it can tell its own copies apart. */
-    const val ClipLabel = "Tieba Lite"
+    const val ClipLabel = "Oolong"
 
     private fun ClipData.setIsSensitive(isSensitive: Boolean): ClipData = apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

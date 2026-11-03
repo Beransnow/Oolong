@@ -26,7 +26,7 @@ object FileUtil {
     const val FILE_TYPE_DOWNLOAD = 0
     const val FILE_TYPE_VIDEO = 1
     const val FILE_TYPE_AUDIO = 2
-    const val FILE_FOLDER = "TiebaLite"
+    const val FILE_FOLDER = "Oolong"
     fun deleteAllFiles(root: File) {
         val files = root.listFiles()
         if (files != null) for (f in files) {

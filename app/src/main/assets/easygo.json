@@ -1,6 +1,6 @@
 {
   "easyGoVersion": "1.0",
-  "client": "com.huanchengfly.tieba.post",
+  "client": "oolong.client",
   "logicEntities": [
     {
       "head": {

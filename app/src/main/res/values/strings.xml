@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">贴吧 Lite</string>
+    <string name="app_name">Oolong</string>
     <string name="title_notifications">消息</string>
     <string name="title_explore">动态</string>
     <string name="title_user">我</string>
@@ -43,7 +43,7 @@
     <string name="title_main">首页</string>
     <string name="title_jump_page">跳页</string>
     <string name="tip_jump_page">当前 %1$d/%2$d 页</string>
-    <string name="title_default">贴吧 Lite</string>
+    <string name="title_default">Oolong</string>
     <string name="title_my_collect">我的收藏</string>
     <string name="title_at_me">提到我的</string>
     <string name="text_message_list_item_reply_my_thread">回复我的主题：%1$s</string>
@@ -121,7 +121,7 @@
     <string name="title_report">举报</string>
     <string name="tip_empty">暂无内容</string>
     <string name="title_auto_sign">自动签到</string>
-    <string name="tip_auto_sign">允许贴吧 Lite 自启动后，才能按时自动签到。MIUI 等系统还需在系统设置中开启相应权限。</string>
+    <string name="tip_auto_sign">允许 Oolong 自启动后，才能按时自动签到。MIUI 等系统还需在系统设置中开启相应权限。</string>
     <string name="title_forum">%1$s吧</string>
     <string name="menu_edit_info">编辑资料</string>
     <string name="button_allow">允许</string>
@@ -308,7 +308,7 @@
     <string name="common_permission_ignore_battery_optimize">忽略电池优化</string>
     <string name="common_permission_picture_in_picture">画中画</string>
     <string name="common_permission_vpn">\tVPN\t</string>
-    <string name="title_request_permission_tip_dialog">贴吧 Lite 请求「%1$s」权限</string>
+    <string name="title_request_permission_tip_dialog">Oolong 请求「%1$s」权限</string>
     <string name="message_request_permission_tip_dialog">授权后，将%1$s</string>
     <string name="usage_webview_location_permission">用于向当前网页提供你的位置信息。</string>
     <string name="relative_date_today">今天 %1$s</string>
@@ -346,11 +346,11 @@
     <string name="settings_group_sign_mode">签到方式</string>
     <string name="settings_group_accounts">账号</string>
     <string name="message_exit_account">退出账号 %1$s？退出后需重新登录。</string>
-    <string name="title_tieba_links">使用贴吧 Lite 打开贴吧链接</string>
+    <string name="title_tieba_links">使用 Oolong 打开贴吧链接</string>
     <string name="value_tieba_links_app">已开启</string>
     <string name="value_tieba_links_browser">未开启</string>
     <string name="value_battery_optimization_on">未忽略</string>
-    <string name="tip_tieba_links">在浏览器或其他应用中点按 tieba.baidu.com 的链接时，直接用贴吧 Lite 打开。此项在系统设置中管理。</string>
+    <string name="tip_tieba_links">在浏览器或其他应用中点按 tieba.baidu.com 的链接时，直接用 Oolong 打开。此项在系统设置中管理。</string>
     <string name="settings_group_links">链接</string>
     <string name="settings_group_storage">存储</string>
     <string name="settings_group_theme">主题</string>
@@ -741,7 +741,7 @@
     <string name="title_picker_unnamed_album">其他</string>
     <string name="title_picker_empty">没有找到图片</string>
     <string name="title_picker_no_access">无法读取照片</string>
-    <string name="tip_picker_no_access">允许贴吧 Lite 访问照片后，才能从相册里选择图片</string>
+    <string name="tip_picker_no_access">允许 Oolong 访问照片后，才能从相册里选择图片</string>
     <string name="button_picker_grant">允许访问</string>
     <string name="button_picker_open_settings">前往设置</string>
     <string name="tip_picker_selected_only">只显示你允许访问的照片</string>
@@ -796,7 +796,7 @@
     <string name="channel_group_messages_description">贴吧的各种消息通知</string>
     <string name="bawu_manager">吧主</string>
     <string name="bawu_assist">小吧主</string>
-    <string name="share_suffix">（分享自贴吧 Lite）</string>
+    <string name="share_suffix">（分享自 Oolong）</string>
     <string name="title_language">语言</string>
     <string name="language_system">跟随系统</string>
     <string name="language_zh_cn" translatable="false">简体中文</string>

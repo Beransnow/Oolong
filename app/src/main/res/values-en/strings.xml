@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Tieba Lite</string>
+    <string name="app_name">Oolong</string>
     <string name="title_notifications">Inbox</string>
     <string name="title_explore">Explore</string>
     <string name="title_user">Me</string>
@@ -44,7 +44,7 @@
     <string name="title_main">Home</string>
     <string name="title_jump_page">Go to page</string>
     <string name="tip_jump_page">Page %1$d of %2$d</string>
-    <string name="title_default">Tieba Lite</string>
+    <string name="title_default">Oolong</string>
     <string name="title_my_collect">Saved</string>
     <string name="title_at_me">Mentions</string>
     <string name="text_message_list_item_reply_my_thread">Replied to your thread: %1$s</string>
@@ -123,7 +123,7 @@
     <string name="title_report">Report</string>
     <string name="tip_empty">Nothing here</string>
     <string name="title_auto_sign">Auto check-in</string>
-    <string name="tip_auto_sign">Auto check-in runs on time only if Tieba Lite is allowed to start automatically. On MIUI and similar systems, also allow it in system settings.</string>
+    <string name="tip_auto_sign">Auto check-in runs on time only if Oolong is allowed to start automatically. On MIUI and similar systems, also allow it in system settings.</string>
     <string name="title_forum">%1$s</string>
     <string name="menu_edit_info">Edit profile</string>
     <string name="button_allow">Allow</string>
@@ -312,7 +312,7 @@
     <string name="common_permission_ignore_battery_optimize">Ignore battery optimization</string>
     <string name="common_permission_picture_in_picture">Picture-in-picture</string>
     <string name="common_permission_vpn">\tVPN\t</string>
-    <string name="title_request_permission_tip_dialog">Tieba Lite requests “%1$s” access</string>
+    <string name="title_request_permission_tip_dialog">Oolong requests “%1$s” access</string>
     <string name="message_request_permission_tip_dialog">If allowed: %1$s</string>
     <string name="usage_webview_location_permission">Used to share your location with this web page.</string>
     <string name="relative_date_today">Today %1$s</string>
@@ -350,11 +350,11 @@
     <string name="settings_group_sign_mode">Check-in method</string>
     <string name="settings_group_accounts">Accounts</string>
     <string name="message_exit_account">Sign out of %1$s? You\'ll need to sign in again.</string>
-    <string name="title_tieba_links">Open Tieba links in Tieba Lite</string>
+    <string name="title_tieba_links">Open Tieba links in Oolong</string>
     <string name="value_tieba_links_app">On</string>
     <string name="value_tieba_links_browser">Off</string>
     <string name="value_battery_optimization_on">On</string>
-    <string name="tip_tieba_links">Open tieba.baidu.com links tapped in your browser or other apps directly in Tieba Lite. Managed in system settings.</string>
+    <string name="tip_tieba_links">Open tieba.baidu.com links tapped in your browser or other apps directly in Oolong. Managed in system settings.</string>
     <string name="settings_group_links">Links</string>
     <string name="settings_group_storage">Storage</string>
     <string name="settings_group_theme">Theme</string>
@@ -747,7 +747,7 @@
     <string name="title_picker_unnamed_album">Other</string>
     <string name="title_picker_empty">No images found</string>
     <string name="title_picker_no_access">Can\'t access photos</string>
-    <string name="tip_picker_no_access">Allow Tieba Lite to access your photos to choose images from your gallery</string>
+    <string name="tip_picker_no_access">Allow Oolong to access your photos to choose images from your gallery</string>
     <string name="button_picker_grant">Allow access</string>
     <string name="button_picker_open_settings">Open settings</string>
     <string name="tip_picker_selected_only">Only photos you\'ve allowed access to are shown</string>
@@ -802,7 +802,7 @@
     <string name="channel_group_messages_description">Notifications for Tieba messages</string>
     <string name="bawu_manager">Moderator</string>
     <string name="bawu_assist">Assistant moderator</string>
-    <string name="share_suffix">" (shared from Tieba Lite)"</string>
+    <string name="share_suffix">" (shared from Oolong)"</string>
     <string name="title_language">Language</string>
     <string name="language_system">System</string>
     <string name="rule_after_scope">", "</string>

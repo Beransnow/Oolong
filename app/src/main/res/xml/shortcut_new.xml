@@ -10,7 +10,7 @@
         <intent
             android:action="oolong.client.action.OKSIGN"
             android:targetClass="oolong.client.activities.OKSignActivity"
-            android:targetPackage="com.huanchengfly.tieba.post" />
+            android:targetPackage="oolong.client" />
     </shortcut>
     <shortcut
         android:icon="@mipmap/ic_shortcut_my_collect"
@@ -19,8 +19,8 @@
         android:shortcutShortLabel="@string/shortcut_my_collect">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="tblite://favorite"
-            android:targetPackage="com.huanchengfly.tieba.post" />
+            android:data="oolong://favorite"
+            android:targetPackage="oolong.client" />
     </shortcut>
     <shortcut
         android:icon="@mipmap/ic_shortcut_search"
@@ -29,8 +29,8 @@
         android:shortcutShortLabel="@string/shortcut_search">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="tblite://search"
-            android:targetPackage="com.huanchengfly.tieba.post" />
+            android:data="oolong://search"
+            android:targetPackage="oolong.client" />
     </shortcut>
     <shortcut
         android:icon="@mipmap/ic_shortcut_my_message"
@@ -39,7 +39,7 @@
         android:shortcutShortLabel="@string/shortcut_my_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="tblite://notifications/0"
-            android:targetPackage="com.huanchengfly.tieba.post" />
+            android:data="oolong://notifications/0"
+            android:targetPackage="oolong.client" />
     </shortcut>
 </shortcuts>

@@ -213,7 +213,7 @@ class MainActivityV2 : AppCompatActivity() {
     private fun checkIntent(intent: Intent) {
         val uri = intent.data ?: return
         val key = when (val scheme = uri.scheme?.lowercase()) {
-            "tblite" -> uri.toDeepLinkKey()
+            "oolong" -> uri.toDeepLinkKey()
             in EXTERNAL_LINK_SCHEMES -> uri.toTiebaKey()
                 ?: if (scheme == "http" || scheme == "https") WebViewKey(uri.toString()) else null
 

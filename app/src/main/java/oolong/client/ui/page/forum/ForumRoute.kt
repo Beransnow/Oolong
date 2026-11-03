@@ -100,7 +100,7 @@ private suspend fun sendToDesktop(context: Context, forum: ForumDetail, showMess
         "forum_${forum.id}",
         forum.avatar,
         context.getString(R.string.title_forum, forum.name),
-        Intent(Intent.ACTION_VIEW).setData(Uri.parse("tblite://forum/${forum.name}")),
+        Intent(Intent.ACTION_VIEW).setData(Uri.parse("oolong://forum/${forum.name}")),
         onSuccess = { succeeded = true },
         onFailure = { failure = it },
     )

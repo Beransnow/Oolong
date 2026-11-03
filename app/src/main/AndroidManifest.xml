@@ -130,7 +130,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="tblite" />
+                <data android:scheme="oolong" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">
@@ -213,7 +213,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="tblite" />
+                <data android:scheme="oolong" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">
@@ -276,7 +276,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="tblite" />
+                <data android:scheme="oolong" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">
@@ -338,7 +338,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="tblite" />
+                <data android:scheme="oolong" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">
@@ -420,7 +420,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.huanchengfly.tieba.post.share.FileProvider"
+            android:authorities="${applicationId}.share.FileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -430,7 +430,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.huanchengfly.tieba.post.androidx-startup"
+            android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
             <meta-data
