@@ -208,12 +208,22 @@ private fun Notes(release: Release, isNew: Boolean) {
             )
         }
         release.notesFor(Locale.getDefault()).forEach { (group, items) ->
-            Text(text = group, style = TextStyles.label.copy(color = colors.textSecondary))
-            Column(modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)) {
+            // Above its items, which may have titles of their own
+            Text(text = group, style = TextStyles.name.copy(color = colors.text))
+            Column(modifier = Modifier.padding(top = 2.dp, bottom = 20.dp)) {
                 items.forEach { item ->
-                    Row {
-                        Text(text = "·", style = TextStyles.bodyCompact.copy(color = colors.textSecondary), modifier = Modifier.padding(end = 8.dp))
-                        Text(text = item, style = TextStyles.bodyCompact.copy(color = colors.text))
+                    // "Title\nwhat it does for you", set as a settings row is; else a plain point
+                    val title = item.substringBefore('\n', missingDelimiterValue = "")
+                    if (title.isNotEmpty()) {
+                        Column(modifier = Modifier.padding(top = 8.dp)) {
+                            Text(text = title, style = TextStyles.label.copy(color = colors.text))
+                            Text(text = item.substringAfter('\n'), style = TextStyles.caption.copy(color = colors.textSecondary))
+                        }
+                    } else {
+                        Row {
+                            Text(text = "·", style = TextStyles.bodyCompact.copy(color = colors.textSecondary), modifier = Modifier.padding(end = 8.dp))
+                            Text(text = item, style = TextStyles.bodyCompact.copy(color = colors.text))
+                        }
                     }
                 }
             }

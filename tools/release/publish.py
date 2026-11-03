@@ -4,7 +4,9 @@ oolong.huanchengfly.top, then points the channel's manifest at it.
     CLOUDFLARE_API_TOKEN=… python3 tools/release/publish.py app.apk --channel stable --notes notes.json
 
 The token needs Workers R2 Storage Write on the account. notes.json holds what changed, by language
-and then by group in the order shown, e.g. {"zh": {"新增": ["…"], "修复": ["…"]}, "en": {…}}.
+and then by group in the order shown, e.g. {"zh": {"新增": ["…"], "修复": ["…"]}, "en": {…}}. An item
+may be a title, a line break and what it does for the reader. Each release's notes are kept in
+tools/release/notes/<version>.json.
 
 Only an APK signed with the Oolong release key is published: the app installs an update only when it
 is signed as the app installed is, so anything else would be offered and then refused. The APK goes

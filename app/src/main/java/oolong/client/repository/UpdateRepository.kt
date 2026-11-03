@@ -59,7 +59,10 @@ data class Release(
     val url: String,
     val size: Long,
     val sha256: String,
-    /** What changed, by language and then by group (新增, 修复…) in the order shown. */
+    /**
+     * What changed, by language and then by group (新增, 修复…) in the order shown. An item may be a
+     * title and, after a line break, what it does for the reader.
+     */
     val notes: Map<String, Map<String, List<String>>> = emptyMap(),
     /** Versions below this one no longer work, and may not skip this release. */
     val minSupported: Int = 0,
