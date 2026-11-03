@@ -13,8 +13,10 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
@@ -55,6 +57,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -234,7 +237,8 @@ private val NavItemWidth = 68.dp
 private val NavItemCollapsedWidth = 52.dp
 private val NavItemHeight = 52.dp
 private val NavItemCollapsedHeight = 40.dp
-private val NavPillMargin = 12.dp
+internal val NavPillMargin = 12.dp
+private val SearchButtonGap = 8.dp
 
 /** Height the pill and its margins take above the navigation bar, expanded. */
 val FloatingNavBarHeight = NavItemHeight + NavPillPadding * 2 + NavPillMargin
@@ -252,6 +256,11 @@ val FloatingNavBarHeight = NavItemHeight + NavPillPadding * 2 + NavPillMargin
  *
  * The bar always measures at its expanded height so content padding does not change while it
  * collapses.
+ *
+ * With [onSearchButtonPlaced] the bar leaves a round space beside the pill, the pill's height and
+ * never collapsing away, for the search button drawn over it; its items narrow where the window
+ * is too narrow for both. While [searching] the pill is left out of what glass sees, so the
+ * search field over it doesn't show it.
  */
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
@@ -261,7 +270,10 @@ fun FloatingNavBar(
     onReselected: (position: Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
     collapsedFraction: () -> Float,
+    modifier: Modifier = Modifier,
     themeColors: ExtendedColors = ExtendedTheme.colors,
+    onSearchButtonPlaced: ((boundsInRoot: Rect) -> Unit)? = null,
+    searching: Boolean = false,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val indicator = remember { Animatable(currentPosition.toFloat()) }
@@ -286,8 +298,8 @@ fun FloatingNavBar(
         navigationItems[index].onClick?.invoke()
     }
 
-    Box(
-        modifier = Modifier
+    BoxWithConstraints(
+        modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(
                 WindowInsets.navigationBars.union(WindowInsets.displayCutout)
@@ -296,180 +308,195 @@ fun FloatingNavBar(
             .height(FloatingNavBarHeight),
         contentAlignment = Alignment.TopCenter,
     ) {
+        val searchSpace = if (onSearchButtonPlaced != null) NavItemHeight + NavPillPadding * 2 + SearchButtonGap else 0.dp
+        val fullItemWidth = minOf(
+            NavItemWidth,
+            (maxWidth - NavPillMargin * 2 - searchSpace - NavPillPadding * 2) / navigationItems.size,
+        )
         val fraction = collapsedFraction()
-        val itemWidth = lerp(NavItemWidth, NavItemCollapsedWidth, fraction)
+        val itemWidth = lerp(fullItemWidth, NavItemCollapsedWidth, fraction)
         val itemHeight = lerp(NavItemHeight, NavItemCollapsedHeight, fraction)
         val density = LocalDensity.current
         val itemWidthPx = with(density) { itemWidth.toPx() }
         // The item under the indicator, so colours follow it while it is dragged.
         val highlighted = indicator.value.roundToInt()
-        Box(modifier = Modifier.padding(top = (NavItemHeight - itemHeight))) {
-            Box(
-                modifier = Modifier
-                    .lensTarget()
-                    .floatingGlass(NavPillShape)
-                    .padding(NavPillPadding)
-                    .onGloballyPositioned { pill = it }
-                    .pointerInput(navigationItems.size, itemWidthPx, menus) {
-                        val last = navigationItems.size - 1
-                        fun positionAt(x: Float) = (x / itemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
-                        awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            coroutineScope.launch { press.animateTo(1f, PressSpring) }
-                            coroutineScope.launch {
-                                indicator.animateTo(
-                                    positionAt(down.position.x).roundToInt().toFloat(),
-                                    IndicatorSpring
-                                )
-                            }
-                            var dragging = false
-                            var lastX = down.position.x
-                            var released = false
-                            var lost = false
-                            fun follow(event: PointerEvent) {
-                                val change = event.changes.firstOrNull { it.id == down.id }
-                                if (change == null) {
-                                    lost = true
-                                    return
-                                }
-                                if (!change.pressed) {
-                                    released = true
-                                    return
-                                }
-                                lastX = change.position.x
-                                if (!dragging &&
-                                    abs(lastX - down.position.x) > viewConfiguration.touchSlop
-                                ) {
-                                    dragging = true
-                                    indicatorDragged = true
-                                }
-                                if (dragging) {
-                                    change.consume()
-                                    coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
-                                }
-                            }
-                            val menu = items[(down.position.x / itemWidthPx).toInt().coerceIn(0, last)].menu
-                            // Until the finger moves off or lifts, a menu waits for the press to last
-                            val held = menu != null && menus != null &&
-                                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                    while (!dragging && !released && !lost) follow(awaitPointerEvent())
-                                } == null
-                            if (held && menu != null && menus != null) {
-                                coroutineScope.launch { press.animateTo(0f, PressSpring) }
-                                coroutineScope.launch {
-                                    indicator.animateTo(shown.toFloat(), IndicatorSpring)
-                                }
-                                val coordinates = pill ?: return@awaitEachGesture
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
-                                while (true) {
-                                    val change = awaitPointerEvent().changes
-                                        .firstOrNull { it.id == down.id } ?: break
-                                    change.consume()
-                                    val position = coordinates.localToWindow(change.position)
-                                    if (!change.pressed) {
-                                        menus.liftFinger(position)
-                                        break
-                                    }
-                                    menus.moveFinger(position)
-                                }
-                                return@awaitEachGesture
-                            }
-                            while (!released && !lost) follow(awaitPointerEvent())
-                            coroutineScope.launch { press.animateTo(0f, PressSpring) }
-                            indicatorDragged = false
-                            if (released) {
-                                val target = if (dragging) {
-                                    positionAt(lastX).roundToInt()
-                                } else {
-                                    (down.position.x / itemWidthPx).toInt().coerceIn(0, last)
-                                }
-                                coroutineScope.launch {
-                                    indicator.animateTo(target.toFloat(), IndicatorSpring)
-                                }
-                                select(target)
-                            } else {
-                                coroutineScope.launch {
-                                    indicator.animateTo(shown.toFloat(), IndicatorSpring)
-                                }
-                            }
-                        }
-                    },
-            ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Box(modifier = Modifier.padding(top = (NavItemHeight - itemHeight))) {
                 Box(
                     modifier = Modifier
-                        .offset { IntOffset((indicator.value * itemWidthPx).roundToInt(), 0) }
-                        .size(width = itemWidth, height = itemHeight)
-                        .graphicsLayer { alpha = 1f - press.value }
-                        .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
-                )
-                Row {
-                    navigationItems.fastForEachIndexed { index, navigationItem ->
-                        val selected = index == currentPosition
-                        val title = navigationItem.title(selected)
-                        val contentColor =
-                            if (index == highlighted) ExtendedTheme.colors.emphasis
-                            else themeColors.textSecondary
-                        Column(
-                            modifier = Modifier
-                                .size(width = itemWidth, height = itemHeight)
-                                .onGloballyPositioned { itemBounds[index] = it.boundsInWindow() }
-                                .semantics(mergeDescendants = true) {
-                                    role = Role.Tab
-                                    this.selected = selected
-                                    onClick(label = title) {
-                                        select(index)
-                                        true
+                        .then(if (searching) Modifier else Modifier.lensTarget())
+                        .floatingGlass(NavPillShape)
+                        .padding(NavPillPadding)
+                        .onGloballyPositioned { pill = it }
+                        .pointerInput(navigationItems.size, itemWidthPx, menus) {
+                            val last = navigationItems.size - 1
+                            fun positionAt(x: Float) = (x / itemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                coroutineScope.launch { press.animateTo(1f, PressSpring) }
+                                coroutineScope.launch {
+                                    indicator.animateTo(
+                                        positionAt(down.position.x).roundToInt().toFloat(),
+                                        IndicatorSpring
+                                    )
+                                }
+                                var dragging = false
+                                var lastX = down.position.x
+                                var released = false
+                                var lost = false
+                                fun follow(event: PointerEvent) {
+                                    val change = event.changes.firstOrNull { it.id == down.id }
+                                    if (change == null) {
+                                        lost = true
+                                        return
                                     }
-                                    val menu = navigationItem.menu
-                                    if (menu != null && menus != null) {
-                                        onLongClick(label = navigationItem.menuLabel) {
-                                            val bounds = itemBounds[index] ?: return@onLongClick false
-                                            menus.show(menu(), anchor = bounds)
+                                    if (!change.pressed) {
+                                        released = true
+                                        return
+                                    }
+                                    lastX = change.position.x
+                                    if (!dragging &&
+                                        abs(lastX - down.position.x) > viewConfiguration.touchSlop
+                                    ) {
+                                        dragging = true
+                                        indicatorDragged = true
+                                    }
+                                    if (dragging) {
+                                        change.consume()
+                                        coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
+                                    }
+                                }
+                                val menu = items[(down.position.x / itemWidthPx).toInt().coerceIn(0, last)].menu
+                                // Until the finger moves off or lifts, a menu waits for the press to last
+                                val held = menu != null && menus != null &&
+                                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                        while (!dragging && !released && !lost) follow(awaitPointerEvent())
+                                    } == null
+                                if (held && menu != null && menus != null) {
+                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                    coroutineScope.launch {
+                                        indicator.animateTo(shown.toFloat(), IndicatorSpring)
+                                    }
+                                    val coordinates = pill ?: return@awaitEachGesture
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
+                                    while (true) {
+                                        val change = awaitPointerEvent().changes
+                                            .firstOrNull { it.id == down.id } ?: break
+                                        change.consume()
+                                        val position = coordinates.localToWindow(change.position)
+                                        if (!change.pressed) {
+                                            menus.liftFinger(position)
+                                            break
+                                        }
+                                        menus.moveFinger(position)
+                                    }
+                                    return@awaitEachGesture
+                                }
+                                while (!released && !lost) follow(awaitPointerEvent())
+                                coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                indicatorDragged = false
+                                if (released) {
+                                    val target = if (dragging) {
+                                        positionAt(lastX).roundToInt()
+                                    } else {
+                                        (down.position.x / itemWidthPx).toInt().coerceIn(0, last)
+                                    }
+                                    coroutineScope.launch {
+                                        indicator.animateTo(target.toFloat(), IndicatorSpring)
+                                    }
+                                    select(target)
+                                } else {
+                                    coroutineScope.launch {
+                                        indicator.animateTo(shown.toFloat(), IndicatorSpring)
+                                    }
+                                }
+                            }
+                        },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .offset { IntOffset((indicator.value * itemWidthPx).roundToInt(), 0) }
+                            .size(width = itemWidth, height = itemHeight)
+                            .graphicsLayer { alpha = 1f - press.value }
+                            .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
+                    )
+                    Row {
+                        navigationItems.fastForEachIndexed { index, navigationItem ->
+                            val selected = index == currentPosition
+                            val title = navigationItem.title(selected)
+                            val contentColor =
+                                if (index == highlighted) ExtendedTheme.colors.emphasis
+                                else themeColors.textSecondary
+                            Column(
+                                modifier = Modifier
+                                    .size(width = itemWidth, height = itemHeight)
+                                    .onGloballyPositioned { itemBounds[index] = it.boundsInWindow() }
+                                    .semantics(mergeDescendants = true) {
+                                        role = Role.Tab
+                                        this.selected = selected
+                                        onClick(label = title) {
+                                            select(index)
                                             true
                                         }
-                                    }
-                                },
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            NavItemIcon(navigationItem, selected, title, contentColor)
-                            if (fraction < 1f) {
-                                Text(
-                                    text = title,
-                                    color = contentColor,
-                                    fontSize = 11.sp,
-                                    lineHeight = 14.sp,
-                                    maxLines = 1,
-                                    modifier = Modifier
-                                        .height(14.dp * (1f - fraction))
-                                        .graphicsLayer { alpha = 1f - fraction * 2f },
-                                )
+                                        val menu = navigationItem.menu
+                                        if (menu != null && menus != null) {
+                                            onLongClick(label = navigationItem.menuLabel) {
+                                                val bounds = itemBounds[index] ?: return@onLongClick false
+                                                menus.show(menu(), anchor = bounds)
+                                                true
+                                            }
+                                        }
+                                    },
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                NavItemIcon(navigationItem, selected, title, contentColor)
+                                if (fraction < 1f) {
+                                    Text(
+                                        text = title,
+                                        color = contentColor,
+                                        fontSize = 11.sp,
+                                        lineHeight = 14.sp,
+                                        maxLines = 1,
+                                        modifier = Modifier
+                                            .height(14.dp * (1f - fraction))
+                                            .graphicsLayer { alpha = 1f - fraction * 2f },
+                                    )
+                                }
                             }
                         }
                     }
                 }
+                // Lifts off the pill while it is pressed: drawn above it, so it magnifies the pill too.
+                // Grows by layout rather than a layer scale so the glass samples the area it covers.
+                val lensScale = lerpFloat(1f, LensScale, press.value)
+                val lensWidth = itemWidth * lensScale
+                val lensHeight = itemHeight * lensScale
+                Box(
+                    modifier = Modifier
+                        .offset {
+                            val padding = NavPillPadding.roundToPx()
+                            val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
+                            val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
+                            IntOffset(
+                                (indicator.value * itemWidthPx).roundToInt() + padding - grownX,
+                                padding - grownY,
+                            )
+                        }
+                        .size(width = lensWidth, height = lensHeight)
+                        .graphicsLayer { alpha = press.value }
+                        .glassLens(NavPillShape)
+                )
             }
-            // Lifts off the pill while it is pressed: drawn above it, so it magnifies the pill too.
-            // Grows by layout rather than a layer scale so the glass samples the area it covers.
-            val lensScale = lerpFloat(1f, LensScale, press.value)
-            val lensWidth = itemWidth * lensScale
-            val lensHeight = itemHeight * lensScale
-            Box(
-                modifier = Modifier
-                    .offset {
-                        val padding = NavPillPadding.roundToPx()
-                        val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
-                        val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
-                        IntOffset(
-                            (indicator.value * itemWidthPx).roundToInt() + padding - grownX,
-                            padding - grownY,
-                        )
-                    }
-                    .size(width = lensWidth, height = lensHeight)
-                    .graphicsLayer { alpha = press.value }
-                    .glassLens(NavPillShape)
-            )
+            if (onSearchButtonPlaced != null) {
+                Spacer(modifier = Modifier.width(SearchButtonGap))
+                Box(
+                    modifier = Modifier
+                        .size(itemHeight + NavPillPadding * 2)
+                        .onGloballyPositioned { onSearchButtonPlaced(it.boundsInRoot()) }
+                )
+            }
         }
     }
 }

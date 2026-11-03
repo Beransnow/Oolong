@@ -224,6 +224,7 @@
     <string name="title_oksign_slow_mode">慢速签到</string>
     <string name="summary_oksign_slow_mode">延长每个吧之间的签到间隔</string>
     <string name="btn_close">关闭</string>
+    <string name="button_close_search">关闭搜索</string>
     <string name="title_uncollected">未收藏</string>
     <string name="title_collected">已收藏</string>
     <string name="text_stat_follow">关注</string>

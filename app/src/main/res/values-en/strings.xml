@@ -228,6 +228,7 @@
     <string name="title_oksign_slow_mode">Slow check-in</string>
     <string name="summary_oksign_slow_mode">Wait longer between forums</string>
     <string name="btn_close">Close</string>
+    <string name="button_close_search">Close search</string>
     <string name="title_uncollected">Not saved</string>
     <string name="title_collected">Saved</string>
     <string name="text_stat_follow">Following</string>

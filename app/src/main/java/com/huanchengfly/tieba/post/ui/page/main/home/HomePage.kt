@@ -428,6 +428,7 @@ sealed interface HomeEvent {
 @Composable
 fun HomePage(
     canOpenExplore: Boolean = false,
+    showSearchBox: Boolean = true,
     viewModel: HomeViewModel = hiltViewModel(),
     onOpenExplore: () -> Unit = {},
 ) {
@@ -456,6 +457,7 @@ fun HomePage(
         listSingle = listSingle,
         showHistory = showHistory,
         canOpenExplore = canOpenExplore,
+        showSearchBox = showSearchBox,
         onOpenExplore = onOpenExplore,
         onToggleListSingle = { context.appPreferences.listSingle = !listSingle },
         onEvent = { event ->
@@ -486,6 +488,7 @@ fun HomeScreen(
     listSingle: Boolean = false,
     showHistory: Boolean = true,
     canOpenExplore: Boolean = false,
+    showSearchBox: Boolean = true,
     onOpenExplore: () -> Unit = {},
     onToggleListSingle: () -> Unit = {},
 ) {
@@ -520,8 +523,9 @@ fun HomeScreen(
             refreshing = isLoading && forums.isNotEmpty(),
             onRefresh = { onEvent(HomeEvent.Refresh) }
         )
+        // On a phone search opens from the button beside the bottom bar instead
         val searchBox: @Composable () -> Unit = {
-            SearchBox(modifier = Modifier.padding(bottom = 4.dp)) { onEvent(HomeEvent.Search) }
+            if (showSearchBox) SearchBox(modifier = Modifier.padding(bottom = 4.dp)) { onEvent(HomeEvent.Search) }
         }
         val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
         Box(modifier = Modifier.pullRefresh(pullRefreshState)) {

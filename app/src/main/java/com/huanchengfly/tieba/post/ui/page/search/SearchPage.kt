@@ -80,6 +80,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBar
+import com.huanchengfly.tieba.post.ui.widgets.compose.GlassTopBarTitle
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyBackHandler
 import com.huanchengfly.tieba.post.ui.widgets.compose.PagerTabIndicator
@@ -164,7 +165,8 @@ fun SearchPage(
 
 /**
  * The search page: the history and suggestions while the user types a keyword, then the forums,
- * threads and users found, in tabs.
+ * threads and users found, in tabs. Without [showField] the field is elsewhere, such as above
+ * the keyboard on the main page, and the top bar carries only the title and the tabs.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -183,6 +185,7 @@ fun SearchScreen(
     onOpenForum: (forumName: String) -> Unit,
     onOpenUser: (uid: Long) -> Unit,
     onOpenThread: (SearchedPost) -> Unit,
+    showField: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val searching = state.keyword.isNotEmpty()
@@ -247,20 +250,24 @@ fun SearchScreen(
         topBar = {
             GlassTopBar(
                 title = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .padding(end = 12.dp)
-                    ) {
-                        // The bar styles its title slot as a title; the field keeps body text.
-                        ProvideTextStyle(MaterialTheme.typography.body1) {
-                            SearchTopBar(
-                                keyword = input,
-                                onKeywordChange = onInputChange,
-                                onKeywordSubmit = onSearch,
-                                onBack = onBack,
-                            )
+                    if (!showField) {
+                        GlassTopBarTitle(text = stringResource(id = R.string.title_search))
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .padding(end = 12.dp)
+                        ) {
+                            // The bar styles its title slot as a title; the field keeps body text.
+                            ProvideTextStyle(MaterialTheme.typography.body1) {
+                                SearchTopBar(
+                                    keyword = input,
+                                    onKeywordChange = onInputChange,
+                                    onKeywordSubmit = onSearch,
+                                    onBack = onBack,
+                                )
+                            }
                         }
                     }
                 },
