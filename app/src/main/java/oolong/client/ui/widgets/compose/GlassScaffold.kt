@@ -18,6 +18,7 @@ import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,19 +27,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import kotlin.math.roundToInt
 
 /**
  * Space taken at the bottom of the screen by chrome that an ancestor floats over this subtree,
@@ -114,6 +119,7 @@ fun GlassScaffold(
         }
     } else null
     val scrollEdge = remember { newScrollEdgeState() }
+    LaunchedEffect(scrollEdge) { scrollEdge.settle() }
     // The page's own parts share its large title and scroll edge; what floats over the page has
     // none, rather than an enclosing page's
     val page: @Composable (@Composable () -> Unit) -> Unit = { slot ->
@@ -185,7 +191,10 @@ fun GlassScaffold(
                             .fillMaxSize()
                             .then(if (sampleContent) Modifier.hazeSource(hazeState, key = glassSource.key) else Modifier)
                     ) {
-                        page { content(padding) }
+                        page {
+                            content(padding)
+                            if (largeTitleState != null) LargeTitleAnchorBox(largeTitleState, scrollEdge, padding)
+                        }
                     }
                 }.map { it.measure(constraints) }
 
@@ -269,4 +278,25 @@ fun PaddingValues.plus(other: PaddingValues): PaddingValues {
             override fun calculateBottomPadding(): Dp = base.calculateBottomPadding() + other.calculateBottomPadding()
         }
     }
+}
+
+/**
+ * Where the large title sits below the bar, moving up with the content as it scrolls, for the
+ * bar's title to be matched to. It draws nothing.
+ */
+@Composable
+private fun LargeTitleAnchorBox(state: LargeTitleState, page: ScrollEdgeState, padding: ScaffoldPadding) {
+    Box(
+        modifier = Modifier
+            .layout { measurable, _ ->
+                val placeable = measurable.measure(Constraints.fixed(1, state.titleHeight.roundToInt()))
+                layout(placeable.width, placeable.height) {
+                    val top = padding.top.roundToPx() - state.height + state.topPx
+                    placeable.place(state.startPx.roundToInt(), top.roundToInt())
+                }
+            }
+            // Far past it, the content's scroll stops mattering: the title is in the bar by then
+            .graphicsLayer { translationY = -(page.scrolled ?: 0).coerceAtMost(state.height * 2).toFloat() }
+            .matchedGeometryAnchor(LargeTitleAnchor)
+    )
 }

@@ -1,13 +1,8 @@
 package oolong.client.ui.page.thread
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,8 +23,6 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,24 +88,13 @@ internal fun ThreadTopBar(
             }
         },
         navigationIcon = { BackNavigationIcon { onEvent(ThreadEvent.Back) } },
-        actions = {
-            AnimatedVisibility(visible = filter != null, enter = DockEnter, exit = DockExit) {
-                // Kept while it leaves, so it can fade out
-                val shown = remember { mutableStateOf(filter) }
-                if (filter != null) shown.value = filter
-                shown.value?.invoke()
-            }
-        },
+        actions = { filter?.invoke() },
         actionsInCapsule = false,
         hiddenFraction = hiddenFraction,
     )
 }
 
 private val ForumCapsule = RoundedCornerShape(percent = 50)
-
-/** The filter grows into the bar from about its size in the list, and shrinks back as it leaves. */
-private val DockEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.snap(), initialScale = 0.7f)
-private val DockExit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.snap(), targetScale = 0.7f)
 
 private val CapsuleShape = Corners.full
 

@@ -1,7 +1,9 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollState
@@ -13,11 +15,16 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 import kotlin.math.abs
 
 /**
@@ -47,7 +54,40 @@ class ScrollEdgeState internal constructor() {
 
     /** Pixels scrolled under the bar, or null when no list reports, so the edge simply shows. */
     val scrolled: Int? get() = inView?.scrolled?.invoke()
+
+    /** The top bar's row, in window coordinates, for things that dock into it; NaN before it is laid out. */
+    internal var barRowTop by mutableFloatStateOf(Float.NaN)
+    internal var barRowBottom by mutableFloatStateOf(Float.NaN)
+
+    /** Where each [matchedGeometryAnchor] was last laid out, in window coordinates. */
+    internal val anchors = mutableStateMapOf<Any, Rect>()
+
+    private val snapRanges = mutableStateListOf<ClosedFloatingPointRange<Float>>()
+
+    internal fun addSnapRange(range: ClosedFloatingPointRange<Float>) = snapRanges.add(range)
+
+    internal fun removeSnapRange(range: ClosedFloatingPointRange<Float>) = snapRanges.remove(range)
+
+    /**
+     * Whenever the content in view stops inside a range that snaps, scrolls it on to the nearer
+     * end, so nothing scroll-driven is left halfway.
+     */
+    internal suspend fun settle() {
+        snapshotFlow { inView }.collectLatest { source ->
+            val scrollable = source?.scrollable ?: return@collectLatest
+            snapshotFlow { scrollable.isScrollInProgress }.filter { !it }.collect {
+                val scrolled = source.scrolled().toFloat()
+                val range = snapRanges.firstOrNull { scrolled > it.start && scrolled < it.endInclusive }
+                    ?: return@collect
+                val target = if (scrolled - range.start < range.endInclusive - scrolled) range.start else range.endInclusive
+                scrollable.animateScrollBy(target - scrolled, spring(stiffness = SnapStiffness))
+            }
+        }
+    }
 }
+
+/** How firmly a snap carries the content to the end of its range. */
+private const val SnapStiffness = 600f
 
 /** The scroll edge a [GlassScaffold] shares between its top bar and its content. */
 val LocalScrollEdge = compositionLocalOf<ScrollEdgeState?> { null }

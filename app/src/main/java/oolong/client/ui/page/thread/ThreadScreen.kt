@@ -48,7 +48,6 @@ import oolong.client.ui.page.reply.panelShown
 import oolong.client.ui.page.reply.rememberReplyChromeState
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.PromptDialog
 import oolong.client.ui.widgets.compose.animateHiddenFraction
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -92,12 +91,6 @@ fun ThreadScreen(
         val hiddenFraction by hide.animateHiddenFraction()
         val statusBarTop = WindowInsets.statusBars.union(WindowInsets.displayCutout).getTop(LocalDensity.current)
         var contentTop by remember { mutableIntStateOf(0) }
-        val rowHalf = with(LocalDensity.current) { (GlassTopBarRowHeight / 2).roundToPx() }
-        val filterDocked by remember(listState, statusBarTop, rowHalf) {
-            derivedStateOf {
-                listState.isThreadFilterDocked(rowHalf + ((contentTop - statusBarTop) * hiddenFraction).roundToInt())
-            }
-        }
         // A thread that can't scroll the bar's height away would leave an empty band where the bar was
         val tooShortToHide by remember(listState) {
             derivedStateOf {
@@ -116,7 +109,7 @@ fun ThreadScreen(
                 ThreadTopBar(
                     forum = state.thread?.forum,
                     onEvent = handleEvent,
-                    filter = if (state.thread != null && filterDocked) {
+                    filter = if (state.thread != null) {
                         { ThreadFilter(state.query.seeLz, handleEvent) }
                     } else null,
                 ) { hiddenFraction }
@@ -185,7 +178,7 @@ fun ThreadScreen(
             SideEffect { contentTop = with(density) { padding.calculateTopPadding().roundToPx() } }
             // Where the visible chrome ends, from the end of the top padding: the bar slides up as it hides
             val chromeEnd = { -((contentTop - statusBarTop) * hiddenFraction).roundToInt() }
-            ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd, filterDocked = { filterDocked })
+            ThreadContent(state, preferences, listState, padding, handleEvent, chromeEnd)
         }
     }
 

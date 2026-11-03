@@ -65,7 +65,10 @@ import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.matchedGeometry
+import oolong.client.ui.widgets.compose.matchedGeometryAnchor
 import oolong.client.ui.widgets.compose.plus
+import oolong.client.ui.widgets.compose.rememberScrollProgress
 import oolong.client.ui.widgets.compose.states.StateScreenScope
 import oolong.client.utils.ImageUtil
 
@@ -77,17 +80,8 @@ internal const val FIRST_REPLY_INDEX = 1
 
 private const val THREAD_HEADER_KEY = "ThreadHeader"
 
-/**
- * Whether the reply count header has scrolled up to where the top bar shows it pinned, so the
- * bar should show it instead. [pinnedAbove] is how far above the end of the list's top padding
- * the pinned header sits, in pixels.
- */
-internal fun LazyListState.isThreadFilterDocked(rowCenter: Int): Boolean {
-    val header = layoutInfo.visibleItemsInfo.firstOrNull { it.key == THREAD_HEADER_KEY }
-    // Item offsets start at the end of the top padding, which is where the bar ends. The filter is
-    // centred in the header, so it docks where its own centre meets the bar's row: no jump.
-    return if (header != null) header.offset + header.size / 2 <= -rowCenter else firstVisibleItemIndex > FIRST_REPLY_INDEX
-}
+/** The key the reply filter in the list and its copy docking in the bar are matched by. */
+internal object ReplyFilter
 
 /** The posts of the thread, or the first load or its error in their place. */
 @OptIn(ExperimentalMaterialApi::class)
@@ -99,7 +93,6 @@ internal fun ThreadContent(
     padding: PaddingValues,
     onEvent: (ThreadEvent) -> Unit,
     chromeEnd: () -> Int = { 0 },
-    filterDocked: () -> Boolean = { false },
 ) {
     val posts = state.posts
     val firstPost = state.firstPost ?: state.preview?.knownFirstFloor()
@@ -159,7 +152,7 @@ internal fun ThreadContent(
                     }
                 }
                 if (state.thread != null) {
-                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent, filterDocked = filterDocked()) }
+                    item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
                 }
                 if (posts.hasPrevious && !newestFirst) {
                     item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
@@ -246,16 +239,16 @@ private fun FirstPost(
 
 /**
  * The reply count and the switch between all posts and the thread author's, above the replies.
- * The count is content and scrolls away; the switch docks in the top bar as it meets the bar's
- * row (see [ThreadFilter]), and [filterDocked] hides it here meanwhile.
+ * The count is content and scrolls away. The switch is where the bar's copy of it ([ThreadFilter])
+ * docks from as it scrolls up into the bar's row, crossfading from this flat one to the glass one.
  */
 @Composable
 internal fun ThreadHeader(
     state: ThreadState,
     onEvent: (ThreadEvent) -> Unit,
     modifier: Modifier = Modifier,
-    filterDocked: Boolean = false,
 ) {
+    val docking = rememberScrollProgress(ReplyFilter)
     Container(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -273,7 +266,8 @@ internal fun ThreadHeader(
             // A segmented switch: the selected side is a pill on the track
             Row(
                 modifier = Modifier
-                    .graphicsLayer { alpha = if (filterDocked) 0f else 1f }
+                    .matchedGeometryAnchor(ReplyFilter)
+                    .graphicsLayer { alpha = 1f - docking.fraction(0f..FilterCrossfade) }
                     .clip(CircleShape)
                     .background(ExtendedTheme.colors.chip)
                     .padding(3.dp),
@@ -403,7 +397,13 @@ private fun rememberPhotoViewData(state: ThreadState): (Post, PostContent.Image)
 @Composable
 internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
     val selected = if (seeLz) 1 else 0
-    GlassTabRow(selectedTabIndex = selected) {
+    val docking = rememberScrollProgress(ReplyFilter)
+    GlassTabRow(
+        selectedTabIndex = selected,
+        modifier = Modifier
+            .matchedGeometry(ReplyFilter, docking)
+            .graphicsLayer { alpha = docking.fraction(0f..FilterCrossfade) },
+    ) {
         listOf(R.string.text_all, R.string.title_see_lz).forEachIndexed { index, label ->
             Tab(
                 selected = index == selected,
@@ -421,3 +421,6 @@ internal fun ThreadFilter(seeLz: Boolean, onEvent: (ThreadEvent) -> Unit) {
         }
     }
 }
+
+/** How much of its docking the reply filter spends turning from the list's flat switch into glass. */
+private const val FilterCrossfade = 0.3f

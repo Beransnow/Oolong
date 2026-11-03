@@ -120,9 +120,7 @@ fun GlassTopBar(
     val coroutineScope = rememberCoroutineScope()
     val largeTitle = LocalLargeTitle.current
     val scrollEdge = LocalScrollEdge.current
-    if (largeTitle != null && scrollEdge != null) {
-        LaunchedEffect(largeTitle, scrollEdge) { largeTitle.settle(scrollEdge) }
-    }
+    val largeTitleProgress = largeTitle?.let { rememberScrollProgress(0f..it.height.toFloat(), snapping = true) }
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     Layout(
         content = {
@@ -157,9 +155,12 @@ fun GlassTopBar(
                 if (title != null) Box(
                     modifier = Modifier
                         .then(
-                            if (largeTitle != null) {
+                            if (scrollEdge != null) {
+                                // Published for what docks in the bar as it scrolls up to it
                                 Modifier.onGloballyPositioned {
-                                    largeTitle.rowBottom = it.positionInWindow().y + it.size.height
+                                    val top = it.positionInWindow().y
+                                    scrollEdge.barRowTop = top
+                                    scrollEdge.barRowBottom = top + it.size.height
                                 }
                             } else Modifier
                         )
@@ -188,19 +189,10 @@ fun GlassTopBar(
                                 if (!centerTitle) ProvideTextStyle(
                                     value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
                                 ) {
-                                    if (largeTitle == null) {
+                                    if (largeTitleProgress == null) {
                                         title()
                                     } else {
-                                        // Measured where the bar puts it, before the move to the slot
-                                        Box(
-                                            modifier = Modifier
-                                                .onGloballyPositioned {
-                                                    val position = it.positionInWindow()
-                                                    largeTitle.titleTop = position.y
-                                                    largeTitle.titleStart = position.x
-                                                }
-                                                .graphicsLayer { with(largeTitle) { place(scrollEdge?.scrolled, scrollEdge?.originX ?: 0f) } }
-                                        ) { title() }
+                                        Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
                                     }
                                 }
                             }
