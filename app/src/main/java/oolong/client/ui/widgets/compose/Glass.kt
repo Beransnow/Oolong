@@ -360,7 +360,21 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
         label = "barButtonPress",
     )
     val chrome = if (bar == null) {
-        shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
+        // Glass stands off the page by its own light and refraction, so it casts no shadow; frosted
+        // and opaque chrome have only a hairline and keep theirs. A shadow cast from here would
+        // also lie over the glass of a glass container, which draws under everything in it. The
+        // layer stays: under the app's lookahead, a part without one that only moves, as the
+        // keyboard moves a search field, is moved in the lookahead pass but left where it was drawn.
+        if (tier == GlassTier.Glass) {
+            graphicsLayer {
+                // As the shadow's layer did, it cuts what is on the glass to its shape, such as a
+                // press's veil
+                this.shape = shape
+                clip = true
+            }
+        } else {
+            shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
+        }
     } else {
         onSizeChanged { empty = it.width == 0 || it.height == 0 }.pointerInput(Unit) {
             // Watches without taking: the buttons inside still get their clicks
@@ -380,7 +394,8 @@ fun Modifier.floatingGlass(shape: RoundedCornerShape, barButton: Boolean = true)
             transformOrigin = if (pressedAt.isSpecified && size.width > 0f) {
                 TransformOrigin(pressedAt.x / size.width, pressedAt.y / size.height)
             } else TransformOrigin.Center
-            shadowElevation = FloatingElevation.toPx() * shown()
+            // Glass casts none, as other floating glass
+            shadowElevation = if (tier == GlassTier.Glass) 0f else FloatingElevation.toPx() * shown()
             this.shape = shape
             ambientShadowColor = ShadowAmbient
             spotShadowColor = ShadowSpot
