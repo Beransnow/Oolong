@@ -110,8 +110,9 @@ fun GlassScaffold(
     val density = LocalDensity.current
     val titleStyle = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
     val measurer = rememberTextMeasurer()
+    val chromeStyle = LocalChromeStyle.current
     // A classic bar holds its title itself
-    val largeTitleState = if (largeTitle && LocalChromeStyle.current == ChromeStyle.Floating) {
+    val largeTitleState = if (largeTitle && chromeStyle == ChromeStyle.Floating) {
         remember(density, titleStyle) {
             with(density) {
                 // One line of the bar's title, so the room is right before the bar is laid out
@@ -169,7 +170,9 @@ fun GlassScaffold(
                 val height = constraints.maxHeight
                 val loose = constraints.copy(minWidth = 0, minHeight = 0)
 
-                val topBarPlaceables = subcompose(GlassScaffoldSlot.TopBar) {
+                // Composed afresh when the bars' style changes: an open page's bar, composed apart
+                // from the page, otherwise kept its floating buttons and large title
+                val topBarPlaceables = subcompose(GlassScaffoldSlot.TopBar to chromeStyle) {
                     page { chrome(topBar) }
                 }.map { it.measure(loose) }
                 val topBarHeight = topBarPlaceables.maxOfOrNull {
