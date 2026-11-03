@@ -2,6 +2,7 @@
 oolong.huanchengfly.top, then points the channel's manifest at it.
 
     CLOUDFLARE_API_TOKEN=… python3 tools/release/publish.py app.apk --channel stable --notes notes.json
+    python3 tools/release/publish.py app.apk --check    # signed as a release? prints the version
 
 The token needs Workers R2 Storage Write on the account. notes.json holds what changed, by language
 and then by group in the order shown, e.g. {"zh": {"新增": ["…"], "修复": ["…"]}, "en": {…}}. An item
@@ -77,17 +78,23 @@ def upload(token, key, data, content_type, cache_control=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("apk")
-    parser.add_argument("--channel", choices=["stable", "beta"], required=True)
-    parser.add_argument("--notes", required=True, help="JSON file of what changed, by language and group")
+    parser.add_argument("--channel", choices=["stable", "beta"])
+    parser.add_argument("--notes", help="JSON file of what changed, by language and group")
     parser.add_argument("--min-supported", type=int, default=0, help="versions below this one must update")
     parser.add_argument("--dry-run", action="store_true", help="print the manifest without uploading")
+    parser.add_argument("--check", action="store_true", help="only check the APK is Oolong, release-signed, and print its version")
     args = parser.parse_args()
+    if not args.check and (args.channel is None or args.notes is None):
+        parser.error("--channel and --notes are needed to publish")
 
     package, version_code, version_name = badging(args.apk)
     if package != "oolong.client":
         sys.exit(f"not Oolong: {package}")
     if RELEASE_CERT_SHA256 not in signer_digests(args.apk):
         sys.exit("not signed with the Oolong release key (Astral Studio); refusing to publish")
+    if args.check:
+        print(version_name)
+        return
     # Pre-releases go to beta, releases to stable; beta offers releases too, by reading both
     pre_release = "-" in version_name.split("+")[0]
     if pre_release != (args.channel == "beta"):
