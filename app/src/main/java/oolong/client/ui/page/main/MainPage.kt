@@ -40,6 +40,7 @@ import oolong.client.arch.emitGlobalEvent
 import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.UpdateKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.main.explore.ExplorePage
@@ -52,6 +53,7 @@ import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyBackHandler
+import oolong.client.ui.widgets.compose.SwipeToDismissSnackbarHost
 import oolong.client.ui.widgets.compose.rememberPageScrollState
 import oolong.client.ui.widgets.compose.rememberScrollProgress
 
@@ -151,6 +153,12 @@ fun MainPage(
                     onOpen = openSearch,
                     onClose = closeSearch,
                 )
+            },
+            snackbarHost = { host ->
+                Box(contentAlignment = Alignment.BottomCenter) {
+                    SwipeToDismissSnackbarHost(host)
+                    UpdateHint(hidden = searchShown, onOpen = { navigator.navigate(UpdateKey) })
+                }
             },
         ) { paddingValues ->
             val chromePadding = if (showBottomNavigation) {

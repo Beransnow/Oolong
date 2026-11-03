@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import oolong.client.repository.Release
@@ -42,6 +43,8 @@ class UpdateViewModel @Inject constructor(
     init {
         // Opening the page checks, as a system update page does, unless a check has an answer
         if (repository.check.value !is UpdateCheck.Done) repository.checkNow()
+        // A release seen here needs no hint on the main page
+        viewModelScope.launch { repository.available.filterNotNull().collect { repository.markHinted(it) } }
     }
 
     fun check() = repository.checkNow()
