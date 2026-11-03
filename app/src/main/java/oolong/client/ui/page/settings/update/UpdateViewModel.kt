@@ -20,6 +20,7 @@ data class UpdateState(
     val download: UpdateDownload = UpdateDownload.Idle,
     val autoCheck: Boolean = true,
     val channel: UpdateChannel = UpdateChannel.default,
+    val installing: Boolean = false,
 ) {
     /** The newer release to offer, if the last check found one. */
     val offered: Release? get() = (check as? UpdateCheck.Done)?.latest?.takeIf { it.isNewer }
@@ -34,7 +35,8 @@ class UpdateViewModel @Inject constructor(
         repository.download,
         repository.autoCheck,
         repository.channel,
-    ) { check, download, autoCheck, channel -> UpdateState(check, download, autoCheck, channel) }
+        repository.installing,
+    ) { check, download, autoCheck, channel, installing -> UpdateState(check, download, autoCheck, channel, installing) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpdateState())
 
     init {
@@ -58,5 +60,5 @@ class UpdateViewModel @Inject constructor(
         viewModelScope.launch { repository.setChannel(channel) }
     }
 
-    fun install(download: UpdateDownload.Ready) = repository.install(download.file)
+    fun install(download: UpdateDownload.Ready) = repository.install(download)
 }

@@ -22,4 +22,8 @@
     <string name="update_channel_beta">测试版</string>
     <string name="update_hint">发现新版本 %1$s</string>
     <string name="update_hint_view">查看</string>
+    <string name="update_installing">正在安装…</string>
+    <string name="update_installing_note">正在安装，完成后应用会重新启动</string>
+    <string name="update_done_title">已更新到 %1$s</string>
+    <string name="update_done_text">点按打开</string>
 </resources>

@@ -12,7 +12,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -134,6 +138,11 @@ class UpdateRepository @Inject constructor(
 
     private val _download = MutableStateFlow<UpdateDownload>(UpdateDownload.Idle)
     val download: StateFlow<UpdateDownload> = _download.asStateFlow()
+
+    private val _installing = MutableStateFlow(false)
+
+    /** Whether an install session is on, from handing it over until it fails or replaces the app. */
+    val installing: StateFlow<Boolean> = _installing.asStateFlow()
 
     private var checkJob: Job? = null
     private var downloadJob: Job? = null
@@ -291,8 +300,13 @@ class UpdateRepository @Inject constructor(
      * installer, needs no confirmation; the first time, before Android 12, or without leave to
      * install apps, the system asks, which [UpdateInstallReceiver] passes on.
      */
-    fun install(file: File) {
+    fun install(download: UpdateDownload.Ready) {
+        if (_installing.value) return
+        _installing.value = true
+        val file = download.file
         scope.launch(io) {
+            // For the notice once the app is replaced: this update is the app's own doing
+            prefs.edit { it[PendingUpdateKey] = download.release.versionName }
             val installer = context.packageManager.packageInstaller
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
                 setAppPackageName(context.packageName)
@@ -314,6 +328,19 @@ class UpdateRepository @Inject constructor(
                 session.commit(PendingIntent.getBroadcast(context, id, intent, flags).intentSender)
             }
         }
+    }
+
+    /** The install session ended without replacing the app: it failed or was turned down. */
+    fun installEnded() {
+        _installing.value = false
+        scope.launch { prefs.edit { it.remove(PendingUpdateKey) } }
+    }
+
+    /** The version the app updated itself to, once, if this start follows an update it installed. */
+    suspend fun takeUpdated(): String? {
+        val version = prefs.data.first()[PendingUpdateKey] ?: return null
+        prefs.edit { it.remove(PendingUpdateKey) }
+        return version
     }
 
     private fun PackageInfo.signerDigests(): Set<String> {
@@ -342,7 +369,18 @@ class UpdateRepository @Inject constructor(
         val SkippedKey = intPreferencesKey("update_skipped_version")
         val HintedKey = intPreferencesKey("update_hinted_version")
         val LastCheckKey = longPreferencesKey("update_last_check")
+        val PendingUpdateKey = stringPreferencesKey("update_pending_version")
     }
 }
 
 private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface UpdateEntryPoint {
+    fun updateRepository(): UpdateRepository
+}
+
+/** For the update receivers, which can't be injected. */
+internal val Context.updateRepository: UpdateRepository
+    get() = EntryPointAccessors.fromApplication(applicationContext, UpdateEntryPoint::class.java).updateRepository()

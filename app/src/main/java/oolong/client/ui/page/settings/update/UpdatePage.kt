@@ -300,6 +300,7 @@ private fun Dock(
         ) {
             val download = state.download
             val note = when {
+                download is UpdateDownload.Ready && state.installing -> stringResource(id = R.string.update_installing_note)
                 download is UpdateDownload.Failed -> stringResource(
                     id = if (download.error is UpdateVerificationException) R.string.update_verify_failed else R.string.update_download_failed,
                 )
@@ -315,6 +316,8 @@ private fun Dock(
                     progress = download.progress,
                     onClick = {},
                 )
+                download is UpdateDownload.Ready && state.installing ->
+                    ProgressButton(text = stringResource(id = R.string.update_installing), enabled = false, onClick = {})
                 download is UpdateDownload.Ready -> ProgressButton(text = stringResource(id = R.string.update_install), onClick = { onInstall(download) })
                 download is UpdateDownload.Failed ->
                     ProgressButton(text = stringResource(id = R.string.button_retry), onClick = { onDownload(download.release) })

@@ -29,10 +29,11 @@ class UpdateInstallReceiver : BroadcastReceiver() {
             PackageInstaller.STATUS_SUCCESS -> Unit
 
             // Turned down by the user, which needs no word from the app
-            PackageInstaller.STATUS_FAILURE_ABORTED -> Unit
+            PackageInstaller.STATUS_FAILURE_ABORTED -> context.updateRepository.installEnded()
 
             else -> {
                 Log.w("UpdateInstall", "status $status: ${intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)}")
+                context.updateRepository.installEnded()
                 Toast.makeText(context, R.string.update_install_failed, Toast.LENGTH_SHORT).show()
             }
         }

@@ -22,4 +22,8 @@
     <string name="update_channel_beta">Beta</string>
     <string name="update_hint">Version %1$s is available</string>
     <string name="update_hint_view">View</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_installing_note">Installing. The app will restart when it\'s done</string>
+    <string name="update_done_title">Updated to %1$s</string>
+    <string name="update_done_text">Tap to open</string>
 </resources>
