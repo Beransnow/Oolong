@@ -1,7 +1,7 @@
 name: CI
 
-# Every push and pull request is checked and built; a push's release build goes to the owner on
-# Telegram. Tags are left to release.yml.
+# Every push and pull request is checked and built, on two runners at once; once both pass, a
+# push's release build goes to the owner on Telegram. Tags are left to release.yml.
 on:
   push:
     branches: [ "**" ]
@@ -15,8 +15,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Debug only: the style, the screenshots, the unit tests and lint
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "zulu"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-cleanup: on-success
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # The runners of a private repository have about 8 GB, less than the project's own settings
+      # ask for; past that the runner is killed mid-build and the run shows as canceled
+      - name: Fit Gradle to the runner
+        run: |
+          mkdir -p ~/.gradle
+          printf '%s\n' 'org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' 'kotlin.daemon.jvmargs=-Xmx2g' >> ~/.gradle/gradle.properties
+
+      - name: Check and test
+        run: ./gradlew ktlintCheck verifyRoborazziDebug testDebugUnitTest lintDebug
+
+  # Release only: the APK the owner gets
   build:
     runs-on: ubuntu-latest
+    outputs:
+      apk: ${{ steps.apk.outputs.name }}
 
     steps:
       - name: Checkout
@@ -50,8 +83,8 @@ jobs:
           mkdir -p ~/.gradle
           printf '%s\n' 'org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' 'kotlin.daemon.jvmargs=-Xmx2g' >> ~/.gradle/gradle.properties
 
-      - name: Check, test and build
-        run: ./gradlew ktlintCheck verifyRoborazziDebug testDebugUnitTest lintDebug :app:assembleRelease
+      - name: Build
+        run: ./gradlew :app:assembleRelease
 
       - name: Find the APK
         id: apk
@@ -78,8 +111,22 @@ jobs:
           name: mapping-${{ steps.apk.outputs.name }}
           path: app/build/outputs/mapping/release
 
+  send:
+    needs: [ check, build ]
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip post]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download the APK
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.apk }}
+          path: apk
+
       - name: Send to the owner
-        if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip post]')
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_ID: ${{ secrets.TELEGRAM_OWNER_ID }}
@@ -87,5 +134,5 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_OWNER_ID" ]; then exit 0; fi
-          python3 tools/release/telegram.py --chat "$TELEGRAM_OWNER_ID" --apk "${{ steps.apk.outputs.path }}" \
+          python3 tools/release/telegram.py --chat "$TELEGRAM_OWNER_ID" --apk "apk/${{ needs.build.outputs.apk }}.apk" \
             --caption "$(printf '%s · %s\n\n%s\n\n%s' "$GITHUB_REF_NAME" "${GITHUB_SHA::8}" "$MESSAGE" "$RUN_URL")"
