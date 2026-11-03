@@ -2,10 +2,10 @@ package oolong.client.ui.page.thread
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -35,7 +34,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -63,6 +61,7 @@ import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.LoadMoreLayout
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
@@ -265,44 +264,18 @@ internal fun ThreadHeader(
                 color = ExtendedTheme.colors.text,
             )
             Spacer(modifier = Modifier.weight(1f))
-            // A segmented switch: the selected side is a pill on the track
-            Row(
+            SegmentedControl(
+                options = persistentListOf(stringResource(R.string.text_all), stringResource(R.string.title_see_lz)),
+                selected = if (state.query.seeLz) 1 else 0,
+                onSelect = { onEvent(ThreadEvent.SetSeeLz(it == 1)) },
                 modifier = Modifier
                     .matchedGeometryAnchor(ReplyFilter)
                     .graphicsLayer { alpha = 1f - docking.fraction(0f..FilterCrossfade) }
-                    .clip(CircleShape)
-                    .background(ExtendedTheme.colors.chip)
-                    .padding(3.dp),
-            ) {
-                HeaderFilter(stringResource(R.string.text_all), selected = !state.query.seeLz) {
-                    onEvent(ThreadEvent.SetSeeLz(false))
-                }
-                HeaderFilter(stringResource(R.string.title_see_lz), selected = state.query.seeLz) {
-                    onEvent(ThreadEvent.SetSeeLz(true))
-                }
-            }
+                    // Both options as wide as the wider one
+                    .width(IntrinsicSize.Max),
+            )
         }
     }
-}
-
-@Composable
-private fun HeaderFilter(text: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        text = text,
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(if (selected) ExtendedTheme.colors.background else Color.Transparent)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                enabled = !selected,
-                onClick = onClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 5.dp),
-        fontSize = 12.sp,
-        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        color = if (selected) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
-    )
 }
 
 @Composable
