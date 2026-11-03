@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 fun loadProperties(name: String): Properties = Properties().apply {
@@ -138,6 +139,11 @@ android {
 
 androidComponents {
     onVariants { variant ->
+        // The builds the baseline profile is generated on install beside the app itself, so
+        // installing and clearing them never touches a device's own install
+        if (variant.name == "nonMinifiedRelease" || variant.name == "benchmarkRelease") {
+            variant.applicationId.set("oolong.client.bp")
+        }
         variant.outputs.forEach { output ->
             (output as VariantOutputImpl).outputFileName.set(
                 "${variant.buildType}-$applicationVersionName($applicationVersionCode).apk"
@@ -262,6 +268,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.palette)
+    // Installs the baseline profile on sideloaded installs, which no store compiles ahead
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
     implementation(libs.androidx.window)
 
     // Test
