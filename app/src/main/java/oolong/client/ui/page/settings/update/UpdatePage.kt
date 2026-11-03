@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +71,7 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.bottomEdgeGlass
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
@@ -89,9 +89,20 @@ fun UpdatePage(
     viewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scroll = rememberScrollState()
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
+        // Over the page, so its scroll edge can blur the page under it
+        bottomBar = {
+            Dock(
+                state = state,
+                onCheck = viewModel::check,
+                onDownload = viewModel::download,
+                onInstall = viewModel::install,
+                contentLeft = { scroll.maxValue - scroll.value },
+            )
+        },
         topBar = {
             GlassTopBar(
                 title = { GlassTopBarTitle(text = stringResource(id = R.string.title_software_update)) },
@@ -106,10 +117,10 @@ fun UpdatePage(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSource(page)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scroll)
                     .padding(contentPaddings)
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = DockRoom),
+                    .padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Hero(lens, state)
@@ -127,13 +138,6 @@ fun UpdatePage(
                 Settings(state, onAutoCheck = viewModel::setAutoCheck, onChannel = viewModel::setChannel)
             }
             LensOverlay(lens = lens, page = page, markSize = MarkSize)
-            Dock(
-                state = state,
-                onCheck = viewModel::check,
-                onDownload = viewModel::download,
-                onInstall = viewModel::install,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }
@@ -271,8 +275,9 @@ private fun Settings(state: UpdateState, onAutoCheck: (Boolean) -> Unit, onChann
 }
 
 /**
- * The button at the bottom, over the page faded out behind it: it checks, downloads and installs,
- * and is the download's progress bar meanwhile. Above it, why it couldn't go on, when it couldn't.
+ * The button at the bottom, over the page faded out behind it while [contentLeft] pixels of the
+ * page are still to come: it checks, downloads and installs, and is the download's progress bar
+ * meanwhile. Above it, why it couldn't go on, when it couldn't.
  */
 @Composable
 private fun Dock(
@@ -280,52 +285,47 @@ private fun Dock(
     onCheck: () -> Unit,
     onDownload: (Release) -> Unit,
     onInstall: (UpdateDownload.Ready) -> Unit,
+    contentLeft: () -> Int,
     modifier: Modifier = Modifier,
 ) {
     val colors = ExtendedTheme.colors
-    Box(modifier = modifier.fillMaxWidth()) {
-        // The page fades out under the button, as it does under the bar at the top
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Brush.verticalGradient(0f to Color.Transparent, 0.45f to colors.background.copy(alpha = 0.85f), 1f to colors.background)),
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            val download = state.download
-            val note = when {
-                download is UpdateDownload.Ready && state.installing -> stringResource(id = R.string.update_installing_note)
-                download is UpdateDownload.Failed -> stringResource(
-                    id = if (download.error is UpdateVerificationException) R.string.update_verify_failed else R.string.update_download_failed,
-                )
-                else -> null
-            }
-            if (note != null) {
-                Text(text = note, style = TextStyles.caption.copy(color = colors.textSecondary), textAlign = TextAlign.Center)
-            }
-            val offered = state.offered
-            when {
-                download is UpdateDownload.Running -> ProgressButton(
-                    text = stringResource(id = R.string.update_downloading, (download.progress * 100).toInt()),
-                    progress = download.progress,
-                    onClick = {},
-                )
-                download is UpdateDownload.Ready && state.installing ->
-                    ProgressButton(text = stringResource(id = R.string.update_installing), enabled = false, onClick = {})
-                download is UpdateDownload.Ready -> ProgressButton(text = stringResource(id = R.string.update_install), onClick = { onInstall(download) })
-                download is UpdateDownload.Failed ->
-                    ProgressButton(text = stringResource(id = R.string.button_retry), onClick = { onDownload(download.release) })
-                offered != null -> ProgressButton(text = stringResource(id = R.string.update_download), onClick = { onDownload(offered) })
-                state.check == UpdateCheck.Checking ->
-                    ProgressButton(text = stringResource(id = R.string.update_status_checking), enabled = false, onClick = {})
-                else -> ProgressButton(text = stringResource(id = R.string.update_check), onClick = onCheck)
-            }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            // The page fades out under the button, as it does under the bar at the top
+            .bottomEdgeGlass(contentLeft)
+            .navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val download = state.download
+        val note = when {
+            download is UpdateDownload.Ready && state.installing -> stringResource(id = R.string.update_installing_note)
+            download is UpdateDownload.Failed -> stringResource(
+                id = if (download.error is UpdateVerificationException) R.string.update_verify_failed else R.string.update_download_failed,
+            )
+            else -> null
+        }
+        if (note != null) {
+            Text(text = note, style = TextStyles.caption.copy(color = colors.textSecondary), textAlign = TextAlign.Center)
+        }
+        val offered = state.offered
+        when {
+            download is UpdateDownload.Running -> ProgressButton(
+                text = stringResource(id = R.string.update_downloading, (download.progress * 100).toInt()),
+                progress = download.progress,
+                onClick = {},
+            )
+            download is UpdateDownload.Ready && state.installing ->
+                ProgressButton(text = stringResource(id = R.string.update_installing), enabled = false, onClick = {})
+            download is UpdateDownload.Ready -> ProgressButton(text = stringResource(id = R.string.update_install), onClick = { onInstall(download) })
+            download is UpdateDownload.Failed ->
+                ProgressButton(text = stringResource(id = R.string.button_retry), onClick = { onDownload(download.release) })
+            offered != null -> ProgressButton(text = stringResource(id = R.string.update_download), onClick = { onDownload(offered) })
+            state.check == UpdateCheck.Checking ->
+                ProgressButton(text = stringResource(id = R.string.update_status_checking), enabled = false, onClick = {})
+            else -> ProgressButton(text = stringResource(id = R.string.update_check), onClick = onCheck)
         }
     }
 }
@@ -382,4 +382,3 @@ private val Name = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = 
 private val CardShape = SmoothCornerShape(Radius.md)
 
 /** Room left under the page for the button and the fade over it. */
-private val DockRoom = 132.dp

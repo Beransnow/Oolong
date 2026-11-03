@@ -224,9 +224,33 @@ private val ExtendedColors.isTranslucent: Boolean
  *
  * Without a blur, an opaque background fades out over the last [TopBarSolidFade] instead.
  */
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.topBarGlass(): Modifier {
+    val scrollEdge = LocalPageScroll.current
+    val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
+    val shown: () -> Float = remember(scrollEdge, revealPx) {
+        { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    }
+    return scrollEdgeGlass(top = true, shown = shown)
+}
+
+/**
+ * [topBarGlass] upside down, for what floats at the bottom of a page over its content, such as a
+ * page's main button: the content fades and blurs out towards the bottom edge. [left] is how far
+ * the content still scrolls on, in pixels; the edge comes in over the last [TopBarEdgeReveal] of
+ * it, so it is clear once the end of the content is in sight.
+ */
+@Composable
+fun Modifier.bottomEdgeGlass(left: () -> Int): Modifier {
+    val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
+    val shown: () -> Float = remember(left, revealPx) { { (left() / revealPx).coerceIn(0f, 1f) } }
+    return scrollEdgeGlass(top = false, shown = shown)
+}
+
+/** A scroll edge along the [top] or bottom edge, drawn as much as [shown] says. */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier {
     val source = currentGlassSource()
     val tier = currentGlassTier()
     val colors = ExtendedTheme.colors
@@ -236,11 +260,6 @@ fun Modifier.topBarGlass(): Modifier {
     val solid = source == null || tier == GlassTier.Solid
     var height by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val scrollEdge = LocalPageScroll.current
-    val revealPx = with(density) { TopBarEdgeReveal.toPx() }
-    val shown: () -> Float = remember(scrollEdge, revealPx) {
-        { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
-    }
     val clear by remember(shown) { derivedStateOf { shown() == 0f } }
     // Where the fades start. The bar can change height, such as a header collapsing inside it,
     // so these follow its size; a bar shorter than a fade fades over all of it.
@@ -252,17 +271,17 @@ fun Modifier.topBarGlass(): Modifier {
     // Nothing to draw, and no blur to run, while the bar is clear
     if (clear) return measured
     if (solid) {
-        val top = if (colors.isTranslucent) color.copy(alpha = TranslucentTopBarTint) else color
-        val brush = remember(top, solidEdge) {
-            Brush.verticalGradient(
-                0f to top,
-                solidEdge to top,
-                1f to top.copy(alpha = 0f),
-            )
+        val veil = if (colors.isTranslucent) color.copy(alpha = TranslucentTopBarTint) else color
+        val brush = remember(veil, solidEdge, top) {
+            if (top) {
+                Brush.verticalGradient(0f to veil, solidEdge to veil, 1f to veil.copy(alpha = 0f))
+            } else {
+                Brush.verticalGradient(0f to veil.copy(alpha = 0f), 1f - solidEdge to veil, 1f to veil)
+            }
         }
         return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
-    val style = remember(color, tint, blurEdge, frost) {
+    val style = remember(color, tint, blurEdge, frost, top, shown) {
         HazeBlurStyle {
             // Read here, the style follows the scroll without being rebuilt
             val strength = shown()
@@ -271,9 +290,10 @@ fun Modifier.topBarGlass(): Modifier {
             noiseFactor(0f)
             progressive(
                 HazeProgressive.verticalGradient(
-                    // Full strength down to the stretch above the edge, then eased out
+                    // Full strength from the screen's edge to the stretch before the inner edge, then eased out
                     easing = { t ->
-                        val x = if (t <= blurEdge) 0f else ((t - blurEdge) / (1f - blurEdge)).coerceIn(0f, 1f)
+                        val fromEdge = if (top) t else 1f - t
+                        val x = if (fromEdge <= blurEdge) 0f else ((fromEdge - blurEdge) / (1f - blurEdge)).coerceIn(0f, 1f)
                         x * x * (3f - 2f * x)
                     },
                     startIntensity = 1f,
@@ -286,8 +306,9 @@ fun Modifier.topBarGlass(): Modifier {
                         Brush.verticalGradient(
                             *Array(TopBarTintStops + 1) { i ->
                                 val t = i / TopBarTintStops.toFloat()
+                                val fromEdge = if (top) t else 1f - t
                                 // A smootherstep over the whole height: no flat band, no line
-                                val gone = t * t * t * (t * (t * 6f - 15f) + 10f)
+                                val gone = fromEdge * fromEdge * fromEdge * (fromEdge * (fromEdge * 6f - 15f) + 10f)
                                 t to color.copy(alpha = tint * strength * (1f - gone))
                             }
                         )
