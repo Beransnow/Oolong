@@ -143,6 +143,9 @@
     <string name="tip_disliked">将减少此类推荐</string>
     <string name="tip_refresh">上次看到这里，点按刷新</string>
     <string name="button_finish">完成</string>
+    <string name="button_rotate">旋转</string>
+    <string name="button_restore">还原</string>
+    <string name="toast_image_unreadable">无法读取这张图片</string>
     <string name="title_custom_theme">自定义主题</string>
     <string name="title_dialog_unfollow_forum">取消关注%s吧？</string>
     <string name="menu_save_audio">保存语音</string>

@@ -146,6 +146,9 @@
     <string name="tip_disliked">You\'ll see less like this</string>
     <string name="tip_refresh">You were here. Tap to refresh</string>
     <string name="button_finish">Done</string>
+    <string name="button_rotate">Rotate</string>
+    <string name="button_restore">Reset</string>
+    <string name="toast_image_unreadable">Couldn\'t read this picture</string>
     <string name="title_custom_theme">Custom theme</string>
     <string name="title_dialog_unfollow_forum">Unfollow %s?</string>
     <string name="menu_save_audio">Save audio</string>

@@ -85,6 +85,9 @@
         <activity
             android:name=".ui.page.picker.ImagePickerActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden" />
+        <activity
+            android:name=".ui.page.editor.ImageEditorActivity"
+            android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden" />
 
         <receiver
             android:name=".receivers.BootCompleteSignReceiver"

@@ -1,10 +1,6 @@
 package oolong.client.ui.page.settings.theme
 
-import android.app.Activity
-import android.graphics.Bitmap
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,7 +64,6 @@ import coil3.request.transformations
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
-import com.yalantis.ucrop.UCrop
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -91,6 +86,8 @@ import oolong.client.ui.common.theme.compose.getColorPalette
 import oolong.client.ui.common.theme.compose.themeColors
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.editor.CropPicture
+import oolong.client.ui.page.editor.CropRequest
 import oolong.client.ui.page.thread.PostCardOptions
 import oolong.client.ui.page.thread.PostItem
 import oolong.client.ui.page.thread.ThreadFloor
@@ -502,30 +499,20 @@ private fun ApplyButton(enabled: Boolean, onClick: () -> Unit) {
 @Composable
 private fun rememberWallpaperPicker(output: File, onPicked: () -> Unit): () -> Unit {
     val context = LocalContext.current
-    val colors = ExtendedTheme.colors
-    val cropLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) {
-            onPicked()
-        } else if (it.resultCode == UCrop.RESULT_ERROR) {
-            it.data?.let(UCrop::getError)?.printStackTrace()
-        }
+    val cropLauncher = rememberLauncherForActivityResult(CropPicture) { written ->
+        if (written) onPicked()
     }
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val picked = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
         val metrics = context.resources.displayMetrics
-        val intent = UCrop.of(picked, Uri.fromFile(output))
-            .withAspectRatio(metrics.widthPixels.toFloat(), metrics.heightPixels.toFloat())
-            .withOptions(UCrop.Options().apply {
-                setShowCropFrame(true)
-                setShowCropGrid(true)
-                setToolbarColor(colors.sheet.toArgb())
-                setToolbarWidgetColor(colors.text.toArgb())
-                setActiveControlsWidgetColor(colors.accent.toArgb())
-                setCompressionFormat(Bitmap.CompressFormat.JPEG)
-                setCompressionQuality(95)
-            })
-            .getIntent(context)
-        cropLauncher.launch(intent)
+        val request = CropRequest(
+            source = picked,
+            output = output,
+            aspect = metrics.widthPixels.toFloat() / metrics.heightPixels,
+            maxWidth = metrics.widthPixels,
+            quality = 95,
+        )
+        cropLauncher.launch(request)
     }
     return { pickLauncher.launch(PickMediasRequest()) }
 }

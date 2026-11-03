@@ -276,14 +276,17 @@ fun rememberColorPicks(): Any? {
     return picks
 }
 
+/** The app's theme; [dark] set makes it dark or light whatever the settings say, as for an editor. */
 @Composable
 fun TiebaLiteTheme(
+    dark: Boolean? = null,
     content: @Composable () -> Unit
 ) {
     val theme by remember { ThemeUtil.themeState }
     val settings by remember { ThemeUtil.settingsState }
     // At night the wallpaper's theme is not a dark one by name: ask the settings
-    val dark = remember(theme, settings) { ThemeUtil.isDark() }
+    val settingsDark = remember(theme, settings) { ThemeUtil.isDark() }
+    val dark = dark ?: settingsDark
     val extendedColors = colorsOf(settings, dark = dark, picks = rememberColorPicks())
 
     val colors = getColorPalette(extendedColors)

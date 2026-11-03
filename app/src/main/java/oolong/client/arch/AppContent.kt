@@ -16,20 +16,23 @@ import oolong.client.utils.ThemeUtil
 /**
  * What every activity's content is drawn in: the theme, the system bars clear over it with icons
  * to suit it, the accounts and the window's size class. The activity draws edge to edge.
+ *
+ * @param dark set, makes the theme dark or light whatever the settings say, as for an editor
  */
 @Composable
 fun AppContent(
     activity: Activity,
     accountRepository: AccountRepository,
+    dark: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
-    TiebaLiteTheme {
+    TiebaLiteTheme(dark = dark) {
         val systemUiController = rememberSystemUiController()
         SideEffect {
-            systemUiController.setStatusBarColor(Color.Transparent, darkIcons = ThemeUtil.isStatusBarFontDark())
+            systemUiController.setStatusBarColor(Color.Transparent, darkIcons = dark != true && ThemeUtil.isStatusBarFontDark())
             systemUiController.setNavigationBarColor(
                 Color.Transparent,
-                darkIcons = ThemeUtil.isNavigationBarFontDark(),
+                darkIcons = dark != true && ThemeUtil.isNavigationBarFontDark(),
                 navigationBarContrastEnforced = false,
             )
         }

@@ -1,10 +1,6 @@
 package oolong.client.ui.page.user.edit
 
-import android.app.Activity
-import android.graphics.Bitmap
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -46,7 +41,6 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.yalantis.ucrop.UCrop
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
 import oolong.client.toastShort
@@ -54,6 +48,8 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.editor.CropPicture
+import oolong.client.ui.page.editor.CropRequest
 import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.BaseTextField
@@ -103,29 +99,12 @@ fun EditProfilePage(
 private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
     val context = LocalContext.current
     val cropped = remember(context) { File(context.cacheDir, "cropped_portrait") }
-    val cropLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) {
-            onPicked(cropped)
-        } else if (it.resultCode == UCrop.RESULT_ERROR) {
-            it.data?.let(UCrop::getError)?.printStackTrace()
-        }
+    val cropLauncher = rememberLauncherForActivityResult(CropPicture) { written ->
+        if (written) onPicked(cropped)
     }
-    val colors = ExtendedTheme.colors
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val source = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
-        val intent = UCrop.of(source, Uri.fromFile(cropped))
-            .withAspectRatio(1f, 1f)
-            .withOptions(UCrop.Options().apply {
-                setShowCropFrame(true)
-                setShowCropGrid(true)
-                setToolbarColor(colors.accent.toArgb())
-                setToolbarWidgetColor(colors.onAccent.toArgb())
-                setActiveControlsWidgetColor(colors.accent.toArgb())
-                setLogoColor(colors.accent.toArgb())
-                setCompressionFormat(Bitmap.CompressFormat.JPEG)
-            })
-            .getIntent(context)
-        cropLauncher.launch(intent)
+        cropLauncher.launch(CropRequest(source, cropped, aspect = 1f, round = true))
     }
     return { pickLauncher.launch(PickMediasRequest()) }
 }

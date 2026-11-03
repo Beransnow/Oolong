@@ -69,6 +69,8 @@ refresh
 remove
 replay fill
 reply
+restart_alt
+rotate_left
 search
 share
 short_text
