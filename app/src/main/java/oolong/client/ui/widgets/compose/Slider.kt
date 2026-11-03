@@ -3,6 +3,7 @@ package oolong.client.ui.widgets.compose
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
@@ -47,6 +48,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -235,6 +237,8 @@ fun Slider(
                 .clip(knobShape)
                 // The white knob fades out as the glass fades in, where glass is drawn
                 .background(Color.White.copy(alpha = if (glassAvailable) 1f - held else 1f))
+                // Unlike the switch's, this knob mostly sits on the page, where white alone is lost
+                .border(Dp.Hairline, KnobRing.copy(alpha = KnobRing.alpha * (1f - held)), knobShape)
                 .controlLens(glassState, knobShape, held)
         )
     }
@@ -252,7 +256,8 @@ private val HeldGrowthHeight = 14.dp
 /** How far from the knob a drag may start and still pick the knob up where it is. */
 private val KnobReach = 24.dp
 
-private val KnobElevation = 2.dp
+private val KnobElevation = 3.dp
+private val KnobRing = Color.Black.copy(alpha = 0.12f)
 private val KnobAmbient = Color.Black.copy(alpha = 0.12f)
 private val KnobSpot = Color.Black.copy(alpha = 0.24f)
 
