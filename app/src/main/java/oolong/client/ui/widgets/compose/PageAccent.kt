@@ -51,6 +51,16 @@ fun rememberAvatarAccent(avatar: String): Color {
 @Composable
 fun pageAccentOrPrimary(): Color = LocalPageAccent.current.takeOrElse { ExtendedTheme.colors.emphasis }
 
+/** The page's colour washed from the top of the page, or [Color.Unspecified] when it has none. */
+@Composable
+fun pageWash(): Color {
+    val accent = LocalPageAccent.current
+    return if (accent.isUnspecified) Color.Unspecified else accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) WashNight else Wash)
+}
+
+private const val Wash = 0.18f
+private const val WashNight = 0.28f
+
 /** Text and icons on [pageAccentOrPrimary]. */
 @Composable
 fun onPageAccent(): Color = when {

@@ -161,12 +161,16 @@ fun Modifier.pageScroll(scrollable: ScrollableState?, scrolled: () -> Int): Modi
 /**
  * [pageScroll] for a lazy list: how far its first item has moved up. Items under the bar
  * are still laid out, so the first item stays known well past the bar and a large title; once it
- * is gone the content counts as far.
+ * is gone the content counts as far. On a page of a [SharedHeaderPager], the list is kept in line
+ * with the header.
  */
 @Composable
-fun Modifier.pageScroll(state: LazyListState): Modifier = pageScroll(state) {
-    // Item offsets start at the end of the top padding
-    state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset } ?: Int.MAX_VALUE
+fun Modifier.pageScroll(state: LazyListState): Modifier {
+    RegisterWithSharedHeader(state)
+    return pageScroll(state) {
+        // Item offsets start at the end of the top padding
+        state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }?.let { -it.offset } ?: Int.MAX_VALUE
+    }
 }
 
 /** [pageScroll] for a lazy grid, as for a lazy list. */
