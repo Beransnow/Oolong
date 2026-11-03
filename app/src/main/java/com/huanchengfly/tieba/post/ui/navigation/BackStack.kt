@@ -68,6 +68,10 @@ class BackStackNavigator(private val backStack: NavBackStack<NavKey>) : Navigato
     }
 
     private fun navigate(target: Key, from: Page?) {
+        // A page already closed may still be sliding away, and a quick second tap may come
+        // before the page it opened shows: neither opens anything more
+        if (from != null && from !in backStack) return
+        if (backStack.lastOrNull()?.key == target) return
         val key = if (twoPane && target is SubPostsSheetKey) target.asPage() else target
         if (key.presentation == Presentation.Page) {
             // A list opens pages in place of what it opened before, so back leaves the list in

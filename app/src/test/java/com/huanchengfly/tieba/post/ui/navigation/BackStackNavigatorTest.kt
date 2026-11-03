@@ -50,6 +50,26 @@ class BackStackNavigatorTest {
     }
 
     @Test
+    fun aSecondTapBeforeThePageShowsOpensNothingMore() {
+        val forum = push(ForumKey("a"))
+
+        navigator.forPage(forum).navigate(ThreadKey(1))
+        navigator.forPage(forum).navigate(ThreadKey(1))
+
+        assertEquals(listOf(MainKey, ForumKey("a"), ThreadKey(1)), keys)
+    }
+
+    @Test
+    fun aPageAlreadyClosedOpensNothing() {
+        val forum = push(ForumKey("a"))
+        navigator.forPage(forum).navigateUp()
+
+        navigator.forPage(forum).navigate(ThreadKey(1))
+
+        assertEquals(listOf(MainKey), keys)
+    }
+
+    @Test
     fun leavingAPageClosesOnlyIt() {
         val thread = push(ThreadKey(1))
         push(ForumKey("a"))
