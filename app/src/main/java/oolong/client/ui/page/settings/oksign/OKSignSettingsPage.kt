@@ -217,7 +217,12 @@ fun OKSignSettingsPage(
                         TextPref(
                             title = stringResource(id = R.string.title_system_notifications),
                             summary = stringResource(id = R.string.summary_auto_sign_notifications),
-                            trailingContent = { PrefsExternal(text = if (state.notifications) allowed else notAllowed) },
+                            // Not yet allowed, the row asks here rather than leaving the app
+                            trailingContent = if (state.notifications) {
+                                { PrefsExternal(text = allowed) }
+                            } else {
+                                { Text(text = notAllowed) }
+                            },
                             onClick = { if (state.notifications) BackgroundSettings.openNotifications(context) else requestNotifications() },
                         )
                     }
