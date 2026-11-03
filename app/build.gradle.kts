@@ -322,6 +322,4 @@ dependencies {
     implementation(libs.retrofit.converter.wire)
 
     implementation(libs.xxpermissions)
-
-    implementation(libs.ucrop)
 }

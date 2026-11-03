@@ -115,11 +115,6 @@
 # package, but their ADAPTER field is kept by converter-wire's own rules.
 -keep class !oolong.client.api.models.protos.**, oolong.client.api.models.** { *; }
 
-# uCrop
--dontwarn com.yalantis.ucrop**
--keep class com.yalantis.ucrop** { *; }
--keep interface com.yalantis.ucrop** { *; }
-
 # kotlin
 -dontwarn kotlin.**
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {

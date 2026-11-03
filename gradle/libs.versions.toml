@@ -104,7 +104,6 @@ lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "
 godaddy-color-picker = { module = "com.godaddy.android.colorpicker:compose-color-picker", version = "0.7.0" }
 oaid = { module = "com.github.gzu-liyujiang:Android_CN_OAID", version = "4.2.4" }
 xxpermissions = { module = "com.github.getActivity:XXPermissions", version = "18.6" }
-ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.11" }
 
 # Test
 junit = { module = "junit:junit", version = "4.13.2" }
