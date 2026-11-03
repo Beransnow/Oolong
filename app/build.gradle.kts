@@ -255,18 +255,14 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.browser)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.palette)
     implementation(libs.androidx.window)
-    implementation(libs.androidx.startup.runtime)
-    implementation(libs.androidx.swiperefreshlayout)
 
     // Test
     testImplementation(libs.junit)
@@ -292,10 +288,8 @@ dependencies {
     implementation(libs.retrofit.converter.wire)
 
     implementation(libs.gson)
-    implementation(libs.jaredrummler.colorpicker)
 
     implementation(libs.xxpermissions)
-    implementation(libs.immersionbar)
 
     implementation(libs.ucrop)
 }

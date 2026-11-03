@@ -110,8 +110,6 @@
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 
--keep class com.gyf.immersionbar.* {*;}
--dontwarn com.gyf.immersionbar.**
 
 # Gson models. Wire protos share the package but are not reflected on beyond
 # their ADAPTER field, which converter-wire's consumer rules already keep.
