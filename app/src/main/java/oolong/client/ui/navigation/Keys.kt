@@ -146,6 +146,9 @@ data object MoreSettingsKey : Key
 data object AboutKey : Key
 
 @Serializable
+data object UpdateKey : Key
+
+@Serializable
 data object CrashLogsKey : Key
 
 @Serializable

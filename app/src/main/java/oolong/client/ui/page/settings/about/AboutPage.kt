@@ -1,6 +1,7 @@
 package oolong.client.ui.page.settings.about
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,14 +17,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -33,6 +37,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import oolong.client.BuildConfig
@@ -43,6 +49,7 @@ import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.UpdateKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Aurora
 import oolong.client.ui.widgets.compose.AuroraState
@@ -60,7 +67,9 @@ import oolong.client.utils.launchUrl
 @Composable
 fun AboutPage(
     navigator: Navigator = LocalNavigator.current,
+    viewModel: AboutViewModel = hiltViewModel(),
 ) {
+    val available by viewModel.available.collectAsStateWithLifecycle()
     val aurora = remember { AuroraState() }
     LaunchedEffect(Unit) { aurora.drift() }
     // A short version of the landing page's entrance: this page is opened again and again
@@ -126,6 +135,10 @@ fun AboutPage(
                     Spacer(modifier = Modifier.weight(1.2f))
                     val context = LocalContext.current
                     Links {
+                        LinkRow(
+                            text = stringResource(id = R.string.title_software_update),
+                            trailing = available?.let { release -> { NewVersion(release.versionName) } },
+                        ) { navigator.navigate(UpdateKey) }
                         LinkRow(text = stringResource(id = R.string.source_code)) {
                             launchUrl(context, navigator, "https://github.com/HuanCheng65/TiebaLite")
                         }
@@ -172,6 +185,15 @@ private fun LinkRow(text: String, trailing: (@Composable () -> Unit)? = null, on
         )
     }
 }
+
+/** A newer version on the software update row: its name and a dot. */
+@Composable
+private fun NewVersion(name: String) {
+    Text(text = name, style = TextStyles.caption.copy(color = ExtendedTheme.colors.textSecondary))
+    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(NewDot))
+}
+
+private val NewDot = Color(0xFFE5484D)
 
 private val MarkSize = 100.dp
 
