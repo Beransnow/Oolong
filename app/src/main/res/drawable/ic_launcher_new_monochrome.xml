@@ -9,13 +9,13 @@
         <path
             android:fillColor="#FF3F6FC8"
             android:fillType="evenOdd"
-            android:pathData="M16,59a25,25 0,1 0,50,0a25,25 0,1 0,-50,0zM30.8,53h16.4a2.8,2.8 0,0 1,0,5.6h-16.4a2.8,2.8 0,0 1,0,-5.6zM30.8,63h7.4a2.8,2.8 0,0 1,0,5.6h-7.4a2.8,2.8 0,0 1,0,-5.6z" />
+            android:pathData="M16.75,58.25a25,25 0,1 0,50,0a25,25 0,1 0,-50,0zM31.55,52.25h16.4a2.8,2.8 0,0 1,0,5.6h-16.4a2.8,2.8 0,0 1,0,-5.6zM31.55,62.25h7.4a2.8,2.8 0,0 1,0,5.6h-7.4a2.8,2.8 0,0 1,0,-5.6z" />
         <group>
-            <clip-path android:pathData="M-25,-25h150v150h-150zM16,59a25,25 0,1 0,50,0a25,25 0,1 0,-50,0z" />
+            <clip-path android:pathData="M-25,-25h150v150h-150zM16.75,58.25a25,25 0,1 0,50,0a25,25 0,1 0,-50,0z" />
             <path
                 android:fillColor="#FF3F6FC8"
                 android:fillAlpha="0.45"
-                android:pathData="M44,36a20,20 0,1 0,40,0a20,20 0,1 0,-40,0z" />
+                android:pathData="M44.75,35.25a20,20 0,1 0,40,0a20,20 0,1 0,-40,0z" />
         </group>
     </group>
 </vector>
