@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.Symbols
@@ -83,8 +84,13 @@ fun VideoCover(
                     if (viewer == null) return@pointerInput
                     detectTapGestures(
                         onPress = {
-                            viewer.preload(current)
-                            if (!tryAwaitRelease()) viewer.cancelPreload(current)
+                            // A fling that starts on the cover turns into a scroll before this; only
+                            // a finger that stays loads ahead. A quick tap loads as it opens
+                            val ended = withTimeoutOrNull(PreloadDelay) { tryAwaitRelease() }
+                            if (ended == null) {
+                                viewer.preload(current)
+                                if (!tryAwaitRelease()) viewer.cancelPreload(current)
+                            }
                         },
                         onTap = { viewer.open(current, bounds) },
                     )
@@ -155,6 +161,9 @@ fun VideoCover(
 }
 
 private const val TallWidthFraction = 0.6f
+
+/** How long a finger stays on a cover before the video starts loading. */
+private const val PreloadDelay = 100L
 
 /** `m:ss`, or `h:mm:ss` from an hour. */
 internal fun formatDuration(millis: Long): String {
