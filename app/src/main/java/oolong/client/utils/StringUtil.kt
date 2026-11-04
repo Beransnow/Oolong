@@ -111,7 +111,7 @@ object StringUtil {
                     append("($username)")
                 }
             } else {
-                append(nickname ?: username)
+                append(nickname?.takeIf { it.isNotBlank() } ?: username)
             }
         }
     }
