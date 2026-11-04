@@ -102,7 +102,8 @@ def main():
     with open(args.notes, encoding="utf-8") as f:
         notes = json.load(f)
 
-    key = f"apk/oolong-{version_name}.apk"
+    # Named by the version without its +<commit>: a + in a URL can be read as a space
+    key = f"apk/oolong-{version_name.split('+')[0]}.apk"
     manifest = {
         "versionCode": version_code,
         "versionName": version_name,
