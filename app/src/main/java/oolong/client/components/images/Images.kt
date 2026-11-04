@@ -35,7 +35,9 @@ suspend fun Context.loadDrawable(data: Any?, configure: ImageRequest.Builder.() 
 suspend fun Context.downloadImage(url: String): ByteArray? = withContext(Dispatchers.IO) {
     val loader = imageLoader
     val diskCache = loader.diskCache ?: return@withContext null
-    fun cached(): ByteArray? = diskCache.openSnapshot(url)?.use { snapshot ->
+    // Under the key the loader stored it by
+    val key = diskCacheKey(url) ?: url
+    fun cached(): ByteArray? = diskCache.openSnapshot(key)?.use { snapshot ->
         diskCache.fileSystem.read(snapshot.data) { readByteArray() }
     }
     cached() ?: run {
