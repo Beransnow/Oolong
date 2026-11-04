@@ -250,7 +250,7 @@ private val ExtendedColors.isTranslucent: Boolean
  * full down to [TopBarBlurFade] above the bottom edge, which the bar sets [TopBarEdgeExtend] below
  * its own, so content is blurred soon after it passes under the bar and fully by the title.
  *
- * Without a blur, the veil alone eases out the same way, thicker.
+ * Without a blur, the veil alone is held the blur's way, thicker, and eases out where it would.
  */
 @Composable
 fun Modifier.topBarGlass(): Modifier {
@@ -297,9 +297,9 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
     // Nothing to draw, and no blur to run, while the bar is clear
     if (clear) return measured
     if (solid) {
-        // The tint's curve on its own, thicker, as nothing blurs what it lets show
+        // Held as the blur is, as nothing blurs what it lets show, then eased out the tint's way
         val veil = if (colors.isTranslucent) TranslucentTopBarTint else SolidTopBarTint
-        val brush = remember(color, veil, top) { scrollEdgeTint(color, veil, top) }
+        val brush = remember(color, veil, top, blurEdge) { scrollEdgeTint(color, veil, top, heldTo = blurEdge) }
         return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
     val style = remember(color, tint, blurEdge, frost, top, shown) {
@@ -356,14 +356,15 @@ private const val TopBarTint = 0.5f
 private const val SolidTopBarTint = 0.85f
 
 /**
- * A scroll edge's veil of [color], [alpha] at the [top] or bottom edge of the screen and gone at
- * its inner edge, by a smootherstep over the whole height: no flat band, no line.
+ * A scroll edge's veil of [color], [alpha] at the [top] or bottom edge of the screen, and up to
+ * [heldTo] of the way in, then gone at its inner edge by a smootherstep: no line where it ends.
  */
-private fun scrollEdgeTint(color: Color, alpha: Float, top: Boolean) = Brush.verticalGradient(
+private fun scrollEdgeTint(color: Color, alpha: Float, top: Boolean, heldTo: Float = 0f) = Brush.verticalGradient(
     *Array(TopBarTintStops + 1) { i ->
         val t = i / TopBarTintStops.toFloat()
         val fromEdge = if (top) t else 1f - t
-        val gone = fromEdge * fromEdge * fromEdge * (fromEdge * (fromEdge * 6f - 15f) + 10f)
+        val x = if (heldTo >= 1f) 0f else ((fromEdge - heldTo) / (1f - heldTo)).coerceIn(0f, 1f)
+        val gone = x * x * x * (x * (x * 6f - 15f) + 10f)
         t to color.copy(alpha = alpha * (1f - gone))
     }
 )
