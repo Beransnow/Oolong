@@ -8,6 +8,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -149,6 +151,15 @@ internal class DefaultVideoPlayerController(
         }
 
     private fun createExoPlayer() = ExoPlayer.Builder(context)
+        // Give way to calls and other players, and stop when headphones are unplugged
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(),
+            true,
+        )
+        .setHandleAudioBecomingNoisy(true)
         .build()
         .apply {
             playWhenReady = initialState.isPlaying

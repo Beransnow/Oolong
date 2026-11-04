@@ -45,6 +45,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import coil3.compose.AsyncImage
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.PressFeedback
@@ -122,6 +124,11 @@ fun VideoPlayer(
         onDispose {
             videoPlayerController.release()
         }
+    }
+
+    // Stops when the app goes to the background or another page covers this one
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        videoPlayerController.pause()
     }
 
     CompositionLocalProvider(
