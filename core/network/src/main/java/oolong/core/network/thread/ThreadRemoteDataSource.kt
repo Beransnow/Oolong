@@ -115,6 +115,8 @@ class ThreadRemoteDataSource(
      * @param subPostId a reply to load the page around, 0 for none
      * @param byTime whether the replies come earliest first, rather than the hottest first and the
      *   rest after them by time
+     * @param previewIds the replies shown under the post on the thread page, which the hottest
+     *   first keep in the order shown there
      */
     suspend fun floor(
         threadId: Long,
@@ -123,6 +125,7 @@ class ThreadRemoteDataSource(
         page: Int,
         subPostId: Long = 0,
         byTime: Boolean = false,
+        previewIds: List<Long> = emptyList(),
     ): PbFloorResponseData {
         val request = PbFloorRequest(
             PbFloorRequestData(
@@ -138,6 +141,7 @@ class ThreadRemoteDataSource(
                 is_comm_reverse = 0,
                 ori_ugc_type = 0,
                 sort = if (byTime) 0 else 2,
+                preview_spids = if (byTime) "" else previewIds.joinToString(","),
             )
         )
         return checkNotNull(floorService.floor(ProtobufBody(request)).data_)

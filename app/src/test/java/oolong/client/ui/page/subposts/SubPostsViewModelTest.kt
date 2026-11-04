@@ -69,7 +69,7 @@ class SubPostsViewModelTest {
     )
 
     private fun respond(vararg pages: PbFloorResponseData) {
-        coEvery { remote.floor(any(), any(), any(), any(), any(), any()) } returnsMany pages.toList()
+        coEvery { remote.floor(any(), any(), any(), any(), any(), any(), any()) } returnsMany pages.toList()
     }
 
     private fun TestScope.createViewModel(

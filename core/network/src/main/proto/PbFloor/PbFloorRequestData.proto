@@ -24,4 +24,5 @@ message PbFloorRequestData {
     string ori_ugc_vid = 16;
     string top_ugc_pid = 17;
     optional int32 sort = 19;
+    string preview_spids = 20;
 }

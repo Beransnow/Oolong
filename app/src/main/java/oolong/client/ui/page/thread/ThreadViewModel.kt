@@ -462,7 +462,7 @@ class ThreadViewModel @AssistedInject constructor(
             floor = try {
                 while (floor.subPosts().size < target) {
                     val next = floor.next ?: break
-                    val page = repository.floor(args.threadId, post.id, forumId, next)
+                    val page = repository.floor(args.threadId, post.id, forumId, next, floor.preview.map { it.id })
                     floor = floor.copy(fetched = floor.fetched + page.subPosts.items, next = page.subPosts.next)
                 }
                 floor.copy(shown = minOf(target, floor.subPosts().size), loading = false)

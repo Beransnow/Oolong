@@ -97,6 +97,7 @@ class SubPostsViewModel @AssistedInject constructor(
     private val threadId: Long = key.threadId
     private val subPostId: Long = key.subPostId
     private val loadFromSubPost: Boolean = key.loadFromSubPost
+    private val previewIds: List<Long> = key.previewIds
 
     private var postId: Long = key.postId
     private var forumId: Long = key.forumId
@@ -120,7 +121,7 @@ class SubPostsViewModel @AssistedInject constructor(
         itemKey = { subPost: SubPost -> subPost.id },
         normalize = { SubPosts(it) },
     ) { key ->
-        val page = repository.floor(threadId, postId, forumId, key)
+        val page = repository.floor(threadId, postId, forumId, key, previewIds)
         postId = page.post.id
         forumId = page.forum.id
         floor.value = page

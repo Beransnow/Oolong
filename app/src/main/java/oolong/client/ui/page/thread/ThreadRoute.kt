@@ -187,6 +187,7 @@ fun ThreadRoute(
                         postId = event.post.id,
                         subPostId = event.subPostId,
                         loadFromSubPost = false,
+                        previewIds = event.post.subPosts.map { it.id },
                     )
                 )
             }

@@ -307,7 +307,7 @@ class ThreadRepositoryTest {
 
     @Test
     fun `the last page of replies has no next page`() = runTest {
-        coEvery { remote.floor(any(), any(), any(), any(), any(), any()) } returns PbFloorResponseData(
+        coEvery { remote.floor(any(), any(), any(), any(), any(), any(), any()) } returns PbFloorResponseData(
             post = post(77, 5),
             subpost_list = listOf(SubPostList(id = 201, author = lz)),
             page = ProtoPage(current_page = 1, total_page = 1),

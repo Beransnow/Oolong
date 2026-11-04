@@ -186,8 +186,8 @@ class ThreadViewModelTest {
     private fun TestScope.floorWithReplies(): ThreadViewModel {
         val withReplies = post(2).copy(sub_post_list = ProtoSubPosts(sub_post_list = listOf(reply(1), reply(2))), sub_post_number = 15)
         respond(data(listOf(withReplies)))
-        coEvery { remote.floor(9_000, 2, 52, 1, 0) } returns floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
-        coEvery { remote.floor(9_000, 2, 52, 2, 0) } returns floorPage((11L..15L).map { reply(it, if (it == 13L) "广告" else "楼中楼 $it") }, page = 2, pages = 2)
+        coEvery { remote.floor(9_000, 2, 52, 1, 0, false, any()) } returns floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
+        coEvery { remote.floor(9_000, 2, 52, 2, 0, false, any()) } returns floorPage((11L..15L).map { reply(it, if (it == 13L) "广告" else "楼中楼 $it") }, page = 2, pages = 2)
         return createViewModel()
     }
 
@@ -208,8 +208,8 @@ class ThreadViewModelTest {
         replies = viewModel.state.value.floorReplies.getValue(2)
         assertEquals((1L..15L).toList(), replies.subPosts.map { it.id })
         assertTrue(replies.complete)
-        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 1, 0) }
-        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 2, 0) }
+        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 1, 0, false, any()) }
+        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 2, 0, false, any()) }
 
         viewModel.closeSubPosts(2)
         runCurrent()
@@ -232,7 +232,7 @@ class ThreadViewModelTest {
     @Test
     fun `a floor that fails to open more can try again`() = runTest {
         val viewModel = floorWithReplies()
-        coEvery { remote.floor(9_000, 2, 52, 1, 0) } throws IOException("network") andThen floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
+        coEvery { remote.floor(9_000, 2, 52, 1, 0, false, any()) } throws IOException("network") andThen floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
         runCurrent()
         val post = viewModel.state.value.posts.items.single().post
 

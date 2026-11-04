@@ -218,12 +218,12 @@ class ThreadRepository @Inject constructor(
     }
 
     /** A page of the replies inside post [postId] of thread [threadId]. */
-    suspend fun floor(threadId: Long, postId: Long, forumId: Long, cursor: FloorCursor): FloorPage =
+    suspend fun floor(threadId: Long, postId: Long, forumId: Long, cursor: FloorCursor, previewIds: List<Long> = emptyList()): FloorPage =
         withContext(io) {
             // Loading around a reply goes by time, so the pages before and after it are the replies
             // written before and after it
             val byTime = cursor.subPostId != 0L || subPostSort?.sort == SubPostSort.Earliest
-            remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId, byTime).toFloorPage(emoticons)
+            remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId, byTime, previewIds).toFloorPage(emoticons)
         }
 
     /** Deletes a post, or with [isSubPost] a reply inside one, from the sub-post page. */

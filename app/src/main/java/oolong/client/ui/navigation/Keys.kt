@@ -40,6 +40,8 @@ data class SubPostsKey(
     val loadFromSubPost: Boolean = false,
     /** Opens at the replies rather than the post, for a post long enough to hide them. */
     val atReplies: Boolean = false,
+    /** The replies the thread page shows under the post, which the hottest first start with. */
+    val previewIds: List<Long> = emptyList(),
 ) : Key
 
 /** [SubPostsKey] shown as a sheet over the thread. */
@@ -51,8 +53,9 @@ data class SubPostsSheetKey(
     val subPostId: Long = 0L,
     val loadFromSubPost: Boolean = false,
     val atReplies: Boolean = false,
+    val previewIds: List<Long> = emptyList(),
 ) : Key {
-    fun asPage() = SubPostsKey(threadId, forumId, postId, subPostId, loadFromSubPost, atReplies)
+    fun asPage() = SubPostsKey(threadId, forumId, postId, subPostId, loadFromSubPost, atReplies, previewIds)
 }
 
 @Serializable
