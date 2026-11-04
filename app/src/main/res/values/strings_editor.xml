@@ -50,5 +50,6 @@
     <string name="editor_unmask">擦除</string>
     <string name="editor_delete">删除</string>
     <string name="editor_straighten">拉直</string>
-    <string name="editor_ratio_turn">切换横竖</string>
+    <string name="editor_ratio_landscape">横向</string>
+    <string name="editor_ratio_portrait">竖向</string>
 </resources>

@@ -314,13 +314,23 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                             width = { if (it == CropRatio.Free || it == CropRatio.Original) 52.dp else 40.dp },
                         ) { ratio, _ -> RatioShape(ratio, portrait) }
                     }
-                    // Which way round fixed shapes stand; free, original and square have none
-                    IconButton(onClick = state::turnRatio, enabled = state.ratio.oriented) {
-                        Icon(
-                            imageVector = if (portrait) Symbols.CropPortrait else Symbols.CropLandscape,
-                            contentDescription = stringResource(id = R.string.editor_ratio_turn),
-                            tint = LocalContentColor.current,
-                        )
+                    // Which way round fixed shapes stand, one of two; free, original and square have none
+                    Box(modifier = Modifier.padding(start = 6.dp)) {
+                        Options(
+                            options = listOf(false, true),
+                            selected = portrait,
+                            onSelect = { if (it != portrait) state.turnRatio() },
+                            label = { stringResource(id = if (it) R.string.editor_ratio_portrait else R.string.editor_ratio_landscape) },
+                            enabled = state.ratio.oriented,
+                            width = { 34.dp },
+                        ) { upright, on ->
+                            Icon(
+                                imageVector = if (upright) Symbols.CropPortrait else Symbols.CropLandscape,
+                                contentDescription = null,
+                                tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
                     // In words: its icon would pass for rotating's
                     TextButton(
