@@ -166,8 +166,6 @@ fun SubPostsScreen(
         }
     } else {
         GlassScaffold(
-            // The capsules, and the composer and menu that grow out of them, are one glass
-            glassContainer = true,
             modifier = modifier,
             topBar = {
                 GlassTopBar(

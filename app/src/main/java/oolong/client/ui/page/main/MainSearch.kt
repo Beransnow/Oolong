@@ -390,11 +390,14 @@ fun MainSearchField(
                             Rect(right - size, bottom - size, right, bottom)
                         }
                     }
-                    // Its glass is there only while search shows, coming and going beside the field;
-                    // a layer's alpha or scale would leave the glass, which a container draws, as it is
+                    .graphicsLayer {
+                        val p = state.progress.value
+                        alpha = p
+                        scaleX = lerp(0.6f, 1f, p)
+                        scaleY = scaleX
+                    }
                     .then(if (glass) Modifier else Modifier.pressScale(interactionSource))
-                    .then(if (state.progress.value > 0f) Modifier.floatingGlass(CapsuleShape, interactionSource = interactionSource) else Modifier)
-                    .graphicsLayer { alpha = state.progress.value }
+                    .floatingGlass(CapsuleShape, interactionSource = interactionSource)
                     .clickable(
                         interactionSource = interactionSource,
                         indication = if (glass) null else PressFeedback.Overlay,

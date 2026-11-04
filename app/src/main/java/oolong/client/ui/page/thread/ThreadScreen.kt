@@ -102,8 +102,6 @@ fun ThreadScreen(
         val page = rememberPageScrollState()
         val hide = rememberScrollProgress(away = GlassTopBarRowHeight, enabled = { !tooShortToHide }, page = page)
         GlassScaffold(
-            // The capsules, and the composer and menu that grow out of them, are one glass
-            glassContainer = true,
             pageScroll = page,
             scaffoldState = scaffoldState,
             topBar = {

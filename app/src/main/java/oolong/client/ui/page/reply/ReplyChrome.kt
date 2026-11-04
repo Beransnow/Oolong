@@ -77,7 +77,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import dev.chrisbanes.haze.glass.GlassMemberTransition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -321,16 +320,16 @@ fun ReplyChrome(
                 .fillMaxWidth()
                 .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                 .padding(horizontal = SideMargin, vertical = BottomMargin)
-                // Moved by placing rather than a layer, which the glass container wouldn't follow;
-                // under the app's lookahead, only a layer of its own makes the move show
+                // Moved by placing; under the app's lookahead, only a layer of its own makes the
+                // move show
                 .offset { IntOffset(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()).roundToInt()) }
                 .graphicsLayer(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (replyCapsule != null) {
                 // Its glass is the composer's while that is out, and fades where it is while the
-                // menu grows; what it shows dissolves in a layer of its own, as a layer's alpha or
-                // scale would leave the glass, which the glass container draws, as it is
+                // menu grows; what it shows dissolves in a layer of its own, as a layer's scale on
+                // the glass would leave it sampling at that scale once back at rest
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -340,7 +339,6 @@ fun ReplyChrome(
                             if (!composing && open.value == 0f) {
                                 Modifier.floatingGlass(
                                     CapsuleShape,
-                                    memberTransition = GlassMemberTransition.None,
                                     alpha = 1f - dissolveOf(grow.value),
                                 )
                             } else {
@@ -378,7 +376,6 @@ fun ReplyChrome(
                             if (!menuOpen && grow.value == 0f && move.value == 0f) {
                                 Modifier.floatingGlass(
                                     CapsuleShape,
-                                    memberTransition = GlassMemberTransition.None,
                                     alpha = 1f - dissolveOf(open.value),
                                 )
                             } else {
@@ -788,7 +785,7 @@ private fun MorphingGlass(bounds: Rect, top: Dp, bottom: Dp, opacity: Float) {
             .offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
             .size(with(density) { bounds.width.toDp() }, with(density) { bounds.height.toDp() })
             // Grown into a surface, frosted or opaque chrome reads as thicker: a deeper shadow under
-            // it. Glass casts none, and in a glass container one cast from here would lie over it.
+            // it. Glass casts none.
             .then(
                 if (glass) {
                     Modifier
@@ -801,7 +798,7 @@ private fun MorphingGlass(bounds: Rect, top: Dp, bottom: Dp, opacity: Float) {
                     )
                 }
             )
-            .floatingGlass(shape, memberTransition = GlassMemberTransition.None)
+            .floatingGlass(shape)
             .then(if (opacity > 0f) Modifier.background(colors.sheet.copy(alpha = opacity), shape) else Modifier)
     )
 }
