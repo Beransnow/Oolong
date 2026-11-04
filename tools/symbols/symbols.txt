@@ -88,6 +88,7 @@ search
 select
 send
 share
+shield
 short_text
 slow_motion_video
 smart_display

@@ -7,7 +7,10 @@ import okhttp3.RequestBody
 import oolong.client.api.models.protos.profile.ProfileResponse
 import oolong.client.api.models.protos.userPost.UserPostResponse
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.QueryMap
 
 interface UserService {
     @POST("c/u/user/profile?cmd=303012&format=protobuf")
@@ -77,6 +80,32 @@ data class ListedUser(
 data class BlackInfoResponse(
     @SerialName("perm_list") val permissions: BlackPermissions? = null,
 )
+
+/** A page of the users the user blacklisted, as the in-app page that lists them asks. */
+interface BlackListService {
+    @Headers(
+        "Accept: application/json, text/plain, */*",
+        "X-Requested-With: XMLHttpRequest",
+        "Referer: https://tieba.baidu.com/mo/q/hybrid-main-service/blackList/hybrid?nonavigationbar=1&customfullscreen=1",
+    )
+    @GET("c/u/user/userBlackPage")
+    suspend fun page(@QueryMap params: Map<String, String>): BlackListResponse
+}
+
+@Serializable
+data class BlackListResponse(
+    @SerialName("user_perm_list") val users: List<User> = emptyList(),
+    @SerialName("is_has_more") val hasMore: String? = null,
+) {
+    @Serializable
+    data class User(
+        val uid: String? = null,
+        @SerialName("user_name") val name: String? = null,
+        @SerialName("name_show") val nameShow: String? = null,
+        val portrait: String? = null,
+        @SerialName("perm_list") val permissions: BlackPermissions? = null,
+    )
+}
 
 @Serializable
 data class BlackPermissions(

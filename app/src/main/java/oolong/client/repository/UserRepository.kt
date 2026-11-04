@@ -1,5 +1,6 @@
 package oolong.client.repository
 
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
@@ -21,6 +22,10 @@ import javax.inject.Inject
 data class BlackSettings(val follow: Boolean, val interact: Boolean, val chat: Boolean) {
     val any: Boolean get() = follow || interact || chat
 }
+
+/** A user on the blacklist and what they are barred from. */
+@Immutable
+data class BlackedUser(val user: oolong.client.model.User, val settings: BlackSettings)
 
 /** A page of what a user posted, and whether they hide their posts from others. */
 data class UserPostsPage(val posts: Page<Int, UserPost>, val hidden: Boolean = false)
@@ -76,6 +81,30 @@ class UserRepository @Inject constructor(
     suspend fun blackSettings(uid: Long): BlackSettings = withContext(io) {
         val permissions = remote.blackInfo(uid)
         BlackSettings(follow = permissions.follow == "1", interact = permissions.interact == "1", chat = permissions.chat == "1")
+    }
+
+    /** Page [page] (from 1) of the signed-in user's blacklist. */
+    suspend fun blackList(page: Int): Page<Int, BlackedUser> = withContext(io) {
+        val response = remote.blackList(page)
+        val users = response.users.mapNotNull { entry ->
+            val id = entry.uid?.toLongOrNull() ?: return@mapNotNull null
+            val name = entry.name.orEmpty()
+            val permissions = entry.permissions
+            BlackedUser(
+                user = oolong.client.model.User(
+                    id = id,
+                    name = name,
+                    nameShow = entry.nameShow.orEmpty().takeIf { it != name }.orEmpty(),
+                    portrait = entry.portrait.orEmpty().substringBefore('?'),
+                ),
+                settings = BlackSettings(
+                    follow = permissions?.follow == "1",
+                    interact = permissions?.interact == "1",
+                    chat = permissions?.chat == "1",
+                ),
+            )
+        }
+        Page(users, next = (page + 1).takeIf { response.hasMore == "1" && users.isNotEmpty() })
     }
 
     suspend fun setBlack(uid: Long, settings: BlackSettings) = withContext(io) {

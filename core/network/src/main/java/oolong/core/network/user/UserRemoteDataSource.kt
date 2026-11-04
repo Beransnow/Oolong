@@ -10,6 +10,7 @@ import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.form.signedFormBody
+import oolong.core.network.form.signedWebQuery
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
 
@@ -23,6 +24,8 @@ class UserRemoteDataSource(
     private val formProfile = TiebaProfile.FORM_12_52
     private val service = network.service<UserService>(protoProfile)
     private val formService = network.service<UserFormService>(formProfile)
+    private val webProfile = TiebaProfile.WEB_12_52
+    private val blackListService = network.service<BlackListService>(webProfile)
 
     private val viewerUid: Long? get() = commonParams.session()?.uid?.toLongOrNull()
 
@@ -131,6 +134,10 @@ class UserRemoteDataSource(
         val params = commonParams.form(formProfile) + listOf("black_uid" to uid.toString())
         return formService.blackInfo(signedFormBody(params, withSig = false)).permissions ?: BlackPermissions()
     }
+
+    /** Page [page] (from 1) of the users the user blacklisted, with what each is barred from. */
+    suspend fun blackList(page: Int): BlackListResponse =
+        blackListService.page(commonParams.signedWebQuery(webProfile, listOf("pn" to page.toString(), "rn" to "30")))
 
     /** Bars [uid] from following the user, interacting with their posts and messaging them, as each is true. */
     suspend fun setBlack(uid: Long, follow: Boolean, interact: Boolean, chat: Boolean) {

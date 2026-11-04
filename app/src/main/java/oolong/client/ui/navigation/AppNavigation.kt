@@ -78,7 +78,6 @@ import oolong.client.ui.page.settings.account.AccountManagePage
 import oolong.client.ui.page.settings.block.BlockRulePage
 import oolong.client.ui.page.settings.block.BlockSettingsPage
 import oolong.client.ui.page.settings.block.blocklist.BlockListPage
-import oolong.client.ui.page.settings.block.disliked.DislikedForumsPage
 import oolong.client.ui.page.settings.catalog.ControlCatalogPage
 import oolong.client.ui.page.settings.crash.CrashLogPage
 import oolong.client.ui.page.settings.crash.CrashLogsPage
@@ -90,6 +89,9 @@ import oolong.client.ui.page.settings.habit.HabitSettingsPage
 import oolong.client.ui.page.settings.more.MoreSettingsPage
 import oolong.client.ui.page.settings.oksign.OKSignSettingsPage
 import oolong.client.ui.page.settings.post.PostSettingsPage
+import oolong.client.ui.page.settings.privacy.BlackListPage
+import oolong.client.ui.page.settings.privacy.DislikedForumsPage
+import oolong.client.ui.page.settings.privacy.PrivacySettingsPage
 import oolong.client.ui.page.settings.storage.StoragePage
 import oolong.client.ui.page.settings.theme.AppThemePage
 import oolong.client.ui.page.settings.theme.TranslucentThemePage
@@ -142,6 +144,8 @@ private fun KeyContent(key: Key) {
         BlockSettingsKey -> BlockSettingsPage()
         BlockListKey -> BlockListPage()
         DislikedForumsKey -> DislikedForumsPage()
+        PrivacySettingsKey -> PrivacySettingsPage()
+        BlackListKey -> BlackListPage()
         is BlockRuleKey -> BlockRulePage(key)
         OKSignSettingsKey -> OKSignSettingsPage()
         MoreSettingsKey -> MoreSettingsPage()

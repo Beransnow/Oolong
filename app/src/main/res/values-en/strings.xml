@@ -596,6 +596,14 @@
     <string name="disliked_forums_empty">No hidden forums</string>
     <string name="btn_cancel_dislike">Unhide</string>
     <string name="toast_cancel_dislike_failed">Couldn\'t unhide %1$s</string>
+    <string name="title_privacy_settings">Privacy</string>
+    <string name="title_black_list">Blacklist</string>
+    <string name="black_list_empty">Nobody is blacklisted</string>
+    <string name="black_list_follow">No following</string>
+    <string name="black_list_interact">No interaction</string>
+    <string name="black_list_chat">No messages</string>
+    <string name="btn_remove_black">Remove</string>
+    <string name="toast_remove_black_failed">Couldn\'t remove from the blacklist %1$s</string>
     <string name="settings_blocked_fold">Collapse to one line</string>
     <string name="settings_blocked_hide">Hide completely</string>
     <plurals name="rules_count">

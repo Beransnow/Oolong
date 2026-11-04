@@ -593,6 +593,14 @@
     <string name="disliked_forums_empty">没有屏蔽的吧</string>
     <string name="btn_cancel_dislike">取消屏蔽</string>
     <string name="toast_cancel_dislike_failed">无法取消屏蔽 %1$s</string>
+    <string name="title_privacy_settings">隐私</string>
+    <string name="title_black_list">黑名单</string>
+    <string name="black_list_empty">黑名单为空</string>
+    <string name="black_list_follow">禁止关注</string>
+    <string name="black_list_interact">禁止互动</string>
+    <string name="black_list_chat">禁止私信</string>
+    <string name="btn_remove_black">移出</string>
+    <string name="toast_remove_black_failed">无法移出黑名单 %1$s</string>
     <string name="settings_blocked_fold">折叠为一行</string>
     <string name="settings_blocked_hide">完全隐藏</string>
     <plurals name="rules_count">

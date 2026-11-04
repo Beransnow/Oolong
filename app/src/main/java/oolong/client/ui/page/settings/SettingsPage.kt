@@ -33,6 +33,7 @@ import oolong.client.ui.navigation.MoreSettingsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.navigation.PostSettingsKey
+import oolong.client.ui.navigation.PrivacySettingsKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.Avatar
@@ -99,6 +100,7 @@ fun SettingsPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
+    val signedIn = LocalAccount.current != null
     ProvideNavigator(navigator = navigator) {
         GlassScaffold(
             largeTitle = true,
@@ -155,6 +157,16 @@ fun SettingsPage(
                             leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Block, contentDescription = null) } },
                             onClick = { navigator.navigate(BlockSettingsKey) }
                         )
+                    }
+                    // What the account keeps on the server, so only while signed in
+                    if (signedIn) {
+                        prefsItem {
+                            TextPref(
+                                title = stringResource(id = R.string.title_privacy_settings),
+                                leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Shield, contentDescription = null) } },
+                                onClick = { navigator.navigate(PrivacySettingsKey) }
+                            )
+                        }
                     }
                     prefsItem {
                         TextPref(
