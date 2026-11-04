@@ -57,6 +57,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -556,6 +558,8 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                     }
                     runCatching { context.startActivity(Intent.createChooser(intent, context.getString(R.string.title_share))) }
                 },
+                saving = viewer.saving[video.key],
+                onSave = { viewer.save(context, video) },
                 modifier = Modifier.graphicsLayer { alpha = chromeAlpha },
             )
         }
@@ -581,6 +585,9 @@ private fun BoxScope.VideoChrome(
     onLandscape: () -> Unit,
     onCopyLink: () -> Unit,
     onShare: () -> Unit,
+    /** How much of the video is saved, 0–1 or -1 when not known; null when it is not being saved. */
+    saving: Float?,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sides = if (landscape) 40.dp else 0.dp
@@ -631,6 +638,7 @@ private fun BoxScope.VideoChrome(
                     }
                     RoundAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
                     RoundAction(Symbols.Share, stringResource(id = R.string.title_share), onShare)
+                    SaveAction(saving = saving, onClick = onSave)
                 }
             }
             Row(
@@ -805,6 +813,40 @@ private fun RoundAction(icon: ImageVector, description: String, onClick: () -> U
         contentAlignment = Alignment.Center,
     ) {
         Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** Saves the video; while it downloads, a ring fills round the button instead, which then does nothing. */
+@Composable
+private fun SaveAction(saving: Float?, onClick: () -> Unit) {
+    val description = stringResource(id = R.string.video_save)
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.14f))
+            .clickable(role = Role.Button, enabled = saving == null, onClickLabel = description, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (saving == null) {
+            Icon(imageVector = Symbols.Download, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
+        } else if (saving < 0f) {
+            WavyLoader(color = Color.White, modifier = Modifier.size(26.dp))
+        } else {
+            Canvas(modifier = Modifier.size(24.dp)) {
+                val stroke = 2.5.dp.toPx()
+                drawCircle(Color.White.copy(alpha = 0.3f), radius = size.minDimension / 2 - stroke / 2, style = Stroke(stroke))
+                drawArc(
+                    color = Color.White,
+                    startAngle = -90f,
+                    sweepAngle = 360f * saving,
+                    useCenter = false,
+                    style = Stroke(stroke, cap = StrokeCap.Round),
+                    topLeft = Offset(stroke / 2, stroke / 2),
+                    size = Size(size.width - stroke, size.height - stroke),
+                )
+            }
+        }
     }
 }
 

@@ -131,6 +131,9 @@
     <string name="video_sign_in">Sign in to play</string>
     <string name="video_speed">Playback speed</string>
     <string name="btn_pause">Pause</string>
+    <string name="video_save">Save video</string>
+    <string name="video_save_failed">Couldn\'t save video</string>
+    <string name="video_save_no_permission">Can\'t save videos without storage access</string>
     <string name="menu_copy">Copy</string>
     <string name="button_load_new">Load latest</string>
     <string name="menu_top">Pin</string>
