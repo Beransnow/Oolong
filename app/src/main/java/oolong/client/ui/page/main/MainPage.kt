@@ -205,7 +205,8 @@ fun MainPage(
                         }
                     }
                 }
-                if (searchShown) {
+                // From the moment it opens, before it shows, see [MainSearchState.open]
+                if (search.open || searchShown) {
                     CompositionLocalProvider(LocalChromePadding provides mainSearchPadding(searchAtTop)) {
                         Box(modifier = Modifier.graphicsLayer { alpha = search.progress.value }) {
                             MainSearchContent(

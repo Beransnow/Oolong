@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -44,10 +45,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -87,11 +88,11 @@ import oolong.client.ui.page.search.SearchState
 import oolong.client.ui.page.search.SearchViewModel
 import oolong.client.ui.widgets.compose.BaseTextField
 import oolong.client.ui.widgets.compose.ChromeStyle
+import oolong.client.ui.widgets.compose.GlassTier
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LocalChromeStyle
-import oolong.client.ui.widgets.compose.floatingGlass
-import oolong.client.ui.widgets.compose.GlassTier
 import oolong.client.ui.widgets.compose.currentGlassTier
+import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.isGlassAvailable
 import kotlin.math.roundToInt
 
@@ -125,6 +126,9 @@ class MainSearchState(open: Boolean) {
     suspend fun open() {
         open = true
         wantsFocus = true
+        // The search content is composed and laid out, still unseen, a frame before the button
+        // starts to stretch, so that work doesn't hold up the motion's first frame
+        withFrameNanos {}
         progress.animateTo(1f, Motion.morph())
     }
 
