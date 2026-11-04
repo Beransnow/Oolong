@@ -25,6 +25,7 @@ class EditRecord(val source: String, val width: Int, val height: Int, val steps:
         val text: String = "",
         val turns: Int = 0,
         val flipped: Boolean = false,
+        val angle: Float = 0f,
     )
 
     /** The steps as edits, for a picture decoded at [width] by [height]; null if it came out another size. */
@@ -57,6 +58,7 @@ private fun Edit.toStep(): EditRecord.Step = when (this) {
         points = listOf(framing.rect.left, framing.rect.top, framing.rect.right, framing.rect.bottom),
         turns = framing.turns,
         flipped = framing.flipped,
+        angle = framing.angle,
     )
     is Edit.Mask -> EditRecord.Step("mask", id, points.flat(), width, kind = "${style.name}/${shape.name}")
     is Edit.Mark -> EditRecord.Step("mark", id, points.flat(), width, color.toArgb().toLong(), kind.name)
@@ -66,7 +68,7 @@ private fun Edit.toStep(): EditRecord.Step = when (this) {
 }
 
 private fun EditRecord.Step.toEdit(): Edit = when (type) {
-    "frame" -> Edit.Frame(Framing(turns, flipped, Rect(points[0], points[1], points[2], points[3])))
+    "frame" -> Edit.Frame(Framing(turns, flipped, Rect(points[0], points[1], points[2], points[3]), angle))
     "mask" -> {
         val (style, shape) = kind.split('/')
         Edit.Mask(id, points.offsets(), width, MaskStyle.valueOf(style), MaskShape.valueOf(shape))

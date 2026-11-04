@@ -13,10 +13,11 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * How the picture is turned and cut: [turns] quarters anticlockwise, then mirrored left to right
- * if [flipped]; [rect] is the part kept, in the turned picture's pixels.
+ * if [flipped], then straightened by [angle] degrees clockwise about its middle; [rect] is the
+ * part kept, in the turned picture's pixels, and lies within the straightened picture.
  */
 @Immutable
-data class Framing(val turns: Int, val flipped: Boolean, val rect: Rect) {
+data class Framing(val turns: Int, val flipped: Boolean, val rect: Rect, val angle: Float = 0f) {
     /** The picture of [size] turned as this turns it. */
     fun turned(size: Size): Size = if (turns % 2 == 0) size else Size(size.height, size.width)
 
@@ -30,7 +31,36 @@ data class Framing(val turns: Int, val flipped: Boolean, val rect: Rect) {
     /** Mirrored, the kept part mirrored with it, in a picture of [size]. */
     fun mirrored(size: Size): Framing {
         val width = turned(size).width
-        return copy(flipped = !flipped, rect = Rect(width - rect.right, rect.top, width - rect.left, rect.bottom))
+        return copy(flipped = !flipped, angle = -angle, rect = Rect(width - rect.right, rect.top, width - rect.left, rect.bottom))
+    }
+
+    /** Whether [rect] lies wholly within the picture of [size] as this turns and straightens it. */
+    fun holds(rect: Rect, size: Size): Boolean {
+        val turned = turned(size)
+        val center = Offset(turned.width / 2, turned.height / 2)
+        val radians = Math.toRadians(-angle.toDouble())
+        val cos = kotlin.math.cos(radians).toFloat()
+        val sin = kotlin.math.sin(radians).toFloat()
+        val slack = 0.5f
+        return listOf(rect.topLeft, rect.topRight, rect.bottomLeft, rect.bottomRight).all { corner ->
+            // The corner turned back by the straightening lies within the unstraightened picture
+            val d = corner - center
+            val x = d.x * cos - d.y * sin + center.x
+            val y = d.x * sin + d.y * cos + center.y
+            x >= -slack && y >= -slack && x <= turned.width + slack && y <= turned.height + slack
+        }
+    }
+
+    /** [rect] shrunk about its middle, keeping its shape, just enough to lie within the picture. */
+    fun fitted(rect: Rect, size: Size): Rect {
+        if (holds(rect, size)) return rect
+        var low = 0f
+        var high = 1f
+        repeat(24) {
+            val mid = (low + high) / 2
+            if (holds(rect.scaled(mid), size)) low = mid else high = mid
+        }
+        return rect.scaled(low)
     }
 
     companion object {
@@ -208,3 +238,8 @@ val Edit.objectId: Int?
         is Edit.Caption -> id
         else -> null
     }
+
+private fun Rect.scaled(factor: Float): Rect {
+    val half = Size(width * factor / 2, height * factor / 2)
+    return Rect(center.x - half.width, center.y - half.height, center.x + half.width, center.y + half.height)
+}

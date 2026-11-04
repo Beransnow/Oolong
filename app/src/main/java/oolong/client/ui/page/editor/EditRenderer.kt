@@ -82,6 +82,7 @@ class EditRenderer(val picture: Bitmap) {
         postTranslate(-size.width / 2, -size.height / 2)
         postRotate(-90f * framing.turns)
         if (framing.flipped) postScale(-1f, 1f)
+        postRotate(framing.angle)
         postTranslate(turned.width / 2, turned.height / 2)
     }
 

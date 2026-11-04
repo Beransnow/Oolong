@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -303,14 +304,22 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                         width = { if (it == CropRatio.Free || it == CropRatio.Original) 52.dp else 40.dp },
                     ) { ratio, _ -> RatioShape(ratio, portrait) }
                 }
-                OptionRow {
-                    IconButton(onClick = state::rotate) {
-                        Icon(imageVector = Symbols.RotateLeft, contentDescription = stringResource(id = R.string.button_rotate), tint = LocalContentColor.current)
+                // The ruler's mark sits in the middle of the panel; the buttons lie over its faded ends
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp),
+                ) {
+                    Straightener(state, Modifier.fillMaxWidth())
+                    Row(modifier = Modifier.align(Alignment.CenterStart)) {
+                        IconButton(onClick = state::rotate) {
+                            Icon(imageVector = Symbols.RotateLeft, contentDescription = stringResource(id = R.string.button_rotate), tint = LocalContentColor.current)
+                        }
+                        IconButton(onClick = state::flip) {
+                            Icon(imageVector = Symbols.Flip, contentDescription = stringResource(id = R.string.editor_flip), tint = LocalContentColor.current)
+                        }
                     }
-                    IconButton(onClick = state::flip) {
-                        Icon(imageVector = Symbols.Flip, contentDescription = stringResource(id = R.string.editor_flip), tint = LocalContentColor.current)
-                    }
-                    IconButton(onClick = state::restore, enabled = state.history.framing != state.whole) {
+                    IconButton(onClick = state::restore, enabled = state.history.framing != state.whole, modifier = Modifier.align(Alignment.CenterEnd)) {
                         Icon(imageVector = Symbols.RestartAlt, contentDescription = stringResource(id = R.string.button_restore), tint = LocalContentColor.current)
                     }
                 }
@@ -814,3 +823,76 @@ private val MarkChoices: List<MarkKind?> = MarkKind.entries + null
 
 /** The ways to lay a mask, then rubbing masks out. */
 private val MaskChoices: List<MaskShape?> = MaskShape.entries + null
+
+/** The most a picture straightens either way, in degrees. */
+private const val MostStraighten = 45f
+
+/** A degree on the ruler, in dp. */
+private const val DegreeWidth = 5f
+
+/**
+ * A ruler of degrees that slides under a fixed mark as the finger drags it, straightening the
+ * picture; the angle shows above the mark. A double tap brings it back to level.
+ */
+@Composable
+private fun Straightener(state: EditorState, modifier: Modifier = Modifier) {
+    val colors = ExtendedTheme.colors
+    val angle = state.framing.angle
+    val measurer = rememberTextMeasurer()
+    val label = stringResource(id = R.string.editor_straighten)
+    Canvas(
+        modifier = modifier
+            .height(40.dp)
+            .semantics { contentDescription = label }
+            .pointerInput(state) {
+                awaitEachGesture {
+                    // The double tap below sees the press first, and takes it
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val start = state.history.framing.rect
+                    val from = state.history.framing.angle
+                    drag(down.id) { change ->
+                        val degrees = (change.position.x - down.position.x) / (DegreeWidth * density)
+                        // Dragging the ruler right brings lower numbers under the mark
+                        state.straighten(start, (from - degrees).coerceIn(-MostStraighten, MostStraighten))
+                        change.consume()
+                    }
+                    state.commitStraighten()
+                }
+            }
+            .pointerInput(state) {
+                detectTapGestures(onDoubleTap = {
+                    val start = state.history.framing.rect
+                    state.straighten(start, 0f)
+                    state.commitStraighten()
+                })
+            }
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                // The ends fade well before the buttons over them, as the ruler goes on past them
+                drawRect(
+                    Brush.horizontalGradient(0.3f to Color.Transparent, 0.4f to Color.Black, 0.6f to Color.Black, 0.7f to Color.Transparent),
+                    blendMode = BlendMode.DstIn,
+                )
+            },
+    ) {
+        val unit = DegreeWidth.dp.toPx()
+        val baseline = size.height - 6.dp.toPx()
+        val first = (angle - size.width / 2 / unit).toInt() - 1
+        val last = (angle + size.width / 2 / unit).toInt() + 1
+        for (degree in first..last) {
+            if (degree < -MostStraighten || degree > MostStraighten) continue
+            val x = size.width / 2 + (degree - angle) * unit
+            val major = degree % 5 == 0
+            drawLine(
+                color = if (degree == 0) colors.text else colors.textSecondary.copy(alpha = if (major) 0.9f else 0.45f),
+                start = Offset(x, baseline - (if (major) 10.dp else 6.dp).toPx()),
+                end = Offset(x, baseline),
+                strokeWidth = 1.dp.toPx(),
+            )
+        }
+        drawLine(colors.text, Offset(size.width / 2, baseline - 14.dp.toPx()), Offset(size.width / 2, baseline + 2.dp.toPx()), 2.dp.toPx(), StrokeCap.Round)
+        val text = measurer.measure("${angle.roundToInt()}°", TextStyle(color = colors.text, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+        drawText(text, topLeft = Offset(size.width / 2 - text.size.width / 2f, 0f))
+    }
+}

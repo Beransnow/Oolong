@@ -93,7 +93,13 @@ class EditorState(
         private set
     var draftText by mutableStateOf(TextFieldValue())
 
-    val framing: Framing get() = history.framing.let { framing -> draftRect?.let { framing.copy(rect = it) } ?: framing }
+    /** The straightening while the ruler is dragged, before it becomes a step. */
+    var draftAngle by mutableStateOf<Float?>(null)
+
+    val framing: Framing
+        get() = history.framing.let { framing ->
+            framing.copy(rect = draftRect ?: framing.rect, angle = draftAngle ?: framing.angle)
+        }
 
     /** Where the picture may be shown on screen, in pixels. */
     var area by mutableStateOf(Rect.Zero)
@@ -228,7 +234,8 @@ class EditorState(
         val center = history.framing.rect.center
         val left = (center.x - width / 2).coerceIn(0f, bounds.width - width)
         val top = (center.y - height / 2).coerceIn(0f, bounds.height - height)
-        frame(history.framing.copy(rect = Rect(left, top, left + width, top + height)))
+        val framing = history.framing
+        frame(framing.copy(rect = framing.fitted(Rect(left, top, left + width, top + height), renderer.size)))
     }
 
     /**
@@ -237,6 +244,12 @@ class EditorState(
      * at least [least] pixels across, and to the ratio picked.
      */
     fun dragFrame(start: Rect, dx: Int, dy: Int, delta: Offset, least: Float): Rect {
+        // Straightened, a frame that would reach past the picture's edge stays where it was
+        val next = dragFrameStraight(start, dx, dy, delta, least)
+        return if (history.framing.holds(next, renderer.size)) next else draftRect ?: start
+    }
+
+    private fun dragFrameStraight(start: Rect, dx: Int, dy: Int, delta: Offset, least: Float): Rect {
         val bounds = Rect(Offset.Zero, history.framing.turned(renderer.size))
         if (dx == 0 && dy == 0) {
             val left = (start.left + delta.x).coerceIn(0f, bounds.width - start.width)
@@ -263,6 +276,20 @@ class EditorState(
         if (dx < 0) left = right - width else right = left + width
         if (dy < 0) top = bottom - height else bottom = top + height
         return Rect(left, top, right, bottom)
+    }
+
+    /** The straightening dragged to [angle]: the frame kept at [start] shrinks just enough to stay within. */
+    fun straighten(start: Rect, angle: Float) {
+        draftAngle = angle
+        draftRect = history.framing.copy(angle = angle).fitted(start, renderer.size)
+    }
+
+    fun commitStraighten() {
+        val angle = draftAngle ?: return
+        val rect = draftRect ?: history.framing.rect
+        draftAngle = null
+        draftRect = null
+        if (angle != history.framing.angle) history.push(Edit.Frame(history.framing.copy(angle = angle, rect = rect)))
     }
 
     fun commitFrame() {
