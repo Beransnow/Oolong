@@ -28,6 +28,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.Velocity
@@ -99,11 +101,24 @@ class PageScrollState internal constructor() {
             return lerp(aScrolled.toFloat(), b.scrolled().coerceAtMost(FarScroll).toFloat(), abs(a.start) / span).toInt()
         }
 
-    /** The top bar's row, in window coordinates, for things that dock into it; NaN before it is laid out. */
+    /**
+     * The scaffold, which the bar and the content are laid out in. What docks into the bar is
+     * placed by it rather than by the window, as the whole page may be scaled and moved, as while
+     * it is peeked past, and a move taken in the window would be scaled a second time.
+     */
+    internal var frame: LayoutCoordinates? = null
+
+    /** Where [coordinates] lie in the [frame], whole even past the screen's edge. */
+    internal fun boundsOf(coordinates: LayoutCoordinates): Rect {
+        val frame = frame?.takeIf { it.isAttached } ?: return coordinates.boundsInWindow(clipBounds = false)
+        return frame.localBoundingBoxOf(coordinates, clipBounds = false)
+    }
+
+    /** The top bar's row, in the [frame], for things that dock into it; NaN before it is laid out. */
     internal var barRowTop by mutableFloatStateOf(Float.NaN)
     internal var barRowBottom by mutableFloatStateOf(Float.NaN)
 
-    /** Where each [matchedGeometryAnchor] was last laid out, in window coordinates. */
+    /** Where each [matchedGeometryAnchor] was last laid out, in the [frame]. */
     internal val anchors = mutableStateMapOf<Any, Rect>()
 
     private val snapRanges = mutableStateListOf<ClosedFloatingPointRange<Float>>()

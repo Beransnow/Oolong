@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -119,8 +118,7 @@ fun rememberScrollProgress(anchor: Any, page: PageScrollState? = LocalPageScroll
 @Composable
 fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
     val page = LocalPageScroll.current ?: return this
-    // Unclipped: an anchor off the screen's edge, as on a page sliding away, is still where it is
-    return onGloballyPositioned { page.anchors[key] = it.boundsInWindow(clipBounds = false) }
+    return onGloballyPositioned { page.anchors[key] = page.boundsOf(it) }
 }
 
 /**
@@ -133,7 +131,7 @@ fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
 fun Modifier.matchedGeometry(key: Any, progress: ScrollProgress): Modifier {
     val page = LocalPageScroll.current ?: return this
     val own = remember { mutableStateOf(Rect.Zero) }
-    return onGloballyPositioned { own.value = it.boundsInWindow(clipBounds = false) }
+    return onGloballyPositioned { own.value = page.boundsOf(it) }
         .graphicsLayer {
             val anchor = page.anchors[key]
             val self = own.value

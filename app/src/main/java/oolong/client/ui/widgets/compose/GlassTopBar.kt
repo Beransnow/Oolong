@@ -47,7 +47,6 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -192,9 +191,9 @@ fun GlassTopBar(
                                 if (scrollEdge != null) {
                                     // Published for what docks in the bar as it scrolls up to it
                                     Modifier.onGloballyPositioned {
-                                        val top = it.positionInWindow().y
-                                        scrollEdge.barRowTop = top
-                                        scrollEdge.barRowBottom = top + it.size.height
+                                        val row = scrollEdge.boundsOf(it)
+                                        scrollEdge.barRowTop = row.top
+                                        scrollEdge.barRowBottom = row.bottom
                                     }
                                 } else Modifier
                             )

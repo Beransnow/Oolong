@@ -179,7 +179,10 @@ fun GlassScaffold(
         Surface(
             modifier = modifier
                 .onConsumedWindowInsetsChanged { consumedInsets = it }
-                .onGloballyPositioned { pageScroll.originX = it.positionInRoot().x }
+                .onGloballyPositioned {
+                    pageScroll.originX = it.positionInRoot().x
+                    pageScroll.frame = it
+                }
                 // Which way the content is going, for what follows that rather than where it is
                 .nestedScroll(pageScroll.scrollWatcher),
             color = backgroundColor,
