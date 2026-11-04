@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import android.util.LruCache
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,12 +26,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -41,6 +44,8 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -342,6 +347,32 @@ fun TextWithMinWidth(
     )
 }
 
+/** Sizes of short texts measured on their own, kept for the whole app: each row of a list asks for the same ones. */
+private val measuredTextSizes = LruCache<MeasuredTextKey, IntSize>(64)
+
+private data class MeasuredTextKey(
+    val text: String,
+    val style: TextStyle,
+    val density: Float,
+    val fontScale: Float,
+    val layoutDirection: LayoutDirection,
+)
+
+/** The size [text] takes alone in [style], measured once for all who ask. */
+@Composable
+fun rememberTextSize(text: String, style: TextStyle): IntSize {
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val fontFamilyResolver = LocalFontFamilyResolver.current
+    return remember(text, style, density, layoutDirection, fontFamilyResolver) {
+        val key = MeasuredTextKey(text, style, density.density, density.fontScale, layoutDirection)
+        measuredTextSizes.get(key) ?: TextMeasurer(fontFamilyResolver, density, layoutDirection, cacheSize = 0)
+            .measure(text, style)
+            .size
+            .also { measuredTextSizes.put(key, it) }
+    }
+}
+
 @Composable
 fun buildChipInlineContent(
     text: String,
@@ -351,8 +382,7 @@ fun buildChipInlineContent(
     backgroundColor: Color = ExtendedTheme.colors.chip,
     color: Color = ExtendedTheme.colors.onChip
 ): InlineTextContent {
-    val textMeasurer = rememberTextMeasurer()
-    val textSize = remember(text, textStyle) { textMeasurer.measure(text, textStyle).size }
+    val textSize = rememberTextSize(text, textStyle)
     val layoutDirection = LocalLayoutDirection.current
     // All in the density the text is measured and drawn in, whose text scale is the app's own
     val (heightSp, fontSize, widthSp) = with(LocalDensity.current) {

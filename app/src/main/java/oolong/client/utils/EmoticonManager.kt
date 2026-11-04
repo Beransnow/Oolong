@@ -14,11 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Density
 import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -31,18 +29,13 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.components.images.loadBitmap
 import oolong.client.models.EmoticonCache
+import oolong.client.ui.widgets.compose.rememberTextSize
 import java.io.File
 import java.lang.ref.WeakReference
 
 @Composable
-fun calcLineHeightPx(style: TextStyle): Int {
-    val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = textMeasurer.measure(
-        AnnotatedString(stringResource(id = R.string.single_chinese_char)),
-        style
-    )
-    return textLayoutResult.size.height
-}
+fun calcLineHeightPx(style: TextStyle): Int =
+    rememberTextSize(stringResource(id = R.string.single_chinese_char), style).height
 
 data class Emoticon(
     val id: String,
