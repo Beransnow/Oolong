@@ -514,7 +514,7 @@ internal fun share(context: Context, url: String) {
     context.toastShort(R.string.toast_preparing_share_pic)
     ImageUtil.download(context, url, true) { uri: Uri ->
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = Intent.normalizeMimeType("image/jpeg")
+            type = context.contentResolver.getType(uri) ?: "image/*"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

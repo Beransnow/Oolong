@@ -252,7 +252,9 @@ object ImageUtil {
             val shareUri = runCatching {
                 val image = context.downloadImage(url) ?: return@runCatching null
                 val folder = File(context.cacheDir, ".shareTemp").apply { mkdirs() }
-                val file = File(folder, "share_" + System.currentTimeMillis())
+                // Named for what it really is, as apps it goes to tell its kind by the name
+                val format = PictureFormat.of(image) ?: PictureFormat.Jpeg
+                val file = File(folder, "share_${System.currentTimeMillis()}.${format.extension}")
                 file.writeBytes(image)
                 FileProvider.getUriForFile(context, context.packageName + ".share.FileProvider", file)
             }.getOrNull()
