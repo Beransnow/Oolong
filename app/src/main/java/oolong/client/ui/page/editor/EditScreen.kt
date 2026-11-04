@@ -97,17 +97,14 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.mediaChromeColors
 import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.ThemeUtil
 import kotlin.math.abs
 import kotlin.math.max
 
 /** The space kept between the picture and the bars. */
 private val PictureMargin = 16.dp
-
-/** The tone the editor's glass takes on the black page. */
-private val ChromeTone = Color(0xFF3A3B40)
 
 /** How near an edge or corner of the frame a finger takes hold of it. */
 private val FrameGrip = 24.dp
@@ -185,15 +182,9 @@ fun EditScreen(
         Text(text = stringResource(id = R.string.editor_discard_title))
     }
 
-    // Glass on black takes its tone from the page and would be black itself: here it is lifted
-    // to a grey of its own, so the bars stand off the black by tone
+    // The bars are glass on black, toned as over any picture
     val colors = ExtendedTheme.colors
-    val chrome = remember(colors) {
-        colors.copy(
-            theme = if (ThemeUtil.isTranslucentTheme(colors.theme)) ThemeUtil.THEME_BLUE_DARK else colors.theme,
-            background = ChromeTone,
-        )
-    }
+    val chrome = remember(colors) { mediaChromeColors(colors) }
     CompositionLocalProvider(LocalExtendedColors provides chrome) {
         BoxWithConstraints {
             val layout = when {
