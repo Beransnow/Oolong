@@ -23,6 +23,30 @@ class PrivacyRulesTest {
     }
 
     @Test
+    fun phoneNumbersInTheirManyForms() {
+        fun phone(text: String) = found(line(text)).filter { it.first == PrivateKind.Phone }.map { it.second }
+        // Mobile numbers, split however, the country before them or not
+        assertEquals(listOf("138-0013-8000"), phone("手机 138-0013-8000"))
+        assertEquals(listOf("1380 013 8000"), phone("打 1380 013 8000 找我"))
+        assertEquals(listOf("+86 13800138000"), phone("Tel: +86 13800138000"))
+        assertEquals(listOf("(+86)138 0013 8000"), phone("(+86)138 0013 8000"))
+        // Landlines with their area code set off, with an extension
+        assertEquals(listOf("010-62345678"), phone("北京总部 010-62345678"))
+        assertEquals(listOf("(0755)8888 8888"), phone("门店(0755)8888 8888营业中"))
+        assertEquals(listOf("0571-87654321转803"), phone("前台0571-87654321转803"))
+        // From abroad
+        assertEquals(listOf("+1 (555) 123-4567"), phone("call +1 (555) 123-4567 now"))
+        assertEquals(listOf("+852 9123 4567"), phone("香港 +852 9123 4567"))
+        // Without an area code, only when called a phone
+        assertEquals(listOf("62345678"), phone("联系电话：62345678"))
+        assertEquals(listOf("02087654321"), phone("座机 02087654321"))
+        assertEquals(listOf(PrivateKind.Phone to "62345678"), found(line("电话", row = 0), line("62345678", row = 1)))
+        assertTrue(phone("订单 62345678 已签收").isEmpty())
+        assertTrue(phone("积分 +100").isEmpty())
+        assertTrue(phone("日期 2026-11-05 12345").isEmpty())
+    }
+
+    @Test
     fun cardsCheckOutOrAreLabelled() {
         // Passes the check digit
         assertEquals(listOf(PrivateKind.BankCard to "6222021234567890128"), found(line("转到 6222021234567890128 这张")))

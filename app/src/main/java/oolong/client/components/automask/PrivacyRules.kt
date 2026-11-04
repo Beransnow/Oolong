@@ -17,17 +17,25 @@ class PrivateMatch(val kind: PrivateKind, val line: ReadLine, val start: Int, va
 }
 
 /**
- * Finds private details in lines of text read off a picture: what its form gives away (phone
- * numbers, ID card and bank card numbers that check out, email addresses, number plates), and
- * what only its label does (QQ and WeChat numbers, verification codes), the label before it on
- * the same line, or its own line to the right or below.
+ * Finds private details in lines of text read off a picture: what its form gives away (mobile
+ * numbers, landlines with their area code set off, numbers from abroad, ID card and bank card
+ * numbers that check out, email addresses, number plates), and what only its label does (a
+ * landline without its area code, QQ and WeChat numbers, verification codes), the label before
+ * it on the same line, or its own line to the right or below.
  */
 object PrivacyRules {
     private val Forms: List<Pair<PrivateKind, Regex>> = listOf(
         PrivateKind.Email to Regex("""[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"""),
         PrivateKind.IdCard to Regex("""(?<![\dXx])\d{6}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?![\dXx])"""),
-        PrivateKind.Phone to Regex("""(?<!\d)(?:\+?86[- ]?)?1[3-9]\d(?:[- ]?\d{4}){2}(?!\d)"""),
         PrivateKind.BankCard to Regex("""(?<!\d)(?:\d{4}[ -]?){3}\d{4}(?:[ -]?\d{1,3})?(?![\dXx])"""),
+        // A mobile number, split anywhere, the country before it or not
+        PrivateKind.Phone to Regex("""(?<!\d)(?:(?:\+|00)86[- ]?|\(\+?86\)[- ]?)?1[3-9]\d(?:[- ]?\d){8}(?!\d)"""),
+        // A landline with its area code set off, an extension after it or not
+        PrivateKind.Phone to Regex(
+            """(?<!\d)(?:(?:\+|00)86[- ]?)?(?:\((?:010|02\d|0[3-9]\d{2})\)[- ]?|(?:010|02\d|0[3-9]\d{2})[- ])[2-9]\d{2,3}[- ]?\d{4}(?:\s*(?:转|分机|ext\.?|-)\s*\d{1,5})?(?!\d)""",
+        ),
+        // A number from abroad, its country after a plus
+        PrivateKind.Phone to Regex("""\+[1-9]\d{0,2}(?:[- .]?\(?\d+\)?)+"""),
         PrivateKind.Plate to Regex(
             """(?<![A-Za-z0-9])(?:[$Provinces][A-HJ-NP-Z][·•.\s]?(?:[A-HJ-NP-Z0-9]{5,6}|[A-HJ-NP-Z0-9]{4}[挂学警港澳领试超])|使\d{6}|\d{6}使|WJ[$Provinces]?\d{4}[\dA-Z])(?![A-Za-z0-9])""",
         ),
@@ -46,6 +54,11 @@ object PrivacyRules {
     }
 
     private val Labels = listOf(
+        Labelled(
+            PrivateKind.Phone,
+            """(?:电话|手机|座机|固话|联系方式|Tel|TEL|tel|Phone|phone|Mobile|mobile)\s*(?:号码?)?""",
+            """0\d{9,11}|[2-9]\d{6,7}""",
+        ),
         Labelled(PrivateKind.QQ, """(?:QQ|qq|Qq|扣扣|Q号)\s*(?:号码?|账号)?""", """[1-9]\d{4,10}"""),
         Labelled(PrivateKind.WeChat, """(?:微信|wx|WX|vx|VX|V信|v信|weixin|wechat|WeChat)\s*(?:号|ID|id)?""", """[A-Za-z][-_A-Za-z0-9]{5,19}|1[3-9]\d{9}"""),
         Labelled(PrivateKind.Code, """(?:验证码|校验码|动态码|动态密码)\s*(?:是|为)?""", """\d{4,8}"""),
@@ -67,6 +80,7 @@ object PrivacyRules {
                     val ok = when (kind) {
                         PrivateKind.IdCard -> idChecks(digits)
                         PrivateKind.BankCard -> luhn(digits) || CardLabel.containsMatchIn(text.substring(0, m.range.first).takeLast(8))
+                        PrivateKind.Phone -> m.value[0] != '+' || digits.length in 8..15
                         else -> true
                     }
                     if (ok) take(kind, m.range.first, m.range.last + 1)
