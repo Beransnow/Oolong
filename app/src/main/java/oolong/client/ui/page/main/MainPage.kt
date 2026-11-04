@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -72,6 +73,20 @@ fun MainPage(
     LaunchedEffect(selectedIndex, navigationItems.size) {
         if (pagerState.currentPage != selectedIndex) pagerState.scrollToPage(selectedIndex)
     }
+    // From a drag of the pages until they settle; a tap on a tab jumps without one
+    var swiping by remember { mutableStateOf(false) }
+    val dragged by pagerState.interactionSource.collectIsDraggedAsState()
+    LaunchedEffect(dragged) { if (dragged) swiping = true }
+    val currentItems by rememberUpdatedState(navigationItems)
+    LaunchedEffect(pagerState) {
+        // A swipe picks the tab it settles on
+        snapshotFlow { pagerState.isScrollInProgress }.collect { scrolling ->
+            if (!scrolling && swiping) {
+                swiping = false
+                currentItems.getOrNull(pagerState.settledPage)?.let { tabs.selected = it.id }
+            }
+        }
+    }
 
     val coroutineScope = rememberCoroutineScope()
     val themeColors = ExtendedTheme.colors
@@ -136,6 +151,9 @@ fun MainPage(
                         onSearchButtonPlaced = if (searchAtTop) null else { bounds -> search.buttonBounds = bounds },
                         searching = searchShown,
                         onSearch = openSearch,
+                        swipePosition = {
+                            if (swiping) pagerState.currentPage + pagerState.currentPageOffsetFraction else null
+                        },
                     )
                 }
             },
@@ -182,7 +200,7 @@ fun MainPage(
                         .fillMaxSize()
                         .graphicsLayer { alpha = 1f - search.progress.value },
                     verticalAlignment = Alignment.Top,
-                    userScrollEnabled = false
+                    userScrollEnabled = !search.open,
                 ) { page ->
                     // Only the tab in view, so the field search opens from is the one that shows
                     CompositionLocalProvider(LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage }) {

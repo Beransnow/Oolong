@@ -52,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -301,6 +302,7 @@ fun FloatingNavBar(
     onSearchButtonPlaced: ((boundsInRoot: Rect) -> Unit)? = null,
     searching: Boolean = false,
     onSearch: () -> Unit = {},
+    swipePosition: () -> Float? = { null },
 ) {
     if (LocalChromeStyle.current == ChromeStyle.Classic) {
         ClassicNavBar(currentPosition, onChangePosition, onReselected, navigationItems, modifier, themeColors, onSearchButtonPlaced, onSearch)
@@ -312,6 +314,21 @@ fun FloatingNavBar(
     var indicatorDragged by remember { mutableStateOf(false) }
     LaunchedEffect(currentPosition) {
         if (!indicatorDragged) indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
+    }
+    // While the pages are swiped, the indicator moves with them, and springs to the tab they settle on
+    val shownTab by rememberUpdatedState(currentPosition)
+    LaunchedEffect(Unit) {
+        var swiping = false
+        snapshotFlow(swipePosition).collect { position ->
+            if (indicatorDragged) return@collect
+            if (position != null) {
+                swiping = true
+                indicator.snapTo(position)
+            } else if (swiping) {
+                swiping = false
+                indicator.animateTo(shownTab.toFloat(), IndicatorSpring)
+            }
+        }
     }
     val menus = LocalContextMenus.current
     val haptic = LocalHapticFeedback.current
