@@ -1,8 +1,10 @@
 package oolong.client.ui.page.thread
 
 import android.graphics.Typeface
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -78,6 +81,7 @@ import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberSubPostText
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -108,6 +112,11 @@ private const val RuleAlpha = 0.16f
 private val BranchRadius = 12.dp
 
 private val ClassicBlockShape = RoundedCornerShape(12.dp)
+
+/** The capsule a floor's replies fold into: its height, and its avatars, how many and how far over each other. */
+private val CapsuleHeight = 30.dp
+private const val CapsuleAvatars = 3
+private val CapsuleAvatarOverlap = 7.dp
 private const val ClassicReplyLines = 3
 
 /** A reply in a floor longer than this many lines folds to [FoldToLines]. */
@@ -148,6 +157,8 @@ fun ThreadFloor(
     canStore: Boolean = true,
     /** More of the replies inside it, once opened in place; null where they open on their own page. */
     replies: FloorReplies? = null,
+    /** Whether its replies fold into a capsule, as in a thread; not in a sample of how floors look. */
+    collapsible: Boolean = false,
 ) {
     val post = item.post
     val context = LocalContext.current
@@ -155,6 +166,9 @@ fun ThreadFloor(
     val labels = postMenuLabels()
     val rule = floorRuleColor()
     val style = rememberSubPostStyle()
+    // Each floor folds and opens on its own; the setting is only where it starts
+    val collapsedByDefault = rememberSubPostsCollapsed()
+    var collapsed by rememberSaveable(post.id, collapsedByDefault) { mutableStateOf(collapsible && collapsedByDefault) }
     var floorHeight by remember { mutableIntStateOf(0) }
     var badgeHeight by remember { mutableIntStateOf(0) }
     // Where the replies sit, for the branches to reach them, by reply id
@@ -215,24 +229,40 @@ fun ThreadFloor(
                     }
                 }
                 if (post.subPostCount > 0 && post.subPosts.isNotEmpty()) {
-                    when (style) {
-                        SubPostStyle.Timeline -> TimelineSubPosts(
-                            item = item,
-                            replies = replies,
-                            options = options,
-                            onEvent = onEvent,
-                            onPlaced = { id, coordinates -> if (branches[id] !== coordinates) branches[id] = coordinates },
-                            onGone = { id -> branches.remove(id) },
-                            onFewer = {
-                                // Back at the floor's top when its replies had carried the page past it
-                                val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
-                                if (info != null && info.index == listState.firstVisibleItemIndex && listState.firstVisibleItemScrollOffset > 0) {
-                                    coroutineScope.launch { listState.scrollToItem(info.index) }
-                                }
-                                onEvent(ThreadEvent.ShowFewerSubPosts(post.id))
-                            },
-                        )
-                        SubPostStyle.Classic -> ClassicSubPosts(item, options, onEvent)
+                    // Full width, so only the height moves between the capsule and the replies
+                    Box(modifier = Modifier.fillMaxWidth().animateContentSize(Motion.settle())) {
+                        when {
+                            // On the timeline the replies open in place; the classic block goes to their page
+                            collapsed -> SubPostsCapsule(
+                                item = item,
+                                opensInPlace = style == SubPostStyle.Timeline,
+                                onClick = {
+                                    if (style == SubPostStyle.Timeline) {
+                                        collapsed = false
+                                    } else {
+                                        onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0))
+                                    }
+                                },
+                            )
+                            style == SubPostStyle.Timeline -> TimelineSubPosts(
+                                item = item,
+                                replies = replies,
+                                options = options,
+                                onEvent = onEvent,
+                                onPlaced = { id, coordinates -> if (branches[id] !== coordinates) branches[id] = coordinates },
+                                onGone = { id -> branches.remove(id) },
+                                onCollapse = if (!collapsible) null else ({
+                                    // Back at the floor's top when its replies had carried the page past it
+                                    val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+                                    if (info != null && info.index == listState.firstVisibleItemIndex && listState.firstVisibleItemScrollOffset > 0) {
+                                        coroutineScope.launch { listState.scrollToItem(info.index) }
+                                    }
+                                    collapsed = true
+                                    onEvent(ThreadEvent.ShowFewerSubPosts(post.id))
+                                }),
+                            )
+                            else -> ClassicSubPosts(item, options, onEvent)
+                        }
                     }
                 }
             }
@@ -357,7 +387,7 @@ private fun FloorBody(
 
 /**
  * The replies inside a post, each on a branch off the floor's rule: those the page brought, or as
- * many as [replies] has opened, then a link to open more in place, or to show fewer again.
+ * many as [replies] has opened, then a link to open more in place, and one to fold them all.
  */
 @Composable
 private fun TimelineSubPosts(
@@ -367,7 +397,7 @@ private fun TimelineSubPosts(
     onEvent: (ThreadEvent) -> Unit,
     onPlaced: (Long, LayoutCoordinates) -> Unit,
     onGone: (Long) -> Unit,
-    onFewer: () -> Unit,
+    onCollapse: (() -> Unit)?,
 ) {
     val post = item.post
     val context = LocalContext.current
@@ -399,34 +429,114 @@ private fun TimelineSubPosts(
             }
         }
         val remaining = if (replies?.complete == true) 0 else (post.subPostCount - subPosts.size).coerceAtLeast(0)
-        val link = when {
-            replies?.loading == true -> null
-            replies?.failed == true -> stringResource(id = R.string.sub_posts_load_failed) to { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }
-            remaining > 0 -> pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining) to { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }
-            replies != null -> stringResource(id = R.string.button_show_fewer_sub_posts) to onFewer
-            else -> null
+        if (replies?.loading != true && replies?.failed != true && remaining == 0 && onCollapse == null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            return@Column
         }
-        when {
-            replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary, onClick = null)
-            link != null -> SubPostsLink(text = link.first, color = ExtendedTheme.colors.accent, onClick = link.second)
-            else -> Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = Gutter, bottom = 12.dp)
+                .fillMaxWidth(),
+        ) {
+            when {
+                replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary, onClick = null)
+                replies?.failed == true -> SubPostsLink(
+                    text = stringResource(id = R.string.sub_posts_load_failed),
+                    color = ExtendedTheme.colors.accent,
+                    onClick = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) },
+                )
+                remaining > 0 -> SubPostsLink(
+                    text = pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining),
+                    color = ExtendedTheme.colors.accent,
+                    onClick = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) },
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (onCollapse != null) {
+                SubPostsLink(
+                    text = stringResource(id = R.string.button_show_fewer_sub_posts),
+                    color = ExtendedTheme.colors.textSecondary,
+                    weight = FontWeight.Normal,
+                    onClick = onCollapse,
+                )
+            }
         }
     }
 }
 
-/** A link under a floor's replies, lined up with their avatars. */
+/** A link under a floor's replies, in the row lined up with their avatars. */
 @Composable
-private fun SubPostsLink(text: String, color: Color, onClick: (() -> Unit)?) {
+private fun SubPostsLink(text: String, color: Color, onClick: (() -> Unit)?, weight: FontWeight = FontWeight.SemiBold) {
     Text(
         text = text,
         style = TextStyles.caption,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = weight,
         color = color,
         modifier = Modifier
-            .padding(start = Gutter, bottom = 12.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = 4.dp),
     )
+}
+
+/**
+ * A floor's replies folded into a capsule: the avatars of who replied, of the replies the floor
+ * came with, then how many replies there are. It opens them in place, or on their own page.
+ */
+@Composable
+private fun SubPostsCapsule(item: PostItem, opensInPlace: Boolean, onClick: () -> Unit) {
+    val post = item.post
+    val colors = ExtendedTheme.colors
+    // Each author once, and none of the replies the block rules fold or hide
+    val repliers = remember(post.subPosts, item.subPostBlocks) {
+        post.subPosts.filter { item.subPostBlocks[it.id] == null }.map { it.author }.distinctBy { it.id }.take(CapsuleAvatars)
+    }
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .padding(start = Gutter, top = 2.dp, bottom = 14.dp)
+            .pressScale(interaction)
+            .height(CapsuleHeight)
+            .clip(CircleShape)
+            .background(colors.chip)
+            .clickable(
+                interactionSource = interaction,
+                indication = PressFeedback.Overlay,
+                role = Role.Button,
+                onClickLabel = if (opensInPlace) stringResource(id = R.string.button_expand_reply) else null,
+                onClick = onClick,
+            )
+            .padding(start = if (repliers.isEmpty()) 12.dp else 4.dp, end = 8.dp),
+    ) {
+        if (repliers.isNotEmpty()) {
+            // Each a little over the one before, ringed in the page's colour to keep them apart
+            Box {
+                repliers.forEachIndexed { index, author ->
+                    Avatar(
+                        data = StringUtil.getAvatarUrl(author.portrait),
+                        size = SubPostAvatarSize,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(start = (SubPostAvatarSize - CapsuleAvatarOverlap) * index)
+                            .border(2.dp, colors.background, CircleShape),
+                    )
+                }
+            }
+        }
+        Text(
+            text = pluralStringResource(id = R.plurals.title_sub_posts_header, count = post.subPostCount, post.subPostCount),
+            style = TextStyles.caption,
+            color = colors.textSecondary,
+        )
+        Icon(
+            imageVector = if (opensInPlace) Symbols.ExpandMore else Symbols.ChevronRight,
+            contentDescription = null,
+            tint = colors.textSecondary,
+            modifier = Modifier.size(16.dp),
+        )
+    }
 }
 
 /**

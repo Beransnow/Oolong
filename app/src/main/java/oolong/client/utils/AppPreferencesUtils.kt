@@ -93,6 +93,11 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var forumFabFunction by DataStoreDelegates.string(defaultValue = "hide")
 
+    /** The name of a [oolong.client.ui.page.thread.SubPostStyle]. */
+    var subPostStyle by DataStoreDelegates.string(defaultValue = "Timeline", key = "subPostStyle")
+
+    var subPostsCollapsed by DataStoreDelegates.boolean(defaultValue = false, key = "subPostsCollapsed")
+
     var hideBlockedContent by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideExplore by DataStoreDelegates.boolean(defaultValue = false)

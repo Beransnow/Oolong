@@ -46,6 +46,7 @@ import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.main.SearchAtTopKey
 import oolong.client.ui.page.thread.SubPostStyle
 import oolong.client.ui.page.thread.SubPostStyleKey
+import oolong.client.ui.page.thread.SubPostsCollapsedKey
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.ChromeStyleKey
@@ -135,6 +136,12 @@ fun CustomSettingsPage(
                     )
                 }
                 prefsItem { SubPostStylePref() }
+                prefsItem {
+                    SwitchPref(
+                        key = SubPostsCollapsedKey.name,
+                        title = stringResource(id = R.string.title_sub_posts_collapsed),
+                    )
+                }
             }
             prefsGroup(textAndIconGroup) {
                 prefsItem {

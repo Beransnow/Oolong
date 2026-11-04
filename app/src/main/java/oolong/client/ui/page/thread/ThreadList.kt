@@ -172,6 +172,7 @@ internal fun ThreadContent(
                         canDelete = viewerId != null && (item.post.author.id == viewerId || options.threadAuthorId == viewerId),
                         photoViewData = { photoViewData(item.post, it) },
                         replies = state.floorReplies[item.post.id],
+                        collapsible = true,
                     )
                 }
             }

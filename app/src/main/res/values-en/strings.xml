@@ -418,6 +418,7 @@
     <string name="sub_posts_load_failed">Couldn\'t load. Tap to retry</string>
     <string name="button_expand_reply">More</string>
     <string name="title_sub_post_style">Comment style</string>
+    <string name="title_sub_posts_collapsed">Collapse comments by default</string>
     <string name="sub_post_style_timeline">Timeline</string>
     <string name="sub_post_style_classic">Classic</string>
     <plurals name="open_all_sub_posts">
