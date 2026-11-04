@@ -41,7 +41,14 @@ data class Framing(val turns: Int, val flipped: Boolean, val rect: Rect) {
 
 enum class MaskStyle { Mosaic, Blur, Block }
 
-enum class MarkKind { Pen, Arrow, Box }
+/** How a mask is laid: painted along the finger, or as a box dragged corner to corner. */
+enum class MaskShape { Brush, Rect }
+
+/**
+ * What a mark draws: a pen or highlighter line through the points; a line, arrow, box or ellipse
+ * from the first to the last; or a numbered dot at the first, numbered in the order dots were put.
+ */
+enum class MarkKind { Pen, Highlighter, Line, Arrow, Box, Ellipse, Number }
 
 enum class CaptionStyle { Outline, Filled, Plain }
 
@@ -53,10 +60,10 @@ enum class CaptionStyle { Outline, Filled, Plain }
 sealed interface Edit {
     data class Frame(val framing: Framing) : Edit
 
-    /** Hides what lies under a stroke through [points], [width] wide. */
-    data class Mask(val points: List<Offset>, val width: Float, val style: MaskStyle) : Edit
+    /** Hides what lies under a stroke through [points], [width] wide, or the box they span. */
+    data class Mask(val points: List<Offset>, val width: Float, val style: MaskStyle, val shape: MaskShape = MaskShape.Brush) : Edit
 
-    /** A pen line through [points], or an arrow or box from the first to the last. */
+    /** A [kind] of mark through or between [points], [width] wide. */
     data class Mark(val kind: MarkKind, val points: List<Offset>, val width: Float, val color: Color) : Edit
 
     /**

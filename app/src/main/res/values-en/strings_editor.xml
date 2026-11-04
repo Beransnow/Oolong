@@ -31,4 +31,19 @@
     <string name="editor_discard_title">Discard changes?</string>
     <string name="editor_discard">Discard</string>
     <string name="editor_keep_editing">Keep editing</string>
+    <string name="editor_brush">Brush</string>
+    <string name="editor_rect">Box</string>
+    <string name="editor_highlighter">Highlighter</string>
+    <string name="editor_line">Line</string>
+    <string name="editor_ellipse">Ellipse</string>
+    <string name="editor_number">Number</string>
+    <string name="editor_color_orange">Orange</string>
+    <string name="editor_color_purple">Purple</string>
+    <string name="editor_color_pink">Pink</string>
+    <string name="editor_color_cyan">Cyan</string>
+    <string name="editor_color_navy">Navy</string>
+    <string name="editor_color_brown">Brown</string>
+    <string name="editor_color_grey">Grey</string>
+    <string name="editor_color_custom">Custom color</string>
+    <string name="editor_color_done">Done picking</string>
 </resources>

@@ -29,6 +29,12 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+/** A highlighter's breadth, in widths of the pen at the same size. */
+private const val HighlighterWidth = 3.5f
+
+/** A numbered dot's radius, in widths of the pen at the same size. */
+private const val NumberRadius = 2.8f
+
 /** The colour a block mask fills with. */
 private val BlockColor = Color(0xFF202124)
 
@@ -80,24 +86,76 @@ class EditRenderer(val picture: Bitmap) {
         val orient = orient(framing)
         canvas.withMatrix(orient) {
             drawBitmap(picture, 0f, 0f, bitmapPaint)
+            // Numbered dots count up in the order they were put
+            number = 0
             for (stroke in strokes) drawStroke(this, stroke)
             if (live != null) drawStroke(this, live)
         }
         for (caption in captions) if (caption.id != hidden) drawCaption(canvas, caption, orient.map(caption.center))
     }
 
+    private fun maskPaint(style: MaskStyle) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        when (style) {
+            MaskStyle.Mosaic -> shader = mosaic
+            MaskStyle.Blur -> {
+                shader = blur
+                isFilterBitmap = true
+            }
+            MaskStyle.Block -> color = BlockColor.toArgb()
+        }
+    }
+
+    /** A dot numbered [number], its radius from the mark's [width]. */
+    private fun drawNumber(canvas: Canvas, center: Offset, width: Float, color: Color, number: Int) {
+        val radius = width * NumberRadius
+        canvas.drawCircle(center.x, center.y, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color.toArgb() })
+        val text = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.DEFAULT_BOLD
+            textSize = radius * 1.15f
+            textAlign = Paint.Align.CENTER
+            this.color = (if (color.luma() > 0.6f) Color(0xFF16181C) else Color.White).toArgb()
+        }
+        canvas.drawText(number.toString(), center.x, center.y - (text.ascent() + text.descent()) / 2, text)
+    }
+
+    /**
+     * A small piece of the picture's middle, [width] by [height], hidden in [style]: how the
+     * style looks on this very picture.
+     */
+    fun stylePreview(style: MaskStyle, width: Int, height: Int): Bitmap {
+        val result = createBitmap(width, height)
+        val side = min(size.width, size.height) / 3
+        val scale = width / side
+        Canvas(result).apply {
+            scale(scale, scale)
+            translate(-(size.width - side) / 2, -(size.height - side * height / width) / 2)
+            drawBitmap(picture, 0f, 0f, bitmapPaint)
+            drawRect(0f, 0f, size.width, size.height, maskPaint(style))
+        }
+        return result
+    }
+
+    /** The number the last numbered dot drawn took. */
+    private var number = 0
+
     private fun drawStroke(canvas: Canvas, edit: Edit) {
+        if (edit is Edit.Mark && edit.kind == MarkKind.Number) number++
         when (edit) {
-            is Edit.Mask -> canvas.drawPath(smooth(edit.points), strokePaint(edit.width).apply {
-                when (edit.style) {
-                    MaskStyle.Mosaic -> shader = mosaic
-                    MaskStyle.Blur -> {
-                        shader = blur
-                        isFilterBitmap = true
-                    }
-                    MaskStyle.Block -> color = BlockColor.toArgb()
+            is Edit.Mask -> {
+                val paint = maskPaint(edit.style).apply {
+                    style = Paint.Style.STROKE
+                    strokeWidth = edit.width
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
                 }
-            })
+                if (edit.shape == MaskShape.Rect) {
+                    val box = box(edit.points.first(), edit.points.last())
+                    val radius = min(min(box.width(), box.height()) * 0.2f, edit.width)
+                    canvas.drawRoundRect(box, radius, radius, paint.apply { style = Paint.Style.FILL })
+                } else {
+                    canvas.drawPath(smooth(edit.points), paint)
+                }
+            }
 
             is Edit.Mark -> {
                 val paint = strokePaint(edit.width).apply { color = edit.color.toArgb() }
@@ -105,11 +163,17 @@ class EditRenderer(val picture: Bitmap) {
                 val to = edit.points.last()
                 when (edit.kind) {
                     MarkKind.Pen -> canvas.drawPath(smooth(edit.points), paint)
+                    MarkKind.Highlighter -> canvas.drawPath(smooth(edit.points), paint.apply {
+                        // Broad, flat-ended and see-through, so the text under it still reads
+                        strokeWidth = edit.width * HighlighterWidth
+                        strokeCap = Paint.Cap.BUTT
+                        alpha = 110
+                    })
+                    MarkKind.Line -> canvas.drawLine(from.x, from.y, to.x, to.y, paint)
                     MarkKind.Arrow -> canvas.drawPath(arrow(from, to, edit.width), paint)
-                    MarkKind.Box -> canvas.drawRoundRect(
-                        RectF(min(from.x, to.x), min(from.y, to.y), max(from.x, to.x), max(from.y, to.y)),
-                        edit.width * 1.5f, edit.width * 1.5f, paint,
-                    )
+                    MarkKind.Box -> canvas.drawRoundRect(box(from, to), edit.width * 1.5f, edit.width * 1.5f, paint)
+                    MarkKind.Ellipse -> canvas.drawOval(box(from, to), paint)
+                    MarkKind.Number -> drawNumber(canvas, from, edit.width, edit.color, number)
                 }
             }
 
@@ -210,7 +274,7 @@ fun Edit.Caption.textColor(): Color =
 /** The outline round an outlined caption: dark, unless the text is dark itself. */
 fun Edit.Caption.outlineColor(): Color = if (color.luma() < 0.25f) Color.White else Color.Black.copy(alpha = 0.85f)
 
-private fun Color.luma() = 0.3f * red + 0.59f * green + 0.11f * blue
+internal fun Color.luma() = 0.3f * red + 0.59f * green + 0.11f * blue
 
 private fun Color.isLight() = luma() > 0.6f
 
@@ -236,6 +300,8 @@ private fun smooth(points: List<Offset>): Path = Path().apply {
     val last = points.last()
     lineTo(last.x, last.y)
 }
+
+private fun box(a: Offset, b: Offset) = RectF(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y))
 
 private fun arrow(from: Offset, to: Offset, width: Float): Path = Path().apply {
     moveTo(from.x, from.y)

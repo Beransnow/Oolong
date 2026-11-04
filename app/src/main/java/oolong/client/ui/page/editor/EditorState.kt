@@ -26,14 +26,21 @@ enum class EditorTool { Crop, Mask, Mark, Text }
 /** A frame shape: width over height of the turned picture, or null for any. */
 enum class CropRatio { Free, Original, Square, Classic, Wide }
 
-/** The colours marks and captions come in. */
+/** The colours marks and captions come in, the most used first; any other can be picked too. */
 val EditorColors = listOf(
     Color(0xFFFF4D4F),
+    Color(0xFFFF8A3D),
     Color(0xFFFFC53D),
     Color(0xFF52C41A),
     Color(0xFF4096FF),
+    Color(0xFF9B6BFF),
     Color.White,
     Color(0xFF1F1F1F),
+    Color(0xFFFF7EB6),
+    Color(0xFF19C6C6),
+    Color(0xFF2B5BD7),
+    Color(0xFF8C5A3C),
+    Color(0xFF9AA0A9),
 )
 
 /** Sizes on screen, in dp, for the three steps of each tool's size. */
@@ -55,6 +62,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     var ratio by mutableStateOf(CropRatio.Free)
     var maskStyle by mutableStateOf(MaskStyle.Mosaic)
+    var maskShape by mutableStateOf(MaskShape.Brush)
     var maskSize by mutableIntStateOf(1)
     var markKind by mutableStateOf(MarkKind.Pen)
     var markColor by mutableStateOf(EditorColors[0])
@@ -253,10 +261,15 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     fun beginStroke(screen: Offset) {
         val point = toPicture(toTurned(screen))
         live = when (tool) {
-            EditorTool.Mask -> Edit.Mask(listOf(point), MaskWidths[maskSize] * density / scale, maskStyle)
+            EditorTool.Mask -> Edit.Mask(
+                if (maskShape == MaskShape.Rect) listOf(point, point) else listOf(point),
+                MaskWidths[maskSize] * density / scale,
+                maskStyle,
+                maskShape,
+            )
             EditorTool.Mark -> Edit.Mark(
                 markKind,
-                if (markKind == MarkKind.Pen) listOf(point) else listOf(point, point),
+                if (markKind.traced || markKind == MarkKind.Number) listOf(point) else listOf(point, point),
                 MarkWidths[markSize] * density / scale,
                 markColor,
             )
@@ -267,8 +280,15 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     fun extendStroke(screen: Offset) {
         val point = toPicture(toTurned(screen))
         live = when (val stroke = live) {
-            is Edit.Mask -> stroke.copy(points = stroke.points + point)
-            is Edit.Mark -> stroke.copy(points = if (stroke.kind == MarkKind.Pen) stroke.points + point else listOf(stroke.points.first(), point))
+            is Edit.Mask -> stroke.copy(points = if (stroke.shape == MaskShape.Rect) listOf(stroke.points.first(), point) else stroke.points + point)
+            is Edit.Mark -> stroke.copy(
+                points = when {
+                    stroke.kind.traced -> stroke.points + point
+                    // A numbered dot follows the finger until it lifts
+                    stroke.kind == MarkKind.Number -> listOf(point)
+                    else -> listOf(stroke.points.first(), point)
+                },
+            )
             else -> stroke
         }
     }
@@ -276,10 +296,14 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     fun endStroke() {
         val stroke = live ?: return
         live = null
-        // An arrow or box needs some length to be one
-        if (stroke is Edit.Mark && stroke.kind != MarkKind.Pen) {
-            val (a, b) = stroke.points.first() to stroke.points.last()
-            if (abs(a.x - b.x) < stroke.width * 2 && abs(a.y - b.y) < stroke.width * 2) return
+        // A line, arrow, box, ellipse or masked box needs some size to be one
+        val spanned = (stroke is Edit.Mark && !stroke.kind.traced && stroke.kind != MarkKind.Number) ||
+            (stroke is Edit.Mask && stroke.shape == MaskShape.Rect)
+        if (spanned) {
+            val width = if (stroke is Edit.Mark) stroke.width else (stroke as Edit.Mask).width
+            val points = if (stroke is Edit.Mark) stroke.points else (stroke as Edit.Mask).points
+            val (a, b) = points.first() to points.last()
+            if (abs(a.x - b.x) < width * 2 && abs(a.y - b.y) < width * 2) return
         }
         history.push(stroke)
     }
@@ -347,3 +371,6 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     /** The largest side the frame must keep, in turned pixels. */
     fun leastFrame(): Float = max(48 * density / scale, 16f)
 }
+
+/** Whether a mark follows the finger all the way, rather than spanning from where it went down. */
+val MarkKind.traced: Boolean get() = this == MarkKind.Pen || this == MarkKind.Highlighter

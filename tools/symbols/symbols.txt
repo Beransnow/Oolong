@@ -80,6 +80,7 @@ reply
 restart_alt
 rotate_left
 search
+select
 share
 short_text
 slow_motion_video
