@@ -16,5 +16,8 @@ CREATE TABLE IF NOT EXISTS feedback (
     marked_at INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'open',
     note TEXT,
-    context TEXT NOT NULL
+    context TEXT NOT NULL,
+    -- The model's write-up as JSON; null until it succeeds, with the last failure beside it
+    summary TEXT,
+    summary_error TEXT
 );

@@ -5,6 +5,7 @@
     "d1_databases": [
         { "binding": "DB", "database_name": "oolong-feedback", "database_id": "ad6eadc8-ed64-46f4-ba9a-83d542524649" }
     ],
+    "ai": { "binding": "AI" },
     // Messages older than a few days are dropped once a day; GROUP_ID and OWNER_ID are secrets
     "triggers": { "crons": ["0 20 * * *"] }
 }
