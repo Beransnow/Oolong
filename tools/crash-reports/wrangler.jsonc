@@ -3,7 +3,7 @@
     "main": "src/index.js",
     "compatibility_date": "2026-10-01",
     "d1_databases": [
-        { "binding": "DB", "database_name": "oolong-crash", "database_id": "00000000-0000-0000-0000-000000000000" }
+        { "binding": "DB", "database_name": "oolong-crash", "database_id": "4be23eaf-709d-4dbe-9060-97c5877e7d77" }
     ],
     // Private: the mapping file of each build, mapping/<versionName>.bin
     "r2_buckets": [
