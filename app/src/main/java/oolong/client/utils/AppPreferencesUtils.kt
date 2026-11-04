@@ -27,6 +27,9 @@ import kotlin.reflect.KProperty
 
 open class AppPreferencesUtils private constructor(ctx: Context) {
     companion object {
+        /** The key of [usageStats], which the settings switch writes too. */
+        const val UsageStatsKey = "usage_stats"
+
         private var instance: AppPreferencesUtils? = null
 
         fun getInstance(context: Context): AppPreferencesUtils {
@@ -50,6 +53,11 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     /** Whether the first-launch landing page has been seen through. */
     var landingShown by DataStoreDelegates.boolean(defaultValue = false, key = "landing_shown")
+
+    /** Whether usage statistics are sent (see UsageStats); asked on first launch, or once after an update. */
+    var usageStats by DataStoreDelegates.boolean(defaultValue = false, key = UsageStatsKey)
+
+    var usageStatsAsked by DataStoreDelegates.boolean(defaultValue = false, key = "usage_stats_asked")
 
     var appIcon by DataStoreDelegates.string(
         defaultValue = LauncherIcons.DEFAULT_ICON,

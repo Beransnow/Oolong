@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -46,7 +45,6 @@ import oolong.client.components.CrashReports
 import oolong.client.dataStore
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
-import oolong.client.ui.common.prefs.widgets.ListPref
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -69,7 +67,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 /** The crashes kept on the device, newest first; each opens to its full record. */
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun CrashLogsPage(
     navigator: Navigator = LocalNavigator.current,
@@ -99,42 +97,23 @@ fun CrashLogsPage(
             )
         },
     ) { padding ->
-        val list = entries ?: return@GlassScaffold
-        PrefsScreen(
-            dataStore = context.dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = padding,
-        ) {
-            prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
-                prefsItem {
-                    ListPref(
-                        key = CrashReports.ModeKey,
-                        title = stringResource(id = R.string.title_crash_report_mode),
-                        entries = mapOf(
-                            CrashReports.Mode.Ask.value to stringResource(id = R.string.crash_report_mode_ask),
-                            CrashReports.Mode.Always.value to stringResource(id = R.string.crash_report_mode_always),
-                            CrashReports.Mode.Never.value to stringResource(id = R.string.crash_report_mode_never),
-                        ),
-                        useSelectedAsSummary = true,
-                        defaultValue = CrashReports.Mode.Ask.value,
-                    )
-                }
+        val list = entries
+        when {
+            list == null -> Unit
+            list.isEmpty() -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(id = R.string.crash_logs_empty),
+                    style = TextStyles.label,
+                    color = ExtendedTheme.colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
             }
-            if (list.isEmpty()) {
-                prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
-                    prefsItem {
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xl), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = stringResource(id = R.string.crash_logs_empty),
-                                style = TextStyles.label,
-                                color = ExtendedTheme.colors.textSecondary,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-            } else {
+            else -> PrefsScreen(
+                dataStore = context.dataStore,
+                dividerThickness = 0.dp,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = padding,
+            ) {
                 prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
                     list.forEach { entry ->
                         prefsItem {

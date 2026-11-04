@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_usage_stats">发送使用统计</string>
+    <string name="title_diagnostics">诊断信息</string>
+    <string name="diagnostics_device">本机</string>
+    <string name="diagnostics_app_version">应用版本</string>
+    <string name="diagnostics_system">系统</string>
+    <string name="diagnostics_model">机型</string>
+    <string name="diagnostics_rom">ROM</string>
+    <string name="diagnostics_form">设备形态</string>
+    <string name="diagnostics_locale">语言</string>
+    <string name="diagnostics_form_phone">手机</string>
+    <string name="diagnostics_form_tablet">平板</string>
+    <string name="diagnostics_form_foldable">折叠屏</string>
+    <string name="diagnostics_rom_other">其他</string>
+    <string name="diagnostics_usage_stats">使用统计</string>
+    <string name="diagnostics_daily">每天</string>
+    <string name="diagnostics_daily_fields">版本、Android 版本、品牌、ROM、设备形态、是否崩溃、活跃情况</string>
+    <string name="diagnostics_monthly">每月一次</string>
+    <string name="diagnostics_monthly_fields">机型、ROM 版本号、语言</string>
+    <string name="diagnostics_never">不发送</string>
+    <string name="diagnostics_never_fields">账号、浏览内容、设备标识</string>
+    <string name="diagnostics_last_sent">最近一次发送 · %1$s</string>
+    <string name="diagnostics_not_sent">尚未发送</string>
+    <string name="diagnostics_crash_logs">崩溃日志</string>
+    <string name="diagnostics_crash_fields">堆栈、版本、机型、所在页面，以及一个只用于崩溃日志的随机标识</string>
+    <string name="usage_stats_note">不含账号和浏览内容。</string>
+    <string name="usage_stats_view">查看内容</string>
+    <string name="title_dialog_usage_stats">发送使用统计？</string>
+    <string name="message_dialog_usage_stats">只有版本、机型等信息，不含账号和浏览内容。</string>
+    <string name="button_send_usage_stats">发送</string>
+    <string name="button_dont_send_usage_stats">不发送</string>
+</resources>

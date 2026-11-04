@@ -46,6 +46,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -88,6 +93,7 @@ import oolong.client.components.ClipBoardLinkDetector
 import oolong.client.components.ClipBoardThreadLink
 import oolong.client.components.CrashLogs
 import oolong.client.components.CrashReports
+import oolong.client.components.UsageStats
 import oolong.client.repository.AccountRepository
 import oolong.client.services.AutoSign
 import oolong.client.services.NotifyJobService
@@ -110,6 +116,7 @@ import oolong.client.ui.navigation.rememberAppBackStack
 import oolong.client.ui.navigation.toDeepLinkKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.landing.LandingHost
+import oolong.client.ui.page.landing.UsageStatsContentDialog
 import oolong.client.ui.page.settings.block.BlockShortcuts
 import oolong.client.ui.page.settings.block.BlockShortcutsHost
 import oolong.client.ui.page.settings.block.LocalBlockShortcuts
@@ -504,13 +511,48 @@ class MainActivity : AppCompatActivity() {
                 }
             },
         )
+        // Asked once of those who used the app before usage statistics came in; new users answer on the welcome
+        val usageStatsDialogState = rememberDialogState()
+        val usageStatsContentState = rememberDialogState()
+        UsageStatsContentDialog(usageStatsContentState)
+        AlertDialog(
+            dialogState = usageStatsDialogState,
+            title = { Text(text = stringResource(id = R.string.title_dialog_usage_stats)) },
+            content = {
+                Text(
+                    text = buildAnnotatedString {
+                        append(stringResource(id = R.string.message_dialog_usage_stats))
+                        withLink(LinkAnnotation.Clickable("view", TextLinkStyles(SpanStyle(color = ExtendedTheme.colors.accent))) { usageStatsContentState.show() }) {
+                            append(stringResource(id = R.string.usage_stats_view))
+                        }
+                    },
+                )
+            },
+            buttons = {
+                DialogPositiveButton(
+                    text = stringResource(id = R.string.button_send_usage_stats),
+                    onClick = { appPreferences.usageStats = true },
+                )
+                DialogNegativeButton(text = stringResource(id = R.string.button_dont_send_usage_stats))
+            },
+        )
         LaunchedEffect(Unit) {
-            // Sends that failed before are tried again on the side
-            lifecycleScope.launch(Dispatchers.IO) { CrashReports.sendWaiting(this@MainActivity) }
+            // Sends that failed before, and today's usage statistics, go on the side
+            lifecycleScope.launch(Dispatchers.IO) {
+                CrashReports.sendWaiting(this@MainActivity)
+                UsageStats.sendIfDue(this@MainActivity)
+            }
             val entry = withContext(Dispatchers.IO) {
                 CrashLogs.collectExits(this@MainActivity)
                 CrashLogs.takeUnnoticed(this@MainActivity)
-            } ?: return@LaunchedEffect
+            }
+            if (entry == null) {
+                if (appPreferences.landingShown && !appPreferences.usageStatsAsked) {
+                    appPreferences.usageStatsAsked = true
+                    usageStatsDialogState.show()
+                }
+                return@LaunchedEffect
+            }
             val sendable = withContext(Dispatchers.IO) { CrashReports.canSend(this@MainActivity, entry) }
             when (if (sendable) CrashReports.mode(this@MainActivity) else CrashReports.Mode.Never) {
                 CrashReports.Mode.Always -> withContext(Dispatchers.IO) { CrashReports.send(this@MainActivity, entry) }

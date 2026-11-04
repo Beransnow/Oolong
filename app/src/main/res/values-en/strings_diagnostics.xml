@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_usage_stats">Send usage statistics</string>
+    <string name="title_diagnostics">Diagnostic info</string>
+    <string name="diagnostics_device">This device</string>
+    <string name="diagnostics_app_version">App version</string>
+    <string name="diagnostics_system">System</string>
+    <string name="diagnostics_model">Model</string>
+    <string name="diagnostics_rom">ROM</string>
+    <string name="diagnostics_form">Form</string>
+    <string name="diagnostics_locale">Language</string>
+    <string name="diagnostics_form_phone">Phone</string>
+    <string name="diagnostics_form_tablet">Tablet</string>
+    <string name="diagnostics_form_foldable">Foldable</string>
+    <string name="diagnostics_rom_other">Other</string>
+    <string name="diagnostics_usage_stats">Usage statistics</string>
+    <string name="diagnostics_daily">Daily</string>
+    <string name="diagnostics_daily_fields">Version, Android version, brand, ROM, form, whether it crashed, activity</string>
+    <string name="diagnostics_monthly">Monthly</string>
+    <string name="diagnostics_monthly_fields">Model, ROM build, language</string>
+    <string name="diagnostics_never">Never sent</string>
+    <string name="diagnostics_never_fields">Account, what you browse, device identifiers</string>
+    <string name="diagnostics_last_sent">Last sent · %1$s</string>
+    <string name="diagnostics_not_sent">Not sent yet</string>
+    <string name="diagnostics_crash_logs">Crash logs</string>
+    <string name="diagnostics_crash_fields">Stack trace, version, model and page, with a random id used only for crash logs</string>
+    <string name="usage_stats_note">No account or browsing data.</string>
+    <string name="usage_stats_view">See what is sent</string>
+    <string name="title_dialog_usage_stats">Send usage statistics?</string>
+    <string name="message_dialog_usage_stats">Only the version, model and similar details, without account or browsing data.</string>
+    <string name="button_send_usage_stats">Send</string>
+    <string name="button_dont_send_usage_stats">Don\'t send</string>
+</resources>

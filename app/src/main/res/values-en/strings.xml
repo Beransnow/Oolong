@@ -848,7 +848,7 @@
     <string name="reader_pictures">Pictures</string>
     <string name="reader_up_to_date">You\'re up to date</string>
     <string name="title_crash_logs">Crash logs</string>
-    <string name="settings_group_troubleshooting">Troubleshooting</string>
+    <string name="settings_group_troubleshooting">Diagnostics</string>
     <string name="crash_logs_empty">No crashes recorded</string>
     <string name="crash_logs_clear">Clear all</string>
     <string name="title_dialog_clear_crash_logs">Clear all crash logs?</string>

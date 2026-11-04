@@ -28,11 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.components.AppStorage
+import oolong.client.components.CrashReports
 import oolong.client.dataStore
 import oolong.client.migration.LegacyImport
 import oolong.client.ui.common.prefs.PrefsChoiceValue
@@ -42,6 +44,7 @@ import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.navigation.CrashLogsKey
+import oolong.client.ui.navigation.DiagnosticsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.StorageKey
 import oolong.client.ui.page.LocalNavigator
@@ -53,6 +56,7 @@ import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
+import oolong.client.utils.AppPreferencesUtils
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -120,13 +124,61 @@ fun MoreSettingsPage(
             }
             prefsGroup(troubleshootingGroup) {
                 prefsItem {
+                    SwitchPref(
+                        key = AppPreferencesUtils.UsageStatsKey,
+                        title = stringResource(id = R.string.title_usage_stats),
+                        defaultChecked = false,
+                    )
+                }
+                prefsItem { CrashReportModePref() }
+                prefsItem {
                     TextPref(
                         title = stringResource(id = R.string.title_crash_logs),
                         onClick = { navigator.navigate(CrashLogsKey) },
                     )
                 }
+                prefsItem {
+                    TextPref(
+                        title = stringResource(id = R.string.title_diagnostics),
+                        onClick = { navigator.navigate(DiagnosticsKey) },
+                    )
+                }
             }
         }
+    }
+}
+
+/** Whether a crash log is sent: asked each time, sent on its own, or never (see CrashReports). */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun CrashReportModePref() {
+    val context = LocalContext.current
+    val dataStore = context.dataStore
+    val coroutineScope = rememberCoroutineScope()
+    val key = remember { stringPreferencesKey(CrashReports.ModeKey) }
+    val value by remember { dataStore.data.map { it[key] ?: CrashReports.Mode.Ask.value } }.collectAsState(initial = CrashReports.Mode.Ask.value)
+    val options = listOf(
+        CrashReports.Mode.Ask to stringResource(id = R.string.crash_report_mode_ask),
+        CrashReports.Mode.Always to stringResource(id = R.string.crash_report_mode_always),
+        CrashReports.Mode.Never to stringResource(id = R.string.crash_report_mode_never),
+    )
+    val current = options.indexOfFirst { it.first.value == value }.coerceAtLeast(0)
+    val menu = rememberMenuTriggerState()
+    Box(
+        modifier = Modifier.clickMenu(
+            state = menu,
+            items = {
+                choiceMenuItems(options.withIndex().map { (index, option) -> index to option.second }, current) { index ->
+                    coroutineScope.launch { dataStore.edit { it[key] = options[index].first.value } }
+                }
+            },
+        ),
+    ) {
+        TextPref(
+            title = stringResource(id = R.string.title_crash_report_mode),
+            enabled = true,
+            trailingContent = { PrefsChoiceValue(text = options[current].second, modifier = Modifier.menuAnchor(menu)) },
+        )
     }
 }
 

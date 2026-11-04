@@ -381,7 +381,9 @@ class UpdateRepository @Inject constructor(
         }
 
         private val AutoCheckKey = booleanPreferencesKey("update_auto_check")
-        private val ChannelKey = stringPreferencesKey("update_channel")
+
+        // Read by UsageStats too, which sends the channel along
+        internal val ChannelKey = stringPreferencesKey("update_channel")
         private val SkippedKey = intPreferencesKey("update_skipped_version")
         private val HintedKey = intPreferencesKey("update_hinted_version")
         private val LastCheckKey = longPreferencesKey("update_last_check")

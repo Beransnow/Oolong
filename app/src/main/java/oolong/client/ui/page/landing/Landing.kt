@@ -10,9 +10,11 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +26,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CheckboxDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -55,9 +61,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -80,11 +91,14 @@ import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.settings.about.LensCenter
 import oolong.client.ui.page.settings.about.LensRadius
+import oolong.client.ui.widgets.compose.AlertDialog
 import oolong.client.ui.widgets.compose.Aurora
 import oolong.client.ui.widgets.compose.AuroraState
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.condense
+import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.appPreferences
 import kotlin.math.PI
 import kotlin.math.roundToInt
@@ -140,9 +154,18 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
         onPauseOrDispose {}
     }
 
+    // Usage statistics are asked on the welcome only; after an import the update's own question comes later
+    var usageStats by rememberSaveable { mutableStateOf(false) }
+    val usageStatsDialog = rememberDialogState()
+    UsageStatsContentDialog(usageStatsDialog)
+
     fun leave(then: () -> Unit = {}) {
         if (state.leaving) return
         state.leaving = true
+        if (stage == Stage.Welcome) {
+            context.appPreferences.usageStats = usageStats
+            context.appPreferences.usageStatsAsked = true
+        }
         then()
         scope.launch {
             state.leave.animateTo(1f, Leave)
@@ -264,6 +287,11 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
                                     style = TextStyles.caption.copy(color = textSecondary, textAlign = TextAlign.Center),
                                 )
                             }
+                            UsageStatsConsent(
+                                checked = usageStats,
+                                onCheckedChange = { usageStats = it },
+                                onView = { usageStatsDialog.show() },
+                            )
                             if (legacy) {
                                 Action(stringResource(R.string.landing_import), primary = true) { export.launch(Unit) }
                                 Action(stringResource(R.string.landing_skip_import), primary = false) { leave() }
@@ -293,6 +321,63 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
         }
         Lens(state)
     }
+}
+
+/** Whether to send usage statistics, unticked until the person ticks it; what is sent opens in a dialog. */
+@Composable
+private fun UsageStatsConsent(checked: Boolean, onCheckedChange: (Boolean) -> Unit, onView: () -> Unit) {
+    val colors = ExtendedTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = CheckboxDefaults.colors(checkedColor = colors.emphasis, uncheckedColor = colors.textSecondary),
+        )
+        Column(modifier = Modifier.padding(top = 12.dp, end = 8.dp)) {
+            Text(text = stringResource(R.string.title_usage_stats), style = TextStyles.label.copy(color = colors.text))
+            Text(
+                text = buildAnnotatedString {
+                    append(stringResource(R.string.usage_stats_note))
+                    withLink(LinkAnnotation.Clickable("view", TextLinkStyles(SpanStyle(color = colors.accent))) { onView() }) {
+                        append(stringResource(R.string.usage_stats_view))
+                    }
+                },
+                style = TextStyles.caption.copy(color = colors.textSecondary),
+            )
+        }
+    }
+}
+
+/** What usage statistics send, as 诊断信息 lists it. */
+@Composable
+internal fun UsageStatsContentDialog(state: DialogState) {
+    AlertDialog(
+        dialogState = state,
+        confirmText = stringResource(R.string.button_ok),
+        title = { Text(text = stringResource(R.string.diagnostics_usage_stats)) },
+        content = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    R.string.diagnostics_daily to R.string.diagnostics_daily_fields,
+                    R.string.diagnostics_monthly to R.string.diagnostics_monthly_fields,
+                    R.string.diagnostics_never to R.string.diagnostics_never_fields,
+                ).forEach { (title, fields) ->
+                    Column {
+                        Text(text = stringResource(title), style = TextStyles.label)
+                        Text(text = stringResource(fields), style = TextStyles.caption.copy(color = ExtendedTheme.colors.textSecondary))
+                    }
+                }
+            }
+        },
+    )
 }
 
 /**
