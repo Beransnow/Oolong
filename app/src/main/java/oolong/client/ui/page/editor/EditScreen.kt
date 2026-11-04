@@ -101,7 +101,13 @@ private val ChromeTone = Color(0xFF3A3B40)
 private val FrameGrip = 24.dp
 
 /** What the editor writes: the picture as framed, with its strokes and captions. */
-class EditResult(val framing: Framing, val strokes: List<Edit>, val captions: List<Edit.Caption>)
+class EditResult(
+    val framing: Framing,
+    val strokes: List<Edit>,
+    val captions: List<Edit.Caption>,
+    /** The steps that led here, kept so the picture can be edited again from where it was left. */
+    val steps: List<Edit>,
+)
 
 /**
  * The editor: the picture between the bars, cancel, undo and redo, and done above, the tools
@@ -113,15 +119,16 @@ fun EditScreen(
     saving: Boolean,
     onCancel: () -> Unit,
     onDone: (EditResult) -> Unit,
+    initial: List<Edit> = emptyList(),
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val state = remember(renderer) { EditorState(renderer, scope) }
+    val state = remember(renderer) { EditorState(renderer, scope, initial) }
     state.density = density.density
     val discardDialog = rememberDialogState()
     val leave = {
         state.finishCaption()
-        if (state.history.canUndo) discardDialog.show() else onCancel()
+        if (state.edited) discardDialog.show() else onCancel()
     }
 
     BackHandler {
@@ -188,7 +195,7 @@ private fun Scaffold(
     val done: () -> Unit = {
         state.finishCaption()
         val history = state.history
-        onDone(EditResult(history.framing, history.strokes, history.captions))
+        onDone(EditResult(history.framing, history.strokes, history.captions, history.applied.toList()))
     }
     GlassScaffold(
         backgroundColor = Color.Black,

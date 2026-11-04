@@ -163,6 +163,13 @@ class EditHistory(private val whole: Framing) {
             } ?: 0
             ) + 1
 
+    /** Starts from [edits] already taken, which undo can take back. */
+    fun restore(edits: List<Edit>) {
+        steps.clear()
+        steps.addAll(edits)
+        position = steps.size
+    }
+
     fun push(edit: Edit) {
         while (steps.size > position) steps.removeAt(steps.lastIndex)
         steps.add(edit)

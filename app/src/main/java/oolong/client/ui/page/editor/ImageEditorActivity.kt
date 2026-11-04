@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -130,6 +131,7 @@ class ImageEditorActivity : AppCompatActivity() {
                     if (renderer != null) {
                         EditScreen(
                             renderer = renderer,
+                            initial = viewModel.initial,
                             saving = saving,
                             onCancel = ::finish,
                             onDone = { result -> finish { viewModel.save(renderer, result) } },
@@ -154,7 +156,17 @@ class ImageEditorActivity : AppCompatActivity() {
 data class Crop(val frame: Size, val turns: Int, val scale: Float, val offset: Offset)
 
 class ImageEditorViewModel(application: Application, savedState: SavedStateHandle) : AndroidViewModel(application) {
-    private val source: Uri? = savedState[EXTRA_SOURCE]
+    private val given: Uri? = savedState[EXTRA_SOURCE]
+
+    /** What was edited before, when the picture given is one this editor made. */
+    private val record: EditRecord? = if (savedState[EXTRA_EDIT] ?: false) given?.takeIf { it.scheme == "file" }?.path?.let { EditRecord.read(File(it)) } else null
+
+    /** The picture to start from: the one an earlier edit started from, or the one given. */
+    private val source: Uri? = record?.source?.toUri() ?: given
+
+    /** The steps taken before, to carry on from; empty for a picture not edited here. */
+    var initial: List<Edit> = emptyList()
+        private set
     private val output = File(checkNotNull(savedState.get<String>(EXTRA_OUTPUT)))
     val aspect: Float = savedState[EXTRA_ASPECT] ?: 1f
     val round: Boolean = savedState[EXTRA_ROUND] ?: false
@@ -175,7 +187,12 @@ class ImageEditorViewModel(application: Application, savedState: SavedStateHandl
                 // Only ever smaller, never blown up past its own pixels
                 precision(Precision.INEXACT)
             }
-            if (bitmap == null) unreadable.trySend(Unit) else _picture.value = bitmap
+            if (bitmap == null) {
+                unreadable.trySend(Unit)
+            } else {
+                initial = record?.edits(bitmap.width, bitmap.height).orEmpty()
+                _picture.value = bitmap
+            }
         }
     }
 
@@ -201,6 +218,7 @@ class ImageEditorViewModel(application: Application, savedState: SavedStateHandl
             output.parentFile?.mkdirs()
             output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
             bitmap.recycle()
+            source?.let { EditRecord.write(output, it.toString(), renderer.picture.width, renderer.picture.height, result.steps) }
         }.isSuccess
     }
 

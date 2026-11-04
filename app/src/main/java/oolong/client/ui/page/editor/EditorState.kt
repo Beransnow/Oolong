@@ -53,9 +53,16 @@ val CaptionSizes = floatArrayOf(22f, 32f, 46f)
  * turned picture the screen shows.
  */
 @Stable
-class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope) {
+class EditorState(
+    val renderer: EditRenderer,
+    private val scope: CoroutineScope,
+    private val initial: List<Edit> = emptyList(),
+) {
     val whole = Framing.whole(renderer.size)
-    val history = EditHistory(whole)
+    val history = EditHistory(whole).apply { restore(initial) }
+
+    /** Whether anything differs from how the editor opened, which leaving would lose. */
+    val edited: Boolean get() = history.applied != initial || draft != null
 
     var tool by mutableStateOf<EditorTool?>(null)
         private set
