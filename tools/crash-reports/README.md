@@ -1,19 +1,72 @@
 # Crash reports
 
-Turns obfuscated stack traces from release builds back into the original classes, methods and
-lines, in a Worker within the free plan's 10 ms of CPU per invocation. The design is in
-`docs/crash-reporting.md`; this directory so far holds the retrace and the mapping shards it reads.
+A Worker that takes crash reports the app sends, with the user's consent, and files them under
+problems. Release builds are obfuscated, so each report is first turned back into the original
+classes, methods and lines with its build's mapping, within the free plan's 10 ms of CPU per
+invocation; reports of one problem are grouped across builds, and the owner hears of new problems
+on Telegram.
 
-- `src/mapping.js` reads an R8 mapping file and lays it out as shards.
+- `src/index.js` is the Worker: `POST /crash`, and the scheduled runs that file reports.
+- `src/group.js` says which reports are one problem.
 - `src/retrace.js` retraces a trace from looked-up records.
-- `src/shards.js` looks records up in the shards.
-- `scripts/shard.mjs` writes a build's shards.
+- `src/mapping.js` reads an R8 mapping file and lays it out as shards.
+- `src/shards.js` reads records from a build's mapping file, at once or over several runs.
+- `scripts/shard.mjs` writes a build's mapping file.
 
 Commands below run from this directory.
 
+## Reports
+
+`POST /crash` takes JSON of at most 64 KB:
+
+| Field | |
+|---|---|
+| `version` | The build's versionName, with `+<commit>` on CI builds |
+| `kind` | `crash`, `anr` or `native` |
+| `trace` | The obfuscated stack trace; for an ANR, the main thread |
+| `install` | A random id the app makes once, to count the installs a problem reaches |
+| `time`, `sdk`, `device`, `rom`, `page`, `thread` | Optional |
+
+It answers 202 once the report is kept, 400 for a malformed one, 429 past 20 reports from one
+install in a day, and 503 while 5,000 wait to be filed.
+
+Every minute the scheduled run files waiting reports. A trace seen before in the same build goes
+straight to its problem. A new one needs lines from its build's mapping file: they are read 24
+shards per run and kept in `crash_lines`, where later traces of the build find them, and once all
+are there the trace is retraced and grouped. A build without a mapping file (a debug build, or one
+whose file has gone) is grouped by its obfuscated names.
+
+A problem is its kind, the exception at the root of the trace and the first three frames of the
+app's own code, without line numbers. A problem marked `fixed` opens again when it shows up in a
+build it hadn't come from before; builds that had it before the fix still have it.
+
+## Setup
+
+```sh
+npx wrangler d1 create oolong-crash            # then fill its id into wrangler.jsonc
+npx wrangler r2 bucket create oolong-mappings  # private: no public access, no custom domain
+npx wrangler d1 execute oolong-crash --remote --file schema.sql
+npx wrangler deploy
+npx wrangler secret put BOT_TOKEN
+npx wrangler secret put OWNER_ID
+```
+
+The app reaches the Worker on a custom domain, as workers.dev isn't reachable from mainland China.
+
+## Reading
+
+```sh
+npx wrangler d1 execute oolong-crash --remote --command "SELECT id, title, reports, last_version FROM crash_groups WHERE status = 'open' ORDER BY last_seen DESC"
+npx wrangler d1 execute oolong-crash --remote --command "SELECT retraced FROM crash_samples WHERE group_id = … ORDER BY id DESC LIMIT 1"
+npx wrangler d1 execute oolong-crash --remote --command "UPDATE crash_groups SET status = 'fixed', fixed_by = '<commit>', note = '…' WHERE id = …"
+```
+
+To try it locally, put a mapping file in the local bucket, run `npx wrangler dev --local
+--test-scheduled`, post reports and call `/__scheduled?cron=*+*+*+*+*` for each run.
+
 ## Mapping file
 
-A build's mapping becomes one file, kept in R2 as `mapping/<versionName>.bin`, `versionName`
+A build's mapping becomes one file, kept in the private bucket as `mapping/<versionName>.bin`, `versionName`
 exactly as the app reports it (with `+<commit>` on CI builds). A lookup reads it by range: the
 header once, then each shard it needs.
 

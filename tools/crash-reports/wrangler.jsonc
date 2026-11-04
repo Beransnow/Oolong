@@ -1,0 +1,15 @@
+{
+    "name": "oolong-crash",
+    "main": "src/index.js",
+    "compatibility_date": "2026-10-01",
+    "d1_databases": [
+        { "binding": "DB", "database_name": "oolong-crash", "database_id": "00000000-0000-0000-0000-000000000000" }
+    ],
+    // Private: the mapping file of each build, mapping/<versionName>.bin
+    "r2_buckets": [
+        { "binding": "MAPPINGS", "bucket_name": "oolong-mappings" }
+    ],
+    // Every minute, waiting reports are filed; once a day, what has expired is dropped.
+    // BOT_TOKEN and OWNER_ID, for telling the owner of new problems, are secrets
+    "triggers": { "crons": ["* * * * *", "17 3 * * *"] }
+}
