@@ -14,7 +14,7 @@
     <string name="storage_runtime">基础组件</string>
     <string name="storage_text">文字识别</string>
     <string name="storage_region">智能选区</string>
-    <string name="storage_text_used">用于自动打码、点选打码</string>
+    <string name="storage_text_used">用于提取文字、自动打码、点选打码</string>
     <string name="storage_region_used">用于点选打码</string>
     <string name="storage_not_downloaded">未下载</string>
     <string name="storage_downloading">下载中 %1$d%%</string>
@@ -23,7 +23,7 @@
     <string name="storage_download_note">大小约 %1$s。</string>
     <string name="storage_download">下载</string>
     <string name="storage_delete_confirm">删除%1$s？</string>
-    <string name="storage_delete_text_note">删除后，使用自动打码和点选打码时需重新下载。</string>
+    <string name="storage_delete_text_note">删除后，使用提取文字、自动打码和点选打码时需重新下载。</string>
     <string name="storage_delete_region_note">删除后，使用点选打码时需重新下载。</string>
     <string name="storage_delete">删除</string>
     <string name="storage_group_data">数据</string>

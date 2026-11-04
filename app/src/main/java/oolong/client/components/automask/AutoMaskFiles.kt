@@ -125,6 +125,7 @@ class AutoMaskFiles @Inject constructor(
     private val loading = Mutex()
     private var runtimeLoaded = false
     private var engine: AutoMask? = null
+    private var finder: TextFinder? = null
     private var reader: TextReader? = null
 
     /** Whether this phone can run them at all: a runtime is built for its processor. */
@@ -163,7 +164,10 @@ class AutoMaskFiles @Inject constructor(
             withContext(io) {
                 fetching.withLock {
                     engine = null
-                    if (ability == Ability.Text) reader = null
+                    if (ability == Ability.Text) {
+                        finder = null
+                        reader = null
+                    }
                     abilityFiles.getValue(ability).forEach { File(folder, it.name).delete() }
                     val anyLeft = abilityFiles.values.flatten().any { File(folder, it.name).exists() }
                     if (!anyLeft) runtime?.let { File(folder, it.name).delete() }
@@ -181,6 +185,23 @@ class AutoMaskFiles @Inject constructor(
 
     /** How much of the phone the runtime takes now. */
     val runtimeBytes: Long get() = runtime?.let { File(folder, it.name).length() } ?: 0
+
+    /** What finds the lines of text, loaded the first time; null until it is downloaded, or when it would not load. */
+    suspend fun finder(): TextFinder? = loading.withLock { loadFinder() }
+
+    private suspend fun loadFinder(): TextFinder? {
+        finder?.let { return it }
+        if (!downloaded(needs(setOf(Ability.Text))) || !loadRuntime()) return null
+        return withContext(io) {
+            try {
+                TextFinder.load(File(folder, Detector), threads = 4).also { finder = it }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                unusable(Ability.Text, e)
+                null
+            }
+        }
+    }
 
     /** What reads text, loaded the first time; null until it is downloaded, or when it would not load. */
     suspend fun reader(): TextReader? = loading.withLock {
@@ -204,12 +225,13 @@ class AutoMaskFiles @Inject constructor(
     suspend fun engine(): AutoMask? = loading.withLock {
         engine?.let { return it }
         if (!downloaded(needs(Ability.entries)) || !loadRuntime()) return null
+        val finder = loadFinder() ?: return null
         withContext(io) {
             try {
-                AutoMask.load(folder, threads = 4).also { engine = it }
+                AutoMask.load(folder, finder, threads = 4).also { engine = it }
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
-                Ability.entries.forEach { unusable(it, e) }
+                unusable(Ability.Region, e)
                 null
             }
         }

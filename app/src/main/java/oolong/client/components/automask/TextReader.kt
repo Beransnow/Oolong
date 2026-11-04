@@ -29,7 +29,9 @@ class TextReader internal constructor(private val model: Interpreter, private va
     /** Reads each of [lines], boxes in [picture]'s pixels; a line it cannot make out comes back empty. */
     fun read(picture: Bitmap, lines: List<RectF>): List<ReadLine> = lines.map { read(picture, it) }
 
-    private fun read(picture: Bitmap, box: RectF): ReadLine {
+    /** Reads the line [box] in [picture]'s pixels; one line at a time, as its buffers are shared. */
+    @Synchronized
+    fun read(picture: Bitmap, box: RectF): ReadLine {
         val left = max(0, box.left.roundToInt())
         val top = max(0, box.top.roundToInt())
         val right = min(picture.width, box.right.roundToInt())

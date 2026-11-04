@@ -26,7 +26,7 @@ import kotlin.math.sin
  * The models and the runtime are downloaded, by [AutoMaskFiles].
  */
 class AutoMask internal constructor(
-    private val detector: Interpreter,
+    private val finder: TextFinder,
     private val encoder: Interpreter,
     private val decoder: Interpreter,
     private val gaussian: FloatArray,
@@ -50,11 +50,11 @@ class AutoMask internal constructor(
 
     fun prepare(picture: Bitmap): Prepared {
         val t0 = System.nanoTime()
-        val lines = detect(picture)
+        val lines = finder.find(picture)
         return prepare(picture, lines, (System.nanoTime() - t0) / 1_000_000)
     }
 
-    /** Readies [picture] for taps, its [lines] of text found already by [detect]. */
+    /** Readies [picture] for taps, its [lines] of text found already by a [TextFinder]. */
     fun prepare(picture: Bitmap, lines: List<RectF>, detectMillis: Long = 0): Prepared {
         val t0 = System.nanoTime()
         val (src, scale) = encode(picture)
@@ -62,7 +62,6 @@ class AutoMask internal constructor(
     }
 
     fun close() {
-        detector.close()
         encoder.close()
         decoder.close()
     }
@@ -103,73 +102,6 @@ class AutoMask internal constructor(
                 x >= line.left - reach && x <= line.right + reach && y >= line.top - reach && y <= line.bottom + reach
             }
         }
-    }
-
-    // Text detection
-
-    /** The lines of text in [picture], in its pixels: quicker than the rest of preparing it. */
-    fun detect(picture: Bitmap): List<RectF> {
-        // Fitted into the detector's frame, the rest left at the mean
-        val scale = min(DetWidth.toFloat() / picture.width, DetHeight.toFloat() / picture.height)
-        val w = (picture.width * scale).roundToInt().coerceIn(1, DetWidth)
-        val h = (picture.height * scale).roundToInt().coerceIn(1, DetHeight)
-        val input = floats(DetWidth * DetHeight * 3)
-        val pixels = IntArray(w * h).also { picture.scale(w, h).getPixels(it, 0, w, 0, 0, w, h) }
-        for (y in 0 until h) {
-            for (x in 0 until w) {
-                val c = pixels[y * w + x]
-                val i = (y * DetWidth + x) * 3
-                input.put(i, (((c shr 16) and 0xFF) / 255f - 0.485f) / 0.229f)
-                input.put(i + 1, (((c shr 8) and 0xFF) / 255f - 0.456f) / 0.224f)
-                input.put(i + 2, ((c and 0xFF) / 255f - 0.406f) / 0.225f)
-            }
-        }
-        val output = floats(DetWidth * DetHeight)
-        detector.run(input, output)
-        return lines(output, w, h).map { r -> RectF(r.left / scale, r.top / scale, r.right / scale, r.bottom / scale) }
-    }
-
-    /** The boxes of the text the probability map shows, grown back to the text's own size as DB's 'unclip' does. */
-    private fun lines(map: FloatBuffer, w: Int, h: Int): List<RectF> {
-        val on = BooleanArray(w * h) { map.get((it / w) * DetWidth + it % w) > 0.3f }
-        val seen = BooleanArray(w * h)
-        val stack = IntArray(w * h)
-        val boxes = mutableListOf<RectF>()
-        for (start in on.indices) {
-            if (!on[start] || seen[start]) continue
-            var top = 0
-            stack[top++] = start
-            seen[start] = true
-            var minX = w
-            var minY = h
-            var maxX = 0
-            var maxY = 0
-            var sum = 0f
-            var count = 0
-            while (top > 0) {
-                val p = stack[--top]
-                val px = p % w
-                val py = p / w
-                minX = min(minX, px)
-                maxX = max(maxX, px)
-                minY = min(minY, py)
-                maxY = max(maxY, py)
-                sum += map.get(py * DetWidth + px)
-                count++
-                for (n in intArrayOf(p - 1, p + 1, p - w, p + w)) {
-                    if (n < 0 || n >= on.size || seen[n] || !on[n]) continue
-                    if ((n == p - 1 && px == 0) || (n == p + 1 && px == w - 1)) continue
-                    seen[n] = true
-                    stack[top++] = n
-                }
-            }
-            val bw = maxX - minX + 1f
-            val bh = maxY - minY + 1f
-            if (min(bw, bh) < 3 || sum / count < 0.6f) continue
-            val grow = bw * bh * 1.5f / (2 * (bw + bh))
-            boxes += RectF(minX - grow, minY - grow, maxX + 1 + grow, maxY + 1 + grow)
-        }
-        return boxes
     }
 
     // MobileSAM
@@ -278,8 +210,6 @@ class AutoMask internal constructor(
     }
 
     companion object {
-        private const val DetWidth = 768
-        private const val DetHeight = 1664
         private const val SamSide = 1024
         private const val Cells = 64
         private const val Channels = 256
@@ -298,8 +228,8 @@ class AutoMask internal constructor(
         /** How many times bigger than the smallest mask a surer one holding it may be, and still be taken. */
         private const val MostGrowth = 5
 
-        /** Loads the models in [folder], the runtime already loaded. */
-        internal fun load(folder: File, threads: Int): AutoMask {
+        /** Loads the models in [folder], the runtime already loaded, finding text with [finder]. */
+        internal fun load(folder: File, finder: TextFinder, threads: Int): AutoMask {
             fun model(name: String): MappedByteBuffer = FileInputStream(File(folder, name)).use {
                 it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.channel.size())
             }
@@ -308,7 +238,7 @@ class AutoMask internal constructor(
                 .let { ByteBuffer.wrap(it).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer() }
                 .let { b -> FloatArray(b.remaining()).also { b.get(it) } }
             return AutoMask(
-                Interpreter(model(AutoMaskFiles.Detector), options),
+                finder,
                 Interpreter(model(AutoMaskFiles.Encoder), options),
                 Interpreter(model(AutoMaskFiles.Decoder), options),
                 // Stored 2 by 128: the x row, then the y row

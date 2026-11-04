@@ -14,7 +14,7 @@
     <string name="storage_runtime">Core components</string>
     <string name="storage_text">Text recognition</string>
     <string name="storage_region">Smart selection</string>
-    <string name="storage_text_used">For auto masking and tap to mask</string>
+    <string name="storage_text_used">For text extraction, auto masking and tap to mask</string>
     <string name="storage_region_used">For tap to mask</string>
     <string name="storage_not_downloaded">Not downloaded</string>
     <string name="storage_downloading">Downloading %1$d%%</string>
@@ -23,7 +23,7 @@
     <string name="storage_download_note">About %1$s.</string>
     <string name="storage_download">Download</string>
     <string name="storage_delete_confirm">Delete %1$s?</string>
-    <string name="storage_delete_text_note">Auto masking and tap to mask will need it downloaded again.</string>
+    <string name="storage_delete_text_note">Text extraction, auto masking and tap to mask will need it downloaded again.</string>
     <string name="storage_delete_region_note">Tap to mask will need it downloaded again.</string>
     <string name="storage_delete">Delete</string>
     <string name="storage_group_data">Data</string>
