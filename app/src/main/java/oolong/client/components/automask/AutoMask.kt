@@ -1,10 +1,10 @@
-package oolong.client.debug.automask
+package oolong.client.components.automask
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
 import androidx.core.graphics.scale
 import org.tensorflow.lite.Interpreter
+import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -22,9 +22,9 @@ import kotlin.math.sin
  * Finds what to hide where a picture is tapped: the line of text there, found by a text
  * detector, or else the smallest thing MobileSAM makes out around the tap.
  *
- * The models come from the debug build's assets, made locally (not committed); see [Models].
+ * The models and the runtime are downloaded, by [AutoMaskFiles].
  */
-class AutoMask private constructor(
+class AutoMask internal constructor(
     private val detector: Interpreter,
     private val encoder: Interpreter,
     private val decoder: Interpreter,
@@ -54,6 +54,12 @@ class AutoMask private constructor(
         val (src, scale) = encode(picture)
         val t2 = System.nanoTime()
         return Prepared(picture.width, picture.height, lines, src, scale, (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000)
+    }
+
+    fun close() {
+        detector.close()
+        encoder.close()
+        decoder.close()
     }
 
     fun tap(prepared: Prepared, x: Float, y: Float): Found {
@@ -231,26 +237,19 @@ class AutoMask private constructor(
         /** A tap's thing taking more of the picture than this is likely not one thing. */
         private const val MostOfPicture = 0.35f
 
-        /** The assets: two exported from MobileSAM, one from PaddleOCR's detector, weights as float16. */
-        object Models {
-            const val Detector = "automask/text_detector.tflite"
-            const val Encoder = "automask/sam_encoder.tflite"
-            const val Decoder = "automask/sam_decoder.tflite"
-            const val Gaussian = "automask/sam_pe_gaussian.bin"
-        }
-
-        fun load(context: Context, threads: Int): AutoMask {
-            fun model(name: String): MappedByteBuffer = context.assets.openFd(name).use { fd ->
-                FileInputStream(fd.fileDescriptor).channel.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength)
+        /** Loads the models in [folder], the runtime already loaded. */
+        internal fun load(folder: File, threads: Int): AutoMask {
+            fun model(name: String): MappedByteBuffer = FileInputStream(File(folder, name)).use {
+                it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.channel.size())
             }
             val options = Interpreter.Options().setNumThreads(threads)
-            val gaussian = context.assets.open(Models.Gaussian).use { it.readBytes() }
+            val gaussian = File(folder, AutoMaskFiles.Gaussian).readBytes()
                 .let { ByteBuffer.wrap(it).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer() }
                 .let { b -> FloatArray(b.remaining()).also { b.get(it) } }
             return AutoMask(
-                Interpreter(model(Models.Detector), options),
-                Interpreter(model(Models.Encoder), options),
-                Interpreter(model(Models.Decoder), options),
+                Interpreter(model(AutoMaskFiles.Detector), options),
+                Interpreter(model(AutoMaskFiles.Encoder), options),
+                Interpreter(model(AutoMaskFiles.Decoder), options),
                 // Stored 2 by 128: the x row, then the y row
                 gaussian,
             )

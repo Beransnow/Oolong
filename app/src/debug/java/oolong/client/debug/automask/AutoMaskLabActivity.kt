@@ -27,8 +27,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,9 +46,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.size.Precision
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import oolong.client.components.automask.AutoMask
+import oolong.client.components.automask.AutoMaskDownload
+import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.components.images.loadBitmap
 
 /**
@@ -56,6 +63,12 @@ import oolong.client.components.images.loadBitmap
  * take on this phone, then tap it to see what would be hidden and how long each tap takes.
  * Blue is a line of text, red what MobileSAM made out.
  */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AutoMaskLabEntry {
+    fun files(): AutoMaskFiles
+}
+
 class AutoMaskLabActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -70,7 +83,8 @@ private class Hit(val box: RectF, val text: Boolean)
 private fun Lab() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var threads by remember { mutableIntStateOf(4) }
+    val files = remember { EntryPointAccessors.fromApplication(context, AutoMaskLabEntry::class.java).files() }
+    val download by files.download.collectAsState()
     var engine by remember { mutableStateOf<AutoMask?>(null) }
     var picture by remember { mutableStateOf<Bitmap?>(null) }
     var prepared by remember { mutableStateOf<AutoMask.Prepared?>(null) }
@@ -88,15 +102,15 @@ private fun Lab() {
             val result = withContext(Dispatchers.Default) {
                 runCatching {
                     val t0 = System.nanoTime()
-                    val loaded = engine ?: AutoMask.load(context, threads)
-                    val loadMillis = (System.nanoTime() - t0) / 1_000_000
+                    val loaded = engine ?: files.engine() ?: error("模型还没下载")
+                    val loadMillis = if (engine == null) (System.nanoTime() - t0) / 1_000_000 else 0
                     engine = loaded
                     loaded.prepare(bitmap) to loadMillis
                 }
             }
             result.onSuccess { (p, load) ->
                 prepared = p
-                status = "${p.width}×${p.height}，$threads 线程\n" +
+                status = "${p.width}×${p.height}\n" +
                     (if (load > 0) "载入模型 $load ms\n" else "") +
                     "文字检测 ${p.detectMillis} ms（${p.lines.size} 行）\n图像编码 ${p.encodeMillis} ms"
             }.onFailure { status = "出错：${it.javaClass.simpleName} ${it.message}" }
@@ -127,11 +141,12 @@ private fun Lab() {
     ) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("选择截图") }
-            Button(onClick = {
-                threads = if (threads == 4) 2 else if (threads == 2) 1 else 4
-                engine = null
-                picture?.let(::run)
-            }) { Text("$threads 线程") }
+            when (val d = download) {
+                is AutoMaskDownload.Missing -> Button(onClick = files::startDownload) { Text("下载模型 ${d.bytes / 1_000_000} MB") }
+                is AutoMaskDownload.Failed -> Button(onClick = files::startDownload) { Text("重试下载") }
+                is AutoMaskDownload.Running -> Text("下载中 ${(d.progress * 100).toInt()}%", color = Color.White)
+                AutoMaskDownload.Ready -> Unit
+            }
             Button(onClick = { showLines = !showLines }) { Text(if (showLines) "隐藏文字框" else "显示文字框") }
         }
         Text(status, color = Color.White, fontSize = 14.sp)
