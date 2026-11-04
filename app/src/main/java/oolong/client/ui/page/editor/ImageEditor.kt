@@ -74,6 +74,7 @@ import oolong.client.components.images.loadBitmap
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
+import oolong.client.ui.utils.FullColorWindow
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -281,6 +282,7 @@ private fun EditorOverlay(session: ImageEditor.Session, onCovering: (Boolean) ->
         state.look(true, work.initial)?.let { (image, rect) -> fly(image, rect) }
     }
     LightSystemBars()
+    FullColorWindow()
     // Leaving mid-way closes it as cancel does; the editor's own back comes first while open
     BackHandler(enabled = closing) {}
 

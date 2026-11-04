@@ -312,7 +312,8 @@ class EditRenderer(val picture: Bitmap) {
     fun render(framing: Framing, strokes: List<Edit>, captions: List<Edit.Caption>, maxSide: Int): Bitmap {
         val rect = framing.rect
         val scale = min(1f, maxSide / max(rect.width, rect.height))
-        val result = createBitmap(
+        val result = bitmapLike(
+            picture,
             (rect.width * scale).roundToInt().coerceAtLeast(1),
             (rect.height * scale).roundToInt().coerceAtLeast(1),
         )

@@ -96,6 +96,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.editor.EditRequest
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
+import oolong.client.ui.utils.FullColorWindow
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
@@ -124,6 +125,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
     val openedItem = opening.data.picItems.getOrNull(opening.data.index)
 
     LightSystemBars()
+    FullColorWindow()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
