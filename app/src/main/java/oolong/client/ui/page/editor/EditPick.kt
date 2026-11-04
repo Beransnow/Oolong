@@ -4,16 +4,12 @@ import android.os.Build
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,13 +18,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -45,7 +39,9 @@ import kotlinx.coroutines.withContext
 import oolong.client.components.automask.AutoMask
 import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.automask.AutoMaskFiles
-import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.widgets.compose.AuroraState
+import oolong.client.ui.widgets.compose.auroraColor
+import oolong.client.ui.widgets.compose.drawAuroraLight
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -72,17 +68,13 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
         if (!state.maskPicking || download != AutoMaskDownload.Ready || prepared != null) return@LaunchedEffect
         val engine = files.engine() ?: return@LaunchedEffect
         val picture = state.renderer.picture
-        val whole = Rect(0f, 0f, picture.width.toFloat(), picture.height.toFloat())
         try {
-            val lines = withContext(Dispatchers.Default) { engine.detect(picture) }
-            state.pickLines = lines.map { Rect(it.left, it.top, it.right, it.bottom).intersect(whole) }
-            prepared = withContext(Dispatchers.Default) { engine.prepare(picture, lines) }
+            prepared = withContext(Dispatchers.Default) { engine.prepare(picture) }
             state.pickReady = true
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             // Left to boxing by hand, as before it was chosen
             Log.w("TapToHide", "could not look the picture over", e)
-            state.pickLines = null
             state.maskPicking = false
             state.maskShape = MaskShape.Rect
         }
@@ -90,6 +82,11 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
     LaunchedEffect(state) {
         snapshotFlow { state.pendingPick }.filterNotNull().collect { at ->
             state.pendingPick = null
+            // A tap on a mask a tap laid takes it away again
+            state.tappedMaskAt(at)?.let { mask ->
+                state.unhidePicked(at, mask)
+                return@collect
+            }
             val ready = prepared ?: return@collect
             val engine = files.engine() ?: return@collect
             val point = state.toPicture(state.toTurned(at))
@@ -102,7 +99,10 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
             }
             val box = found.box
             if (box != null) {
-                state.hidePicked(at, Rect(box.left, box.top, box.right, box.bottom))
+                val rect = Rect(box.left, box.top, box.right, box.bottom)
+                // Found where a tap hid already: taken away, rather than hidden twice over
+                val same = state.tappedMaskOver(rect)
+                if (same != null) state.unhidePicked(at, same) else state.hidePicked(at, rect)
             } else {
                 state.missedPick(at)
                 view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS)
@@ -112,117 +112,140 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
 }
 
 /**
- * What tap-to-hide shows on the picture. While it looks the picture over, it dims, a band of light
- * sweeps down it, and its lines of text light up one after another as they are found; all of it
- * goes once the picture is ready. A tap's box grows out of the finger into what it hides; a tap
- * that found nothing rings out and fades.
+ * What tap-to-hide shows on the picture. While it looks the picture over, the aurora's light
+ * spreads over it from the middle, drifting quicker than on the landing page, and gathers back
+ * and fades once the picture is ready. A tap's mask spreads out of the finger to fill its box,
+ * a faint rim of the same light at its edge; a tap that found nothing gives off a little glow.
  */
 @Stable
 internal class PickEffect(
-    private val sweep: State<Float>,
+    val aurora: AuroraState,
     /** 1 while looking, to 0 once ready. */
     val looking: Animatable<Float, *>,
-    /** From 0 as the lines are found, to 1 once all have lit. */
-    val lines: Animatable<Float, *>,
-    /** From 0 as a tap's box grows, to 1 once it has faded. */
+    /** From 0 as a tap's mask spreads, to 1 once it fills its box and the rim has faded. */
     val tap: Animatable<Float, *>,
 ) {
-    fun draw(scope: DrawScope, state: EditorState) = with(scope) {
-        val w = state.renderer.size.width
-        val h = state.renderer.size.height
+    /** The light over the picture, while it is looked over. */
+    fun drawLooking(scope: DrawScope, state: EditorState) = with(scope) {
         val look = looking.value
-        if (look > 0f) {
-            val corners = listOf(Offset.Zero, Offset(w, 0f), Offset(w, h), Offset(0f, h)).map(state::pictureToScreen)
-            val outline = Path().apply {
-                moveTo(corners[0].x, corners[0].y)
-                corners.drop(1).forEach { lineTo(it.x, it.y) }
-                close()
-            }
+        if (look <= 0f) return@with
+        val corners = pictureCorners(state)
+        clipPath(polygon(corners)) {
+            drawRect(Color.Black.copy(alpha = 0.3f * look))
             val bounds = Rect(corners.minOf { it.x }, corners.minOf { it.y }, corners.maxOf { it.x }, corners.maxOf { it.y })
-            clipPath(outline) {
-                drawRect(Color.Black.copy(alpha = 0.32f * look))
-                // A soft band of light, from above the picture to below it
-                val band = bounds.height * 0.18f
-                val y = bounds.top - band + (bounds.height + 2 * band) * sweep.value
-                drawRect(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.5f to Color.White.copy(alpha = 0.26f * look),
-                        1f to Color.Transparent,
-                        startY = y - band,
-                        endY = y + band,
-                    ),
-                    topLeft = Offset(bounds.left, y - band),
-                    size = androidx.compose.ui.geometry.Size(bounds.width, 2 * band),
-                )
-            }
-            // Lines light up from the top down, each over a short while
-            state.pickLines?.forEach { line ->
-                val lit = ((lines.value * 1.4f - line.top / h * 0.4f) / 1f).coerceIn(0f, 1f)
-                if (lit <= 0f) return@forEach
-                val path = boxPath(state, line, 3.dp.toPx() / state.scale)
-                drawPath(path, Color.White.copy(alpha = 0.12f * lit * look), style = Stroke(6.dp.toPx(), join = StrokeJoin.Round))
-                drawPath(path, Color.White.copy(alpha = 0.75f * lit * look), style = Stroke(1.2.dp.toPx(), join = StrokeJoin.Round))
-            }
+            drawAuroraLight(aurora, bounds, dark = true, pace = LookingPace, sway = 2.2f, fill = true, alpha = look)
         }
+    }
+
+    /**
+     * The circle a tap's mask shows within, on screen: spreading out of the finger as it is
+     * laid, drawing back into it as it is taken away; null once it is done.
+     */
+    fun spread(state: EditorState): Pair<Offset, Float>? {
+        val picked = state.picked ?: return null
+        if (picked.box == null || tap.value >= SpreadEnd) return null
+        return picked.at to radius(state, picked, tap.value)
+    }
+
+    private fun radius(state: EditorState, picked: EditorState.Picked, t: Float): Float {
+        val reach = boxCorners(state, picked.box ?: return 0f).maxOf { (it - picked.at).getDistance() }
+        val eased = spreadEasing((t / SpreadEnd).coerceIn(0f, 1f))
+        return reach * if (picked.removed != null) 1f - eased else eased
+    }
+
+    /** The rim of light at the spreading mask's edge, or a tap's glow when it found nothing. */
+    fun drawTap(scope: DrawScope, state: EditorState) = with(scope) {
         val picked = state.picked ?: return@with
         val t = tap.value
         if (t >= 1f) return@with
-        val box = picked.box
-        if (box != null) {
-            // Grows out of the finger over the first half, then fades
-            val grow = (t * 2f).coerceAtMost(1f)
-            val fade = 1f - ((t - 0.5f) * 2f).coerceIn(0f, 1f)
-            val target = boxCorners(state, box)
-            val path = Path().apply {
-                target.map { lerp(picked.at, it, grow) }.let { c ->
-                    moveTo(c[0].x, c[0].y)
-                    c.drop(1).forEach { lineTo(it.x, it.y) }
-                    close()
-                }
+        val glow = auroraColor(1)
+        if (picked.box != null) {
+            val r = radius(state, picked, t)
+            // Bright while spreading, fading once it has filled the box
+            val fade = 1f - ((t - SpreadEnd * 0.6f) / (1f - SpreadEnd * 0.6f)).coerceIn(0f, 1f)
+            val width = 18.dp.toPx()
+            if (r <= 0f || fade <= 0f) return@with
+            clipPath(polygon(boxCorners(state, picked.box))) {
+                drawCircle(
+                    Brush.radialGradient(
+                        ((r - width) / r).coerceAtLeast(0f) to Color.Transparent,
+                        0.985f to glow.copy(alpha = 0.55f * fade),
+                        1f to Color.Transparent,
+                        center = picked.at,
+                        radius = r,
+                    ),
+                    radius = r,
+                    center = picked.at,
+                    blendMode = BlendMode.Plus,
+                )
             }
-            // A dark halo under the light line, so it shows on a light picture as on a dark one
-            drawPath(path, Color.Black.copy(alpha = 0.3f * fade), style = Stroke(6.dp.toPx(), join = StrokeJoin.Round))
-            drawPath(path, Color.White.copy(alpha = 0.95f * fade), style = Stroke(2.dp.toPx(), join = StrokeJoin.Round))
         } else {
-            val radius = 28.dp.toPx() * t
-            drawCircle(Color.Black.copy(alpha = 0.3f * (1f - t)), radius = radius, center = picked.at, style = Stroke(5.dp.toPx()))
-            drawCircle(Color.White.copy(alpha = 0.9f * (1f - t)), radius = radius, center = picked.at, style = Stroke(2.dp.toPx()))
+            // A small glow that swells a little and goes
+            val r = 36.dp.toPx() * (0.5f + 0.5f * spreadEasing(t))
+            drawCircle(
+                Brush.radialGradient(
+                    0f to glow.copy(alpha = 0.6f * (1f - t)),
+                    1f to Color.Transparent,
+                    center = picked.at,
+                    radius = r,
+                ),
+                radius = r,
+                center = picked.at,
+                blendMode = BlendMode.Plus,
+            )
         }
+    }
+
+    private fun pictureCorners(state: EditorState): List<Offset> {
+        val w = state.renderer.size.width
+        val h = state.renderer.size.height
+        return listOf(Offset.Zero, Offset(w, 0f), Offset(w, h), Offset(0f, h)).map(state::pictureToScreen)
     }
 
     private fun boxCorners(state: EditorState, box: Rect) =
         listOf(box.topLeft, box.topRight, box.bottomRight, box.bottomLeft).map(state::pictureToScreen)
 
-    private fun boxPath(state: EditorState, box: Rect, pad: Float) = Path().apply {
-        val c = boxCorners(state, box.inflate(pad))
-        moveTo(c[0].x, c[0].y)
-        c.drop(1).forEach { lineTo(it.x, it.y) }
+    private fun polygon(corners: List<Offset>) = Path().apply {
+        moveTo(corners[0].x, corners[0].y)
+        corners.drop(1).forEach { lineTo(it.x, it.y) }
         close()
+    }
+
+    companion object {
+        /** How much quicker the light drifts while the picture is looked over: it is at work. */
+        private const val LookingPace = 3f
+
+        /** The part of a tap's time the mask spends spreading; the rim fades over the rest. */
+        private const val SpreadEnd = 0.6f
+
+        /** Quick out of the finger, settling as it reaches the box's far corner. */
+        private fun spreadEasing(t: Float) = 1f - (1f - t) * (1f - t) * (1f - t)
     }
 }
 
 @Composable
 internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEffect {
-    val sweep = rememberInfiniteTransition(label = "pickSweep").animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart),
-        label = "pickSweep",
-    )
-    val effect = remember { PickEffect(sweep, Animatable(0f), Animatable(0f), Animatable(1f)) }
+    val effect = remember { PickEffect(AuroraState(spread = 0f), Animatable(0f), Animatable(1f)) }
     // Looking while picking, its files here and the picture not ready yet
     val looking = state.tool == EditorTool.Mask && state.maskPicking && filesReady && !state.pickReady
     LaunchedEffect(looking) {
-        if (looking) effect.looking.animateTo(1f, Motion.snap()) else effect.looking.animateTo(0f, tween(400))
+        if (looking) {
+            launch { effect.looking.animateTo(1f, tween(300)) }
+            effect.aurora.spread.animateTo(1f, tween(1200, easing = FastOutSlowInEasing))
+        } else {
+            // Gathers back to the middle as it fades, the way it came
+            launch { effect.aurora.spread.animateTo(0f, tween(700, easing = FastOutSlowInEasing)) }
+            effect.looking.animateTo(0f, tween(700))
+        }
     }
-    LaunchedEffect(state.pickLines) {
-        if (state.pickLines != null) effect.lines.animateTo(1f, tween(900, easing = LinearEasing))
+    // The light drifts only while it shows
+    LaunchedEffect(looking || effect.looking.value > 0f) {
+        if (looking || effect.looking.value > 0f) effect.aurora.drift()
     }
     LaunchedEffect(state.picked) {
         if (state.picked == null) return@LaunchedEffect
         effect.tap.snapTo(0f)
-        launch { effect.tap.animateTo(1f, tween(if (state.picked?.box != null) 700 else 450)) }
+        effect.tap.animateTo(1f, tween(if (state.picked?.box != null) 520 else 420, easing = LinearEasing))
     }
     return effect
 }

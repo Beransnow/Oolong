@@ -50,6 +50,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -382,8 +384,24 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                     val kept = state.history.framing.rect
                     val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
                     clipRect(shown.left, shown.top, shown.right, shown.bottom) {
-                        drawEdits(state)
-                        pickEffect.draw(this, state)
+                        // A tap's mask spreads out of the finger, or draws back into it: shown inside the circle only
+                        val spread = pickEffect.spread(state)
+                        if (spread == null) {
+                            drawEdits(state)
+                        } else {
+                            val circle = Path().apply { addOval(Rect(spread.first, spread.second)) }
+                            val removed = state.picked?.removed
+                            if (removed == null) {
+                                clipPath(circle, ClipOp.Difference) { drawEdits(state, without = state.picked?.id) }
+                                clipPath(circle) { drawEdits(state) }
+                            } else {
+                                // Taken away: still shown inside the circle, as it draws back
+                                clipPath(circle, ClipOp.Difference) { drawEdits(state) }
+                                clipPath(circle) { drawEdits(state, plus = removed) }
+                            }
+                        }
+                        pickEffect.drawLooking(this, state)
+                        pickEffect.drawTap(this, state)
                     }
                     drawSelection(state)
                 }
@@ -408,7 +426,7 @@ private fun showHomeOnce(state: EditorState) {
     }
 }
 
-private fun DrawScope.drawEdits(state: EditorState) {
+private fun DrawScope.drawEdits(state: EditorState, without: Int? = null, plus: Edit? = null) {
     val moving = state.moving
     val captions = state.history.captions.map { caption ->
         if (moving != null && moving.first == caption.id) state.movedCaption(caption, moving.second) else caption
@@ -416,7 +434,8 @@ private fun DrawScope.drawEdits(state: EditorState) {
     drawIntoCanvas { canvas ->
         val native = canvas.nativeCanvas
         native.withMatrix(state.screenMatrix()) {
-            state.renderer.draw(native, state.framing, state.shownStrokes, captions, state.live, state.draft?.id)
+            val strokes = state.shownStrokes.filter { without == null || it.objectId != without } + listOfNotNull(plus)
+            state.renderer.draw(native, state.framing, strokes, captions, state.live, state.draft?.id)
         }
     }
 }

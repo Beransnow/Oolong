@@ -137,30 +137,62 @@ class EditorState(
      */
     var maskPicking by mutableStateOf(false)
 
-    /** The picture's lines of text, in its pixels, once found: shown while the rest is made ready. */
-    var pickLines by mutableStateOf<List<Rect>?>(null)
-
     /** Whether the picture is ready for taps. */
     var pickReady by mutableStateOf(false)
 
     /** A tap waiting to be looked into, on screen. */
     var pendingPick by mutableStateOf<Offset?>(null)
 
-    /** The last tap looked into: where it was, and the box it hid, or none when it found nothing to. */
-    class Picked(val at: Offset, val box: Rect?)
+    /**
+     * The last tap looked into: where it was on screen, and the mask it laid over the box it
+     * found, or none when it found nothing small enough.
+     */
+    class Picked(val at: Offset, val box: Rect?, val id: Int?, val removed: Edit.Mask? = null)
 
     var picked by mutableStateOf<Picked?>(null)
         private set
 
     /** Hides [box], in picture pixels, found by a tap [at] a point on screen. */
     fun hidePicked(at: Offset, box: Rect) {
-        history.push(Edit.Mask(history.nextId, listOf(box.topLeft, box.bottomRight), MaskWidths[maskSize] * density / scale, maskStyle, MaskShape.Rect))
-        picked = Picked(at, box)
+        val id = history.nextId
+        history.push(Edit.Mask(id, listOf(box.topLeft, box.bottomRight), MaskWidths[maskSize] * density / scale, maskStyle, MaskShape.Rect))
+        tapped += id
+        picked = Picked(at, box, id)
+    }
+
+    /** The masks laid by a tap this time the editor is open. */
+    private val tapped = mutableSetOf<Int>()
+
+    /**
+     * The mask laid by a tap under [screen], the topmost: a tap there takes it away again. A tap
+     * near one counts, as a tap near a line of text counts as on it.
+     */
+    fun tappedMaskAt(screen: Offset): Edit.Mask? {
+        val point = toPicture(toTurned(screen))
+        val reach = 20 * density / scale
+        return tappedMasks().lastOrNull { box(it.points).inflate(reach).contains(point) }
+    }
+
+    /** The mask laid by a tap over much the same place as [box], which a tap finding it again takes away. */
+    fun tappedMaskOver(box: Rect): Edit.Mask? = tappedMasks().lastOrNull { mask ->
+        val other = box(mask.points)
+        val overlap = box.intersect(other)
+        if (overlap.width <= 0f || overlap.height <= 0f) return@lastOrNull false
+        val shared = overlap.width * overlap.height
+        shared / (box.width * box.height + other.width * other.height - shared) >= 0.7f
+    }
+
+    private fun tappedMasks() = history.strokes.filterIsInstance<Edit.Mask>().filter { it.id in tapped }
+
+    /** Takes [mask] away again, tapped [at] a point on screen. */
+    fun unhidePicked(at: Offset, mask: Edit.Mask) {
+        history.push(Edit.Remove(mask.id))
+        picked = Picked(at, box(mask.points), mask.id, removed = mask)
     }
 
     /** A tap [at] a point on screen that found nothing small enough to be one thing. */
     fun missedPick(at: Offset) {
-        picked = Picked(at, null)
+        picked = Picked(at, null, null)
     }
 
     /** What marks draw; null rubs marks out instead. */

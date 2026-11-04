@@ -11,15 +11,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.sin
 
 /**
@@ -64,44 +67,8 @@ class AuroraState(spread: Float = 1f) {
 fun Aurora(state: AuroraState, modifier: Modifier = Modifier, dark: Boolean = ExtendedTheme.colors.isNightMode) {
     val palette = if (dark) AuroraDark else AuroraLight
     Canvas(modifier) {
-        val w = size.width
-        val h = size.height
-        val t = state.time
-        val spread = state.spread.value
         drawRect(palette.background)
-        Blobs.forEachIndexed { i, blob ->
-            val (color, strength) = palette.blobs[i]
-            // Every colour starts at the middle and spreads, as dye does in water
-            var x = lerp(.5f, blob.x + sin(t * blob.speed * 1.6f * 2 * PI.toFloat() + blob.phase) * blob.dx, spread) * w
-            var y = lerp(.36f, blob.y + cos(t * blob.speed * 1.6f * 5.1f + blob.phase) * blob.dy, spread) * h
-            state.finger?.let { finger ->
-                val dx = finger.x - x
-                val dy = finger.y - y
-                val d = hypot(dx, dy) + 1f
-                val pull = state.pull * 60.dp.toPx() * exp(-d / 260.dp.toPx())
-                x += dx / d * pull
-                y += dy / d * pull
-            }
-            val r = blob.radius * w * lerp(.08f, 1f, spread) * (1f + sin(t * .4f + i) * .06f)
-            val a = strength * lerp(.2f, 1f, spread)
-            val center = Offset(x, y)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    // Close to a Gaussian, so no edge shows where the colour runs out
-                    0f to color.copy(alpha = a),
-                    .2f to color.copy(alpha = a * .86f),
-                    .4f to color.copy(alpha = a * .58f),
-                    .6f to color.copy(alpha = a * .3f),
-                    .8f to color.copy(alpha = a * .1f),
-                    1f to color.copy(alpha = 0f),
-                    center = center,
-                    radius = r,
-                ),
-                radius = r,
-                center = center,
-                blendMode = if (dark) BlendMode.Plus else BlendMode.SrcOver,
-            )
-        }
+        drawAuroraLight(state, Rect(Offset.Zero, size), dark)
         // The edges stay quiet; fading from the ground's own colour keeps them from turning grey
         val edge = if (dark) Color.Black.copy(alpha = .45f) else palette.background.copy(alpha = .85f)
         drawRect(
@@ -109,12 +76,69 @@ fun Aurora(state: AuroraState, modifier: Modifier = Modifier, dark: Boolean = Ex
                 0f to edge.copy(alpha = 0f),
                 .25f to edge.copy(alpha = 0f),
                 1f to edge,
-                center = Offset(w / 2, h * .46f),
-                radius = h * .8f,
+                center = Offset(size.width / 2, size.height * .46f),
+                radius = size.height * .8f,
             ),
         )
     }
 }
+
+/**
+ * The aurora's colours alone, over [area] and without its ground: on dark, light added to what
+ * is under it. [pace] speeds the drift and [sway] widens it; [fill] sizes the colours by the
+ * area's longer side rather than its width, so a tall one is washed over whole; [alpha] fades it.
+ */
+fun DrawScope.drawAuroraLight(
+    state: AuroraState,
+    area: Rect,
+    dark: Boolean,
+    pace: Float = 1f,
+    sway: Float = 1f,
+    fill: Boolean = false,
+    alpha: Float = 1f,
+) {
+    val palette = if (dark) AuroraDark else AuroraLight
+    val w = area.width
+    val h = area.height
+    val t = state.time * pace
+    val spread = state.spread.value
+    Blobs.forEachIndexed { i, blob ->
+        val (color, strength) = palette.blobs[i]
+        // Every colour starts at the middle and spreads, as dye does in water
+        var x = area.left + lerp(.5f, blob.x + sin(t * blob.speed * 1.6f * 2 * PI.toFloat() + blob.phase) * blob.dx * sway, spread) * w
+        var y = area.top + lerp(.36f, blob.y + cos(t * blob.speed * 1.6f * 5.1f + blob.phase) * blob.dy * sway, spread) * h
+        state.finger?.let { finger ->
+            val dx = finger.x - x
+            val dy = finger.y - y
+            val d = hypot(dx, dy) + 1f
+            val pull = state.pull * 60.dp.toPx() * exp(-d / 260.dp.toPx())
+            x += dx / d * pull
+            y += dy / d * pull
+        }
+        val r = blob.radius * (if (fill) max(w, h) * .8f else w) * lerp(.08f, 1f, spread) * (1f + sin(t * .4f + i) * .06f)
+        val a = strength * lerp(.2f, 1f, spread) * alpha
+        val center = Offset(x, y)
+        drawCircle(
+            brush = Brush.radialGradient(
+                // Close to a Gaussian, so no edge shows where the colour runs out
+                0f to color.copy(alpha = a),
+                .2f to color.copy(alpha = a * .86f),
+                .4f to color.copy(alpha = a * .58f),
+                .6f to color.copy(alpha = a * .3f),
+                .8f to color.copy(alpha = a * .1f),
+                1f to color.copy(alpha = 0f),
+                center = center,
+                radius = r,
+            ),
+            radius = r,
+            center = center,
+            blendMode = if (dark) BlendMode.Plus else BlendMode.SrcOver,
+        )
+    }
+}
+
+/** One of the aurora's colours, for light that belongs with it. */
+fun auroraColor(index: Int, dark: Boolean = true): Color = (if (dark) AuroraDark else AuroraLight).blobs[index % Blobs.size].first
 
 /** Positions are fractions of the page's width and height; speeds are turns per second. */
 private class Blob(val x: Float, val y: Float, val radius: Float, val dx: Float, val dy: Float, val speed: Float, val phase: Float)
