@@ -7,10 +7,6 @@
     <string name="storage_videos">Videos</string>
     <string name="storage_web">Web pages</string>
     <string name="storage_temporary">Temporary files</string>
-    <string name="storage_clear_images">Clear the picture cache?</string>
-    <string name="storage_clear_videos">Clear the video cache?</string>
-    <string name="storage_clear_web">Clear the web page cache?</string>
-    <string name="storage_clear_temporary">Clear temporary files?</string>
     <string name="storage_clear_cache_confirm">Clear all cache?</string>
     <string name="storage_clear_cache_note">It loads again when needed.</string>
     <string name="storage_group_extensions">Smart extensions</string>

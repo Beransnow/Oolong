@@ -4,6 +4,7 @@ package oolong.client.ui.page.settings.storage
 
 import android.text.format.Formatter
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,18 +56,16 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.editor.rememberAutoMaskFiles
 import oolong.client.ui.widgets.compose.BackNavigationIcon
-import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.rememberDialogState
 
 /** What may be cleared or deleted, waiting on the user's word. */
 private sealed interface Asked {
-    data class Clear(val title: Int, val clear: suspend () -> Unit) : Asked
+    data object ClearCache : Asked
 
     data class Download(val ability: Ability) : Asked
 
@@ -77,7 +76,7 @@ private sealed interface Asked {
 
 /**
  * How much of the phone the app takes, as its system app details count it, broken down: cache to
- * clear, the smart extensions to download or delete, and what it keeps, all of which can go at
+ * clear all at once, the smart extensions to download or delete, and what it keeps, all of which can go at
  * once, as the system's own button would have it.
  */
 @Composable
@@ -123,23 +122,21 @@ fun StoragePage(
                     Header(
                         title = stringResource(R.string.storage_group_cache),
                         action = stringResource(R.string.storage_clear_cache).takeIf { now.cache > 0 },
-                        onAction = { ask(Asked.Clear(R.string.storage_clear_cache_confirm) { AppStorage.clearCache(context) }) },
+                        onAction = { ask(Asked.ClearCache) },
                     )
                 },
             ) {
                 prefsItem {
-                    SizePref(R.string.storage_images, now.images) { ask(Asked.Clear(R.string.storage_clear_images) { AppStorage.clearImages(context) }) }
+                    SizePref(R.string.storage_images, now.images)
                 }
                 prefsItem {
-                    SizePref(R.string.storage_videos, now.videos) { ask(Asked.Clear(R.string.storage_clear_videos) { AppStorage.clearVideos(context) }) }
+                    SizePref(R.string.storage_videos, now.videos)
                 }
                 prefsItem {
-                    SizePref(R.string.storage_web, now.web) { ask(Asked.Clear(R.string.storage_clear_web) { AppStorage.clearWeb(context) }) }
+                    SizePref(R.string.storage_web, now.web)
                 }
                 prefsItem {
-                    SizePref(R.string.storage_temporary, now.temporary) {
-                        ask(Asked.Clear(R.string.storage_clear_temporary) { AppStorage.clearTemporary(context) })
-                    }
+                    SizePref(R.string.storage_temporary, now.temporary)
                 }
             }
             if (files.supported) {
@@ -204,8 +201,8 @@ private fun AskedDialog(asked: Asked?, dialog: DialogState, files: AutoMaskFiles
         dialogState = dialog,
         onConfirm = {
             when (what) {
-                is Asked.Clear -> scope.launch {
-                    what.clear()
+                Asked.ClearCache -> scope.launch {
+                    AppStorage.clearCache(context)
                     done()
                 }
                 is Asked.Download -> files.start(what.ability)
@@ -218,7 +215,7 @@ private fun AskedDialog(asked: Asked?, dialog: DialogState, files: AutoMaskFiles
         },
         confirmText = stringResource(
             when (what) {
-                is Asked.Clear, Asked.ClearAll -> R.string.button_clear
+                Asked.ClearCache, Asked.ClearAll -> R.string.button_clear
                 is Asked.Download -> R.string.storage_download
                 is Asked.Delete -> R.string.storage_delete
             },
@@ -226,7 +223,7 @@ private fun AskedDialog(asked: Asked?, dialog: DialogState, files: AutoMaskFiles
         title = {
             Text(
                 when (what) {
-                    is Asked.Clear -> stringResource(what.title)
+                    Asked.ClearCache -> stringResource(R.string.storage_clear_cache_confirm)
                     is Asked.Download -> stringResource(R.string.storage_download_confirm, name)
                     is Asked.Delete -> stringResource(R.string.storage_delete_confirm, name)
                     Asked.ClearAll -> stringResource(R.string.storage_clear_all_confirm)
@@ -236,7 +233,7 @@ private fun AskedDialog(asked: Asked?, dialog: DialogState, files: AutoMaskFiles
     ) {
         Text(
             when (what) {
-                is Asked.Clear -> stringResource(R.string.storage_clear_cache_note)
+                Asked.ClearCache -> stringResource(R.string.storage_clear_cache_note)
                 is Asked.Download -> stringResource(R.string.storage_download_note, size(missingBytes(files.state(what.ability).value)))
                 is Asked.Delete -> stringResource(if (what.ability == Ability.Text) R.string.storage_delete_text_note else R.string.storage_delete_region_note)
                 Asked.ClearAll -> stringResource(R.string.storage_clear_all_note)
@@ -279,16 +276,10 @@ private fun AbilityPref(files: AutoMaskFiles, ability: Ability, state: AutoMaskD
     )
 }
 
-/** A kind of cache, its size and clearing it; nothing to clear, nothing to press. */
+/** A kind of cache and its size. */
 @Composable
-private fun SizePref(title: Int, bytes: Long, clear: () -> Unit) {
-    TextPref(
-        title = stringResource(title),
-        darkenOnDisable = false,
-        trailingContent = {
-            if (bytes > 0) Action(size(bytes), stringResource(R.string.button_clear), clear) else Value(size(bytes))
-        },
-    )
+private fun SizePref(title: Int, bytes: Long) {
+    TextPref(title = stringResource(title), darkenOnDisable = false, trailingContent = { Value(size(bytes)) })
 }
 
 /** A row's value with what can be done to it beside. */
@@ -297,7 +288,18 @@ private fun Action(value: String, action: String, onClick: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Value(value)
         Spacer(modifier = Modifier.width(12.dp))
-        Chip(text = action, onClick = onClick)
+        val accent = ExtendedTheme.colors.accent
+        Text(
+            text = action,
+            color = accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.12f))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -309,16 +311,25 @@ private fun Value(text: String) {
 /** A group's title, as other groups', with a note under it or an action at its end. */
 @Composable
 private fun Header(title: String, note: String? = null, action: String? = null, onAction: () -> Unit = {}) {
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        modifier = Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = if (action != null) 0.dp else 8.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(bottom = if (action != null) 8.dp else 0.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = if (action != null) 0.dp else 8.dp)) {
+        // The action's text on the title's line
+        Column(modifier = Modifier.weight(1f).alignByBaseline()) {
             Text(title, color = ExtendedTheme.colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
             if (note != null) Text(note, color = ExtendedTheme.colors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp)
         }
         if (action != null) {
-            TextButton(onClick = onAction) { Text(action, fontSize = 13.sp) }
+            Text(
+                action,
+                color = ExtendedTheme.colors.accent,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier
+                    .alignByBaseline()
+                    .clip(CircleShape)
+                    .clickable(onClick = onAction)
+                    // Its text ends in line with the sizes below; the rest is room to press
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
     }
 }
@@ -335,7 +346,7 @@ private fun Summary(use: StorageUse) {
     ).filter { it.second.first > 0 }
     val total = parts.sumOf { it.second.first }.coerceAtLeast(1)
     // Lined up with the large title above it
-    Column(modifier = Modifier.fillMaxWidth().padding(start = 28.dp, end = 32.dp, top = 8.dp, bottom = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(size(use.total), color = ExtendedTheme.colors.text, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(12.dp))
         Row(

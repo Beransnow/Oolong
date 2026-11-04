@@ -7,10 +7,6 @@
     <string name="storage_videos">视频</string>
     <string name="storage_web">网页</string>
     <string name="storage_temporary">临时文件</string>
-    <string name="storage_clear_images">清除图片缓存？</string>
-    <string name="storage_clear_videos">清除视频缓存？</string>
-    <string name="storage_clear_web">清除网页缓存？</string>
-    <string name="storage_clear_temporary">清除临时文件？</string>
     <string name="storage_clear_cache_confirm">清除全部缓存？</string>
     <string name="storage_clear_cache_note">需要时会重新加载。</string>
     <string name="storage_group_extensions">智能扩展</string>
@@ -31,7 +27,7 @@
     <string name="storage_delete_region_note">删除后，再用点选打码需要重新下载。</string>
     <string name="storage_delete">删除</string>
     <string name="storage_group_data">数据</string>
-    <string name="storage_app">应用本身</string>
+    <string name="storage_app">应用程序</string>
     <string name="storage_records">账号、设置与记录</string>
     <string name="storage_clear_all">清除全部数据</string>
     <string name="storage_clear_all_confirm">清除全部数据？</string>

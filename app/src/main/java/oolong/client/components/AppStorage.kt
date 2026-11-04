@@ -19,7 +19,7 @@ import java.io.File
  * what: the parts it can tell apart, and the rest of each kind as one.
  */
 class StorageUse(
-    /** The app itself: its package and what the system compiled of it. */
+    /** The app: its package and what the system compiled of it. */
     val app: Long,
     /** What the app keeps, its caches included. */
     val data: Long,
@@ -44,14 +44,18 @@ class StorageUse(
 object AppStorage {
     private const val VideoDir = "video"
     private const val WebDir = "WebView"
+    private const val EditedDir = "edited"
 
     /** What [extensions] bytes of downloaded models stand beside: everything measured once. */
     suspend fun measure(context: Context, extensions: Long): StorageUse = withContext(Dispatchers.IO) {
         val (app, data, cache) = systemCounts(context) ?: ownCounts(context)
+        // What the system compiled of the app it counts as cache, but nothing here clears it: it
+        // is counted with the app instead, the total as the system's
+        val compiled = minOf(compiledDirs(context).sumOf(::sizeOf), cache)
         StorageUse(
-            app = app,
-            data = data,
-            cache = cache,
+            app = app + compiled,
+            data = data - compiled,
+            cache = cache - compiled,
             images = imageDirs(context).sumOf(::sizeOf),
             videos = sizeOf(File(context.cacheDir, VideoDir)),
             web = sizeOf(File(context.cacheDir, WebDir)),
@@ -92,33 +96,38 @@ object AppStorage {
         listOf(File(it, ImageCacheUtil.DEFAULT_DISK_CACHE_DIR), File(it, "sketch3"))
     }
 
-    suspend fun clearImages(context: Context) = withContext(Dispatchers.IO) {
+    private suspend fun clearImages(context: Context) = withContext(Dispatchers.IO) {
         context.imageLoader.diskCache?.clear()
         context.imageLoader.memoryCache?.clear()
         oldImageDirs(context).forEach { it.deleteRecursively() }
     }
 
-    suspend fun clearVideos(context: Context) = withContext(Dispatchers.IO) { VideoCache.clear(context) }
+    private suspend fun clearVideos(context: Context) = withContext(Dispatchers.IO) { VideoCache.clear(context) }
 
     /** Web pages' cache, through a web view: one may be open and own the files. */
-    suspend fun clearWeb(context: Context) = withContext(Dispatchers.Main) {
+    private suspend fun clearWeb(context: Context) = withContext(Dispatchers.Main) {
         runCatching { WebView(context).apply { clearCache(true) }.destroy() }
         Unit
     }
 
+    /** Where the system keeps what it compiled of the app. */
+    private fun compiledDirs(context: Context): List<File> = listOf(File(context.cacheDir, "oat_primary"), context.codeCacheDir)
+
     /**
-     * Every other cached file: what is left of downloads, pictures made to send or share. What
-     * was written in the last minutes is kept, as it may be in use.
+     * Every other cached file: what is left of downloads, pictures made to send or share. Kept
+     * only what may be in use: an update still downloading, pictures edited for a reply still
+     * being written.
      */
-    suspend fun clearTemporary(context: Context) = withContext(Dispatchers.IO) {
-        val keep = imageDirs(context).map { it.absoluteFile } +
-            File(context.cacheDir, VideoDir).absoluteFile +
-            File(context.cacheDir, WebDir).absoluteFile +
-            // The system's own, compiled from the app
-            File(context.cacheDir, "oat_primary").absoluteFile
-        val before = System.currentTimeMillis() - RecentMillis
+    private suspend fun clearTemporary(context: Context) = withContext(Dispatchers.IO) {
+        val skip = (imageDirs(context) + compiledDirs(context) + File(context.cacheDir, VideoDir) + File(context.cacheDir, WebDir))
+            .map { it.absoluteFile }
+        val now = System.currentTimeMillis()
+        val inUse = mapOf(
+            File(context.cacheDir, UpdateRepository.UpdateDir).absoluteFile to now - RecentMillis,
+            File(context.cacheDir, EditedDir).absoluteFile to now - EditedMillis,
+        )
         for (base in listOfNotNull(context.cacheDir, context.externalCacheDir)) {
-            base.listFiles()?.filter { it.absoluteFile !in keep }?.forEach { deleteOlder(it, before) }
+            base.listFiles()?.filter { it.absoluteFile !in skip }?.forEach { deleteOlder(it, inUse[it.absoluteFile] ?: Long.MAX_VALUE) }
         }
     }
 
@@ -129,7 +138,7 @@ object AppStorage {
      */
     fun sweep(context: Context) {
         File(context.cacheDir, UpdateRepository.UpdateDir).deleteRecursively()
-        deleteOlder(File(context.cacheDir, "edited"), System.currentTimeMillis() - EditedMillis)
+        deleteOlder(File(context.cacheDir, EditedDir), System.currentTimeMillis() - EditedMillis)
     }
 
     suspend fun clearCache(context: Context) {
