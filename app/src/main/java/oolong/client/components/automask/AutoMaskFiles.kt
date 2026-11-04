@@ -8,8 +8,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,10 +40,21 @@ sealed interface AutoMaskDownload {
     data class Failed(val bytes: Long, val error: Exception) : AutoMaskDownload
 }
 
+/** What the downloaded models can do, each downloaded and deleted on its own; what uses it needs all it lacks. */
+enum class Ability {
+    /** Finding the lines of text in a picture and reading them. */
+    Text,
+
+    /** Finding the whole of the thing at a point. */
+    Region,
+}
+
 /**
- * The models and the LiteRT runtime that [AutoMask] needs: too large for an option few use, so
- * fetched the first time it is, from the release host. Each file is checked against the hash it
- * is pinned to here before it is kept; the runtime is native code, so nothing else may stand in.
+ * The models and the LiteRT runtime the picture tools run on the phone: too large for options
+ * few use, so fetched the first time one is, from the release host, an [Ability] at a time, the
+ * runtime with whichever comes first and gone with the last. Each file is checked against the
+ * hash it is pinned to here before it is kept; the runtime is native code, so nothing else may
+ * stand in.
  */
 @Singleton
 class AutoMaskFiles @Inject constructor(
@@ -52,19 +66,23 @@ class AutoMaskFiles @Inject constructor(
 
     private val folder = File(context.filesDir, "automask/$Version")
 
-    private val files: List<Remote> = buildList {
-        add(Remote("models/automask/$Version/$Detector", Detector, "ed1a220aa9c52642c84075cd0d9e9923a0bb1985a1ea9e23d21b0bd8ba1fea55", 5_115_728))
-        add(Remote("models/automask/$Version/$Encoder", Encoder, "1089090d59f9e6d159c84415c23fab2b97ae73b99b9453f50092d5c2887c1007", 14_244_036))
-        add(Remote("models/automask/$Version/$Decoder", Decoder, "e2f4f85c7243b6debd290717796eace1793305e3683fc962402d403014de870b", 8_277_936))
-        add(Remote("models/automask/$Version/$Gaussian", Gaussian, "9bf5b8dcada0e312a19b3a4c98a913f44df480d6aa72aedc2ea4558f979beff4", 1_024))
-        runtime()?.let(::add)
-    }
+    private val runtime: Remote? = runtime()
 
-    /** What reading text needs besides: only for hiding everything at once, so fetched only for that. */
-    private val readFiles: List<Remote> = listOf(
-        Remote("models/automask/$Version/$Recognizer", Recognizer, "2fdd5dd8b89e00e9267e1c0918077497026d1ea7f18274489400dbe571bc94e7", 8_319_400),
-        Remote("models/automask/$Version/$Characters", Characters, "d1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b", 74_012),
+    private val abilityFiles: Map<Ability, List<Remote>> = mapOf(
+        Ability.Text to listOf(
+            Remote("models/automask/$Version/$Detector", Detector, "ed1a220aa9c52642c84075cd0d9e9923a0bb1985a1ea9e23d21b0bd8ba1fea55", 5_115_728),
+            Remote("models/automask/$Version/$Recognizer", Recognizer, "2fdd5dd8b89e00e9267e1c0918077497026d1ea7f18274489400dbe571bc94e7", 8_319_400),
+            Remote("models/automask/$Version/$Characters", Characters, "d1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b", 74_012),
+        ),
+        Ability.Region to listOf(
+            Remote("models/automask/$Version/$Encoder", Encoder, "1089090d59f9e6d159c84415c23fab2b97ae73b99b9453f50092d5c2887c1007", 14_244_036),
+            Remote("models/automask/$Version/$Decoder", Decoder, "e2f4f85c7243b6debd290717796eace1793305e3683fc962402d403014de870b", 8_277_936),
+            Remote("models/automask/$Version/$Gaussian", Gaussian, "9bf5b8dcada0e312a19b3a4c98a913f44df480d6aa72aedc2ea4558f979beff4", 1_024),
+        ),
     )
+
+    /** What [abilities] need on the phone: their own files and the runtime. */
+    private fun needs(abilities: Collection<Ability>): List<Remote> = abilities.flatMap { abilityFiles.getValue(it) } + listOfNotNull(runtime)
 
     // Its own client, as the updater's: the app's carry Tieba's cookies
     private val client = OkHttpClient.Builder()
@@ -72,98 +90,168 @@ class AutoMaskFiles @Inject constructor(
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val _download = MutableStateFlow(if (downloaded()) AutoMaskDownload.Ready else AutoMaskDownload.Missing(missingBytes()))
-    val download: StateFlow<AutoMaskDownload> = _download.asStateFlow()
-    private var job: Job? = null
+    private val states: Map<Ability, MutableStateFlow<AutoMaskDownload>> = Ability.entries.associateWith { MutableStateFlow(settled(setOf(it))) }
 
-    private val _readDownload = MutableStateFlow(if (downloaded(readFiles)) AutoMaskDownload.Ready else AutoMaskDownload.Missing(missingBytes(readFiles)))
+    /** Where [ability] stands: what fetching it would take, counting the runtime if that is missing too. */
+    fun state(ability: Ability): StateFlow<AutoMaskDownload> = states.getValue(ability).asStateFlow()
 
-    /** Where what reading text needs stands. */
-    val readDownload: StateFlow<AutoMaskDownload> = _readDownload.asStateFlow()
-    private var readJob: Job? = null
-    private var reader: TextReader? = null
+    /** Where all of [abilities] stand together. */
+    fun state(abilities: Set<Ability>): StateFlow<AutoMaskDownload> {
+        val flows = abilities.map { states.getValue(it) }
+        return combine(flows) { together(abilities) }.stateIn(scope, SharingStarted.Eagerly, together(abilities))
+    }
+
+    private fun together(abilities: Set<Ability>): AutoMaskDownload {
+        val each = abilities.map { states.getValue(it).value }
+        return when {
+            each.all { it == AutoMaskDownload.Ready } -> AutoMaskDownload.Ready
+            each.any { it is AutoMaskDownload.Running } -> AutoMaskDownload.Running(each.filterIsInstance<AutoMaskDownload.Running>().minOf { it.progress })
+            else -> {
+                val failed = each.filterIsInstance<AutoMaskDownload.Failed>().firstOrNull()
+                if (failed != null) AutoMaskDownload.Failed(missingBytes(needs(abilities)), failed.error) else AutoMaskDownload.Missing(missingBytes(needs(abilities)))
+            }
+        }
+    }
+
+    /** What tap-to-hide needs: the lines of text, and the things around them. */
+    val download: StateFlow<AutoMaskDownload> = state(setOf(Ability.Text, Ability.Region))
+
+    /** What reading text needs. */
+    val readDownload: StateFlow<AutoMaskDownload> = state(Ability.Text)
+
+    private val fetching = Mutex()
+    private val jobs = mutableMapOf<Ability, Job>()
 
     private val loading = Mutex()
+    private var runtimeLoaded = false
     private var engine: AutoMask? = null
+    private var reader: TextReader? = null
 
-    /** Whether this phone can run it at all: a runtime is built for its processor. */
-    val supported: Boolean get() = runtime() != null
+    /** Whether this phone can run them at all: a runtime is built for its processor. */
+    val supported: Boolean get() = runtime != null
 
-    fun startDownload() {
-        if (job?.isActive == true || _download.value == AutoMaskDownload.Ready) return
-        job = scope.launch {
-            _download.value = AutoMaskDownload.Running(0f)
-            _download.value = try {
-                fetch(files, _download)
-                AutoMaskDownload.Ready
+    /** Fetches what tap-to-hide needs. */
+    fun startDownload() = start(Ability.Text, Ability.Region)
+
+    /** Fetches what reading text needs. */
+    fun startReadDownload() = start(Ability.Text)
+
+    /** Fetches whichever of [abilities] are not here yet, together, one download at a time. */
+    @Synchronized
+    fun start(vararg abilities: Ability) {
+        val wanted = abilities.filter { jobs[it]?.isActive != true && states.getValue(it).value != AutoMaskDownload.Ready }
+        if (wanted.isEmpty()) return
+        wanted.forEach { states.getValue(it).value = AutoMaskDownload.Running(0f) }
+        val job = scope.launch {
+            try {
+                fetching.withLock { fetch(needs(wanted)) { progress -> wanted.forEach { states.getValue(it).value = AutoMaskDownload.Running(progress) } } }
+                wanted.forEach { states.getValue(it).value = settled(setOf(it)) }
             } catch (e: Exception) {
-                AutoMaskDownload.Failed(missingBytes(), e)
+                wanted.forEach { states.getValue(it).value = AutoMaskDownload.Failed(missingBytes(needs(setOf(it))), e) }
             }
         }
+        wanted.forEach { jobs[it] = job }
     }
 
-    fun startReadDownload() {
-        if (readJob?.isActive == true || _readDownload.value == AutoMaskDownload.Ready) return
-        readJob = scope.launch {
-            _readDownload.value = AutoMaskDownload.Running(0f)
-            _readDownload.value = try {
-                fetch(readFiles, _readDownload)
-                AutoMaskDownload.Ready
-            } catch (e: Exception) {
-                AutoMaskDownload.Failed(missingBytes(readFiles), e)
-            }
-        }
-    }
-
-    /** What reads text, loaded the first time; null until it and the rest are downloaded, or when it would not load. */
-    suspend fun reader(): TextReader? {
-        if (engine() == null) return null
-        return loading.withLock {
-            reader?.let { return@withLock it }
-            if (!downloaded(readFiles)) return@withLock null
+    /**
+     * Deletes [ability]'s files, and the runtime with the last of them. What was loaded is let go
+     * rather than closed, as something may still be using it; it is gone with the process.
+     */
+    suspend fun delete(ability: Ability) {
+        synchronized(this) { jobs[ability] }?.let { if (it.isActive) return }
+        loading.withLock {
             withContext(io) {
-                try {
-                    TextReader.load(File(folder, Recognizer), File(folder, Characters), threads = 4).also { reader = it }
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    readFiles.forEach { File(folder, it.name).delete() }
-                    _readDownload.value = AutoMaskDownload.Failed(missingBytes(readFiles), e)
-                    null
+                fetching.withLock {
+                    engine = null
+                    if (ability == Ability.Text) reader = null
+                    abilityFiles.getValue(ability).forEach { File(folder, it.name).delete() }
+                    val anyLeft = abilityFiles.values.flatten().any { File(folder, it.name).exists() }
+                    if (!anyLeft) runtime?.let { File(folder, it.name).delete() }
+                    Ability.entries.forEach { states.getValue(it).value = settled(setOf(it)) }
                 }
             }
         }
     }
 
-    /**
-     * The engine, its runtime and models loaded the first time; null until they are downloaded,
-     * or when they would not load, which has them fetched again.
-     */
-    suspend fun engine(): AutoMask? = loading.withLock {
-        engine?.let { return it }
-        if (!downloaded()) return null
+    /** How much of the phone [ability]'s own files take now. */
+    fun bytesOf(ability: Ability): Long = abilityFiles.getValue(ability).sumOf { File(folder, it.name).length() }
+
+    /** How much [ability]'s own files take once downloaded. */
+    fun sizeOf(ability: Ability): Long = abilityFiles.getValue(ability).sumOf { it.size }
+
+    /** How much of the phone the runtime takes now. */
+    val runtimeBytes: Long get() = runtime?.let { File(folder, it.name).length() } ?: 0
+
+    /** What reads text, loaded the first time; null until it is downloaded, or when it would not load. */
+    suspend fun reader(): TextReader? = loading.withLock {
+        reader?.let { return it }
+        if (!downloaded(needs(setOf(Ability.Text))) || !loadRuntime()) return null
         withContext(io) {
             try {
-                // Native code is only loaded from a file nothing can write to, as Android 17 asks
-                val runtime = File(folder, RuntimeName).apply { setReadOnly() }
-                // LiteRT finds no runtime in the APK and lets this one stand in
-                System.load(runtime.absolutePath)
-                AutoMask.load(folder, threads = 4).also { engine = it }
-            } catch (e: Throwable) {
+                TextReader.load(File(folder, Recognizer), File(folder, Characters), threads = 4).also { reader = it }
+            } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                // Not to be loaded as it is: fetched afresh the next time
-                folder.deleteRecursively()
-                _readDownload.value = AutoMaskDownload.Missing(missingBytes(readFiles))
-                _download.value = AutoMaskDownload.Failed(missingBytes(), e as? Exception ?: IOException(e))
+                unusable(Ability.Text, e)
                 null
             }
         }
     }
 
-    private fun downloaded(of: List<Remote> = files) = of.all { File(folder, it.name).length() == it.size }
+    /**
+     * The engine, its models loaded the first time; null until they are downloaded, or when they
+     * would not load, which has them fetched again.
+     */
+    suspend fun engine(): AutoMask? = loading.withLock {
+        engine?.let { return it }
+        if (!downloaded(needs(Ability.entries)) || !loadRuntime()) return null
+        withContext(io) {
+            try {
+                AutoMask.load(folder, threads = 4).also { engine = it }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                Ability.entries.forEach { unusable(it, e) }
+                null
+            }
+        }
+    }
 
-    private fun missingBytes(of: List<Remote> = files) = of.filter { File(folder, it.name).length() != it.size }.sumOf { it.size }
+    /** Loads the runtime, once; false when it would not load, which has it fetched again. */
+    private suspend fun loadRuntime(): Boolean {
+        if (runtimeLoaded) return true
+        val remote = runtime ?: return false
+        return withContext(io) {
+            try {
+                // Native code is only loaded from a file nothing can write to, as Android 17 asks
+                val file = File(folder, remote.name).apply { setReadOnly() }
+                // LiteRT finds no runtime in the APK and lets this one stand in
+                System.load(file.absolutePath)
+                runtimeLoaded = true
+                true
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                File(folder, remote.name).delete()
+                Ability.entries.forEach { states.getValue(it).value = AutoMaskDownload.Failed(missingBytes(needs(setOf(it))), e as? Exception ?: IOException(e)) }
+                false
+            }
+        }
+    }
 
-    private suspend fun fetch(files: List<Remote>, state: MutableStateFlow<AutoMaskDownload>) = withContext(io) {
+    /** [ability]'s files would not load as they are: fetched afresh the next time. */
+    private fun unusable(ability: Ability, e: Throwable) {
+        abilityFiles.getValue(ability).forEach { File(folder, it.name).delete() }
+        states.getValue(ability).value = AutoMaskDownload.Failed(missingBytes(needs(setOf(ability))), e as? Exception ?: IOException(e))
+    }
+
+    private fun settled(abilities: Set<Ability>): AutoMaskDownload {
+        val files = needs(abilities)
+        return if (downloaded(files)) AutoMaskDownload.Ready else AutoMaskDownload.Missing(missingBytes(files))
+    }
+
+    private fun downloaded(files: List<Remote>) = files.all { File(folder, it.name).length() == it.size }
+
+    private fun missingBytes(files: List<Remote>) = files.filter { File(folder, it.name).length() != it.size }.sumOf { it.size }
+
+    private suspend fun fetch(files: List<Remote>, progress: (Float) -> Unit) = withContext(io) {
         folder.mkdirs()
         val wanted = files.filter { File(folder, it.name).length() != it.size }
         val total = wanted.sumOf { it.size }.coerceAtLeast(1)
@@ -184,10 +272,10 @@ class AutoMaskFiles @Inject constructor(
                             output.write(buffer, 0, n)
                             digest.update(buffer, 0, n)
                             done += n
-                            val progress = (done.toFloat() / total).coerceIn(0f, 1f)
-                            if (progress - shown >= 0.005f) {
-                                shown = progress
-                                state.value = AutoMaskDownload.Running(progress)
+                            val fraction = (done.toFloat() / total).coerceIn(0f, 1f)
+                            if (fraction - shown >= 0.005f) {
+                                shown = fraction
+                                progress(fraction)
                             }
                         }
                     }

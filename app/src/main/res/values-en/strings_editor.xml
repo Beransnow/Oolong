@@ -57,7 +57,6 @@
     <string name="editor_pick_looking">Looking the picture over</string>
     <string name="editor_pick_ready">Tap what to hide</string>
     <string name="editor_pick_auto">Auto</string>
-    <string name="editor_pick_auto_download">About %1$d MB to download for auto</string>
     <string name="editor_pick_spotting">Looking for private details</string>
     <string name="editor_pick_spotted">%1$d found</string>
     <string name="editor_pick_spotted_none">Nothing found</string>

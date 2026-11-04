@@ -902,20 +902,18 @@ private enum class MaskWay(val label: Int, val icon: ImageVector) {
 
 /**
  * Where tap-to-hide stands, under its option: what it needs fetched, then whether it is ready,
- * with hiding every private detail at once beside; what that found, to hide or let go.
+ * with hiding every private detail at once beside, which reads with what it fetched; what that
+ * found, to hide or let go.
  */
 @Composable
 private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
     val download by files.download.collectAsState()
-    val readDownload by files.readDownload.collectAsState()
-    // Asked for once, what reading needs is offered for download
-    var offered by remember { mutableStateOf(false) }
     val spotted = state.spotted
     val color = ExtendedTheme.colors.textSecondary
     val style = MaterialTheme.typography.body2
     when {
         download != AutoMaskDownload.Ready -> DownloadRow(download, R.string.editor_pick_download, files::startDownload)
-        state.spotting || (state.spotAsked && readDownload == AutoMaskDownload.Ready) -> OptionRow(height = 24.dp) {
+        state.spotting || state.spotAsked -> OptionRow(height = 24.dp) {
             Text(stringResource(R.string.editor_pick_spotting), color = color, style = style)
         }
         spotted != null -> OptionRow(arrangement = Arrangement.SpaceBetween) {
@@ -933,10 +931,6 @@ private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
                 }
             }
         }
-        offered && readDownload != AutoMaskDownload.Ready -> DownloadRow(readDownload, R.string.editor_pick_auto_download) {
-            files.startReadDownload()
-            state.spotAsked = true
-        }
         else -> OptionRow(arrangement = Arrangement.SpaceBetween) {
             Text(
                 stringResource(if (state.pickReady) R.string.editor_pick_ready else R.string.editor_pick_looking),
@@ -945,9 +939,7 @@ private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
                 modifier = Modifier.padding(start = 12.dp),
             )
             TextButton(
-                onClick = {
-                    if (readDownload == AutoMaskDownload.Ready) state.spotAsked = true else offered = true
-                },
+                onClick = { state.spotAsked = true },
                 enabled = state.pickReady,
                 color = ExtendedTheme.colors.text,
             ) { Text(stringResource(R.string.editor_pick_auto)) }
