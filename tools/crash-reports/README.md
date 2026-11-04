@@ -11,7 +11,8 @@ on Telegram.
 - `src/retrace.js` retraces a trace from looked-up records.
 - `src/mapping.js` reads an R8 mapping file and lays it out as shards.
 - `src/shards.js` reads records from a build's mapping file, at once or over several runs.
-- `scripts/shard.mjs` writes a build's mapping file.
+- `src/retention.js` says which builds' mapping files to drop.
+- `scripts/shard.mjs` writes a build's mapping file; `scripts/upload.py` puts it in the bucket.
 
 Commands below run from this directory.
 
@@ -66,6 +67,16 @@ npx wrangler d1 execute oolong-crash --remote --command "UPDATE crash_groups SET
 
 To try it locally, put a mapping file in the local bucket, run `npx wrangler dev --local
 --test-scheduled`, post reports and call `/__scheduled?cron=*+*+*+*+*` for each run.
+
+## Mapping files in CI
+
+Every CI build of a push writes its mapping file and uploads it (`ci.yml`); a release marks its
+build as released, as `released/<versionName>` (`release.yml`). Both need the repository secrets
+`CLOUDFLARE_API_TOKEN` (Workers R2 Storage Write) and `CLOUDFLARE_ACCOUNT_ID`, and skip the step
+without them.
+
+Once a day the Worker drops expired files: the latest 20 released builds keep theirs; any other
+build's goes once it is 14 days old and no report has come from it in 14 days.
 
 ## Mapping file
 

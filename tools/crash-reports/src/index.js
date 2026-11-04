@@ -5,10 +5,12 @@
  * whose trace it has seen before, then works on one new trace: it reads the lines that trace needs
  * from the build's mapping file in R2, a few shards per run so as to stay within the CPU an
  * invocation has, and once all are read retraces it, finds its group and tells the owner on Telegram
- * of a new problem or one come back. Once a day it drops what has expired.
+ * of a new problem or one come back. Once a day it drops what has expired, mapping files included
+ * (see retention.js).
  */
 
 import { digest, groupOf, traceKey } from "./group.js";
+import { DAYS, expiredVersions } from "./retention.js";
 import { retrace } from "./retrace.js";
 import { headerSize, linesLookup, parseHeader, readLines, shardsOf, wantedKeys } from "./shards.js";
 
@@ -259,8 +261,40 @@ async function notify(env, what, title, report) {
     }).catch(() => {});
 }
 
-/** Drops quotas of past days. */
+/** Drops quotas of past days, and the mapping files retention.js says have expired. */
 async function expire(env) {
-    const today = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
+    const today = new Date(now).toISOString().slice(0, 10);
     await env.DB.prepare("DELETE FROM crash_quota WHERE day < ?").bind(today).run();
+
+    const since = new Date(now - DAYS * 86_400_000).toISOString().slice(0, 10);
+    const { results } = await env.DB.prepare("SELECT DISTINCT version FROM crash_counts WHERE day >= ?").bind(since).all();
+    const reported = new Set(results.map((row) => row.version));
+    const files = await listed(env.MAPPINGS, "mapping/", ".bin");
+    const released = await listed(env.MAPPINGS, "released/", "");
+    for (const version of expiredVersions(files, released, reported, now)) {
+        await env.MAPPINGS.delete(`mapping/${version}.bin`);
+        await env.DB.batch([
+            env.DB.prepare("DELETE FROM crash_lines WHERE version = ?").bind(version),
+            env.DB.prepare(
+                `INSERT INTO crash_mappings (version, state, last_seen) VALUES (?, 'missing', ?)
+                 ON CONFLICT (version) DO UPDATE SET state = 'missing'`,
+            ).bind(version, now),
+        ]);
+    }
+}
+
+/** The objects under [prefix] in [bucket], as { version, uploaded }: the key without prefix and [suffix]. */
+async function listed(bucket, prefix, suffix) {
+    const all = [];
+    let cursor;
+    do {
+        const page = await bucket.list({ prefix, cursor });
+        for (const object of page.objects) {
+            if (!object.key.endsWith(suffix)) continue;
+            all.push({ version: object.key.slice(prefix.length, object.key.length - suffix.length), uploaded: object.uploaded.getTime() });
+        }
+        cursor = page.truncated ? page.cursor : undefined;
+    } while (cursor);
+    return all;
 }

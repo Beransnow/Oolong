@@ -90,6 +90,15 @@ jobs:
           python3 tools/release/publish.py "${{ steps.release.outputs.apk }}" \
             --channel "${{ steps.release.outputs.channel }}" --notes "${{ steps.release.outputs.notes }}"
 
+      # The crash Worker keeps the mapping of released builds longer (tools/crash-reports)
+      - name: Mark the build released for crash reports
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then exit 0; fi
+          python3 tools/crash-reports/scripts/upload.py released "${{ steps.release.outputs.apk }}"
+
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
