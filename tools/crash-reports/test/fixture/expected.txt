@@ -1,0 +1,48 @@
+java.lang.NullPointerException: outline, inlined frames and a rewriteFrame rule that applies
+	at androidx.appcompat.app.AppCompatDelegateImpl.createSubDecor(AppCompatDelegateImpl.java:934)
+	at androidx.appcompat.app.AppCompatDelegateImpl.ensureSubDecor(AppCompatDelegateImpl.java:815)
+	at androidx.browser.customtabs.CustomTabsService.requestPostMessageChannel(CustomTabsService.java:573)
+	at androidx.browser.customtabs.CustomTabsService$1.requestPostMessageChannelWithExtras(CustomTabsService.java:277)
+	at android.support.customtabs.ICustomTabsService$Stub.onTransact(ICustomTabsService.java:249)
+	at android.support.customtabs.ICustomTabsService$Stub.onTransact(ICustomTabsService.java)
+	at android.support.customtabs.ICustomTabsService$Stub.onTransact(ICustomTabsService.java:65000)
+	at android.os.Binder.execTransact(Binder.java:1)
+Caused by: java.lang.NullPointerException
+	at androidx.browser.customtabs.CustomTabsService$1.requestPostMessageChannelWithExtras(CustomTabsService.java:277)
+	at android.support.customtabs.ICustomTabsService$Stub.onTransact(ICustomTabsService.java:249)
+	at androidx.appcompat.app.AppCompatDelegateImpl.createSubDecor(AppCompatDelegateImpl.java:851)
+	at androidx.appcompat.app.AppCompatDelegateImpl.ensureSubDecor(AppCompatDelegateImpl.java:815)
+	... 3 more
+
+java.lang.NullPointerException
+	at androidx.recyclerview.widget.RecyclerView$RecycledViewPool.detach(RecyclerView.java:6322)
+	at androidx.recyclerview.widget.RecyclerView$RecycledViewPool.onAdapterChanged(RecyclerView.java:6374)
+	at androidx.recyclerview.widget.RecyclerView$Recycler.onAdapterChanged(RecyclerView.java:7358)
+	at androidx.recyclerview.widget.RecyclerView.setAdapterInternal(RecyclerView.java:1279)
+	at androidx.recyclerview.widget.RecyclerView.setAdapter(RecyclerView.java:1225)
+	at oolong.client.ui.widgets.compose.FeedCardKt.ThreadMedia(FeedCard.kt:447)
+	at oolong.client.api.models.protos.addPollPost.AddPollPostResponseData.<init>(AddPollPostResponseData.kt:49)
+	at oolong.client.api.models.protos.addPollPost.AddPollPostResponseData.<init>(AddPollPostResponseData.kt)
+	at oolong.client.api.models.protos.pbFloor.PbFloorRequestData$Companion$ADAPTER$1.decode(PbFloorRequestData.kt:422)
+	at oolong.client.api.models.protos.pbFloor.PbFloorRequestData$Companion$ADAPTER$1.decode(PbFloorRequestData.kt:255)
+
+okhttp3.internal.proxy.NullProxySelector: an exception whose class has no package
+	at androidx.compose.ui.text.AnnotatedString.getLength(AnnotatedString.kt:165)
+	at androidx.compose.ui.text.AnnotatedString.length(AnnotatedString.kt:48)
+	at androidx.compose.foundation.text.selection.MultiWidgetSelectionDelegate.getBoundingBox(MultiWidgetSelectionDelegate.kt:199)
+"main" prio=5 tid=1 Native
+  #00 pc 000000000004e6d8  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+24)
+java.lang.IllegalStateException: amb0
+	at androidx.activity.BackEventCompat.<init>(BackEventCompat.kt)
+	at androidx.activity.BackEventCompat.<init>(BackEventCompat.kt:63)
+	at androidx.activity.BackEventCompat.<init>(BackEventCompat.kt:65535)
+
+java.lang.IllegalStateException: amb1
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(ComponentActivity.kt)
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(ComponentActivity.kt:934)
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(ComponentActivity.kt:65535)
+
+java.lang.IllegalStateException: amb2
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(ComponentActivity.kt)
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(ComponentActivity.kt:990)
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(ComponentActivity.kt:65535)

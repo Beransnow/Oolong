@@ -1,0 +1,38 @@
+java.lang.NullPointerException: outline, inlined frames and a rewriteFrame rule that applies
+	at qy.a(SourceFile:4)
+	at androidx.appcompat.app.AppCompatDelegateImpl.F(SourceFile:593)
+	at nq5$a.onTransact(SourceFile:458)
+	at nq5$a.onTransact(Unknown Source)
+	at nq5$a.onTransact(SourceFile:65000)
+	at android.os.Binder.execTransact(Binder.java:1)
+Caused by: java.lang.NullPointerException
+	at nq5$a.onTransact(SourceFile:458)
+	at androidx.appcompat.app.AppCompatDelegateImpl.F(SourceFile:600)
+	... 3 more
+
+java.lang.NullPointerException
+	at androidx.recyclerview.widget.RecyclerView.setAdapter(SourceFile:101)
+	at jz3.q(SourceFile:437)
+	at oolong.client.api.models.protos.addPollPost.AddPollPostResponseData.<init>(SourceFile:17)
+	at oolong.client.api.models.protos.pbFloor.PbFloorRequestData$a.d(SourceFile:138)
+
+b48: an exception whose class has no package
+	at lr7.e(SourceFile:17)
+	at mv2.b(SourceFile:13)
+	at lk2.a(SourceFile:5)
+"main" prio=5 tid=1 Native
+  #00 pc 000000000004e6d8  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+24)
+java.lang.IllegalStateException: amb0
+	at tf0.<init>(Unknown Source)
+	at tf0.<init>(SourceFile:4)
+	at tf0.<init>(SourceFile:65535)
+
+java.lang.IllegalStateException: amb1
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(Unknown Source)
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(SourceFile:5)
+	at androidx.activity.ComponentActivity.onMultiWindowModeChanged(SourceFile:65535)
+
+java.lang.IllegalStateException: amb2
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(Unknown Source)
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(SourceFile:5)
+	at androidx.activity.ComponentActivity.onPictureInPictureModeChanged(SourceFile:65535)
