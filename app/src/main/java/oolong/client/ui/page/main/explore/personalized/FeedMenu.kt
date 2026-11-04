@@ -22,6 +22,7 @@ import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
 import oolong.client.model.DislikeOption
 import oolong.client.model.ThreadSummary
+import oolong.client.model.threadId
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
@@ -60,7 +61,7 @@ fun FeedMenu(
         onClick = {
             menus ?: return@IconButton
             val dislikes = dislikeMenuItems(context, navigator, options, onDislike)
-            val items = dislikes + shareMenuItems(shareLabels, context, thread.id, thread.title).mapIndexed { i, item ->
+            val items = dislikes + shareMenuItems(shareLabels, context, thread.threadId, thread.title).mapIndexed { i, item ->
                 if (i == 0) item.copy(startsGroup = dislikes.isNotEmpty()) else item
             } + shortcuts?.let { blockMenuItems(blockLabels, it, thread, forumOffered = options.offersBlockingForum()) }.orEmpty()
             menuId = menus.show(items, anchor = bounds, icon = Symbols.MoreVert)

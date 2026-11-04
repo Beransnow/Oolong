@@ -24,6 +24,7 @@ import oolong.client.arch.MessageController
 import oolong.client.model.DislikeOption
 import oolong.client.model.ThreadSummary
 import oolong.client.model.knownFirstFloor
+import oolong.client.model.threadId
 import oolong.client.repository.ThreadRepository
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.theme.compose.Symbols
@@ -55,7 +56,8 @@ class ThreadPeekViewModel @Inject constructor(
     fun prefetch(thread: ThreadSummary) = repository.prefetch(thread.key().query())
 
     fun store(thread: ThreadSummary) = actions.launch("store-${thread.id}") {
-        runCatching { repository.addStore(thread.id, thread.firstPostId) }
+        // A recommended reply is stored at itself
+        runCatching { repository.addStore(thread.threadId, thread.reply?.postId ?: thread.firstPostId) }
             .onSuccess { messages.show(R.string.message_add_favorite_success, 1) }
             .onFailure { messages.showError(R.string.message_add_favorite_failure, it) }
     }
@@ -98,7 +100,7 @@ fun rememberThreadPeeker(): ThreadPeeker? {
             viewModel.prefetch(thread)
             val items = buildList {
                 add(ContextMenuItem(Symbols.Star, collect) { viewModel.store(thread) })
-                addAll(shareMenuItems(shareLabels, context, thread.id, thread.title))
+                addAll(shareMenuItems(shareLabels, context, thread.threadId, thread.title))
                 dislikeMenuItems(context, navigator, options, onDislike).forEachIndexed { i, item ->
                     add(if (i == 0) item.copy(startsGroup = true) else item)
                 }
@@ -124,11 +126,15 @@ fun rememberThreadPeeker(): ThreadPeeker? {
 
 /**
  * A thread's first floor in full, as the thread page shows it, from what the list knows of it:
- * lists carry the whole first floor, only their abstract is cut short.
+ * lists carry the whole first floor, only their abstract is cut short. A recommended reply shows
+ * itself under the thread's title.
  */
 @Composable
 fun ThreadPeek(thread: ThreadSummary, modifier: Modifier = Modifier) {
-    val post = remember(thread) { thread.knownFirstFloor() }
+    val post = remember(thread) {
+        val floor = thread.knownFirstFloor()
+        thread.reply?.let { floor.copy(author = it.author, time = it.time) } ?: floor
+    }
     FirstPostContent(
         post = post,
         title = post.title,

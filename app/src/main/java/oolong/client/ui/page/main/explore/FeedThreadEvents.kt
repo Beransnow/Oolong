@@ -9,8 +9,10 @@ import oolong.client.model.ForumSummary
 import oolong.client.model.SharedThread
 import oolong.client.model.ThreadSummary
 import oolong.client.model.User
+import oolong.client.model.threadId
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.navigation.ForumKey
+import oolong.client.ui.navigation.SubPostsKey
 import oolong.client.ui.navigation.ThreadKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
@@ -25,6 +27,8 @@ class FeedThreadEvents(
     val onOpenForum: (ForumSummary) -> Unit = {},
     val onOpenUser: (User) -> Unit = {},
     val onOpenOrigin: (SharedThread) -> Unit = {},
+    /** Opening a recommended reply where it was made, in its floor. */
+    val onOpenFeedReply: (ThreadSummary) -> Unit = {},
     /**
      * Long-pressing a card, at its bounds and the press in the window, with the card as the
      * origin of the thread's page; null where it does nothing.
@@ -40,11 +44,18 @@ fun rememberFeedThreadEvents(onAgree: (ThreadSummary) -> Unit): FeedThreadEvents
     return remember(navigator, onAgree, peeker) {
         FeedThreadEvents(
             onOpen = { navigator.navigateToThread(it) },
-            onOpenReplies = { navigator.navigate(ThreadKey(it.id, it.forum.id, scrollToReply = true)) },
+            onOpenReplies = { navigator.navigate(ThreadKey(it.threadId, it.forum.id, scrollToReply = true)) },
             onAgree = onAgree,
             onOpenForum = { navigator.navigate(ForumKey(it.name)) },
             onOpenUser = { navigator.navigate(UserProfileKey(it.id)) },
             onOpenOrigin = { navigator.navigate(ThreadKey(threadId = it.id, forumId = it.forumId)) },
+            onOpenFeedReply = { thread ->
+                // The reply may be a floor or a reply inside one, which only pb/floor tells apart:
+                // it opens the floor with its replies either way
+                thread.reply?.let {
+                    navigator.navigate(SubPostsKey(threadId = it.threadId, forumId = thread.forum.id, subPostId = it.postId, loadFromSubPost = true))
+                }
+            },
             onPeek = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
         )
     }

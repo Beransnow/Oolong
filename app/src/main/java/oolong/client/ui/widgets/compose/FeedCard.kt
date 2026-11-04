@@ -71,6 +71,7 @@ import kotlinx.collections.immutable.persistentListOf
 import oolong.client.App
 import oolong.client.R
 import oolong.client.findActivity
+import oolong.client.model.FeedReply
 import oolong.client.model.ForumSummary
 import oolong.client.model.SharedThread
 import oolong.client.model.ThreadImage
@@ -704,6 +705,10 @@ fun ThreadShareBtn(
 /**
  * A thread in a list: its author and when, its title and abstract, its pictures or video, the
  * thread it shares, then its forum, shares, replies and likes.
+ *
+ * A reply recommended in its place shows the thread under its forum, which the feed tells of
+ * instead of its author, and the reply in a block of its own, which [onClickFeedReply] opens at.
+ * The feed has no counts for the thread, so the card ends there.
  */
 @Composable
 fun FeedCard(
@@ -715,6 +720,7 @@ fun FeedCard(
     onClickUser: (User) -> Unit = {},
     onClickForum: (ForumSummary) -> Unit = {},
     onClickShared: (SharedThread) -> Unit = {},
+    onClickFeedReply: (ThreadSummary) -> Unit = onClick,
     /** Whether to show the thread's forum, which a forum's own list leaves out. */
     showForum: Boolean = true,
     /** Long-pressing the card, at its bounds and the press in the window, with the card as an origin. */
@@ -749,17 +755,22 @@ fun FeedCard(
             }
     }
     val author = thread.author
+    val reply = thread.reply
     // The thread page opens out of the card, and closes back into it
     val origin = rememberPageOrigin()
     Card(
         header = {
-            UserHeader(
-                nameProvider = { author.name },
-                nameShowProvider = { author.nameShow },
-                portraitProvider = { author.portrait },
-                timeProvider = { thread.listTime.toInt() },
-                onClick = { onClickUser(author) },
-            ) { dislikeAction() }
+            if (reply != null) {
+                ForumHeader(forum = thread.forum, onClick = { onClickForum(thread.forum) }) { dislikeAction() }
+            } else {
+                UserHeader(
+                    nameProvider = { author.name },
+                    nameShowProvider = { author.nameShow },
+                    portraitProvider = { author.portrait },
+                    timeProvider = { thread.listTime.toInt() },
+                    onClick = { onClickUser(author) },
+                ) { dislikeAction() }
+            }
         },
         content = {
             ThreadContent(
@@ -789,8 +800,20 @@ fun FeedCard(
                         .padding(16.dp)
                 )
             }
+
+            if (reply != null) {
+                FeedReplyBlock(
+                    reply = reply,
+                    onClickUser = onClickUser,
+                    modifier = Modifier
+                        .clip(SmoothCornerShape(6.dp))
+                        .background(ExtendedTheme.colors.inset)
+                        .clickable { onClickFeedReply(thread) }
+                        .padding(12.dp)
+                )
+            }
         },
-        action = {
+        action = if (reply != null) null else ({
             FeedCardActions(
                 forum = {
                     if (showForum) {
@@ -816,7 +839,7 @@ fun FeedCard(
                     onClick = { onAgree(thread) },
                 )
             }
-        },
+        }),
         onClick = {
             origin.leave()
             onClick(thread)
@@ -833,6 +856,82 @@ fun FeedCard(
         modifier = modifier.pageOrigin(origin).then(pressTracking),
     )
 }
+
+/** A card's header naming its forum, where the card has no author to name. */
+@Composable
+private fun ForumHeader(
+    forum: ForumSummary,
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit,
+) {
+    UserHeader(
+        avatar = { Avatar(data = forum.avatar, size = Sizes.Small, contentDescription = null) },
+        name = { AuthorName(text = AnnotatedString(stringResource(id = R.string.title_forum, forum.name))) },
+        onClick = onClick,
+        content = content,
+    )
+}
+
+/**
+ * A recommended reply under its thread: who made it and when, what it says in a few lines, and
+ * its first picture small beside that.
+ */
+@Composable
+private fun FeedReplyBlock(
+    reply: FeedReply,
+    onClickUser: (User) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(
+                modifier = Modifier.clickable(interactionSource = null, indication = null) { onClickUser(reply.author) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Avatar(data = StringUtil.getAvatarUrl(reply.author.portrait), size = ReplyAvatarSize, contentDescription = null)
+                AuthorName(
+                    text = StringUtil.getUsernameAnnotatedString(
+                        context = context,
+                        username = reply.author.name,
+                        nickname = reply.author.nameShow,
+                        color = LocalContentColor.current,
+                    )
+                )
+                MetaText(text = relativeTime(reply.time))
+            }
+            EmoticonText(
+                text = reply.text,
+                fontSize = 15.sp,
+                lineHeight = 24.sp,
+                color = ExtendedTheme.colors.text,
+                maxLines = ReplyMaxLines,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        reply.images.firstOrNull()?.let { image ->
+            NetworkImage(
+                imageUri = image.small,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(ReplyImageSize)
+                    .clip(MediaShape),
+            )
+        }
+    }
+}
+
+private val ReplyAvatarSize = 20.dp
+private val ReplyImageSize = 64.dp
+private const val ReplyMaxLines = 3
 
 /** The thread a thread shares: what it says, then its pictures or video. */
 @Composable

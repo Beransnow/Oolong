@@ -9,6 +9,7 @@ import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.api.models.protos.VideoInfo
 import oolong.client.api.models.protos.abstractText
 import oolong.client.model.Agree
+import oolong.client.model.FeedReply
 import oolong.client.model.ForumSummary
 import oolong.client.model.SharedThread
 import oolong.client.model.ThreadImage
@@ -24,7 +25,13 @@ import oolong.client.model.UserThread
  * A thread as a list returned it. Feeds name the forum only in its forum info and forums only by
  * name; either way the summary has both.
  */
-fun ThreadInfo.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary = ThreadSummary(
+fun ThreadInfo.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary {
+    val origin = origin_thread_info
+    if (thread_type == FeedReplyType && origin != null) return toFeedReplyThread(origin, emoticons)
+    return toOwnThreadSummary(emoticons)
+}
+
+private fun ThreadInfo.toOwnThreadSummary(emoticons: EmoticonRegistry) = ThreadSummary(
     id = threadId.takeIf { it != 0L } ?: id,
     forum = ForumSummary(
         id = forumInfo?.id ?: forumId,
@@ -49,6 +56,54 @@ fun ThreadInfo.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary = Thr
     tabName = tabName,
     hotNum = hotNum.toLong(),
 )
+
+/**
+ * A reply a feed passes off as a thread, titled 「回复：」 and the thread's title under an id of its
+ * own, which it keeps: the thread it was made in, which [origin] names with neither its author nor
+ * its counts, and the reply on it.
+ */
+private fun ThreadInfo.toFeedReplyThread(origin: OriginThreadInfo, emoticons: EmoticonRegistry): ThreadSummary {
+    val forum = ForumSummary(
+        id = forumInfo?.id ?: forumId,
+        name = forumName.ifEmpty { forumInfo?.name.orEmpty() },
+        avatar = forumInfo?.avatar.orEmpty(),
+    )
+    return ThreadSummary(
+        id = id,
+        forum = forum,
+        title = origin.title,
+        author = User(id = 0, name = "", nameShow = "", portrait = ""),
+        createTime = 0,
+        listTime = createTime.toLong(),
+        abstract = origin._abstract.abstractText,
+        firstPostId = 0,
+        firstPost = firstPostContent.toPostContent(emoticons),
+        images = origin.media.map { it.toThreadImage() }.toImmutableList(),
+        video = origin.video_info?.toThreadVideo(),
+        reply = FeedReply(
+            threadId = origin.tid.toLongOrNull() ?: 0L,
+            postId = post_id,
+            author = author?.toUser() ?: User(id = authorId, name = "", nameShow = "", portrait = ""),
+            time = createTime.toLong(),
+            text = richAbstract.replyText(emoticons),
+            images = media.map { it.toThreadImage() }.toImmutableList(),
+        ),
+    )
+}
+
+private const val FeedReplyType = 81
+
+/**
+ * A reply's text, which starts with the user it answers, if any, as `@name 回复：` and the rest:
+ * written `回复 @name：` as a reply to someone reads.
+ */
+private fun List<PbContent>.replyText(emoticons: EmoticonRegistry): String {
+    val mention = firstOrNull()?.takeIf { it.type == MentionType }?.text
+    val rest = drop(if (mention != null) 1 else 0).abstractText(emoticons).trim().removePrefix("回复：").trim()
+    return if (mention != null) "回复 $mention：$rest" else rest
+}
+
+private const val MentionType = 4
 
 /**
  * The abstract as one line of text: text pieces with runs of spaces collapsed, emoticons as their

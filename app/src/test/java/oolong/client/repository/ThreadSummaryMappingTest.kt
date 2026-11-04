@@ -113,4 +113,48 @@ class ThreadSummaryMappingTest {
         assertNull(notSharing.shared)
         assertFalse(notSharing.isGood)
     }
+
+    @Test
+    fun `a recommended reply shows its thread with the reply on it`() {
+        val summary = ThreadInfo(
+            id = 2100000009177635,
+            threadId = 2100000009177635,
+            thread_type = 81,
+            title = "回复：贝果记录一下",
+            forumInfo = SimpleForum(id = 5, name = "绝区零", avatar = "a.png"),
+            author = User(id = 7, name = "name", nameShow = "show", portrait = "p"),
+            createTime = 50,
+            post_id = 154099046834,
+            richAbstract = listOf(
+                PbContent(type = 4, text = "@下个星期四"),
+                PbContent(type = 0, text = " 回复：你应该去找"),
+            ),
+            firstPostContent = listOf(PbContent(type = 0, text = "你应该去找")),
+            media = listOf(Media(type = 3, bigPic = "reply.jpg")),
+            origin_thread_info = OriginThreadInfo(
+                title = "贝果记录一下",
+                tid = "11035424096",
+                media = listOf(Media(type = 3, bigPic = "thread.jpg")),
+            ),
+        ).toThreadSummary(emoticons)
+
+        // The entry keeps the feed's id, so it never stands in for the thread elsewhere
+        assertEquals(2100000009177635, summary.id)
+        assertEquals("贝果记录一下", summary.title)
+        assertEquals("thread.jpg", summary.images.single().small)
+        assertEquals("", summary.author.name)
+        assertEquals("你应该去找", summary.firstPost.plainText)
+        val reply = summary.reply!!
+        assertEquals(11035424096, reply.threadId)
+        assertEquals(154099046834, reply.postId)
+        assertEquals("show", reply.author.displayName)
+        assertEquals(50, reply.time)
+        assertEquals("回复 @下个星期四：你应该去找", reply.text)
+        assertEquals("reply.jpg", reply.images.single().small)
+    }
+
+    @Test
+    fun `a thread of its own has no reply`() {
+        assertNull(ThreadInfo(id = 1, title = "标题").toThreadSummary(emoticons).reply)
+    }
 }

@@ -113,10 +113,15 @@ fun BlockRules.blocks(author: User, content: String): Boolean =
 
 /**
  * How the rules block [thread] in a list at [place], by its author, its forum, or its first floor,
- * or what lists know of it where that is missing.
+ * or what lists know of it where that is missing. A recommended reply goes by its own author and
+ * what it says.
  */
 fun BlockRules.check(thread: ThreadSummary, place: BlockPlace): BlockVerdict? {
     if (empty) return null
+    val reply = thread.reply
+    if (reply != null) {
+        return check(Blockable(reply.author, thread.firstPost, place, title = thread.title, forum = thread.forum.name))
+    }
     val item = if (thread.firstPost.isNotEmpty()) {
         Blockable(thread.author, thread.firstPost, place, title = thread.title, forum = thread.forum.name, byThreadAuthor = true)
     } else {

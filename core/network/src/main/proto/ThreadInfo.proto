@@ -38,6 +38,8 @@ message ThreadInfo {
   int32 commentNum = 20;
   repeated Abstract _abstract = 21;
   repeated Media media = 22;
+  // 81 for a reply a feed passes off as a thread, which origin_thread_info then names
+  int32 thread_type = 26;
   int64 forumId = 27;
   string forumName = 28;
   int32 isNoTitle = 38;

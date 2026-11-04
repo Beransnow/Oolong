@@ -41,7 +41,29 @@ data class ThreadSummary(
     val tabName: String = "",
     /** How hot the thread is on the hot threads ranking; 0 elsewhere. */
     val hotNum: Long = 0,
+    /**
+     * The reply a feed recommends in place of a thread. [id] is then the feed's own id for the
+     * entry, [firstPost] the reply in full, and the rest the thread the reply was made in, whose
+     * author the feed leaves out.
+     */
+    val reply: FeedReply? = null,
 )
+
+/** A reply a feed recommends, shown on the thread it was made in. */
+@Immutable
+data class FeedReply(
+    val threadId: Long,
+    val postId: Long,
+    val author: User,
+    /** When the reply was made, in seconds since the epoch. */
+    val time: Long,
+    val text: String,
+    val images: ImmutableList<ThreadImage> = persistentListOf(),
+)
+
+/** The thread's own id, which a recommended reply's entry doesn't go by. */
+val ThreadSummary.threadId: Long
+    get() = reply?.threadId ?: id
 
 /** The thread liked or not, its like count following. */
 fun ThreadSummary.withAgreed(agreed: Boolean) = copy(agree = agree.withAgreed(agreed))

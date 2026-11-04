@@ -1,6 +1,7 @@
 package oolong.client.ui.page.thread
 
 import oolong.client.model.ThreadSummary
+import oolong.client.model.threadId
 import oolong.client.repository.ThreadQuery
 import oolong.client.repository.ThreadSort
 import oolong.client.ui.navigation.Navigator
@@ -15,7 +16,7 @@ fun Navigator.navigateToThread(thread: ThreadSummary, key: ThreadKey = thread.ke
 }
 
 /** Where opening [this] thread from a list goes. */
-fun ThreadSummary.key() = ThreadKey(id, forum.id)
+fun ThreadSummary.key() = ThreadKey(threadId, forum.id)
 
 /** What the page opened at this key asks for. */
 fun ThreadKey.query() = ThreadQuery(
