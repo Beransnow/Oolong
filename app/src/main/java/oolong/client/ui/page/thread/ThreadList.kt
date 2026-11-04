@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -65,6 +64,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
@@ -106,7 +106,7 @@ internal fun ThreadContent(
                 error != null -> remember { StateScreenScope { onEvent(ThreadEvent.Retry) } }
                     .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
 
-                loadingFirstTime -> CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
+                loadingFirstTime -> WavyLoader()
             }
         }
         return
@@ -126,6 +126,8 @@ internal fun ThreadContent(
     val viewerId = state.viewer.user?.id
     val photoViewData = rememberPhotoViewData(state)
 
+    // Until the first page of replies is in, the end of the list says how that load is going
+    val firstLoad = posts.items.isEmpty() && (loadingFirstTime || error != null)
     LoadMoreEffect(listState, enabled = posts.hasMore && posts.append == LoadStatus.Idle, onLoadMore = { onEvent(ThreadEvent.LoadMore) })
     PullRefresh(
         refreshing = pullRefreshing,
@@ -133,7 +135,7 @@ internal fun ThreadContent(
         enabled = posts.hasPrevious || newestFirst,
         indicatorTop = padding.calculateTopPadding(),
         endPull = when {
-            posts.hasMore -> EndPull.None
+            firstLoad || posts.hasMore -> EndPull.None
             newestFirst -> EndPull.Tease
             else -> EndPull.Action { onEvent(ThreadEvent.LoadLatest) }
         },
@@ -176,14 +178,20 @@ internal fun ThreadContent(
                     )
                 }
             }
-            loadMoreFooter(posts.append, posts.hasMore, pullToLoadLatest = !newestFirst, onRetry = { onEvent(if (posts.hasMore) ThreadEvent.LoadMore else ThreadEvent.LoadLatest) })
-            if (loadingFirstTime) {
-                item(key = "Loading") {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
-                    }
-                }
-            }
+            loadMoreFooter(
+                append = if (firstLoad) posts.refresh else posts.append,
+                hasMore = posts.hasMore,
+                pullToLoadLatest = !newestFirst && !firstLoad,
+                onRetry = {
+                    onEvent(
+                        when {
+                            firstLoad -> ThreadEvent.Retry
+                            posts.hasMore -> ThreadEvent.LoadMore
+                            else -> ThreadEvent.LoadLatest
+                        }
+                    )
+                },
+            )
         }
     }
 }
