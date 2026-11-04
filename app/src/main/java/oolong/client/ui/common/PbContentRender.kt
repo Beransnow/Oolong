@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import oolong.client.R
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -46,6 +45,7 @@ import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.videoview.VideoCover
 import oolong.client.ui.page.videoview.ViewerVideo
+import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.EmoticonText
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
@@ -200,8 +200,8 @@ data class VideoContentRender(
                     modifier = Modifier.fillMaxWidth(widthFraction),
                 )
             } else {
-                AsyncImage(
-                    model = picUrl,
+                ContentImage(
+                    imageUri = picUrl,
                     contentDescription = stringResource(id = R.string.desc_video),
                     modifier = picModifier
                         .clickable {

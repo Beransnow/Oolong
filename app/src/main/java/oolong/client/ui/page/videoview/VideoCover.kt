@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -41,11 +42,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
-import coil3.compose.AsyncImage
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.widgets.compose.ContentImage
+import oolong.client.ui.widgets.compose.shouldLoadImage
 
 /**
  * A video in a list or a post: its cover with a play button, how long it runs and how much of it
@@ -60,6 +62,7 @@ fun VideoCover(
     shape: Shape = Corners.sm,
 ) {
     val viewer = LocalVideoViewer.current
+    val context = LocalContext.current
     val current by rememberUpdatedState(video)
     var bounds by remember { mutableStateOf<Rect?>(null) }
     val description = stringResource(id = R.string.desc_video)
@@ -104,10 +107,12 @@ fun VideoCover(
                     }
                 },
         ) {
-            AsyncImage(
-                model = video.cover,
+            // Held back like any picture when the data-saving setting says so; a tap still plays
+            ContentImage(
+                imageUri = video.cover,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                load = remember { shouldLoadImage(context, skipNetworkCheck = false) },
                 modifier = Modifier.fillMaxSize(),
             )
             Box(

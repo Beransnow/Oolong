@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.ImmutableList
 import oolong.client.R
 import oolong.client.model.PostContent
@@ -45,6 +44,7 @@ import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.videoview.VideoCover
 import oolong.client.ui.page.videoview.ViewerVideo
+import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
 import oolong.client.utils.EmoticonUtil.emoticonString
@@ -142,8 +142,8 @@ private fun PostVideo(video: PostContent.Video) {
             modifier = Modifier.fillMaxWidth(mediaWidthFraction()),
         )
     } else {
-        AsyncImage(
-            model = video.coverUrl,
+        ContentImage(
+            imageUri = video.coverUrl,
             contentDescription = stringResource(id = R.string.desc_video),
             modifier = modifier.clickable { navigator.navigate(WebViewKey(video.webUrl)) },
             contentScale = ContentScale.Crop,
