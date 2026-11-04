@@ -1006,5 +1006,8 @@ private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick
 @Composable
 private fun rememberNumeralFamily(): FontFamily {
     val context = LocalContext.current
-    return remember { FontFamily(Typeface.createFromAsset(context.assets, "bebas.ttf")) }
+    return numeralFamily ?: FontFamily(Typeface.createFromAsset(context.assets, "bebas.ttf")).also { numeralFamily = it }
 }
+
+/** Loaded once for every floor: loading it took about a millisecond each time a floor came in. */
+private var numeralFamily: FontFamily? = null
