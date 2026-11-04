@@ -164,12 +164,12 @@ class EditorState(
     private val tapped = mutableSetOf<Int>()
 
     /**
-     * The mask laid by a tap under [screen], the topmost: a tap there takes it away again. A tap
-     * near one counts, as a tap near a line of text counts as on it.
+     * The mask laid by a tap under [screen], the topmost: a tap there takes it away again. Only
+     * a tap on it, give or take a little, so one on the next line hides that line instead.
      */
     fun tappedMaskAt(screen: Offset): Edit.Mask? {
         val point = toPicture(toTurned(screen))
-        val reach = 20 * density / scale
+        val reach = 4 * density / scale
         return tappedMasks().lastOrNull { box(it.points).inflate(reach).contains(point) }
     }
 
