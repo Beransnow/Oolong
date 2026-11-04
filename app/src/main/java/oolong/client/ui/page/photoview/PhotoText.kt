@@ -1,0 +1,464 @@
+package oolong.client.ui.page.photoview
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.RectF
+import android.os.Build
+import android.util.Log
+import android.view.HapticFeedbackConstants
+import android.view.View
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import oolong.client.R
+import oolong.client.components.automask.Ability
+import oolong.client.components.automask.AutoMaskDownload
+import oolong.client.components.automask.AutoMaskFiles
+import oolong.client.components.automask.PictureText
+import oolong.client.components.automask.ReadLine
+import oolong.client.components.images.downloadImage
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
+import oolong.client.ui.widgets.compose.MediaGlassPill
+import oolong.client.utils.TiebaUtil
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+
+/**
+ * Picking text out of the picture shown: the picture read off its original, the lines found
+ * lit as they are, then read, the line pressed first; a selection from one character to
+ * another, across lines, to copy.
+ */
+@Stable
+internal class PhotoTextState(
+    private val context: Context,
+    private val files: AutoMaskFiles,
+    private val scope: CoroutineScope,
+) {
+    /** The picture whose text is picked from; null when none is. */
+    var url by mutableStateOf<String?>(null)
+        private set
+
+    /** The picture as read, the selection's and the lines' pixels its own. */
+    var picture by mutableStateOf<Bitmap?>(null)
+        private set
+
+    /** The lines found, lit while they are read. */
+    var found by mutableStateOf<List<RectF>>(emptyList())
+        private set
+
+    var text by mutableStateOf<PictureText?>(null)
+        private set
+
+    /** The characters picked, first and last, in [text]'s order. */
+    var selection by mutableStateOf<IntRange?>(null)
+
+    var reading by mutableStateOf(false)
+        private set
+
+    /** Asked for before text recognition was downloaded: picked from once it is. */
+    var waiting by mutableStateOf<String?>(null)
+        private set
+
+    val active: Boolean get() = url != null || waiting != null
+
+    private var job: Job? = null
+
+    val download get() = files.state(Ability.Text)
+
+    val supported: Boolean get() = files.supported
+
+    /**
+     * Picks text out of the picture at [url], [pressed] where on it a long press was, as a share
+     * of its width and height, or null for all of it; false when it cannot be read yet.
+     */
+    fun start(url: String, pressed: Offset?, onMissed: () -> Unit = {}): Boolean {
+        if (files.state(Ability.Text).value != AutoMaskDownload.Ready) return false
+        if (this.url == url && text != null) {
+            pressed?.let { selectLineAt(it) }
+            return true
+        }
+        stop()
+        this.url = url
+        reading = true
+        job = scope.launch {
+            try {
+                val bitmap = withContext(Dispatchers.IO) { context.downloadImage(url)?.let(::decode) } ?: return@launch stopAfterMiss(onMissed)
+                picture = bitmap
+                val finder = files.finder() ?: return@launch stopAfterMiss(onMissed)
+                val reader = files.reader() ?: return@launch stopAfterMiss(onMissed)
+                val lines = withContext(Dispatchers.Default) { finder.find(bitmap) }
+                if (lines.isEmpty()) return@launch stopAfterMiss(onMissed)
+                found = lines
+                // The line pressed first, picked whole, the rest after
+                val at = pressed?.let { Offset(it.x * bitmap.width, it.y * bitmap.height) }
+                val reach = bitmap.width * 0.04f
+                val first = at?.let { p -> lines.minByOrNull { gap(it, p) }?.takeIf { gap(it, p) <= reach } }
+                if (pressed != null && first == null) return@launch stopAfterMiss(onMissed)
+                val read = mutableListOf<ReadLine>()
+                if (first != null) {
+                    read += withContext(Dispatchers.Default) { reader.read(bitmap, first) }
+                    show(read)
+                    selection = text?.takeIf { !it.isEmpty }?.let { 0..it.glyphs.lastIndex }
+                }
+                for ((i, line) in lines.withIndex()) {
+                    if (line === first) continue
+                    read += withContext(Dispatchers.Default) { reader.read(bitmap, line) }
+                    if (i % 6 == 5) show(read)
+                }
+                show(read)
+                if (text?.isEmpty != false) stopAfterMiss(onMissed)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.w("PhotoText", "could not read the picture", e)
+                stop()
+            } finally {
+                reading = false
+            }
+        }
+        return true
+    }
+
+    /** Offers text recognition for download, the picture at [url] read once it is. */
+    fun startAfterDownload(url: String) {
+        stop()
+        waiting = url
+    }
+
+    fun fetch() = files.start(Ability.Text)
+
+    /** Called as the download goes: picks text out of the picture waited for once it is done. */
+    fun downloaded() {
+        val url = waiting ?: return
+        waiting = null
+        start(url, null)
+    }
+
+    fun cancelWaiting() {
+        waiting = null
+    }
+
+    private fun stopAfterMiss(onMissed: () -> Unit) {
+        stop()
+        onMissed()
+    }
+
+    /** The text read so far, the selection kept on the same characters. */
+    private fun show(read: List<ReadLine>) {
+        val before = text
+        val picked = selection
+        val anchors = if (before != null && picked != null) before.glyphs[picked.first] to before.glyphs[picked.last] else null
+        val now = PictureText(read.toList())
+        text = now
+        if (anchors != null) {
+            val from = now.nearestGlyph(anchors.first.centerX, anchors.first.centerY)
+            val to = now.nearestGlyph(anchors.second.centerX, anchors.second.centerY)
+            selection = if (from != null && to != null) min(from, to)..max(from, to) else null
+        }
+    }
+
+    fun stop() {
+        job?.cancel()
+        job = null
+        url = null
+        picture = null
+        found = emptyList()
+        text = null
+        selection = null
+        reading = false
+        waiting = null
+    }
+
+    /** Picks the line at [share] of the picture's width and height; true when there was one. */
+    fun selectLineAt(share: Offset): Boolean {
+        val bitmap = picture ?: return false
+        val text = text ?: return false
+        val glyph = text.glyphAt(share.x * bitmap.width, share.y * bitmap.height, reach = bitmap.width * 0.02f) ?: return false
+        selection = text.lineOf(glyph)
+        return true
+    }
+
+    fun selectAll() {
+        val text = text ?: return
+        if (!text.isEmpty) selection = 0..text.glyphs.lastIndex
+    }
+
+    val selectedText: String
+        get() = selection?.let { text?.text(it.first, it.last) }.orEmpty()
+
+    private fun gap(r: RectF, p: Offset) = max(max(r.left - p.x, 0f), p.x - r.right) + max(max(r.top - p.y, 0f), p.y - r.bottom)
+
+    companion object {
+        /** Most pixels a picture is read at: a long one is halved until it fits. */
+        private const val MostPixels = 16_000_000
+
+        private fun decode(bytes: ByteArray): Bitmap? {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            var sample = 1
+            while (bounds.outWidth.toLong() * bounds.outHeight / (sample * sample) > MostPixels) sample *= 2
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        }
+    }
+}
+
+/** Which end of a selection a finger holds. */
+private enum class Handle { Start, End }
+
+private val SelectionColor = Color(0xFF4C8DFF)
+
+/**
+ * The text picked from over the picture, which shows in [display] on screen: the lines found,
+ * lit, brighter while they are read; the selection with a handle at each end, which a finger
+ * drags character by character with a loupe over it.
+ */
+@Composable
+internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
+    val view = LocalView.current
+    var held by remember { mutableStateOf<Handle?>(null) }
+    var finger by remember { mutableStateOf<Offset?>(null) }
+    val pulse = rememberInfiniteTransition(label = "reading")
+        .animateFloat(0.12f, 0.3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(state) {
+                val grab = 28.dp.toPx()
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    val text = state.text ?: return@awaitEachGesture
+                    val picture = state.picture ?: return@awaitEachGesture
+                    val picked = state.selection ?: return@awaitEachGesture
+                    val rect = display()
+                    val k = rect.width / picture.width
+                    fun toScreen(x: Float, y: Float) = Offset(rect.left + x * k, rect.top + y * k)
+                    val first = text.glyphs[picked.first]
+                    val last = text.glyphs[picked.last]
+                    val start = toScreen(first.left, first.bottom)
+                    val end = toScreen(last.right, last.bottom)
+                    val handle = when {
+                        (down.position - end).getDistance() <= grab -> Handle.End
+                        (down.position - start).getDistance() <= grab -> Handle.Start
+                        else -> return@awaitEachGesture
+                    }
+                    down.consume()
+                    held = handle
+                    finger = down.position
+                    // The other end stays where it is
+                    var fixed = if (handle == Handle.End) picked.first else picked.last
+                    var lastGlyph = if (handle == Handle.End) picked.last else picked.first
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            change.consume()
+                            finger = change.position
+                            val now = display()
+                            val scale = now.width / picture.width
+                            // Aimed a little above the finger, at the line it is held under
+                            val x = (change.position.x - now.left) / scale
+                            val y = (change.position.y - 12.dp.toPx() - now.top) / scale
+                            val glyph = text.nearestGlyph(x, y) ?: continue
+                            if (glyph != lastGlyph) {
+                                lastGlyph = glyph
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            }
+                            state.selection = min(fixed, glyph)..max(fixed, glyph)
+                        }
+                    } finally {
+                        held = null
+                        finger = null
+                    }
+                }
+            },
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val picture = state.picture ?: return@Canvas
+            val rect = display()
+            if (rect.isEmpty) return@Canvas
+            val k = rect.width / picture.width
+            fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
+            // The lines found: brighter while being read
+            val lit = if (state.reading) pulse.value else 0.12f
+            for (line in state.found) {
+                val r = box(line)
+                drawRoundRect(Color.White.copy(alpha = lit), r.topLeft, r.size, CornerRadius(r.height * 0.2f))
+            }
+            val text = state.text ?: return@Canvas
+            val picked = state.selection ?: return@Canvas
+            // The selection, a piece of each line it covers
+            var i = picked.first
+            while (i <= picked.last) {
+                val line = text.glyphs[i].line
+                var j = i
+                while (j + 1 <= picked.last && text.glyphs[j + 1].line == line) j++
+                val a = text.glyphs[i]
+                val b = text.glyphs[j]
+                val r = box(RectF(a.left, a.top, b.right, b.bottom))
+                drawRect(SelectionColor.copy(alpha = 0.38f), r.topLeft, r.size)
+                i = j + 1
+            }
+            val first = text.glyphs[picked.first]
+            val last = text.glyphs[picked.last]
+            drawHandle(box(RectF(first.left, first.top, first.left, first.bottom)), start = true)
+            drawHandle(box(RectF(last.right, last.top, last.right, last.bottom)), start = false)
+            finger?.let { drawLoupe(it, picture, rect, held != null) }
+        }
+    }
+}
+
+/** A selection's end: a bar along the line's height, a dot past it. */
+private fun DrawScope.drawHandle(bar: Rect, start: Boolean) {
+    val width = 2.dp.toPx()
+    drawRect(SelectionColor, Offset(bar.left - width / 2, bar.top), Size(width, bar.height))
+    val dot = 6.dp.toPx()
+    drawCircle(SelectionColor, dot, Offset(bar.left, if (start) bar.top - dot * 0.6f else bar.bottom + dot * 0.6f))
+}
+
+/** The picture around the finger, bigger, over it, so what is under the finger can be seen. */
+private fun DrawScope.drawLoupe(at: Offset, picture: Bitmap, rect: Rect, shown: Boolean) {
+    if (!shown) return
+    val radius = 52.dp.toPx()
+    val zoom = 1.8f
+    val centre = Offset(at.x, (at.y - radius - 40.dp.toPx()).coerceAtLeast(radius))
+    val k = rect.width / picture.width
+    // The picture's pixels around the finger, a little above it where it aims
+    val px = (at.x - rect.left) / k
+    val py = (at.y - 12.dp.toPx() - rect.top) / k
+    val half = radius / (k * zoom)
+    val src = IntOffset((px - half).roundToInt(), (py - half).roundToInt())
+    val srcSize = IntSize((half * 2).roundToInt().coerceAtLeast(1), (half * 2).roundToInt().coerceAtLeast(1))
+    val circle = Path().apply { addOval(Rect(centre, radius)) }
+    drawCircle(Color.Black, radius, centre)
+    clipPath(circle) {
+        drawImage(
+            picture.asImageBitmap(),
+            srcOffset = src,
+            srcSize = srcSize,
+            dstOffset = IntOffset((centre.x - radius).roundToInt(), (centre.y - radius).roundToInt()),
+            dstSize = IntSize((radius * 2).roundToInt(), (radius * 2).roundToInt()),
+        )
+    }
+    drawCircle(Color.White.copy(alpha = 0.8f), radius, centre, style = Stroke(1.5.dp.toPx()))
+}
+
+/** Where [p] falls in [rect], as a share of its width and height; null outside it. */
+internal fun shareOf(rect: Rect, p: Offset): Offset? {
+    if (rect.isEmpty || !rect.contains(p)) return null
+    return Offset((p.x - rect.left) / rect.width, (p.y - rect.top) / rect.height)
+}
+
+/**
+ * The bar while text is picked from a picture: what text recognition still needs, that the
+ * picture is being read, or what can be done with what is picked.
+ */
+@Composable
+internal fun PhotoTextBar(state: PhotoTextState, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val download by state.download.collectAsState()
+    Box(modifier = modifier.navigationBarsPadding().padding(bottom = 24.dp)) {
+        MediaGlassPill {
+            when {
+                state.waiting != null -> when (val now = download) {
+                    is AutoMaskDownload.Missing -> {
+                        Label(stringResource(R.string.photo_extract_download, ((now.bytes + 999_999) / 1_000_000).toInt()))
+                        Action(stringResource(R.string.photo_download), state::fetch)
+                    }
+                    is AutoMaskDownload.Failed -> {
+                        Label(stringResource(R.string.photo_download_failed))
+                        Action(stringResource(R.string.photo_retry), state::fetch)
+                    }
+                    is AutoMaskDownload.Running -> Label(stringResource(R.string.photo_downloading, (now.progress * 100).toInt()))
+                    AutoMaskDownload.Ready -> Label(stringResource(R.string.photo_reading))
+                }
+                state.text == null -> Label(stringResource(R.string.photo_reading))
+                state.selection != null -> {
+                    // Copied, it is done with
+                    Action(stringResource(R.string.photo_copy)) {
+                        TiebaUtil.copyText(context, state.selectedText)
+                        state.stop()
+                    }
+                    Action(stringResource(R.string.photo_select_all), state::selectAll)
+                }
+                else -> Action(stringResource(R.string.photo_select_all), state::selectAll)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Label(text: String) {
+    Text(text = text, color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
+}
+
+@Composable
+private fun Action(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        color = Color.White,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .clip(SmoothCornerShape.Capsule)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    )
+}
+
+/** The buzz of something that did not take. */
+internal fun View.reject() {
+    performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS)
+}

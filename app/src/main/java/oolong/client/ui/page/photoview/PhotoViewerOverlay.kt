@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
@@ -87,8 +88,10 @@ import com.github.panpf.zoomimage.zoom.Edge
 import com.github.panpf.zoomimage.zoom.ReadMode
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.images.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
 import oolong.client.toastShort
@@ -98,11 +101,14 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.editor.EditRequest
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
+import oolong.client.ui.page.editor.rememberAutoMaskFiles
 import oolong.client.ui.utils.FullColorWindow
+import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MediaGlassActions
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.ProvideMediaGlass
+import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
@@ -156,6 +162,9 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val dragFade = 1f - (abs(drag.y) / (container.height * 0.5f)).coerceIn(0f, 1f)
 
         val glass = rememberHazeState()
+        val view = LocalView.current
+        val autoMask = rememberAutoMaskFiles()
+        val text = remember { PhotoTextState(context, autoMask, scope) }
         val zoomStates = remember { mutableStateMapOf<Int, CoilZoomState>() }
         val loadedKeys = remember { mutableStateMapOf<String, MemoryCache.Key>() }
         val pageCount by rememberUpdatedState(pictures.size)
@@ -167,6 +176,13 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         LaunchedEffect(Unit) {
             progress.animateTo(1f, Motion.present(Motion.ProgressThreshold))
             phase = Phase.Open
+        }
+        // Text is picked from the picture shown only
+        LaunchedEffect(pagerState.currentPage) { text.stop() }
+        LaunchedEffect(text.waiting) {
+            if (text.waiting == null) return@LaunchedEffect
+            text.download.first { it == AutoMaskDownload.Ready }
+            text.downloaded()
         }
         LaunchedEffect(state.currentIndex, pictures.isNotEmpty()) {
             if (pictures.isNotEmpty() && pagerState.currentPage != state.currentIndex) {
@@ -206,6 +222,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
 
         val onClose by rememberUpdatedState<() -> Unit> { close() }
         BackHandler(enabled = phase != Phase.Closing) { close() }
+        // Picking text, back leaves it first
+        BackHandler(enabled = phase != Phase.Closing && text.active) { text.stop() }
 
         val p = progress.value
         val black = if (phase == Phase.Closing) p * closingFade else p.coerceIn(0f, 1f) * dragFade
@@ -236,7 +254,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                         val slop = viewConfiguration.touchSlop
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                            if (phase != Phase.Open || !zoomStates[pagerState.currentPage].atRest()) return@awaitEachGesture
+                            if (phase != Phase.Open || text.active || !zoomStates[pagerState.currentPage].atRest()) return@awaitEachGesture
                             val tracker = VelocityTracker()
                             var total = Offset.Zero
                             var active = false
@@ -285,6 +303,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             ) {
                 HorizontalPager(
                     state = pagerState,
+                    userScrollEnabled = !text.active,
                     pageSpacing = 16.dp,
                     key = { "${pictures[it].picId}_${pictures[it].postId}" },
                     modifier = Modifier.fillMaxSize(),
@@ -302,7 +321,26 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                             ?: opening.thumbnail.takeIf { picture.picId == openedItem?.picId },
                         zoomState = zoomState,
                         onLoaded = { loadedKeys[picture.picId] = it },
-                        onTap = { onClose() },
+                        onTap = { at ->
+                            val share = zoomState.zoomable.contentDisplayRectF.let { shareOf(it, at) }
+                            // Picking text, a tap picks a line or leaves; otherwise it closes
+                            if (text.url == picture.originUrl) {
+                                if (share == null || !text.selectLineAt(share)) text.stop()
+                            } else if (!text.active) {
+                                onClose()
+                            }
+                        },
+                        onLongPress = { at ->
+                            val share = shareOf(zoomState.zoomable.contentDisplayRectF, at)
+                            if (share != null && text.start(picture.originUrl, share, onMissed = { view.reject() })) {
+                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                            }
+                        },
+                        overlay = {
+                            if (text.url == picture.originUrl) {
+                                PhotoTextOverlay(text, display = { zoomState.zoomable.contentDisplayRectF })
+                            }
+                        },
                     )
                 }
             }
@@ -333,7 +371,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         }
 
         val chrome by animateFloatAsState(
-            targetValue = if (phase == Phase.Open && !dragging && currentZoom.atRest(edge = false)) 1f else 0f,
+            targetValue = if (phase == Phase.Open && !dragging && !text.active && currentZoom.atRest(edge = false)) 1f else 0f,
             animationSpec = if (phase == Phase.Open && !dragging) Motion.fadeIn() else Motion.fadeOut(),
             label = "chrome",
         )
@@ -345,6 +383,13 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 onShare = { share(context, current.originUrl) },
                 onSave = { ImageUtil.download(context, current.originUrl) },
                 onCopyLink = { TiebaUtil.copyText(context, current.originUrl) },
+                // Not offered where the models cannot run
+                onExtract = if (text.supported) {
+                    {
+                        if (text.download.value == AutoMaskDownload.Ready) text.start(current.originUrl, null, onMissed = { context.toastShort(R.string.photo_no_text) })
+                        else text.startAfterDownload(current.originUrl)
+                    }
+                } else null,
                 onEdit = {
                     // The edited picture goes to the gallery once done
                     val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
@@ -359,6 +404,9 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 modifier = Modifier.graphicsLayer { alpha = chrome },
             )
         }
+        if (current != null && phase == Phase.Open && text.active) ProvideMediaGlass(glass) {
+            PhotoTextBar(text, modifier = Modifier.align(Alignment.BottomCenter))
+        }
     }
 }
 
@@ -369,7 +417,9 @@ private fun Photo(
     placeholder: MemoryCache.Key?,
     zoomState: CoilZoomState,
     onLoaded: (MemoryCache.Key) -> Unit,
-    onTap: () -> Unit,
+    onTap: (Offset) -> Unit,
+    onLongPress: (Offset) -> Unit,
+    overlay: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     var loading by remember(picture.originUrl) { mutableStateOf(true) }
@@ -382,12 +432,14 @@ private fun Photo(
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             zoomState = zoomState,
-            onTap = { onTap() },
+            onTap = { onTap(it) },
+            onLongPress = { onLongPress(it) },
             onState = { state ->
                 loading = state is AsyncImagePainter.State.Loading
                 if (state is AsyncImagePainter.State.Success) state.result.memoryCacheKey?.let(onLoaded)
             },
         )
+        overlay()
         if (loading && placeholder == null) {
             val fraction = progress
             if (fraction != null) {
@@ -399,7 +451,10 @@ private fun Photo(
     }
 }
 
-/** Which picture of how many, who posted it with what they wrote, and what can be done with it. */
+/**
+ * Which picture of how many, who posted it with what they wrote, and what can be done with it:
+ * editing, picking its text, sharing and saving it, and copying its link behind a menu.
+ */
 @Composable
 private fun PhotoChrome(
     picture: ThreadPicture,
@@ -408,6 +463,7 @@ private fun PhotoChrome(
     onSave: () -> Unit,
     onCopyLink: () -> Unit,
     onEdit: () -> Unit,
+    onExtract: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -426,42 +482,55 @@ private fun PhotoChrome(
                 )
             }
         }
-        Row(
+        // What was written with it on a row of its own, the actions under it: neither crowds the other
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
                 .navigationBarsPadding()
-                .padding(start = 16.dp, end = 8.dp, top = 40.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(modifier = Modifier.weight(1f).padding(bottom = 10.dp)) {
-                var expanded by remember(picture.picId) { mutableStateOf(false) }
-                picture.author?.let {
-                    Text(text = it, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                }
-                picture.text?.let {
-                    Text(
-                        text = it,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.5.sp,
-                        lineHeight = 20.sp,
-                        maxLines = if (expanded) 8 else 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .padding(top = 2.dp)
-                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                                expanded = !expanded
-                            },
-                    )
+            if (picture.author != null || picture.text != null) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    var expanded by remember(picture.picId) { mutableStateOf(false) }
+                    picture.author?.let {
+                        Text(text = it, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    }
+                    picture.text?.let {
+                        Text(
+                            text = it,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 13.5.sp,
+                            lineHeight = 20.sp,
+                            maxLines = if (expanded) 8 else 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                    expanded = !expanded
+                                },
+                        )
+                    }
                 }
             }
             MediaGlassActions {
                 PhotoAction(Symbols.Edit, stringResource(id = R.string.editor_edit_picture), onEdit)
-                PhotoAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
+                if (onExtract != null) PhotoAction(Symbols.DocumentScanner, stringResource(id = R.string.photo_extract_text), onExtract)
                 PhotoAction(Symbols.Share, stringResource(id = R.string.title_share_pic), onShare)
                 PhotoAction(Symbols.Download, stringResource(id = R.string.desc_download_pic), onSave)
+                val copyLink = stringResource(id = R.string.title_copy_link)
+                // What is done less often, behind one button
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickMenu(items = { listOf(ContextMenuItem(Symbols.Link, copyLink, onClick = onCopyLink)) }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(imageVector = Symbols.MoreHoriz, contentDescription = stringResource(id = R.string.photo_more), tint = Color.White, modifier = Modifier.size(22.dp))
+                }
             }
         }
     }

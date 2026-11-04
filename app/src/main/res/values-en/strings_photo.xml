@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_extract_text">Extract text</string>
+    <string name="photo_extract_download">About %1$d MB to download to extract text</string>
+    <string name="photo_download">Download</string>
+    <string name="photo_downloading">Downloading %1$d%%</string>
+    <string name="photo_download_failed">Download failed</string>
+    <string name="photo_retry">Retry</string>
+    <string name="photo_reading">Reading text</string>
+    <string name="photo_no_text">No text found</string>
+    <string name="photo_copy">Copy</string>
+    <string name="photo_select_all">Select all</string>
+    <string name="photo_more">More</string>
+</resources>

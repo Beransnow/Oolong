@@ -96,16 +96,16 @@ fun PhotoViewerHost(content: @Composable () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
             ContextMenuHost {
                 content()
-                // Under the menus, for the speed menu to open over the video
+                // Under the menus, for the speed menu to open over the video and the more menu over the picture
                 videoViewer.opening?.let { opening ->
                     key(opening.id) {
                         VideoViewerOverlay(viewer = videoViewer, opening = opening, origin = origin)
                     }
                 }
-            }
-            viewer.opening?.let { opening ->
-                key(opening.id) {
-                    PhotoViewerOverlay(viewer = viewer, opening = opening, origin = origin)
+                viewer.opening?.let { opening ->
+                    key(opening.id) {
+                        PhotoViewerOverlay(viewer = viewer, opening = opening, origin = origin)
+                    }
                 }
             }
         }
