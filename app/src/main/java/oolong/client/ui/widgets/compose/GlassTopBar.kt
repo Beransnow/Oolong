@@ -66,7 +66,8 @@ internal val GlassTopBarRowHeight = 56.dp
 /** The height of everything floating in that row: buttons, capsules, a title that is a button. */
 val GlassTopBarItemHeight = 48.dp
 
-private val TopBarRowPadding = 12.dp
+/** The row's padding: the page's margin, so the buttons' glass lines up with the large title and the cards. */
+private val TopBarRowPadding = 16.dp
 private val TitlePadding = 8.dp
 
 /** The navigation icon's and the actions' glass. */
@@ -133,10 +134,12 @@ fun GlassTopBar(
     // A classic bar is a band, its buttons bare on it
     val classic = LocalChromeStyle.current == ChromeStyle.Classic
     val besideRail = LocalNavigationRailShown.current
-    // The buttons are bare at the top of a page, and float on glass once content is under the bar
+    // The buttons are bare at the top of a page, and float on glass once content is under the
+    // bar. Over a large title they keep their glass: its edge is what lines up with the title
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
-    val barButtons = remember(scrollEdge, revealPx) {
-        BarButtons { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    val glassAlways = largeTitle != null
+    val barButtons = remember(scrollEdge, revealPx, glassAlways) {
+        BarButtons { if (glassAlways) 1f else scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     }
     Layout(
         content = {
