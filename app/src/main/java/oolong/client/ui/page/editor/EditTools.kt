@@ -307,26 +307,11 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
             }
 
             EditorTool.Mask -> {
-                OptionRow(Arrangement.SpaceBetween) {
-                    Options(
-                        options = MaskShape.entries,
-                        selected = state.maskShape,
-                        onSelect = { state.maskShape = it },
-                        label = { stringResource(id = if (it == MaskShape.Brush) R.string.editor_brush else R.string.editor_rect) },
-                    ) { shape, on ->
-                        Icon(
-                            imageVector = if (shape == MaskShape.Brush) Symbols.Gesture else Symbols.Select,
-                            contentDescription = null,
-                            tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
-                        )
-                    }
-                    // A box needs no breadth
-                    if (state.maskShape == MaskShape.Brush) Sizes(selected = state.maskSize, onSelect = { state.maskSize = it })
-                }
+                // What it looks like, on the picture itself, across the whole row
                 OptionRow {
                     val density = LocalDensity.current
                     val previews = remember(state.renderer) {
-                        val (w, h) = with(density) { 40.dp.roundToPx() to 28.dp.roundToPx() }
+                        val (w, h) = with(density) { 56.dp.roundToPx() to 28.dp.roundToPx() }
                         MaskStyle.entries.associateWith { state.renderer.stylePreview(it, w, h).asImageBitmap() }
                     }
                     Options(
@@ -334,17 +319,38 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                         selected = state.maskStyle,
                         onSelect = { state.maskStyle = it },
                         label = { stringResource(id = it.label) },
-                        width = { 52.dp },
+                        modifier = Modifier.fillMaxWidth(),
+                        fill = true,
                     ) { style, on ->
                         Image(
                             bitmap = previews.getValue(style),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(40.dp, 28.dp)
+                                .size(56.dp, 28.dp)
                                 .clip(RoundedCornerShape(7.dp))
                                 .border(if (on) 1.5.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else 0.2f), RoundedCornerShape(7.dp)),
                         )
                     }
+                }
+                // How it is laid, and how broad, where marks and text keep their colours and sizes
+                OptionRow {
+                    Options(
+                        options = MaskShape.entries,
+                        selected = state.maskShape,
+                        onSelect = { state.maskShape = it },
+                        label = { stringResource(id = if (it == MaskShape.Brush) R.string.editor_brush else R.string.editor_rect) },
+                        modifier = Modifier.weight(1f),
+                        fill = true,
+                    ) { shape, on ->
+                        Icon(
+                            imageVector = if (shape == MaskShape.Brush) Symbols.Gesture else Symbols.Select,
+                            contentDescription = null,
+                            tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
+                        )
+                    }
+                    RowDivider()
+                    // A box needs no breadth
+                    Sizes(selected = state.maskSize, onSelect = { state.maskSize = it }, enabled = state.maskShape == MaskShape.Brush)
                 }
             }
 
@@ -417,18 +423,23 @@ private fun OptionRow(arrangement: Arrangement.Horizontal = Arrangement.Center, 
     )
 }
 
-/** One choice among [options] on a shared track, the chosen one in a bubble; each drawn by [content]. */
+/**
+ * One choice among [options] on a shared track, the chosen one in a bubble; each drawn by
+ * [content]. When [fill], they share the width the [modifier] gives the track evenly.
+ */
 @Composable
 private fun <T> Options(
     options: List<T>,
     selected: T,
     onSelect: (T) -> Unit,
     label: @Composable (T) -> String,
+    modifier: Modifier = Modifier,
+    fill: Boolean = false,
     width: (T) -> Dp = { 40.dp },
     content: @Composable (T, Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .background(TrackColor, CircleShape)
             .padding(2.dp),
     ) {
@@ -437,7 +448,7 @@ private fun <T> Options(
             val description = label(option)
             Box(
                 modifier = Modifier
-                    .size(width(option), 36.dp)
+                    .then(if (fill) Modifier.weight(1f).height(36.dp) else Modifier.size(width(option), 36.dp))
                     .clip(CircleShape)
                     .background(if (on) BubbleColor else Color.Transparent)
                     .clickable(role = Role.RadioButton) { onSelect(option) }
@@ -582,12 +593,7 @@ private fun ColorRow(selected: Color, onSelect: (Color) -> Unit, onCustom: () ->
             val own = selected !in EditorColors
             Swatch(color = if (own) selected else null, chosen = own, label = stringResource(id = R.string.editor_color_custom), onClick = onCustom)
         }
-        Box(
-            modifier = Modifier
-                .padding(horizontal = 6.dp)
-                .size(1.dp, 22.dp)
-                .background(Color.White.copy(alpha = 0.14f)),
-        )
+        RowDivider()
         Sizes(selected = step, onSelect = onStep)
     }
 }
@@ -661,13 +667,26 @@ private fun hueOf(color: Color): Float {
     return hsv[0]
 }
 
-/** Three sizes, each a dot of its size. */
+/** A thin line between two groups on a row. */
 @Composable
-private fun Sizes(selected: Int, onSelect: (Int) -> Unit) {
+private fun RowDivider() {
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 6.dp)
+            .size(1.dp, 22.dp)
+            .background(Color.White.copy(alpha = 0.14f)),
+    )
+}
+
+/** Three sizes, each a dot of its size; dimmed, not hidden, when they don't apply. */
+@Composable
+private fun Sizes(selected: Int, onSelect: (Int) -> Unit, enabled: Boolean = true) {
     val colors = ExtendedTheme.colors
     val labels = listOf(R.string.editor_size_small, R.string.editor_size_medium, R.string.editor_size_large)
+    val alpha by animateFloatAsState(if (enabled) 1f else 0.38f, Motion.snap(), label = "sizes")
     Row(
         modifier = Modifier
+            .graphicsLayer { this.alpha = alpha }
             .background(TrackColor, CircleShape)
             .padding(2.dp),
     ) {
@@ -678,7 +697,7 @@ private fun Sizes(selected: Int, onSelect: (Int) -> Unit) {
                     .size(30.dp, 36.dp)
                     .clip(CircleShape)
                     .background(if (i == selected) BubbleColor else Color.Transparent)
-                    .clickable(role = Role.RadioButton) { onSelect(i) }
+                    .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(i) }
                     .semantics {
                         contentDescription = label
                         this.selected = i == selected
