@@ -148,7 +148,8 @@ fun UserHeader(
             Avatar(
                 data = avatar,
                 size = Sizes.Small,
-                contentDescription = null,
+                // It opens the author's profile, so it reads as the author
+                contentDescription = nameShow.ifEmpty { name },
                 modifier = Modifier.pageHero(hero),
             )
         },

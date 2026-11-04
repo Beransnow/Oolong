@@ -28,8 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -133,7 +136,7 @@ fun ForumScreen(
                             .size(56.dp)
                             .shadow(elevation = 8.dp, shape = CircleShape)
                             .background(pageAccentOrPrimary(), CircleShape)
-                            .clickable {
+                            .clickable(role = Role.Button) {
                                 coroutineScope.launch {
                                     listStates[state.selectedTab]?.animateScrollToItem(0)
                                     if (fab == ForumFab.Refresh) onEvent(ForumEvent.Refresh)
@@ -144,7 +147,7 @@ fun ForumScreen(
                         Icon(
                             tint = onPageAccent(),
                             imageVector = if (fab == ForumFab.Refresh) Symbols.Refresh else Symbols.VerticalAlignTop,
-                            contentDescription = null
+                            contentDescription = stringResource(if (fab == ForumFab.Refresh) R.string.btn_refresh else R.string.btn_back_to_top),
                         )
                     }
                 }

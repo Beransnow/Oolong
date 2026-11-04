@@ -269,7 +269,8 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
                 Avatar(
                     data = StringUtil.getAvatarUrl(post.author.portrait),
                     size = FloorAvatarSize,
-                    contentDescription = null,
+                    // It opens the author's profile, so it reads as the author
+                    contentDescription = post.author.nameShow.ifEmpty { post.author.name },
                 )
             }
             Box(
