@@ -71,7 +71,7 @@ import kotlin.math.roundToInt
 
 /** The colour in use, by the name the theme page gives it. */
 @Composable
-private fun currentThemeName(): String {
+internal fun currentThemeName(): String {
     val settings by ThemeUtil.settingsState
     val names = stringArrayResource(id = R.array.accent_names)
     return when {

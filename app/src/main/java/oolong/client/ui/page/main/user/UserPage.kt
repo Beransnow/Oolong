@@ -4,13 +4,17 @@ import android.graphics.Typeface
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,40 +33,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import oolong.client.R
+import oolong.client.model.HistoryEntry
 import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
+import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AboutKey
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.HistoryKey
+import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.navigation.SettingsKey
 import oolong.client.ui.navigation.ThreadStoreKey
 import oolong.client.ui.navigation.UserFollowsKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.settings.custom.currentThemeName
+import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.Avatar
+import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassStatusBar
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.ListMenuItem
-import oolong.client.ui.widgets.compose.LocalTopBarEnd
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
-import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
 import oolong.client.utils.CuidUtils
@@ -142,19 +151,37 @@ private fun InfoCard(
                 lineHeight = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .placeholder(visible = isPlaceholder, color = ExtendedTheme.colors.chip, shape = RectangleShape),
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = userIntro,
-                fontSize = 12.sp,
-                color = ExtendedTheme.colors.textSecondary,
+            // The arrow says the header opens the profile
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .placeholder(visible = isPlaceholder, color = ExtendedTheme.colors.chip, shape = RectangleShape),
-            )
+            ) {
+                Text(
+                    text = userIntro,
+                    fontSize = 12.sp,
+                    color = ExtendedTheme.colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (!isPlaceholder) {
+                    Icon(
+                        imageVector = Symbols.ChevronRight,
+                        contentDescription = null,
+                        tint = ExtendedTheme.colors.textSecondary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.width(16.dp))
         if (avatar != null) {
@@ -206,23 +233,24 @@ private fun StatCardItem(
 }
 
 @Composable
-private fun LoginTipCard(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-    ) {
+private fun LoginTipCard(onLogin: () -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier = modifier) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .align(Alignment.Bottom)
+                .align(Alignment.Bottom),
         ) {
             Text(
-                text = stringResource(id = R.string.tip_login),
-                fontSize = 16.sp,
+                text = stringResource(id = R.string.title_not_logged_in),
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = ExtendedTheme.colors.text,
-                modifier = Modifier
-                    .fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = onLogin) {
+                Text(text = stringResource(id = R.string.title_login), fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Icon(
@@ -230,12 +258,64 @@ private fun LoginTipCard(modifier: Modifier = Modifier) {
             contentDescription = null,
             tint = ExtendedTheme.colors.onChip,
             modifier = Modifier
+                .align(Alignment.Bottom)
                 .clip(CircleShape)
                 .size(Sizes.Large)
                 .background(color = ExtendedTheme.colors.chip)
                 .padding(16.dp),
         )
     }
+}
+
+/**
+ * A big entry for what the user goes back to most, on the inset colour like the home page's
+ * search field: a button, not a card holding things. [detail] is a line under its name.
+ */
+@Composable
+private fun EntryBlock(
+    icon: ImageVector,
+    text: String,
+    detail: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(Corners.lg)
+            .background(ExtendedTheme.colors.inset)
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = 92.dp)
+            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = ExtendedTheme.colors.text, modifier = Modifier.size(26.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+        Column {
+            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ExtendedTheme.colors.text, maxLines = 1)
+            Text(
+                // Kept even when empty, so the two blocks stay the same height
+                text = detail.orEmpty(),
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                color = ExtendedTheme.colors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** What ends a row that opens a page: the value it shows, then the arrow. */
+@Composable
+private fun RowValue(text: String) {
+    Text(text = text, color = ExtendedTheme.colors.textSecondary, fontSize = 12.sp, maxLines = 1)
+    Spacer(modifier = Modifier.width(4.dp))
+    Icon(
+        imageVector = Symbols.ChevronRight,
+        contentDescription = null,
+        tint = ExtendedTheme.colors.textSecondary.copy(alpha = 0.6f),
+        modifier = Modifier.size(20.dp),
+    )
 }
 
 @Composable
@@ -245,28 +325,50 @@ fun UserPage(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val account = LocalAccount.current
     LaunchedEffect(account?.uid) { viewModel.refresh() }
-    UserScreen(account = account, isLoading = state.isLoading, onRefresh = viewModel::refresh)
+    UserScreen(
+        account = account,
+        isLoading = state.isLoading,
+        onRefresh = viewModel::refresh,
+        lastThread = state.lastThread,
+        storedWithReplies = state.storedWithReplies,
+        updateAvailable = state.updateAvailable,
+    )
 }
 
-/** The "me" tab: who is logged in with their figures, then the menus, or a prompt to log in. */
 private val StatsPadding = Modifier
     .fillMaxWidth()
     .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp)
 
+/**
+ * The "me" tab: who is logged in with their figures, or a prompt to log in; the stored threads and
+ * the history as two big entries; then the other menus. The night switch is a button in the bar.
+ */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserScreen(
     account: Account?,
     isLoading: Boolean,
     onRefresh: () -> Unit,
+    lastThread: HistoryEntry.Thread? = null,
+    storedWithReplies: Int = 0,
+    updateAvailable: Boolean = false,
 ) {
     val navigator = LocalNavigator.current
+    val dark = ExtendedTheme.colors.isNightMode
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            // Beside the rail a bar of its own carries search, which the page has no title for
-            if (LocalTopBarEnd.current != null) GlassTopBar(title = {}) else GlassStatusBar()
+            GlassTopBar(
+                title = {},
+                actions = {
+                    ActionItem(
+                        icon = ImageVector.vectorResource(id = if (dark) R.drawable.ic_me_night_on else R.drawable.ic_me_night),
+                        contentDescription = stringResource(id = if (dark) R.string.night_mode_off else R.string.night_mode_on),
+                        onClick = { ThemeUtil.toggleDark() },
+                    )
+                },
+            )
         },
         modifier = Modifier.fillMaxSize()
     ) { contentPaddings ->
@@ -285,7 +387,6 @@ fun UserScreen(
                 if (account != null) {
                     InfoCard(
                         modifier = Modifier
-                            .padding(top = 8.dp)
                             .clickable {
                                 navigator.navigate(UserProfileKey(account.uid.toLong()))
                             }
@@ -303,60 +404,56 @@ fun UserScreen(
                     )
                 } else if (isLoading) {
                     InfoCard(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                         isPlaceholder = true,
                     )
                     StatCardPlaceholder(modifier = StatsPadding)
                 } else {
                     LoginTipCard(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
+                        onLogin = { navigator.navigate(LoginKey) },
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
                     )
                 }
-                if (account != null) {
-                    ListMenuItem(
-                        iconColor = ExtendedTheme.colors.text,
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
-                        text = stringResource(id = R.string.title_my_collect),
-                        onClick = {
-                            navigator.navigate(ThreadStoreKey)
-                        }
-                    )
-                }
-                ListMenuItem(
-                    iconColor = ExtendedTheme.colors.text,
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
-                    text = stringResource(id = R.string.title_history),
-                    onClick = {
-                        navigator.navigate(HistoryKey)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                ) {
+                    if (account != null) {
+                        EntryBlock(
+                            icon = ImageVector.vectorResource(id = R.drawable.ic_me_collect),
+                            text = stringResource(id = R.string.title_my_collect),
+                            detail = storedWithReplies.takeIf { it > 0 }?.let {
+                                pluralStringResource(id = R.plurals.stored_with_replies, count = it, it)
+                            },
+                            onClick = { navigator.navigate(ThreadStoreKey) },
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                        )
                     }
-                )
+                    EntryBlock(
+                        icon = ImageVector.vectorResource(id = R.drawable.ic_me_history),
+                        text = stringResource(id = R.string.title_history),
+                        detail = lastThread?.title,
+                        onClick = { navigator.navigate(HistoryKey) },
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    )
+                }
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
+                    icon = ImageVector.vectorResource(id = R.drawable.ic_me_theme),
                     text = stringResource(id = R.string.title_theme),
                     onClick = {
                         navigator.navigate(AppThemeKey)
                     }
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.my_info_night),
-                        color = ExtendedTheme.colors.textSecondary,
-                        fontSize = 12.sp,
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Switch(
-                        checked = ExtendedTheme.colors.isNightMode,
-                        onCheckedChange = { ThemeUtil.toggleDark() }
-                    )
+                    RowValue(text = currentThemeName())
                 }
                 if (account != null) {
                     ListMenuItem(
                         iconColor = ExtendedTheme.colors.text,
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
+                        icon = ImageVector.vectorResource(id = R.drawable.ic_me_help),
                         text = stringResource(id = R.string.my_info_service_center),
                         onClick = {
                             navigator.navigate(
@@ -365,23 +462,38 @@ fun UserScreen(
                                 )
                             )
                         },
-                    )
+                    ) {
+                        // It opens a web page
+                        Icon(
+                            imageVector = Symbols.OpenInNew,
+                            contentDescription = null,
+                            tint = ExtendedTheme.colors.textSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
                 // The two groups of menus are set apart by space alone
                 Spacer(modifier = Modifier.height(16.dp))
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
+                    icon = ImageVector.vectorResource(id = R.drawable.ic_me_settings),
                     text = stringResource(id = R.string.my_info_settings),
                     onClick = { navigator.navigate(SettingsKey) },
                 )
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
+                    icon = ImageVector.vectorResource(id = R.drawable.ic_me_about),
                     text = stringResource(id = R.string.my_info_about),
                     onClick = { navigator.navigate(AboutKey) },
-                )
+                ) {
+                    if (updateAvailable) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(NewVersionDot))
+                    }
+                }
             }
         }
     }
 }
+
+/** The red of the About page's new-version mark. */
+private val NewVersionDot = Color(0xFFE5484D)

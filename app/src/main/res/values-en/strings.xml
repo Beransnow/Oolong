@@ -862,4 +862,10 @@
     <string name="landing_imported_body">Your accounts and settings are here</string>
     <string name="landing_start">Get started</string>
     <string name="landing_uninstall_legacy">Uninstall the old app</string>
+    <string name="night_mode_on">Turn on dark mode</string>
+    <string name="night_mode_off">Turn off dark mode</string>
+    <plurals name="stored_with_replies">
+        <item quantity="one">%d thread with new replies</item>
+        <item quantity="other">%d threads with new replies</item>
+    </plurals>
 </resources>

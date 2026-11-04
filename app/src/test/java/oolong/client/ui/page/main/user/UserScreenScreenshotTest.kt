@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main.user
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import oolong.client.model.HistoryEntry
 import oolong.client.models.database.Account
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
@@ -41,9 +42,18 @@ class UserScreenScreenshotTest {
         postNum = "1789",
     )
 
+    private val lastThread = HistoryEntry.Thread(id = 1, time = 0, avatar = "", threadId = 7, title = "【攻略】新手入坑必看：从零开始的配队思路整理", authorName = "a")
+
     @Test
     fun loggedIn() {
         captureScreenshot { UserScreen(account = account, isLoading = false, onRefresh = {}) }
+    }
+
+    @Test
+    fun withUpdates() {
+        captureScreenshot {
+            UserScreen(account = account, isLoading = false, onRefresh = {}, lastThread = lastThread, storedWithReplies = 3, updateAvailable = true)
+        }
     }
 
     @Test

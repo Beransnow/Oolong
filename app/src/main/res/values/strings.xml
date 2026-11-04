@@ -846,4 +846,9 @@
     <string name="landing_imported_body">账号与设置已导入</string>
     <string name="landing_start">开始使用</string>
     <string name="landing_uninstall_legacy">卸载旧版</string>
+    <string name="night_mode_on">开启夜间模式</string>
+    <string name="night_mode_off">关闭夜间模式</string>
+    <plurals name="stored_with_replies">
+        <item quantity="other">%d 帖有新回复</item>
+    </plurals>
 </resources>
