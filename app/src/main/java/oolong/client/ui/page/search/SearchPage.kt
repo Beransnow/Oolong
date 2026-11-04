@@ -433,6 +433,8 @@ private fun ColumnScope.SearchTabRow(
             if (item.supportSort) {
                 TabClickMenu(
                     selected = pagerState.currentPage == index,
+                    // A glass tab fills the height it is given, and this row gives it all there is
+                    modifier = Modifier.height(TabHeight),
                     onClick = {
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(index)
@@ -655,3 +657,6 @@ fun PreviewSearchHistoryList() {
         }
     }
 }
+
+/** A Material tab's height with text only, which the row's other tabs take. */
+private val TabHeight = 48.dp
