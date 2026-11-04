@@ -238,9 +238,6 @@ fun GlassTopBar(
                             end = LocalTopBarEnd.current,
                             centerTitle = centerTitle,
                             barButtons = barButtons,
-                            // Over a large title the bare buttons line up with the page by what
-                            // shows of them, not by the glass yet to come
-                            outward = largeTitle != null && !classic,
                         )
                     }
                     content?.invoke(this)
@@ -330,7 +327,6 @@ private fun TitleRow(
     end: (@Composable (room: Dp) -> Unit)?,
     centerTitle: Boolean,
     barButtons: BarButtons,
-    outward: Boolean,
 ) {
     // The bar's own buttons, and any glass in its title, come in with the scroll
     ProvideContentColor(color = ExtendedTheme.colors.text) {
@@ -364,12 +360,9 @@ private fun TitleRow(
                 layout(width, height) {
                     fun Placeable.centredY() = ((height - this.height) / 2f).roundToInt()
                     val endWidth = ending?.width ?: 0
-                    // Bare at the top, the buttons sit out by the row's padding, so the arrow's
-                    // ink starts where the page's content does; they come in as their glass does
-                    val out = if (outward) ((1f - barButtons.shown()) * TopBarRowPadding.toPx()).roundToInt() else 0
-                    nav?.place(-out, nav.centredY())
+                    nav?.place(0, nav.centredY())
                     ending?.place(width - endWidth, ending.centredY())
-                    acts.place(width - endWidth - gap - acts.width + if (ending == null) out else 0, acts.centredY())
+                    acts.place(width - endWidth - gap - acts.width, acts.centredY())
                     // Centred on the whole row, whatever buttons sit at either end
                     if (centerTitle) {
                         text.place(((width - text.width) / 2f).roundToInt(), text.centredY())
