@@ -10,6 +10,7 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Shader
+import android.graphics.SweepGradient
 import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
@@ -29,6 +30,7 @@ import androidx.core.graphics.withMatrix
 import androidx.core.graphics.withSave
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.addSmoothRect
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -52,6 +54,37 @@ private const val HighlighterWidth = 3.5f
 
 /** A numbered dot's radius, in widths of the pen at the same size. */
 private const val NumberRadius = 2.8f
+
+/**
+ * What a style's preview hides: a round picture in colours and two lines of text, on a light
+ * ground, [width] by [height].
+ */
+private fun styleSample(width: Int, height: Int): Bitmap = createBitmap(width, height).also { bitmap ->
+    val w = width.toFloat()
+    val h = height.toFloat()
+    Canvas(bitmap).apply {
+        drawColor(Color(0xFFF1F2F4).toArgb())
+        val r = h * 0.24f
+        val cx = h * 0.12f + r
+        val cy = h / 2
+        drawCircle(cx, cy, r, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = SweepGradient(cx, cy, intArrayOf(0xFFFF8A3D.toInt(), 0xFFE94B8A.toInt(), 0xFF5B7CFA.toInt(), 0xFF2EC4B6.toInt(), 0xFFFF8A3D.toInt()), null)
+        })
+        val text = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.DEFAULT_BOLD
+            textSize = h * 0.2f
+            color = Color(0xFF2B2D31).toArgb()
+        }
+        val x = cx + r + h * 0.12f
+        drawText("用户昵称", x, h * 0.44f, text)
+        text.apply {
+            typeface = Typeface.DEFAULT
+            textSize = h * 0.17f
+            color = Color(0xFF6B6F76).toArgb()
+        }
+        drawText("138 0013 8000", x, h * 0.72f, text)
+    }
+}
 
 /** The colour a block mask fills with. */
 private val BlockColor = Color(0xFF202124)
@@ -294,20 +327,28 @@ class EditRenderer(val picture: Bitmap) {
     }
 
     /**
-     * A small piece of the picture's middle, [width] by [height], hidden in [style]: how the
-     * style looks on this very picture.
+     * How [style] looks, [width] by [height]: a brush stroke of it across a sample of what is
+     * hidden most, a picture and lines of text on a plain ground. The same for every picture,
+     * so the styles tell apart on a plain screenshot too.
      */
     fun stylePreview(style: MaskStyle, width: Int, height: Int): Bitmap {
-        val result = createBitmap(width, height)
-        val side = min(size.width, size.height) / 3
-        val scale = width / side
-        Canvas(result).apply {
-            scale(scale, scale)
-            translate(-(size.width - side) / 2, -(size.height - side * height / width) / 2)
-            drawBase()
-            drawRect(0f, 0f, size.width, size.height, maskPaint(style))
+        val sample = EditRenderer(styleSample(width, height))
+        val w = width.toFloat()
+        val h = height.toFloat()
+        // A brush stroke rising gently left to right, over half the picture and the text
+        val points = (0..12).map { i ->
+            val t = i / 12f
+            Offset(w * (0.2f + 0.68f * t), h * (0.6f - 0.18f * t + 0.06f * sin(t * 2 * PI.toFloat())))
         }
-        return result
+        val stroke = Edit.Mask(0, points, h * 0.42f, style)
+        return createBitmap(width, height).also { result ->
+            Canvas(result).apply {
+                sample.run {
+                    drawBase()
+                    drawStroke(this@apply, stroke)
+                }
+            }
+        }
     }
 
     /** The number the last numbered dot drawn took. */
