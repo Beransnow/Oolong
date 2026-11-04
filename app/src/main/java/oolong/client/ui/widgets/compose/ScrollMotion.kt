@@ -195,6 +195,7 @@ internal class DirectedProgress(
 ) {
     private var offset by mutableFloatStateOf(0f)
     private var animating: Job? = null
+    private var animatingTo = Float.NaN
 
     /** Scroll gone on (negative) or back (positive) since the last flip, in toggle mode. */
     private var run = 0f
@@ -202,8 +203,12 @@ internal class DirectedProgress(
     val value: Float get() = if (distance > 0f) offset / distance else 0f
 
     private fun animateTo(target: Float) {
+        // Every scroll past the distance asks again; started over each time, it would never get
+        // past its first frame until the scroll stopped
+        if (animating?.isActive == true && animatingTo == target) return
         animating?.cancel()
         if (offset == target) return
+        animatingTo = target
         animating = scope.launch {
             animate(offset, target, animationSpec = Motion.settle()) { value, _ -> offset = value }
         }
