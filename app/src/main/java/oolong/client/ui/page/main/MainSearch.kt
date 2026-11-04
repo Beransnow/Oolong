@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +38,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +70,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import oolong.client.R
@@ -254,9 +255,11 @@ fun MainSearchField(
     onOpen: () -> Unit,
     onClose: () -> Unit,
 ) {
+    // Read once it changes rather than each frame of the motion, which would compose all this again
+    val shown by remember(state) { derivedStateOf { state.progress.value > 0f } }
     if (state.buttonBounds.isEmpty) return
     // At rest the button is drawn where it sits: at the top, or as a classic bar's item
-    if ((atTop || LocalChromeStyle.current == ChromeStyle.Classic) && state.progress.value == 0f) return
+    if ((atTop || LocalChromeStyle.current == ChromeStyle.Classic) && !shown) return
     var origin by remember { mutableStateOf(Offset.Zero) }
     val colors = ExtendedTheme.colors
     val glass = isGlassAvailable()
@@ -322,62 +325,68 @@ fun MainSearchField(
                     }
                 ),
         ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val progress = state.progress.value
-                // The icon keeps the same distance from the left as from the top and bottom, so it
-                // sits in the middle of the round button and at the start of the field
-                val inset = ((maxHeight - IconSize) / 2).coerceAtLeast(0.dp)
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize().padding(start = inset)) {
-                    Icon(
-                        imageVector = Symbols.Search,
-                        contentDescription = if (state.open) null else stringResource(id = R.string.title_search),
-                        tint = colors.text,
-                        modifier = Modifier.size(IconSize),
-                    )
-                    if (progress > 0f) {
-                        LaunchedEffect(state.wantsFocus) {
-                            if (state.wantsFocus) {
-                                state.focusRequester.requestFocus()
-                                state.wantsFocus = false
-                            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    // The icon keeps the same distance from the left as from the top and bottom, so
+                    // it sits in the middle of the round button and at the start of the field.
+                    // Worked out as it is laid out, as the height changes each frame of the motion.
+                    .layout { measurable, constraints ->
+                        val inset = ((constraints.maxHeight - IconSize.roundToPx()) / 2).coerceAtLeast(0)
+                        val placeable = measurable.measure(constraints.offset(horizontal = -inset))
+                        layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(inset, 0) }
+                    },
+            ) {
+                Icon(
+                    imageVector = Symbols.Search,
+                    contentDescription = if (state.open) null else stringResource(id = R.string.title_search),
+                    tint = colors.text,
+                    modifier = Modifier.size(IconSize),
+                )
+                if (shown) {
+                    LaunchedEffect(state.wantsFocus) {
+                        if (state.wantsFocus) {
+                            state.focusRequester.requestFocus()
+                            state.wantsFocus = false
                         }
-                        Spacer(modifier = Modifier.width(FieldIconGap))
-                        BaseTextField(
-                            value = input,
-                            onValueChange = onInputChange,
-                            enabled = state.open,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { onSearch(input) }),
-                            placeholder = {
-                                Text(
-                                    text = stringResource(id = R.string.hint_search),
-                                    color = colors.text.copy(alpha = ContentAlpha.medium),
-                                    maxLines = 1,
-                                )
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                // Grown from the home page's field, the hint is already there
-                                .graphicsLayer { alpha = if (atTop) 1f else ((state.progress.value - 0.4f) / 0.6f).coerceIn(0f, 1f) }
-                                .focusRequester(state.focusRequester),
-                        )
-                        if (input.isNotEmpty() && state.open) {
-                            CompositionLocalProvider(LocalContentColor provides colors.textSecondary) {
-                                FieldButton(
-                                    icon = Symbols.Close,
-                                    label = stringResource(id = R.string.button_clear),
-                                    onClick = { onInputChange("") },
-                                )
-                            }
+                    }
+                    Spacer(modifier = Modifier.width(FieldIconGap))
+                    BaseTextField(
+                        value = input,
+                        onValueChange = onInputChange,
+                        enabled = state.open,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { onSearch(input) }),
+                        placeholder = {
+                            Text(
+                                text = stringResource(id = R.string.hint_search),
+                                color = colors.text.copy(alpha = ContentAlpha.medium),
+                                maxLines = 1,
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            // Grown from the home page's field, the hint is already there
+                            .graphicsLayer { alpha = if (atTop) 1f else ((state.progress.value - 0.4f) / 0.6f).coerceIn(0f, 1f) }
+                            .focusRequester(state.focusRequester),
+                    )
+                    if (input.isNotEmpty() && state.open) {
+                        CompositionLocalProvider(LocalContentColor provides colors.textSecondary) {
+                            FieldButton(
+                                icon = Symbols.Close,
+                                label = stringResource(id = R.string.button_clear),
+                                onClick = { onInputChange("") },
+                            )
                         }
                     }
                 }
             }
         }
 
-        if (state.progress.value > 0f) {
+        if (shown) {
             val interactionSource = remember { MutableInteractionSource() }
             Box(
                 contentAlignment = Alignment.Center,
