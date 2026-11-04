@@ -32,6 +32,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -71,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withMatrix
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
@@ -80,11 +82,16 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
+import oolong.client.utils.ThemeUtil
 import kotlin.math.abs
 
 /** The space kept between the picture and the bars. */
 private val PictureMargin = 16.dp
+
+/** The tone the editor's glass takes on the black page. */
+private val ChromeTone = Color(0xFF3A3B40)
 
 /** How near an edge or corner of the frame a finger takes hold of it. */
 private val FrameGrip = 24.dp
@@ -130,10 +137,21 @@ fun EditScreen(
         Text(text = stringResource(id = R.string.editor_discard_title))
     }
 
-    BoxWithConstraints {
-        // Wide or on its side, the tools stand down the end of the screen
-        val side = maxWidth >= 600.dp || maxWidth > maxHeight
-        Scaffold(state, saving, side, leave, onDone)
+    // Glass on black takes its tone from the page and would be black itself: here it is lifted
+    // to a grey of its own, so the bars stand off the black by tone
+    val colors = ExtendedTheme.colors
+    val chrome = remember(colors) {
+        colors.copy(
+            theme = if (ThemeUtil.isTranslucentTheme(colors.theme)) ThemeUtil.THEME_BLUE_DARK else colors.theme,
+            background = ChromeTone,
+        )
+    }
+    CompositionLocalProvider(LocalExtendedColors provides chrome) {
+        BoxWithConstraints {
+            // Wide or on its side, the tools stand down the end of the screen
+            val side = maxWidth >= 600.dp || maxWidth > maxHeight
+            Scaffold(state, saving, side, leave, onDone)
+        }
     }
 }
 
@@ -252,6 +270,8 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                // Nothing scrolls under the bar: it stays clear over the black
+                .pageScroll(null) { 0 }
                 .graphicsLayer { translationY = -lift }
                 .pointerInput(state) { gestures(state, grip) },
         ) {
