@@ -184,9 +184,14 @@ fun Card(
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
     onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
 ) {
     val cardModifier = when {
-        onLongClick != null -> Modifier.combinedClickable(onClick = { onClick?.invoke() }, onLongClick = onLongClick)
+        onLongClick != null -> Modifier.combinedClickable(
+            onClick = { onClick?.invoke() },
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+        )
         onClick != null -> Modifier.clickable(onClick = onClick)
         else -> Modifier
     }
@@ -816,6 +821,7 @@ fun FeedCard(
             origin.leave()
             onClick(thread)
         },
+        onLongClickLabel = stringResource(R.string.btn_preview),
         onLongClick = onLongPress?.let { peek ->
             {
                 coordinates?.let {

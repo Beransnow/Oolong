@@ -365,6 +365,7 @@
     </plurals>
     <string name="btn_search_in_forum">Search this forum</string>
     <string name="btn_more">More options</string>
+    <string name="btn_preview">Preview</string>
     <string name="launcher_not_support_pin_shortcut">This launcher can\'t add shortcuts</string>
     <string name="load_shortcut_icon_fail">Couldn\'t load the icon</string>
     <string name="delete_store_success">Removed from Saved</string>

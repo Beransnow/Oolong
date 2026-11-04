@@ -145,6 +145,7 @@ private fun SearchHistoryList(
                         .clip(Corners.full)
                         .combinedClickable(
                             onClick = { onSearchHistoryClick(searchHistory) },
+                            onLongClickLabel = stringResource(R.string.title_delete),
                             onLongClick = { onDelete(searchHistory) }
                         )
                         .background(ExtendedTheme.colors.chip)

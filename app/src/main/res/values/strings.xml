@@ -360,6 +360,7 @@
     </plurals>
     <string name="btn_search_in_forum">吧内搜索</string>
     <string name="btn_more">更多选项</string>
+    <string name="btn_preview">预览</string>
     <string name="launcher_not_support_pin_shortcut">启动器不支持创建快捷方式</string>
     <string name="load_shortcut_icon_fail">无法加载图标</string>
     <string name="delete_store_success">已取消收藏</string>

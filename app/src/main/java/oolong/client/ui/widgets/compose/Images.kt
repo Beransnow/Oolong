@@ -35,6 +35,10 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import coil3.compose.AsyncImage
@@ -120,6 +124,20 @@ fun NetworkImage(
     // After a long press, the picture's menu follows this finger until it lifts
     var menuOpen by remember { mutableStateOf(false) }
     var boxOffset by remember { mutableStateOf(Offset.Zero) }
+    // Loads the picture if it waits for a tap, then opens it in the viewer
+    val open = {
+        if (!shouldLoad) {
+            shouldLoad = true
+        } else if (photoViewData != null) {
+            viewer?.open(
+                data = photoViewData,
+                from = Rect(layoutOffset, layoutSize.toSize()),
+                thumbnail = memoryCacheKey,
+                aspect = imageAspectRatio,
+            )
+        }
+    }
+    val moreLabel = stringResource(R.string.btn_more)
 
     Box(
         modifier = Modifier
@@ -137,19 +155,24 @@ fun NetworkImage(
                         } else {
                             null
                         },
-                        onTap = {
-                            if (!shouldLoad) {
-                                shouldLoad = true
-                            } else if (photoViewData != null) {
-                                viewer?.open(
-                                    data = photoViewData,
-                                    from = Rect(layoutOffset, layoutSize.toSize()),
-                                    thumbnail = memoryCacheKey,
-                                    aspect = imageAspectRatio,
-                                )
-                            }
-                        },
+                        onTap = { open() },
                     )
+                }
+            }
+            // The taps above, for screen readers too; the menu opens at the picture's middle
+            .semantics {
+                if (enableClick) {
+                    onClick {
+                        open()
+                        true
+                    }
+                    if (menus != null && menuItems != null && shouldLoad) {
+                        onLongClick(label = moreLabel) {
+                            val middle = Offset(layoutSize.width / 2f, layoutSize.height / 2f)
+                            menus.show(menuItems, anchor = Rect(boxOffset + middle, Size.Zero))
+                            true
+                        }
+                    }
                 }
             }
             .pointerInput(menus) {

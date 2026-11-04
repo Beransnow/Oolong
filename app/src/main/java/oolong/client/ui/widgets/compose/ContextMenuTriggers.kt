@@ -28,6 +28,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.stringResource
+import oolong.client.R
 
 /**
  * An icon button opening a menu of [items], which grows out of its icon and takes the icon in
@@ -139,6 +141,7 @@ fun Modifier.longPressMenu(
             interactionSource = interaction,
             indication = indication,
             enabled = enabled,
+            onLongClickLabel = stringResource(R.string.btn_more),
             onLongClick = menus?.let {
                 {
                     val list = items()
