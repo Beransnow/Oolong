@@ -140,25 +140,50 @@ class EditorState(
     /** Whether the picture is ready for taps. */
     var pickReady by mutableStateOf(false)
 
-    /** A tap waiting to be looked into, on screen. */
-    var pendingPick by mutableStateOf<Offset?>(null)
+    /** A tap waiting to be looked into: where it was on screen, and whether the finger was held first. */
+    class Pick(val at: Offset, val held: Boolean)
+
+    var pendingPick by mutableStateOf<Pick?>(null)
+
+    /** Where a finger on the picture aims, on screen, from the moment it is down until its tap is looked into. */
+    var aim by mutableStateOf<Offset?>(null)
+
+    /** Whether the finger is held or moved, rather than tapped: what it would hide then shows, with a loupe. */
+    var aiming by mutableStateOf(false)
+
+    /**
+     * What the finger aiming at [point], in picture pixels, would do: hide [box], or take away
+     * [removing], a mask a tap laid; neither when it finds nothing.
+     */
+    class Aimed(val point: Offset, val box: Rect?, val removing: Edit.Mask?)
+
+    var aimed by mutableStateOf<Aimed?>(null)
+
+    /** Done aiming, once the finger's tap is looked into or it moves the view instead. */
+    fun stopAiming() {
+        aim = null
+        aiming = false
+    }
 
     /**
      * The last tap looked into: where it was on screen, and the mask it laid over the box it
      * found, or none when it found nothing small enough.
      */
-    class Picked(val at: Offset, val box: Rect?, val id: Int?, val removed: Edit.Mask? = null)
+    class Picked(val at: Offset, val box: Rect?, val id: Int?, val removed: Edit.Mask? = null, val held: Boolean = false)
 
     var picked by mutableStateOf<Picked?>(null)
         private set
 
     /** Hides [box], in picture pixels, found by a tap [at] a point on screen. */
-    fun hidePicked(at: Offset, box: Rect) {
+    fun hidePicked(at: Offset, box: Rect, held: Boolean = false) {
         val id = history.nextId
-        history.push(Edit.Mask(id, listOf(box.topLeft, box.bottomRight), MaskWidths[maskSize] * density / scale, maskStyle, MaskShape.Rect))
+        history.push(pickedMask(id, box))
         tapped += id
-        picked = Picked(at, box, id)
+        picked = Picked(at, box, id, held = held)
     }
+
+    /** The mask a tap lays over [box]; [id] -1 for one only shown while aiming. */
+    fun pickedMask(id: Int, box: Rect) = Edit.Mask(id, listOf(box.topLeft, box.bottomRight), MaskWidths[maskSize] * density / scale, maskStyle, MaskShape.Rect)
 
     /** The masks laid by a tap this time the editor is open. */
     private val tapped = mutableSetOf<Int>()
@@ -185,9 +210,9 @@ class EditorState(
     private fun tappedMasks() = history.strokes.filterIsInstance<Edit.Mask>().filter { it.id in tapped }
 
     /** Takes [mask] away again, tapped [at] a point on screen. */
-    fun unhidePicked(at: Offset, mask: Edit.Mask) {
+    fun unhidePicked(at: Offset, mask: Edit.Mask, held: Boolean = false) {
         history.push(Edit.Remove(mask.id))
-        picked = Picked(at, box(mask.points), mask.id, removed = mask)
+        picked = Picked(at, box(mask.points), mask.id, removed = mask, held = held)
     }
 
     /** A tap [at] a point on screen that found nothing small enough to be one thing. */
@@ -317,6 +342,18 @@ class EditorState(
         val size = Size(r.width / z, r.height / z)
         val center = focus + (r.center - focus) / z - pan / (scale * z)
         scope.launch { region.snapTo(Rect(center - Offset(size.width / 2, size.height / 2), size)) }
+    }
+
+    /** As much of a move by [step], on screen, as there is picture past the edge it moves in from. */
+    fun edgeRoom(step: Offset): Offset {
+        val kept = history.framing.rect
+        val shown = Rect(toScreen(kept.topLeft), toScreen(kept.bottomRight))
+        fun room(move: Float, before: Float, after: Float) =
+            if (move > 0f) move.coerceAtMost(before.coerceAtLeast(0f)) else move.coerceAtLeast(-after.coerceAtLeast(0f))
+        return Offset(
+            room(step.x, area.left - shown.left, shown.right - area.right),
+            room(step.y, area.top - shown.top, shown.bottom - area.bottom),
+        )
     }
 
     /** Once the fingers let go: back home if zoomed out past it or moved off it. */

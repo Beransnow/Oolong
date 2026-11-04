@@ -1,5 +1,6 @@
 package oolong.client.ui.page.editor
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
@@ -82,6 +83,7 @@ import androidx.core.graphics.withMatrix
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -384,11 +386,20 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                     // Only the kept part shows; what lies outside it is kept for later
                     val kept = state.history.framing.rect
                     val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
+                    // While a finger aims: what it would hide added, or what it would take away left out
+                    val aimed = pickEffect.aimedEdits(state)
+                    val drawAimed: DrawScope.() -> Unit = {
+                        clipRect(shown.left, shown.top, shown.right, shown.bottom) {
+                            drawEdits(state, without = aimed?.second, plus = aimed?.first)
+                            pickEffect.drawAimed(this, state)
+                        }
+                    }
                     clipRect(shown.left, shown.top, shown.right, shown.bottom) {
                         // A tap's mask spreads out of the finger, or draws back into it: shown inside the circle only
                         val spread = pickEffect.spread(state)
                         if (spread == null) {
-                            drawEdits(state)
+                            drawEdits(state, without = aimed?.second, plus = aimed?.first)
+                            pickEffect.drawAimed(this, state)
                         } else {
                             val circle = Path().apply { addOval(Rect(spread.first, spread.second)) }
                             val removed = state.picked?.removed
@@ -405,6 +416,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                         pickEffect.drawTap(this, state)
                     }
                     drawSelection(state)
+                    pickEffect.drawLoupe(this, state, drawAimed)
                 }
             }
         }
@@ -585,7 +597,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.gestures
                 when {
                     !shown.contains(down.position) -> transform(state, down)
                     // A tap hides what it lands on; a drag moves the view
-                    state.tool == EditorTool.Mask && state.maskPicking -> tapToHide(state, down, viewConfiguration.touchSlop)
+                    state.tool == EditorTool.Mask && state.maskPicking -> tapToHide(state, down, viewConfiguration.touchSlop, density)
                     else -> drawOrPick(state, down, viewConfiguration.touchSlop, grip)
                 }
             }
@@ -716,19 +728,81 @@ private suspend fun AwaitPointerEventScope.tapOrTransform(state: EditorState, do
     }
 }
 
-/** A tap hands its point to be looked into; anything more moves the view. */
-private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: PointerInputChange, slop: Float) {
+/**
+ * A tap hands its point to be looked into. Held or moved, the finger aims: what it would hide
+ * shows, with a loupe, and it is hidden once the finger lets go; near an edge with more of the
+ * picture past it, the picture moves in. A second finger moves the view instead.
+ */
+private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: PointerInputChange, slop: Float, density: Float) {
+    // Nothing to aim at until the picture is looked over
+    if (!state.pickReady) return transform(state, down)
+    state.aimed = null
+    state.aim = down.position
+    var at = down.position
+    var held = false
+    // The edges move the picture only once the finger has come to them, not when it starts there
+    var armed = edgePull(state, at, density) == Offset.Zero
+    var pullSince = -1L
+    var tick = SystemClock.uptimeMillis()
     while (true) {
-        val event = awaitPointerEvent()
-        val change = event.changes.firstOrNull { it.id == down.id }
-        if (event.changes.count { it.pressed } > 1 || change == null || (change.pressed && (change.position - down.position).getDistance() > slop)) {
-            transform(state, null)
-            return
+        val event = withTimeoutOrNull(FrameMillis) { awaitPointerEvent() }
+        val now = SystemClock.uptimeMillis()
+        if (event != null) {
+            val change = event.changes.firstOrNull { it.id == down.id }
+            if (event.changes.count { it.pressed } > 1 || change == null) {
+                state.stopAiming()
+                transform(state, null)
+                return
+            }
+            if (!change.pressed) break
+            if (change.positionChanged()) change.consume()
+            at = change.position
+            state.aim = at
+            if ((at - down.position).getDistance() > slop) held = true
         }
-        if (!change.pressed) break
+        if (now - down.uptimeMillis >= HoldMillis) held = true
+        state.aiming = held
+        val pull = edgePull(state, at, density)
+        if (pull == Offset.Zero) {
+            armed = true
+            pullSince = -1L
+        } else if (armed && held) {
+            if (pullSince < 0) pullSince = now
+            // Eased in, so a finger reaching the edge to aim there has time to stop it
+            val ramp = ((now - pullSince) / EdgeRampMillis.toFloat()).coerceIn(0f, 1f)
+            val step = pull * (EdgeMostSpeed * density * ramp * ramp * (now - tick).coerceAtMost(32L) / 1000f)
+            state.transform(at, state.edgeRoom(step), 1f)
+        }
+        tick = now
     }
-    if (state.pickReady) state.pendingPick = down.position
+    state.pendingPick = EditorState.Pick(at, held)
 }
+
+/**
+ * How hard the edges pull a finger [at] a point, each way from -1 to 1, as the way the picture
+ * moves: deeper into an edge, quicker, gently at first.
+ */
+private fun edgePull(state: EditorState, at: Offset, density: Float): Offset {
+    val zone = EdgeZone * density
+    val area = state.area
+    fun pull(near: Float, far: Float) = when {
+        near < zone -> ((zone - near) / zone).coerceAtMost(1f).let { it * it }
+        far < zone -> -((zone - far) / zone).coerceAtMost(1f).let { it * it }
+        else -> 0f
+    }
+    return Offset(pull(at.x - area.left, area.right - at.x), pull(at.y - area.top, area.bottom - at.y))
+}
+
+/** A frame's wait while a finger is held still, so the edges keep moving the picture. */
+private const val FrameMillis = 16L
+
+/** How long a finger is down before it aims rather than taps. */
+private const val HoldMillis = 160L
+
+/** How far in from the edges they pull, in dp, the most they move the picture, in dp a second, and how long they take to get going. */
+private const val EdgeZone = 56f
+private const val EdgeMostSpeed = 900f
+private const val EdgeRampMillis = 350L
 
 /** Draws the stroke begun, following the finger until it lifts. */
 private suspend fun AwaitPointerEventScope.stroke(state: EditorState, down: PointerInputChange) {
