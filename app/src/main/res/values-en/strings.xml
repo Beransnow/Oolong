@@ -591,6 +591,11 @@
     <string name="settings_blocked_content">Hidden content</string>
     <string name="settings_blocked_content_note">Collapsed content shows why it\'s hidden; tap to view it. Each rule can choose differently.</string>
     <string name="settings_block_rules_group">Rules</string>
+    <string name="settings_disliked_forums">Hidden forums</string>
+    <string name="title_disliked_forums">Forums hidden from For you</string>
+    <string name="disliked_forums_empty">No hidden forums</string>
+    <string name="btn_cancel_dislike">Unhide</string>
+    <string name="toast_cancel_dislike_failed">Couldn\'t unhide %1$s</string>
     <string name="settings_blocked_fold">Collapse to one line</string>
     <string name="settings_blocked_hide">Hide completely</string>
     <plurals name="rules_count">

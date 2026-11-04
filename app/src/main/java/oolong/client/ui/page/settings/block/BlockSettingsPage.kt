@@ -29,11 +29,13 @@ import oolong.client.repository.DefaultLowLevel
 import oolong.client.repository.HideBlockedContentKey
 import oolong.client.repository.LowLevelEnabledKey
 import oolong.client.repository.LowLevelKey
+import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.prefs.PrefsLinkValue
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.navigation.BlockListKey
+import oolong.client.ui.navigation.DislikedForumsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -92,6 +94,8 @@ fun BlockSettingsPage(
         val commonGroup = stringResource(id = R.string.settings_block_common)
         val blockedGroup = stringResource(id = R.string.settings_blocked_content)
         val rulesGroup = stringResource(id = R.string.settings_block_rules_group)
+        val recommendGroup = stringResource(id = R.string.title_personalized)
+        val signedIn = LocalAccount.current != null
         PrefsScreen(
             dataStore = context.dataStore,
             dividerThickness = 0.dp,
@@ -166,6 +170,17 @@ fun BlockSettingsPage(
                         onClick = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                         trailingContent = null,
                     )
+                }
+            }
+            // What the server keeps out of the recommendations, for the signed-in account
+            if (signedIn) {
+                prefsGroup(recommendGroup) {
+                    prefsItem {
+                        TextPref(
+                            title = stringResource(id = R.string.settings_disliked_forums),
+                            onClick = { navigator.navigate(DislikedForumsKey) },
+                        )
+                    }
                 }
             }
         }

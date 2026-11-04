@@ -19,6 +19,7 @@ import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.form.signedFormBody
+import oolong.core.network.form.signedParams
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
 import java.util.concurrent.atomic.AtomicInteger
@@ -33,6 +34,8 @@ class ExploreRemoteDataSource(
     private val formProfile = TiebaProfile.FORM_12_52
     private val service = network.service<ExploreService>(protoProfile)
     private val formService = network.service<ExploreFormService>(formProfile)
+    private val webProfile = TiebaProfile.WEB_12_52
+    private val dislikedForumService = network.service<DislikedForumService>(webProfile)
 
     // Recommendations come as the newer clients get them, with their newer ways of disliking a thread
     private val personalizedProfile = TiebaProfile.PROTO_22_FLOOR
@@ -144,5 +147,22 @@ class ExploreRemoteDataSource(
             "dislike_from" to "homepage",
         )
         formService.submitDislike(signedFormBody(params, withSig = false))
+    }
+
+    /** Page [page] (from 1) of the forums user [userId] keeps out of their recommendations. */
+    suspend fun dislikedForums(userId: Long, page: Int): DislikedForumsResponse =
+        dislikedForumService.list(webParams("user_id" to userId.toString(), "pn" to page.toString(), "rn" to "20"))
+
+    /** Lets forum [forumId] back into the recommendations of user [userId]. */
+    suspend fun cancelDislikedForum(userId: Long, forumId: Long) {
+        dislikedForumService.cancel(webParams("forum_id" to forumId.toString(), "user_id" to userId.toString()))
+    }
+
+    private fun webParams(vararg params: Pair<String, String>): Map<String, String> {
+        val all = commonParams.form(webProfile, includeTbs = true) + params + listOf(
+            "client_type" to "8",
+            "subapp_type" to "client_fe",
+        )
+        return signedParams(all, withSig = false).toMap()
     }
 }

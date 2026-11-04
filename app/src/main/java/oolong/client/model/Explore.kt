@@ -55,3 +55,7 @@ data class HotThreads(
     val categories: List<HotCategory>,
     val threads: List<ThreadSummary>,
 )
+
+/** A forum the user keeps out of their recommendations. */
+@Immutable
+data class DislikedForum(val id: Long, val name: String, val avatar: String, val slogan: String)

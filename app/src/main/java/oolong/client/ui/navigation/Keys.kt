@@ -132,6 +132,9 @@ data object BlockSettingsKey : Key
 @Serializable
 data object BlockListKey : Key
 
+@Serializable
+data object DislikedForumsKey : Key
+
 /** A block rule to edit, or a new one when [id] is 0. */
 @Serializable
 data class BlockRuleKey(val id: Long = 0) : Key
