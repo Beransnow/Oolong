@@ -81,6 +81,7 @@ fun ConcernScreen(
         LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
         PullRefresh(
             refreshing = list.refresh == LoadStatus.Loading,
+            revealUnpulled = true,
             onRefresh = onRefresh,
             indicatorTop = contentPadding.calculateTopPadding(),
             endPull = if (list.hasMore) EndPull.None else EndPull.Tease,

@@ -121,6 +121,7 @@ fun HotScreen(
     ) {
         PullRefresh(
             refreshing = isLoading,
+            revealUnpulled = true,
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
             indicatorTop = contentPadding.calculateTopPadding(),

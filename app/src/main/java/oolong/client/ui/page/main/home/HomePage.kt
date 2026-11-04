@@ -546,6 +546,7 @@ fun HomeScreen(
         val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
         PullRefresh(
             refreshing = isLoading && forums.isNotEmpty(),
+            revealUnpulled = true,
             onRefresh = { onEvent(HomeEvent.Refresh) },
             indicatorTop = contentPaddings.calculateTopPadding(),
         ) {

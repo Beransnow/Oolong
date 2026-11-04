@@ -144,6 +144,7 @@ fun PersonalizedScreen(
         Box {
             PullRefresh(
                 refreshing = refreshing,
+                revealUnpulled = true,
                 onRefresh = onRefresh,
                 indicatorTop = contentPadding.calculateTopPadding(),
                 endPull = if (list.hasMore) EndPull.None else EndPull.Tease,

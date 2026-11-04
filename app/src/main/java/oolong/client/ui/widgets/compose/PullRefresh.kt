@@ -77,6 +77,10 @@ internal val LocalPullOffset = compositionLocalOf<() -> Float> { { 0f } }
  * the gap it leaves below [indicatorTop], usually the list's top padding. Pulled far enough and
  * let go, the list waits a little lower while [refreshing], then goes back. [endPull] says what
  * pulling up past the end does.
+ *
+ * With [revealUnpulled], a refresh started some other way, such as tapping the selected tab again,
+ * lowers the list to show the loader as a pull would. Only lists whose [refreshing] means a refresh
+ * of what they show want it, not those that are also refreshing while they first load.
  */
 @Composable
 fun PullRefresh(
@@ -86,6 +90,7 @@ fun PullRefresh(
     enabled: Boolean = true,
     indicatorTop: Dp = 0.dp,
     endPull: EndPull = EndPull.None,
+    revealUnpulled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -99,12 +104,10 @@ fun PullRefresh(
     val curEnabled by rememberUpdatedState(enabled)
     val curEndPull by rememberUpdatedState(endPull)
 
-    // A refresh started some other way than by pulling, such as tapping the tab again, lowers the
-    // list to show the loader as a pull would; it goes back up once refreshing ends, unless a
-    // finger still holds the list
+    // The list goes back up once refreshing ends, unless a finger still holds it
     LaunchedEffect(refreshing) {
         when {
-            refreshing && !state.dragging && state.offset == 0f -> state.settle(holdPx, Motion.snap())
+            refreshing && revealUnpulled && !state.dragging && state.offset == 0f -> state.settle(holdPx, Motion.snap())
             !refreshing && !state.dragging && state.offset > 0f -> state.settle(0f, Motion.dismiss())
         }
     }

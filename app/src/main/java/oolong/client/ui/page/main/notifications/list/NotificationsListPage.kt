@@ -131,6 +131,7 @@ fun NotificationList(
     ) {
         PullRefresh(
             refreshing = refreshing,
+            revealUnpulled = true,
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize(),
             indicatorTop = contentPadding.calculateTopPadding(),
