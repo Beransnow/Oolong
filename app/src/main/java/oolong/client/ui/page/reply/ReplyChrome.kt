@@ -321,8 +321,10 @@ fun ReplyChrome(
                 .fillMaxWidth()
                 .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                 .padding(horizontal = SideMargin, vertical = BottomMargin)
-                // Moved by placing rather than a layer, which the glass container wouldn't follow
-                .offset { IntOffset(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()).roundToInt()) },
+                // Moved by placing rather than a layer, which the glass container wouldn't follow;
+                // under the app's lookahead, only a layer of its own makes the move show
+                .offset { IntOffset(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()).roundToInt()) }
+                .graphicsLayer(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (replyCapsule != null) {
