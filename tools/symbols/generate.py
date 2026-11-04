@@ -1,5 +1,9 @@
 """Writes Symbols.kt: the Material Symbols Rounded icons listed in symbols.txt, as Compose ImageVectors.
 
+Icons marked "drawable" are also written as Android drawables, res/drawable/symbol_<name>[_fill].xml,
+for the places that take a resource rather than an ImageVector, such as a picture-in-picture
+window's buttons.
+
 The icons come from the Android vector drawables Google publishes for Material Symbols (weight 400,
 grade 0, optical size 24), fetched once into a cache next to this script.
 """
@@ -13,19 +17,22 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CACHE = os.path.join(HERE, ".cache")
 OUT = os.path.join(ROOT, "app/src/main/java/oolong/client/ui/common/theme/compose/Symbols.kt")
+DRAWABLES = os.path.join(ROOT, "app/src/main/res/drawable")
 URL = "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/android/{name}/materialsymbolsrounded/{file}"
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 
 
 def listed():
+    """Each listed icon as (name, fill, drawable)."""
     for line in open(os.path.join(HERE, "symbols.txt")):
         line = line.split("#", 1)[0].strip()
         if line:
-            parts = line.split()
-            yield parts[0], len(parts) > 1 and parts[1] == "fill"
+            name, *flags = line.split()
+            assert set(flags) <= {"fill", "drawable"}, line
+            yield name, "fill" in flags, "drawable" in flags
 
 
-def drawable(name, fill):
+def cached(name, fill):
     file = f"{name}{'_fill1' if fill else ''}_24px.xml"
     path = os.path.join(CACHE, file)
     if not os.path.exists(path):
@@ -33,7 +40,25 @@ def drawable(name, fill):
         data = urllib.request.urlopen(URL.format(name=name, file=file), timeout=30).read()
         with open(path, "wb") as f:
             f.write(data)
-    return ET.parse(path).getroot()
+    return path
+
+
+def drawable(name, fill):
+    return ET.parse(cached(name, fill)).getroot()
+
+
+def write_drawables(wanted):
+    """Copies the listed drawables into res/drawable as they are published, and removes ones no longer listed."""
+    names = set()
+    for name, fill in sorted(wanted):
+        out = f"symbol_{name}{'_fill' if fill else ''}.xml"
+        names.add(out)
+        with open(cached(name, fill), "rb") as src, open(os.path.join(DRAWABLES, out), "wb") as dst:
+            dst.write(src.read())
+    for old in os.listdir(DRAWABLES):
+        if old.startswith("symbol_") and old.endswith(".xml") and old not in names:
+            os.remove(os.path.join(DRAWABLES, old))
+    return len(names)
 
 
 def kotlin_name(name, fill):
@@ -42,7 +67,8 @@ def kotlin_name(name, fill):
 
 def main():
     entries = []
-    for name, fill in sorted(set(listed())):
+    icons = list(listed())
+    for name, fill in sorted({(name, fill) for name, fill, _ in icons}):
         root = drawable(name, fill)
         assert root.get(ANDROID + "viewportWidth") == "960" and root.get(ANDROID + "viewportHeight") == "960", name
         mirror = root.get(ANDROID + "autoMirrored") == "true"
@@ -78,6 +104,8 @@ private fun symbol(name: String, autoMirror: Boolean, vararg paths: String): Ima
     }.build()
 ''')
     print(f"wrote {len(entries)} icons to {os.path.relpath(OUT, ROOT)}")
+    count = write_drawables({(name, fill) for name, fill, wanted in icons if wanted})
+    print(f"wrote {count} drawables to {os.path.relpath(DRAWABLES, ROOT)}")
 
 
 if __name__ == "__main__":

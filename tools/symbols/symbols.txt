@@ -1,4 +1,5 @@
 # Material Symbols Rounded used by the app, one per line; "fill" after a name for its filled form.
+# "drawable" after a name also writes it to res/drawable as symbol_<name>[_fill].xml.
 # Regenerate Symbols.kt with: python3 tools/symbols/generate.py
 account_circle
 add
@@ -67,13 +68,13 @@ no_accounts
 open_in_browser
 open_in_new
 palette
-pause fill
+pause fill drawable
 person
 person_off
 photo
 photo_camera
 photo_library
-play_arrow fill
+play_arrow fill drawable
 public
 redo
 refresh
