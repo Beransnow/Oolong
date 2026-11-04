@@ -22,9 +22,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
@@ -283,19 +286,22 @@ fun ThreadFloor(
     }
 }
 
-/** The avatar with the floor number on a tab across its lower edge. */
+/**
+ * The avatar with the floor number on a tab across its lower edge. A long number widens the tab
+ * past the avatar, up to the gutter, and past that gets smaller, keeping to one line.
+ */
 @Composable
 private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val background = ExtendedTheme.colors.background
     Box(modifier = modifier, contentAlignment = Alignment.TopCenter) {
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(background)
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(modifier = Modifier.padding(bottom = 8.dp)) {
+        Box(contentAlignment = Alignment.BottomCenter) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(background)
+                    .clickable(onClick = onClick)
+                    .padding(bottom = 8.dp),
+            ) {
                 Avatar(
                     data = StringUtil.getAvatarUrl(post.author.portrait),
                     size = FloorAvatarSize,
@@ -303,8 +309,10 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
                     contentDescription = post.author.nameShow.ifEmpty { post.author.name },
                 )
             }
+            // Outside the avatar's clip, so it can be wider than the avatar
             Box(
                 modifier = Modifier
+                    .widthIn(max = Gutter)
                     .clip(CircleShape)
                     .background(background)
                     .padding(2.dp)
@@ -313,10 +321,16 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
                     .padding(horizontal = 5.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
+                BasicText(
                     text = stringResource(R.string.floor_short, post.floor),
-                    style = TextStyle(fontFamily = rememberNumeralFamily(), fontSize = 12.sp, lineHeight = 14.sp),
-                    color = ExtendedTheme.colors.textSecondary,
+                    style = TextStyle(
+                        color = ExtendedTheme.colors.textSecondary,
+                        fontFamily = rememberNumeralFamily(),
+                        fontSize = 12.sp,
+                        lineHeight = 14.sp,
+                    ),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
                 )
             }
         }
