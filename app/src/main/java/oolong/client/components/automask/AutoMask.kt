@@ -206,7 +206,16 @@ class AutoMask internal constructor(
             if (area in 1 until bestArea) {
                 bestArea = area
                 val f = SamSide.toFloat() / MaskSide / prepared.scale
-                best = RectF(minX * f, minY * f, (maxX + 1) * f, (maxY + 1) * f)
+                // The mask is coarse, a cell some pixels across, and leaves out the cells only
+                // partly on the thing: grown by a cell and a little more, so all of it is hidden
+                val box = RectF(minX * f, minY * f, (maxX + 1) * f, (maxY + 1) * f)
+                val grow = f + max(box.width(), box.height()) * 0.03f
+                best = RectF(
+                    max(0f, box.left - grow),
+                    max(0f, box.top - grow),
+                    min(prepared.width.toFloat(), box.right + grow),
+                    min(prepared.height.toFloat(), box.bottom + grow),
+                )
             }
         }
         return best
