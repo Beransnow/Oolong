@@ -173,6 +173,8 @@
     <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$s 条回复</string>
     <string name="subtitle_link">网页链接</string>
     <string name="toast_preparing_share_pic">正在下载图片…</string>
+    <string name="toast_save_pic_failed">无法保存图片</string>
+    <string name="toast_share_pic_failed">无法分享图片</string>
     <string name="title_translucent_theme_blur">模糊</string>
     <string name="title_select_color">强调色</string>
     <string name="title_custom_color">自定义</string>

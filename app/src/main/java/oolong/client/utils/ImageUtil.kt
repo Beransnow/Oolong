@@ -41,6 +41,7 @@ import oolong.client.App.Companion.INSTANCE
 import oolong.client.R
 import oolong.client.components.images.downloadImage
 import oolong.client.dpToPxFloat
+import oolong.client.toastShort
 import oolong.client.utils.PermissionUtils.PermissionData
 import oolong.client.utils.PermissionUtils.askPermission
 import java.io.ByteArrayOutputStream
@@ -247,34 +248,15 @@ object ImageUtil {
     private fun downloadForShare(context: Context, url: String?, taskCallback: ShareTaskCallback) {
         if (url == null) return
         CoroutineScope(Dispatchers.IO).launch {
-            val image = context.downloadImage(url)
-            if (image != null) {
-                val inputStream = image.inputStream()
-                val pictureFolder = File(context.cacheDir, ".shareTemp")
-                if (pictureFolder.exists() || pictureFolder.mkdirs()) {
-                    val fileName = "share_" + System.currentTimeMillis()
-                    val destFile = File(pictureFolder, fileName)
-                    if (!destFile.exists()) {
-                        withContext(Dispatchers.IO) {
-                            destFile.createNewFile()
-                        }
-                    }
-                    inputStream.use { input ->
-                        if (destFile.canWrite()) {
-                            destFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                    }
-                    val shareUri = FileProvider.getUriForFile(
-                        context,
-                        context.packageName + ".share.FileProvider",
-                        destFile
-                    )
-                    withContext(Dispatchers.Main) {
-                        taskCallback.onGetUri(shareUri)
-                    }
-                }
+            val shareUri = runCatching {
+                val image = context.downloadImage(url) ?: return@runCatching null
+                val folder = File(context.cacheDir, ".shareTemp").apply { mkdirs() }
+                val file = File(folder, "share_" + System.currentTimeMillis())
+                file.writeBytes(image)
+                FileProvider.getUriForFile(context, context.packageName + ".share.FileProvider", file)
+            }.getOrNull()
+            withContext(Dispatchers.Main) {
+                if (shareUri != null) taskCallback.onGetUri(shareUri) else context.toastShort(R.string.toast_share_pic_failed)
             }
         }
     }
@@ -339,7 +321,7 @@ object ImageUtil {
         }
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val image = context.downloadImage(url) ?: return@launch
+            val image = context.downloadImage(url) ?: return@launch saveFailed(context)
             val gif = image.inputStream().use { isGifFile(it) }
             val fileName = URLUtil.guessFileName(url, null, "image/jpeg")
             if (gif) {
@@ -353,7 +335,7 @@ object ImageUtil {
     private fun downloadBelowQ(context: Context, url: String?) {
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val image = context.downloadImage(url) ?: return@launch
+            val image = context.downloadImage(url) ?: return@launch saveFailed(context)
             var fileName = URLUtil.guessFileName(url, null, "image/jpeg")
             if (image.inputStream().use { isGifFile(it) }) {
                 fileName = FileUtil.changeFileExtension(fileName, ".gif")
@@ -375,7 +357,7 @@ object ImageUtil {
             val cr = context.contentResolver
             val uri: Uri = runCatching {
                 cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            }.getOrNull() ?: return
+            }.getOrNull() ?: return saveFailed(context)
             try {
                 cr.openFileDescriptor(uri, "w")?.use {
                     FileOutputStream(it.fileDescriptor).use { outputStream -> outputStream.write(image) }
@@ -386,18 +368,23 @@ object ImageUtil {
             } catch (e: Exception) {
                 e.printStackTrace()
                 cr.delete(uri, null, null)
+                saveFailed(context)
             }
         } else {
             val pictureFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
-            if (!appDir.exists() && !appDir.mkdirs()) return
+            if (!appDir.exists() && !appDir.mkdirs()) return saveFailed(context)
             val destFile = File(appDir, fileName)
-            destFile.writeBytes(image)
+            if (runCatching { destFile.writeBytes(image) }.isFailure) return saveFailed(context)
             context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(destFile)))
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, context.getString(R.string.toast_photo_saved, destFile.path), Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private suspend fun saveFailed(context: Context) = withContext(Dispatchers.Main) {
+        context.toastShort(R.string.toast_save_pic_failed)
     }
 
     private fun checkGifFile(file: File) {

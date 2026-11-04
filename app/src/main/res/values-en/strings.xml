@@ -176,6 +176,8 @@
     <string name="subtitle_quick_preview_thread">%1$s · Replies: %2$s</string>
     <string name="subtitle_link">Web link</string>
     <string name="toast_preparing_share_pic">Downloading image…</string>
+    <string name="toast_save_pic_failed">Couldn\'t save the picture</string>
+    <string name="toast_share_pic_failed">Couldn\'t share the picture</string>
     <string name="title_translucent_theme_blur">Blur</string>
     <string name="title_select_color">Accent color</string>
     <string name="title_custom_color">Custom</string>
