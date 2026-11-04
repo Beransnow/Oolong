@@ -192,6 +192,13 @@ roborazzi {
     outputDir.set(layout.projectDirectory.dir("src/test/screenshots"))
 }
 
+// -PskipScreenshots leaves the screenshot tests out, for CI's check that runs them on their own
+if (providers.gradleProperty("skipScreenshots").isPresent) {
+    tasks.withType<Test>().configureEach {
+        filter.excludeTestsMatching("*ScreenshotTest")
+    }
+}
+
 ktlint {
     version.set(libs.versions.ktlint)
 }
