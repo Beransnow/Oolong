@@ -241,6 +241,7 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.exifinterface)
     implementation(libs.coil.gif)
     implementation(libs.zoomimage.compose.coil3)
 

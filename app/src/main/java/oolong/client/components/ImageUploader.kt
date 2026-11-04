@@ -1,7 +1,5 @@
 package oolong.client.components
 
-import android.graphics.BitmapFactory
-import androidx.core.graphics.scale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -19,7 +17,9 @@ import oolong.client.api.models.UploadPictureResultBean
 import oolong.client.api.retrofit.exception.TiebaException
 import oolong.client.api.retrofit.exception.getErrorCode
 import oolong.client.api.retrofit.exception.getErrorMessage
-import oolong.client.utils.ImageUtil
+import oolong.client.components.images.UploadPicture
+import oolong.client.components.images.UploadPictureException
+import oolong.client.components.images.preparePictureForUpload
 import oolong.client.utils.MD5Util
 import oolong.client.utils.appPreferences
 import oolong.core.network.upload.PictureChunk
@@ -39,6 +39,10 @@ class ImageUploader(
 
         const val IMAGE_MAX_SIZE = 5242880
         const val ORIGIN_IMAGE_MAX_SIZE = 10485760
+
+        /** The most pixels a picture drawn again for upload keeps, compressed and as the original. */
+        private const val IMAGE_MAX_PIXELS = 16_000_000L
+        private const val ORIGIN_IMAGE_MAX_PIXELS = 32_000_000L
 
         const val PIC_WATER_TYPE_NO = "0"
         const val PIC_WATER_TYPE_USER_NAME = "1"
@@ -60,59 +64,32 @@ class ImageUploader(
             .filter { it.size == filePaths.size }
     }
 
-    private suspend fun compressImage(
-        filePath: String,
-        isOriginImage: Boolean
-    ): File {
-        val originFile = File(filePath)
-        val fileLength = originFile.length()
-        val maxSize = if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE
-        val tempFile = withContext(Dispatchers.IO) {
-            File.createTempFile("temp", ".tmp")
+    /** [filePath] made ready to upload, into a file of its own that is deleted once sent. */
+    private suspend fun prepare(filePath: String, isOriginImage: Boolean): UploadPicture = withContext(Dispatchers.IO) {
+        val output = File.createTempFile("upload", ".tmp")
+        try {
+            preparePictureForUpload(
+                source = File(filePath),
+                output = output,
+                maxBytes = (if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE).toLong(),
+                maxPixels = if (isOriginImage) ORIGIN_IMAGE_MAX_PIXELS else IMAGE_MAX_PIXELS,
+            )
+        } catch (e: Exception) {
+            output.delete()
+            if (e is UploadPictureException) throw UploadPictureFailedException(message = e.message.orEmpty())
+            throw e
         }
-        withContext<Unit>(Dispatchers.IO) {
-            if (isOriginImage && fileLength <= maxSize) {
-                originFile.copyTo(tempFile, true)
-            } else {
-                val bitmap = BitmapFactory.decodeFile(filePath)
-                val firstCompressResult = ImageUtil.compressImage(bitmap, quality = 95)
-                tempFile.writeBytes(firstCompressResult)
-                if (firstCompressResult.size > maxSize) {
-                    // 压缩尺寸至 1080P
-                    val width = bitmap.width
-                    val height = bitmap.height
-                    val scale = if (width > height) {
-                        1080f / width
-                    } else {
-                        1080f / height
-                    }
-                    if (scale < 1) {
-                        val newWidth = (width * scale).toInt()
-                        val newHeight = (height * scale).toInt()
-                        val newBitmap = bitmap.scale(newWidth, newHeight)
-                        tempFile.writeBytes(ImageUtil.compressImage(newBitmap, quality = 95))
-                    }
-                }
-            }
-        }
-        return tempFile
     }
 
     suspend fun uploadSinglePicture(
         filePath: String,
         isOriginImage: Boolean = false,
     ): UploadPictureResultBean {
-        val option = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-        BitmapFactory.decodeFile(filePath, option)
-        val width = option.outWidth
-        val height = option.outHeight
-        check(width > 0 && height > 0) { "图片宽高不正确" }
-        val file = compressImage(filePath, isOriginImage)
+        val picture = prepare(filePath, isOriginImage)
+        val file = picture.file
+        val width = picture.width
+        val height = picture.height
         val fileLength = file.length()
-        val maxSize = if (isOriginImage) ORIGIN_IMAGE_MAX_SIZE else IMAGE_MAX_SIZE
-        check(fileLength <= maxSize) { "图片大小超过限制" }
         val fileMd5 = MD5Util.toMd5(file)
         val isMultipleChunkSize = fileLength % chunkSize == 0L
         val totalChunkNum = fileLength / chunkSize + if (isMultipleChunkSize) 0 else 1
