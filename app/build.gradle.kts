@@ -66,7 +66,7 @@ android {
     defaultConfig {
         applicationId = "oolong.client"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = applicationVersionCode
         versionName = applicationVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
