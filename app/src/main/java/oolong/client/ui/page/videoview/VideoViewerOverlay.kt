@@ -39,7 +39,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -62,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -89,6 +92,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -108,6 +112,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import coil3.compose.AsyncImage
+import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
@@ -130,6 +135,8 @@ import oolong.client.ui.widgets.compose.MediaGlassIconButton
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.ui.widgets.compose.WavyLoader
+import oolong.client.ui.widgets.compose.controlLens
+import oolong.client.ui.widgets.compose.isGlassAvailable
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
 import kotlin.math.abs
@@ -542,12 +549,16 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                 }
             }
 
+            // Only says what the hold does, so it is no control, and no glass: a dim capsule
             if (fast && phase == Phase.Open) {
-                MediaGlassPill(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .statusBarsPadding()
-                        .padding(top = 48.dp),
+                        .padding(top = 48.dp)
+                        .background(Color.Black.copy(alpha = 0.35f), SmoothCornerShape.Capsule),
                 ) {
                     Icon(
                         imageVector = Symbols.FastForwardFill,
@@ -824,7 +835,10 @@ private fun BoxScope.VideoChrome(
     }
 }
 
-/** A seek bar: thin while left alone, thicker under a finger, which may tap or drag along it. */
+/**
+ * A seek bar: thin while left alone, thicker under a finger, which may tap or drag along it. Held,
+ * its knob grows and turns to clear glass over the track, as the app's slider's does.
+ */
 @Composable
 private fun Scrubber(
     position: Long,
@@ -834,19 +848,24 @@ private fun Scrubber(
     onSeekEnd: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var held by remember { mutableStateOf(false) }
-    val track by animateDpAsState(if (held) 7.dp else 3.dp, Motion.snap(), label = "track")
-    val knob by animateDpAsState(if (held) 8.dp else 6.dp, Motion.snap(), label = "knob")
+    var pressed by remember { mutableStateOf(false) }
+    val held by animateFloatAsState(if (pressed) 1f else 0f, Motion.snap(), label = "held")
+    val glassAvailable = isGlassAvailable()
+    val track = 3.dp + 4.dp * held
     val length = duration.coerceAtLeast(1L)
+    val fraction = (position.toFloat() / length).coerceIn(0f, 1f)
     val currentSeek by rememberUpdatedState(onSeek)
     val currentEnd by rememberUpdatedState(onSeekEnd)
-    Canvas(
+    // What the held knob sees: the track, and clear space around it
+    val glassState = remember { HazeState() }
+    BoxWithConstraints(
+        contentAlignment = Alignment.CenterStart,
         modifier = modifier
-            .height(24.dp)
+            .height(KnobHeldHeight)
             .pointerInput(length) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
-                    held = true
+                    pressed = true
                     fun at(x: Float) = (x / size.width).coerceIn(0f, 1f).let { (it * length).toLong() }
                     var target = at(down.position.x)
                     currentSeek(target)
@@ -857,23 +876,40 @@ private fun Scrubber(
                         target = at(change.position.x)
                         currentSeek(target)
                     }
-                    held = false
+                    pressed = false
                     currentEnd(target)
                 }
             },
     ) {
-        val h = track.toPx()
-        val top = (size.height - h) / 2
-        val radius = CornerRadius(h / 2)
-        val played = (position.toFloat() / length).coerceIn(0f, 1f) * size.width
-        val loaded = (buffered.toFloat() / length).coerceIn(0f, 1f) * size.width
-        drawRoundRect(Color.White.copy(alpha = 0.28f), Offset(0f, top), Size(size.width, h), radius)
-        drawRoundRect(Color.White.copy(alpha = 0.35f), Offset(0f, top), Size(loaded, h), radius)
-        drawRoundRect(Color.White, Offset(0f, top), Size(played, h), radius)
-        drawCircle(Color.Black.copy(alpha = 0.25f), knob.toPx() + 1.dp.toPx(), Offset(played, size.height / 2))
-        drawCircle(Color.White, knob.toPx(), Offset(played, size.height / 2))
+        Canvas(modifier = Modifier.fillMaxSize().hazeSource(glassState)) {
+            val h = track.toPx()
+            val top = (size.height - h) / 2
+            val radius = CornerRadius(h / 2)
+            val loaded = (buffered.toFloat() / length).coerceIn(0f, 1f) * size.width
+            drawRoundRect(Color.White.copy(alpha = 0.28f), Offset(0f, top), Size(size.width, h), radius)
+            drawRoundRect(Color.White.copy(alpha = 0.35f), Offset(0f, top), Size(loaded, h), radius)
+            drawRoundRect(Color.White, Offset(0f, top), Size(fraction * size.width, h), radius)
+        }
+        val knobWidth = KnobSize + (KnobHeldWidth - KnobSize) * held
+        val knobHeight = KnobSize + (KnobHeldHeight - KnobSize) * held
+        val knobShape = SmoothCornerShape.Capsule
+        val travel = maxWidth
+        Box(
+            Modifier
+                .offset { IntOffset((travel * fraction - knobWidth / 2).roundToPx(), 0) }
+                .requiredSize(knobWidth, knobHeight)
+                .shadow(2.dp * (1f - held), knobShape)
+                .clip(knobShape)
+                // The white knob fades out as the glass fades in, where glass is drawn
+                .background(Color.White.copy(alpha = if (glassAvailable) 1f - held else 1f))
+                .controlLens(glassState, knobShape, held),
+        )
     }
 }
+
+private val KnobSize = 12.dp
+private val KnobHeldWidth = 34.dp
+private val KnobHeldHeight = 22.dp
 
 /** How far the video has played, along the bottom while the controls are hidden. */
 @Composable

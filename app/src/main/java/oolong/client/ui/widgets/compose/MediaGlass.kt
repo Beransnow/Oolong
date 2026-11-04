@@ -42,10 +42,10 @@ fun mediaChromeColors(colors: ExtendedColors): ExtendedColors = colors.copy(
 )
 
 /**
- * Floating glass in [content] samples what [state] captures, a viewer's picture or video, and is
- * toned for black around it: dark glass whatever the app's appearance, as the controls on it are
- * white. The picture or video is marked with `hazeSource(state)`; the glass is drawn over it,
- * outside that.
+ * Glass in [content] samples what [state] captures, a viewer's picture or video: [mediaGlass],
+ * clear and dimmed, in the dark appearance whatever the app's, as the controls on it are white;
+ * where the device draws no glass, frosted or solid chrome toned for black. The picture or video
+ * is marked with `hazeSource(state)`; the glass is drawn over it, outside that.
  */
 @Composable
 fun ProvideMediaGlass(state: HazeState, content: @Composable () -> Unit) {
@@ -64,7 +64,7 @@ fun ProvideMediaGlass(state: HazeState, content: @Composable () -> Unit) {
 @Composable
 fun MediaGlassActions(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
     Row(
-        modifier = modifier.floatingGlass(SmoothCornerShape.Capsule, barButton = false),
+        modifier = modifier.mediaGlass(SmoothCornerShape.Capsule),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CompositionLocalProvider(LocalContentColor provides Color.White) { content() }
@@ -85,7 +85,7 @@ fun MediaGlassButton(
     Box(
         modifier = modifier
             .size(size)
-            .floatingGlass(CircleShape, barButton = false, interactionSource = interaction)
+            .mediaGlass(CircleShape, interactionSource = interaction)
             .clip(CircleShape)
             .clickable(
                 interactionSource = interaction,
@@ -126,7 +126,7 @@ fun MediaGlassPill(
     val interaction = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
-            .floatingGlass(SmoothCornerShape.Capsule, barButton = false, interactionSource = onClick?.let { interaction })
+            .mediaGlass(SmoothCornerShape.Capsule, interactionSource = onClick?.let { interaction })
             .clip(SmoothCornerShape.Capsule)
             .then(
                 if (onClick == null) Modifier

@@ -560,6 +560,49 @@ fun Modifier.floatingGlass(
     }
 }
 
+/**
+ * [floatingGlass] for a control floating over a picture or video: clear glass, which leaves what
+ * is under it nearly as it is, over a dimming layer that keeps white icons readable on a bright
+ * picture. Below [GlassTier.Glass] it is [floatingGlass].
+ */
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+fun Modifier.mediaGlass(shape: Shape, interactionSource: MutableInteractionSource? = null): Modifier {
+    val source = currentGlassSource()
+    if (source == null || currentGlassTier() != GlassTier.Glass) {
+        return floatingGlass(shape, barButton = false, interactionSource = interactionSource)
+    }
+    val style = remember(shape, interactionSource != null) {
+        GlassStyle.clear.then {
+            shape(shape.glassShape())
+            backgroundColor(Color.Black)
+            tint(MediaDim)
+            lightPosition(LightAbove)
+            if (interactionSource != null) {
+                pressed {
+                    animate(toSpec = Motion.press(), fromSpec = Motion.release()) {
+                        lightingIntensity(1f)
+                        whitePointDelta(PressBrighten)
+                        scale(PressedGlassScale)
+                    }
+                }
+            }
+        }
+    }
+    return graphicsLayer {
+        this.shape = shape
+        clip = true
+    }.hazeGlass(
+        input = source.input,
+        style = style,
+        interactionSource = interactionSource,
+        interactionTransformTarget = GlassTransformTarget.MaterialAndContent,
+    )
+}
+
+/** The dimming layer under clear glass over media, as dark as a bright picture needs for white on it. */
+private val MediaDim = Color.Black.copy(alpha = 0.35f)
+
 private val FullyShown: () -> Float = { 1f }
 
 /** How high floating glass stands over the content, by its shadow. */
