@@ -528,7 +528,7 @@ private fun smooth(points: List<Offset>): Path = Path().apply {
 }
 
 /** [rect] with smooth corners of [radius], as the app's own corners are. */
-private fun Canvas.drawSmoothRect(rect: RectF, radius: Float, paint: Paint) {
+internal fun Canvas.drawSmoothRect(rect: RectF, radius: Float, paint: Paint) {
     val path = ComposePath().apply {
         addSmoothRect(rect.width(), rect.height(), radius, SmoothCornerShape.DefaultSmoothing)
         translate(Offset(rect.left, rect.top))
