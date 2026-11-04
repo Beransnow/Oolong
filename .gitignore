@@ -66,3 +66,6 @@ fastlane/readme.md
 
 # Kotlin compiler caches
 .kotlin/
+
+# Auto-mask models for the debug lab, made locally; the app will fetch them
+/app/src/debug/assets/automask/*.tflite

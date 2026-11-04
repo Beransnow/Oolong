@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".debug.automask.AutoMaskLabActivity"
+            android:exported="false"
+            android:label="点选打码实验" />
+    </application>
+</manifest>

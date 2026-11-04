@@ -86,6 +86,8 @@ android {
         // The app itself is Chinese-only; drop the translations dependencies bring in.
         // Libraries ship Chinese only under region qualifiers, so a bare "zh" keeps none of it.
         localeFilters += listOf("en", "zh-rCN", "zh-rTW", "zh-rHK")
+        // Models are mapped straight from the APK, which they can't be compressed
+        noCompress += "tflite"
     }
     signingConfigs {
         if (keystoreFile.isNotBlank()) {
@@ -242,6 +244,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.exifinterface)
+    // Only the debug build's auto-mask lab runs models so far
+    debugImplementation(libs.litert)
     implementation(libs.coil.gif)
     implementation(libs.zoomimage.compose.coil3)
 

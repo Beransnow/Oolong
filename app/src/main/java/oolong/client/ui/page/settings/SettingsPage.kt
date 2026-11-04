@@ -1,5 +1,6 @@
 package oolong.client.ui.page.settings
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -97,6 +98,7 @@ fun NowAccountItem(
 fun SettingsPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
+    val context = LocalContext.current
     ProvideNavigator(navigator = navigator) {
         GlassScaffold(
             largeTitle = true,
@@ -178,6 +180,14 @@ fun SettingsPage(
                                 title = "控件目录",
                                 leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Category, contentDescription = null) } },
                                 onClick = { navigator.navigate(ControlCatalogKey) }
+                            )
+                        }
+                        prefsItem {
+                            TextPref(
+                                title = "点选打码实验",
+                                leadingIcon = { LeadingIcon { Icon(imageVector = Symbols.Category, contentDescription = null) } },
+                                // Built only into the debug build, so found by name
+                                onClick = { context.startActivity(Intent().setClassName(context, "oolong.client.debug.automask.AutoMaskLabActivity")) }
                             )
                         }
                     }
