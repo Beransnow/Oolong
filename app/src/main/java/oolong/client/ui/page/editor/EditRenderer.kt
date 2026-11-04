@@ -96,7 +96,11 @@ class EditRenderer(val picture: Bitmap) {
 
     private fun maskPaint(style: MaskStyle) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         when (style) {
-            MaskStyle.Mosaic -> shader = mosaic
+            MaskStyle.Mosaic -> {
+                shader = mosaic
+                // Sharp-edged cells: new paints smooth bitmaps by default, which blurs them together
+                isFilterBitmap = false
+            }
             MaskStyle.Blur -> {
                 shader = blur
                 isFilterBitmap = true
