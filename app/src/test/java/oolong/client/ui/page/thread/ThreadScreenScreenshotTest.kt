@@ -8,6 +8,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -23,6 +24,13 @@ class ThreadScreenScreenshotTest {
 
     @Test
     fun loaded() {
+        captureScreenshot { ThreadScreen(state = ThreadPreviewData.loaded, onEvent = {}) }
+    }
+
+    /** The app's text size stands in for the system's, so a large system one changes nothing. */
+    @Test
+    fun loadedWithLargeSystemText() {
+        RuntimeEnvironment.setFontScale(2f)
         captureScreenshot { ThreadScreen(state = ThreadPreviewData.loaded, onEvent = {}) }
     }
 

@@ -19,8 +19,7 @@ import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Density
 import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.coroutines.CoroutineScope
@@ -32,8 +31,6 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.components.images.loadBitmap
 import oolong.client.models.EmoticonCache
-import oolong.client.pxToDp
-import oolong.client.pxToSp
 import java.io.File
 import java.lang.ref.WeakReference
 
@@ -121,16 +118,15 @@ object EmoticonManager {
     private val drawableCache: MutableMap<String, Drawable> = mutableMapOf()
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 
+    /** Emoticons [sizePx] across, in the [density] of the text they sit in. */
     fun getEmoticonInlineContent(
-        sizePx: Float
+        sizePx: Float,
+        density: Density,
     ): Map<String, InlineTextContent> {
+        val size = with(density) { sizePx.toSp() }
         return emoticonIds.associate { id ->
             "Emoticon#$id" to InlineTextContent(
-                placeholder = Placeholder(
-                    sizePx.pxToSp().sp,
-                    sizePx.pxToSp().sp,
-                    PlaceholderVerticalAlign.TextCenter
-                ),
+                placeholder = Placeholder(size, size, PlaceholderVerticalAlign.TextCenter),
                 children = {
                     AsyncImage(
                         model = rememberEmoticon(id = id),
@@ -138,7 +134,7 @@ object EmoticonManager {
                             id = R.string.emoticon,
                             getEmoticonNameById(id) ?: ""
                         ),
-                        modifier = Modifier.size(sizePx.pxToDp().dp)
+                        modifier = Modifier.size(with(density) { sizePx.toDp() })
                     )
                 }
             )

@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -44,11 +45,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import oolong.client.R
-import oolong.client.dpToPxFloat
 import oolong.client.pxToDp
 import oolong.client.pxToSp
-import oolong.client.pxToSpFloat
-import oolong.client.spToPxFloat
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -146,10 +144,12 @@ fun EmoticonText(
         )
     )
     val sizePx = calcLineHeightPx(mergedStyle)
+    // Back to sp with the density it was measured in, whose text scale is the app's own, not the system's
+    val density = LocalDensity.current
     val spacingLineHeight =
-        remember(sizePx) { (sizePx + lineSpacing.value.spToPxFloat()).pxToSpFloat().sp }
+        remember(sizePx, lineSpacing, density) { with(density) { (sizePx + lineSpacing.toPx()).toSp() } }
     val emoticonInlineContent =
-        remember(sizePx) { EmoticonManager.getEmoticonInlineContent(sizePx * emoticonSize) }
+        remember(sizePx, density) { EmoticonManager.getEmoticonInlineContent(sizePx * emoticonSize, density) }
     IconText(
         text.emoticonString,
         modifier,
@@ -353,17 +353,17 @@ fun buildChipInlineContent(
 ): InlineTextContent {
     val textMeasurer = rememberTextMeasurer()
     val textSize = remember(text, textStyle) { textMeasurer.measure(text, textStyle).size }
-    val heightPx = textSize.height
-    val heightSp = heightPx.pxToSpFloat().sp
-    val textHeightPx = textStyle.fontSize.value.spToPxFloat() -
-        padding.calculateTopPadding().value.dpToPxFloat() -
-        padding.calculateBottomPadding().value.dpToPxFloat()
-    val fontSize = textHeightPx.pxToSpFloat().sp
-    val textWidthPx = textSize.width
-    val widthPx = textWidthPx +
-        padding.calculateStartPadding(LocalLayoutDirection.current).value.dpToPxFloat() +
-        padding.calculateEndPadding(LocalLayoutDirection.current).value.dpToPxFloat()
-    val widthSp = widthPx.pxToSpFloat().sp
+    val layoutDirection = LocalLayoutDirection.current
+    // All in the density the text is measured and drawn in, whose text scale is the app's own
+    val (heightSp, fontSize, widthSp) = with(LocalDensity.current) {
+        val textHeightPx = textStyle.fontSize.toPx() -
+            padding.calculateTopPadding().toPx() -
+            padding.calculateBottomPadding().toPx()
+        val widthPx = textSize.width +
+            padding.calculateStartPadding(layoutDirection).toPx() +
+            padding.calculateEndPadding(layoutDirection).toPx()
+        Triple(textSize.height.toSp(), textHeightPx.toSp(), widthPx.toSp())
+    }
     return InlineTextContent(
         placeholder = Placeholder(
             width = widthSp,

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -37,10 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
-import oolong.client.dpToPxFloat
 import oolong.client.model.StoredThread
 import oolong.client.model.User
-import oolong.client.pxToSp
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
@@ -229,8 +228,10 @@ private fun StoreItem(
                     style = UpdateTipTextStyle
                 ).size
             }
-            val width = result.width.pxToSp() + 12F.dpToPxFloat().pxToSp() * 2 + 1
-            val height = result.height.pxToSp() + 4F.dpToPxFloat().pxToSp() * 2
+            // In the density the title is drawn in, whose text scale is the app's own
+            val (width, height) = with(LocalDensity.current) {
+                (result.width.toDp() + 12.dp * 2 + 1.dp).toSp() to (result.height.toDp() + 4.dp * 2).toSp()
+            }
             Text(
                 text = title,
                 fontSize = 15.sp,
@@ -238,8 +239,8 @@ private fun StoreItem(
                 inlineContent = mapOf(
                     "Update" to InlineTextContent(
                         placeholder = Placeholder(
-                            width = width.sp,
-                            height = height.sp,
+                            width = width,
+                            height = height,
                             placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
                         ),
                         children = {
