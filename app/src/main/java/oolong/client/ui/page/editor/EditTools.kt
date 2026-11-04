@@ -90,6 +90,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.floatingGlass
 import kotlin.math.roundToInt
@@ -295,7 +296,7 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
         when (tool) {
             EditorTool.Crop -> CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.text) {
                 val portrait = state.history.framing.turned(state.renderer.size).let { it.height > it.width }
-                OptionRow {
+                OptionRow(Arrangement.SpaceBetween) {
                     Options(
                         options = CropRatio.entries,
                         selected = state.ratio,
@@ -303,24 +304,21 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                         label = { ratioLabel(it, portrait) },
                         width = { if (it == CropRatio.Free || it == CropRatio.Original) 52.dp else 40.dp },
                     ) { ratio, _ -> RatioShape(ratio, portrait) }
+                    // In words: its icon would pass for rotating's
+                    TextButton(
+                        onClick = state::restore,
+                        enabled = state.history.framing != state.whole,
+                        color = ExtendedTheme.colors.text,
+                    ) { Text(text = stringResource(id = R.string.button_restore)) }
                 }
-                // The ruler's mark sits in the middle of the panel; the buttons lie over its faded ends
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                ) {
-                    Straightener(state, Modifier.fillMaxWidth())
-                    Row(modifier = Modifier.align(Alignment.CenterStart)) {
-                        IconButton(onClick = state::rotate) {
-                            Icon(imageVector = Symbols.RotateLeft, contentDescription = stringResource(id = R.string.button_rotate), tint = LocalContentColor.current)
-                        }
-                        IconButton(onClick = state::flip) {
-                            Icon(imageVector = Symbols.Flip, contentDescription = stringResource(id = R.string.editor_flip), tint = LocalContentColor.current)
-                        }
+                // One button either side, so the ruler between them is long and its mark in the middle
+                OptionRow {
+                    IconButton(onClick = state::rotate) {
+                        Icon(imageVector = Symbols.RotateLeft, contentDescription = stringResource(id = R.string.button_rotate), tint = LocalContentColor.current)
                     }
-                    IconButton(onClick = state::restore, enabled = state.history.framing != state.whole, modifier = Modifier.align(Alignment.CenterEnd)) {
-                        Icon(imageVector = Symbols.RestartAlt, contentDescription = stringResource(id = R.string.button_restore), tint = LocalContentColor.current)
+                    Straightener(state, Modifier.weight(1f))
+                    IconButton(onClick = state::flip) {
+                        Icon(imageVector = Symbols.Flip, contentDescription = stringResource(id = R.string.editor_flip), tint = LocalContentColor.current)
                     }
                 }
             }
@@ -869,9 +867,9 @@ private fun Straightener(state: EditorState, modifier: Modifier = Modifier) {
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                // The ends fade well before the buttons over them, as the ruler goes on past them
+                // The ends fade, as the ruler goes on past them
                 drawRect(
-                    Brush.horizontalGradient(0.3f to Color.Transparent, 0.4f to Color.Black, 0.6f to Color.Black, 0.7f to Color.Transparent),
+                    Brush.horizontalGradient(0f to Color.Transparent, 0.18f to Color.Black, 0.82f to Color.Black, 1f to Color.Transparent),
                     blendMode = BlendMode.DstIn,
                 )
             },
