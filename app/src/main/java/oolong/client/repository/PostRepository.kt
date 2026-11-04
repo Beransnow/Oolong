@@ -67,7 +67,11 @@ class PostRepository @Inject constructor(
      * @param original whether to upload them as they are rather than compressed
      */
     suspend fun uploadPictures(forumName: String, uris: List<String>, original: Boolean): List<String> = withContext(io) {
-        val paths = uris.map { FileUtil.getRealPathFromUri(context, it.toUri()) }
+        // Edited pictures are files of our own; picked ones are found through the media store
+        val paths = uris.map {
+            val uri = it.toUri()
+            if (uri.scheme == "file") uri.path.orEmpty() else FileUtil.getRealPathFromUri(context, uri)
+        }
         ImageUploader(uploads, forumName).uploadImages(paths, original).first().map { image ->
             // ImageUploader only returns results that carry picId and picInfo
             val originPic = checkNotNull(image.picInfo).originPic

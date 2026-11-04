@@ -91,6 +91,7 @@ sealed interface ReplyComposerEvent {
     data class ShowPanel(val panel: ReplyPanelType) : ReplyComposerEvent
     data object PickImages : ReplyComposerEvent
     data class RemoveImage(val index: Int) : ReplyComposerEvent
+    data class EditImage(val index: Int) : ReplyComposerEvent
     data class SetOriginalImages(val original: Boolean) : ReplyComposerEvent
     data class SetWithTail(val withTail: Boolean) : ReplyComposerEvent
     data object EditText : ReplyComposerEvent
@@ -196,6 +197,7 @@ fun ReplyComposerContent(
                 images = images,
                 onAdd = { onEvent(ReplyComposerEvent.PickImages) },
                 onRemove = { onEvent(ReplyComposerEvent.RemoveImage(it)) },
+                onEdit = { onEvent(ReplyComposerEvent.EditImage(it)) },
             )
         }
         Reveal(Unit.takeIf { state.images.isNotEmpty() || hasTail }) {
@@ -623,6 +625,7 @@ private fun PictureStrip(
     images: ImmutableList<String>,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
+    onEdit: (Int) -> Unit,
 ) {
     val colors = ExtendedTheme.colors
     LazyRow(
@@ -640,7 +643,9 @@ private fun PictureStrip(
                     model = uri,
                     contentDescription = stringResource(id = R.string.desc_image),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(60.dp),
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clickable(role = Role.Button) { onEdit(index) },
                 )
                 Box(
                     modifier = Modifier

@@ -103,6 +103,10 @@ class ReplyViewModel @Inject constructor(
         state.copy(images = state.images.filterIndexed { i, _ -> i != index }.toImmutableList())
     }
 
+    fun replaceImage(index: Int, uri: String) = _state.update { state ->
+        state.copy(images = state.images.mapIndexed { i, old -> if (i == index) uri else old }.toImmutableList())
+    }
+
     fun setOriginalImages(original: Boolean) = _state.update { it.copy(originalImages = original) }
 
     /** The unsent reply saved under [hash], a hash of what it replies to. */

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -12,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
@@ -29,8 +31,11 @@ import oolong.client.arch.onGlobalEvent
 import oolong.client.repository.ReplyTarget
 import oolong.client.toMD5
 import oolong.client.toastShort
+import oolong.client.ui.page.editor.EditPicture
+import oolong.client.ui.page.editor.EditRequest
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
+import java.io.File
 import java.util.UUID
 
 /**
@@ -50,6 +55,9 @@ class ReplyComposer internal constructor(
     internal var tbs: String? = null
     internal var showNotice by mutableStateOf(context.appPreferences.postOrReplyWarning)
     internal val imagePickerId = UUID.randomUUID().toString()
+
+    /** Opens the editor on the attached picture at an index. */
+    internal var editImage: (Int) -> Unit = {}
 
     /** The draft's key: what the reply answers, so each floor keeps its own. */
     internal val draftKey: String?
@@ -111,6 +119,7 @@ class ReplyComposer internal constructor(
             )
 
             is ReplyComposerEvent.RemoveImage -> viewModel.removeImage(event.index)
+            is ReplyComposerEvent.EditImage -> editImage(event.index)
             is ReplyComposerEvent.SetOriginalImages -> viewModel.setOriginalImages(event.original)
             is ReplyComposerEvent.SetWithTail -> viewModel.setWithTail(event.withTail)
             ReplyComposerEvent.EditText -> if (state.panel != ReplyPanelType.NONE) {
@@ -170,6 +179,21 @@ fun rememberReplyComposer(
     val context = LocalContext.current
     val editor = rememberReplyEditorState()
     val composer = remember(chrome, viewModel) { ReplyComposer(chrome, editor, viewModel, context) }
+    // The picture being edited, and the file the edit is written to
+    var editing by rememberSaveable { mutableStateOf<Pair<Int, String>?>(null) }
+    val editLauncher = rememberLauncherForActivityResult(EditPicture) { written ->
+        val (index, path) = editing ?: return@rememberLauncherForActivityResult
+        editing = null
+        if (written) viewModel.replaceImage(index, Uri.fromFile(File(path)).toString())
+    }
+    composer.editImage = { index ->
+        val source = viewModel.state.value.images.getOrNull(index)
+        if (source != null) {
+            val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
+            editing = index to output.path
+            editLauncher.launch(EditRequest(source.toUri(), output))
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
 
     // Keyboard up when the composer opens, down when it closes
