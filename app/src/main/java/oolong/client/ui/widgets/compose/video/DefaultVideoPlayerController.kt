@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
 import androidx.media3.common.Player.STATE_IDLE
@@ -123,6 +124,11 @@ internal class DefaultVideoPlayerController(
             }
         }
 
+        override fun onPlayerError(error: PlaybackException) {
+            Log.w("VideoPlayerController", "playback failed", error)
+            _state.set { copy(failed = true, isPlaying = false) }
+        }
+
         override fun onVideoSizeChanged(videoSize: VideoSize) {
             _state.set {
                 copy(videoSize = videoSize.width.toFloat() to videoSize.height.toFloat())
@@ -210,6 +216,10 @@ internal class DefaultVideoPlayerController(
     private val waitPlayerViewToPrepare = AtomicBoolean(false)
 
     override fun play() {
+        if (_state.value.failed) {
+            _state.set { copy(failed = false) }
+            exoPlayer.prepare()
+        }
         _state.set { copy(startedPlay = true) }
         if (exoPlayer.playbackState == STATE_ENDED) {
             exoPlayer.seekTo(0)

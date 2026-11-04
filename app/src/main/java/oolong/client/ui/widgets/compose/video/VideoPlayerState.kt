@@ -18,5 +18,7 @@ data class VideoPlayerState(
     val draggingProgress: DraggingProgress? = null,
     val playbackState: PlaybackState = PlaybackState.IDLE,
     val quickSeekAction: QuickSeekAction = QuickSeekAction.none(),
-    val isFullScreen: Boolean = false
+    val isFullScreen: Boolean = false,
+    /** The last load or decode failed; [VideoPlayerController.play] tries again. */
+    val failed: Boolean = false,
 ) : Parcelable
