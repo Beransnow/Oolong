@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_storage">Storage</string>
+    <string name="storage_group_cache">Cache</string>
+    <string name="storage_clear_cache">Clear all</string>
+    <string name="storage_images">Pictures</string>
+    <string name="storage_videos">Videos</string>
+    <string name="storage_web">Web pages</string>
+    <string name="storage_temporary">Temporary files</string>
+    <string name="storage_clear_images">Clear the picture cache?</string>
+    <string name="storage_clear_videos">Clear the video cache?</string>
+    <string name="storage_clear_web">Clear the web page cache?</string>
+    <string name="storage_clear_temporary">Clear temporary files?</string>
+    <string name="storage_clear_cache_confirm">Clear all cache?</string>
+    <string name="storage_clear_cache_note">It loads again when needed.</string>
+    <string name="storage_group_extensions">Smart extensions</string>
+    <string name="storage_extensions_note">Downloaded when needed, run on this device</string>
+    <string name="storage_runtime">Core components</string>
+    <string name="storage_text">Text recognition</string>
+    <string name="storage_region">Smart selection</string>
+    <string name="storage_text_used">For auto masking and tap to mask</string>
+    <string name="storage_region_used">For tap to mask</string>
+    <string name="storage_not_downloaded">Not downloaded</string>
+    <string name="storage_downloading">Downloading %1$d%%</string>
+    <string name="storage_download_failed">Download failed</string>
+    <string name="storage_download_confirm">Download %1$s?</string>
+    <string name="storage_download_note">About %1$s.</string>
+    <string name="storage_download">Download</string>
+    <string name="storage_delete_confirm">Delete %1$s?</string>
+    <string name="storage_delete_text_note">Auto masking and tap to mask will need to download it again.</string>
+    <string name="storage_delete_region_note">Tap to mask will need to download it again.</string>
+    <string name="storage_delete">Delete</string>
+    <string name="storage_group_data">Data</string>
+    <string name="storage_app">App</string>
+    <string name="storage_records">Account, settings and history</string>
+    <string name="storage_clear_all">Clear all data</string>
+    <string name="storage_clear_all_confirm">Clear all data?</string>
+    <string name="storage_clear_all_note">You will be signed out, all settings go back to their defaults and downloads are deleted. The app then closes.</string>
+</resources>

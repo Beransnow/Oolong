@@ -89,6 +89,7 @@ import oolong.client.ui.page.settings.habit.HabitSettingsPage
 import oolong.client.ui.page.settings.more.MoreSettingsPage
 import oolong.client.ui.page.settings.oksign.OKSignSettingsPage
 import oolong.client.ui.page.settings.post.PostSettingsPage
+import oolong.client.ui.page.settings.storage.StoragePage
 import oolong.client.ui.page.settings.theme.AppThemePage
 import oolong.client.ui.page.settings.theme.TranslucentThemePage
 import oolong.client.ui.page.settings.update.UpdatePage
@@ -145,6 +146,7 @@ private fun KeyContent(key: Key) {
         MoreSettingsKey -> MoreSettingsPage()
         AboutKey -> AboutPage()
         UpdateKey -> UpdatePage()
+        StorageKey -> StoragePage()
         CrashLogsKey -> CrashLogsPage()
         is CrashLogKey -> CrashLogPage(key)
         ControlCatalogKey -> ControlCatalogPage()

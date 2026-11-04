@@ -307,6 +307,12 @@ internal object VideoCache {
         ).also { cache = it }
     }
 
+    /** Forgets every video kept; one playing reads on from the network. */
+    fun clear(context: Context) {
+        val cache = cache(context.applicationContext)
+        cache.keys.toList().forEach { runCatching { cache.removeResource(it) } }
+    }
+
     fun dataSource(context: Context): DataSource.Factory {
         val app = context.applicationContext
         // The video servers may refuse requests that do not come from the app

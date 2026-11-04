@@ -152,6 +152,9 @@ data object AboutKey : Key
 data object UpdateKey : Key
 
 @Serializable
+data object StorageKey : Key
+
+@Serializable
 data object CrashLogsKey : Key
 
 @Serializable

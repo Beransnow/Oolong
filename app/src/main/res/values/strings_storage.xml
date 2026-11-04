@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_storage">存储空间</string>
+    <string name="storage_group_cache">缓存</string>
+    <string name="storage_clear_cache">全部清除</string>
+    <string name="storage_images">图片</string>
+    <string name="storage_videos">视频</string>
+    <string name="storage_web">网页</string>
+    <string name="storage_temporary">临时文件</string>
+    <string name="storage_clear_images">清除图片缓存？</string>
+    <string name="storage_clear_videos">清除视频缓存？</string>
+    <string name="storage_clear_web">清除网页缓存？</string>
+    <string name="storage_clear_temporary">清除临时文件？</string>
+    <string name="storage_clear_cache_confirm">清除全部缓存？</string>
+    <string name="storage_clear_cache_note">需要时会重新加载。</string>
+    <string name="storage_group_extensions">智能扩展</string>
+    <string name="storage_extensions_note">按需下载，在本机运行</string>
+    <string name="storage_runtime">基础组件</string>
+    <string name="storage_text">文字识别</string>
+    <string name="storage_region">智能选区</string>
+    <string name="storage_text_used">用于自动打码、点选打码</string>
+    <string name="storage_region_used">用于点选打码</string>
+    <string name="storage_not_downloaded">未下载</string>
+    <string name="storage_downloading">下载中 %1$d%%</string>
+    <string name="storage_download_failed">下载失败</string>
+    <string name="storage_download_confirm">下载%1$s？</string>
+    <string name="storage_download_note">约 %1$s。</string>
+    <string name="storage_download">下载</string>
+    <string name="storage_delete_confirm">删除%1$s？</string>
+    <string name="storage_delete_text_note">删除后，再用自动打码、点选打码需要重新下载。</string>
+    <string name="storage_delete_region_note">删除后，再用点选打码需要重新下载。</string>
+    <string name="storage_delete">删除</string>
+    <string name="storage_group_data">数据</string>
+    <string name="storage_app">应用本身</string>
+    <string name="storage_records">账号、设置与记录</string>
+    <string name="storage_clear_all">清除全部数据</string>
+    <string name="storage_clear_all_confirm">清除全部数据？</string>
+    <string name="storage_clear_all_note">将退出登录，所有设置恢复默认，下载的内容一并删除。应用随即关闭。</string>
+</resources>

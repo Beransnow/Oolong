@@ -5,6 +5,7 @@ import android.content.pm.verify.domain.DomainVerificationManager
 import android.content.pm.verify.domain.DomainVerificationUserState
 import android.os.Build
 import android.provider.Settings
+import android.text.format.Formatter
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,27 +32,27 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.components.AppStorage
 import oolong.client.dataStore
 import oolong.client.migration.LegacyImport
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.prefs.PrefsExternal
+import oolong.client.ui.common.prefs.PrefsLinkValue
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.navigation.CrashLogsKey
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.StorageKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
-import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
-import oolong.client.utils.ImageCacheUtil
-import kotlin.concurrent.thread
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -72,17 +72,16 @@ fun MoreSettingsPage(
             )
         },
     ) { paddingValues ->
-        val snackbarHostState = LocalSnackbarHostState.current
         val context = LocalContext.current
         val linksGroup = stringResource(id = R.string.settings_group_links)
         val storageGroup = stringResource(id = R.string.settings_group_storage)
         val troubleshootingGroup = stringResource(id = R.string.settings_group_troubleshooting)
         val legacySource = remember { LegacyImport.source(context) }
-        var cacheSize by remember { mutableStateOf("0.0B") }
-        LaunchedEffect(Unit) {
-            thread {
-                cacheSize = ImageCacheUtil.getCacheSize(context)
-            }
+        // Measured again on coming back, as the storage page may have cleared some
+        var storageTotal by remember { mutableStateOf<Long?>(null) }
+        LifecycleResumeEffect(Unit) {
+            val job = coroutineScope.launch { storageTotal = AppStorage.total(context) }
+            onPauseOrDispose { job.cancel() }
         }
         PrefsScreen(
             dataStore = LocalContext.current.dataStore,
@@ -113,16 +112,9 @@ fun MoreSettingsPage(
                 }
                 prefsItem {
                     TextPref(
-                        enabled = true,
-                        title = stringResource(id = R.string.title_clear_picture_cache),
-                        onClick = {
-                            coroutineScope.launch {
-                                ImageCacheUtil.clearImageAllCache(context)
-                                cacheSize = "0.0B"
-                                snackbarHostState.showSnackbar(context.getString(R.string.toast_clear_picture_cache_success))
-                            }
-                        },
-                        trailingContent = { Text(text = cacheSize) },
+                        title = stringResource(id = R.string.title_storage),
+                        onClick = { navigator.navigate(StorageKey) },
+                        trailingContent = { PrefsLinkValue(storageTotal?.let { Formatter.formatShortFileSize(context, it) }.orEmpty()) },
                     )
                 }
             }
