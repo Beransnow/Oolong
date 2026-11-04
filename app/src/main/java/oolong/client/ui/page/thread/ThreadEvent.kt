@@ -28,6 +28,12 @@ sealed interface ThreadEvent {
 
     /** Open the replies inside [post], at [subPostId] or from the start when 0. */
     data class OpenSubPosts(val post: Post, val subPostId: Long) : ThreadEvent
+
+    /** Shows more of the replies inside [post] in place. */
+    data class ShowMoreSubPosts(val post: Post) : ThreadEvent
+
+    /** Back to the few replies inside post [postId] the thread's page brings. */
+    data class ShowFewerSubPosts(val postId: Long) : ThreadEvent
     data class OpenOriginThread(val threadId: Long, val forumId: Long) : ThreadEvent
 
     /** Copy [content] or a part of it. */

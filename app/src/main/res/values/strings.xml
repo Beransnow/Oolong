@@ -403,6 +403,15 @@
     <string name="message_update_collect_mark_failed">无法更新收藏楼层 %s</string>
     <string name="message_update_collect_mark_success">已更新收藏楼层</string>
     <string name="single_chinese_char" translatable="false">国</string>
+    <plurals name="show_more_sub_posts">
+        <item quantity="other">展开其余 %d 条</item>
+    </plurals>
+    <string name="button_show_fewer_sub_posts">收起</string>
+    <string name="sub_posts_load_failed">加载失败，点按重试</string>
+    <string name="button_expand_reply">展开</string>
+    <string name="title_sub_post_style">楼中楼样式</string>
+    <string name="sub_post_style_timeline">时间线</string>
+    <string name="sub_post_style_classic">经典</string>
     <plurals name="open_all_sub_posts">
         <item quantity="other">查看全部 %d 条回复</item>
     </plurals>

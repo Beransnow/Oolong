@@ -22,34 +22,52 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.Post
 import oolong.client.model.PostContent
@@ -62,6 +80,7 @@ import oolong.client.ui.common.rememberSubPostText
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.page.settings.block.LocalBlockShortcuts
 import oolong.client.ui.widgets.compose.Avatar
@@ -79,6 +98,21 @@ private val Gutter = 52.dp
 private val GutterStart = 4.dp
 private val FloorAvatarSize = 36.dp
 private val SubPostAvatarSize = 22.dp
+
+/** How far down a reply its avatar's centre is, on its first line, where its branch arrives. */
+private val ReplyAvatarCenter = 12.dp
+
+/** The rule down a floor and its branches: thin, and a light wash of the text colour. */
+private val RuleWidth = 1.25.dp
+private const val RuleAlpha = 0.16f
+private val BranchRadius = 12.dp
+
+private val ClassicBlockShape = RoundedCornerShape(12.dp)
+private const val ClassicReplyLines = 3
+
+/** A reply in a floor longer than this many lines folds to [FoldToLines]. */
+private const val FoldOverLines = 8
+private const val FoldToLines = 6
 
 /** Space kept above the end of a floor when its avatar sticks below the bar. */
 private val StickyEndGap = 40.dp
@@ -112,14 +146,21 @@ fun ThreadFloor(
     photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
     /** Whether the floor's menu offers storing the thread up to it. */
     canStore: Boolean = true,
+    /** More of the replies inside it, once opened in place; null where they open on their own page. */
+    replies: FloorReplies? = null,
 ) {
     val post = item.post
     val context = LocalContext.current
     val shortcuts = LocalBlockShortcuts.current
     val labels = postMenuLabels()
     val rule = floorRuleColor()
+    val style = rememberSubPostStyle()
     var floorHeight by remember { mutableIntStateOf(0) }
     var badgeHeight by remember { mutableIntStateOf(0) }
+    // Where the replies sit, for the branches to reach them, by reply id
+    var floorCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val branches = remember { mutableStateMapOf<Long, LayoutCoordinates>() }
     BlockableContent(
         block = item.block,
         tip = { reason, onShow ->
@@ -132,11 +173,33 @@ fun ThreadFloor(
         },
         modifier = modifier.fillMaxWidth(),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().onSizeChanged { floorHeight = it.height }) {
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val x = (GutterStart + Gutter / 2).toPx()
-                val top = if (startsRule) (FloorAvatarSize / 2 + 10.dp).toPx() else 0f
-                drawLine(rule, Offset(x, top), Offset(x, size.height), 1.dp.toPx())
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { floorHeight = it.height }
+                .onPlaced { floorCoordinates = it },
+        ) {
+            // The classic style keeps replies in a block of their own, with no rule to hang them off
+            if (style == SubPostStyle.Timeline) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val x = (GutterStart + Gutter / 2).toPx()
+                    val top = if (startsRule) (FloorAvatarSize / 2 + 10.dp).toPx() else 0f
+                    val floor = floorCoordinates
+                    // One path, so a branch leaving the rule doesn't paint over it a second time
+                    val path = Path().apply {
+                        moveTo(x, top)
+                        lineTo(x, size.height)
+                        if (floor != null && floor.isAttached) {
+                            branches.values.forEach { reply ->
+                                if (reply.isAttached) {
+                                    val y = floor.localPositionOf(reply, Offset.Zero).y + ReplyAvatarCenter.toPx()
+                                    branch(x, y, (GutterStart + Gutter).toPx(), BranchRadius.toPx())
+                                }
+                            }
+                        }
+                    }
+                    drawPath(path, rule, style = Stroke(RuleWidth.toPx()))
+                }
             }
             Column(modifier = Modifier.padding(start = GutterStart, end = 16.dp)) {
                 Box(
@@ -152,7 +215,25 @@ fun ThreadFloor(
                     }
                 }
                 if (post.subPostCount > 0 && post.subPosts.isNotEmpty()) {
-                    FloorSubPosts(item, options, rule, onEvent)
+                    when (style) {
+                        SubPostStyle.Timeline -> TimelineSubPosts(
+                            item = item,
+                            replies = replies,
+                            options = options,
+                            onEvent = onEvent,
+                            onPlaced = { id, coordinates -> if (branches[id] !== coordinates) branches[id] = coordinates },
+                            onGone = { id -> branches.remove(id) },
+                            onFewer = {
+                                // Back at the floor's top when its replies had carried the page past it
+                                val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+                                if (info != null && info.index == listState.firstVisibleItemIndex && listState.firstVisibleItemScrollOffset > 0) {
+                                    coroutineScope.launch { listState.scrollToItem(info.index) }
+                                }
+                                onEvent(ThreadEvent.ShowFewerSubPosts(post.id))
+                            },
+                        )
+                        SubPostStyle.Classic -> ClassicSubPosts(item, options, onEvent)
+                    }
                 }
             }
             FloorBadge(
@@ -273,59 +354,179 @@ private fun FloorBody(
     }
 }
 
-/** The first replies inside a post, each on a branch off the floor's rule, then a link to the rest. */
+/**
+ * The replies inside a post, each on a branch off the floor's rule: those the page brought, or as
+ * many as [replies] has opened, then a link to open more in place, or to show fewer again.
+ */
 @Composable
-private fun FloorSubPosts(
+private fun TimelineSubPosts(
+    item: PostItem,
+    replies: FloorReplies?,
+    options: PostCardOptions,
+    onEvent: (ThreadEvent) -> Unit,
+    onPlaced: (Long, LayoutCoordinates) -> Unit,
+    onGone: (Long) -> Unit,
+    onFewer: () -> Unit,
+) {
+    val post = item.post
+    val context = LocalContext.current
+    val shortcuts = LocalBlockShortcuts.current
+    val labels = postMenuLabels()
+    val subPosts = replies?.subPosts ?: post.subPosts
+    val blocks = replies?.blocks ?: item.subPostBlocks
+    Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
+        subPosts.forEach { subPost ->
+            key(subPost.id) {
+                DisposableEffect(subPost.id) { onDispose { onGone(subPost.id) } }
+                BlockableContent(
+                    block = blocks[subPost.id],
+                    tip = { reason, onShow ->
+                        BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(start = Gutter, end = 16.dp, bottom = 4.dp))
+                    },
+                ) {
+                    Row(modifier = Modifier.onPlaced { onPlaced(subPost.id, it) }) {
+                        Spacer(modifier = Modifier.width(Gutter))
+                        SubPostLine(
+                            subPost = subPost,
+                            isLz = subPost.author.id == options.threadAuthorId,
+                            onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
+                            menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
+                            foldLong = true,
+                        )
+                    }
+                }
+            }
+        }
+        val remaining = if (replies?.complete == true) 0 else (post.subPostCount - subPosts.size).coerceAtLeast(0)
+        val link = when {
+            replies?.loading == true -> null
+            replies?.failed == true -> stringResource(id = R.string.sub_posts_load_failed) to { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }
+            remaining > 0 -> pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining) to { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }
+            replies != null -> stringResource(id = R.string.button_show_fewer_sub_posts) to onFewer
+            else -> null
+        }
+        when {
+            replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary, onClick = null)
+            link != null -> SubPostsLink(text = link.first, color = ExtendedTheme.colors.accent, onClick = link.second)
+            else -> Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+/** A link under a floor's replies, lined up with their avatars. */
+@Composable
+private fun SubPostsLink(text: String, color: Color, onClick: (() -> Unit)?) {
+    Text(
+        text = text,
+        style = TextStyles.caption,
+        fontWeight = FontWeight.SemiBold,
+        color = color,
+        modifier = Modifier
+            .padding(start = Gutter, bottom = 12.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = 4.dp),
+    )
+}
+
+/**
+ * The first replies inside a post as a block under it, each a paragraph of a few lines that opens
+ * the replies' own page at it, then a link to all of them there.
+ */
+@Composable
+private fun ClassicSubPosts(
     item: PostItem,
     options: PostCardOptions,
-    rule: Color,
     onEvent: (ThreadEvent) -> Unit,
 ) {
     val post = item.post
     val context = LocalContext.current
     val shortcuts = LocalBlockShortcuts.current
     val labels = postMenuLabels()
-    Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
+    val colors = ExtendedTheme.colors
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .padding(start = Gutter, top = 2.dp, bottom = 14.dp)
+            .fillMaxWidth()
+            .clip(ClassicBlockShape)
+            .background(if (colors.isNightMode) Color.White.copy(alpha = 0.05f) else colors.accent.copy(alpha = 0.06f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
         post.subPosts.forEach { subPost ->
             BlockableContent(
                 block = item.subPostBlocks[subPost.id],
-                tip = { reason, onShow ->
-                    BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(start = Gutter, end = 16.dp, bottom = 4.dp))
-                },
+                tip = { reason, onShow -> BlockTip(reason = reason, onShow = onShow, boxed = false) },
             ) {
-                SubPostBranch(rule = rule) {
-                    SubPostLine(
-                        subPost = subPost,
-                        isLz = subPost.author.id == options.threadAuthorId,
-                        onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
-                        menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
-                        maxLines = 4,
-                    )
-                }
+                ClassicSubPostLine(
+                    subPost = subPost,
+                    isLz = subPost.author.id == options.threadAuthorId,
+                    onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
+                    menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
+                )
             }
         }
         if (post.subPostCount > post.subPosts.size) {
             Text(
                 text = pluralStringResource(id = R.plurals.open_all_sub_posts, count = post.subPostCount, post.subPostCount),
-                style = MaterialTheme.typography.caption,
-                fontSize = 13.sp,
+                style = TextStyles.caption,
                 fontWeight = FontWeight.SemiBold,
-                color = ExtendedTheme.colors.accent,
-                modifier = Modifier
-                    .padding(start = Gutter, bottom = 12.dp)
-                    .clickable { onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0)) }
-                    .padding(vertical = 4.dp),
+                color = colors.accent,
+                modifier = Modifier.clickable { onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0)) },
             )
-        } else {
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
+/** A reply in the classic block: who, what and when in one paragraph, cut to a few lines. */
+@Composable
+private fun ClassicSubPostLine(
+    subPost: SubPost,
+    isLz: Boolean,
+    onClick: () -> Unit,
+    menuItems: () -> List<ContextMenuItem>,
+) {
+    val colors = ExtendedTheme.colors
+    val text = rememberSubPostText(subPost, isLz, nameColor = colors.text)
+    val time = relativeTime(subPost.time)
+    val paragraph = remember(text, time, colors.textSecondary) {
+        buildAnnotatedString {
+            append(text)
+            // The time keeps to one line, wrapping whole when it must
+            withStyle(SpanStyle(color = colors.textSecondary, fontSize = TextStyles.footnote.fontSize)) { append("  " + time.replace(' ', '\u00A0')) }
+        }
+    }
+    Box(modifier = Modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
+        PbContentText(
+            text = paragraph,
+            style = TextStyles.replyDense.copy(color = colors.text),
+            emoticonSize = 0.9f,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = ClassicReplyLines,
+            inlineContent = mapOf("Lz" to lzChip()),
+        )
+    }
+}
+
+@Composable
+private fun lzChip() = buildChipInlineContent(
+    stringResource(id = R.string.tip_lz),
+    backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
+    color = ExtendedTheme.colors.textSecondary,
+)
+
 /** The colour of the rule down a floor and the branches off it to its replies. */
 @Composable
-fun floorRuleColor(): Color =
-    ExtendedTheme.colors.textDisabled.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.45f else 0.7f)
+fun floorRuleColor(): Color = ExtendedTheme.colors.text.copy(alpha = RuleAlpha)
+
+/**
+ * A branch off a rule running down at [x], to [endX] at [y]: it leaves the rule on a quarter
+ * circle of [radius], then runs straight. Added to the rule's own path, it paints nothing twice.
+ */
+private fun Path.branch(x: Float, y: Float, endX: Float, radius: Float) {
+    moveTo(x, y - radius)
+    arcTo(Rect(x, y - 2 * radius, x + 2 * radius, y), startAngleDegrees = 180f, sweepAngleDegrees = -90f, forceMoveTo = false)
+    lineTo(endX, y)
+}
 
 /** Lines content up with a floor's body, past the avatar column the floor's rule runs down. */
 fun Modifier.floorIndent(): Modifier = padding(start = GutterStart, end = 16.dp)
@@ -345,16 +546,16 @@ fun SubPostBranch(
     Row(modifier = modifier.height(IntrinsicSize.Min)) {
         Canvas(modifier = Modifier.width(Gutter).fillMaxSize()) {
             val x = Gutter.toPx() / 2
-            val y = (SubPostAvatarSize / 2).toPx()
-            val r = 10.dp.toPx()
-            val stroke = 1.dp.toPx()
-            if (rail) drawLine(rule, Offset(x, 0f), Offset(x, if (last) y - r else size.height), stroke)
-            val branch = Path().apply {
-                moveTo(x, y - r)
-                quadraticTo(x, y, x + r, y)
-                lineTo(size.width - 4.dp.toPx(), y)
+            val y = ReplyAvatarCenter.toPx()
+            val r = BranchRadius.toPx()
+            val path = Path().apply {
+                if (rail) {
+                    moveTo(x, 0f)
+                    lineTo(x, if (last) y - r else size.height)
+                }
+                branch(x, y, size.width, r)
             }
-            drawPath(branch, rule, style = Stroke(stroke))
+            drawPath(path, rule, style = Stroke(RuleWidth.toPx()))
         }
         content()
     }
@@ -362,8 +563,8 @@ fun SubPostBranch(
 
 /**
  * A reply inside a post: the avatar, then who and what in one paragraph, then when. In a floor it
- * is cut to [maxLines] and shows its likes; on the replies' own page it shows in full, with
- * [onAgree] a like button.
+ * shows its likes, and with [foldLong] a long one shows its first lines and a link to the rest; on
+ * the replies' own page it shows in full, with [onAgree] a like button.
  */
 @Composable
 fun SubPostLine(
@@ -372,40 +573,30 @@ fun SubPostLine(
     onClick: (() -> Unit)?,
     menuItems: () -> List<ContextMenuItem>,
     modifier: Modifier = Modifier,
-    maxLines: Int = Int.MAX_VALUE,
+    foldLong: Boolean = false,
     onAgree: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
+    val colors = ExtendedTheme.colors
     Box(modifier = modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
-        Column(modifier = Modifier.padding(bottom = 10.dp)) {
+        Column(modifier = Modifier.padding(bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Avatar(
                     data = StringUtil.getAvatarUrl(subPost.author.portrait),
                     size = SubPostAvatarSize,
                     contentDescription = null,
+                    // Centred on the first line
+                    modifier = Modifier.padding(top = ReplyAvatarCenter - SubPostAvatarSize / 2),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                ProvideTextStyle(value = MaterialTheme.typography.body2.copy(color = ExtendedTheme.colors.text)) {
-                    PbContentText(
-                        text = rememberSubPostText(subPost, isLz, nameColor = ExtendedTheme.colors.text),
-                        modifier = Modifier.weight(1f),
-                        fontSize = 15.sp,
-                        lineHeight = 22.sp,
-                        emoticonSize = 0.9f,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = maxLines,
-                        inlineContent = mapOf(
-                            "Lz" to buildChipInlineContent(
-                                stringResource(id = R.string.tip_lz),
-                                backgroundColor = ExtendedTheme.colors.textSecondary.copy(alpha = 0.1f),
-                                color = ExtendedTheme.colors.textSecondary
-                            ),
-                        )
-                    )
-                }
+                FoldingReplyText(
+                    text = rememberSubPostText(subPost, isLz, nameColor = colors.text),
+                    fold = foldLong,
+                    key = subPost.id,
+                    modifier = Modifier.weight(1f),
+                )
             }
             Row(
-                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = 2.dp),
+                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -413,8 +604,8 @@ fun SubPostLine(
                         relativeTime(subPost.time),
                         subPost.author.ipLocation.takeIf { it.isNotEmpty() },
                     ).joinToString(" · "),
-                    style = MaterialTheme.typography.caption,
-                    color = ExtendedTheme.colors.textSecondary,
+                    style = TextStyles.footnote,
+                    color = colors.textSecondary,
                     modifier = Modifier.weight(1f),
                 )
                 if (onAgree != null) {
@@ -429,19 +620,64 @@ fun SubPostLine(
                     Icon(
                         imageVector = Symbols.Favorite,
                         contentDescription = stringResource(id = R.string.title_agree),
-                        tint = ExtendedTheme.colors.textSecondary,
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = subPost.agree.count.getShortNumString(),
-                        style = MaterialTheme.typography.caption,
-                        color = ExtendedTheme.colors.textSecondary,
+                        style = TextStyles.footnote,
+                        color = colors.textSecondary,
                     )
                 }
             }
         }
     }
+}
+
+/**
+ * A reply's paragraph. With [fold], one longer than [FoldOverLines] lines shows its first
+ * [FoldToLines], the last of them ending in a link that shows the rest in place.
+ */
+@Composable
+private fun FoldingReplyText(text: AnnotatedString, fold: Boolean, key: Long, modifier: Modifier = Modifier) {
+    val colors = ExtendedTheme.colors
+    var unfolded by rememberSaveable(key) { mutableStateOf(false) }
+    // Where the paragraph is cut, found from a layout of it in full; null while it isn't cut
+    var cut by remember(text) { mutableStateOf<Int?>(null) }
+    var measured by remember(text) { mutableStateOf(false) }
+    val folding = fold && !unfolded
+    val more = stringResource(id = R.string.button_expand_reply)
+    val shown = cut?.takeIf { folding }?.let { end ->
+        buildAnnotatedString {
+            append(text.subSequence(0, end))
+            append("…")
+            withLink(LinkAnnotation.Clickable("expand") { unfolded = true }) {
+                withStyle(SpanStyle(color = colors.accent, fontWeight = FontWeight.SemiBold)) { append(more) }
+            }
+        }
+    } ?: text
+    val moreWidth = with(LocalDensity.current) { (TextStyles.reply.fontSize * (more.length + 1.5f)).toPx() }
+    PbContentText(
+        text = shown,
+        style = TextStyles.reply.copy(color = colors.text),
+        emoticonSize = 0.9f,
+        // Laid out once past the fold to tell whether it folds at all
+        maxLines = if (folding && !measured) FoldOverLines + 1 else Int.MAX_VALUE,
+        onTextLayout = { layout ->
+            if (folding && !measured) {
+                measured = true
+                if (layout.lineCount > FoldOverLines) {
+                    val line = FoldToLines - 1
+                    val y = (layout.getLineTop(line) + layout.getLineBottom(line)) / 2
+                    val end = layout.getLineEnd(line, visibleEnd = true)
+                    cut = minOf(end, layout.getOffsetForPosition(Offset(layout.size.width - moreWidth, y)))
+                }
+            }
+        },
+        inlineContent = mapOf("Lz" to lzChip()),
+        modifier = modifier,
+    )
 }
 
 /**

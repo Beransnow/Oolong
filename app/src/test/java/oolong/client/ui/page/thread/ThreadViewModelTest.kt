@@ -19,6 +19,7 @@ import oolong.client.api.models.protos.PollInfo
 import oolong.client.api.models.protos.PollOption
 import oolong.client.api.models.protos.SimpleForum
 import oolong.client.api.models.protos.ThreadInfo
+import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
 import oolong.client.api.models.protos.pbPage.PbPageResponseData
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
@@ -168,6 +169,81 @@ class ThreadViewModelTest {
         blockRules.value = blockRulesMatching { "广告" in it.content }
         runCurrent()
         assertEquals(listOf(true, false), viewModel.state.value.posts.items.map { it.blocked })
+    }
+
+    private fun reply(id: Long, text: String = "楼中楼 $id") =
+        ProtoSubPost(id = id, author = ProtoUser(id = 30, name = "r$id"), content = listOf(PbContent(type = 0, text = text)))
+
+    private fun floorPage(replies: List<ProtoSubPost>, page: Int, pages: Int) = PbFloorResponseData(
+        post = post(2),
+        subpost_list = replies,
+        page = ProtoPage(current_page = page, total_page = pages, total_count = 15),
+        thread = ThreadInfo(id = 9_000, author = lz),
+        forum = SimpleForum(id = 52, name = "吧名"),
+    )
+
+    /** Post 2 shows replies 1 and 2 of the 15 inside it; their pages hold 1–10 and 11–15. */
+    private fun TestScope.floorWithReplies(): ThreadViewModel {
+        val withReplies = post(2).copy(sub_post_list = ProtoSubPosts(sub_post_list = listOf(reply(1), reply(2))), sub_post_number = 15)
+        respond(data(listOf(withReplies)))
+        coEvery { remote.floor(9_000, 2, 52, 1, 0) } returns floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
+        coEvery { remote.floor(9_000, 2, 52, 2, 0) } returns floorPage((11L..15L).map { reply(it, if (it == 13L) "广告" else "楼中楼 $it") }, page = 2, pages = 2)
+        return createViewModel()
+    }
+
+    @Test
+    fun `a floor opens ten more of its replies at a time, loading their pages as needed`() = runTest {
+        val viewModel = floorWithReplies()
+        runCurrent()
+        val post = viewModel.state.value.posts.items.single().post
+
+        viewModel.openSubPosts(post)
+        runCurrent()
+        var replies = viewModel.state.value.floorReplies.getValue(2)
+        assertEquals((1L..12L).toList(), replies.subPosts.map { it.id })
+        assertFalse(replies.complete)
+
+        viewModel.openSubPosts(post)
+        runCurrent()
+        replies = viewModel.state.value.floorReplies.getValue(2)
+        assertEquals((1L..15L).toList(), replies.subPosts.map { it.id })
+        assertTrue(replies.complete)
+        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 1, 0) }
+        coVerify(exactly = 1) { remote.floor(9_000, 2, 52, 2, 0) }
+
+        viewModel.closeSubPosts(2)
+        runCurrent()
+        assertNull(viewModel.state.value.floorReplies[2])
+    }
+
+    @Test
+    fun `replies opened in a floor follow the block rules`() = runTest {
+        blockRules.value = blockRulesMatching { "广告" in it.content }
+        val viewModel = floorWithReplies()
+        runCurrent()
+        val post = viewModel.state.value.posts.items.single().post
+        viewModel.openSubPosts(post)
+        runCurrent()
+        viewModel.openSubPosts(post)
+        runCurrent()
+        assertEquals(setOf(13L), viewModel.state.value.floorReplies.getValue(2).blocks.keys)
+    }
+
+    @Test
+    fun `a floor that fails to open more can try again`() = runTest {
+        val viewModel = floorWithReplies()
+        coEvery { remote.floor(9_000, 2, 52, 1, 0) } throws IOException("network") andThen floorPage((1L..10L).map { reply(it) }, page = 1, pages = 2)
+        runCurrent()
+        val post = viewModel.state.value.posts.items.single().post
+
+        viewModel.openSubPosts(post)
+        runCurrent()
+        assertTrue(viewModel.state.value.floorReplies.getValue(2).failed)
+        assertEquals(listOf(1L, 2L), viewModel.state.value.floorReplies.getValue(2).subPosts.map { it.id })
+
+        viewModel.openSubPosts(post)
+        runCurrent()
+        assertEquals((1L..12L).toList(), viewModel.state.value.floorReplies.getValue(2).subPosts.map { it.id })
     }
 
     private fun threadRepository(client: QueryClient) =

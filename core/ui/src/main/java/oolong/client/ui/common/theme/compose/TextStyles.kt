@@ -6,7 +6,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * The text styles the design uses (design-system.md §4.1), named after what they are for.
- * Reading text ([bodyLead], [body], [bodyCompact]) is further scaled by the app's font size setting
+ * Reading text ([bodyLead], [body], [bodyCompact], [reply], [replyDense]) is further scaled by the app's font size setting
  * where it is shown.
  */
 object TextStyles {
@@ -30,6 +30,12 @@ object TextStyles {
 
     /** Sub-posts, summaries. */
     val bodyCompact = TextStyle(fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
+
+    /** Replies inside a floor, read in full there. */
+    val reply = TextStyle(fontSize = 15.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal)
+
+    /** Replies inside a floor, a few lines each in a block. */
+    val replyDense = TextStyle(fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
 
     /** Forum names in two columns, small enough for long names. */
     val nameCompact = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)

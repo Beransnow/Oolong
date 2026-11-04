@@ -147,6 +147,8 @@ fun ThreadRoute(
             ThreadEvent.OpenMenu -> Unit
             ThreadEvent.AgreeThread -> viewModel.agreeThread()
             is ThreadEvent.AgreePost -> viewModel.agreePost(event.postId)
+            is ThreadEvent.ShowMoreSubPosts -> viewModel.openSubPosts(event.post)
+            is ThreadEvent.ShowFewerSubPosts -> viewModel.closeSubPosts(event.postId)
             is ThreadEvent.Vote -> viewModel.vote(event.optionIds)
             ThreadEvent.OpenForum -> thread?.let { navigator.navigate(ForumKey(it.forum.name)) }
             is ThreadEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))

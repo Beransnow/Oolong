@@ -44,6 +44,8 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.SearchPlacementKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.main.SearchAtTopKey
+import oolong.client.ui.page.thread.SubPostStyle
+import oolong.client.ui.page.thread.SubPostStyleKey
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.ChromeStyleKey
@@ -132,6 +134,7 @@ fun CustomSettingsPage(
                         },
                     )
                 }
+                prefsItem { SubPostStylePref() }
             }
             prefsGroup(textAndIconGroup) {
                 prefsItem {
@@ -253,6 +256,21 @@ private fun ChromeStylePref() {
         options = listOf(
             ChromeStyle.Floating.name to stringResource(id = R.string.chrome_style_floating),
             ChromeStyle.Classic.name to stringResource(id = R.string.chrome_style_classic),
+        ),
+        current = chosen,
+        onSelect = { chosen = it },
+    )
+}
+
+/** How a floor shows the replies inside it: on a timeline, opening in place, or in a block. */
+@Composable
+private fun SubPostStylePref() {
+    var chosen by rememberPreferenceAsMutableState(SubPostStyleKey, SubPostStyle.Timeline.name)
+    ChoicePref(
+        title = stringResource(id = R.string.title_sub_post_style),
+        options = listOf(
+            SubPostStyle.Timeline.name to stringResource(id = R.string.sub_post_style_timeline),
+            SubPostStyle.Classic.name to stringResource(id = R.string.sub_post_style_classic),
         ),
         current = chosen,
         onSelect = { chosen = it },

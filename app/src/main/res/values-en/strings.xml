@@ -407,6 +407,16 @@
     <string name="message_update_collect_mark">You\'ve read up to #%d. Update the saved position?</string>
     <string name="message_update_collect_mark_failed">Couldn\'t update the saved position: %s</string>
     <string name="message_update_collect_mark_success">Saved position updated</string>
+    <plurals name="show_more_sub_posts">
+        <item quantity="one">Show %d more</item>
+        <item quantity="other">Show %d more</item>
+    </plurals>
+    <string name="button_show_fewer_sub_posts">Show less</string>
+    <string name="sub_posts_load_failed">Couldn\'t load. Tap to retry</string>
+    <string name="button_expand_reply">More</string>
+    <string name="title_sub_post_style">Comment style</string>
+    <string name="sub_post_style_timeline">Timeline</string>
+    <string name="sub_post_style_classic">Classic</string>
     <plurals name="open_all_sub_posts">
         <item quantity="one">View %d comment</item>
         <item quantity="other">View all %d comments</item>

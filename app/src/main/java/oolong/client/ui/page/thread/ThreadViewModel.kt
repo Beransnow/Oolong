@@ -10,11 +10,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -49,6 +52,7 @@ import oolong.client.arch.query.QueryPager
 import oolong.client.arch.query.withLatestEntities
 import oolong.client.model.Post
 import oolong.client.model.PostContent
+import oolong.client.model.SubPost
 import oolong.client.model.ThreadDetail
 import oolong.client.model.ThreadSummary
 import oolong.client.model.User
@@ -59,6 +63,7 @@ import oolong.client.repository.BlockRuleSource
 import oolong.client.repository.BlockRules
 import oolong.client.repository.BlockVerdict
 import oolong.client.repository.Blockable
+import oolong.client.repository.FloorCursor
 import oolong.client.repository.Posts
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.ThreadCursor
@@ -83,6 +88,20 @@ data class PostItem(
     val blocked: Boolean get() = block != null
 }
 
+/**
+ * The replies a floor shows inside it once opened past the few its page brings: [subPosts] in
+ * order, the first of them those, with how the block rules block them by id. [complete] once the
+ * server has no more.
+ */
+@Immutable
+data class FloorReplies(
+    val subPosts: ImmutableList<SubPost> = persistentListOf(),
+    val blocks: ImmutableMap<Long, BlockVerdict> = persistentMapOf(),
+    val loading: Boolean = false,
+    val failed: Boolean = false,
+    val complete: Boolean = false,
+)
+
 @Immutable
 data class ThreadState(
     val query: ThreadQuery,
@@ -95,6 +114,8 @@ data class ThreadState(
     /** The furthest page loaded, and the number of pages, for jumping to a page. */
     val currentPage: Int = 0,
     val totalPage: Int = 0,
+    /** The floors opened to more of their replies, by post id. */
+    val floorReplies: ImmutableMap<Long, FloorReplies> = persistentMapOf(),
 )
 
 sealed interface ThreadEffect {
@@ -190,11 +211,13 @@ class ThreadViewModel @AssistedInject constructor(
     /** Block flags for each post, which most state changes leave as they are. */
     private val blocked = BlockMemo<Post, PostItem>()
 
+    // Rules for one forum, or about the thread author, need to know the thread's
+    private val origin = meta.map { meta -> meta.page?.thread?.let { ThreadOrigin(it.forum.name, it.author.id) } }.distinctUntilChanged()
+
     private val items: Flow<PagerState<PostItem>> = combine(
         lists.flatMapLatest { it.state },
         blockRuleSource.rules,
-        // Rules for one forum, or about the thread author, need to know the thread's
-        meta.map { meta -> meta.page?.thread?.let { ThreadOrigin(it.forum.name, it.author.id) } }.distinctUntilChanged(),
+        origin,
     ) { state, rules, origin ->
         val items = blocked.map(rules to origin, state.items) { it.withBlocked(rules, origin) }.toImmutableList()
         PagerState(
@@ -211,7 +234,27 @@ class ThreadViewModel @AssistedInject constructor(
         meta.copy(page = meta.page?.let { it.copy(thread = it.thread.copy(summary = Threads(it.thread.summary))) })
     }
 
-    val state: StateFlow<ThreadState> = combine(query, latestMeta, items) { query, meta, items ->
+    /** Floors opened to more of their replies, as far as they go, by post id. */
+    private val opened = MutableStateFlow<PersistentMap<Long, OpenedFloor>>(persistentMapOf())
+    private val openingJobs = mutableMapOf<Long, Job>()
+
+    private val floorReplies: Flow<ImmutableMap<Long, FloorReplies>> = combine(opened, blockRuleSource.rules, origin) { opened, rules, origin ->
+        opened.mapValues { (_, floor) ->
+            val subPosts = floor.subPosts().take(floor.shown)
+            FloorReplies(
+                subPosts = subPosts.toImmutableList(),
+                blocks = subPosts
+                    .mapNotNull { subPost -> rules.checkIn(origin, subPost.author, subPost.content)?.let { subPost.id to it } }
+                    .toMap()
+                    .toImmutableMap(),
+                loading = floor.loading,
+                failed = floor.failed,
+                complete = floor.next == null && floor.shown >= floor.subPosts().size,
+            )
+        }.toImmutableMap()
+    }
+
+    val state: StateFlow<ThreadState> = combine(query, latestMeta, items, floorReplies) { query, meta, items, floorReplies ->
         val page = meta.page
         ThreadState(
             query = query,
@@ -222,6 +265,7 @@ class ThreadViewModel @AssistedInject constructor(
             viewer = page?.viewer ?: Viewer(null),
             currentPage = meta.maxPage,
             totalPage = page?.totalPage ?: 0,
+            floorReplies = floorReplies,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ThreadState(query.value))
 
@@ -394,6 +438,40 @@ class ThreadViewModel @AssistedInject constructor(
     }
 
     /**
+     * Shows [REPLIES_PER_OPENING] more of the replies inside [post], loading pages of them as needed,
+     * after the few the thread's page brings.
+     */
+    fun openSubPosts(post: Post) {
+        val start = opened.value[post.id] ?: OpenedFloor(preview = post.subPosts, shown = post.subPosts.size, next = FloorCursor(1))
+        if (start.loading) return
+        val forumId = meta.value.page?.thread?.forum?.id ?: return
+        val target = start.shown + REPLIES_PER_OPENING
+        openingJobs[post.id] = viewModelScope.launch {
+            var floor = start.copy(loading = true, failed = false)
+            opened.update { it.put(post.id, floor) }
+            floor = try {
+                while (floor.subPosts().size < target) {
+                    val next = floor.next ?: break
+                    val page = repository.floor(args.threadId, post.id, forumId, next)
+                    floor = floor.copy(fetched = floor.fetched + page.subPosts.items, next = page.subPosts.next)
+                }
+                floor.copy(shown = minOf(target, floor.subPosts().size), loading = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                floor.copy(loading = false, failed = true)
+            }
+            opened.update { it.put(post.id, floor) }
+        }
+    }
+
+    /** Back to the few replies inside post [postId] that the thread's page brings. */
+    fun closeSubPosts(postId: Long) {
+        openingJobs.remove(postId)?.cancel()
+        opened.update { it.remove(postId) }
+    }
+
+    /**
      * The user's reply was sent: load it and show it. A reply inside post [inPost] updates that
      * post where it is.
      */
@@ -453,18 +531,39 @@ class ThreadViewModel @AssistedInject constructor(
 
     private companion object {
         const val HISTORY_DELAY = 1_000L
+
+        /** How many more replies inside a floor each opening shows. */
+        const val REPLIES_PER_OPENING = 10
     }
+}
+
+/**
+ * A floor opened to more of its replies: the [preview] its page brought, those [fetched] from the
+ * pages of the replies, the [shown] first of both, and the page to load next, null past the last.
+ */
+private data class OpenedFloor(
+    val preview: List<SubPost>,
+    val shown: Int,
+    val next: FloorCursor?,
+    val fetched: List<SubPost> = emptyList(),
+    val loading: Boolean = false,
+    val failed: Boolean = false,
+) {
+    /** The pages of the replies start with those the preview has. */
+    fun subPosts(): List<SubPost> = (preview + fetched).distinctBy { it.id }
 }
 
 /** Where a thread's posts were written: its forum, by name, and who started it. */
 private data class ThreadOrigin(val forum: String, val authorId: Long)
 
+private fun BlockRules.checkIn(origin: ThreadOrigin?, author: User, content: List<PostContent>) = check(
+    author, content, BlockPlace.Thread, forum = origin?.forum,
+    byThreadAuthor = origin != null && author.id == origin.authorId,
+)
+
 private fun Post.withBlocked(rules: BlockRules, origin: ThreadOrigin?): PostItem {
     val post = this
-    fun check(author: User, content: List<PostContent>) = rules.check(
-        author, content, BlockPlace.Thread, forum = origin?.forum,
-        byThreadAuthor = origin != null && author.id == origin.authorId,
-    )
+    fun check(author: User, content: List<PostContent>) = rules.checkIn(origin, author, content)
     return PostItem(
         post = post,
         block = check(post.author, post.content),
