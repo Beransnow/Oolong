@@ -198,11 +198,13 @@ object PageTransitions {
                 drive = drive(),
                 zIndex = 1f,
             )
-            // Fading as well, in case its origin has gone meanwhile
+            // The page coming back goes over the one going, so taps reach it at once: the one
+            // going shrinks above everything, or, its origin gone meanwhile, the one coming back
+            // fades in over it instead ([PageOrigins.comebackAlpha])
             morph -> PageTransition(
-                { EnterTransition.None togetherWith fadeOut(seeked(end = MorphFade)) },
+                { EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished },
                 drive = drive(),
-                zIndex = -1f,
+                zIndex = 1f,
             )
             // An image taken along flies on its own, so the page only fades in and out around
             // it, in place: sliding as well would send the eye two ways at once
@@ -211,10 +213,12 @@ object PageTransitions {
                 drive = drive(),
                 zIndex = 1f,
             )
+            // Fading in over the page going, not that page fading out over it, which looks the
+            // same, so taps reach the page coming back at once
             heroFlies -> PageTransition(
-                { EnterTransition.None togetherWith fadeOut(seeked()) },
+                { fadeIn(seeked()) togetherWith ExitTransition.KeepUntilTransitionsFinished },
                 drive = drive(),
-                zIndex = -1f,
+                zIndex = 1f,
             )
             toDepth < fromDepth -> PageTransition(popTransitionSpec(overlap, seeked()), drive(), zIndex = -1f)
             else -> PageTransition(transitionSpec(overlap, seeked()), drive(), zIndex = 1f)
@@ -274,6 +278,7 @@ object PageTransitions {
             null
         }
         val covered = LocalPageCover.current
+        val origins = if (key != null) LocalPageOrigins.current else null
         val peek = if (key != null) LocalPagePeek.current else null
         if (peek != null) {
             // Rests once the scenes are still and this page is the one shown
@@ -304,14 +309,15 @@ object PageTransitions {
                 .fillMaxSize()
                 .then(if (key != null) Modifier.pageMorph(key) else Modifier)
                 .then(
-                    if (peek != null) {
+                    if (key != null) {
                         Modifier.graphicsLayer {
-                            val amount = if (peek.topKey == key) peek.amount else 0f
+                            alpha = origins?.comebackAlpha(key, transition.targetState == EnterExitState.Visible, covered()) ?: 1f
+                            val amount = if (peek != null && peek.topKey == key) peek.amount else 0f
                             if (amount > 0f) {
                                 val scale = 1f - (1f - PeekScale) * amount
                                 scaleX = scale
                                 scaleY = scale
-                                val toward = if (peek.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
+                                val toward = if (peek?.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
                                 translationX = toward * size.width * PeekShift * amount
                                 shape = SmoothCornerShape(PeekRadius * amount)
                                 clip = true

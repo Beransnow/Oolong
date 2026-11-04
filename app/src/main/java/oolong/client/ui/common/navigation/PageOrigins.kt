@@ -63,6 +63,26 @@ class PageOrigins {
     internal var morph by mutableStateOf<Morph?>(null)
         private set
 
+    /** The page's end of the morph under way, which tells whether its origin was found. */
+    @OptIn(ExperimentalSharedTransitionApi::class)
+    internal var morphState by mutableStateOf<SharedTransitionScope.SharedContentState?>(null)
+
+    /**
+     * How opaque the page with content [key] is, [shown] or going, while the page over it may be
+     * shrinking into its origin. Coming back, it goes over that page, so taps reach it at once:
+     * the shrinking page is drawn above everything while its origin is found, and otherwise it is
+     * this page that fades in over it, [covered] as it is, as that page would have faded out.
+     * Turned round, it has nothing over it left to show.
+     */
+    @OptIn(ExperimentalSharedTransitionApi::class)
+    internal fun comebackAlpha(key: Any, shown: Boolean, covered: Float): Float {
+        val morph = morph ?: return 1f
+        if (morph.opening || morph.page == key) return 1f
+        if (!shown) return 0f
+        if (morphState?.isMatchFound == true) return 1f
+        return ((1f - covered) / MorphFade).coerceIn(0f, 1f)
+    }
+
     internal fun leave(key: PageOriginKey) {
         pending = key
     }
@@ -87,8 +107,8 @@ class PageOrigins {
     internal fun morphs(from: Any, to: Any, opening: Boolean, peek: Boolean, kept: Set<Any>): Boolean {
         val origin = pending.also { pending = null }
         morph = when {
-            opening -> origin?.let { Morph(page = to, origin = it) }
-            else -> opened[from]?.let { Morph(page = from, origin = it) }
+            opening -> origin?.let { Morph(page = to, origin = it, opening = true) }
+            else -> opened[from]?.let { Morph(page = from, origin = it, opening = false) }
         }
         if (!peek) opened.keys.retainAll(kept)
         if (opening && origin != null) opened[to] = origin
@@ -115,7 +135,7 @@ class PageOrigins {
 }
 
 @Immutable
-internal data class Morph(val page: Any, val origin: PageOriginKey)
+internal data class Morph(val page: Any, val origin: PageOriginKey, val opening: Boolean)
 
 /** The morph under way, if any. */
 @Composable
@@ -210,8 +230,9 @@ fun Modifier.pageOrigin(origin: PageOrigin): Modifier {
     val visibility = LocalNavAnimatedContentScope.current
     SideEffect { origin.visibility = visibility }
     val enabled = !origin.standIn && currentMorph()?.origin == origin.key
+    val state = rememberMorphState(origin.key, enabled) ?: return this
     // Lifted out of the page it shows on, it takes that page's ground along
-    return morphing(origin.key, visibility, enabled)
+    return morphing(state, visibility, enabled)
         .then(if (enabled) Modifier.background(ExtendedTheme.colors.background) else Modifier)
 }
 
@@ -226,7 +247,9 @@ fun Modifier.pageOriginStandIn(origin: PageOrigin): Modifier {
         origin.standIn = true
         onDispose { origin.standIn = false }
     }
-    return morphing(origin.key, visibility, enabled = currentMorph()?.origin == origin.key)
+    val enabled = currentMorph()?.origin == origin.key
+    val state = rememberMorphState(origin.key, enabled) ?: return this
+    return morphing(state, visibility, enabled)
 }
 
 /**
@@ -297,18 +320,35 @@ private fun Modifier.heroing(key: PageHeroKey, enabled: Boolean): Modifier {
 /** Has the page framed alone with content [key] turn into the origin it opened from, and back. */
 @Composable
 internal fun Modifier.pageMorph(key: Any): Modifier {
-    val morph = currentMorph()
-    if (morph == null || morph.page != key || LocalPageSharedTransitionScope.current == null) return this
-    return morphing(morph.origin, LocalNavAnimatedContentScope.current, enabled = true)
+    val origins = LocalPageOrigins.current ?: return this
+    val morph = origins.morph
+    if (morph == null || morph.page != key) return this
+    val state = rememberMorphState(morph.origin, enabled = true) ?: return this
+    DisposableEffect(origins, state) {
+        origins.morphState = state
+        onDispose { if (origins.morphState === state) origins.morphState = null }
+    }
+    return morphing(state, LocalNavAnimatedContentScope.current, enabled = true)
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun Modifier.morphing(key: PageOriginKey, visibility: AnimatedVisibilityScope, enabled: Boolean): Modifier {
+private fun rememberMorphState(key: PageOriginKey, enabled: Boolean): SharedTransitionScope.SharedContentState? {
+    val scope = LocalPageSharedTransitionScope.current ?: return null
+    return with(scope) { rememberSharedContentState(key, if (enabled) Enabled else Disabled) }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun Modifier.morphing(
+    state: SharedTransitionScope.SharedContentState,
+    visibility: AnimatedVisibilityScope,
+    enabled: Boolean,
+): Modifier {
     val scope = LocalPageSharedTransitionScope.current ?: return this
     return with(scope) {
         this@morphing.sharedBounds(
-            sharedContentState = rememberSharedContentState(key, if (enabled) Enabled else Disabled),
+            sharedContentState = state,
             animatedVisibilityScope = visibility,
             enter = if (enabled) fadeIn(PageTransitions.seeked(end = MorphFade)) else EnterTransition.None,
             exit = if (enabled) fadeOut(PageTransitions.seeked(end = MorphFade)) else ExitTransition.None,
