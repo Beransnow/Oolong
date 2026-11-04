@@ -187,10 +187,8 @@ class AutoMask internal constructor(
         inputs[decoder.getInputIndex("pos")] = pos
         inputs[decoder.getInputIndex("point")] = point
         decoder.runForMultipleInputsOutputs(inputs, mapOf(decoder.getOutputIndex("masks") to masks, decoder.getOutputIndex("scores") to scores))
-        // The smallest of the three, as its box, back in picture pixels
-        var best: RectF? = null
-        var bestArea = Int.MAX_VALUE
-        for (k in 0 until 3) {
+        // Each of the three as its box, in mask cells, smallest first
+        val levels = (0 until 3).mapNotNull { k ->
             var minX = MaskSide
             var minY = MaskSide
             var maxX = -1
@@ -206,23 +204,32 @@ class AutoMask internal constructor(
                     maxY = max(maxY, my)
                 }
             }
-            if (area in 1 until bestArea) {
-                bestArea = area
-                val f = SamSide.toFloat() / MaskSide / prepared.scale
-                // The mask is coarse, a cell some pixels across, and leaves out the cells only
-                // partly on the thing: grown by a cell and a little more, so all of it is hidden
-                val box = RectF(minX * f, minY * f, (maxX + 1) * f, (maxY + 1) * f)
-                val grow = f + max(box.width(), box.height()) * 0.03f
-                best = RectF(
-                    max(0f, box.left - grow),
-                    max(0f, box.top - grow),
-                    min(prepared.width.toFloat(), box.right + grow),
-                    min(prepared.height.toFloat(), box.bottom + grow),
-                )
-            }
+            if (area == 0) null else Level(RectF(minX.toFloat(), minY.toFloat(), maxX + 1f, maxY + 1f), area, scores.get(k))
+        }.sortedBy { it.area }
+        // The smallest, unless what holds it is surer and not much bigger: a picture made of
+        // pictures, as a group's avatar, is one thing, not its first tile
+        var chosen = levels.firstOrNull() ?: return null
+        for (next in levels.drop(1)) {
+            if (next.score > chosen.score && next.area <= chosen.area * MostGrowth && next.box.holds(chosen.box)) chosen = next
         }
-        return best
+        // Back in picture pixels. The mask is coarse, a cell some pixels across, and leaves out
+        // the cells only partly on the thing: grown by a cell and a little more, so all of it is hidden
+        val f = SamSide.toFloat() / MaskSide / prepared.scale
+        val box = RectF(chosen.box.left * f, chosen.box.top * f, chosen.box.right * f, chosen.box.bottom * f)
+        val grow = f + max(box.width(), box.height()) * 0.03f
+        return RectF(
+            max(0f, box.left - grow),
+            max(0f, box.top - grow),
+            min(prepared.width.toFloat(), box.right + grow),
+            min(prepared.height.toFloat(), box.bottom + grow),
+        )
     }
+
+    private class Level(val box: RectF, val area: Int, val score: Float)
+
+    /** Whether this holds [other], give or take a cell. */
+    private fun RectF.holds(other: RectF): Boolean =
+        left <= other.left + 1 && top <= other.top + 1 && right >= other.right - 1 && bottom >= other.bottom - 1
 
     /** The decoder's positional encoding of each cell of the 64 by 64 embedding, channels last. */
     private fun denseEncoding(): FloatBuffer {
@@ -253,6 +260,9 @@ class AutoMask internal constructor(
 
         /** A tap's thing taking more of the picture than this is likely not one thing. */
         private const val MostOfPicture = 0.35f
+
+        /** How many times bigger than the smallest mask a surer one holding it may be, and still be taken. */
+        private const val MostGrowth = 5
 
         /** Loads the models in [folder], the runtime already loaded. */
         internal fun load(folder: File, threads: Int): AutoMask {
