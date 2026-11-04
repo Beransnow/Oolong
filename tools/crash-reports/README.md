@@ -42,16 +42,19 @@ build it hadn't come from before; builds that had it before the fix still have i
 
 ## Setup
 
+The app posts its reports to `/crash` on the update host. That host serves the update bucket; the
+Worker runs on a route for this one path in front of it, and every other path stays with the bucket.
+The host is kept out of the repository, so the route is passed when deploying: set `UPDATE_HOST` to
+the host name and pass the route with every deploy.
+
 ```sh
 npx wrangler d1 create oolong-crash            # then fill its id into wrangler.jsonc
 npx wrangler r2 bucket create oolong-mappings  # private: no public access, no custom domain
 npx wrangler d1 execute oolong-crash --remote --file schema.sql
-npx wrangler deploy
+npx wrangler deploy --route "$UPDATE_HOST/crash"
 npx wrangler secret put BOT_TOKEN
 npx wrangler secret put OWNER_ID
 ```
-
-The app reaches the Worker on a custom domain, as workers.dev isn't reachable from mainland China.
 
 ## Reading
 

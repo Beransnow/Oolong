@@ -9,6 +9,9 @@
     "r2_buckets": [
         { "binding": "MAPPINGS", "bucket_name": "oolong-mappings" }
     ],
+    // Runs on a route for the update host's /crash path, passed to deploy (see the README) so that
+    // the host stays out of the repository. workers.dev isn't reachable from mainland China
+    "workers_dev": false,
     // Every minute, waiting reports are filed; once a day, what has expired is dropped.
     // BOT_TOKEN and OWNER_ID, for telling the owner of new problems, are secrets
     "triggers": { "crons": ["* * * * *", "17 3 * * *"] }
