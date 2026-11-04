@@ -9,6 +9,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import android.text.format.DateFormat as AndroidDateFormat
+import java.util.concurrent.ConcurrentHashMap
 
 /** How long ago something was, in the steps a post's time is told in. */
 sealed interface RelativeTime {
@@ -61,7 +62,8 @@ object DateTimeUtils {
         val locale = res.configuration.locales[0] ?: Locale.getDefault()
         val is24Hour = AndroidDateFormat.is24HourFormat(context)
         fun pattern(skeleton: String, time: Long) =
-            SimpleDateFormat(AndroidDateFormat.getBestDateTimePattern(locale, skeleton), locale).format(Date(time))
+            SimpleDateFormat(bestPatterns.getOrPut(locale to skeleton) { AndroidDateFormat.getBestDateTimePattern(locale, skeleton) }, locale)
+                .format(Date(time))
         fun timeOfDay(time: Long) = pattern(if (is24Hour) "Hm" else "hm", time)
         return when (relative) {
             RelativeTime.JustNow -> res.getString(R.string.relative_date_just_now)
@@ -94,6 +96,9 @@ object DateTimeUtils {
         }
         return timestampStrBuilder.toString().toLong()
     }
+
+    /** Worked out once for each locale and skeleton: every time shown in a list asks again. */
+    private val bestPatterns = ConcurrentHashMap<Pair<Locale, String>, String>()
 
     private const val MINUTE = 60_000L
     private const val HOUR = 60 * MINUTE
