@@ -47,6 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -88,6 +90,8 @@ import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.GlassTier
+import oolong.client.ui.widgets.compose.currentGlassTier
 import oolong.client.ui.widgets.compose.isGlassAvailable
 import kotlin.math.roundToInt
 
@@ -161,6 +165,8 @@ fun mainSearchPadding(atTop: Boolean): PaddingValues =
 @Composable
 fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     val colors = ExtendedTheme.colors
+    // Without a material it is the plain field it was before there was glass
+    val plain = currentGlassTier() == GlassTier.Solid
     val interactionSource = remember { MutableInteractionSource() }
     // Gone, as when the window narrows to a phone's and the bar's button takes over, it leaves no
     // place behind for search to open out of
@@ -184,21 +190,21 @@ fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifie
                 .pressScale(interactionSource)
                 // The same glass as the field it turns into; over the page it can't see through, so
                 // it shows as the glass's solid form
-                .floatingGlass(CapsuleShape)
+                .then(if (plain) Modifier.clip(CapsuleShape).background(colors.searchField) else Modifier.floatingGlass(CapsuleShape))
                 .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onOpen)
                 .padding(start = if (compact) 0.dp else (FieldHeight - IconSize) / 2),
         ) {
             Icon(
                 imageVector = Symbols.Search,
                 contentDescription = if (compact) stringResource(id = R.string.hint_search) else null,
-                tint = colors.text,
+                tint = if (plain) colors.onSearchField else colors.text,
                 modifier = Modifier.size(IconSize),
             )
             if (!compact) {
                 Spacer(modifier = Modifier.width(FieldIconGap))
                 Text(
                     text = stringResource(id = R.string.hint_search),
-                    color = colors.text.copy(alpha = ContentAlpha.medium),
+                    color = if (plain) colors.onSearchField else colors.text.copy(alpha = ContentAlpha.medium),
                     maxLines = 1,
                 )
             }
@@ -250,6 +256,8 @@ fun MainSearchField(
     var origin by remember { mutableStateOf(Offset.Zero) }
     val colors = ExtendedTheme.colors
     val glass = isGlassAvailable()
+    // Without a material the button turns into the plain field, as the one at the top is
+    val plain = currentGlassTier() == GlassTier.Solid
     val buttonInteraction = remember { MutableInteractionSource() }
     val bottomInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
     val topInsets = WindowInsets.statusBars.union(WindowInsets.displayCutout)
@@ -294,6 +302,7 @@ fun MainSearchField(
                 .semantics { traversalIndex = -1f }
                 .then(if (glass) Modifier else Modifier.pressScale(buttonInteraction))
                 .floatingGlass(CapsuleShape, interactionSource = buttonInteraction)
+                .then(if (plain) Modifier.drawBehind { drawRect(colors.searchField.copy(alpha = colors.searchField.alpha * state.progress.value)) } else Modifier)
                 .then(
                     if (state.open) {
                         Modifier
