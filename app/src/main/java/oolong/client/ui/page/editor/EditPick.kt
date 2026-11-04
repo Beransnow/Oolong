@@ -90,31 +90,48 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
     }
     // One look into the picture at a time: aiming and tapping share the decoder
     val lock = remember { Mutex() }
-    suspend fun look(ready: AutoMask.Prepared, point: Offset): Rect? {
+
+    // Near enough is a fingertip on screen, however far the picture is zoomed out
+    fun reach() = with(density) { TextReach.toPx() } / state.scale
+    suspend fun look(ready: AutoMask.Prepared, point: Offset): EditorState.Swept? {
         val engine = files.engine() ?: return null
-        // Near enough is a fingertip on screen, however far the picture is zoomed out
-        val reach = with(density) { TextReach.toPx() } / state.scale
+        val reach = reach()
         val found = lock.withLock { withContext(Dispatchers.Default) { engine.tap(ready, point.x, point.y, reach) } }
-        return found.box?.let { Rect(it.left, it.top, it.right, it.bottom) }
+        return found.box?.let { EditorState.Swept(Rect(it.left, it.top, it.right, it.bottom), found.text) }
     }
-    // What the finger would hide, looked into again as it moves or the picture moves under it
+    // What the finger passes over, looked into as it moves or the picture moves under it
     LaunchedEffect(state, prepared) {
         val ready = prepared ?: return@LaunchedEffect
+        var last: Offset? = null
         snapshotFlow { state.aim?.let { it to state.toPicture(state.toTurned(it)) } }.filterNotNull().conflate().collect { (at, point) ->
-            val removing = state.tappedMaskAt(at)
-            state.aimed = if (removing != null) {
-                EditorState.Aimed(point, null, removing)
-            } else {
-                val box = try {
-                    look(ready, point)
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    Log.w("TapToHide", "could not look where the finger aims", e)
-                    return@collect
-                }
-                val same = box?.let(state::tappedMaskOver)
-                EditorState.Aimed(point, box.takeIf { same == null }, same)
+            if (state.swept.isEmpty()) last = null
+            // Held on a mask a tap laid, before passing over anything: to take it away
+            val removing = if (state.swept.isEmpty()) state.tappedMaskAt(at) else null
+            if (removing != null) {
+                state.aimed = EditorState.Aimed(point, emptyList(), removing)
+                last = point
+                return@collect
             }
+            val found = try {
+                look(ready, point)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.w("TapToHide", "could not look where the finger aims", e)
+                return@collect
+            }
+            // Lines passed on the way here too, however quick the finger
+            val from = last
+            val crossed = if (from == null) {
+                emptyList()
+            } else {
+                val engine = files.engine()
+                engine?.linesAlong(ready, from.x, from.y, point.x, point.y, reach())
+                    ?.map { EditorState.Swept(Rect(it.left, it.top, it.right, it.bottom), text = true) }
+                    .orEmpty()
+            }
+            last = point
+            state.sweep(listOfNotNull(found) + crossed)
+            state.aimed = EditorState.Aimed(point, state.sweptBlocks(), null)
         }
     }
     LaunchedEffect(state) {
@@ -122,35 +139,44 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
             state.pendingPick = null
             val at = pick.at
             val point = state.toPicture(state.toTurned(at))
-            // Held, it does what it showed, once that is for where the finger let go
-            val aimed = state.aimed?.takeIf { pick.held && (it.point - point).getDistance() < 1f }
             try {
-                when {
-                    aimed?.removing != null -> state.unhidePicked(at, aimed.removing, held = true)
-                    aimed?.box != null -> state.hidePicked(at, aimed.box, held = true)
-                    aimed != null -> missed(state, view, at)
-                    else -> {
-                        // A tap on a mask a tap laid takes it away again
-                        state.tappedMaskAt(at)?.let { mask ->
-                            state.unhidePicked(at, mask, pick.held)
-                            return@collect
-                        }
-                        val ready = prepared ?: return@collect
-                        val rect = try {
+                if (pick.held) {
+                    // Held, it does what it showed, with what lies where the finger let go
+                    val ready = prepared ?: return@collect
+                    val aimed = state.aimed
+                    if (aimed?.removing != null && state.swept.isEmpty()) return@collect state.unhidePicked(at, aimed.removing, held = true)
+                    if (aimed == null || (aimed.point - point).getDistance() >= 1f) {
+                        val found = try {
                             look(ready, point)
                         } catch (e: Exception) {
                             if (e is CancellationException) throw e
-                            Log.w("TapToHide", "could not look into a tap", e)
-                            return@collect
+                            null
                         }
-                        if (rect != null) {
-                            // Found where a tap hid already: taken away, rather than hidden twice over
-                            val same = state.tappedMaskOver(rect)
-                            if (same != null) state.unhidePicked(at, same, pick.held) else state.hidePicked(at, rect, pick.held)
-                        } else {
-                            missed(state, view, at)
-                        }
+                        state.sweep(listOfNotNull(found))
                     }
+                    val blocks = state.sweptBlocks()
+                    if (blocks.isEmpty()) missed(state, view, at) else state.hideSwept(at, blocks)
+                    return@collect
+                }
+                // A tap on a mask a tap laid takes it away again
+                state.tappedMaskAt(at)?.let { mask ->
+                    state.unhidePicked(at, mask)
+                    return@collect
+                }
+                val ready = prepared ?: return@collect
+                val found = try {
+                    look(ready, point)
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Log.w("TapToHide", "could not look into a tap", e)
+                    return@collect
+                }
+                if (found != null) {
+                    // Found where a tap hid already: taken away, rather than hidden twice over
+                    val same = state.tappedMaskOver(found.box)
+                    if (same != null) state.unhidePicked(at, same) else state.hidePicked(at, found.box)
+                } else {
+                    missed(state, view, at)
                 }
             } finally {
                 state.stopAiming()
@@ -263,11 +289,11 @@ internal class PickEffect(
      * What the aiming finger would do, as [draw] draws the picture with a mask added or one left
      * out; null when the picture is drawn as it is.
      */
-    fun aimedEdits(state: EditorState): Pair<Edit?, Int?>? {
+    fun aimedEdits(state: EditorState): Pair<List<Edit>, Int?>? {
         val aimed = state.aimed?.takeIf { state.aiming } ?: return null
         return when {
-            aimed.removing != null -> null to aimed.removing.id
-            aimed.box != null -> state.pickedMask(-1, aimed.box) to null
+            aimed.removing != null -> emptyList<Edit>() to aimed.removing.id
+            aimed.blocks.isNotEmpty() -> aimed.blocks.map { state.pickedMask(-1, it) } to null
             else -> null
         }
     }
@@ -276,10 +302,12 @@ internal class PickEffect(
     fun drawAimed(scope: DrawScope, state: EditorState) = with(scope) {
         val h = hold.value
         val aimed = state.aimed ?: return@with
-        val box = aimed.box ?: aimed.removing?.let { mask -> Rect(mask.points.first(), mask.points.last()) } ?: return@with
         if (h <= 0f) return@with
-        clipPath(polygon(boxCorners(state, box))) {
-            drawRect(auroraColor(1).copy(alpha = 0.22f * h), blendMode = BlendMode.Plus)
+        val boxes = aimed.removing?.let { mask -> listOf(Rect(mask.points.first(), mask.points.last())) } ?: aimed.blocks
+        for (box in boxes) {
+            clipPath(polygon(boxCorners(state, box))) {
+                drawRect(auroraColor(1).copy(alpha = 0.22f * h), blendMode = BlendMode.Plus)
+            }
         }
     }
 

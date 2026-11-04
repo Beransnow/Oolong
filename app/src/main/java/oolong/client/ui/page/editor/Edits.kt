@@ -115,6 +115,9 @@ sealed interface Edit {
     /** Takes away the mask, mark or caption [id]. */
     data class Remove(val id: Int) : Edit
 
+    /** Several steps taken as one, undone together: the masks one slide of a finger laid. */
+    data class Group(val edits: List<Edit>) : Edit
+
     /** Adjusts the picture's tone and colour by [values], in place of any adjustment before. */
     data class Adjust(val values: Map<Adjustment, Float>) : Edit
 
@@ -148,11 +151,14 @@ class EditHistory(private val whole: Framing) {
 
     val applied: List<Edit> get() = steps.subList(0, position)
 
+    /** The steps applied, those taken together one by one. */
+    private val taken: List<Edit> get() = applied.flatMap { if (it is Edit.Group) it.edits else listOf(it) }
+
     /** The picture's adjustments as they stand. */
     val adjustments: Map<Adjustment, Float>
-        get() = applied.lastOrNull { it is Edit.Adjust }?.let { (it as Edit.Adjust).values } ?: NoAdjustments
+        get() = taken.lastOrNull { it is Edit.Adjust }?.let { (it as Edit.Adjust).values } ?: NoAdjustments
 
-    val framing: Framing get() = applied.lastOrNull { it is Edit.Frame }?.let { (it as Edit.Frame).framing } ?: whole
+    val framing: Framing get() = taken.lastOrNull { it is Edit.Frame }?.let { (it as Edit.Frame).framing } ?: whole
 
     /**
      * The strokes, masks, marks and what rubs them out, in the order they were made; a mask or
@@ -161,14 +167,15 @@ class EditHistory(private val whole: Framing) {
     val strokes: List<Edit>
         get() {
             val latest = HashMap<Int, Edit>()
-            for (edit in applied) {
+            val taken = taken
+            for (edit in taken) {
                 when (edit) {
                     is Edit.Remove -> latest.remove(edit.id)
                     else -> edit.objectId?.let { latest[it] = edit }
                 }
             }
             val seen = HashSet<Int>()
-            return applied.mapNotNull { edit ->
+            return taken.mapNotNull { edit ->
                 when (edit) {
                     is Edit.Erase -> edit
                     is Edit.Mask, is Edit.Mark -> edit.objectId?.takeIf(seen::add)?.let(latest::get)
@@ -181,7 +188,7 @@ class EditHistory(private val whole: Framing) {
     val captions: List<Edit.Caption>
         get() {
             val latest = LinkedHashMap<Int, Edit.Caption>()
-            for (edit in applied) {
+            for (edit in taken) {
                 if (edit is Edit.Caption) latest[edit.id] = edit
                 if (edit is Edit.Remove) latest.remove(edit.id)
             }
@@ -191,7 +198,7 @@ class EditHistory(private val whole: Framing) {
     /** An id nothing drawn or written has had. */
     val nextId: Int
         get() = (
-            steps.maxOfOrNull {
+            steps.flatMap { if (it is Edit.Group) it.edits else listOf(it) }.maxOfOrNull {
                 when (it) {
                     is Edit.Caption -> it.id
                     is Edit.Mask -> it.id
@@ -221,7 +228,9 @@ class EditHistory(private val whole: Framing) {
     fun pushOrMerge(edit: Edit) {
         val last = steps.getOrNull(position - 1)
         if (position == steps.size && last != null && last.objectId != null && last.objectId == edit.objectId &&
-            steps.subList(0, position - 1).any { it.objectId == edit.objectId }
+            steps.subList(0, position - 1).any { step ->
+                step.objectId == edit.objectId || (step is Edit.Group && step.edits.any { it.objectId == edit.objectId })
+            }
         ) {
             steps[position - 1] = edit
         } else {

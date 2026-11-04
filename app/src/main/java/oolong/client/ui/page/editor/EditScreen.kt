@@ -101,6 +101,7 @@ import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.ThemeUtil
 import kotlin.math.abs
+import kotlin.math.max
 
 /** The space kept between the picture and the bars. */
 private val PictureMargin = 16.dp
@@ -389,7 +390,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                     val aimed = pickEffect.aimedEdits(state)
                     val drawAimed: DrawScope.() -> Unit = {
                         clipRect(shown.left, shown.top, shown.right, shown.bottom) {
-                            drawEdits(state, without = aimed?.second, plus = aimed?.first)
+                            drawEdits(state, without = aimed?.second, plus = aimed?.first.orEmpty())
                             pickEffect.drawAimed(this, state)
                         }
                     }
@@ -397,7 +398,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                         // A tap's mask spreads out of the finger, or draws back into it: shown inside the circle only
                         val spread = pickEffect.spread(state)
                         if (spread == null) {
-                            drawEdits(state, without = aimed?.second, plus = aimed?.first)
+                            drawEdits(state, without = aimed?.second, plus = aimed?.first.orEmpty())
                             pickEffect.drawAimed(this, state)
                         } else {
                             val circle = Path().apply { addOval(Rect(spread.first, spread.second)) }
@@ -408,7 +409,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                             } else {
                                 // Taken away: still shown inside the circle, as it draws back
                                 clipPath(circle, ClipOp.Difference) { drawEdits(state) }
-                                clipPath(circle) { drawEdits(state, plus = removed) }
+                                clipPath(circle) { drawEdits(state, plus = listOf(removed)) }
                             }
                         }
                         pickEffect.drawLooking(this, state)
@@ -438,7 +439,7 @@ private fun showHomeOnce(state: EditorState) {
     }
 }
 
-private fun DrawScope.drawEdits(state: EditorState, without: Int? = null, plus: Edit? = null) {
+private fun DrawScope.drawEdits(state: EditorState, without: Int? = null, plus: List<Edit> = emptyList()) {
     val moving = state.moving
     val captions = state.history.captions.map { caption ->
         if (moving != null && moving.first == caption.id) state.movedCaption(caption, moving.second) else caption
@@ -446,7 +447,7 @@ private fun DrawScope.drawEdits(state: EditorState, without: Int? = null, plus: 
     drawIntoCanvas { canvas ->
         val native = canvas.nativeCanvas
         native.withMatrix(state.screenMatrix()) {
-            val strokes = state.shownStrokes.filter { without == null || it.objectId != without } + listOfNotNull(plus)
+            val strokes = state.shownStrokes.filter { without == null || it.objectId != without } + plus
             state.renderer.draw(native, state.framing, strokes, captions, state.live, state.draft?.id)
         }
     }
@@ -736,7 +737,10 @@ private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: P
     // Nothing to aim at until the picture is looked over
     if (!state.pickReady) return transform(state, down)
     state.aimed = null
+    state.swept = emptyList()
     state.aim = down.position
+    // How far the finger has gone from where it went down, to tell a slide brought back
+    var farthest = 0f
     var at = down.position
     var held = false
     // The edges move the picture only once the finger has come to them, not when it starts there
@@ -757,6 +761,7 @@ private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: P
             if (change.positionChanged()) change.consume()
             at = change.position
             state.aim = at
+            farthest = max(farthest, (at - down.position).getDistance())
             if ((at - down.position).getDistance() > slop) held = true
         }
         if (now - down.uptimeMillis >= HoldMillis) held = true
@@ -774,8 +779,16 @@ private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: P
         }
         tick = now
     }
+    // Brought back to where it began, after going out: let go of it all
+    if (farthest > CancelReach * 3 * density && (at - down.position).getDistance() < CancelReach * density) {
+        state.stopAiming()
+        return
+    }
     state.pendingPick = EditorState.Pick(at, held)
 }
+
+/** How near where it began a slide brought back lets go of what it passed over, in dp. */
+private const val CancelReach = 24f
 
 /**
  * How hard the edges pull a finger [at] a point, each way from -1 to 1, as the way the picture

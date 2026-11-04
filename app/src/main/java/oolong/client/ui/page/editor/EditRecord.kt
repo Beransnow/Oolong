@@ -43,7 +43,7 @@ class EditRecord(val source: String, val width: Int, val height: Int, val steps:
         fun read(picture: File): EditRecord? = runCatching { json.decodeFromString<EditRecord>(fileOf(picture).readText()) }.getOrNull()
 
         fun write(picture: File, source: String, width: Int, height: Int, edits: List<Edit>) {
-            fileOf(picture).writeText(json.encodeToString(EditRecord(source, width, height, edits.map { it.toStep() })))
+            fileOf(picture).writeText(json.encodeToString(EditRecord(source, width, height, edits.flatMap { if (it is Edit.Group) it.edits else listOf(it) }.map { it.toStep() })))
         }
     }
 }
@@ -66,6 +66,8 @@ private fun Edit.toStep(): EditRecord.Step = when (this) {
     is Edit.Caption -> EditRecord.Step("caption", id, listOf(center.x, center.y), size, color.toArgb().toLong(), style.name, text)
     is Edit.Remove -> EditRecord.Step("remove", id)
     is Edit.Adjust -> EditRecord.Step("adjust", points = Adjustment.entries.map { values[it] ?: 0f })
+    // Written as the steps in it
+    is Edit.Group -> error("A group is written as its steps")
 }
 
 private fun EditRecord.Step.toEdit(): Edit = when (type) {

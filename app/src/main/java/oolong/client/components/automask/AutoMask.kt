@@ -13,6 +13,7 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -88,6 +89,20 @@ class AutoMask internal constructor(
             return Found(whole ?: line, text = whole == null, millis = (System.nanoTime() - t0) / 1_000_000)
         }
         return Found(box, text = false, millis = (System.nanoTime() - t0) / 1_000_000)
+    }
+
+    /** The lines of text a finger moving from [x0], [y0] to [x1], [y1] passes within [reach] of. */
+    fun linesAlong(prepared: Prepared, x0: Float, y0: Float, x1: Float, y1: Float, reach: Float): List<RectF> {
+        val step = max(reach / 2, 1f)
+        val steps = (hypot(x1 - x0, y1 - y0) / step).toInt() + 1
+        return prepared.lines.filter { line ->
+            (0..steps).any { i ->
+                val t = i.toFloat() / steps
+                val x = x0 + (x1 - x0) * t
+                val y = y0 + (y1 - y0) * t
+                x >= line.left - reach && x <= line.right + reach && y >= line.top - reach && y <= line.bottom + reach
+            }
+        }
     }
 
     // Text detection

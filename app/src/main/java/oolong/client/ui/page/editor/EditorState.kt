@@ -152,17 +152,65 @@ class EditorState(
     var aiming by mutableStateOf(false)
 
     /**
-     * What the finger aiming at [point], in picture pixels, would do: hide [box], or take away
-     * [removing], a mask a tap laid; neither when it finds nothing.
+     * What the finger aiming at [point], in picture pixels, would do: hide [blocks], what it has
+     * passed over, or take away [removing], a mask a tap laid; neither when it finds nothing.
      */
-    class Aimed(val point: Offset, val box: Rect?, val removing: Edit.Mask?)
+    class Aimed(val point: Offset, val blocks: List<Rect>, val removing: Edit.Mask?)
 
     var aimed by mutableStateOf<Aimed?>(null)
+
+    /** Something the finger passed over while aiming, in picture pixels, and whether it is a line of text. */
+    class Swept(val box: Rect, val text: Boolean)
+
+    /** What the finger has passed over since it went down. */
+    var swept by mutableStateOf(emptyList<Swept>())
+
+    /** Adds [found] to what the finger has passed over, leaving out what it has already, or a tap hid. */
+    fun sweep(found: List<Swept>) {
+        var all = swept
+        for (f in found) {
+            if (all.any { same(it.box, f.box) } || tappedMaskOver(f.box) != null) continue
+            all = all.filterNot { f.box.holds(it.box) } + f
+        }
+        if (all.size != swept.size || all.zip(swept).any { (a, b) -> a !== b }) swept = all
+    }
+
+    /** What the finger has passed over, lines of text stacked one under another joined in blocks. */
+    fun sweptBlocks(): List<Rect> {
+        val blocks = swept.filter { it.text }.map { it.box }.sortedBy { it.top }.toMutableList()
+        var joined = true
+        while (joined) {
+            joined = false
+            loop@ for (i in blocks.indices) {
+                for (j in i + 1 until blocks.size) {
+                    if (stacked(blocks[i], blocks[j])) {
+                        blocks[i] = blocks[i].union(blocks[j])
+                        blocks.removeAt(j)
+                        joined = true
+                        break@loop
+                    }
+                }
+            }
+        }
+        val things = swept.filterNot { it.text }.map { it.box }.filter { thing -> blocks.none { it.holds(thing) } }
+        return blocks + things
+    }
+
+    /** Hides [blocks], what a slide passed over, as one step, the finger last [at] a point on screen. */
+    fun hideSwept(at: Offset, blocks: List<Rect>) {
+        if (blocks.size == 1) return hidePicked(at, blocks[0], held = true)
+        val first = history.nextId
+        val masks = blocks.mapIndexed { i, box -> pickedMask(first + i, box) }
+        history.push(Edit.Group(masks))
+        tapped += masks.map { it.id }
+        picked = Picked(at, blocks.reduce(Rect::union), null, held = true)
+    }
 
     /** Done aiming, once the finger's tap is looked into or it moves the view instead. */
     fun stopAiming() {
         aim = null
         aiming = false
+        swept = emptyList()
     }
 
     /**
@@ -817,4 +865,25 @@ private fun distanceToSegment(p: Offset, a: Offset, b: Offset): Float {
     if (length == 0f) return (p - a).getDistance()
     val t = (((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / length).coerceIn(0f, 1f)
     return (p - (a + ab * t)).getDistance()
+}
+
+/** Whether [a] and [b] are much the same box. */
+private fun same(a: Rect, b: Rect): Boolean {
+    val overlap = a.intersect(b)
+    if (overlap.width <= 0f || overlap.height <= 0f) return false
+    val shared = overlap.width * overlap.height
+    return shared / (a.width * a.height + b.width * b.height - shared) >= 0.7f
+}
+
+/** Whether this holds [other], give or take a pixel. */
+private fun Rect.holds(other: Rect) =
+    left <= other.left + 1 && top <= other.top + 1 && right >= other.right - 1 && bottom >= other.bottom - 1
+
+private fun Rect.union(other: Rect) = Rect(min(left, other.left), min(top, other.top), max(right, other.right), max(bottom, other.bottom))
+
+/** Whether lines [a] and [b] lie one under the other, side by side and close, as in a paragraph. */
+private fun stacked(a: Rect, b: Rect): Boolean {
+    val across = min(a.right, b.right) - max(a.left, b.left)
+    val gap = max(a.top, b.top) - min(a.bottom, b.bottom)
+    return across > 0f && gap <= 0.8f * min(a.height, b.height)
 }
