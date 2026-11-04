@@ -1,18 +1,22 @@
 /**
- * Takes crash reports from the app and files them under groups (see docs/crash-reporting.md).
+ * Takes crash reports and usage heartbeats from the app, and serves the console that reads them
+ * (see the README).
  *
  * POST /crash only checks a report and keeps it. Every minute, the scheduled run files kept reports
  * whose trace it has seen before, then works on one new trace: it reads the lines that trace needs
  * from the build's mapping file in R2, a few shards per run so as to stay within the CPU an
- * invocation has, and once all are read retraces it, finds its group and tells the owner on Telegram
- * of a new problem or one come back. Once a day it drops what has expired, mapping files included
- * (see retention.js).
+ * invocation has, and once all are read retraces it and finds its group. Once a day it drops what
+ * has expired, mapping files included (see retention.js).
+ *
+ * POST /stats adds a heartbeat to the counts (see stats.js). /console is the console (console.js).
  */
 
 import { digest, groupOf, traceKey } from "./group.js";
+import { handleConsole } from "./console.js";
 import { DAYS, expiredVersions } from "./retention.js";
 import { retrace } from "./retrace.js";
 import { headerSize, linesLookup, parseHeader, readLines, shardsOf, wantedKeys } from "./shards.js";
+import { parseHeartbeat, recordHeartbeat } from "./stats.js";
 
 // As scripts/shard.mjs writes them
 const SHARDS = 4096;
@@ -36,6 +40,8 @@ const INSTALL = /^[\w-]{8,64}$/;
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
+        if (url.pathname === "/stats") return heartbeat(request, env);
+        if (url.pathname === "/console" || url.pathname.startsWith("/console/")) return handleConsole(request, env, url);
         if (url.pathname !== "/crash") return new Response("not found", { status: 404 });
         if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
         if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY) return new Response("too large", { status: 413 });
@@ -70,6 +76,26 @@ export default {
         else await file(env);
     },
 };
+
+/**
+ * Adds a heartbeat to the counts. The reply tells the app the share of devices that should send
+ * (STATS_RATE, 1 unless set), so that sending can be thinned to stay within the free plan; each
+ * heartbeat then counts for 1 / that share. Nothing of the request beyond its body is read.
+ */
+async function heartbeat(request, env) {
+    if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+    const text = await request.text();
+    if (text.length > 2048) return new Response("too large", { status: 413 });
+    let beat;
+    try {
+        beat = parseHeartbeat(JSON.parse(text));
+    } catch {
+        return new Response("bad heartbeat", { status: 400 });
+    }
+    const rate = Math.min(1, Math.max(0.01, Number(env.STATS_RATE ?? 1) || 1));
+    await env.DB.batch(recordHeartbeat(env.DB, beat, Date.now(), rate));
+    return new Response(JSON.stringify({ rate }), { headers: { "content-type": "application/json" } });
+}
 
 /** The fields of a report the app sends, checked; throws when one is missing or malformed. */
 function parseReport(body) {
@@ -192,33 +218,30 @@ async function cacheLines(env, version, lines) {
     if (all.length > 0) await env.DB.batch(all);
 }
 
-/** The id of [group]'s row, made when the problem is new; tells the owner of a new one. */
+/** The id of [group]'s row, made when the problem is new. */
 async function groupFor(env, group, report, received) {
     const key = await digest(group.key);
     const existing = await env.DB.prepare("SELECT id FROM crash_groups WHERE key = ?").bind(key).first("id");
     if (existing !== null) return existing;
-    const id = await env.DB.prepare(
+    return env.DB.prepare(
         `INSERT INTO crash_groups (key, kind, title, first_version, last_version, first_seen, last_seen)
          VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     )
         .bind(key, report.kind, group.title, report.version, report.version, received, received)
         .first("id");
-    await notify(env, "新问题", group.title, report);
-    return id;
 }
 
 /**
- * Opens a fixed problem again when [report] shows it in a build it hadn't come from before, and
- * tells the owner. Builds it came from before the fix still have it, and don't count.
+ * Opens a fixed problem again, as come back, when [report] shows it in a build it hadn't come from
+ * before. Builds it came from before the fix still have it, and don't count.
  */
 async function reopen(env, groupId, report) {
-    const title = await env.DB.prepare(
-        `UPDATE crash_groups SET status = 'open' WHERE id = ? AND status = 'fixed'
-         AND NOT EXISTS (SELECT 1 FROM crash_counts WHERE group_id = ? AND version = ?) RETURNING title`,
+    await env.DB.prepare(
+        `UPDATE crash_groups SET status = 'open', reopened_at = ? WHERE id = ? AND status = 'fixed'
+         AND NOT EXISTS (SELECT 1 FROM crash_counts WHERE group_id = ? AND version = ?)`,
     )
-        .bind(groupId, groupId, report.version)
-        .first("title");
-    if (title !== null) await notify(env, "已修复的问题在新版本中再次出现", title, report);
+        .bind(Date.now(), groupId, groupId, report.version)
+        .run();
 }
 
 /** Counts a report under its group, keeps it as a sample and takes it out of the inbox. */
@@ -248,17 +271,6 @@ async function record(env, row, report, groupId, retraced) {
         ).bind(groupId, groupId, SAMPLES_PER_GROUP),
         env.DB.prepare("DELETE FROM crash_inbox WHERE id = ?").bind(row.id),
     ]);
-}
-
-/** A message to the owner on Telegram; nothing when the bot isn't set up. */
-async function notify(env, what, title, report) {
-    if (!env.BOT_TOKEN || !env.OWNER_ID) return;
-    const where = [report.version, report.device, report.sdk && `Android SDK ${report.sdk}`].filter(Boolean).join(" · ");
-    await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chat_id: env.OWNER_ID, text: `${what}：${title}\n${where}` }),
-    }).catch(() => {});
 }
 
 /** Drops quotas of past days, and the mapping files retention.js says have expired. */

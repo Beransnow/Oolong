@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oolong 控制台</title>
+<style>
+body { margin: 0; }
+/* Layout: summary band on top, then problems on the left and the chosen one on the right; on a phone, list then detail. */
+:root {
+  --page: #eceef1; --ink: #16181c; --ink-2: #5b616b; --ink-3: #9aa0a9; --rule: #e3e6ea;
+  --card: #ffffff; --chip: #f0f1f3; --accent: #3e6fd8; --on-accent: #ffffff; --tint: rgba(22,24,28,.05);
+  --crash: #d23b3b; --crash-bg: rgba(210,59,59,.10); --anr: #c27a12; --anr-bg: rgba(194,122,18,.12);
+  --native: #7a52c7; --native-bg: rgba(122,82,199,.12); --ok: #2b8a57; --ok-bg: rgba(43,138,87,.12);
+  --sans: "Noto Sans SC", "PingFang SC", "HarmonyOS Sans SC", system-ui, sans-serif;
+  --num: "Bebas Neue", "DIN Alternate", "Roboto Condensed", var(--sans);
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0c0d0f; --ink: #eceef1; --ink-2: #a3a9b2; --ink-3: #6b717a; --rule: #2a2d33;
+    --card: #1b1c20; --chip: #24262b; --accent: #7da2f0; --on-accent: #0f1012; --tint: rgba(236,238,241,.08);
+    --crash: #f07070; --crash-bg: rgba(240,112,112,.14); --anr: #e3a64a; --anr-bg: rgba(227,166,74,.14);
+    --native: #b39af0; --native-bg: rgba(179,154,240,.14); --ok: #5cc48a; --ok-bg: rgba(92,196,138,.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0c0d0f; --ink: #eceef1; --ink-2: #a3a9b2; --ink-3: #6b717a; --rule: #2a2d33;
+  --card: #1b1c20; --chip: #24262b; --accent: #7da2f0; --on-accent: #0f1012; --tint: rgba(236,238,241,.08);
+  --crash: #f07070; --crash-bg: rgba(240,112,112,.14); --anr: #e3a64a; --anr-bg: rgba(227,166,74,.14);
+  --native: #b39af0; --native-bg: rgba(179,154,240,.14); --ok: #5cc48a; --ok-bg: rgba(92,196,138,.14);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--page); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shell { max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.top h1 { font-size: 22px; margin: 0; letter-spacing: .01em; }
+.sample { font-size: 12px; color: var(--ink-3); border: 1px dashed var(--rule); border-radius: 999px; padding: 1px 8px; }
+.spacer { flex: 1; }
+.seg { display: inline-flex; background: var(--chip); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { padding: 5px 12px; border-radius: 999px; color: var(--ink-2); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); font-weight: 500; }
+.seg .n { font-variant-numeric: tabular-nums; color: var(--ink-3); margin-left: 4px; }
+select { background: var(--chip); border: 0; border-radius: 999px; padding: 6px 12px; }
+
+/* Summary */
+.summary { background: var(--card); border-radius: 18px; padding: 16px 18px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 28px; align-items: end; }
+.figures { display: flex; gap: 28px; flex-wrap: wrap; }
+.fig .v { font-family: var(--num); font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.fig .l { color: var(--ink-2); font-size: 12px; }
+.fig.new .v { color: var(--crash); }
+.trend { min-width: 0; }
+.trend svg { width: 100%; height: 64px; display: block; }
+.trend .cap { display: flex; justify-content: space-between; color: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) { .summary { grid-template-columns: minmax(0, 1fr); } }
+
+/* Two panes */
+.panes { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .panes { grid-template-columns: minmax(0, 1fr); } .panes[data-view="detail"] .list { display: none; } .panes[data-view="list"] .detail { display: none; } }
+.list { background: var(--card); border-radius: 18px; overflow: hidden; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 16px; border-top: 1px solid var(--rule); width: 100%; text-align: left; }
+.row:first-child { border-top: 0; }
+.row:hover { background: var(--tint); }
+.row[aria-current="true"] { background: var(--tint); box-shadow: inset 3px 0 0 var(--accent); }
+.row .t { font-weight: 500; overflow-wrap: anywhere; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.row .where { color: var(--ink-2); font-size: 12px; font-family: var(--mono); overflow-wrap: anywhere; }
+.row .meta { color: var(--ink-3); font-size: 12px; grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.row .count { text-align: right; grid-row: 1 / 3; grid-column: 2; display: grid; justify-items: end; gap: 2px; }
+.row .count .v { font-family: var(--num); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.row .count svg { width: 72px; height: 18px; }
+.kind { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.kind.crash { color: var(--crash); background: var(--crash-bg); }
+.kind.anr { color: var(--anr); background: var(--anr-bg); }
+.kind.native { color: var(--native); background: var(--native-bg); }
+.flag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.flag.new { color: var(--on-accent); background: var(--accent); }
+.flag.regress { color: var(--crash); border: 1px solid var(--crash); }
+.flag.fixed { color: var(--ok); background: var(--ok-bg); }
+.empty { padding: 40px 16px; text-align: center; color: var(--ink-3); }
+
+/* Detail */
+.detail { display: grid; gap: 12px; min-width: 0; }
+.card { background: var(--card); border-radius: 18px; padding: 16px 18px; min-width: 0; }
+.back { display: none; color: var(--accent); margin-bottom: 4px; }
+@media (max-width: 900px) { .back { display: inline-block; } }
+.head h2 { margin: 6px 0 2px; font-size: 18px; text-wrap: balance; overflow-wrap: anywhere; }
+.head .exc { font-family: var(--mono); font-size: 12px; color: var(--ink-2); overflow-wrap: anywhere; }
+.head .line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.btn { padding: 7px 14px; border-radius: 999px; background: var(--chip); font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn:hover { filter: brightness(.97); }
+.fixform { display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr) auto; gap: 8px; margin-top: 12px; }
+.fixform input { background: var(--chip); border: 0; border-radius: 10px; padding: 7px 10px; min-width: 0; }
+@media (max-width: 560px) { .fixform { grid-template-columns: minmax(0, 1fr); } }
+.fixed-note { margin-top: 10px; color: var(--ink-2); font-size: 13px; }
+.fixed-note code { font-family: var(--mono); color: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat .v { font-family: var(--num); font-size: 28px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat .v.small { font-family: var(--sans); font-size: 15px; font-weight: 500; line-height: 1.6; }
+.stat .l { color: var(--ink-2); font-size: 12px; }
+.stat .s { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+h3 { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; font-weight: 500; letter-spacing: .02em; }
+.chart svg { width: 100%; height: 120px; display: block; }
+.versions { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.versions td, .versions th { padding: 6px 0; border-top: 1px solid var(--rule); text-align: right; }
+.versions th { color: var(--ink-3); font-weight: 400; font-size: 12px; border-top: 0; }
+.versions td:first-child, .versions th:first-child { text-align: left; font-family: var(--mono); font-size: 12px; }
+.bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); opacity: .7; vertical-align: middle; margin-right: 8px; }
+.samples { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
+.samples button { flex: none; padding: 6px 10px; border-radius: 10px; background: var(--chip); text-align: left; font-size: 12px; color: var(--ink-2); }
+.samples button[aria-pressed="true"] { background: var(--tint); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.samples b { display: block; color: var(--ink); font-weight: 500; }
+.sampleinfo { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--ink-2); font-size: 12px; margin-bottom: 8px; }
+.tracebar { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.trace { background: var(--chip); border-radius: 12px; padding: 12px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.65; margin: 0; white-space: pre; color: var(--ink-3); }
+.trace .own { color: var(--ink); font-weight: 600; }
+.trace .hd { color: var(--crash); }
+.copied { color: var(--ok); font-size: 12px; }
+
+/* Tabs and the overview */
+.tabs { display: inline-flex; gap: 4px; }
+.tabs button { font-size: 22px; font-weight: 700; color: var(--ink-3); padding: 0 6px; }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.ov { display: grid; gap: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--card); border-radius: 18px; padding: 14px 16px; }
+.kpi .v { font-family: var(--num); font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.kpi .l { color: var(--ink-2); font-size: 12px; margin-top: 4px; }
+.kpi .d { font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.up { color: var(--ok); } .down { color: var(--crash); }
+.cardhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+.cardhead h3 { margin: 0; }
+.hint { color: var(--ink-3); font-size: 12px; }
+#dau { width: 100%; height: 150px; display: block; }
+.axis { display: flex; justify-content: space-between; color: var(--ink-3); font-size: 11px; }
+.stack { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin-bottom: 10px; }
+.stack span { display: block; height: 100%; }
+.vt { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.vt th, .vt td { padding: 6px 0; border-top: 1px solid var(--rule); text-align: right; font-size: 13px; }
+.vt th { color: var(--ink-3); font-weight: 400; font-size: 12px; border-top: 0; }
+.vt td:first-child, .vt th:first-child { text-align: left; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+.cf.bad { color: var(--crash); font-weight: 600; }
+.dists { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .dists { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dists { grid-template-columns: minmax(0, 1fr); } }
+.dist { background: var(--card); border-radius: 18px; padding: 16px 18px; min-width: 0; }
+.dist ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.dist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; font-size: 13px; }
+.dist .nm { overflow-wrap: anywhere; }
+.dist .ct { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.dist .tr { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--chip); overflow: hidden; }
+.dist .tr i { display: block; height: 100%; background: var(--accent); opacity: .65; border-radius: 3px; }
+.scroll { overflow-x: auto; }
+.cohort { border-collapse: separate; border-spacing: 3px; font-variant-numeric: tabular-nums; font-size: 12px; min-width: 560px; width: 100%; }
+.cohort th { color: var(--ink-3); font-weight: 400; text-align: center; }
+.cohort th:first-child, .cohort td:first-child { text-align: left; color: var(--ink-2); white-space: nowrap; }
+.cohort td { text-align: center; border-radius: 6px; padding: 6px 4px; }
+.footnote { color: var(--ink-3); font-size: 12px; margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .row, .btn { transition: background .15s; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="tabs" role="tablist" aria-label="控制台">
+      <button type="button" role="tab" id="tab-overview" aria-selected="true" data-tab="overview">概览</button>
+      <button type="button" role="tab" id="tab-crash" aria-selected="false" data-tab="crash">崩溃</button>
+    </div>
+    <span class="sample" id="who"></span>
+    <span class="spacer"></span>
+    <div class="seg crash-only" role="group" aria-label="状态" id="status"></div>
+    <div class="seg overview-only" role="group" aria-label="渠道" id="channel"></div>
+  </div>
+
+  <div id="overview" class="overview-only ov">
+    <section class="kpis" id="kpis"></section>
+    <section class="card">
+      <div class="cardhead"><h3>日活</h3><span class="hint">近 30 天，每天打开过应用的设备</span></div>
+      <svg id="dau" viewBox="0 0 700 150" preserveAspectRatio="none" role="img" aria-label="近 30 天每天的日活"></svg>
+      <div class="axis"><span id="dau-from"></span><span>今天</span></div>
+    </section>
+    <section class="card">
+      <div class="cardhead"><h3>版本</h3><span class="hint">占比按昨天的设备，无崩溃率按近 7 天</span></div>
+      <div class="stack" id="stack"></div>
+      <table class="vt" id="vtable"></table>
+    </section>
+    <div class="dists" id="dists"></div>
+    <section class="card">
+      <div class="cardhead"><h3>新用户留存</h3><span class="hint">按安装所在的周，之后每周仍在使用的比例</span></div>
+      <div class="scroll"><table class="cohort" id="cohort"></table></div>
+    </section>
+    <p class="footnote">设备数来自每天最多一次、不带任何标识的使用统计，只统计开启了「发送使用统计」的设备。日期按 UTC 计。不足 5 台的数字显示为 &lt;5。</p>
+  </div>
+
+  <div id="crashview" class="crash-only" hidden>
+  <section class="summary" aria-label="近 14 天" id="crash-summary">
+    <div class="figures" id="figures"></div>
+    <div class="trend">
+      <svg id="trend" viewBox="0 0 280 64" preserveAspectRatio="none" role="img" aria-label="近 14 天每天的崩溃次数"></svg>
+      <div class="cap"><span id="trend-from"></span><span>近 14 天每天的崩溃次数</span><span>今天</span></div>
+    </div>
+  </section>
+
+  <div class="panes" id="panes" data-view="list">
+    <div class="list" id="list"></div>
+    <div class="detail" id="detail"></div>
+  </div>
+  </div>
+</div>
+
+<script>
+// The console's script: reads /console/api/* and draws the overview and the crash problems.
+const DAYS = 14;
+const API = "/console/api";
+const KIND = { crash: "崩溃", anr: "无响应", native: "原生" };
+const STATUS = [["open", "未解决"], ["fixed", "已修复"], ["ignored", "已忽略"], ["all", "全部"]];
+const CHANNELS = [["", "全部"], ["stable", "正式版"], ["beta", "测试版"]];
+const FORMS = { phone: "手机", tablet: "平板", foldable: "折叠屏" };
+const ANDROID = { 24: "7.0", 25: "7.1", 26: "8.0", 27: "8.1", 28: "9", 29: "10", 30: "11", 31: "12", 32: "12L", 33: "13", 34: "14", 35: "15", 36: "16", 37: "17" };
+const COLORS = ["var(--accent)", "var(--anr)", "var(--native)", "var(--ok)", "var(--crash)", "var(--ink-3)"];
+
+let tab = "overview", channel = "", status = "open", current = null, sample = 0, fixing = false;
+let groups = [];
+const details = new Map();
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const num = (n) => (n === null || n === undefined ? "&lt;5" : n.toLocaleString("zh-CN"));
+const md = (iso) => { const [, m, d] = iso.split("-"); return `${Number(m)}月${Number(d)}日`; };
+const shortVer = (v) => String(v).replace(/\+.*/, "");
+function ago(time) {
+    const minutes = (Date.now() - time) / 60000;
+    if (minutes < 60) return `${Math.max(1, Math.round(minutes))} 分钟前`;
+    if (minutes < 24 * 60) return `${Math.round(minutes / 60)} 小时前`;
+    return `${Math.round(minutes / 1440)} 天前`;
+}
+function when(time) {
+    const d = new Date(time), now = new Date();
+    const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return d.toDateString() === now.toDateString() ? `今天 ${hm}` : `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`;
+}
+async function get(path) {
+    const response = await fetch(API + path, { credentials: "same-origin" });
+    if (!response.ok) throw new Error(`${response.status}`);
+    return response.json();
+}
+
+function spark(values, w, h) {
+    const max = Math.max(1, ...values), step = w / (values.length - 1);
+    const pts = values.map((v, i) => [i * step, h - 2 - (v / max) * (h - 4)]);
+    const line = pts.map((p) => p.join(",")).join(" ");
+    const [ex, ey] = pts[pts.length - 1];
+    return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polygon points="0,${h} ${line} ${w},${h}" fill="var(--accent)" opacity=".12"></polygon>
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"></polyline><circle cx="${ex}" cy="${ey}" r="2.2" fill="var(--accent)"></circle></svg>`;
+}
+
+/* Overview */
+
+async function loadOverview() {
+    let data;
+    try {
+        data = await get(`/overview?channel=${encodeURIComponent(channel)}`);
+    } catch {
+        document.getElementById("kpis").innerHTML = `<div class="kpi" style="grid-column:1/-1"><div class="l">无法读取统计，刷新页面重试</div></div>`;
+        return;
+    }
+    renderOverview(data);
+}
+
+function change(now, before) {
+    if (now === null || before === null || !before) return "";
+    const pct = Math.round(((now - before) / before) * 1000) / 10;
+    return `<div class="d ${pct >= 0 ? "up" : "down"}">比上一期 ${pct >= 0 ? "+" : "−"}${Math.abs(pct)}%</div>`;
+}
+
+function renderOverview(o) {
+    document.getElementById("channel").innerHTML = CHANNELS.map(([k, l]) => `<button type="button" id="ch-${k || "all"}" aria-pressed="${channel === k}" data-ch="${k}">${l}</button>`).join("");
+    const k = (v, l, d = "") => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div>${d}</div>`;
+    document.getElementById("kpis").innerHTML =
+        k(num(o.dayActive), "日活 · 昨天") +
+        k(num(o.weekActive), "本周活跃", change(o.weekActive, o.lastWeekActive)) +
+        k(num(o.monthActive), "本月活跃", change(o.monthActive, o.lastMonthActive)) +
+        k(o.crashFree === null ? "-" : `${o.crashFree}%`, "无崩溃率 · 昨天");
+
+    const values = o.days.map((d) => d.devices ?? 0);
+    const max = Math.max(5, ...values) * 1.1, step = 700 / (values.length - 1);
+    const pts = values.map((v, i) => [i * step, 140 - (v / max) * 130]);
+    const line = pts.map((p) => p.map((x) => x.toFixed(1)).join(",")).join(" ");
+    const tick = Math.max(1, Math.round(max / 3 / 10) * 10 || 1);
+    const grid = [1, 2, 3].map((g) => g * tick).filter((g) => g < max).map((g) => { const y = 140 - (g / max) * 130; return `<line x1="0" y1="${y}" x2="700" y2="${y}" stroke="var(--rule)"></line><text x="2" y="${y - 3}" font-size="10" fill="var(--ink-3)">${g}</text>`; }).join("");
+    const [ex, ey] = pts[pts.length - 1];
+    document.getElementById("dau").innerHTML = `${grid}<polygon points="0,140 ${line} 700,140" fill="var(--accent)" opacity=".12"></polygon>
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"></polyline><circle cx="${ex}" cy="${ey}" r="3.5" fill="var(--accent)"></circle>`;
+    document.getElementById("dau-from").textContent = md(o.days[0].day);
+
+    const versions = o.versions.map((v, i) => ({ ...v, color: COLORS[Math.min(i, COLORS.length - 1)] }));
+    document.getElementById("stack").innerHTML = versions.map((v) => `<span style="width:${v.share}%;background:${v.color}" title="${esc(v.version)} ${v.share}%"></span>`).join("");
+    document.getElementById("vtable").innerHTML = versions.length
+        ? `<thead><tr><th>版本</th><th>设备</th><th>占比</th><th>无崩溃率</th></tr></thead><tbody>` +
+          versions.map((v) => `<tr><td><span class="dot" style="background:${v.color}"></span>${esc(v.version)}</td><td>${num(v.devices)}</td><td>${v.share}%</td><td class="cf ${v.crashFree !== null && v.crashFree < 98 ? "bad" : ""}">${v.crashFree === null ? "-" : v.crashFree + "%"}</td></tr>`).join("") + "</tbody>"
+        : `<tbody><tr><td>还没有数据</td></tr></tbody>`;
+
+    const dist = (title, range, rows, label) => {
+        const top = Math.max(1, ...rows.map((r) => r.devices ?? 0));
+        const body = rows.length
+            ? rows.map((r) => `<li><span class="nm">${r.value === null ? "其余" : esc(label(r.value))}</span><span class="ct">${num(r.devices)}${r.share !== null && r.share !== undefined ? ` · ${r.share}%` : ""}</span><span class="tr"><i style="width:${((r.devices ?? 0) / top) * 100}%"></i></span></li>`).join("")
+            : `<li><span class="nm" style="color:var(--ink-3)">还没有数据</span></li>`;
+        return `<section class="dist"><div class="cardhead"><h3>${title}</h3><span class="hint">${range}</span></div><ol>${body}</ol></section>`;
+    };
+    const same = (v) => v || "其他";
+    document.getElementById("dists").innerHTML =
+        dist("Android 版本", "上周", o.sdk, (v) => `Android ${ANDROID[v] ?? `API ${v}`}`) +
+        dist("品牌", "上周", o.brand, same) +
+        dist("ROM", "上周", o.rom, same) +
+        dist("设备形态", "上周", o.form, (v) => FORMS[v] ?? same(v)) +
+        dist("机型", "本月", o.model, same) +
+        dist("语言", "本月", o.locale, same);
+
+    document.getElementById("cohort").innerHTML = o.cohorts.length
+        ? `<thead><tr><th>安装的周</th><th>设备</th>${Array.from({ length: 8 }, (_, i) => `<th>第 ${i} 周</th>`).join("")}</tr></thead><tbody>` +
+          o.cohorts.map((c) => `<tr><td>${md(c.week)}</td><td>${num(c.devices)}</td>${Array.from({ length: 8 }, (_, i) => {
+              const r = c.kept[i];
+              if (r === undefined) return "<td></td>";
+              if (r === null) return `<td style="color:var(--ink-3)">&lt;5</td>`;
+              return `<td style="background:color-mix(in srgb, var(--accent) ${Math.round(r * 0.55)}%, transparent);color:${r > 70 ? "var(--on-accent)" : "var(--ink)"}">${r}%</td>`;
+          }).join("")}</tr>`).join("") + "</tbody>"
+        : `<tbody><tr><td>还没有数据</td></tr></tbody>`;
+}
+
+/* Crash problems */
+
+async function loadGroups() {
+    try {
+        groups = await get("/groups");
+    } catch {
+        document.getElementById("list").innerHTML = `<div class="empty">无法读取崩溃，刷新页面重试</div>`;
+        return;
+    }
+    renderGroups();
+}
+
+const visible = () => groups.filter((g) => status === "all" || g.status === status);
+
+function renderGroups() {
+    document.getElementById("status").innerHTML = STATUS.map(([k, label]) => {
+        const n = k === "all" ? groups.length : groups.filter((g) => g.status === k).length;
+        return `<button type="button" id="st-${k}" aria-pressed="${status === k}" data-s="${k}">${label}<span class="n">${n}</span></button>`;
+    }).join("");
+    const totals = Array.from({ length: DAYS }, (_, i) => groups.reduce((s, g) => s + g.daily[i], 0));
+    const open = groups.filter((g) => g.status === "open").length;
+    const fresh = groups.filter((g) => g.isNew || g.returned).length;
+    document.getElementById("figures").innerHTML = `
+      <div class="fig"><div class="v">${totals.reduce((a, b) => a + b, 0)}</div><div class="l">近 14 天崩溃次数</div></div>
+      <div class="fig"><div class="v">${open}</div><div class="l">未解决问题</div></div>
+      <div class="fig new"><div class="v">${fresh}</div><div class="l">新问题与回归</div></div>`;
+    const max = Math.max(1, ...totals), bw = 280 / DAYS;
+    document.getElementById("trend").innerHTML = totals.map((v, i) => {
+        const h = Math.max(v ? 3 : 1, (v / max) * 58);
+        return `<rect x="${i * bw + 2}" y="${64 - h}" width="${bw - 4}" height="${h}" rx="2" fill="var(--accent)" opacity="${i === DAYS - 1 ? 1 : 0.45}"></rect>`;
+    }).join("");
+    document.getElementById("trend-from").textContent = md(new Date(Date.now() - 13 * 86400000).toISOString().slice(0, 10));
+
+    const list = visible();
+    if (!list.some((g) => g.id === current)) current = list[0]?.id ?? null;
+    const el = document.getElementById("list");
+    el.innerHTML = list.length
+        ? list.map((g) => {
+              const [name, where] = g.title.split(" · ");
+              return `<button type="button" class="row" id="p-${g.id}" data-id="${g.id}" aria-current="${g.id === current}">
+                <span class="t"><span class="kind ${g.kind}">${KIND[g.kind]}</span>${esc(name)}
+                  ${g.isNew ? '<span class="flag new">新</span>' : ""}${g.returned ? '<span class="flag regress">回归</span>' : ""}${g.status === "fixed" ? '<span class="flag fixed">已修复</span>' : ""}</span>
+                <span class="count"><span class="v">${g.reports}</span>${spark(g.daily, 72, 18)}</span>
+                <span class="where">${esc(where ?? "")}</span>
+                <span class="meta"><span>${g.installs} 台设备</span><span>${esc(shortVer(g.first_version))} → ${esc(shortVer(g.last_version))}</span><span>${ago(g.last_seen)}</span></span>
+              </button>`;
+          }).join("")
+        : `<div class="empty">没有${STATUS.find(([k]) => k === status)[1]}的问题</div>`;
+    renderDetail();
+}
+
+function traceHtml(text) {
+    return text.split("\n").map((line, i) => `<span class="${i === 0 ? "hd" : /\boolong\.client\./.test(line) ? "own" : ""}">${esc(line)}</span>`).join("\n");
+}
+
+async function renderDetail() {
+    const el = document.getElementById("detail");
+    const g = groups.find((x) => x.id === current);
+    if (!g) { el.innerHTML = ""; return; }
+    if (!details.has(g.id)) {
+        el.innerHTML = `<section class="card"><div class="hint">正在读取…</div></section>`;
+        try { details.set(g.id, await get(`/groups/${g.id}`)); } catch { el.innerHTML = `<section class="card"><div class="hint">无法读取这个问题</div></section>`; return; }
+        if (current !== g.id) return;
+    }
+    const d = details.get(g.id);
+    const s = d.samples[Math.min(sample, d.samples.length - 1)];
+    const [name, where] = g.title.split(" · ");
+    const max = Math.max(1, ...g.daily), bw = 600 / DAYS;
+    const vmax = Math.max(1, ...d.versions.map((v) => v.reports));
+    const note = g.status === "fixed"
+        ? `<div class="fixed-note">已${g.fixed_by ? `在 <code>${esc(g.fixed_by)}</code> ` : ""}修复${g.note ? `：${esc(g.note)}` : ""}。在新版本中再次出现时会自动改回未解决。</div>`
+        : g.status === "ignored" ? `<div class="fixed-note">已忽略${g.note ? `：${esc(g.note)}` : ""}。</div>`
+        : g.returned ? `<div class="fixed-note">标记为已修复后，在新版本 ${esc(shortVer(g.last_version))} 中再次出现。</div>` : "";
+    const actions = g.status === "open"
+        ? `<button type="button" class="btn primary" id="fix">标记为已修复</button><button type="button" class="btn" id="ignore">忽略</button>`
+        : `<button type="button" class="btn" id="reopen">改回未解决</button>`;
+    el.innerHTML = `
+      <section class="card head">
+        <button type="button" class="back" id="back">‹ 全部问题</button>
+        <div class="line"><span class="kind ${g.kind}">${KIND[g.kind]}</span>${g.isNew ? '<span class="flag new">新</span>' : ""}${g.returned ? '<span class="flag regress">回归</span>' : ""}</div>
+        <h2>${esc(name)}${where ? ` · ${esc(where)}` : ""}</h2>
+        ${note}
+        <div class="actions">${actions}</div>
+        ${fixing ? `<form class="fixform" id="fixform"><input id="fix-commit" placeholder="修复提交，如 4241ef7e" aria-label="修复提交"><input id="fix-note" placeholder="说明（可不填）" aria-label="说明"><button class="btn primary" type="submit">确定</button></form>` : ""}
+      </section>
+      <section class="card stats">
+        <div class="stat"><div class="v">${g.reports}</div><div class="l">次数</div></div>
+        <div class="stat"><div class="v">${g.installs}</div><div class="l">设备</div></div>
+        <div class="stat"><div class="v small">${esc(shortVer(g.first_version))}</div><div class="l">首次出现</div><div class="s">${ago(g.first_seen)}</div></div>
+        <div class="stat"><div class="v small">${esc(shortVer(g.last_version))}</div><div class="l">最近出现</div><div class="s">${ago(g.last_seen)}</div></div>
+      </section>
+      <section class="card chart">
+        <h3>每天次数</h3>
+        <svg viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="近 14 天每天的次数">
+          <line x1="0" y1="100.5" x2="600" y2="100.5" stroke="var(--rule)"></line>
+          ${g.daily.map((v, i) => { const h = v ? Math.max(3, (v / max) * 84) : 0; return `<rect x="${i * bw + 6}" y="${100 - h}" width="${bw - 12}" height="${h}" rx="3" fill="var(--accent)" opacity="${i === DAYS - 1 ? 1 : 0.55}"></rect>${v ? `<text x="${i * bw + bw / 2}" y="${94 - h}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${v}</text>` : ""}`; }).join("")}
+        </svg>
+        <h3 style="margin-top:14px">按版本</h3>
+        <table class="versions"><thead><tr><th>版本</th><th>次数</th></tr></thead><tbody>
+          ${d.versions.map((v) => `<tr><td>${esc(v.version)}</td><td><span class="bar" style="width:${Math.round((v.reports / vmax) * 80)}px"></span>${v.reports}</td></tr>`).join("")}
+        </tbody></table>
+      </section>
+      ${s ? `<section class="card">
+        <h3>最近的报告</h3>
+        <div class="samples">${d.samples.map((x, i) => `<button type="button" id="s-${i}" data-i="${i}" aria-pressed="${i === sample}"><b>${when(x.received)}</b>${esc(x.device ?? "")}</button>`).join("")}</div>
+        <div class="sampleinfo"><span>${esc(s.version)}</span>${s.sdk ? `<span>Android SDK ${s.sdk}</span>` : ""}${s.rom ? `<span>${esc(s.rom)}</span>` : ""}${s.page ? `<span>页面 ${esc(s.page)}</span>` : ""}${s.thread ? `<span>线程 ${esc(s.thread)}</span>` : ""}</div>
+        <div class="tracebar"><h3 style="margin:0">还原后的堆栈</h3><button type="button" class="btn" id="copy">复制</button></div>
+        <pre class="trace" style="margin-top:8px">${traceHtml(s.retraced)}</pre>
+      </section>` : ""}`;
+}
+
+async function setStatus(body) {
+    const g = groups.find((x) => x.id === current);
+    const response = await fetch(`${API}/groups/${g.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!response.ok) { alert(`无法保存（${response.status}）`); return; }
+    fixing = false;
+    await loadGroups();
+}
+
+function renderTab() {
+    document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+    document.querySelectorAll(".overview-only").forEach((el) => { el.hidden = tab !== "overview"; });
+    document.querySelectorAll(".crash-only").forEach((el) => { el.hidden = tab !== "crash"; });
+}
+
+document.addEventListener("click", async (e) => {
+    const t = e.target.closest("[data-tab]");
+    if (t) { tab = t.dataset.tab; renderTab(); return; }
+    const c = e.target.closest("[data-ch]");
+    if (c) { channel = c.dataset.ch; loadOverview(); return; }
+    const st = e.target.closest("[data-s]");
+    if (st) { status = st.dataset.s; renderGroups(); return; }
+    const row = e.target.closest(".row");
+    if (row) { current = Number(row.dataset.id); sample = 0; fixing = false; document.getElementById("panes").dataset.view = "detail"; renderGroups(); return; }
+    const smp = e.target.closest("[data-i]");
+    if (smp) { sample = Number(smp.dataset.i); renderDetail(); return; }
+    switch (e.target.id) {
+        case "back": document.getElementById("panes").dataset.view = "list"; break;
+        case "fix": fixing = !fixing; await renderDetail(); document.getElementById("fix-commit")?.focus(); break;
+        case "ignore": await setStatus({ status: "ignored" }); break;
+        case "reopen": await setStatus({ status: "open" }); break;
+        case "copy": {
+            const s = details.get(current)?.samples[sample];
+            if (!s) return;
+            try { await navigator.clipboard.writeText(s.retraced); e.target.textContent = "已复制"; } catch { e.target.textContent = "无法复制"; }
+            break;
+        }
+    }
+});
+document.addEventListener("submit", async (e) => {
+    if (e.target.id !== "fixform") return;
+    e.preventDefault();
+    await setStatus({ status: "fixed", fixedBy: document.getElementById("fix-commit").value, note: document.getElementById("fix-note").value });
+});
+
+renderTab();
+loadOverview();
+loadGroups();
+</script>
+</body>
+</html>

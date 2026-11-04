@@ -1,22 +1,24 @@
 # Crash reports
 
-A Worker that takes crash reports the app sends, with the user's consent, and files them under
-problems. Release builds are obfuscated, so each report is first turned back into the original
-classes, methods and lines with its build's mapping, within the free plan's 10 ms of CPU per
-invocation; reports of one problem are grouped across builds, and the owner hears of new problems
-on Telegram.
+A Worker that takes crash reports and usage statistics the app sends, each only with the user's
+consent, and a console that reads them. Release builds are obfuscated, so each crash report is first
+turned back into the original classes, methods and lines with its build's mapping, within the free
+plan's 10 ms of CPU per invocation; reports of one problem are grouped across builds. Usage
+statistics carry no identifier and are kept only as counts.
 
-- `src/index.js` is the Worker: `POST /crash`, and the scheduled runs that file reports.
+- `src/index.js` is the Worker: `POST /crash`, `POST /stats`, `/console`, and the scheduled runs.
 - `src/group.js` says which reports are one problem.
 - `src/retrace.js` retraces a trace from looked-up records.
 - `src/mapping.js` reads an R8 mapping file and lays it out as shards.
 - `src/shards.js` reads records from a build's mapping file, at once or over several runs.
 - `src/retention.js` says which builds' mapping files to drop.
+- `src/stats.js` counts heartbeats and gives the overview.
+- `src/console.js`, `src/console.html` and `src/access.js` are the console and its sign-in check.
 - `scripts/shard.mjs` writes a build's mapping file; `scripts/upload.py` puts it in the bucket.
 
 Commands below run from this directory.
 
-## Reports
+## Crash reports
 
 `POST /crash` takes JSON of at most 64 KB:
 
@@ -38,34 +40,57 @@ are there the trace is retraced and grouped. A build without a mapping file (a d
 whose file has gone) is grouped by its obfuscated names.
 
 A problem is its kind, the exception at the root of the trace and the first three frames of the
-app's own code, without line numbers. A problem marked `fixed` opens again when it shows up in a
-build it hadn't come from before; builds that had it before the fix still have it.
+app's own code, without line numbers. A problem marked fixed opens again, shown as come back, when
+it shows up in a build it hadn't come from before; builds that had it before the fix still have it.
+
+## Usage statistics
+
+`POST /stats` takes one heartbeat a device sends at most once a UTC day. It carries no identifier;
+active devices are counted from its flags, the first heartbeat of the ISO week and of the month.
+
+| Field | |
+|---|---|
+| `version`, `channel` | versionName; `stable`, `beta` or empty |
+| `sdk`, `brand`, `rom`, `form` | Android API level; manufacturer; ROM family and major version; `phone`, `tablet` or `foldable` |
+| `crashed` | Whether the app crashed or froze since the previous heartbeat |
+| `week`, `month` | First heartbeat of the ISO week, of the month |
+| `installWeek` | Weeks since install, 0 to 7; left out later |
+| `model`, `romVersion`, `locale` | Only with `month`: counted on their own, never crossed |
+
+A heartbeat only adds to counts and is not kept, nor is anything else of the request. The answer
+is `{ "rate": r }`: the share of devices that should send, 1 unless `STATS_RATE` is set on the
+Worker to stay within the free plan; each heartbeat then counts for 1 / r. The console never shows
+a count under 5.
 
 ## Setup
 
-The app posts its reports to `/crash` on the update host. That host serves the update bucket; the
-Worker runs on a route for this one path in front of it, and every other path stays with the bucket.
-The host is kept out of the repository, so the route is passed when deploying: set `UPDATE_HOST` to
-the host name and pass the route with every deploy.
+The app posts to `/crash` and `/stats` on the update host. That host serves the update bucket; the
+Worker runs on routes for these paths and `/console` in front of it, and every other path stays
+with the bucket. The host is kept out of the repository, so the routes are passed when deploying:
+set `UPDATE_HOST` to the host name and pass them with every deploy.
 
 ```sh
 npx wrangler d1 create oolong-crash            # then fill its id into wrangler.jsonc
 npx wrangler r2 bucket create oolong-mappings  # private: no public access, no custom domain
 npx wrangler d1 execute oolong-crash --remote --file schema.sql
-npx wrangler deploy --route "$UPDATE_HOST/crash"
-npx wrangler secret put BOT_TOKEN
-npx wrangler secret put OWNER_ID
+npx wrangler deploy --route "$UPDATE_HOST/crash" --route "$UPDATE_HOST/stats" --route "$UPDATE_HOST/console*"
 ```
+
+The console sits behind Cloudflare Access: a self-hosted application for `$UPDATE_HOST/console`
+that lets in the owner's email. The Worker checks Access's token again, so set on it
+`ACCESS_TEAM` (the team's `*.cloudflareaccess.com` host) and `ACCESS_AUD` (the application's
+audience tag). Without them the console answers 401 to everyone.
 
 ## Reading
 
+Open `https://$UPDATE_HOST/console`. Without Access:
+
 ```sh
 npx wrangler d1 execute oolong-crash --remote --command "SELECT id, title, reports, last_version FROM crash_groups WHERE status = 'open' ORDER BY last_seen DESC"
-npx wrangler d1 execute oolong-crash --remote --command "SELECT retraced FROM crash_samples WHERE group_id = … ORDER BY id DESC LIMIT 1"
-npx wrangler d1 execute oolong-crash --remote --command "UPDATE crash_groups SET status = 'fixed', fixed_by = '<commit>', note = '…' WHERE id = …"
 ```
 
-To try it locally, put a mapping file in the local bucket, run `npx wrangler dev --local
+To try it locally, put a mapping file in the local bucket, write `CONSOLE_DEV="1"` to `.dev.vars`
+(ignored by git; it lets the console in without Access), run `npx wrangler dev --local
 --test-scheduled`, post reports and call `/__scheduled?cron=*+*+*+*+*` for each run.
 
 ## Mapping files in CI

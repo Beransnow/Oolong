@@ -26,8 +26,10 @@ CREATE TABLE IF NOT EXISTS crash_groups (
     first_seen INTEGER NOT NULL,
     last_seen INTEGER NOT NULL,
     reports INTEGER NOT NULL DEFAULT 0,
-    -- open, fixed or ignored; a fixed problem seen again is open again
+    -- open, fixed or ignored; a fixed problem seen again in a new build is open again
     status TEXT NOT NULL DEFAULT 'open',
+    -- When it was opened again that way, to show it as come back
+    reopened_at INTEGER,
     -- The commit that fixed it, and what was done or decided, in a line
     fixed_by TEXT,
     note TEXT
@@ -84,4 +86,49 @@ CREATE TABLE IF NOT EXISTS crash_mappings (
     -- present or missing
     state TEXT NOT NULL,
     last_seen INTEGER NOT NULL
+);
+
+-- Added after the tables above were created:
+-- ALTER TABLE crash_groups ADD COLUMN reopened_at INTEGER;
+
+-- Usage statistics: counts only, never single reports. A device sends at most one heartbeat a day,
+-- with nothing that ties it to another; see src/stats.js. Every column of a key is NOT NULL, as
+-- SQLite would take NULLs as distinct and split a count.
+
+-- Devices per UTC day and combination of the few values that may be crossed. Counts are REAL, as a
+-- sampled heartbeat counts for 1 / the sampling rate
+CREATE TABLE IF NOT EXISTS stats_daily (
+    day TEXT NOT NULL,
+    version TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    sdk INTEGER NOT NULL,
+    brand TEXT NOT NULL,
+    rom TEXT NOT NULL,
+    form TEXT NOT NULL,
+    -- 1 when the app crashed or froze since the device's previous heartbeat
+    crashed INTEGER NOT NULL,
+    devices REAL NOT NULL DEFAULT 0,
+    -- Of those, the devices using the app for the first time that ISO week, and that month
+    week_first REAL NOT NULL DEFAULT 0,
+    month_first REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, version, channel, sdk, brand, rom, form, crashed)
+);
+
+-- Devices using the app in a week, by the ISO week they installed it in (its Monday) and the weeks
+-- since; sent only in the first 8 weeks
+CREATE TABLE IF NOT EXISTS stats_retention (
+    install_week TEXT NOT NULL,
+    weeks INTEGER NOT NULL,
+    devices REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (install_week, weeks)
+);
+
+-- Devices per month for values with too many kinds to cross with anything: model, full ROM version
+-- and locale, each counted on its own
+CREATE TABLE IF NOT EXISTS stats_monthly (
+    month TEXT NOT NULL,
+    field TEXT NOT NULL,
+    value TEXT NOT NULL,
+    devices REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (month, field, value)
 );
