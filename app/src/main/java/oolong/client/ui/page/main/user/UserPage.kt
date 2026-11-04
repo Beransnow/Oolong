@@ -57,7 +57,9 @@ import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassStatusBar
+import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.ListMenuItem
+import oolong.client.ui.widgets.compose.LocalTopBarEnd
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.Switch
@@ -262,7 +264,10 @@ fun UserScreen(
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
-        topBar = { GlassStatusBar() },
+        topBar = {
+            // Beside the rail a bar of its own carries search, which the page has no title for
+            if (LocalTopBarEnd.current != null) GlassTopBar(title = {}) else GlassStatusBar()
+        },
         modifier = Modifier.fillMaxSize()
     ) { contentPaddings ->
         PullRefresh(

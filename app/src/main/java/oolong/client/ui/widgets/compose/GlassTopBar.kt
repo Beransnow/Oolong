@@ -30,6 +30,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -39,6 +40,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -46,8 +49,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -184,57 +187,38 @@ fun GlassTopBar(
                             .height(GlassTopBarRowHeight),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = TopBarRowPadding),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ProvideContentColor(color = ExtendedTheme.colors.text) {
-                                CompositionLocalProvider(LocalBarButtons provides barButtons) {
-                                    if (navigationIcon != null) {
-                                        Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { navigationIcon() }
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            // What docks into the title passes under the bar's buttons on its way
-                                            .zIndex(-1f)
-                                            .weight(1f)
-                                            .padding(
-                                                start = if (navigationIcon != null) TitlePadding else BareTitlePadding,
-                                                end = TitlePadding,
-                                            ),
-                                    ) {
-                                        if (!centerTitle) ProvideTextStyle(
-                                            value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)
-                                        ) {
-                                            if (largeTitleProgress == null) {
-                                                title()
-                                            } else {
-                                                Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
-                                            }
-                                        }
-                                    }
-                                    if (actionsInCapsule) {
-                                        // With no actions the row measures nothing, so no glass shows
-                                        Row(
-                                            modifier = Modifier.floatingGlass(TopBarCapsule),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            content = actions,
-                                        )
+                        TitleRow(
+                            navigationIcon = navigationIcon?.let { icon ->
+                                { Box(modifier = Modifier.floatingGlass(TopBarCapsule)) { icon() } }
+                            },
+                            title = {
+                                ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
+                                    if (largeTitleProgress == null || centerTitle) {
+                                        title()
                                     } else {
-                                        // Bare, with no glass to answer for them
-                                        CompositionLocalProvider(LocalBarButtons provides null) { actions() }
+                                        Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
                                     }
                                 }
-                            }
-                        }
-                        // Centred on the whole row, whatever buttons sit at either end
-                        if (centerTitle) {
-                            ProvideContentColor(color = ExtendedTheme.colors.text) {
-                                ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold), content = title)
-                            }
-                        }
+                            },
+                            actions = {
+                                if (actionsInCapsule) {
+                                    // With no actions the row measures nothing, so no glass shows
+                                    Row(
+                                        modifier = Modifier.floatingGlass(TopBarCapsule),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        content = actions,
+                                    )
+                                } else {
+                                    // Bare, with no glass to answer for them
+                                    CompositionLocalProvider(LocalBarButtons provides null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+                                    }
+                                }
+                            },
+                            end = LocalTopBarEnd.current,
+                            centerTitle = centerTitle,
+                            barButtons = barButtons,
+                        )
                     }
                     content?.invoke(this)
                 }
@@ -286,6 +270,81 @@ fun GlassStatusBar(modifier: Modifier = Modifier) {
             .topBarGlass()
     )
 }
+
+/**
+ * What the page's host puts at the end of every [GlassTopBar] under it, past the bar's own
+ * actions, such as search beside the rail. It is given the room it may take and sizes itself to it.
+ */
+val LocalTopBarEnd = staticCompositionLocalOf<(@Composable (room: Dp) -> Unit)?> { null }
+
+/** Between the bar's actions and what [LocalTopBarEnd] puts after them. */
+private val EndGap = 12.dp
+
+/** What [LocalTopBarEnd] is kept at least room for, as a round button. */
+private val EndLeast = GlassTopBarItemHeight
+
+/**
+ * The bar's row: the navigation icon at the start, the title after it or centred on the whole row,
+ * the actions at the end and [end] past them, each centred on the row's height. The title passes
+ * under the buttons, as what docks into it does on its way.
+ */
+@Composable
+private fun TitleRow(
+    navigationIcon: (@Composable () -> Unit)?,
+    title: @Composable () -> Unit,
+    actions: @Composable () -> Unit,
+    end: (@Composable (room: Dp) -> Unit)?,
+    centerTitle: Boolean,
+    barButtons: BarButtons,
+) {
+    // The bar's own buttons, and any glass in its title, come in with the scroll
+    ProvideContentColor(color = ExtendedTheme.colors.text) {
+        CompositionLocalProvider(LocalBarButtons provides barButtons) {
+            SubcomposeLayout(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = TopBarRowPadding),
+            ) { constraints ->
+                val width = constraints.maxWidth
+                val height = constraints.maxHeight
+                val loose = constraints.copy(minWidth = 0, minHeight = 0)
+                val nav = navigationIcon?.let { subcompose(TopBarSlot.Navigation, it).first().measure(loose) }
+                val acts = subcompose(TopBarSlot.Actions, actions).first().measure(loose)
+                val gap = if (end != null && acts.width > 0) EndGap.roundToPx() else 0
+                val least = if (end != null) EndLeast.roundToPx() else 0
+                val titleStart = (nav?.width ?: 0) + (if (nav != null) TitlePadding else BareTitlePadding).roundToPx()
+                val titleRoom = if (centerTitle) width else width - titleStart - TitlePadding.roundToPx() - acts.width - gap - least
+                val text = subcompose(TopBarSlot.Title) { Box { title() } }.first().measure(loose.copy(maxWidth = titleRoom.coerceAtLeast(0)))
+                val room = if (centerTitle) {
+                    (width - text.width) / 2 - TitlePadding.roundToPx() - acts.width - gap
+                } else {
+                    width - titleStart - text.width - TitlePadding.roundToPx() - acts.width - gap
+                }.coerceAtLeast(least)
+                val ending = end?.let { slot ->
+                    subcompose(TopBarSlot.End) {
+                        // Its own glass, not a bar button's that comes in with the scroll
+                        CompositionLocalProvider(LocalBarButtons provides null) { Box { slot(room.toDp()) } }
+                    }.first().measure(loose.copy(maxWidth = room))
+                }
+                layout(width, height) {
+                    fun Placeable.centredY() = ((height - this.height) / 2f).roundToInt()
+                    val endWidth = ending?.width ?: 0
+                    nav?.place(0, nav.centredY())
+                    ending?.place(width - endWidth, ending.centredY())
+                    acts.place(width - endWidth - gap - acts.width, acts.centredY())
+                    // Centred on the whole row, whatever buttons sit at either end
+                    if (centerTitle) {
+                        text.place(((width - text.width) / 2f).roundToInt(), text.centredY())
+                    } else {
+                        text.place(titleStart, text.centredY(), zIndex = -1f)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum class TopBarSlot { Navigation, Title, Actions, End }
 
 /** Single-line title text for [GlassTopBar]. */
 @Composable

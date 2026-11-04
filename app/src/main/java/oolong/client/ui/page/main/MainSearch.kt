@@ -3,6 +3,7 @@ package oolong.client.ui.page.main
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,9 +35,11 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,6 +65,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -150,36 +154,78 @@ fun mainSearchPadding(atTop: Boolean): PaddingValues =
 
 /**
  * The field search opens from where it is at the top: under the home page's title on a phone where
- * the user keeps it there, over the tabs beside the rail. What the search field grows out of, in
- * its shape; it reports where it is to [state] and gives way to that field while search shows.
+ * the user keeps it there, at the end of the top bar beside the rail. What the search field grows
+ * out of, in its shape; it reports where it is to [state] and gives way to that field while search
+ * shows. [compact], where there is no room for the field, it is a round button.
  */
 @Composable
-fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     val colors = ExtendedTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(FieldHeight)
-            .onGloballyPositioned { state.buttonBounds = it.boundsInRoot() }
-            .graphicsLayer { alpha = if (state.progress.value > 0f) 0f else 1f }
-            .pressScale(interactionSource)
-            // The same glass as the field it turns into; over the page it can't see through, so
-            // it shows as the glass's solid form
-            .floatingGlass(CapsuleShape)
-            .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onOpen)
-            .padding(start = (FieldHeight - IconSize) / 2),
-    ) {
-        Icon(imageVector = Symbols.Search, contentDescription = null, tint = colors.text, modifier = Modifier.size(IconSize))
-        Spacer(modifier = Modifier.width(FieldIconGap))
-        Text(
-            text = stringResource(id = R.string.hint_search),
-            color = colors.text.copy(alpha = ContentAlpha.medium),
-            maxLines = 1,
-        )
+    // Gone, as when the window narrows to a phone's and the bar's button takes over, it leaves no
+    // place behind for search to open out of
+    var placed by remember { mutableStateOf(Rect.Zero) }
+    DisposableEffect(state) {
+        onDispose { if (state.buttonBounds == placed) state.buttonBounds = Rect.Zero }
+    }
+    // A new glass for each form, rather than one whose modifiers change under it
+    key(compact) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (compact) Arrangement.Center else Arrangement.Start,
+            modifier = modifier
+                .then(if (compact) Modifier.width(FieldHeight) else Modifier.fillMaxWidth())
+                .height(FieldHeight)
+                .onGloballyPositioned {
+                    placed = it.boundsInRoot()
+                    state.buttonBounds = placed
+                }
+                .graphicsLayer { alpha = if (state.progress.value > 0f) 0f else 1f }
+                .pressScale(interactionSource)
+                // The same glass as the field it turns into; over the page it can't see through, so
+                // it shows as the glass's solid form
+                .floatingGlass(CapsuleShape)
+                .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onOpen)
+                .padding(start = if (compact) 0.dp else (FieldHeight - IconSize) / 2),
+        ) {
+            Icon(
+                imageVector = Symbols.Search,
+                contentDescription = if (compact) stringResource(id = R.string.hint_search) else null,
+                tint = colors.text,
+                modifier = Modifier.size(IconSize),
+            )
+            if (!compact) {
+                Spacer(modifier = Modifier.width(FieldIconGap))
+                Text(
+                    text = stringResource(id = R.string.hint_search),
+                    color = colors.text.copy(alpha = ContentAlpha.medium),
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
+
+/**
+ * [TopSearchField] at the end of a top bar, in [room]: as wide as it may be up to [TopBarFieldWidth],
+ * or a round button where there is less room than [TopBarFieldLeast].
+ */
+@Composable
+fun TopBarSearchField(state: MainSearchState, room: Dp, onOpen: () -> Unit) {
+    val compact = room < TopBarFieldLeast
+    TopSearchField(
+        state = state,
+        onOpen = onOpen,
+        compact = compact,
+        modifier = if (compact) Modifier else Modifier.width(minOf(room, TopBarFieldWidth)),
+    )
+}
+
+/** The widest the field gets in a top bar. */
+private val TopBarFieldWidth = 320.dp
+
+/** The least room the field takes in a top bar before it folds to a button. */
+private val TopBarFieldLeast = 200.dp
 
 /**
  * The button and the field it stretches into, one piece of glass between the bar's room for it
@@ -267,7 +313,7 @@ fun MainSearchField(
                 val progress = state.progress.value
                 // The icon keeps the same distance from the left as from the top and bottom, so it
                 // sits in the middle of the round button and at the start of the field
-                val inset = (maxHeight - IconSize) / 2
+                val inset = ((maxHeight - IconSize) / 2).coerceAtLeast(0.dp)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize().padding(start = inset)) {
                     Icon(
                         imageVector = Symbols.Search,

@@ -4,15 +4,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -31,6 +25,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,9 +44,9 @@ import oolong.client.ui.page.main.notifications.NotificationsTab
 import oolong.client.ui.page.main.user.UserPage
 import oolong.client.ui.page.search.SearchViewModel
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassTopBarRowHeight
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
+import oolong.client.ui.widgets.compose.LocalTopBarEnd
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.SwipeToDismissSnackbarHost
 import oolong.client.ui.widgets.compose.rememberPageScrollState
@@ -171,20 +166,9 @@ fun MainPage(
                 PaddingValues(0.dp)
             }
             CompositionLocalProvider(LocalChromePadding provides chromePadding) {
-                // Beside the rail, the field stands over every tab, at the top of the list they
-                // show in, and the tabs take the room under it
-                if (!showBottomNavigation) {
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
-                            .height(GlassTopBarRowHeight)
-                            .padding(horizontal = NavPillMargin)
-                            .graphicsLayer { alpha = 1f - search.progress.value },
-                    ) {
-                        TopSearchField(state = search, onOpen = openSearch)
-                    }
+                // Beside the rail, the field stands at the end of the top bar of the tab in view
+                val barSearch: (@Composable (Dp) -> Unit)? = if (showBottomNavigation) null else { room ->
+                    TopBarSearchField(state = search, room = room, onOpen = openSearch)
                 }
                 LazyLoadHorizontalPager(
                     state = pagerState,
@@ -192,36 +176,29 @@ fun MainPage(
                     // Gives way to search, which on the translucent theme has no ground of its own
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(
-                            if (showBottomNavigation) {
-                                Modifier
-                            } else {
-                                Modifier
-                                    .padding(top = GlassTopBarRowHeight)
-                                    .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
-                                    .consumeWindowInsets(WindowInsets.statusBars)
-                            }
-                        )
                         .graphicsLayer { alpha = 1f - search.progress.value },
                     verticalAlignment = Alignment.Top,
                     userScrollEnabled = false
-                ) {
-                    when (navigationItems[it].id) {
-                        MainTabs.HOME -> HomePage(
-                            canOpenExplore = navigationItems.any { item -> item.id == MainTabs.EXPLORE },
-                            showSearchBox = false,
-                            searchField = if (showBottomNavigation && searchAtTop) {
-                                { TopSearchField(state = search, onOpen = openSearch) }
-                            } else {
-                                null
-                            },
-                        ) {
-                            tabs.selected = MainTabs.EXPLORE
-                        }
+                ) { page ->
+                    // Only the tab in view, so the field search opens from is the one that shows
+                    CompositionLocalProvider(LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage }) {
+                        when (navigationItems[page].id) {
+                            MainTabs.HOME -> HomePage(
+                                canOpenExplore = navigationItems.any { item -> item.id == MainTabs.EXPLORE },
+                                showSearchBox = false,
+                                searchField = if (showBottomNavigation && searchAtTop) {
+                                    { TopSearchField(state = search, onOpen = openSearch) }
+                                } else {
+                                    null
+                                },
+                            ) {
+                                tabs.selected = MainTabs.EXPLORE
+                            }
 
-                        MainTabs.EXPLORE -> ExplorePage()
-                        MainTabs.NOTIFICATIONS -> NotificationsTab()
-                        MainTabs.USER -> UserPage()
+                            MainTabs.EXPLORE -> ExplorePage()
+                            MainTabs.NOTIFICATIONS -> NotificationsTab()
+                            MainTabs.USER -> UserPage()
+                        }
                     }
                 }
                 if (searchShown) {
