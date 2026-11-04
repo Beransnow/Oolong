@@ -19,7 +19,7 @@ import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.form.signedFormBody
-import oolong.core.network.form.signedParams
+import oolong.core.network.form.signedWebQuery
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
 import java.util.concurrent.atomic.AtomicInteger
@@ -158,11 +158,6 @@ class ExploreRemoteDataSource(
         dislikedForumService.cancel(webParams("forum_id" to forumId.toString(), "user_id" to userId.toString()))
     }
 
-    private fun webParams(vararg params: Pair<String, String>): Map<String, String> {
-        val all = commonParams.form(webProfile, includeTbs = true) + params + listOf(
-            "client_type" to "8",
-            "subapp_type" to "client_fe",
-        )
-        return signedParams(all, withSig = false).toMap()
-    }
+    private fun webParams(vararg params: Pair<String, String>): Map<String, String> =
+        commonParams.signedWebQuery(webProfile, params.toList() + ("client_type" to "8"))
 }
