@@ -85,6 +85,8 @@ import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.util.IntSizeCompat
 import com.github.panpf.zoomimage.zoom.Edge
 import com.github.panpf.zoomimage.zoom.ReadMode
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.components.images.rememberImageDownloadProgress
@@ -97,6 +99,10 @@ import oolong.client.ui.page.editor.EditRequest
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.ui.utils.FullColorWindow
+import oolong.client.ui.widgets.compose.IconButton
+import oolong.client.ui.widgets.compose.MediaGlassActions
+import oolong.client.ui.widgets.compose.MediaGlassPill
+import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
@@ -149,6 +155,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val dragScale = 1f - (drag.y.coerceAtLeast(0f) / container.height).coerceIn(0f, 1f) * 0.45f
         val dragFade = 1f - (abs(drag.y) / (container.height * 0.5f)).coerceIn(0f, 1f)
 
+        val glass = rememberHazeState()
         val zoomStates = remember { mutableStateMapOf<Int, CoilZoomState>() }
         val loadedKeys = remember { mutableStateMapOf<String, MemoryCache.Key>() }
         val pageCount by rememberUpdatedState(pictures.size)
@@ -215,6 +222,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    // What the controls' glass shows through
+                    .hazeSource(glass)
                     .graphicsLayer {
                         alpha = if (phase == Phase.Open) 1f else 0f
                         translationX = drag.x
@@ -329,7 +338,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             label = "chrome",
         )
         val editor = LocalImageEditor.current
-        if (current != null && chrome > 0f && phase != Phase.Closing) {
+        if (current != null && chrome > 0f && phase != Phase.Closing) ProvideMediaGlass(glass) {
             PhotoChrome(
                 picture = current,
                 total = state.totalAmount,
@@ -403,18 +412,19 @@ private fun PhotoChrome(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         if (total > 1) {
-            Text(
-                text = "${picture.overallIndex} / $total",
-                color = Color.White,
-                fontSize = 13.sp,
+            MediaGlassPill(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(top = 8.dp)
-                    .clip(SmoothCornerShape.Capsule)
-                    .background(Color.Black.copy(alpha = 0.35f))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-            )
+                    .padding(top = 8.dp),
+            ) {
+                Text(
+                    text = "${picture.overallIndex} / $total",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+            }
         }
         Row(
             modifier = Modifier
@@ -447,24 +457,19 @@ private fun PhotoChrome(
                     )
                 }
             }
-            PhotoAction(Symbols.Edit, stringResource(id = R.string.editor_edit_picture), onEdit)
-            PhotoAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
-            PhotoAction(Symbols.Share, stringResource(id = R.string.title_share_pic), onShare)
-            PhotoAction(Symbols.Download, stringResource(id = R.string.desc_download_pic), onSave)
+            MediaGlassActions {
+                PhotoAction(Symbols.Edit, stringResource(id = R.string.editor_edit_picture), onEdit)
+                PhotoAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
+                PhotoAction(Symbols.Share, stringResource(id = R.string.title_share_pic), onShare)
+                PhotoAction(Symbols.Download, stringResource(id = R.string.desc_download_pic), onSave)
+            }
         }
     }
 }
 
 @Composable
 private fun PhotoAction(icon: ImageVector, description: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    IconButton(onClick = onClick) {
         Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }

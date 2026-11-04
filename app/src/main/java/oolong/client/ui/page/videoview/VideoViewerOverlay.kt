@@ -108,6 +108,8 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import coil3.compose.AsyncImage
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -121,7 +123,12 @@ import oolong.client.ui.page.photoview.LightSystemBars
 import oolong.client.ui.page.photoview.offsetTo
 import oolong.client.ui.utils.FullColorWindow
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.LocalContextMenus
+import oolong.client.ui.widgets.compose.MediaGlassActions
+import oolong.client.ui.widgets.compose.MediaGlassIconButton
+import oolong.client.ui.widgets.compose.MediaGlassPill
+import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
@@ -358,9 +365,12 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             animationSpec = Motion.fadeOut(),
             label = "cover",
         )
+        val glass = rememberHazeState()
         Box(
             modifier = Modifier
                 .offsetTo(rect)
+                // What the controls' glass shows through
+                .hazeSource(glass)
                 .graphicsLayer {
                     alpha = if (near == null) p.coerceIn(0f, 1f) else 1f
                     shape = SmoothCornerShape(corner.dp)
@@ -506,103 +516,105 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             label = "chrome",
         )
 
-        // The middle: where a seek is going, or why the video is not playing
-        if (phase == Phase.Open && !dragging && !inPip) {
-            var loading by remember { mutableStateOf(false) }
-            val waiting = playback.error == null && playback.playWhenReady &&
-                (playback.state == Player.STATE_BUFFERING || !playback.firstFrame)
-            LaunchedEffect(waiting) {
-                loading = false
-                if (waiting) {
-                    delay(LoaderDelay)
-                    loading = true
-                }
-            }
-            val error = playback.error
-            val signedIn = LocalAccount.current != null
-            Box(modifier = Modifier.align(Alignment.Center)) {
-                when {
-                    seekTarget != null -> SeekTime(seekTarget ?: 0L, duration)
-                    error != null -> Failure(error.message(signedIn), onRetry = ::retry)
-                    playback.ended -> BigButton(Symbols.ReplayFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
-                    !playback.playWhenReady -> BigButton(Symbols.PlayArrowFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
-                    loading -> WavyLoader(color = Color.White, modifier = Modifier.size(44.dp))
-                }
-            }
-        }
-
-        if (fast && phase == Phase.Open) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 48.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Icon(imageVector = Symbols.FastForwardFill, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                Text(text = "2×", color = Color.White, style = TimeStyle.copy(fontSize = 13.sp))
-            }
-        }
-
-        if (phase == Phase.Open && !dragging && !inPip && chromeAlpha < 1f) {
-            ProgressLine(
-                fraction = if (duration > 0) position.toFloat() / duration else 0f,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 6.dp)
-                    .graphicsLayer { alpha = 1f - chromeAlpha },
-            )
-        }
-
-        if (chromeAlpha > 0f && phase != Phase.Closing) {
-            VideoChrome(
-                video = video,
-                landscape = landscape,
-                playing = playback.playWhenReady && !playback.ended,
-                ended = playback.ended,
-                position = seekTarget ?: position,
-                buffered = buffered,
-                duration = duration,
-                speed = speed,
-                onClose = { close() },
-                onTogglePlaying = { togglePlaying() },
-                onSeek = { seekTarget = it },
-                onSeekEnd = {
-                    player.seekTo(it)
-                    seekTarget = null
-                    touched++
-                },
-                onSpeed = { anchor ->
-                    touched++
-                    speedMenu = menus?.show(
-                        items = Speeds.map { value ->
-                            ContextMenuItem(icon = null, label = speedLabel(value), selected = value == speed) { speed = value }
-                        },
-                        anchor = anchor,
-                    )
-                },
-                onLandscape = { setLandscape(!landscape) },
-                onCopyLink = { TiebaUtil.copyText(context, video.url) },
-                onShare = {
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, video.url)
+        ProvideMediaGlass(glass) {
+            // The middle: where a seek is going, or why the video is not playing
+            if (phase == Phase.Open && !dragging && !inPip) {
+                var loading by remember { mutableStateOf(false) }
+                val waiting = playback.error == null && playback.playWhenReady &&
+                    (playback.state == Player.STATE_BUFFERING || !playback.firstFrame)
+                LaunchedEffect(waiting) {
+                    loading = false
+                    if (waiting) {
+                        delay(LoaderDelay)
+                        loading = true
                     }
-                    // Not a leaving of the app, which would shrink the video into its own window
-                    val chooser = Intent.createChooser(intent, context.getString(R.string.title_share))
-                        .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
-                    runCatching { context.startActivity(chooser) }
-                },
-                onPip = enterPip,
-                saving = viewer.saving[video.key],
-                onSave = { viewer.save(context, video) },
-                modifier = Modifier.graphicsLayer { alpha = chromeAlpha },
-            )
+                }
+                val error = playback.error
+                val signedIn = LocalAccount.current != null
+                Box(modifier = Modifier.align(Alignment.Center)) {
+                    when {
+                        seekTarget != null -> SeekTime(seekTarget ?: 0L, duration)
+                        error != null -> Failure(error.message(signedIn), onRetry = ::retry)
+                        playback.ended -> BigButton(Symbols.ReplayFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
+                        !playback.playWhenReady -> BigButton(Symbols.PlayArrowFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
+                        loading -> WavyLoader(color = Color.White, modifier = Modifier.size(44.dp))
+                    }
+                }
+            }
+
+            if (fast && phase == Phase.Open) {
+                MediaGlassPill(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 48.dp),
+                ) {
+                    Icon(
+                        imageVector = Symbols.FastForwardFill,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 14.dp).size(16.dp),
+                    )
+                    Text(text = "2×", color = Color.White, style = TimeStyle.copy(fontSize = 13.sp), modifier = Modifier.padding(end = 14.dp, top = 6.dp, bottom = 6.dp))
+                }
+            }
+
+            if (phase == Phase.Open && !dragging && !inPip && chromeAlpha < 1f) {
+                ProgressLine(
+                    fraction = if (duration > 0) position.toFloat() / duration else 0f,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 6.dp)
+                        .graphicsLayer { alpha = 1f - chromeAlpha },
+                )
+            }
+
+            if (chromeAlpha > 0f && phase != Phase.Closing) {
+                VideoChrome(
+                    video = video,
+                    landscape = landscape,
+                    playing = playback.playWhenReady && !playback.ended,
+                    ended = playback.ended,
+                    position = seekTarget ?: position,
+                    buffered = buffered,
+                    duration = duration,
+                    speed = speed,
+                    onClose = { close() },
+                    onTogglePlaying = { togglePlaying() },
+                    onSeek = { seekTarget = it },
+                    onSeekEnd = {
+                        player.seekTo(it)
+                        seekTarget = null
+                        touched++
+                    },
+                    onSpeed = { anchor ->
+                        touched++
+                        speedMenu = menus?.show(
+                            items = Speeds.map { value ->
+                                ContextMenuItem(icon = null, label = speedLabel(value), selected = value == speed) { speed = value }
+                            },
+                            anchor = anchor,
+                        )
+                    },
+                    onLandscape = { setLandscape(!landscape) },
+                    onCopyLink = { TiebaUtil.copyText(context, video.url) },
+                    onShare = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, video.url)
+                        }
+                        // Not a leaving of the app, which would shrink the video into its own window
+                        val chooser = Intent.createChooser(intent, context.getString(R.string.title_share))
+                            .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+                        runCatching { context.startActivity(chooser) }
+                    },
+                    onPip = enterPip,
+                    saving = viewer.saving[video.key],
+                    onSave = { viewer.save(context, video) },
+                    modifier = Modifier.graphicsLayer { alpha = chromeAlpha },
+                )
+            }
         }
     }
 }
@@ -756,9 +768,11 @@ private fun BoxScope.VideoChrome(
                             )
                         }
                     }
-                    RoundAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
-                    RoundAction(Symbols.Share, stringResource(id = R.string.title_share), onShare)
-                    SaveAction(saving = saving, onClick = onSave)
+                    MediaGlassActions {
+                        RoundAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
+                        RoundAction(Symbols.Share, stringResource(id = R.string.title_share), onShare)
+                        SaveAction(saving = saving, onClick = onSave)
+                    }
                 }
             }
             Row(
@@ -786,17 +800,18 @@ private fun BoxScope.VideoChrome(
                 )
                 Text(text = formatDuration(duration), color = Color.White.copy(alpha = 0.9f), style = TimeStyle)
                 var speedBounds by remember { mutableStateOf(Rect.Zero) }
-                Text(
-                    text = speedLabel(speed),
-                    color = Color.White,
-                    style = TimeStyle.copy(fontSize = 12.sp),
-                    modifier = Modifier
-                        .onGloballyPositioned { speedBounds = it.boundsInWindow() }
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.14f))
-                        .clickable(role = Role.Button, onClickLabel = stringResource(id = R.string.video_speed)) { onSpeed(speedBounds) }
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                )
+                MediaGlassPill(
+                    onClick = { onSpeed(speedBounds) },
+                    onClickLabel = stringResource(id = R.string.video_speed),
+                    modifier = Modifier.onGloballyPositioned { speedBounds = it.boundsInWindow() },
+                ) {
+                    Text(
+                        text = speedLabel(speed),
+                        color = Color.White,
+                        style = TimeStyle.copy(fontSize = 12.sp),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                    )
+                }
                 if (video.aspect in 0.01f..0.99f || landscape) {
                     ControlButton(
                         icon = if (landscape) Symbols.FullscreenExit else Symbols.Fullscreen,
@@ -881,32 +896,20 @@ private fun SeekTime(target: Long, duration: Long) {
 private fun Failure(message: Int, onRetry: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(text = stringResource(id = message), color = Color.White, fontSize = 15.sp)
-        Text(
-            text = stringResource(id = R.string.button_retry),
-            color = Color.White,
-            fontSize = 14.sp,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.16f))
-                .clickable(role = Role.Button, onClick = onRetry)
-                .padding(horizontal = 18.dp, vertical = 7.dp),
-        )
+        MediaGlassPill(onClick = onRetry) {
+            Text(
+                text = stringResource(id = R.string.button_retry),
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun BigButton(icon: ImageVector, description: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.35f))
-            .border(0.5.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(34.dp))
-    }
+    MediaGlassIconButton(icon = icon, description = description, onClick = onClick, size = 64.dp, iconSize = 34.dp)
 }
 
 @Composable
@@ -924,46 +927,22 @@ private fun ControlButton(icon: ImageVector, description: String, onClick: () ->
 
 @Composable
 private fun RoundAction(icon: ImageVector, description: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    IconButton(onClick = onClick) {
         Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }
 
-/** A button along the top, over the video: its own small dark disc. */
+/** A button along the top, over the video. */
 @Composable
 private fun TopButton(icon: ImageVector, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.35f))
-            .border(0.5.dp, Color.White.copy(alpha = 0.28f), CircleShape)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
-    }
+    MediaGlassIconButton(icon = icon, description = description, onClick = onClick, modifier = modifier, size = 40.dp)
 }
 
-/** Saves the video; while it downloads, a ring fills round the button instead, which then does nothing. */
+/** Saves the video; while it downloads, a ring fills in the button's place, which then does nothing. */
 @Composable
 private fun SaveAction(saving: Float?, onClick: () -> Unit) {
     val description = stringResource(id = R.string.video_save)
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
-            .clickable(role = Role.Button, enabled = saving == null, onClickLabel = description, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    IconButton(onClick = onClick, enabled = saving == null) {
         if (saving == null) {
             Icon(imageVector = Symbols.Download, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
         } else if (saving < 0f) {
