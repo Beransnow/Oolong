@@ -12,14 +12,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.arch.GlobalEvent
+import oolong.client.arch.onGlobalEvent
 import oolong.client.model.NotificationType
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
+import oolong.client.ui.page.main.MainTabs
 import oolong.client.ui.page.main.notifications.list.NotificationsListPage
+import oolong.client.ui.page.main.notifications.list.NotificationsViewModel
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTab
@@ -79,8 +84,8 @@ fun NotificationsPage(
 @Composable
 fun NotificationsTab(
     initialTab: Int = 0,
+    viewModel: NotificationsViewModel = hiltViewModel(),
 ) {
-    val navigator = LocalNavigator.current
     val pages = listOf<Pair<String, (@Composable (PaddingValues) -> Unit)>>(
         stringResource(id = R.string.title_reply_me) to @Composable {
             NotificationsListPage(type = NotificationType.ReplyMe, contentPadding = it)
@@ -92,7 +97,10 @@ fun NotificationsTab(
     val pagerState = rememberPagerState(
         initialPage = initialTab,
     ) { pages.size }
-    val coroutineScope = rememberCoroutineScope()
+    // Tapping the tab again refreshes the list in view
+    onGlobalEvent<GlobalEvent.Refresh>(filter = { it.key == MainTabs.NOTIFICATIONS }) {
+        viewModel.refresh(NotificationTypes[pagerState.currentPage])
+    }
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
@@ -114,6 +122,9 @@ fun NotificationsTab(
         }
     }
 }
+
+/** The notification lists, in the order of the tabs. */
+private val NotificationTypes = listOf(NotificationType.ReplyMe, NotificationType.AtMe)
 
 /** The pages' names on a tab capsule in the bar's title row: on these pages the tabs are the title. */
 @Composable
