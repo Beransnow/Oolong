@@ -81,6 +81,9 @@ sealed interface Edit {
     /** What an [Erase] rubs out: masks or marks. */
     enum class Layer { Masks, Marks }
 
+    /** Takes away the mask, mark or caption [id]. */
+    data class Remove(val id: Int) : Edit
+
     /**
      * Text centred on [center], [size] pixels high, always upright however the picture is turned.
      * A later caption with the same [id] replaces it; one with blank [text] removes it.
@@ -113,14 +116,37 @@ class EditHistory(private val whole: Framing) {
 
     val framing: Framing get() = applied.lastOrNull { it is Edit.Frame }?.let { (it as Edit.Frame).framing } ?: whole
 
-    /** The strokes, masks, marks and what rubs them out, in the order they were made. */
-    val strokes: List<Edit> get() = applied.filter { it is Edit.Mask || it is Edit.Mark || it is Edit.Erase }
+    /**
+     * The strokes, masks, marks and what rubs them out, in the order they were made; a mask or
+     * mark changed later stays in its place, as it now is, and one removed is gone.
+     */
+    val strokes: List<Edit>
+        get() {
+            val latest = HashMap<Int, Edit>()
+            for (edit in applied) {
+                when (edit) {
+                    is Edit.Remove -> latest.remove(edit.id)
+                    else -> edit.objectId?.let { latest[it] = edit }
+                }
+            }
+            val seen = HashSet<Int>()
+            return applied.mapNotNull { edit ->
+                when (edit) {
+                    is Edit.Erase -> edit
+                    is Edit.Mask, is Edit.Mark -> edit.objectId?.takeIf(seen::add)?.let(latest::get)
+                    else -> null
+                }
+            }
+        }
 
     /** The captions as they stand, each once, in the order they were added. */
     val captions: List<Edit.Caption>
         get() {
             val latest = LinkedHashMap<Int, Edit.Caption>()
-            for (edit in applied) if (edit is Edit.Caption) latest[edit.id] = edit
+            for (edit in applied) {
+                if (edit is Edit.Caption) latest[edit.id] = edit
+                if (edit is Edit.Remove) latest.remove(edit.id)
+            }
             return latest.values.filter { it.text.isNotBlank() }
         }
 
@@ -143,6 +169,21 @@ class EditHistory(private val whole: Framing) {
         position = steps.size
     }
 
+    /**
+     * Pushes [edit], or, when the last step changed the same mask or mark and nothing was undone,
+     * puts it in that step's place: a colour slid through many values is one step.
+     */
+    fun pushOrMerge(edit: Edit) {
+        val last = steps.getOrNull(position - 1)
+        if (position == steps.size && last != null && last.objectId != null && last.objectId == edit.objectId &&
+            steps.subList(0, position - 1).any { it.objectId == edit.objectId }
+        ) {
+            steps[position - 1] = edit
+        } else {
+            push(edit)
+        }
+    }
+
     fun undo() {
         if (canUndo) position--
     }
@@ -151,3 +192,12 @@ class EditHistory(private val whole: Framing) {
         if (canRedo) position++
     }
 }
+
+/** The id of a mask, mark or caption, which later steps change it by; null for other steps. */
+val Edit.objectId: Int?
+    get() = when (this) {
+        is Edit.Mask -> id
+        is Edit.Mark -> id
+        is Edit.Caption -> id
+        else -> null
+    }

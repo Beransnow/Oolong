@@ -48,4 +48,5 @@
     <string name="editor_color_done">Done picking</string>
     <string name="editor_eraser">Eraser</string>
     <string name="editor_unmask">Erase</string>
+    <string name="editor_delete">Delete</string>
 </resources>

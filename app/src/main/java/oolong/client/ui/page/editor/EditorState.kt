@@ -129,6 +129,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     fun select(next: EditorTool?) {
         finishCaption()
+        deselect()
         tool = if (next == tool) null else next
         goHome()
         // Text starts with a caption to type, in the middle, unless there are some already
@@ -165,6 +166,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     fun undo() {
         finishCaption()
+        deselect()
         val before = history.framing
         history.undo()
         if (history.framing != before) goHome()
@@ -172,6 +174,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     fun redo() {
         finishCaption()
+        deselect()
         val before = history.framing
         history.redo()
         if (history.framing != before) goHome()
@@ -388,7 +391,171 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     /** The largest side the frame must keep, in turned pixels. */
     fun leastFrame(): Float = max(48 * density / scale, 16f)
+
+    /** The mask or mark picked up to change, by id. */
+    var selected by mutableStateOf<Int?>(null)
+        private set
+
+    /** The picked-up mask or mark while a finger moves it, before it becomes a step. */
+    var dragged by mutableStateOf<Edit?>(null)
+
+    /** The picked-up mask or mark as it now stands. */
+    val selection: Edit? get() = dragged ?: selected?.let { id -> history.strokes.firstOrNull { it.objectId == id } }
+
+    /** The strokes as drawn now, with the one being moved where the finger has it. */
+    val shownStrokes: List<Edit>
+        get() {
+            val moving = dragged ?: return history.strokes
+            return history.strokes.map { if (it.objectId == moving.objectId) moving else it }
+        }
+
+    /** What can be picked up with the tool in hand: marks with markup, boxed masks with redaction. */
+    private fun pickable(edit: Edit): Boolean = when (edit) {
+        is Edit.Mark -> tool == EditorTool.Mark || tool == null
+        is Edit.Mask -> edit.shape == MaskShape.Rect && (tool == EditorTool.Mask || tool == null)
+        else -> false
+    }
+
+    /** The mask or mark under [screen] that can be picked up, the topmost first. */
+    fun objectAt(screen: Offset): Edit? {
+        val point = toPicture(toTurned(screen))
+        val slop = 12 * density / scale
+        return history.strokes.lastOrNull { pickable(it) && hits(it, point, slop) }
+    }
+
+    private fun hits(edit: Edit, point: Offset, slop: Float): Boolean = when (edit) {
+        is Edit.Mask -> box(edit.points).inflate(slop).contains(point)
+        is Edit.Mark -> when (edit.kind) {
+            MarkKind.Pen, MarkKind.Highlighter -> {
+                val reach = edit.width * (if (edit.kind == MarkKind.Highlighter) 3.5f else 1f) / 2 + slop
+                edit.points.size == 1 && (edit.points[0] - point).getDistance() < reach ||
+                    edit.points.zipWithNext().any { (a, b) -> distanceToSegment(point, a, b) < reach }
+            }
+            MarkKind.Line, MarkKind.Arrow -> distanceToSegment(point, edit.points.first(), edit.points.last()) < edit.width / 2 + slop
+            MarkKind.Box, MarkKind.Ellipse -> box(edit.points).inflate(edit.width / 2 + slop).contains(point)
+            MarkKind.Number -> (edit.points.first() - point).getDistance() < edit.width * 2.8f + slop
+        }
+        else -> false
+    }
+
+    /** Where [edit] lies in the picture's pixels, its breadth counted. */
+    fun bounds(edit: Edit): Rect = when (edit) {
+        is Edit.Mask -> box(edit.points)
+        is Edit.Mark -> {
+            val reach = when (edit.kind) {
+                MarkKind.Number -> edit.width * 2.8f
+                MarkKind.Highlighter -> edit.width * 1.75f
+                else -> edit.width / 2
+            }
+            box(edit.points).inflate(reach)
+        }
+        else -> Rect.Zero
+    }
+
+    /** Picks [edit] up, and shows its colour, size and kind in the options. */
+    fun pick(edit: Edit) {
+        selected = edit.objectId
+        when (edit) {
+            is Edit.Mark -> {
+                if (tool != EditorTool.Mark) select(EditorTool.Mark)
+                selected = edit.id
+                markKind = edit.kind
+                markColor = edit.color
+                markSize = nearestStep(edit.width, MarkWidths)
+            }
+            is Edit.Mask -> {
+                if (tool != EditorTool.Mask) select(EditorTool.Mask)
+                selected = edit.id
+                maskShape = edit.shape
+                maskStyle = edit.style
+            }
+            else -> Unit
+        }
+    }
+
+    fun deselect() {
+        selected = null
+        dragged = null
+    }
+
+    /** Which of [steps], on screen, a [width] in picture pixels comes nearest to now. */
+    private fun nearestStep(width: Float, steps: FloatArray): Int =
+        steps.indices.minBy { abs(steps[it] * density / scale - width) }
+
+    /** The handles of [edit] that move one end on their own: both ends of what spans two points. */
+    fun handles(edit: Edit): List<Offset> = when {
+        edit is Edit.Mask -> listOf(edit.points.first(), edit.points.last())
+        edit is Edit.Mark && !edit.kind.traced && edit.kind != MarkKind.Number -> listOf(edit.points.first(), edit.points.last())
+        else -> emptyList()
+    }
+
+    /** [edit] moved by [by], in picture pixels, whole or, given [handle], that end alone. */
+    fun moved(edit: Edit, by: Offset, handle: Int? = null): Edit {
+        fun shift(points: List<Offset>) = if (handle == null) {
+            points.map { it + by }
+        } else {
+            val end = if (handle == 0) 0 else points.lastIndex
+            points.mapIndexed { i, p -> if (i == end) p + by else p }
+        }
+        return when (edit) {
+            is Edit.Mask -> edit.copy(points = shift(edit.points))
+            is Edit.Mark -> edit.copy(points = shift(edit.points))
+            else -> edit
+        }
+    }
+
+    /** Ends a move: the moved mask or mark becomes a step. */
+    fun commitDrag() {
+        val moved = dragged ?: return
+        dragged = null
+        if (moved != history.strokes.firstOrNull { it.objectId == moved.objectId }) history.push(moved)
+    }
+
+    /** Gives the picked-up mark the colour and size in the options, or the boxed mask the style. */
+    fun restyle() {
+        val edit = selection ?: return
+        val changed = when (edit) {
+            is Edit.Mark -> edit.copy(color = markColor, width = MarkWidths[markSize] * density / scale)
+            is Edit.Mask -> edit.copy(style = maskStyle)
+            else -> edit
+        }
+        if (changed != edit) history.pushOrMerge(changed)
+    }
+
+    /** Where a point in the picture's pixels shows on screen. */
+    fun pictureToScreen(point: Offset): Offset {
+        val values = floatArrayOf(point.x, point.y)
+        renderer.orient(history.framing).mapPoints(values)
+        return toScreen(Offset(values[0], values[1]))
+    }
+
+    /** Where [edit] shows on screen. */
+    fun screenBounds(edit: Edit): Rect {
+        val b = bounds(edit)
+        val corners = listOf(b.topLeft, b.topRight, b.bottomLeft, b.bottomRight).map(::pictureToScreen)
+        return Rect(corners.minOf { it.x }, corners.minOf { it.y }, corners.maxOf { it.x }, corners.maxOf { it.y })
+    }
+
+    fun deleteSelection() {
+        val id = selected ?: return
+        deselect()
+        history.push(Edit.Remove(id))
+    }
 }
 
 /** Whether a mark follows the finger all the way, rather than spanning from where it went down. */
 val MarkKind.traced: Boolean get() = this == MarkKind.Pen || this == MarkKind.Highlighter
+
+private fun box(points: List<Offset>): Rect {
+    val a = points.first()
+    val b = points.last()
+    return Rect(minOf(a.x, b.x), minOf(a.y, b.y), maxOf(a.x, b.x), maxOf(a.y, b.y))
+}
+
+private fun distanceToSegment(p: Offset, a: Offset, b: Offset): Float {
+    val ab = b - a
+    val length = ab.x * ab.x + ab.y * ab.y
+    if (length == 0f) return (p - a).getDistance()
+    val t = (((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / length).coerceIn(0f, 1f)
+    return (p - (a + ab * t)).getDistance()
+}

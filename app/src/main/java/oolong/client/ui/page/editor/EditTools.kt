@@ -327,7 +327,10 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     Options(
                         options = MaskStyle.entries,
                         selected = state.maskStyle,
-                        onSelect = { state.maskStyle = it },
+                        onSelect = {
+                            state.maskStyle = it
+                            state.restyle()
+                        },
                         // Rubbing out has no style
                         enabled = state.maskShape != null,
                         label = { stringResource(id = it.label) },
@@ -349,7 +352,11 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     Options(
                         options = MaskChoices,
                         selected = state.maskShape,
-                        onSelect = { state.maskShape = it },
+                        onSelect = {
+                            // Another way to lay masks puts down what was picked up
+                            state.deselect()
+                            state.maskShape = it
+                        },
                         label = {
                             stringResource(
                                 id = when (it) {
@@ -383,7 +390,10 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     Options(
                         options = MarkChoices,
                         selected = state.markKind,
-                        onSelect = { state.markKind = it },
+                        onSelect = {
+                            state.deselect()
+                            state.markKind = it
+                        },
                         label = { stringResource(id = it?.label ?: R.string.editor_eraser) },
                         width = { 37.dp },
                     ) { kind, on ->
@@ -395,16 +405,29 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     }
                 }
                 if (picking) {
-                    HuePicker(color = state.markColor, onPick = { state.markColor = it }, onDone = { picking = false })
+                    HuePicker(
+                        color = state.markColor,
+                        onPick = {
+                            state.markColor = it
+                            state.restyle()
+                        },
+                        onDone = { picking = false },
+                    )
                 } else {
                     ColorRow(
                         selected = state.markColor,
-                        onSelect = { state.markColor = it },
+                        onSelect = {
+                            state.markColor = it
+                            state.restyle()
+                        },
                         // A rubber has no colour
                         enabled = state.markKind != null,
                         onCustom = { picking = true },
                         step = state.markSize,
-                        onStep = { state.markSize = it },
+                        onStep = {
+                            state.markSize = it
+                            state.restyle()
+                        },
                     )
                 }
             }

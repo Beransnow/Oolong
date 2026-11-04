@@ -50,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeJoin
@@ -331,10 +332,16 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                 val kept = state.history.framing.rect
                 val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
                 clipRect(shown.left, shown.top, shown.right, shown.bottom) { drawEdits(state) }
+                drawSelection(state)
             }
         }
         state.draft?.let { draft ->
             CaptionField(state, draft, lift)
+        }
+        // What is picked up can be taken away, from a button just above it
+        val selection = state.selection
+        if (selection != null && state.dragged == null && state.tool != EditorTool.Crop) {
+            DeleteButton(state, selection)
         }
     }
 }
@@ -355,8 +362,22 @@ private fun DrawScope.drawEdits(state: EditorState) {
     drawIntoCanvas { canvas ->
         val native = canvas.nativeCanvas
         native.withMatrix(state.screenMatrix()) {
-            state.renderer.draw(native, state.framing, state.history.strokes, captions, state.live, state.draft?.id)
+            state.renderer.draw(native, state.framing, state.shownStrokes, captions, state.live, state.draft?.id)
         }
+    }
+}
+
+/** Round what is picked up, a dashed outline, and a handle on each end that moves alone. */
+private fun DrawScope.drawSelection(state: EditorState) {
+    val edit = state.selection ?: return
+    val bounds = state.screenBounds(edit).inflate(6.dp.toPx())
+    val dash = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))
+    drawRect(Color.Black.copy(alpha = 0.4f), bounds.topLeft, bounds.size, style = Stroke(2.5.dp.toPx(), pathEffect = dash))
+    drawRect(Color.White, bounds.topLeft, bounds.size, style = Stroke(1.dp.toPx(), pathEffect = dash))
+    for (handle in state.handles(edit)) {
+        val at = state.pictureToScreen(handle)
+        drawCircle(Color.Black.copy(alpha = 0.3f), 8.dp.toPx(), at)
+        drawCircle(Color.White, 6.5.dp.toPx(), at)
     }
 }
 
@@ -476,10 +497,10 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.gestures
                 // Strokes start on the picture; elsewhere a finger moves the view
                 val kept = state.history.framing.rect
                 val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
-                if (shown.contains(down.position)) stroke(state, down) else transform(state, down)
+                if (shown.contains(down.position)) drawOrPick(state, down, viewConfiguration.touchSlop, grip) else transform(state, down)
             }
             EditorTool.Text -> caption(state, down, viewConfiguration.touchSlop)
-            null -> transform(state, down)
+            null -> tapOrTransform(state, down, viewConfiguration.touchSlop)
         }
     }
 }
@@ -522,8 +543,92 @@ private suspend fun AwaitPointerEventScope.dragFrame(state: EditorState, down: P
     state.commitFrame()
 }
 
-private suspend fun AwaitPointerEventScope.stroke(state: EditorState, down: PointerInputChange) {
+/**
+ * With markup or redaction in hand: on what is picked up, a finger moves it, or one end of it by
+ * its handle; a tap on something drawn picks it up, a tap elsewhere puts it down; a drag draws.
+ */
+private suspend fun AwaitPointerEventScope.drawOrPick(state: EditorState, down: PointerInputChange, slop: Float, grip: Float) {
+    val selection = state.selection
+    if (selection != null) {
+        val handle = state.handles(selection).indexOfFirst { (state.pictureToScreen(it) - down.position).getDistance() < grip }
+        if (handle >= 0 || state.objectAt(down.position)?.objectId == selection.objectId) {
+            move(state, down, selection, handle.takeIf { it >= 0 })
+            return
+        }
+    }
+    val hit = state.objectAt(down.position)
+    // Until the finger moves, it may be a tap
+    val path = mutableListOf(down.position)
+    var drawing = false
+    while (!drawing) {
+        val event = awaitPointerEvent()
+        if (event.changes.count { it.pressed } > 1) {
+            transform(state, null)
+            return
+        }
+        val change = event.changes.firstOrNull { it.id == down.id } ?: return
+        if (!change.pressed) break
+        path += change.position
+        if ((change.position - down.position).getDistance() > slop) drawing = true
+    }
+    if (!drawing) {
+        when {
+            hit != null -> state.pick(hit)
+            selection != null -> state.deselect()
+            // A tap draws a dot, or puts a numbered one
+            else -> {
+                state.beginStroke(down.position)
+                state.endStroke()
+            }
+        }
+        return
+    }
+    state.deselect()
     state.beginStroke(down.position)
+    path.drop(1).forEach(state::extendStroke)
+    stroke(state, down)
+}
+
+/** Moves [edit], or one end of it, with the finger, and makes it a step once lifted. */
+private suspend fun AwaitPointerEventScope.move(state: EditorState, down: PointerInputChange, edit: Edit, handle: Int?) {
+    val from = state.toPicture(state.toTurned(down.position))
+    while (true) {
+        val event = awaitPointerEvent()
+        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+        if (!change.pressed) break
+        if (change.positionChanged()) {
+            state.dragged = state.moved(edit, state.toPicture(state.toTurned(change.position)) - from, handle)
+            change.consume()
+        }
+    }
+    state.commitDrag()
+}
+
+/** With no tool in hand: a tap on something drawn or written picks it up with its tool; else the view moves. */
+private suspend fun AwaitPointerEventScope.tapOrTransform(state: EditorState, down: PointerInputChange, slop: Float) {
+    while (true) {
+        val event = awaitPointerEvent()
+        val change = event.changes.firstOrNull { it.id == down.id }
+        if (event.changes.count { it.pressed } > 1 || change == null || (change.pressed && (change.position - down.position).getDistance() > slop)) {
+            transform(state, null)
+            return
+        }
+        if (!change.pressed) break
+    }
+    val caption = state.captionAt(down.position)
+    val hit = state.objectAt(down.position)
+    when {
+        caption != null -> {
+            state.select(EditorTool.Text)
+            state.editCaption(caption)
+        }
+        hit != null -> state.pick(hit)
+    }
+}
+
+/** Draws the stroke begun, following the finger until it lifts. */
+private suspend fun AwaitPointerEventScope.stroke(state: EditorState, down: PointerInputChange) {
+    if (state.live == null) state.beginStroke(down.position)
     while (true) {
         val event = awaitPointerEvent()
         // A second finger zooms instead
@@ -595,4 +700,28 @@ private fun EditorBottom(state: EditorState) {
             .padding(bottom = 12.dp),
         contentAlignment = Alignment.BottomCenter,
     ) { EditorTools(state) }
+}
+
+@Composable
+private fun DeleteButton(state: EditorState, selection: Edit) {
+    val density = LocalDensity.current
+    val bounds = state.screenBounds(selection)
+    Box(
+        modifier = Modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+            layout(constraints.maxWidth, constraints.maxHeight) {
+                val gap = with(density) { 14.dp.roundToPx() }
+                // Above, or below when there is no room above
+                val above = bounds.top - gap - placeable.height
+                val y = if (above >= state.area.top) above else bounds.bottom + gap
+                placeable.place((bounds.center.x - placeable.width / 2f).toInt(), y.toInt())
+            }
+        },
+    ) {
+        Box(modifier = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)) {
+            IconButton(onClick = state::deleteSelection) {
+                Icon(imageVector = Symbols.Delete, contentDescription = stringResource(id = R.string.editor_delete), tint = ExtendedTheme.colors.text)
+            }
+        }
+    }
 }
