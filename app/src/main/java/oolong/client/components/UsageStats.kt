@@ -4,7 +4,13 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.edit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import oolong.client.BuildConfig
 import oolong.client.dataStore
 import oolong.client.repository.UpdateChannel
@@ -56,8 +62,16 @@ object UsageStats {
         locale = Locale.getDefault().let { listOf(it.language, it.country).filter(String::isNotEmpty).joinToString("-") }.take(20),
     )
 
+    /** Sends today's heartbeat in the background, for right after the person agreed. */
+    fun sendSoon(context: Context) {
+        val app = context.applicationContext
+        scope.launch { sendIfDue(app) }
+    }
+
     /** Sends today's heartbeat if one is due and the person agreed. Blocking. */
-    suspend fun sendIfDue(context: Context) {
+    suspend fun sendIfDue(context: Context) = sending.withLock { send(context) }
+
+    private suspend fun send(context: Context) {
         if (BuildConfig.BUILD_TYPE != "release" || !context.appPreferences.usageStats) return
         val preferences = preferences(context)
         val now = System.currentTimeMillis()
@@ -163,6 +177,11 @@ object UsageStats {
             connection.disconnect()
         }
     }.getOrNull()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // So that a send at launch and one right after agreeing don't both go out
+    private val sending = Mutex()
 
     private fun preferences(context: Context) = context.getSharedPreferences(Preferences, Context.MODE_PRIVATE)
 

@@ -82,6 +82,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.SPLASH_ICON_MILLIS
+import oolong.client.components.UsageStats
 import oolong.client.findActivity
 import oolong.client.migration.LegacyImport
 import oolong.client.toastShort
@@ -165,6 +166,7 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
         if (stage == Stage.Welcome) {
             context.appPreferences.usageStats = usageStats
             context.appPreferences.usageStatsAsked = true
+            if (usageStats) UsageStats.sendSoon(context)
         }
         then()
         scope.launch {

@@ -531,7 +531,10 @@ class MainActivity : AppCompatActivity() {
             buttons = {
                 DialogPositiveButton(
                     text = stringResource(id = R.string.button_send_usage_stats),
-                    onClick = { appPreferences.usageStats = true },
+                    onClick = {
+                        appPreferences.usageStats = true
+                        UsageStats.sendSoon(this@MainActivity)
+                    },
                 )
                 DialogNegativeButton(text = stringResource(id = R.string.button_dont_send_usage_stats))
             },
