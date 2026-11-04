@@ -56,6 +56,13 @@
     <string name="editor_pick_downloading">正在下载 %1$d%%</string>
     <string name="editor_pick_looking">正在识别</string>
     <string name="editor_pick_ready">点按要打码的地方</string>
+    <string name="editor_pick_auto">自动</string>
+    <string name="editor_pick_auto_download">自动打码需下载约 %1$d MB</string>
+    <string name="editor_pick_spotting">正在查找</string>
+    <string name="editor_pick_spotted">找到 %1$d 处</string>
+    <string name="editor_pick_spotted_none">没有找到</string>
+    <string name="editor_pick_cancel">取消</string>
+    <string name="editor_pick_hide_all">打码</string>
     <string name="editor_unmask">擦除</string>
     <string name="editor_delete">删除</string>
     <string name="editor_straighten">拉直</string>

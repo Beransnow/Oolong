@@ -736,6 +736,19 @@ private suspend fun AwaitPointerEventScope.tapOrTransform(state: EditorState, do
 private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: PointerInputChange, slop: Float, density: Float) {
     // Nothing to aim at until the picture is looked over
     if (!state.pickReady) return transform(state, down)
+    // While what was found all at once shows, a tap turns one off or on again
+    if (state.spotted != null || state.spotting) {
+        while (true) {
+            val event = awaitPointerEvent()
+            val change = event.changes.firstOrNull { it.id == down.id }
+            if (event.changes.count { it.pressed } > 1 || change == null || (change.pressed && (change.position - down.position).getDistance() > slop)) {
+                return transform(state, null)
+            }
+            if (!change.pressed) break
+        }
+        state.toggleSpotted(down.position)
+        return
+    }
     state.aimed = null
     state.swept = emptyList()
     state.aim = down.position

@@ -38,7 +38,9 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,6 +48,8 @@ import kotlinx.coroutines.withContext
 import oolong.client.components.automask.AutoMask
 import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.automask.AutoMaskFiles
+import oolong.client.components.automask.CodeFinder
+import oolong.client.components.automask.PrivacyRules
 import oolong.client.ui.widgets.compose.AuroraState
 import oolong.client.ui.widgets.compose.auroraColor
 import oolong.client.ui.widgets.compose.drawAuroraLight
@@ -132,6 +136,38 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
             last = point
             state.sweep(listOfNotNull(found) + crossed)
             state.aimed = EditorState.Aimed(point, state.sweptBlocks(), null)
+        }
+    }
+    // What was found all at once goes once another way or tool is chosen
+    LaunchedEffect(state.maskPicking, state.tool) {
+        if (!state.maskPicking || state.tool != EditorTool.Mask) state.spotted = null
+    }
+    // Every private detail at once, once asked and what reading needs is here
+    LaunchedEffect(state, prepared) {
+        val ready = prepared ?: return@LaunchedEffect
+        snapshotFlow { state.spotAsked }.filter { it }.collect {
+            files.readDownload.first { it == AutoMaskDownload.Ready }
+            state.spotAsked = false
+            val reader = files.reader() ?: return@collect
+            state.spotting = true
+            try {
+                val picture = state.renderer.picture
+                val boxes = withContext(Dispatchers.Default) {
+                    val read = reader.read(picture, ready.lines)
+                    val details = PrivacyRules.find(read).map { m ->
+                        // Characters are placed by their middles: a little more, so their edges are hidden too
+                        val pad = m.line.height * 0.35f
+                        Rect(m.line.spans[m.start].start - pad, m.line.top, m.line.spans[m.end - 1].endInclusive + pad, m.line.bottom)
+                    }
+                    details + CodeFinder.find(picture).map { Rect(it.left, it.top, it.right, it.bottom) }
+                }
+                state.spotted = boxes.map(EditorState::Spotted)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.w("TapToHide", "could not look for private details", e)
+            } finally {
+                state.spotting = false
+            }
         }
     }
     LaunchedEffect(state) {
@@ -290,6 +326,7 @@ internal class PickEffect(
      * out; null when the picture is drawn as it is.
      */
     fun aimedEdits(state: EditorState): Pair<List<Edit>, Int?>? {
+        state.spotted?.let { spotted -> return spotted.filter { it.on }.map { state.pickedMask(-1, it.box) } to null }
         val aimed = state.aimed?.takeIf { state.aiming } ?: return null
         return when {
             aimed.removing != null -> emptyList<Edit>() to aimed.removing.id
@@ -300,6 +337,12 @@ internal class PickEffect(
 
     /** A soft light over what the finger would hide, fading as the finger lets go. */
     fun drawAimed(scope: DrawScope, state: EditorState) = with(scope) {
+        // What was found all at once: lit while it is to be hidden, faintly once turned off
+        state.spotted?.forEach { spotted ->
+            clipPath(polygon(boxCorners(state, spotted.box))) {
+                drawRect(auroraColor(1).copy(alpha = if (spotted.on) 0.22f else 0.1f), blendMode = BlendMode.Plus)
+            }
+        }
         val h = hold.value
         val aimed = state.aimed ?: return@with
         if (h <= 0f) return@with
@@ -427,7 +470,7 @@ internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEf
         }
     }
     // Looking while picking, its files here and the picture not ready yet
-    val looking = state.tool == EditorTool.Mask && state.maskPicking && filesReady && !state.pickReady
+    val looking = state.tool == EditorTool.Mask && state.maskPicking && filesReady && (!state.pickReady || state.spotting)
     LaunchedEffect(looking) {
         if (looking) {
             launch { effect.looking.animateTo(1f, tween(300)) }

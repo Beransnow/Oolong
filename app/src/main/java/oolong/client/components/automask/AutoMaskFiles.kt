@@ -60,6 +60,12 @@ class AutoMaskFiles @Inject constructor(
         runtime()?.let(::add)
     }
 
+    /** What reading text needs besides: only for hiding everything at once, so fetched only for that. */
+    private val readFiles: List<Remote> = listOf(
+        Remote("models/automask/$Version/$Recognizer", Recognizer, "2fdd5dd8b89e00e9267e1c0918077497026d1ea7f18274489400dbe571bc94e7", 8_319_400),
+        Remote("models/automask/$Version/$Characters", Characters, "d1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b", 74_012),
+    )
+
     // Its own client, as the updater's: the app's carry Tieba's cookies
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -69,6 +75,13 @@ class AutoMaskFiles @Inject constructor(
     private val _download = MutableStateFlow(if (downloaded()) AutoMaskDownload.Ready else AutoMaskDownload.Missing(missingBytes()))
     val download: StateFlow<AutoMaskDownload> = _download.asStateFlow()
     private var job: Job? = null
+
+    private val _readDownload = MutableStateFlow(if (downloaded(readFiles)) AutoMaskDownload.Ready else AutoMaskDownload.Missing(missingBytes(readFiles)))
+
+    /** Where what reading text needs stands. */
+    val readDownload: StateFlow<AutoMaskDownload> = _readDownload.asStateFlow()
+    private var readJob: Job? = null
+    private var reader: TextReader? = null
 
     private val loading = Mutex()
     private var engine: AutoMask? = null
@@ -81,10 +94,42 @@ class AutoMaskFiles @Inject constructor(
         job = scope.launch {
             _download.value = AutoMaskDownload.Running(0f)
             _download.value = try {
-                fetch()
+                fetch(files, _download)
                 AutoMaskDownload.Ready
             } catch (e: Exception) {
                 AutoMaskDownload.Failed(missingBytes(), e)
+            }
+        }
+    }
+
+    fun startReadDownload() {
+        if (readJob?.isActive == true || _readDownload.value == AutoMaskDownload.Ready) return
+        readJob = scope.launch {
+            _readDownload.value = AutoMaskDownload.Running(0f)
+            _readDownload.value = try {
+                fetch(readFiles, _readDownload)
+                AutoMaskDownload.Ready
+            } catch (e: Exception) {
+                AutoMaskDownload.Failed(missingBytes(readFiles), e)
+            }
+        }
+    }
+
+    /** What reads text, loaded the first time; null until it and the rest are downloaded, or when it would not load. */
+    suspend fun reader(): TextReader? {
+        if (engine() == null) return null
+        return loading.withLock {
+            reader?.let { return@withLock it }
+            if (!downloaded(readFiles)) return@withLock null
+            withContext(io) {
+                try {
+                    TextReader.load(File(folder, Recognizer), File(folder, Characters), threads = 4).also { reader = it }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    readFiles.forEach { File(folder, it.name).delete() }
+                    _readDownload.value = AutoMaskDownload.Failed(missingBytes(readFiles), e)
+                    null
+                }
             }
         }
     }
@@ -107,17 +152,18 @@ class AutoMaskFiles @Inject constructor(
                 if (e is CancellationException) throw e
                 // Not to be loaded as it is: fetched afresh the next time
                 folder.deleteRecursively()
+                _readDownload.value = AutoMaskDownload.Missing(missingBytes(readFiles))
                 _download.value = AutoMaskDownload.Failed(missingBytes(), e as? Exception ?: IOException(e))
                 null
             }
         }
     }
 
-    private fun downloaded() = files.all { File(folder, it.name).length() == it.size }
+    private fun downloaded(of: List<Remote> = files) = of.all { File(folder, it.name).length() == it.size }
 
-    private fun missingBytes() = files.filter { File(folder, it.name).length() != it.size }.sumOf { it.size }
+    private fun missingBytes(of: List<Remote> = files) = of.filter { File(folder, it.name).length() != it.size }.sumOf { it.size }
 
-    private suspend fun fetch() = withContext(io) {
+    private suspend fun fetch(files: List<Remote>, state: MutableStateFlow<AutoMaskDownload>) = withContext(io) {
         folder.mkdirs()
         val wanted = files.filter { File(folder, it.name).length() != it.size }
         val total = wanted.sumOf { it.size }.coerceAtLeast(1)
@@ -141,7 +187,7 @@ class AutoMaskFiles @Inject constructor(
                             val progress = (done.toFloat() / total).coerceIn(0f, 1f)
                             if (progress - shown >= 0.005f) {
                                 shown = progress
-                                _download.value = AutoMaskDownload.Running(progress)
+                                state.value = AutoMaskDownload.Running(progress)
                             }
                         }
                     }
@@ -176,6 +222,8 @@ class AutoMaskFiles @Inject constructor(
         const val Encoder = "sam_encoder.tflite"
         const val Decoder = "sam_decoder.tflite"
         const val Gaussian = "sam_pe_gaussian.bin"
+        const val Recognizer = "text_recognizer.tflite"
+        const val Characters = "text_recognizer_dict.txt"
         private const val RuntimeName = "libtensorflowlite_jni.so"
 
         private val Runtimes = mapOf(

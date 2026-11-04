@@ -900,43 +900,90 @@ private enum class MaskWay(val label: Int, val icon: ImageVector) {
     Erase(R.string.editor_unmask, Symbols.InkEraser),
 }
 
-/** Where tap-to-hide stands, under its option: what it needs fetched, then whether it is ready. */
+/**
+ * Where tap-to-hide stands, under its option: what it needs fetched, then whether it is ready,
+ * with hiding every private detail at once beside; what that found, to hide or let go.
+ */
 @Composable
 private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
     val download by files.download.collectAsState()
-    // A line of words alone needs less room than a row with a button
-    OptionRow(arrangement = Arrangement.SpaceBetween, height = if (download == AutoMaskDownload.Ready) 24.dp else 40.dp) {
+    val readDownload by files.readDownload.collectAsState()
+    // Asked for once, what reading needs is offered for download
+    var offered by remember { mutableStateOf(false) }
+    val spotted = state.spotted
+    val color = ExtendedTheme.colors.textSecondary
+    val style = MaterialTheme.typography.body2
+    when {
+        download != AutoMaskDownload.Ready -> DownloadRow(download, R.string.editor_pick_download, files::startDownload)
+        state.spotting || (state.spotAsked && readDownload == AutoMaskDownload.Ready) -> OptionRow(height = 24.dp) {
+            Text(stringResource(R.string.editor_pick_spotting), color = color, style = style)
+        }
+        spotted != null -> OptionRow(arrangement = Arrangement.SpaceBetween) {
+            val count = spotted.count { it.on }
+            Text(
+                if (spotted.isEmpty()) stringResource(R.string.editor_pick_spotted_none) else stringResource(R.string.editor_pick_spotted, count),
+                color = color,
+                style = style,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+            Row {
+                TextButton(onClick = { state.spotted = null }, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_cancel)) }
+                if (count > 0) {
+                    TextButton(onClick = state::hideSpotted, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_hide_all)) }
+                }
+            }
+        }
+        offered && readDownload != AutoMaskDownload.Ready -> DownloadRow(readDownload, R.string.editor_pick_auto_download) {
+            files.startReadDownload()
+            state.spotAsked = true
+        }
+        else -> OptionRow(arrangement = Arrangement.SpaceBetween) {
+            Text(
+                stringResource(if (state.pickReady) R.string.editor_pick_ready else R.string.editor_pick_looking),
+                color = color,
+                style = style,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+            TextButton(
+                onClick = {
+                    if (readDownload == AutoMaskDownload.Ready) state.spotAsked = true else offered = true
+                },
+                enabled = state.pickReady,
+                color = ExtendedTheme.colors.text,
+            ) { Text(stringResource(R.string.editor_pick_auto)) }
+        }
+    }
+}
+
+/** A download not done yet: its size and a button to start it, how far along it is, or that it failed. */
+@Composable
+private fun DownloadRow(download: AutoMaskDownload, sizeText: Int, start: () -> Unit) {
+    OptionRow(arrangement = Arrangement.SpaceBetween) {
         val color = ExtendedTheme.colors.textSecondary
         val style = MaterialTheme.typography.body2
-        when (val d = download) {
+        when (download) {
             is AutoMaskDownload.Missing -> {
-                Text(stringResource(R.string.editor_pick_download, (d.bytes / 1_000_000).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
-                TextButton(onClick = files::startDownload, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_download_action)) }
+                Text(stringResource(sizeText, ((download.bytes + 999_999) / 1_000_000).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
+                TextButton(onClick = start, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_download_action)) }
             }
             is AutoMaskDownload.Failed -> {
                 Text(stringResource(R.string.editor_pick_failed), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
-                TextButton(onClick = files::startDownload, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_retry)) }
+                TextButton(onClick = start, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_retry)) }
             }
             is AutoMaskDownload.Running -> {
-                Text(stringResource(R.string.editor_pick_downloading, (d.progress * 100).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
+                Text(stringResource(R.string.editor_pick_downloading, (download.progress * 100).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
                 Box(
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .width(120.dp)
                         .height(4.dp)
-                        .clip(SmoothCornerShape.Capsule)
+                        .clip(CircleShape)
                         .background(TrackColor),
                 ) {
-                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(d.progress).background(ExtendedTheme.colors.text))
+                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(download.progress).background(ExtendedTheme.colors.text))
                 }
             }
-            AutoMaskDownload.Ready -> Text(
-                stringResource(if (state.pickReady) R.string.editor_pick_ready else R.string.editor_pick_looking),
-                color = color,
-                style = style,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-            )
+            AutoMaskDownload.Ready -> Unit
         }
     }
 }

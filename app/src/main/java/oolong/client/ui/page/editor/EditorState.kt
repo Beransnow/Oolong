@@ -196,6 +196,39 @@ class EditorState(
         return blocks + things
     }
 
+    /** Private details found all at once, each to be hidden while [Spotted.on]; null when none are shown. */
+    class Spotted(val box: Rect) {
+        var on by mutableStateOf(true)
+    }
+
+    var spotted by mutableStateOf<List<Spotted>?>(null)
+
+    /** Whether private details are being looked for. */
+    var spotting by mutableStateOf(false)
+
+    /** Asked to look for private details, until it starts. */
+    var spotAsked by mutableStateOf(false)
+
+    /** Turns the found detail under [screen] off, or on again; whether there was one. */
+    fun toggleSpotted(screen: Offset): Boolean {
+        val point = toPicture(toTurned(screen))
+        val reach = 8 * density / scale
+        val hit = spotted?.lastOrNull { it.box.inflate(reach).contains(point) } ?: return false
+        hit.on = !hit.on
+        return true
+    }
+
+    /** Hides the found details still on, as one step, and stops showing them. */
+    fun hideSpotted() {
+        val boxes = spotted.orEmpty().filter { it.on }.map { it.box }
+        spotted = null
+        if (boxes.isEmpty()) return
+        val first = history.nextId
+        val masks = boxes.mapIndexed { i, box -> pickedMask(first + i, box) }
+        history.push(if (masks.size == 1) masks[0] else Edit.Group(masks))
+        tapped += masks.map { it.id }
+    }
+
     /** Hides [blocks], what a slide passed over, as one step, the finger last [at] a point on screen. */
     fun hideSwept(at: Offset, blocks: List<Rect>) {
         if (blocks.size == 1) return hidePicked(at, blocks[0], held = true)

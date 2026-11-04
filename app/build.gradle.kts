@@ -255,6 +255,7 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     // Its native runtime is left out of the APK, see packaging
     implementation(libs.litert)
+    implementation(libs.zxing.core)
     implementation(libs.coil.gif)
     implementation(libs.zoomimage.compose.coil3)
 
