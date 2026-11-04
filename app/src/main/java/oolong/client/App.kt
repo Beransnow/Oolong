@@ -20,6 +20,7 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.github.gzuliyujiang.oaid.DeviceID
 import dagger.hilt.android.HiltAndroidApp
+import oolong.client.components.AppStorage
 import oolong.client.components.CrashLogs
 import oolong.client.components.OAIDGetter
 import oolong.client.components.images.newAppImageLoader
@@ -79,6 +80,7 @@ class App : Application(), SingletonImageLoader.Factory {
         thread {
             EmoticonManager.init(this@App)
         }
+        thread { AppStorage.sweep(this@App) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

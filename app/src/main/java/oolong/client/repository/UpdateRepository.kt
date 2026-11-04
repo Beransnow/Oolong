@@ -369,22 +369,23 @@ class UpdateRepository @Inject constructor(
         return signatures.orEmpty().map { MessageDigest.getInstance("SHA-256").digest(it.toByteArray()).toHex() }.toSet()
     }
 
-    private companion object {
+    companion object {
+        /** Under the cache, where the package being downloaded is kept. */
         const val UpdateDir = "update"
 
         @Suppress("DEPRECATION")
-        val SignatureFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        private val SignatureFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             PackageManager.GET_SIGNING_CERTIFICATES
         } else {
             PackageManager.GET_SIGNATURES
         }
 
-        val AutoCheckKey = booleanPreferencesKey("update_auto_check")
-        val ChannelKey = stringPreferencesKey("update_channel")
-        val SkippedKey = intPreferencesKey("update_skipped_version")
-        val HintedKey = intPreferencesKey("update_hinted_version")
-        val LastCheckKey = longPreferencesKey("update_last_check")
-        val PendingUpdateKey = stringPreferencesKey("update_pending_version")
+        private val AutoCheckKey = booleanPreferencesKey("update_auto_check")
+        private val ChannelKey = stringPreferencesKey("update_channel")
+        private val SkippedKey = intPreferencesKey("update_skipped_version")
+        private val HintedKey = intPreferencesKey("update_hinted_version")
+        private val LastCheckKey = longPreferencesKey("update_last_check")
+        private val PendingUpdateKey = stringPreferencesKey("update_pending_version")
     }
 }
 

@@ -9,6 +9,7 @@ import android.webkit.WebView
 import coil3.imageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import oolong.client.repository.UpdateRepository
 import oolong.client.ui.page.videoview.VideoCache
 import oolong.client.utils.ImageCacheUtil
 import java.io.File
@@ -121,6 +122,16 @@ object AppStorage {
         }
     }
 
+    /**
+     * What is left from before the app last started: the update package, installed by now or
+     * not to be, as a download only lives as long as the app; pictures edited for a reply more
+     * than a day ago, which a reply still being written does not hold on to.
+     */
+    fun sweep(context: Context) {
+        File(context.cacheDir, UpdateRepository.UpdateDir).deleteRecursively()
+        deleteOlder(File(context.cacheDir, "edited"), System.currentTimeMillis() - EditedMillis)
+    }
+
     suspend fun clearCache(context: Context) {
         clearImages(context)
         clearVideos(context)
@@ -149,4 +160,5 @@ object AppStorage {
     }
 
     private const val RecentMillis = 10 * 60 * 1000L
+    private const val EditedMillis = 24 * 60 * 60 * 1000L
 }
