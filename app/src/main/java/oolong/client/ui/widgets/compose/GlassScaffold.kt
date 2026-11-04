@@ -344,6 +344,10 @@ fun PaddingValues.plus(other: PaddingValues): PaddingValues {
 /**
  * Where the large title sits below the bar, moving up with the content as it scrolls, for the
  * bar's title to be matched to. It draws nothing.
+ *
+ * There is no large title of its own: the bar's title is the only one, drawn here, scaled up by
+ * this anchor's height over its own, and drawn back in the bar as the content scrolls
+ * ([matchedGeometry]). Only the anchor's start, top and height count, so it is 1 px wide.
  */
 @Composable
 private fun LargeTitleAnchorBox(state: LargeTitleState, page: PageScrollState, padding: ScaffoldPadding) {
