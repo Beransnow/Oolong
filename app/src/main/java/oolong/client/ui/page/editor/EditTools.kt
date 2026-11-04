@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,11 +43,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.collections.immutable.toImmutableList
@@ -70,11 +76,12 @@ private val ToolHeight = 52.dp
 private val SidePanelWidth = 340.dp
 
 /**
- * The tools on one piece of glass, along the bottom or, when [side], down the end of the screen;
- * the chosen tool's options grow out of its button, above it or beside it, and go back into it.
+ * The tools on one piece of glass, along the bottom or, when [side], down the end of the space it
+ * fills; the chosen tool's options grow out of its button, above it or level with it beside it,
+ * and go back into it. [onRail] hears how wide the side rail is, for the picture to keep clear of.
  */
 @Composable
-fun EditorTools(state: EditorState, side: Boolean = false) {
+fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit = {}) {
     val tools = remember { mutableStateMapOf<EditorTool, Rect>() }
     var panelBounds by remember { mutableStateOf(Rect.Zero) }
     // The options shown: the tool's while open, the last one's while closing
@@ -176,9 +183,28 @@ fun EditorTools(state: EditorState, side: Boolean = false) {
         }
     }
     if (side) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            panel()
-            rail()
+        var railTop by remember { mutableFloatStateOf(0f) }
+        var railHeight by remember { mutableIntStateOf(0) }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+            Row(verticalAlignment = Alignment.Top) {
+                // Level with the chosen tool, kept within the rail's height
+                Box(
+                    modifier = Modifier.offset {
+                        val from = shown?.let { tools[it] } ?: return@offset IntOffset.Zero
+                        val height = panelBounds.height
+                        val room = railHeight - height
+                        val y = (from.center.y - railTop - height / 2).coerceIn(minOf(0f, room), maxOf(0f, room))
+                        IntOffset(0, y.toInt())
+                    },
+                ) { panel() }
+                Box(
+                    modifier = Modifier.onGloballyPositioned {
+                        railTop = it.boundsInRoot().top
+                        railHeight = it.size.height
+                        onRail(it.size.width)
+                    },
+                ) { rail() }
+            }
         }
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -13,10 +13,12 @@ import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,9 +26,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Icon
@@ -148,82 +151,128 @@ fun EditScreen(
     }
     CompositionLocalProvider(LocalExtendedColors provides chrome) {
         BoxWithConstraints {
-            // Wide or on its side, the tools stand down the end of the screen
-            val side = maxWidth >= 600.dp || maxWidth > maxHeight
-            Scaffold(state, saving, side, leave, onDone)
+            val layout = when {
+                maxWidth > maxHeight && maxHeight < 600.dp -> EditorLayout.Landscape
+                maxWidth >= 600.dp -> EditorLayout.Side
+                else -> EditorLayout.Bottom
+            }
+            Scaffold(state, saving, layout, leave, onDone)
         }
     }
+}
+
+/** Where the editor's controls go. */
+private enum class EditorLayout {
+    /** A phone upright: the bar above, the tools along the bottom. */
+    Bottom,
+
+    /** Wide, as a tablet: the bar above, the tools down the end. */
+    Side,
+
+    /** A phone on its side, short of height: no bar; cancel and undo down the start, done and the tools down the end. */
+    Landscape,
 }
 
 @Composable
 private fun Scaffold(
     state: EditorState,
     saving: Boolean,
-    side: Boolean,
+    layout: EditorLayout,
     leave: () -> Unit,
     onDone: (EditResult) -> Unit,
 ) {
+    val density = LocalDensity.current
     var railWidth by remember { mutableIntStateOf(0) }
+    var startWidth by remember { mutableIntStateOf(0) }
+    val done: () -> Unit = {
+        state.finishCaption()
+        val history = state.history
+        onDone(EditResult(history.framing, history.strokes, history.captions))
+    }
     GlassScaffold(
         backgroundColor = Color.Black,
         topBar = {
-            GlassTopBar(
-                title = { UndoRedo(state) },
-                centerTitle = true,
-                navigationIcon = {
-                    TextButton(onClick = leave, color = ExtendedTheme.colors.text) {
-                        Text(text = stringResource(id = R.string.button_cancel))
-                    }
-                },
-                actionsInCapsule = false,
-                actions = {
-                    Button(
-                        onClick = {
-                            state.finishCaption()
-                            val history = state.history
-                            onDone(EditResult(history.framing, history.strokes, history.captions))
-                        },
-                        enabled = !saving,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                        modifier = Modifier.padding(end = 12.dp),
-                    ) {
-                        Text(text = stringResource(id = R.string.button_finish))
-                    }
-                },
-            )
+            if (layout != EditorLayout.Landscape) {
+                GlassTopBar(
+                    title = { UndoRedo(state) },
+                    centerTitle = true,
+                    navigationIcon = { CancelButton(leave) },
+                    actionsInCapsule = false,
+                    actions = { DoneButton(saving, done, Modifier.padding(end = 12.dp)) },
+                )
+            }
         },
-        bottomBar = { if (!side) EditorBottom(state) },
+        bottomBar = { if (layout == EditorLayout.Bottom) EditorBottom(state) },
         overlay = {
-            if (side) {
+            if (layout != EditorLayout.Bottom) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .systemBarsPadding()
-                        .padding(end = 16.dp),
-                    contentAlignment = Alignment.CenterEnd,
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(horizontal = 16.dp)
+                        .padding(top = if (layout == EditorLayout.Side) TopBarRoom else 8.dp, bottom = 8.dp),
                 ) {
-                    Box(modifier = Modifier.onSizeChanged { railWidth = it.width }) { EditorTools(state, side = true) }
+                    EditorTools(state, side = true, onRail = { railWidth = it })
+                    if (layout == EditorLayout.Landscape) {
+                        CancelButton(leave, Modifier.align(Alignment.TopStart))
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .onSizeChanged { startWidth = it.width },
+                        ) { UndoRedo(state, vertical = true) }
+                        DoneButton(saving, done, Modifier.align(Alignment.TopEnd))
+                    }
                 }
             }
         },
     ) { padding ->
         val direction = LocalLayoutDirection.current
-        val end = with(LocalDensity.current) { if (side) railWidth.toDp() + 16.dp else 0.dp }
-        Picture(
-            state,
-            PaddingValues(
+        val safe = WindowInsets.safeDrawing.asPaddingValues()
+        val insets = when (layout) {
+            EditorLayout.Bottom -> padding
+            EditorLayout.Side -> PaddingValues(
                 start = padding.calculateStartPadding(direction),
                 top = padding.calculateTopPadding(),
-                end = padding.calculateEndPadding(direction) + end,
+                end = padding.calculateEndPadding(direction) + with(density) { railWidth.toDp() } + 16.dp,
                 bottom = padding.calculateBottomPadding(),
-            ),
-        )
+            )
+            // The picture takes the whole height between the two sides
+            EditorLayout.Landscape -> PaddingValues(
+                start = safe.calculateStartPadding(direction) + 16.dp + with(density) { startWidth.toDp() },
+                top = safe.calculateTopPadding(),
+                end = safe.calculateEndPadding(direction) + 16.dp + with(density) { railWidth.toDp() },
+                bottom = safe.calculateBottomPadding(),
+            )
+        }
+        Picture(state, insets)
+    }
+}
+
+/** Room above the side tools for the bar. */
+private val TopBarRoom = 64.dp
+
+@Composable
+private fun CancelButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    TextButton(onClick = onClick, color = ExtendedTheme.colors.text, modifier = modifier) {
+        Text(text = stringResource(id = R.string.button_cancel))
     }
 }
 
 @Composable
-private fun UndoRedo(state: EditorState) {
-    Row(modifier = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)) {
+private fun DoneButton(saving: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(
+        onClick = onClick,
+        enabled = !saving,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        modifier = modifier,
+    ) {
+        Text(text = stringResource(id = R.string.button_finish))
+    }
+}
+
+@Composable
+private fun UndoRedo(state: EditorState, vertical: Boolean = false) {
+    val buttons: @Composable () -> Unit = {
         IconButton(onClick = state::undo, enabled = state.history.canUndo || state.draft != null) {
             Icon(imageVector = Symbols.Undo, contentDescription = stringResource(id = R.string.editor_undo))
         }
@@ -231,6 +280,8 @@ private fun UndoRedo(state: EditorState) {
             Icon(imageVector = Symbols.Redo, contentDescription = stringResource(id = R.string.editor_redo))
         }
     }
+    val glass = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)
+    if (vertical) Column(modifier = glass) { buttons() } else Row(modifier = glass) { buttons() }
 }
 
 /**
