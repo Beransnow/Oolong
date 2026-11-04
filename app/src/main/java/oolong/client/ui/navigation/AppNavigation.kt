@@ -63,7 +63,6 @@ import oolong.client.ui.page.history.HistoryPage
 import oolong.client.ui.page.hottopic.list.HotTopicListPage
 import oolong.client.ui.page.login.LoginPage
 import oolong.client.ui.page.main.LocalMainTabs
-import oolong.client.ui.page.main.LocalNavigationRailShown
 import oolong.client.ui.page.main.MainPage
 import oolong.client.ui.page.main.MainTabs
 import oolong.client.ui.page.main.NavigationRail
@@ -99,6 +98,7 @@ import oolong.client.ui.page.user.UserProfilePage
 import oolong.client.ui.page.user.edit.EditProfilePage
 import oolong.client.ui.page.user.follows.UserFollowsPage
 import oolong.client.ui.page.webview.WebViewPage
+import oolong.client.ui.widgets.compose.LocalNavigationRailShown
 
 /** Whether the entry being composed is the top of the back stack, as opposed to one below a sheet or dialog. */
 val LocalIsTopEntry = compositionLocalOf { true }

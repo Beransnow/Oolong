@@ -46,6 +46,7 @@ import oolong.client.ui.page.search.SearchViewModel
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
+import oolong.client.ui.widgets.compose.LocalNavigationRailShown
 import oolong.client.ui.widgets.compose.LocalTopBarEnd
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.SwipeToDismissSnackbarHost

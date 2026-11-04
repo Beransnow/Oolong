@@ -57,9 +57,6 @@ class MainTabs(selected: String = HOME, messageCount: Int = 0) {
 
 val LocalMainTabs = compositionLocalOf { MainTabs() }
 
-/** Whether the rail beside the pages shows the tabs, so the main page leaves out its own bar. */
-val LocalNavigationRailShown = compositionLocalOf { false }
-
 /** The main tabs as the navigation shows them; explore only while it is not hidden. */
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable

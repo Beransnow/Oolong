@@ -28,11 +28,14 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -128,6 +131,7 @@ fun GlassTopBar(
     val statusBar = WindowInsets.statusBars.union(WindowInsets.displayCutout)
     // A classic bar is a band, its buttons bare on it
     val classic = LocalChromeStyle.current == ChromeStyle.Classic
+    val besideRail = LocalNavigationRailShown.current
     // The buttons are bare at the top of a page, and float on glass once content is under the bar
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
     val barButtons = remember(scrollEdge, revealPx) {
@@ -148,6 +152,18 @@ fun GlassTopBar(
                             Modifier
                                 .lensTarget()
                                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                // Beside the rail the glass fades in from the rail's edge, rather
+                                // than starting in a line along it
+                                .drawWithContent {
+                                    drawContent()
+                                    if (besideRail) {
+                                        val fade = RailEdgeFade.toPx()
+                                        drawRect(
+                                            brush = Brush.horizontalGradient(0f to Color.Transparent, fade / size.width to Color.Black),
+                                            blendMode = BlendMode.DstIn,
+                                        )
+                                    }
+                                }
                                 .topBarGlass()
                         }
                     )
@@ -276,6 +292,15 @@ fun GlassStatusBar(modifier: Modifier = Modifier) {
  * actions, such as search beside the rail. It is given the room it may take and sizes itself to it.
  */
 val LocalTopBarEnd = staticCompositionLocalOf<(@Composable (room: Dp) -> Unit)?> { null }
+
+/**
+ * Whether the navigation rail shows beside the pages: the main page then leaves out its own bar,
+ * and top bars fade their glass in from the rail's edge.
+ */
+val LocalNavigationRailShown = compositionLocalOf { false }
+
+/** How far from the rail's edge the bar's glass fades in. */
+private val RailEdgeFade = 40.dp
 
 /** Between the bar's actions and what [LocalTopBarEnd] puts after them. */
 private val EndGap = 12.dp
