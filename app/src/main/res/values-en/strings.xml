@@ -858,6 +858,16 @@
     <string name="title_dialog_crashed">The app closed unexpectedly</string>
     <string name="message_dialog_crashed">A crash log is kept on this device. You can attach it when reporting the problem.</string>
     <string name="button_view_crash_log">View</string>
+    <string name="message_dialog_crashed_send">A crash log is kept on this device. Sending it to the developer helps fix the problem; it holds no account details.</string>
+    <string name="button_send_crash_log">Send</string>
+    <string name="button_dont_send_crash_log">Don\'t send</string>
+    <string name="title_crash_report_mode">Send crash logs</string>
+    <string name="crash_report_mode_ask">Ask each time</string>
+    <string name="crash_report_mode_always">Automatically</string>
+    <string name="crash_report_mode_never">Never</string>
+    <string name="title_send_crash_log">Send to the developer</string>
+    <string name="toast_crash_log_sent">Sent</string>
+    <string name="toast_crash_log_send_failed">Couldn\'t send; it will be tried again at the next start</string>
     <string name="settings_group_auto_sign_conditions">Running on time</string>
     <string name="value_allowed">Allowed</string>
     <string name="value_not_allowed">Not allowed</string>

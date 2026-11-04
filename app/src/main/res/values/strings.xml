@@ -844,6 +844,16 @@
     <string name="title_dialog_crashed">上次异常退出</string>
     <string name="message_dialog_crashed">崩溃日志已保存在本机，反馈问题时可以附上。</string>
     <string name="button_view_crash_log">查看</string>
+    <string name="message_dialog_crashed_send">崩溃日志已保存在本机。发送给开发者有助于修复这个问题，日志不含账号信息。</string>
+    <string name="button_send_crash_log">发送</string>
+    <string name="button_dont_send_crash_log">不发送</string>
+    <string name="title_crash_report_mode">发送崩溃日志</string>
+    <string name="crash_report_mode_ask">每次询问</string>
+    <string name="crash_report_mode_always">自动发送</string>
+    <string name="crash_report_mode_never">不发送</string>
+    <string name="title_send_crash_log">发送给开发者</string>
+    <string name="toast_crash_log_sent">已发送</string>
+    <string name="toast_crash_log_send_failed">发送失败，下次启动时重试</string>
     <string name="settings_group_auto_sign_conditions">按时运行</string>
     <string name="value_allowed">已允许</string>
     <string name="value_not_allowed">未允许</string>

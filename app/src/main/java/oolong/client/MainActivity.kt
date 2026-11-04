@@ -35,7 +35,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -85,6 +87,7 @@ import oolong.client.components.ClipBoardLink
 import oolong.client.components.ClipBoardLinkDetector
 import oolong.client.components.ClipBoardThreadLink
 import oolong.client.components.CrashLogs
+import oolong.client.components.CrashReports
 import oolong.client.repository.AccountRepository
 import oolong.client.services.AutoSign
 import oolong.client.services.NotifyJobService
@@ -462,26 +465,57 @@ class MainActivity : AppCompatActivity() {
                 okSignAlertDialogState.show()
             }
         }
-        // After the app went down, once: what happened is kept and can be read
+        // After the app went down, once: what happened is kept and can be read, and sent when the
+        // person agrees (see CrashReports)
         val crashDialogState = rememberDialogState()
+        var crash by remember { mutableStateOf<CrashLogs.Entry?>(null) }
+        var askToSend by remember { mutableStateOf(false) }
         AlertDialog(
             dialogState = crashDialogState,
             title = { Text(text = stringResource(id = R.string.title_dialog_crashed)) },
-            content = { Text(text = stringResource(id = R.string.message_dialog_crashed)) },
+            content = {
+                Text(text = stringResource(id = if (askToSend) R.string.message_dialog_crashed_send else R.string.message_dialog_crashed))
+            },
             buttons = {
-                DialogPositiveButton(
-                    text = stringResource(id = R.string.button_view_crash_log),
-                    onClick = { navigator?.navigate(CrashLogsKey) },
-                )
-                DialogNegativeButton(text = stringResource(id = R.string.btn_close))
+                if (askToSend) {
+                    DialogPositiveButton(
+                        text = stringResource(id = R.string.button_send_crash_log),
+                        onClick = {
+                            val entry = crash ?: return@DialogPositiveButton
+                            lifecycleScope.launch(Dispatchers.IO) { CrashReports.send(this@MainActivity, entry) }
+                        },
+                    )
+                    DialogNegativeButton(
+                        text = stringResource(id = R.string.button_view_crash_log),
+                        onClick = { navigator?.navigate(CrashLogsKey) },
+                    )
+                    DialogNegativeButton(text = stringResource(id = R.string.button_dont_send_crash_log))
+                } else {
+                    DialogPositiveButton(
+                        text = stringResource(id = R.string.button_view_crash_log),
+                        onClick = { navigator?.navigate(CrashLogsKey) },
+                    )
+                    DialogNegativeButton(text = stringResource(id = R.string.btn_close))
+                }
             },
         )
         LaunchedEffect(Unit) {
-            val crashed = withContext(Dispatchers.IO) {
+            // Sends that failed before are tried again on the side
+            lifecycleScope.launch(Dispatchers.IO) { CrashReports.sendWaiting(this@MainActivity) }
+            val entry = withContext(Dispatchers.IO) {
                 CrashLogs.collectExits(this@MainActivity)
-                CrashLogs.takeUnnoticed(this@MainActivity) != null
+                CrashLogs.takeUnnoticed(this@MainActivity)
+            } ?: return@LaunchedEffect
+            val sendable = withContext(Dispatchers.IO) { CrashReports.canSend(this@MainActivity, entry) }
+            when (if (sendable) CrashReports.mode(this@MainActivity) else CrashReports.Mode.Never) {
+                CrashReports.Mode.Always -> withContext(Dispatchers.IO) { CrashReports.send(this@MainActivity, entry) }
+                CrashReports.Mode.Ask -> {
+                    crash = entry
+                    askToSend = true
+                    crashDialogState.show()
+                }
+                CrashReports.Mode.Never -> crashDialogState.show()
             }
-            if (crashed) crashDialogState.show()
         }
         TiebaLiteLocalProvider {
             TranslucentThemeBackground {

@@ -86,6 +86,7 @@ restart_alt
 rotate_left
 search
 select
+send
 share
 short_text
 slow_motion_video
