@@ -288,25 +288,30 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
         val brush = remember(color, veil, top, blurEdge) { scrollEdgeTint(color, veil, top, heldTo = blurEdge) }
         return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
-    val style = remember(color, tint, blurEdge, frost, top, shown) {
+    // Read through a derived state, so the style is read again only when the strength changes and
+    // not on every frame the content scrolls under a bar that is already fully in
+    val strength by remember(shown) { derivedStateOf { shown() } }
+    // Made once: one made each time the style is read never matches the blur Haze keeps, and the
+    // blur would be made afresh on every frame
+    val progressive = remember(top, blurEdge) {
+        HazeProgressive.verticalGradient(
+            // Full strength from the screen's edge to the stretch before the inner edge, then eased out
+            easing = { t ->
+                val fromEdge = if (top) t else 1f - t
+                val x = if (fromEdge <= blurEdge) 0f else ((fromEdge - blurEdge) / (1f - blurEdge)).coerceIn(0f, 1f)
+                x * x * (3f - 2f * x)
+            },
+            startIntensity = 1f,
+            endIntensity = 0f,
+        )
+    }
+    val style = remember(color, tint, frost, top, progressive) {
         HazeBlurStyle {
             // Read here, the style follows the scroll without being rebuilt
-            val strength = shown()
             backgroundColor(colors.background)
             blurRadius(TopBarBlur * frost * strength)
             noiseFactor(0f)
-            progressive(
-                HazeProgressive.verticalGradient(
-                    // Full strength from the screen's edge to the stretch before the inner edge, then eased out
-                    easing = { t ->
-                        val fromEdge = if (top) t else 1f - t
-                        val x = if (fromEdge <= blurEdge) 0f else ((fromEdge - blurEdge) / (1f - blurEdge)).coerceIn(0f, 1f)
-                        x * x * (3f - 2f * x)
-                    },
-                    startIntensity = 1f,
-                    endIntensity = 0f,
-                )
-            )
+            progressive(progressive)
             colorEffects(listOf(HazeColorEffect.tint(scrollEdgeTint(color, tint * strength, top))))
         }
     }
