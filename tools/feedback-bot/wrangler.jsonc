@@ -1,0 +1,12 @@
+{
+    "name": "oolong-feedback-bot",
+    "main": "src/index.js",
+    "compatibility_date": "2026-10-01",
+    "d1_databases": [
+        // Filled in from `wrangler d1 create oolong-feedback`
+        { "binding": "DB", "database_name": "oolong-feedback", "database_id": "" }
+    ],
+    // Messages older than a few days are dropped once a day; GROUP_ID, OWNER_ID and
+    // WEBHOOK_SECRET are secrets
+    "triggers": { "crons": ["0 20 * * *"] }
+}

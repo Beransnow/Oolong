@@ -1,0 +1,20 @@
+-- The group's messages, kept a few days so one marked late can still be found
+CREATE TABLE IF NOT EXISTS messages (
+    message_id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    user_name TEXT,
+    text TEXT,
+    reply_to INTEGER,
+    photo TEXT,
+    date INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS messages_date ON messages (date);
+
+-- Messages the owner marked as feedback, with the conversation around them as it was then
+CREATE TABLE IF NOT EXISTS feedback (
+    message_id INTEGER PRIMARY KEY,
+    marked_at INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    note TEXT,
+    context TEXT NOT NULL
+);
