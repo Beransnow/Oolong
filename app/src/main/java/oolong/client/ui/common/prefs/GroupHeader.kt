@@ -6,6 +6,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +28,8 @@ fun GroupHeader(
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+            .padding(start = 32.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
+            .semantics { heading() },
     )
 }
 

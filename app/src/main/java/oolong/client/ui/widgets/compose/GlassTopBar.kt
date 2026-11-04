@@ -2,8 +2,7 @@ package oolong.client.ui.widgets.compose
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -41,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
@@ -49,6 +49,8 @@ import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -177,12 +179,9 @@ fun GlassTopBar(
                 Column(
                     modifier = Modifier
                         .layoutId(TopBarLayer.Foreground)
-                        .combinedClickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onDoubleClick = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) },
-                            onClick = {},
-                        )
+                        // Double-tapping the bar scrolls the page to its top: a touch shortcut only, so
+                        // screen readers don't take the whole bar for a button that does nothing
+                        .pointerInput(Unit) { detectTapGestures(onDoubleTap = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) }) }
                         .windowInsetsPadding(
                             statusBar.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
                         )
@@ -209,10 +208,16 @@ fun GlassTopBar(
                             },
                             title = {
                                 ProvideTextStyle(value = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold)) {
-                                    if (largeTitleProgress == null || centerTitle) {
-                                        title()
-                                    } else {
-                                        Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
+                                    // The page's title, which screen readers can jump to
+                                    Box(
+                                        modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+                                        propagateMinConstraints = true,
+                                    ) {
+                                        if (largeTitleProgress == null || centerTitle) {
+                                            title()
+                                        } else {
+                                            Box(modifier = Modifier.matchedGeometry(LargeTitleAnchor, largeTitleProgress)) { title() }
+                                        }
                                     }
                                 }
                             },

@@ -1,10 +1,8 @@
 package oolong.client.ui.widgets.compose
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -235,15 +234,8 @@ fun TopAppBarContainer(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onDoubleClick = {
-                        Log.i("TopAppBarContainer", "TopAppBarContainer: onDoubleClick")
-                        coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop)
-                    },
-                    onClick = {},
-                ),
+                // A touch shortcut only, as on the glass bar
+                .pointerInput(Unit) { detectTapGestures(onDoubleTap = { coroutineScope.emitGlobalEvent(GlobalEvent.ScrollToTop) }) },
             content = topBar
         )
         content?.let {
