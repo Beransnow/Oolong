@@ -336,6 +336,9 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                             }
                         },
+                        handles = if (text.url == picture.originUrl) {
+                            Modifier.selectionHandles(text, display = { zoomState.zoomable.contentDisplayRectF }, view = view)
+                        } else Modifier,
                         overlay = {
                             if (text.url == picture.originUrl) {
                                 PhotoTextOverlay(text, display = { zoomState.zoomable.contentDisplayRectF })
@@ -419,6 +422,7 @@ private fun Photo(
     onLoaded: (MemoryCache.Key) -> Unit,
     onTap: (Offset) -> Unit,
     onLongPress: (Offset) -> Unit,
+    handles: Modifier,
     overlay: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -426,7 +430,7 @@ private fun Photo(
     val progress by rememberImageDownloadProgress(picture.originUrl)
     // Made once: the placeholder only matters until the picture is in
     val request = remember(picture.originUrl) { request(context, picture.originUrl, placeholder) }
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().then(handles), contentAlignment = Alignment.Center) {
         CoilZoomAsyncImage(
             model = request,
             contentDescription = null,

@@ -27,7 +27,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,6 +102,10 @@ internal class PhotoTextState(
     var reading by mutableStateOf(false)
         private set
 
+    /** The handle a finger drags, and where the finger is on screen. */
+    var held by mutableStateOf<Handle?>(null)
+    var finger by mutableStateOf<Offset?>(null)
+
     /** Asked for before text recognition was downloaded: picked from once it is. */
     var waiting by mutableStateOf<String?>(null)
         private set
@@ -110,6 +113,9 @@ internal class PhotoTextState(
     val active: Boolean get() = url != null || waiting != null
 
     private var job: Job? = null
+
+    /** A long press on a line not read yet, as a share of the picture: picked once it is. */
+    private var pending: Offset? = null
 
     val download get() = files.state(Ability.Text)
 
@@ -121,8 +127,9 @@ internal class PhotoTextState(
      */
     fun start(url: String, pressed: Offset?, onMissed: () -> Unit = {}): Boolean {
         if (files.state(Ability.Text).value != AutoMaskDownload.Ready) return false
-        if (this.url == url && text != null) {
-            pressed?.let { selectLineAt(it) }
+        if (this.url == url) {
+            // Still being read, the line is picked once it is
+            if (pressed != null && !selectLineAt(pressed)) pending = pressed
             return true
         }
         stop()
@@ -197,6 +204,7 @@ internal class PhotoTextState(
         val anchors = if (before != null && picked != null) before.glyphs[picked.first] to before.glyphs[picked.last] else null
         val now = PictureText(read.toList())
         text = now
+        pending?.let { if (selectLineAt(it)) pending = null }
         if (anchors != null) {
             val from = now.nearestGlyph(anchors.first.centerX, anchors.first.centerY)
             val to = now.nearestGlyph(anchors.second.centerX, anchors.second.centerY)
@@ -214,6 +222,7 @@ internal class PhotoTextState(
         selection = null
         reading = false
         waiting = null
+        pending = null
     }
 
     /** Picks the line at [share] of the picture's width and height; true when there was one. */
@@ -255,108 +264,120 @@ internal class PhotoTextState(
 }
 
 /** Which end of a selection a finger holds. */
-private enum class Handle { Start, End }
+internal enum class Handle { Start, End }
 
 private val SelectionColor = Color(0xFF4C8DFF)
 
 /**
+ * Lets a finger drag the selection's handles, character by character, the text as read at each
+ * step, the other end held where it is on the picture. Put on what holds the picture, it sees a
+ * press before the picture does and takes it only when it is on a handle: the picture still
+ * pans, zooms and answers taps and long presses everywhere else.
+ */
+internal fun Modifier.selectionHandles(state: PhotoTextState, display: () -> Rect, view: View): Modifier = pointerInput(state) {
+    val grab = 28.dp.toPx()
+    val aim = 12.dp.toPx()
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val text = state.text ?: return@awaitEachGesture
+        val picture = state.picture ?: return@awaitEachGesture
+        val picked = state.selection ?: return@awaitEachGesture
+        val rect = display()
+        val k = rect.width / picture.width
+        fun bar(g: PictureText.Glyph, end: Boolean): Pair<Offset, Offset> {
+            val x = rect.left + (if (end) g.right else g.left) * k
+            return Offset(x, rect.top + g.top * k) to Offset(x, rect.top + g.bottom * k)
+        }
+
+        // How far a press is from a handle: its bar along the line, and the dot past it
+        fun distance(p: Offset, ends: Pair<Offset, Offset>): Float {
+            val y = p.y.coerceIn(ends.first.y - grab, ends.second.y + grab)
+            return (p - Offset(ends.first.x, y)).getDistance()
+        }
+        val first = text.glyphs[picked.first]
+        val last = text.glyphs[picked.last]
+        val toEnd = distance(down.position, bar(last, end = true))
+        val toStart = distance(down.position, bar(first, end = false))
+        val handle = when {
+            toEnd <= grab && toEnd <= toStart -> Handle.End
+            toStart <= grab -> Handle.Start
+            else -> return@awaitEachGesture
+        }
+        down.consume()
+        state.held = handle
+        state.finger = down.position
+        // The other end, as a place on the picture: the text may be laid out again meanwhile
+        val other = if (handle == Handle.End) first else last
+        val fixedAt = Offset(other.centerX, other.centerY)
+        var lastGlyph = -1
+        try {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) break
+                change.consume()
+                state.finger = change.position
+                val now = display()
+                val current = state.text ?: break
+                val scale = now.width / picture.width
+                // Aimed a little above the finger, at the line it is held under
+                val x = (change.position.x - now.left) / scale
+                val y = (change.position.y - aim - now.top) / scale
+                val glyph = current.nearestGlyph(x, y) ?: continue
+                val fixed = current.nearestGlyph(fixedAt.x, fixedAt.y) ?: continue
+                if (glyph != lastGlyph) {
+                    if (lastGlyph >= 0) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    lastGlyph = glyph
+                }
+                state.selection = min(fixed, glyph)..max(fixed, glyph)
+            }
+        } finally {
+            state.held = null
+            state.finger = null
+        }
+    }
+}
+
+/**
  * The text picked from over the picture, which shows in [display] on screen: the lines found,
- * lit, brighter while they are read; the selection with a handle at each end, which a finger
- * drags character by character with a loupe over it.
+ * lit, brighter while they are read; the selection with a handle at each end, and a loupe over
+ * the finger dragging one. It only draws; [selectionHandles] takes the handles.
  */
 @Composable
 internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
-    val view = LocalView.current
-    var held by remember { mutableStateOf<Handle?>(null) }
-    var finger by remember { mutableStateOf<Offset?>(null) }
     val pulse = rememberInfiniteTransition(label = "reading")
         .animateFloat(0.12f, 0.3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pointerInput(state) {
-                val grab = 28.dp.toPx()
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                    val text = state.text ?: return@awaitEachGesture
-                    val picture = state.picture ?: return@awaitEachGesture
-                    val picked = state.selection ?: return@awaitEachGesture
-                    val rect = display()
-                    val k = rect.width / picture.width
-                    fun toScreen(x: Float, y: Float) = Offset(rect.left + x * k, rect.top + y * k)
-                    val first = text.glyphs[picked.first]
-                    val last = text.glyphs[picked.last]
-                    val start = toScreen(first.left, first.bottom)
-                    val end = toScreen(last.right, last.bottom)
-                    val handle = when {
-                        (down.position - end).getDistance() <= grab -> Handle.End
-                        (down.position - start).getDistance() <= grab -> Handle.Start
-                        else -> return@awaitEachGesture
-                    }
-                    down.consume()
-                    held = handle
-                    finger = down.position
-                    // The other end stays where it is
-                    var fixed = if (handle == Handle.End) picked.first else picked.last
-                    var lastGlyph = if (handle == Handle.End) picked.last else picked.first
-                    try {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (!change.pressed) break
-                            change.consume()
-                            finger = change.position
-                            val now = display()
-                            val scale = now.width / picture.width
-                            // Aimed a little above the finger, at the line it is held under
-                            val x = (change.position.x - now.left) / scale
-                            val y = (change.position.y - 12.dp.toPx() - now.top) / scale
-                            val glyph = text.nearestGlyph(x, y) ?: continue
-                            if (glyph != lastGlyph) {
-                                lastGlyph = glyph
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                            }
-                            state.selection = min(fixed, glyph)..max(fixed, glyph)
-                        }
-                    } finally {
-                        held = null
-                        finger = null
-                    }
-                }
-            },
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val picture = state.picture ?: return@Canvas
-            val rect = display()
-            if (rect.isEmpty) return@Canvas
-            val k = rect.width / picture.width
-            fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
-            // The lines found: brighter while being read
-            val lit = if (state.reading) pulse.value else 0.12f
-            for (line in state.found) {
-                val r = box(line)
-                drawRoundRect(Color.White.copy(alpha = lit), r.topLeft, r.size, CornerRadius(r.height * 0.2f))
-            }
-            val text = state.text ?: return@Canvas
-            val picked = state.selection ?: return@Canvas
-            // The selection, a piece of each line it covers
-            var i = picked.first
-            while (i <= picked.last) {
-                val line = text.glyphs[i].line
-                var j = i
-                while (j + 1 <= picked.last && text.glyphs[j + 1].line == line) j++
-                val a = text.glyphs[i]
-                val b = text.glyphs[j]
-                val r = box(RectF(a.left, a.top, b.right, b.bottom))
-                drawRect(SelectionColor.copy(alpha = 0.38f), r.topLeft, r.size)
-                i = j + 1
-            }
-            val first = text.glyphs[picked.first]
-            val last = text.glyphs[picked.last]
-            drawHandle(box(RectF(first.left, first.top, first.left, first.bottom)), start = true)
-            drawHandle(box(RectF(last.right, last.top, last.right, last.bottom)), start = false)
-            finger?.let { drawLoupe(it, picture, rect, held != null) }
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val picture = state.picture ?: return@Canvas
+        val rect = display()
+        if (rect.isEmpty) return@Canvas
+        val k = rect.width / picture.width
+        fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
+        // The lines found: brighter while being read
+        val lit = if (state.reading) pulse.value else 0.12f
+        for (line in state.found) {
+            val r = box(line)
+            drawRoundRect(Color.White.copy(alpha = lit), r.topLeft, r.size, CornerRadius(r.height * 0.2f))
         }
+        val text = state.text ?: return@Canvas
+        val picked = state.selection ?: return@Canvas
+        // The selection, a piece of each line it covers
+        var i = picked.first
+        while (i <= picked.last) {
+            val line = text.glyphs[i].line
+            var j = i
+            while (j + 1 <= picked.last && text.glyphs[j + 1].line == line) j++
+            val a = text.glyphs[i]
+            val b = text.glyphs[j]
+            val r = box(RectF(a.left, a.top, b.right, b.bottom))
+            drawRect(SelectionColor.copy(alpha = 0.38f), r.topLeft, r.size)
+            i = j + 1
+        }
+        val first = text.glyphs[picked.first]
+        val last = text.glyphs[picked.last]
+        drawHandle(box(RectF(first.left, first.top, first.left, first.bottom)), start = true)
+        drawHandle(box(RectF(last.right, last.top, last.right, last.bottom)), start = false)
+        state.finger?.let { drawLoupe(it, picture, rect, state.held != null) }
     }
 }
 
