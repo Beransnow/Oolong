@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
@@ -244,10 +245,12 @@ fun AppNavDisplay(
                     MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
                 }
                 // The display lays out no container of its own: sheets and dialogs are emitted beside
-                // the pages, so they need a box here, not the row, to cover them
+                // the pages, so they need a box here, not the row, to cover them. Pages sliding out
+                // end at the rail, rather than passing over it.
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .clipToBounds()
                         .then(
                             if (showRail) {
                                 Modifier.consumeWindowInsets(
