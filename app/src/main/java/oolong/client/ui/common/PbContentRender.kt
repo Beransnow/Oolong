@@ -44,6 +44,8 @@ import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.videoview.VideoCover
+import oolong.client.ui.page.videoview.ViewerVideo
 import oolong.client.ui.widgets.compose.EmoticonText
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
@@ -192,19 +194,11 @@ data class VideoContentRender(
                 .aspectRatio(width * 1f / height)
 
             if (videoUrl.isNotBlank()) {
-                Box(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}
-                    )
-                ) {
-                    oolong.client.ui.widgets.compose.VideoPlayer(
-                        videoUrl = videoUrl,
-                        thumbnailUrl = picUrl,
-                        modifier = picModifier
-                    )
-                }
+                VideoCover(
+                    video = remember(this) { ViewerVideo(videoUrl, picUrl, width, height) },
+                    shape = SmoothCornerShape(context.appPreferences.radius.dp),
+                    modifier = Modifier.fillMaxWidth(widthFraction),
+                )
             } else {
                 AsyncImage(
                     model = picUrl,

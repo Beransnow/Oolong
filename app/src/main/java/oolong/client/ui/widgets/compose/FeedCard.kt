@@ -1,7 +1,5 @@
 package oolong.client.ui.widgets.compose
 
-import android.content.pm.ActivityInfo
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,7 +32,6 @@ import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,7 +67,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.App
 import oolong.client.R
-import oolong.client.findActivity
 import oolong.client.model.FeedReply
 import oolong.client.model.ForumSummary
 import oolong.client.model.SharedThread
@@ -94,15 +90,12 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.page.photoview.LocalPhotoViewer
+import oolong.client.ui.page.videoview.VideoCover
+import oolong.client.ui.page.videoview.ViewerVideo
 import oolong.client.ui.utils.getPhotoViewData
-import oolong.client.ui.utils.rememberSystemUiController
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
-import oolong.client.ui.widgets.compose.video.DefaultVideoPlayerController
-import oolong.client.ui.widgets.compose.video.OnFullScreenModeChangedListener
-import oolong.client.ui.widgets.compose.video.VideoPlayerSource
-import oolong.client.ui.widgets.compose.video.rememberVideoPlayerController
 import oolong.client.utils.EmoticonUtil.emoticonString
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
@@ -425,6 +418,9 @@ private fun ThreadMedia(
     modifier: Modifier = Modifier,
     medias: ImmutableList<ThreadImage> = persistentListOf(),
     videoInfo: ThreadVideo? = null,
+    /** Who posted the thread and what it says, shown under its video when it plays. */
+    videoAuthor: String? = null,
+    videoText: String? = null,
 ) {
     val context = LocalContext.current
 
@@ -464,25 +460,18 @@ private fun ThreadMedia(
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
-                    val aspectRatio = remember(videoInfo) {
-                        max(videoInfo.coverWidth.toFloat() / videoInfo.coverHeight, 16f / 9)
-                    }
-                    Box(
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
-                    ) {
-                        VideoPlayer(
-                            videoUrl = videoInfo.url,
-                            thumbnailUrl = videoInfo.cover,
-                            modifier = Modifier
-                                .fillMaxWidth(singleMediaFraction)
-                                .aspectRatio(aspectRatio)
-                                .clip(Corners.sm)
+                    val video = remember(videoInfo, videoAuthor, videoText) {
+                        ViewerVideo(
+                            url = videoInfo.url,
+                            cover = videoInfo.cover,
+                            width = videoInfo.coverWidth,
+                            height = videoInfo.coverHeight,
+                            duration = videoInfo.duration,
+                            author = videoAuthor,
+                            text = videoText,
                         )
                     }
+                    VideoCover(video = video, modifier = Modifier.fillMaxWidth(singleMediaFraction))
                 }
             } else if (hasPhoto) {
                 if (hideMedia) {
@@ -788,6 +777,8 @@ fun FeedCard(
                 threadId = thread.id,
                 medias = thread.images,
                 videoInfo = thread.video,
+                videoAuthor = author.nameShow.ifBlank { author.name },
+                videoText = thread.title.ifBlank { thread.abstract },
             )
 
             thread.shared?.let { shared ->
@@ -1022,64 +1013,6 @@ private fun ActionBtn(
                 text()
             }
         }
-    }
-}
-
-@Composable
-fun VideoPlayer(
-    videoUrl: String,
-    thumbnailUrl: String,
-    modifier: Modifier = Modifier,
-    title: String = "",
-) {
-    val context = LocalContext.current
-    val systemUiController = rememberSystemUiController()
-    val videoPlayerController = rememberVideoPlayerController(
-        source = VideoPlayerSource.Network(videoUrl),
-        thumbnailUrl = thumbnailUrl,
-        fullScreenModeChangedListener = object : OnFullScreenModeChangedListener {
-            override fun onFullScreenModeChanged(isFullScreen: Boolean) {
-                Log.i("VideoPlayer", "onFullScreenModeChanged $isFullScreen")
-                systemUiController.isStatusBarVisible = !isFullScreen
-                systemUiController.isNavigationBarVisible = !isFullScreen
-                if (isFullScreen) {
-                    context.findActivity()?.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                } else {
-                    context.findActivity()?.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                }
-            }
-        }
-    )
-
-    val fullScreen by (videoPlayerController as DefaultVideoPlayerController).collect { isFullScreen }
-    // Remembered, so going full screen moves the player there instead of making a new one
-    val videoPlayerContent = remember(videoPlayerController) {
-        movableContentOf { isFullScreen: Boolean, playerModifier: Modifier ->
-            oolong.client.ui.widgets.compose.video.VideoPlayer(
-                videoPlayerController = videoPlayerController,
-                modifier = playerModifier,
-                backgroundColor = if (isFullScreen) Color.Black else Color.Transparent
-            )
-        }
-    }
-
-    if (fullScreen) {
-        Spacer(
-            modifier = modifier
-        )
-        FullScreen {
-            videoPlayerContent(
-                true,
-                Modifier.fillMaxSize()
-            )
-        }
-    } else {
-        videoPlayerContent(
-            false,
-            modifier
-        )
     }
 }
 

@@ -43,8 +43,9 @@ import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.videoview.VideoCover
+import oolong.client.ui.page.videoview.ViewerVideo
 import oolong.client.ui.widgets.compose.NetworkImage
-import oolong.client.ui.widgets.compose.VideoPlayer
 import oolong.client.ui.widgets.compose.VoicePlayer
 import oolong.client.utils.EmoticonUtil.emoticonString
 import oolong.client.utils.ImageUtil
@@ -133,16 +134,13 @@ private fun PostVideo(video: PostContent.Video) {
         .fillMaxWidth(mediaWidthFraction())
         .aspectRatio(video.width * 1f / video.height)
     if (video.url.isNotBlank()) {
-        // Taps belong to the player, not to the post around it
-        Box(
-            modifier = Modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {},
-            )
-        ) {
-            VideoPlayer(videoUrl = video.url, thumbnailUrl = video.coverUrl, modifier = modifier)
-        }
+        VideoCover(
+            video = remember(video) {
+                ViewerVideo(video.url, video.coverUrl, video.width, video.height, video.duration)
+            },
+            shape = SmoothCornerShape(context.appPreferences.radius.dp),
+            modifier = Modifier.fillMaxWidth(mediaWidthFraction()),
+        )
     } else {
         AsyncImage(
             model = video.coverUrl,

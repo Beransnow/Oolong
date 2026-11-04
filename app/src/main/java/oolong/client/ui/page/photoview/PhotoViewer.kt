@@ -24,6 +24,9 @@ import coil3.memory.MemoryCache
 import oolong.client.R
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.page.videoview.LocalVideoViewer
+import oolong.client.ui.page.videoview.VideoViewerOverlay
+import oolong.client.ui.page.videoview.rememberVideoViewer
 import oolong.client.ui.widgets.compose.ContextMenuHost
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.utils.ImageUtil
@@ -83,14 +86,23 @@ class PhotoViewer internal constructor() {
 /** The window's picture viewer; null where there is none, as in previews and tests. */
 val LocalPhotoViewer = staticCompositionLocalOf<PhotoViewer?> { null }
 
-/** Draws [content] with the picture viewer and context menus over it, ready for pictures to open. */
+/** Draws [content] with the picture and video viewers and context menus over it, ready for pictures and videos to open. */
 @Composable
 fun PhotoViewerHost(content: @Composable () -> Unit) {
     val viewer = remember { PhotoViewer() }
+    val videoViewer = rememberVideoViewer(LocalContext.current)
     var origin by remember { mutableStateOf(Offset.Zero) }
-    CompositionLocalProvider(LocalPhotoViewer provides viewer) {
+    CompositionLocalProvider(LocalPhotoViewer provides viewer, LocalVideoViewer provides videoViewer) {
         Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
-            ContextMenuHost(content = content)
+            ContextMenuHost {
+                content()
+                // Under the menus, for the speed menu to open over the video
+                videoViewer.opening?.let { opening ->
+                    key(opening.id) {
+                        VideoViewerOverlay(viewer = videoViewer, opening = opening, origin = origin)
+                    }
+                }
+            }
             viewer.opening?.let { opening ->
                 key(opening.id) {
                     PhotoViewerOverlay(viewer = viewer, opening = opening, origin = origin)

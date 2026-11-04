@@ -127,6 +127,10 @@
     <string name="toast_clear_success">Cleared</string>
     <string name="button_retry">Retry</string>
     <string name="video_play_failed">Can\'t play</string>
+    <string name="video_offline">No connection</string>
+    <string name="video_sign_in">Sign in to play</string>
+    <string name="video_speed">Playback speed</string>
+    <string name="btn_pause">Pause</string>
     <string name="menu_copy">Copy</string>
     <string name="button_load_new">Load latest</string>
     <string name="menu_top">Pin</string>

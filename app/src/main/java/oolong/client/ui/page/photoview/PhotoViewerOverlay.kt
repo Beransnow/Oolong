@@ -471,7 +471,7 @@ private fun PhotoAction(icon: ImageVector, description: String, onClick: () -> U
 
 /** Light status and navigation bar icons over the black, while the viewer shows. */
 @Composable
-private fun LightSystemBars() {
+internal fun LightSystemBars() {
     val view = LocalView.current
     val activity = LocalContext.current.findActivity() ?: return
     DisposableEffect(activity) {
