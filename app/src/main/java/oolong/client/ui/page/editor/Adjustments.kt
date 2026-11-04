@@ -26,12 +26,7 @@ fun Map<Adjustment, Float>.changesNothing(): Boolean = values.all { it == 0f }
  * mixed in after. The same for the screen and for the file, so they look alike.
  */
 fun adjust(source: Bitmap, values: Map<Adjustment, Float>, maxSide: Int? = null): Bitmap {
-    val scaled = if (maxSide != null && max(source.width, source.height) > maxSide) {
-        val s = maxSide.toFloat() / max(source.width, source.height)
-        source.scale((source.width * s).roundToInt().coerceAtLeast(1), (source.height * s).roundToInt().coerceAtLeast(1))
-    } else {
-        source
-    }
+    val scaled = if (maxSide != null) fitted(source, maxSide) else source
     if (values.changesNothing()) return scaled
     val curve = toneCurve(values)
     val saturation = 1f + (values[Adjustment.Saturation] ?: 0f) / 100f
@@ -115,6 +110,16 @@ private fun smoothstep(from: Float, to: Float, x: Float): Float {
     val t = ((x - from) / (to - from)).coerceIn(0f, 1f)
     return t * t * (3f - 2f * t)
 }
+
+/** [source] no longer than [maxSide] on its longer side: itself when it is not. */
+fun fitted(source: Bitmap, maxSide: Int): Bitmap {
+    if (max(source.width, source.height) <= maxSide) return source
+    val s = maxSide.toFloat() / max(source.width, source.height)
+    return source.scale((source.width * s).roundToInt().coerceAtLeast(1), (source.height * s).roundToInt().coerceAtLeast(1))
+}
+
+/** The longest side of the copy adjusted while the ruler moves: small enough to keep up with it. */
+const val MovingSide = 1024
 
 /** The longest side the screen's copy of an adjusted picture needs. */
 fun previewSide(width: Int, height: Int): Int = min(max(width, height), 2048)

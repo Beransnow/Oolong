@@ -77,7 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withMatrix
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -135,17 +135,24 @@ fun EditScreen(
     state.hidden = pictureHidden
     // Once the picture has its place, whoever opened the editor may fly a copy to it
     LaunchedEffect(state, state.laidOut) { if (state.laidOut) onReady(state) }
-    // The screen shows an adjusted copy, as large as a screen needs, made again as the ruler moves;
-    // a newer change drops the one being made
+    // The screen shows an adjusted copy, made again as the ruler moves: from a small copy while it
+    // moves, so each change shows as the finger goes, and as large as a screen needs once it rests.
+    // Each copy is finished and shown before the latest change is taken up.
     LaunchedEffect(state) {
-        snapshotFlow { state.adjustments }.collectLatest { values ->
-            val picture = renderer.picture
-            renderer.base = if (values.changesNothing()) {
-                picture
-            } else {
-                withContext(Dispatchers.Default) { adjust(picture, values, previewSide(picture.width, picture.height)) }
-            }
+        val picture = renderer.picture
+        val (moving, resting) = withContext(Dispatchers.Default) {
+            val resting = fitted(picture, previewSide(picture.width, picture.height))
+            fitted(resting, MovingSide) to resting
         }
+        snapshotFlow { state.adjustments to (state.draftAdjustments != null) }
+            .conflate()
+            .collect { (values, dragging) ->
+                renderer.base = if (values.changesNothing()) {
+                    picture
+                } else {
+                    withContext(Dispatchers.Default) { adjust(if (dragging) moving else resting, values) }
+                }
+            }
     }
     state.density = density.density
     val discardDialog = rememberDialogState()
