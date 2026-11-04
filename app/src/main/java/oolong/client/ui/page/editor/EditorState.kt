@@ -12,6 +12,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineScope
@@ -179,7 +181,35 @@ class EditorState(
     }
 
     /** Whether [area] has been measured and the picture shown in it. */
-    var laidOut = false
+    var laidOut by mutableStateOf(false)
+
+    /** Whether the picture is left undrawn, while a copy of it flies in or out over the screen. */
+    var hidden by mutableStateOf(false)
+
+    /** Where the kept part shows on screen. */
+    fun keptOnScreen(): Rect = history.framing.rect.let { Rect(toScreen(it.topLeft), toScreen(it.bottomRight)) }
+
+    /**
+     * The picture as it would leave, for a copy to fly: written, as it now stands, where it shows;
+     * cancelled, as it was opened with [initial] steps, where it showed then. Null before it is placed.
+     */
+    fun look(written: Boolean, initial: List<Edit>): Pair<ImageBitmap, Rect>? {
+        if (!laidOut || area.width <= 0f) return null
+        val side = max(area.width, area.height).toInt()
+        return if (written) {
+            renderer.render(history.framing, history.strokes, history.captions, side).asImageBitmap() to keptOnScreen()
+        } else {
+            val opened = EditHistory(whole).apply { restore(initial) }
+            renderer.render(opened.framing, opened.strokes, opened.captions, side).asImageBitmap() to fitted(opened.framing.rect.size)
+        }
+    }
+
+    /** Where a picture of [size] shows when fitted into [area], as the kept part is at home. */
+    fun fitted(size: Size): Rect {
+        val s = min(area.width / size.width, area.height / size.height)
+        val shown = size * s
+        return Rect(area.center - Offset(shown.width / 2, shown.height / 2), shown)
+    }
 
     /** Shows [home], as after a tool changes or the frame does. */
     fun goHome(animate: Boolean = true) {

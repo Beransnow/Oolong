@@ -9,11 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -29,7 +31,9 @@ import oolong.client.arch.onGlobalEvent
 import oolong.client.repository.ReplyTarget
 import oolong.client.toMD5
 import oolong.client.toastShort
+import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.page.editor.EditRequest
+import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
@@ -56,6 +60,9 @@ class ReplyComposer internal constructor(
 
     /** Opens the editor on the attached picture at an index. */
     internal var editImage: (Int) -> Unit = {}
+
+    /** Where each attached picture's thumbnail is, in the window. */
+    internal val thumbnails = mutableStateMapOf<Int, Rect>()
 
     /** The draft's key: what the reply answers, so each floor keeps its own. */
     internal val draftKey: String?
@@ -182,7 +189,9 @@ fun rememberReplyComposer(
         val source = viewModel.state.value.images.getOrNull(index)
         if (source != null && imageEditor != null) {
             val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
-            imageEditor.open(EditRequest(source.toUri(), output)) { written ->
+            // Out of its thumbnail and back into the same place, edited or not
+            val place = { composer.thumbnails[index]?.let { EditorPlace(it, Radius.sm) } }
+            imageEditor.open(EditRequest(source.toUri(), output), from = place, back = { place() }) { written ->
                 if (written) viewModel.replaceImage(index, Uri.fromFile(output).toString())
             }
         }
@@ -242,6 +251,7 @@ fun ReplyComposer.Content(handle: @Composable () -> Unit, fill: Boolean) {
         canAttachImages = canAttachImages,
         onEvent = { onEvent(it, coroutineScope) },
         handle = handle,
+        onThumbnailPlaced = { index, bounds -> thumbnails[index] = bounds },
     )
 }
 

@@ -91,6 +91,8 @@ fun ImageEditorScreen(
     saving: Boolean,
     onCancel: () -> Unit,
     onDone: (Crop) -> Unit,
+    pictureHidden: Boolean = false,
+    onFrame: (Rect) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val state = remember { CropState(scope) }
@@ -139,7 +141,7 @@ fun ImageEditorScreen(
     ) { padding ->
         val image = remember(picture) { picture?.asImageBitmap() }
         if (image != null) {
-            CropArea(image = image, aspect = aspect, round = round, state = state, padding = padding)
+            CropArea(image = image, aspect = aspect, round = round, state = state, padding = padding, hidden = pictureHidden, onFrame = onFrame)
         }
     }
 }
@@ -297,7 +299,15 @@ private class CropState(private val scope: CoroutineScope) {
 }
 
 @Composable
-private fun CropArea(image: ImageBitmap, aspect: Float, round: Boolean, state: CropState, padding: PaddingValues) {
+private fun CropArea(
+    image: ImageBitmap,
+    aspect: Float,
+    round: Boolean,
+    state: CropState,
+    padding: PaddingValues,
+    hidden: Boolean,
+    onFrame: (Rect) -> Unit,
+) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
     val grid by animateFloatAsState(if (state.touching) 1f else 0f, Motion.snap(), label = "grid")
@@ -335,7 +345,9 @@ private fun CropArea(image: ImageBitmap, aspect: Float, round: Boolean, state: C
         }
         val width = minOf(area.width, area.height * aspect)
         val frame = Rect(Offset(area.center.x - width / 2, area.center.y - width / aspect / 2), Size(width, width / aspect))
+        if (frameRect != frame) onFrame(frame)
         frameRect = frame
+        if (hidden) return@Canvas
         state.fit(frame.size, IntSize(image.width, image.height))
 
         drawPicture(image, frame, state)

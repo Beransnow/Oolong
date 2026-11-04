@@ -24,12 +24,17 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -49,6 +54,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.editor.CropRequest
+import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -79,7 +85,9 @@ fun EditProfilePage(
             }
         }
     }
-    val pickPortrait = rememberPortraitPicker(onPicked = viewModel::uploadPortrait)
+    // Where the avatar is, for the cut picture to go into
+    var avatar by remember { mutableStateOf<Rect?>(null) }
+    val pickPortrait = rememberPortraitPicker(avatar = { avatar }, onPicked = viewModel::uploadPortrait)
     EditProfileScreen(
         state = state,
         onBack = { navigator.navigateUp() },
@@ -88,6 +96,7 @@ fun EditProfilePage(
         onIntroChange = viewModel::setIntro,
         onSexChange = viewModel::setSex,
         onUploadPortrait = pickPortrait,
+        onAvatarPlaced = { avatar = it },
     )
 }
 
@@ -96,13 +105,14 @@ fun EditProfilePage(
  * starts it.
  */
 @Composable
-private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
+private fun rememberPortraitPicker(avatar: () -> Rect?, onPicked: (File) -> Unit): () -> Unit {
     val context = LocalContext.current
     val cropped = remember(context) { File(context.cacheDir, "cropped_portrait") }
     val editor = LocalImageEditor.current
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val source = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
-        editor?.open(CropRequest(source, cropped, aspect = 1f, round = true)) { written ->
+        val back = { written: Boolean -> avatar()?.takeIf { written }?.let { EditorPlace(it, round = true) } }
+        editor?.open(CropRequest(source, cropped, aspect = 1f, round = true), back = back) { written ->
             if (written) onPicked(cropped)
         }
     }
@@ -119,6 +129,7 @@ fun EditProfileScreen(
     onIntroChange: (String) -> Unit,
     onSexChange: (Int) -> Unit,
     onUploadPortrait: () -> Unit,
+    onAvatarPlaced: (Rect) -> Unit = {},
 ) {
     val profile = state.profile
     Scaffold(
@@ -180,6 +191,7 @@ fun EditProfileScreen(
                 onNickNameChange = onNickNameChange,
                 onIntroChange = onIntroChange,
                 onUploadPortrait = onUploadPortrait,
+                onAvatarPlaced = onAvatarPlaced,
                 onModifySex = { dialogState.show = true }
             )
             Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.card_margin)))
@@ -202,6 +214,7 @@ fun EditProfileCard(
     onUploadPortrait: (() -> Unit)? = null,
     onModifySex: (() -> Unit)? = null,
     color: Color = ExtendedTheme.colors.background,
+    onAvatarPlaced: (Rect) -> Unit = {},
 ) {
     val context = LocalContext.current
     Card(elevation = 0.dp, backgroundColor = color) {
@@ -213,6 +226,7 @@ fun EditProfileCard(
             Box(
                 modifier = Modifier
                     .size(64.dp)
+                    .onGloballyPositioned { onAvatarPlaced(it.boundsInWindow()) }
                     .clip(CircleShape)
                     .align(Alignment.CenterHorizontally)
                     .placeholder(visible = loading)

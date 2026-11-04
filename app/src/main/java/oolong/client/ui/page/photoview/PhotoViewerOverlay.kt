@@ -94,6 +94,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.editor.EditRequest
+import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
@@ -336,7 +337,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 onEdit = {
                     // The edited picture goes to the gallery once done
                     val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
-                    editor?.open(EditRequest(current.originUrl.toUri(), output)) { written ->
+                    // Out of the picture as shown; back into it only if nothing was saved, for the
+                    // viewer still shows the original, the edit going to the gallery instead
+                    val place = current.takeIf { it.width > 0 && it.height > 0 }
+                        ?.let { EditorPlace(shownRect(container, it.height.toFloat() / it.width).translate(origin)) }
+                    editor?.open(EditRequest(current.originUrl.toUri(), output), from = { place }, back = { written -> place.takeUnless { written } }) { written ->
                         if (written) ImageUtil.saveToGallery(context, output)
                     }
                 },

@@ -39,12 +39,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -126,6 +129,7 @@ fun ReplyComposerContent(
     onEvent: (ReplyComposerEvent) -> Unit,
     handle: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    onThumbnailPlaced: (index: Int, bounds: Rect) -> Unit = { _, _ -> },
 ) {
     val colors = ExtendedTheme.colors
     Column(modifier = modifier) {
@@ -199,6 +203,7 @@ fun ReplyComposerContent(
                 onAdd = { onEvent(ReplyComposerEvent.PickImages) },
                 onRemove = { onEvent(ReplyComposerEvent.RemoveImage(it)) },
                 onEdit = { onEvent(ReplyComposerEvent.EditImage(it)) },
+                onPlaced = onThumbnailPlaced,
             )
         }
         Reveal(Unit.takeIf { state.images.isNotEmpty() || hasTail }) {
@@ -627,6 +632,7 @@ private fun PictureStrip(
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
     onEdit: (Int) -> Unit,
+    onPlaced: (index: Int, bounds: Rect) -> Unit,
 ) {
     val colors = ExtendedTheme.colors
     LazyRow(
@@ -646,6 +652,8 @@ private fun PictureStrip(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(60.dp)
+                        // Where the editor grows out of, and goes back to
+                        .onGloballyPositioned { onPlaced(index, it.boundsInWindow()) }
                         .clickable(role = Role.Button) { onEdit(index) },
                 )
                 Box(

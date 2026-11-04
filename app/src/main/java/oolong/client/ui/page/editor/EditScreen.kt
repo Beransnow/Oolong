@@ -121,10 +121,15 @@ fun EditScreen(
     onCancel: () -> Unit,
     onDone: (EditResult) -> Unit,
     initial: List<Edit> = emptyList(),
+    pictureHidden: Boolean = false,
+    onReady: (EditorState) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val state = remember(renderer) { EditorState(renderer, scope, initial) }
+    state.hidden = pictureHidden
+    // Once the picture has its place, whoever opened the editor may fly a copy to it
+    LaunchedEffect(state, state.laidOut) { if (state.laidOut) onReady(state) }
     state.density = density.density
     val discardDialog = rememberDialogState()
     val leave = {
@@ -332,6 +337,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
         ) {
             state.area = Rect(room.left, room.top, size.width - room.right, size.height - room.bottom)
             showHomeOnce(state)
+            if (state.hidden) return@Canvas
             // A turn or a mirroring just made, still coming round
             withTransform({
                 val fit = state.turningFit()
