@@ -39,6 +39,8 @@ sealed interface PostContent {
         val webUrl: String,
         val width: Int,
         val height: Int,
+        /** In seconds, or 0 when not known. */
+        val duration: Int = 0,
     ) : PostContent
 
     @Immutable

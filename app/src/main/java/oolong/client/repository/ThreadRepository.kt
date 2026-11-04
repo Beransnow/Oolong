@@ -380,7 +380,11 @@ internal fun List<PbContent>.withPlayableVideo(videoInfo: VideoInfo?): List<PbCo
     if (videoInfo == null || videoInfo.videoUrl.isBlank() || videoInfo.videoMD5.isBlank()) return this
     return map {
         if (it.type == 5 && it.link != videoInfo.videoUrl && it.link.contains(videoInfo.videoMD5)) {
-            it.copy(link = videoInfo.videoUrl, src = videoInfo.thumbnailUrl.ifBlank { it.src })
+            it.copy(
+                link = videoInfo.videoUrl,
+                src = videoInfo.thumbnailUrl.ifBlank { it.src },
+                duringTime = it.duringTime.takeIf { d -> d > 0 } ?: videoInfo.videoDuration,
+            )
         } else {
             it
         }

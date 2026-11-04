@@ -75,7 +75,7 @@ private fun PbContent.toBlock(): PostContent? {
             sticker = true,
         )
 
-        5 -> PostContent.Video(url = link, coverUrl = src, webUrl = text, width = width, height = height)
+        5 -> PostContent.Video(url = link, coverUrl = src, webUrl = text, width = width, height = height, duration = duringTime.toInt())
         10 -> PostContent.Voice(md5 = voiceMD5, duration = duringTime)
         else -> null
     }

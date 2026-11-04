@@ -143,6 +143,7 @@ internal fun VideoInfo.toThreadVideo() = ThreadVideo(
     cover = thumbnailUrl,
     coverWidth = thumbnailWidth,
     coverHeight = thumbnailHeight,
+    duration = videoDuration.toInt(),
 )
 
 internal fun OriginThreadInfo.toSharedThread(emoticons: EmoticonRegistry) = SharedThread(

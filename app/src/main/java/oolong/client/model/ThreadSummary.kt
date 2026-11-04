@@ -109,6 +109,8 @@ data class ThreadVideo(
     val cover: String,
     val coverWidth: Int,
     val coverHeight: Int,
+    /** In seconds, or 0 when not known. */
+    val duration: Int = 0,
 )
 
 /** The thread a sharing thread shares, as much of it as the card shows. */
