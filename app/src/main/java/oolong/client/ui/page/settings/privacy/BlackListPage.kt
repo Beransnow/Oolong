@@ -104,7 +104,7 @@ fun BlackListPage(
         StateScreen(
             isEmpty = list.items.isEmpty(),
             isError = error != null,
-            isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+            isLoading = list.refresh == LoadStatus.Loading,
             onReload = viewModel::refresh,
             errorScreen = { ErrorScreen(error = error) },
             emptyScreen = {
