@@ -55,6 +55,7 @@ import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowHeightSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.editor.ImageEditorHost
 import oolong.client.ui.page.forum.ForumPage
 import oolong.client.ui.page.forum.detail.ForumDetailPage
 import oolong.client.ui.page.forum.rule.ForumRuleDetailPage
@@ -235,67 +236,69 @@ fun AppNavDisplay(
         LocalIsPop provides isPop,
         LocalBackStackChange provides change,
     ) {
-        PhotoViewerHost {
-            Row(modifier = modifier.fillMaxSize()) {
-                AnimatedVisibility(
-                    visible = showRail,
-                    enter = expandHorizontally(Motion.settle()),
-                    exit = shrinkHorizontally(Motion.dismiss()),
-                ) {
-                    MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
-                }
-                // The display lays out no container of its own: sheets and dialogs are emitted beside
-                // the pages, so they need a box here, not the row, to cover them. Pages sliding out
-                // end at the rail, rather than passing over it.
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clipToBounds()
-                        .then(
-                            if (showRail) {
-                                Modifier.consumeWindowInsets(
-                                    WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
-                                )
-                            } else Modifier
-                        ),
-                ) {
-                    val pagePeek = remember { PagePeek() }
-                    val pageOrigins = LocalPageOrigins.current
-                    val entries = rememberDecoratedNavEntries(
-                        backStack = backStack,
-                        entryDecorators = listOf(
-                            rememberSaveableStateHolderNavEntryDecorator(),
-                            rememberViewModelStoreNavEntryDecorator(),
-                        ),
-                        entryProvider = entryProvider {
-                            entry<Page>(
-                                clazzContentKey = { it.id },
-                                metadata = { it.key.metadata() },
-                            ) { page ->
-                                val isTop = backStack.lastOrNull() == page
-                                val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
-                                CompositionLocalProvider(
-                                    LocalIsTopEntry provides isTop,
-                                    LocalNavigator provides pageNavigator,
-                                ) {
-                                    if (page.key.readsAtWidth) {
-                                        ReadingWidth { KeyContent(page.key) }
-                                    } else {
-                                        KeyContent(page.key)
+        ImageEditorHost {
+            PhotoViewerHost {
+                Row(modifier = modifier.fillMaxSize()) {
+                    AnimatedVisibility(
+                        visible = showRail,
+                        enter = expandHorizontally(Motion.settle()),
+                        exit = shrinkHorizontally(Motion.dismiss()),
+                    ) {
+                        MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+                    }
+                    // The display lays out no container of its own: sheets and dialogs are emitted beside
+                    // the pages, so they need a box here, not the row, to cover them. Pages sliding out
+                    // end at the rail, rather than passing over it.
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clipToBounds()
+                            .then(
+                                if (showRail) {
+                                    Modifier.consumeWindowInsets(
+                                        WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
+                                    )
+                                } else Modifier
+                            ),
+                    ) {
+                        val pagePeek = remember { PagePeek() }
+                        val pageOrigins = LocalPageOrigins.current
+                        val entries = rememberDecoratedNavEntries(
+                            backStack = backStack,
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator(),
+                            ),
+                            entryProvider = entryProvider {
+                                entry<Page>(
+                                    clazzContentKey = { it.id },
+                                    metadata = { it.key.metadata() },
+                                ) { page ->
+                                    val isTop = backStack.lastOrNull() == page
+                                    val pageNavigator = remember(navigator, page) { navigator.forPage(page) }
+                                    CompositionLocalProvider(
+                                        LocalIsTopEntry provides isTop,
+                                        LocalNavigator provides pageNavigator,
+                                    ) {
+                                        if (page.key.readsAtWidth) {
+                                            ReadingWidth { KeyContent(page.key) }
+                                        } else {
+                                            KeyContent(page.key)
+                                        }
                                     }
                                 }
+                            },
+                        )
+                        val scenes = rememberPageScenes(entries, strategies)
+                        PageBackHandler(scenes, pagePeek, onBack)
+                        CompositionLocalProvider(LocalPagePeek provides pagePeek) {
+                            PageDisplay(
+                                scenes = scenes,
+                                peek = pagePeek,
+                                modifier = Modifier.fillMaxSize(),
+                            ) { from, to, peek ->
+                                PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins)
                             }
-                        },
-                    )
-                    val scenes = rememberPageScenes(entries, strategies)
-                    PageBackHandler(scenes, pagePeek, onBack)
-                    CompositionLocalProvider(LocalPagePeek provides pagePeek) {
-                        PageDisplay(
-                            scenes = scenes,
-                            peek = pagePeek,
-                            modifier = Modifier.fillMaxSize(),
-                        ) { from, to, peek ->
-                            PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins)
                         }
                     }
                 }

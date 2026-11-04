@@ -6,7 +6,6 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,7 +40,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,8 +93,8 @@ import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
-import oolong.client.ui.page.editor.EditPicture
 import oolong.client.ui.page.editor.EditRequest
+import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
@@ -327,13 +325,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             animationSpec = if (phase == Phase.Open && !dragging) Motion.fadeIn() else Motion.fadeOut(),
             label = "chrome",
         )
-        // The picture being edited goes to the gallery once done
-        var edited by rememberSaveable { mutableStateOf<String?>(null) }
-        val editLauncher = rememberLauncherForActivityResult(EditPicture) { written ->
-            val path = edited ?: return@rememberLauncherForActivityResult
-            edited = null
-            if (written) ImageUtil.saveToGallery(context, File(path))
-        }
+        val editor = LocalImageEditor.current
         if (current != null && chrome > 0f && phase != Phase.Closing) {
             PhotoChrome(
                 picture = current,
@@ -342,9 +334,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 onSave = { ImageUtil.download(context, current.originUrl) },
                 onCopyLink = { TiebaUtil.copyText(context, current.originUrl) },
                 onEdit = {
+                    // The edited picture goes to the gallery once done
                     val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
-                    edited = output.path
-                    editLauncher.launch(EditRequest(current.originUrl.toUri(), output))
+                    editor?.open(EditRequest(current.originUrl.toUri(), output)) { written ->
+                        if (written) ImageUtil.saveToGallery(context, output)
+                    }
                 },
                 modifier = Modifier.graphicsLayer { alpha = chrome },
             )

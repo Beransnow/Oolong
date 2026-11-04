@@ -86,8 +86,8 @@ import oolong.client.ui.common.theme.compose.getColorPalette
 import oolong.client.ui.common.theme.compose.themeColors
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.ui.page.editor.CropPicture
 import oolong.client.ui.page.editor.CropRequest
+import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.ui.page.thread.PostCardOptions
 import oolong.client.ui.page.thread.PostItem
 import oolong.client.ui.page.thread.ThreadFloor
@@ -499,9 +499,7 @@ private fun ApplyButton(enabled: Boolean, onClick: () -> Unit) {
 @Composable
 private fun rememberWallpaperPicker(output: File, onPicked: () -> Unit): () -> Unit {
     val context = LocalContext.current
-    val cropLauncher = rememberLauncherForActivityResult(CropPicture) { written ->
-        if (written) onPicked()
-    }
+    val editor = LocalImageEditor.current
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val picked = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
         val metrics = context.resources.displayMetrics
@@ -512,7 +510,7 @@ private fun rememberWallpaperPicker(output: File, onPicked: () -> Unit): () -> U
             maxWidth = metrics.widthPixels,
             quality = 95,
         )
-        cropLauncher.launch(request)
+        editor?.open(request) { written -> if (written) onPicked() }
     }
     return { pickLauncher.launch(PickMediasRequest()) }
 }

@@ -48,8 +48,8 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.ui.page.editor.CropPicture
 import oolong.client.ui.page.editor.CropRequest
+import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.BaseTextField
@@ -99,12 +99,12 @@ fun EditProfilePage(
 private fun rememberPortraitPicker(onPicked: (File) -> Unit): () -> Unit {
     val context = LocalContext.current
     val cropped = remember(context) { File(context.cacheDir, "cropped_portrait") }
-    val cropLauncher = rememberLauncherForActivityResult(CropPicture) { written ->
-        if (written) onPicked(cropped)
-    }
+    val editor = LocalImageEditor.current
     val pickLauncher = rememberLauncherForActivityResult(PickMediasContract) { (_, uris) ->
         val source = uris.firstOrNull() ?: return@rememberLauncherForActivityResult
-        cropLauncher.launch(CropRequest(source, cropped, aspect = 1f, round = true))
+        editor?.open(CropRequest(source, cropped, aspect = 1f, round = true)) { written ->
+            if (written) onPicked(cropped)
+        }
     }
     return { pickLauncher.launch(PickMediasRequest()) }
 }
