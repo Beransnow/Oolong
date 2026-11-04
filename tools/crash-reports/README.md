@@ -11,26 +11,30 @@ lines, in a Worker within the free plan's 10 ms of CPU per invocation. The desig
 
 Commands below run from this directory.
 
-## Shards
+## Mapping file
 
-A build's mapping is kept under `mapping/<versionName>/` in R2, `versionName` exactly as the app
-reports it:
+A build's mapping becomes one file, kept in R2 as `mapping/<versionName>.bin`, `versionName`
+exactly as the app reports it (with `+<commit>` on CI builds). A lookup reads it by range: the
+header once, then each shard it needs.
 
-| File | Holds |
+| Bytes | Holds |
 |---|---|
-| `meta.json` | `{ version, shards, classes, mapping }`: the shard count and the mapping's SHA-256 |
-| `<n>.gz` | Shard `n`, gzipped lines `key<TAB>json` |
+| 0–3 | `OLM1` |
+| 4–7 | Shard count `n`, u32 little-endian |
+| 8 – 8 + 4(n + 1) | Where each shard starts and the last ends, u32 little-endian |
+| Then | The shards, each gzipped on its own |
 
-A line's key is an obfuscated class name, holding `{ n, f?, y? }` for the class, or
-`<class> <method>`, holding `{ n, f?, y?, g }` with that method's groups. A line goes to shard
-`fnv1a(key) % shards`, FNV-1a over the key's UTF-8 bytes; a lookup decompresses that shard, finds
-`\n<key>\t` and parses that line alone. The fields are described at the top of `src/mapping.js`.
+A shard is lines `key<TAB>json`. A line's key is an obfuscated class name, holding `{ n, f?, y? }`
+for the class, or `<class> <method>`, holding `{ n, f?, y?, g }` with that method's groups. A line
+goes to shard `fnv1a(key) % n`, FNV-1a over the key's UTF-8 bytes; a lookup decompresses that
+shard, finds `\n<key>\t` and parses that line alone. The fields are described at the top of
+`src/mapping.js`.
 
-At 4096 shards a mapping of 20,000 classes makes 13 MB, a file per shard of at most 20 KB, and a
-trace costs about 2 ms of CPU (4 ms at the 95th percentile) over some 8 files.
+With 4096 shards a mapping of 20,000 classes makes a 13 MB file with shards of at most 20 KB, and a
+trace costs about 1.6 ms of CPU (3.6 ms at the 95th percentile) over some 9 reads.
 
 ```sh
-node scripts/shard.mjs ../../app/build/outputs/mapping/release/mapping.txt 1.0.0 out 4096
+node scripts/shard.mjs ../../app/build/outputs/mapping/release/mapping.txt mapping.bin
 ```
 
 ## Tests

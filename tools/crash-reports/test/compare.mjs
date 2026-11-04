@@ -6,12 +6,11 @@
 //   node test/compare.mjs <mapping.txt> [traces] [seed]
 //
 // R8_JAR (default: the Android SDK's command-line tools) and JAVA (default: java) choose the retrace
-// to compare with. SHARDS=<dir> looks classes up in the shards scripts/shard.mjs wrote there, as
-// the Worker does, instead of in the parsed mapping.
+// to compare with. SHARDS=<file> looks classes up in a file scripts/shard.mjs wrote, as the Worker
+// does, instead of in the parsed mapping.
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseMapping } from "../src/mapping.js";
@@ -130,12 +129,12 @@ rmSync(dir, { recursive: true });
 
 let lookup = (name) => classes.get(name);
 if (process.env.SHARDS) {
-    const dir = process.env.SHARDS;
-    const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8"));
-    const read = (path) => readFile(join(dir, path)).catch(() => null);
-    // A fresh lookup per trace, as the Worker reads files for one report at a time
+    const bytes = new Uint8Array(readFileSync(process.env.SHARDS));
+    const shards = new DataView(bytes.buffer).getUint32(4, true);
+    const read = async (offset, length) => bytes.slice(offset, offset + length);
+    // A fresh lookup per trace, as the Worker reads shards for one report at a time
     lookup = null;
-    var perTrace = () => shardLookup(read, meta);
+    var perTrace = () => shardLookup(read, shards);
 }
 const actual = lookup
     ? (await retrace(input, lookup)).text
