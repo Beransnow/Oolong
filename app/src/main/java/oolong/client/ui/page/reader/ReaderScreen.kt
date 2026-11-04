@@ -1,6 +1,7 @@
 package oolong.client.ui.page.reader
 
 import android.text.format.DateFormat
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -56,6 +57,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -75,6 +77,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -280,6 +283,9 @@ private fun ReaderContent(
     val document = state.document
     val scope = rememberCoroutineScope()
     var chrome by rememberSaveable { mutableStateOf(initialChrome) }
+    // A screen reader can't tap the page to call the chrome back, so it stays while one runs
+    val touchExploration = rememberTouchExploration()
+    val chromeShown = chrome || touchExploration
     var sheet by remember { mutableStateOf<ReaderSheet?>(null) }
     val openNotes = remember { mutableStateListOf<String>() }
 
@@ -310,7 +316,7 @@ private fun ReaderContent(
                 if (foot != null) onReadUpTo(foot.postId)
             }
     }
-    BackHandler(enabled = chrome && sheet == null) { chrome = false }
+    BackHandler(enabled = chromeShown && !touchExploration && sheet == null) { chrome = false }
 
     val pageMargin = if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) Dimens.PageGutter else Dimens.PageGutterWide
     val thread = state.thread
@@ -321,7 +327,7 @@ private fun ReaderContent(
         overlay = {
             Box(modifier = Modifier.fillMaxSize()) {
                 AnimatedVisibility(
-                    visible = chrome,
+                    visible = chromeShown,
                     enter = slideInVertically(Motion.present()) { -it } + fadeIn(Motion.fadeIn()),
                     exit = slideOutVertically(Motion.dismiss()) { -it } + fadeOut(Motion.fadeOut()),
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -343,7 +349,7 @@ private fun ReaderContent(
                     )
                 }
                 AnimatedVisibility(
-                    visible = chrome,
+                    visible = chromeShown,
                     enter = slideInVertically(Motion.present()) { it } + fadeIn(Motion.fadeIn()),
                     exit = slideOutVertically(Motion.dismiss()) { it } + fadeOut(Motion.fadeOut()),
                     modifier = Modifier.align(Alignment.BottomCenter),
@@ -429,7 +435,7 @@ private fun ReaderContent(
             }
             // A quiet running head while the chrome is away: where in the text, and how far through
             AnimatedVisibility(
-                visible = !chrome,
+                visible = !chromeShown,
                 enter = fadeIn(Motion.fadeIn()),
                 exit = fadeOut(Motion.fadeOut()),
             ) {
@@ -989,3 +995,17 @@ private val RunningHeadHeight = 36.dp
 private val TwoPaneMinWidth = 840.dp
 private val TwoPaneMinHeight = 480.dp
 private val ContentsPaneWidth = 320.dp
+
+/** Whether a screen reader explores the screen by touch, as TalkBack does, following it being turned on and off. */
+@Composable
+private fun rememberTouchExploration(): Boolean {
+    val context = LocalContext.current
+    val manager = remember(context) { context.getSystemService(AccessibilityManager::class.java) }
+    var enabled by remember(manager) { mutableStateOf(manager?.isTouchExplorationEnabled == true) }
+    DisposableEffect(manager) {
+        val listener = AccessibilityManager.TouchExplorationStateChangeListener { enabled = it }
+        manager?.addTouchExplorationStateChangeListener(listener)
+        onDispose { manager?.removeTouchExplorationStateChangeListener(listener) }
+    }
+    return enabled
+}
