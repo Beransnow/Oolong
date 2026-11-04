@@ -77,7 +77,8 @@ class EditorState(
     val history = EditHistory(whole).apply { restore(initial) }
 
     /** Whether anything differs from how the editor opened, which leaving would lose. */
-    val edited: Boolean get() = history.applied != initial || draft != null
+    // A copy, as a slice of the history's list compares by identity, not by what is in it
+    val edited: Boolean get() = history.applied.toList() != initial || draft != null
 
     var tool by mutableStateOf<EditorTool?>(null)
         private set
