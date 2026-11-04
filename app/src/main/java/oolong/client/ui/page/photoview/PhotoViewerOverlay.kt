@@ -411,7 +411,7 @@ private fun PhotoChrome(
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 8.dp)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(Color.Black.copy(alpha = 0.35f))
                     .padding(horizontal = 12.dp, vertical = 4.dp),
             )

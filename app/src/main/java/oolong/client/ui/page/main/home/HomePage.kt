@@ -78,6 +78,7 @@ import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.LoginKey
@@ -240,7 +241,7 @@ private fun ForumItemPlaceholder(
 
 @Composable
 private fun CompactForumItemPlaceholder() {
-    val placeholder = Modifier.placeholder(visible = true, color = ExtendedTheme.colors.chip, shape = CircleShape)
+    val placeholder = Modifier.placeholder(visible = true, color = ExtendedTheme.colors.chip, shape = SmoothCornerShape.Capsule)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -354,7 +355,7 @@ private fun CompactForumItemContent(item: FollowedForum) {
             modifier = Modifier
                 .width(CompactLevelWidth)
                 .height(18.dp)
-                .background(color = ExtendedTheme.colors.chip, shape = CircleShape),
+                .background(color = ExtendedTheme.colors.chip, shape = SmoothCornerShape.Capsule),
             verticalAlignment = CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {

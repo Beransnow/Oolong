@@ -21,11 +21,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.withMatrix
 import androidx.core.graphics.withSave
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
+import oolong.client.ui.common.theme.compose.addSmoothRect
 import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -33,6 +36,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import androidx.compose.ui.graphics.Path as ComposePath
 
 /** Which layer a stroke is drawn on or rubs out. */
 private val Edit.layer: Edit.Layer?
@@ -262,7 +266,7 @@ class EditRenderer(val picture: Bitmap) {
                     val box = box(edit.points.first(), edit.points.last())
                     val radius = min(min(box.width(), box.height()) * 0.2f, edit.width)
                     boxShader(edit.style, box)?.let { paint.shader = it }
-                    canvas.drawRoundRect(box, radius, radius, paint.apply { style = Paint.Style.FILL })
+                    canvas.drawSmoothRect(box, radius, paint.apply { style = Paint.Style.FILL })
                 } else {
                     canvas.drawPath(smooth(edit.points), paint)
                 }
@@ -282,7 +286,7 @@ class EditRenderer(val picture: Bitmap) {
                     })
                     MarkKind.Line -> canvas.drawLine(from.x, from.y, to.x, to.y, paint)
                     MarkKind.Arrow -> canvas.drawPath(arrow(from, to, edit.width), paint)
-                    MarkKind.Box -> canvas.drawRoundRect(box(from, to), edit.width * 1.5f, edit.width * 1.5f, paint)
+                    MarkKind.Box -> canvas.drawSmoothRect(box(from, to), edit.width * 1.5f, paint)
                     MarkKind.Ellipse -> canvas.drawOval(box(from, to), paint)
                     MarkKind.Number -> drawNumber(canvas, from, edit.width, edit.color, number)
                 }
@@ -337,8 +341,8 @@ class EditRenderer(val picture: Bitmap) {
                 CaptionStyle.Filled -> {
                     val pad = captionPadding(caption)
                     val radius = caption.size * 0.3f
-                    drawRoundRect(
-                        RectF(-pad.x, -pad.y, layout.width + pad.x, layout.height + pad.y), radius, radius,
+                    drawSmoothRect(
+                        RectF(-pad.x, -pad.y, layout.width + pad.x, layout.height + pad.y), radius,
                         Paint(Paint.ANTI_ALIAS_FLAG).apply { color = caption.color.toArgb() },
                     )
                 }
@@ -413,6 +417,15 @@ private fun smooth(points: List<Offset>): Path = Path().apply {
     }
     val last = points.last()
     lineTo(last.x, last.y)
+}
+
+/** [rect] with smooth corners of [radius], as the app's own corners are. */
+private fun Canvas.drawSmoothRect(rect: RectF, radius: Float, paint: Paint) {
+    val path = ComposePath().apply {
+        addSmoothRect(rect.width(), rect.height(), radius, SmoothCornerShape.DefaultSmoothing)
+        translate(Offset(rect.left, rect.top))
+    }
+    drawPath(path.asAndroidPath(), paint)
 }
 
 private fun box(a: Offset, b: Offset) = RectF(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y))

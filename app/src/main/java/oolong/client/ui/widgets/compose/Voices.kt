@@ -50,6 +50,7 @@ import androidx.media3.extractor.mp3.Mp3Extractor
 import kotlinx.coroutines.delay
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.utils.FileUtil
 
@@ -93,7 +94,7 @@ fun VoicePlayer(
     val save = stringResource(id = R.string.menu_save_audio)
     Box(
         modifier = modifier
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .longPressMenu(
                 items = { listOf(ContextMenuItem(Symbols.Download, save) { saveVoice(context, url) }) },
                 onClick = { VoicePlayback.toggle(context, url) },
@@ -104,7 +105,7 @@ fun VoicePlayer(
             modifier = Modifier
                 .width(widthOf(length))
                 .height(40.dp)
-                .clip(CircleShape)
+                .clip(SmoothCornerShape.Capsule)
                 .background(colors.accent.copy(alpha = 0.10f))
                 .drawBehind {
                     drawRect(colors.accent.copy(alpha = 0.22f), size = size.copy(width = size.width * fraction))

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -32,6 +31,7 @@ import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.model.ForumTab
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.page.main.explore.rememberThreadPeeker
@@ -160,7 +160,7 @@ private fun TopThreadItem(
             fontWeight = FontWeight.SemiBold,
             color = accent,
             modifier = Modifier
-                .clip(CircleShape)
+                .clip(SmoothCornerShape.Capsule)
                 .background(accent.copy(alpha = 0.14f))
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         )

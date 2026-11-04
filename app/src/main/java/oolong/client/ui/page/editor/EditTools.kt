@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
@@ -50,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -95,6 +93,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.addSmoothRect
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TextButton
@@ -172,7 +171,7 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
                         if (side) translationX = lerp(from.right - panel.right, 0f, p) else translationY = lerp(from.bottom - panel.bottom, 0f, p)
                         alpha = (p * 3f).coerceIn(0f, 1f)
                     }
-                    .floatingGlass(RoundedCornerShape(26.dp), barButton = false)
+                    .floatingGlass(SmoothCornerShape(26.dp), barButton = false)
                     .animateContentSize(Motion.morph())
                     .padding(10.dp),
             ) {
@@ -439,8 +438,8 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                             contentDescription = null,
                             modifier = Modifier
                                 .size(56.dp, 28.dp)
-                                .clip(RoundedCornerShape(7.dp))
-                                .border(if (on) 1.5.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else 0.2f), RoundedCornerShape(7.dp)),
+                                .clip(SmoothCornerShape(7.dp))
+                                .border(if (on) 1.5.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else 0.2f), SmoothCornerShape(7.dp)),
                         )
                     }
                 }
@@ -597,7 +596,7 @@ private fun <T> Options(
     Row(
         modifier = modifier
             .graphicsLayer { this.alpha = alpha }
-            .background(TrackColor, CircleShape)
+            .background(TrackColor, SmoothCornerShape.Capsule)
             .padding(2.dp),
     ) {
         for (option in options) {
@@ -606,7 +605,7 @@ private fun <T> Options(
             Box(
                 modifier = Modifier
                     .then(if (fill) Modifier.weight(1f).height(36.dp) else Modifier.size(width(option), 36.dp))
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(if (on) BubbleColor else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(option) }
                     .semantics {
@@ -641,7 +640,7 @@ private fun RatioShape(ratio: CropRatio, portrait: Boolean) {
     Box(
         modifier = Modifier
             .size(if (portrait) short else long, if (portrait) long else short)
-            .border(1.5.dp, colors.text, RoundedCornerShape(3.dp)),
+            .border(1.5.dp, colors.text, SmoothCornerShape(3.dp)),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = label, color = colors.text, fontSize = if (label.length > 3) 6.sp else 7.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
@@ -672,7 +671,10 @@ private fun MarkPreview(kind: MarkKind, color: Color) {
                 lineTo(19 * s, 5 * s)
                 lineTo(19 * s, 13 * s)
             }, color, style = stroke)
-            MarkKind.Box -> drawRoundRect(color, Offset(3.5f * s, 5.5f * s), Size(17 * s, 13 * s), CornerRadius(2.5f * s), style = stroke)
+            MarkKind.Box -> drawPath(Path().apply {
+                addSmoothRect(17 * s, 13 * s, 2.5f * s, SmoothCornerShape.DefaultSmoothing)
+                translate(Offset(3.5f * s, 5.5f * s))
+            }, color, style = stroke)
             MarkKind.Ellipse -> drawOval(color, Offset(3.5f * s, 5.5f * s), Size(17 * s, 13 * s), style = stroke)
             MarkKind.Number -> {
                 drawCircle(color, 8 * s)
@@ -695,7 +697,7 @@ private fun CaptionPreview(style: CaptionStyle) {
         CaptionStyle.Filled -> Box(
             modifier = Modifier
                 .size(22.dp, 20.dp)
-                .background(Color.White, RoundedCornerShape(5.dp)),
+                .background(Color.White, SmoothCornerShape(5.dp)),
             contentAlignment = Alignment.Center,
         ) { Text(text = "A", style = letter.copy(color = Color(0xFF202124), fontSize = 14.sp)) }
         CaptionStyle.Plain -> Text(text = "A", style = letter.copy(color = ExtendedTheme.colors.text))
@@ -786,7 +788,7 @@ private fun HuePicker(color: Color, onPick: (Color) -> Unit, onDone: () -> Unit)
                 .weight(1f)
                 .padding(end = 8.dp)
                 .height(28.dp)
-                .clip(CircleShape)
+                .clip(SmoothCornerShape.Capsule)
                 .background(Brush.horizontalGradient(HueStops))
                 .pointerInput(Unit) {
                     awaitEachGesture {
@@ -834,7 +836,7 @@ private fun Sizes(selected: Int, onSelect: (Int) -> Unit, enabled: Boolean = tru
     Row(
         modifier = Modifier
             .graphicsLayer { this.alpha = alpha }
-            .background(TrackColor, CircleShape)
+            .background(TrackColor, SmoothCornerShape.Capsule)
             .padding(2.dp),
     ) {
         for (i in 0..2) {
@@ -842,7 +844,7 @@ private fun Sizes(selected: Int, onSelect: (Int) -> Unit, enabled: Boolean = tru
             Box(
                 modifier = Modifier
                     .size(30.dp, 36.dp)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(if (i == selected) BubbleColor else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(i) }
                     .semantics {
@@ -921,7 +923,7 @@ private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
                         .padding(end = 12.dp)
                         .width(120.dp)
                         .height(4.dp)
-                        .clip(CircleShape)
+                        .clip(SmoothCornerShape.Capsule)
                         .background(TrackColor),
                 ) {
                     Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(d.progress).background(ExtendedTheme.colors.text))

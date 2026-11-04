@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -47,6 +46,7 @@ import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.AvatarPlaceholder
@@ -198,7 +198,7 @@ private fun ForumHeaderDetails(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ButtonHeight)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent)
                     .clickable(enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
                 horizontalArrangement = Arrangement.Center,
@@ -286,14 +286,14 @@ private fun ForumLevel(forum: ForumDetail, accent: Color, modifier: Modifier = M
                 .fillMaxWidth()
                 .widthIn(min = 88.dp)
                 .height(4.dp)
-                .clip(CircleShape)
+                .clip(SmoothCornerShape.Capsule)
                 .background(accent.copy(alpha = 0.2f))
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(max(0f, min(1f, forum.score / max(1f, forum.levelUpScore.toFloat()))))
                     .height(4.dp)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(accent)
             )
         }

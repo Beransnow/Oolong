@@ -320,11 +320,11 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
         modifier = Modifier.matchParentSize().background(colors.background).padding(horizontal = 8.dp, vertical = 12.dp),
     ) {
         Bar(colors.topBarContent, width = 0.45f, height = 6.dp)
-        Box(modifier = Modifier.fillMaxWidth().height(10.dp).background(colors.searchField, CircleShape))
+        Box(modifier = Modifier.fillMaxWidth().height(10.dp).background(colors.searchField, SmoothCornerShape.Capsule))
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(modifier = Modifier.size(width = 18.dp, height = 6.dp).background(colors.emphasis, CircleShape))
-            Box(modifier = Modifier.size(width = 14.dp, height = 6.dp).background(colors.chip, CircleShape))
-            Box(modifier = Modifier.size(width = 14.dp, height = 6.dp).background(colors.chip, CircleShape))
+            Box(modifier = Modifier.size(width = 18.dp, height = 6.dp).background(colors.emphasis, SmoothCornerShape.Capsule))
+            Box(modifier = Modifier.size(width = 14.dp, height = 6.dp).background(colors.chip, SmoothCornerShape.Capsule))
+            Box(modifier = Modifier.size(width = 14.dp, height = 6.dp).background(colors.chip, SmoothCornerShape.Capsule))
         }
         repeat(2) {
             Column(
@@ -348,7 +348,7 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
             .padding(horizontal = 14.dp, vertical = 8.dp)
             .fillMaxWidth()
             .height(12.dp)
-            .background(colors.chip, CircleShape),
+            .background(colors.chip, SmoothCornerShape.Capsule),
     ) {
         Box(modifier = Modifier.size(5.dp).background(colors.emphasis, CircleShape))
         Box(modifier = Modifier.size(5.dp).background(colors.textSecondary, CircleShape))
@@ -358,7 +358,7 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
 
 @Composable
 internal fun Bar(color: Color, width: Float, height: Dp) {
-    Box(modifier = Modifier.fillMaxWidth(width).height(height).background(color, CircleShape))
+    Box(modifier = Modifier.fillMaxWidth(width).height(height).background(color, SmoothCornerShape.Capsule))
 }
 
 /**

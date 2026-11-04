@@ -369,7 +369,7 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
         fontSize = 14.sp,
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         modifier = Modifier
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .background(if (selected) colors.accent else colors.divider)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -485,7 +485,7 @@ private fun ApplyButton(enabled: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .background(if (enabled) colors.accent else colors.accent.copy(alpha = 0.5f))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 14.dp),

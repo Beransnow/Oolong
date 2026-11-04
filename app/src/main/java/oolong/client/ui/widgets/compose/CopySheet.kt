@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
@@ -138,7 +137,7 @@ private fun CopySheet(content: List<PostContent>, onDismiss: () -> Unit) {
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 8.dp, bottom = Spacing.sm)
                         .size(width = 36.dp, height = 5.dp)
-                        .clip(CircleShape)
+                        .clip(SmoothCornerShape.Capsule)
                         .background(colors.text.copy(alpha = 0.18f)),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {

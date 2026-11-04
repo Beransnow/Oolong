@@ -34,7 +34,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -798,7 +798,7 @@ private fun MorphingGlass(bounds: Rect, top: Dp, bottom: Dp, opacity: Float) {
     val colors = ExtendedTheme.colors
     val glass = isGlassAvailable()
     if (bounds.isEmpty) return
-    val shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
+    val shape = SmoothCornerShape(CornerSize(top), CornerSize(top), CornerSize(bottom), CornerSize(bottom))
     Box(
         modifier = Modifier
             .offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }

@@ -739,7 +739,7 @@ private fun ReaderSheetLayout(onDismiss: () -> Unit, content: @Composable Column
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 8.dp, bottom = Spacing.sm)
                         .size(width = 36.dp, height = 5.dp)
-                        .clip(CircleShape)
+                        .clip(SmoothCornerShape.Capsule)
                         .background(colors.text.copy(alpha = 0.18f)),
                 )
                 content(close)

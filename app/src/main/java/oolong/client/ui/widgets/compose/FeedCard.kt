@@ -358,7 +358,7 @@ fun ForumInfoChip(
     Row(
         modifier = Modifier
             .height(28.dp)
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .background(color = ExtendedTheme.colors.chip)
             .clickable(onClick = onClick)
             .padding(start = if (imageUri != null) 4.dp else 10.dp, end = 10.dp),

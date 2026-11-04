@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -543,7 +542,7 @@ private fun CaptionField(state: EditorState, draft: Edit.Caption, lift: Float) {
             }
             .then(
                 if (draft.style == CaptionStyle.Filled) {
-                    Modifier.background(draft.color, RoundedCornerShape(with(density) { (px * 0.3f).toDp() }))
+                    Modifier.background(draft.color, SmoothCornerShape(with(density) { (px * 0.3f).toDp() }))
                 } else {
                     Modifier
                 }

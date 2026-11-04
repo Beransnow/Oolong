@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
@@ -106,7 +105,7 @@ fun KeywordSheet(text: String, onBlock: (List<String>) -> Unit, onDismiss: () ->
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 8.dp, bottom = Spacing.sm)
                         .size(width = 36.dp, height = 5.dp)
-                        .clip(CircleShape)
+                        .clip(SmoothCornerShape.Capsule)
                         .background(colors.text.copy(alpha = 0.18f)),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {

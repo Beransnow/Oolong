@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.Icon
@@ -86,6 +85,7 @@ import oolong.client.ui.common.rememberSubPostText
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
@@ -114,7 +114,7 @@ private val RuleWidth = 1.25.dp
 private const val RuleAlpha = 0.16f
 private val BranchRadius = 12.dp
 
-private val ClassicBlockShape = RoundedCornerShape(12.dp)
+private val ClassicBlockShape = SmoothCornerShape(12.dp)
 
 /** The capsule a floor's replies fold into: its height, and its avatars, how many and how far over each other. */
 private val CapsuleHeight = 30.dp
@@ -313,10 +313,10 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
             Box(
                 modifier = Modifier
                     .widthIn(max = Gutter)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(background)
                     .padding(2.dp)
-                    .clip(CircleShape)
+                    .clip(SmoothCornerShape.Capsule)
                     .background(ExtendedTheme.colors.chip)
                     .padding(horizontal = 5.dp),
                 contentAlignment = Alignment.Center,
@@ -526,7 +526,7 @@ private fun SubPostsCapsule(item: PostItem, opensInPlace: Boolean, onClick: () -
             .padding(start = Gutter, top = 2.dp, bottom = 14.dp)
             .pressScale(interaction)
             .height(CapsuleHeight)
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .background(colors.chip)
             .clickable(
                 interactionSource = interaction,
@@ -990,7 +990,7 @@ private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick
         modifier = Modifier
             .pressScale(interactionSource)
             .height(36.dp)
-            .clip(CircleShape)
+            .clip(SmoothCornerShape.Capsule)
             .background(ExtendedTheme.colors.chip)
             .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, onClick = onClick)
             .padding(horizontal = 14.dp),

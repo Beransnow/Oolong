@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
@@ -93,7 +92,7 @@ private class BottomSheetScene<T : Any>(
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 8.dp)
                         .size(width = 36.dp, height = 5.dp)
-                        .clip(CircleShape)
+                        .clip(SmoothCornerShape.Capsule)
                         .background(ExtendedTheme.colors.text.copy(alpha = 0.18f))
                 )
                 entry.Content()
