@@ -171,6 +171,14 @@ private class PeekBackHandler(
     /** Where a peek still settling back was when a new gesture took it up again. */
     private var resumedFrom = 0f
 
+    /**
+     * The furthest the gesture has gone, and the peek there. Coming back from it, the peek comes
+     * back in step, rather than staying put until the gesture is back under [PagePeek.amountFor]'s
+     * flat end, as when the system winds a gesture called off back to its start.
+     */
+    private var furthest = 0f
+    private var furthestAmount = 0f
+
     override fun onBackStarted(event: NavigationEvent) {
         log { "started edge=${event.swipeEdge} x=${event.touchX} peekable=${peek.restingKey}" }
         if (settling && peek.isPeeking) {
@@ -178,10 +186,14 @@ private class PeekBackHandler(
             settling = false
             dragging = true
             resumedFrom = shown
+            furthest = 0f
+            furthestAmount = 0f
             onArrived = {}
             return
         }
         resumedFrom = 0f
+        furthest = 0f
+        furthestAmount = 0f
         // Peeks once the finger moves: a back key starts and completes at once, and pops as usual
         dragging = true
     }
@@ -205,9 +217,14 @@ private class PeekBackHandler(
         // Also a gesture begun while pages still moved, once they rest
         if (dragging && !peek.isPeeking && event.progress > 0f) tryPeek(event)
         if (!peek.isPeeking || settling) return
-        val amount = PagePeek.amountFor(event.progress)
+        val progress = event.progress
+        if (progress >= furthest) {
+            furthest = progress
+            furthestAmount = PagePeek.amountFor(progress)
+        }
+        val amount = if (furthest > 0f) furthestAmount * progress / furthest else 0f
         moveTo(amount + (1f - amount) * resumedFrom)
-        log { "progress=${event.progress} x=${event.touchX} target=${amount + (1f - amount) * resumedFrom}" }
+        log { "progress=$progress x=${event.touchX} target=${amount + (1f - amount) * resumedFrom}" }
     }
 
     override fun onBackCompleted() {
