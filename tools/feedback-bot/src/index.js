@@ -33,7 +33,7 @@ export default {
     async scheduled(controller, env) {
         const before = Math.floor(Date.now() / 1000) - KEEP_DAYS * 86400;
         await env.DB.prepare("DELETE FROM messages WHERE date < ?").bind(before).run();
-        // Feedback the model failed to write up is tried again
+        // Feedback the model failed to write up, or was cut off writing, is tried again
         const { results } = await env.DB.prepare("SELECT message_id FROM feedback WHERE summary IS NULL LIMIT 10").all();
         for (const row of results) await summarize(env, row.message_id);
     },
@@ -136,13 +136,16 @@ async function summarize(env, id) {
         const photo = m.photo ? "［图片］" : "";
         return `${m.message_id === id ? "★ " : ""}[${m.message_id}] ${m.user_name ?? "匿名"}${reply}：${photo}${m.text ?? ""}`;
     });
+    // Left in place if the run is cut off, as a write-up after the reply to Telegram may be
+    await env.DB.prepare("UPDATE feedback SET summary_error = ? WHERE message_id = ?").bind("started", id).run();
     try {
         const result = await env.AI.run(MODEL, {
             messages: [
                 { role: "system", content: PROMPT },
                 { role: "user", content: lines.join("\n") },
             ],
-            reasoning_effort: "low",
+            // Picking facts out needs no thinking, and thinking would run past the time a write-up gets
+            reasoning_effort: "none",
             max_tokens: 1000,
         });
         const text = result.choices?.[0]?.message?.content ?? result.response ?? "";
