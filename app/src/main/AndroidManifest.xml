@@ -65,6 +65,7 @@
         android:label="@string/app_name"
         android:largeHeap="true"
         android:localeConfig="@xml/locales_config"
+        android:manageSpaceActivity=".ManageSpace"
         android:roundIcon="@mipmap/ic_launcher_new_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -188,6 +189,12 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcut_new" />
         </activity>
+
+        <!-- Opened by the system's app details in place of clearing all data: the storage page -->
+        <activity-alias
+            android:name=".ManageSpace"
+            android:exported="true"
+            android:targetActivity=".MainActivity" />
 
         <!-- Switching the launcher icon disables MainActivity and enables one of these aliases,
              so every alias must repeat the deep link filters of MainActivity. -->

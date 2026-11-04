@@ -103,6 +103,7 @@ import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.Key
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.Page
+import oolong.client.ui.navigation.StorageKey
 import oolong.client.ui.navigation.ThreadKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.navigation.rememberAppBackStack
@@ -225,6 +226,10 @@ class MainActivity : AppCompatActivity() {
 
     /** Opens the page [intent] links to, over the pages already open. */
     private fun checkIntent(intent: Intent) {
+        // The system's app details, managing the app's space
+        if (intent.component?.className == "${MainActivity::class.java.`package`?.name}.ManageSpace") {
+            return navigate(StorageKey)
+        }
         val uri = intent.data ?: return
         val key = when (val scheme = uri.scheme?.lowercase()) {
             "oolong" -> uri.toDeepLinkKey()
