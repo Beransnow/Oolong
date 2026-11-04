@@ -43,7 +43,7 @@ class TextReader internal constructor(private val model: Interpreter, private va
         val line = createBitmap(width, Height)
         Canvas(line).drawBitmap(picture, Rect(left, top, right, bottom), Rect(0, 0, width, Height), Paint(Paint.FILTER_BITMAP_FLAG))
         val pixels = IntArray(width * Height).also { line.getPixels(it, 0, width, 0, 0, width, Height) }
-        val text = StringBuilder()
+        val chars = mutableListOf<String>()
         val spans = mutableListOf<ClosedFloatingPointRange<Float>>()
         var start = 0
         // Characters whose middle falls in a window's own part, the overlap shared with the next
@@ -69,7 +69,8 @@ class TextReader internal constructor(private val model: Interpreter, private va
             output.clear()
             model.run(input, output)
             val last = start + Width >= width
-            val ownTo = if (last) width else start + Width - Overlap / 2
+            // The last window owns the padding past the line too: a character at its very end peaks there
+            val ownTo = if (last) start + Width else start + Width - Overlap / 2
             var previous = 0
             var current = false
             for (t in 0 until Steps) {
@@ -88,7 +89,7 @@ class TextReader internal constructor(private val model: Interpreter, private va
                     val middle = from + StepWidth / 2
                     current = middle in ownFrom until ownTo
                     if (current) {
-                        text.append(characters[best])
+                        chars += characters[best]
                         spans += from.toFloat()..(from + StepWidth).toFloat()
                     }
                 } else if (best != 0 && current) {
@@ -102,12 +103,14 @@ class TextReader internal constructor(private val model: Interpreter, private va
             start += Width - Overlap
         }
         return ReadLine(
-            text.toString(),
-            spans.map { (left + it.start / scale)..(left + it.endInclusive / scale) },
+            chars.joinToString(""),
+            // Kept within the line, a character read off the padding past it included
+            spans.map { (left + min(it.start, width.toFloat()) / scale)..(left + min(it.endInclusive, width.toFloat()) / scale) },
             left.toFloat(),
             top.toFloat(),
             right.toFloat(),
             bottom.toFloat(),
+            chars,
         )
     }
 

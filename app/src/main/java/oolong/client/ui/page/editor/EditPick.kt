@@ -157,7 +157,7 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
                     val details = PrivacyRules.find(read).map { m ->
                         // Characters are placed by their middles: a little more, so their edges are hidden too
                         val pad = m.line.height * 0.35f
-                        Rect(m.line.spans[m.start].start - pad, m.line.top, m.line.spans[m.end - 1].endInclusive + pad, m.line.bottom)
+                        Rect(m.line.spanAt(m.start).start - pad, m.line.top, m.line.spanAt(m.end - 1).endInclusive + pad, m.line.bottom)
                     }
                     details + CodeFinder.find(picture).map { Rect(it.left, it.top, it.right, it.bottom) }
                 }

@@ -17,7 +17,7 @@ class PictureText(lines: List<ReadLine>) {
     }
 
     /** The lines read, in reading order: rows top to bottom, each row's lines left to right. */
-    val lines: List<ReadLine> = order(lines.filter { it.text.isNotBlank() && it.spans.size == it.text.length })
+    val lines: List<ReadLine> = order(lines.filter { it.text.isNotBlank() && it.spans.size == it.chars.size })
 
     /** Every character, in reading order. */
     val glyphs: List<Glyph> = this.lines.flatMapIndexed { index, line -> glyphsOf(line, index) }
@@ -101,10 +101,10 @@ class PictureText(lines: List<ReadLine>) {
          */
         private fun glyphsOf(line: ReadLine, index: Int): List<Glyph> {
             val spans = line.spans
-            return line.text.indices.map { i ->
+            return line.chars.indices.map { i ->
                 val left = if (i == 0) line.left else (spans[i - 1].endInclusive + spans[i].start) / 2
                 val right = if (i == spans.lastIndex) line.right else (spans[i].endInclusive + spans[i + 1].start) / 2
-                Glyph(line.text[i].toString(), index, left, line.top, max(right, left), line.bottom)
+                Glyph(line.chars[i], index, left, line.top, max(right, left), line.bottom)
             }
         }
     }

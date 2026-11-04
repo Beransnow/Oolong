@@ -41,6 +41,17 @@ class PictureTextTest {
     }
 
     @Test
+    fun aRareCharacterKeepsItsLine() {
+        // 𠀀 takes two places in the string but is one character read, with one span
+        val rare = "a\uD840\uDC00b"
+        val line = ReadLine(rare, listOf(0f..10f, 10f..20f, 20f..30f), 0f, 0f, 30f, 30f)
+        val text = PictureText(listOf(line))
+        assertEquals(3, text.glyphs.size)
+        assertEquals(rare, text.text())
+        assertEquals(20f..30f, line.spanAt(3))
+    }
+
+    @Test
     fun partsOfATallPictureMergeIntoItsLines() {
         val box = { top: Float, bottom: Float -> TextFinder.Box(10f, top, 300f, bottom) }
         val parts = listOf(

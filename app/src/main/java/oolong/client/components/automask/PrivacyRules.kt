@@ -7,8 +7,27 @@ enum class PrivateKind { Phone, IdCard, BankCard, Email, Plate, QQ, WeChat, Code
  * A line of text as read: its [text], and for each of its characters the span it covers across
  * the line, left to right; [top] and [bottom] bound the line.
  */
-class ReadLine(val text: String, val spans: List<ClosedFloatingPointRange<Float>>, val left: Float, val top: Float, val right: Float, val bottom: Float) {
+class ReadLine(
+    val text: String,
+    val spans: List<ClosedFloatingPointRange<Float>>,
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+    /** The characters as read, one for each of [spans]: some take two places in [text], as a rare character or an emoji. */
+    val chars: List<String> = text.codePoints().toArray().map { String(Character.toChars(it)) },
+) {
     val height: Float get() = bottom - top
+
+    /** The span of the character at [offset] in [text]. */
+    fun spanAt(offset: Int): ClosedFloatingPointRange<Float> {
+        var at = 0
+        for ((i, char) in chars.withIndex()) {
+            at += char.length
+            if (offset < at) return spans[i]
+        }
+        return spans.last()
+    }
 }
 
 /** A private detail found: its [kind], and the part of [line] it takes, characters [start] until [end]. */
