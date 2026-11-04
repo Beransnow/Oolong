@@ -104,9 +104,6 @@ jobs:
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_GROUP_ID" ]; then exit 0; fi
           apk="oolong-$VERSION.apk"
-          kind=$([ "$CHANNEL" = beta ] && echo 测试版 || echo 正式版)
-          size=$(du -b "$apk" | awk '{printf "%.1f MB", $1 / 1048576}')
           python3 tools/release/telegram.py --chat "$TELEGRAM_GROUP_ID" --apk "$apk" \
-            --caption "$(printf 'Oolong %s · %s\n%s · Android 7.0 及以上\nSHA-256：%s\n\n禁止任何形式的二次转载。' \
-              "$VERSION" "$kind" "$size" "$(sha256sum "$apk" | cut -d' ' -f1)")" \
+            --caption-html "$(python3 tools/release/caption.py "$apk" "$VERSION" "$CHANNEL")" \
             --notes "${{ steps.release.outputs.notes }}"

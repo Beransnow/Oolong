@@ -2,10 +2,11 @@
 release notes, the notes as a message of their own.
 
     TELEGRAM_BOT_TOKEN=… python3 tools/release/telegram.py --chat 123 --apk app.apk --caption "…"
-    TELEGRAM_BOT_TOKEN=… python3 tools/release/telegram.py --chat -100… --apk app.apk --caption "…" \\
+    TELEGRAM_BOT_TOKEN=… python3 tools/release/telegram.py --chat -100… --apk app.apk --caption-html "<b>…</b>" \\
         --notes tools/release/notes/1.0.0.json
 
-Captions and notes go as HTML, escaped here, so a commit message can hold any character. Telegram
+Captions and notes go as HTML, escaped here, so a commit message can hold any character; a caption
+given with --caption-html is sent as it is. Telegram
 cuts a caption at 1024 characters and a message at 4096; longer text is shortened to fit.
 """
 import argparse
@@ -89,13 +90,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--chat", required=True, help="the chat to send to: a user's id, or a group's")
     parser.add_argument("--apk", required=True)
-    parser.add_argument("--caption", required=True, help="plain text, escaped here")
+    caption = parser.add_mutually_exclusive_group(required=True)
+    caption.add_argument("--caption", help="plain text, escaped here")
+    caption.add_argument("--caption-html", help="HTML as Telegram takes it, sent as is")
     parser.add_argument("--notes", help="release notes JSON, sent after the APK")
     parser.add_argument("--lang", default="zh")
     args = parser.parse_args()
 
     token = os.environ.get("TELEGRAM_BOT_TOKEN") or sys.exit("set TELEGRAM_BOT_TOKEN")
-    caption = escaped_within(args.caption, CAPTION_LIMIT)
+    caption = args.caption_html if args.caption is None else escaped_within(args.caption, CAPTION_LIMIT)
     call(token, "sendDocument", {"chat_id": args.chat, "caption": caption, "parse_mode": "HTML"}, {"document": args.apk})
     if args.notes:
         text = lines_within(render_notes(args.notes, args.lang), MESSAGE_LIMIT).strip()
