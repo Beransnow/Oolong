@@ -56,6 +56,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -180,6 +185,11 @@ fun AppThemePage(
             ThemeGroup {
                 TextPref(
                     title = stringResource(id = R.string.title_wallpaper),
+                    // Read as the switch it shows, though tapping may first pick a wallpaper
+                    modifier = Modifier.semantics {
+                        role = Role.Switch
+                        toggleableState = ToggleableState(settings.wallpaper)
+                    },
                     onClick = {
                         when {
                             settings.wallpaper -> ThemeUtil.setWallpaper(false)

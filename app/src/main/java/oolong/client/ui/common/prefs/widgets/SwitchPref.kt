@@ -1,6 +1,7 @@
 package oolong.client.ui.common.prefs.widgets
 
 import android.util.Log
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -9,6 +10,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.launch
@@ -54,21 +57,19 @@ fun SwitchPref(
 
     TextPref(
         title = title,
-        modifier = modifier,
+        // The whole row is the switch, also to accessibility services, which read its title and state together
+        modifier = modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch) { edit(it) },
         textColor = textColor,
         summary = summary(checked),
         darkenOnDisable = true,
         leadingIcon = leadingIcon,
         enabled = enabled,
-        onClick = {
-            checked = !checked
-            edit(checked)
-        }
     ) {
         Switch(
             checked = checked,
             enabled = enabled,
             onCheckedChange = { edit(it) },
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }
@@ -126,21 +127,19 @@ fun SwitchPref(
 
     TextPref(
         title = title,
-        modifier = modifier,
+        // The whole row is the switch, also to accessibility services, which read its title and state together
+        modifier = modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch) { edit(it) },
         textColor = textColor,
         summary = (if (checked) summaryOn else summaryOff) ?: summary,
         darkenOnDisable = true,
         leadingIcon = leadingIcon,
         enabled = enabled,
-        onClick = {
-            checked = !checked
-            edit(checked)
-        }
     ) {
         Switch(
             checked = checked,
             enabled = enabled,
             onCheckedChange = { edit(it) },
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }

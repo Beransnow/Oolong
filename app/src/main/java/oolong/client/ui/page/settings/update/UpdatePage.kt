@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ProvideTextStyle
@@ -35,6 +36,8 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -255,12 +258,18 @@ private fun Settings(state: UpdateState, onAutoCheck: (Boolean) -> Unit, onChann
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
-                .clickable(interactionSource = null, indication = PressFeedback.Overlay) { onAutoCheck(!state.autoCheck) }
+                .toggleable(
+                    value = state.autoCheck,
+                    interactionSource = null,
+                    indication = PressFeedback.Overlay,
+                    role = Role.Switch,
+                    onValueChange = onAutoCheck,
+                )
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = stringResource(id = R.string.update_auto_check), style = TextStyles.bodyCompact.copy(color = colors.text), modifier = Modifier.weight(1f))
-            Switch(checked = state.autoCheck, onCheckedChange = onAutoCheck)
+            Switch(checked = state.autoCheck, onCheckedChange = onAutoCheck, modifier = Modifier.clearAndSetSemantics {})
         }
         // Chosen in a menu growing out of the value, as settings' choices are
         val menu = rememberMenuTriggerState()

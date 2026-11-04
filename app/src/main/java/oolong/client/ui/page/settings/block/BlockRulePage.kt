@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
@@ -38,6 +39,8 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -176,11 +179,15 @@ fun BlockRuleScreen(
                     .heightIn(min = 52.dp)
                     .clip(Corners.md)
                     .background(colors.chip)
-                    .clickable { onEdit { it.copy(enabled = !it.enabled) } }
+                    .toggleable(value = draft.enabled, role = Role.Switch) { checked -> onEdit { it.copy(enabled = checked) } }
                     .padding(horizontal = Spacing.md),
             ) {
                 Text(text = stringResource(id = R.string.rule_enabled), style = TextStyles.bodyCompact, color = colors.text, modifier = Modifier.weight(1f))
-                Switch(checked = draft.enabled, onCheckedChange = { checked -> onEdit { it.copy(enabled = checked) } })
+                Switch(
+                    checked = draft.enabled,
+                    onCheckedChange = { checked -> onEdit { it.copy(enabled = checked) } },
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
             }
             if (!state.isNew) {
                 // A destructive action at the end of its block, red, asking first
