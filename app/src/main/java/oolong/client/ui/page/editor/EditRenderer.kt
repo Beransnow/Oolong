@@ -77,6 +77,60 @@ class EditRenderer(val picture: Bitmap) {
         masksFrom = base
         mosaicShader = null
         blurShader = null
+        boxShaders.clear()
+    }
+
+    // A boxed mask's own shader, by its style and box, while the base stays the same
+    private val boxShaders = HashMap<Pair<MaskStyle, RectF>, Shader?>()
+
+    /**
+     * A boxed mask's shader, made from what is inside its [box] alone: mosaic cells laid from its
+     * corner, blur kept within it. A mask over text on white then leaves the white as it was,
+     * rather than greyed by what lies around the box.
+     */
+    private fun boxShader(style: MaskStyle, box: RectF): Shader? {
+        if (style == MaskStyle.Block) return null
+        maskShaders()
+        // A box being drawn is a new one on every frame
+        if (boxShaders.size > 64) boxShaders.clear()
+        return boxShaders.getOrPut(style to RectF(box)) {
+            // The box in the base's pixels, which may be fewer than the picture's
+            val k = base.width / size.width
+            val left = (box.left * k).toInt().coerceIn(0, base.width - 1)
+            val top = (box.top * k).toInt().coerceIn(0, base.height - 1)
+            val right = ceil(box.right * k).toInt().coerceIn(left + 1, base.width)
+            val bottom = ceil(box.bottom * k).toInt().coerceIn(top + 1, base.height)
+            val inside = Bitmap.createBitmap(base, left, top, right - left, bottom - top)
+            // Where the crop lies in the picture
+            val x = left / k
+            val y = top / k
+            val w = (right - left) / k
+            val h = (bottom - top) / k
+            when (style) {
+                MaskStyle.Mosaic -> {
+                    val cell = max(8f, min(size.width, size.height) / 45f)
+                    val small = shrink(inside, ceil(w / cell).toInt(), ceil(h / cell).toInt())
+                    BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                        setLocalMatrix(Matrix().apply {
+                            setScale(w / small.width, h / small.height)
+                            postTranslate(x, y)
+                        })
+                    }
+                }
+
+                else -> {
+                    val factor = max(4f, min(size.width, size.height) / 135f)
+                    val small = shrink(inside, ceil(w / factor).toInt(), ceil(h / factor).toInt())
+                    repeat(3) { boxBlur(small, radius = 2) }
+                    BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                        setLocalMatrix(Matrix().apply {
+                            setScale(w / small.width, h / small.height)
+                            postTranslate(x, y)
+                        })
+                    }
+                }
+            }
+        }
     }
 
     /** Mosaic cells as big as about half a line of text in a screenshot, so it can't be read back. */
@@ -207,6 +261,7 @@ class EditRenderer(val picture: Bitmap) {
                 if (edit.shape == MaskShape.Rect) {
                     val box = box(edit.points.first(), edit.points.last())
                     val radius = min(min(box.width(), box.height()) * 0.2f, edit.width)
+                    boxShader(edit.style, box)?.let { paint.shader = it }
                     canvas.drawRoundRect(box, radius, radius, paint.apply { style = Paint.Style.FILL })
                 } else {
                     canvas.drawPath(smooth(edit.points), paint)
