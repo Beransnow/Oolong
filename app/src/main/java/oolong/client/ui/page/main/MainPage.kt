@@ -102,6 +102,10 @@ fun MainPage(
             searchViewModel.search("")
         }
     }
+    // Another tab picked, from the rail too, leaves search for that tab
+    LaunchedEffect(tabs.selected) {
+        if (search.open) closeSearch()
+    }
     val searchShown by remember { derivedStateOf { search.progress.value > 0f } }
     val searchKeptAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
     // Beside the rail there is no bar to put it by: it stands at the top of the list
