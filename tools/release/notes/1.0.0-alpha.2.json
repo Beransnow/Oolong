@@ -1,0 +1,56 @@
+{
+  "zh": {
+    "新增": [
+      "编辑图片\n发送回复或查看图片时可编辑图片，支持裁剪、打码、标注与添加文字",
+      "楼中楼样式\n可在外观设置中选择「时间线」或「经典」样式",
+      "收起楼中楼\n楼中楼可收起为一行，显示回复者头像与回复数；可在外观设置中设为默认收起"
+    ],
+    "改进": [
+      "楼中楼就地展开\n回复直接在楼层下展开，无需跳转；较长的回复先显示部分内容",
+      "「我的」页\n收藏与浏览记录置于顶部，显示新回复数与最近浏览的帖子",
+      "夜间模式\n可在「我的」页顶栏一键切换；主题跟随系统时，不改动主题设置",
+      "平板搜索\n侧边栏旁的搜索移至顶栏末端",
+      "无障碍改进\n改进读屏朗读与操作"
+    ],
+    "修复": [
+      "吧页面刷新后顶栏与标签行显示异常",
+      "从吧页面打开的帖子返回时，未收回原卡片",
+      "打开新页面时，上一页的标题消失或停在屏幕边缘",
+      "取消返回手势时页面短暂停顿",
+      "首页底栏滑动时无法及时收起",
+      "部分网络环境下无法登录",
+      "搜索页排序标签显示异常",
+      "平板上页面滑出时遮挡侧边栏，切换标签后搜索未关闭",
+      "帖子页底栏滑动时无法收起",
+      "部分图片无法保存或分享",
+      "壁纸主题下分段选择器显示异常"
+    ]
+  },
+  "en": {
+    "New": [
+      "Edit pictures\nEdit pictures on a reply before sending, or from the photo viewer: crop, redact, mark up and add text",
+      "Comment style\nChoose Timeline or Classic in Appearance",
+      "Collapse comments\nComments can fold into one line showing who replied and how many; set them to start collapsed in Appearance"
+    ],
+    "Improved": [
+      "Comments in place\nComments open under their reply without leaving the thread; long ones show in part first",
+      "Me tab\nStored threads and history sit at the top, with new replies and the thread you read last",
+      "Night mode\nSwitch it in one tap from the Me tab's bar; while following the system, your theme setting stays as it was",
+      "Search on tablets\nBeside the navigation rail, search sits at the end of the top bar",
+      "Accessibility\nBetter screen reader support"
+    ],
+    "Fixed": [
+      "The bar and tabs showed incorrectly after refreshing a forum",
+      "Going back from a thread opened in a forum didn't return it to its card",
+      "Opening a page made the previous page's title vanish or stick at the screen's edge",
+      "Calling off a back gesture briefly paused the page",
+      "The home bottom bar didn't fold in time while scrolling",
+      "Signing in failed on some networks",
+      "The sortable tab on the search page showed incorrectly",
+      "On tablets, pages sliding out covered the navigation rail, and search stayed open after switching tabs",
+      "The thread's bottom bar didn't slide away while scrolling",
+      "Some pictures couldn't be saved or shared",
+      "Segmented controls showed incorrectly on the wallpaper theme"
+    ]
+  }
+}
