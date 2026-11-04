@@ -58,7 +58,7 @@ object UsageStats {
         rom = Roms.family(),
         form = form(context),
         model = Build.MODEL.orEmpty().take(64),
-        romVersion = Build.DISPLAY.orEmpty().take(100),
+        romVersion = Roms.version().take(100),
         locale = Locale.getDefault().let { listOf(it.language, it.country).filter(String::isNotEmpty).joinToString("-") }.take(20),
     )
 

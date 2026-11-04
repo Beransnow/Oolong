@@ -10,6 +10,16 @@ import android.os.Build
 object Roms {
     fun family(): String = runCatching { detect() }.getOrNull().orEmpty()
 
+    /**
+     * The ROM's own build number. Most vendors write it into Build.DISPLAY; HyperOS and MIUI leave
+     * Android's build id there ("CP2A.260605.016") and put theirs ("OS2.0.6.0.VMCCNXM") in
+     * Build.VERSION.INCREMENTAL.
+     */
+    fun version(): String {
+        val xiaomi = prop("ro.mi.os.version.name") != null || prop("ro.miui.ui.version.name") != null
+        return (if (xiaomi) Build.VERSION.INCREMENTAL else Build.DISPLAY).orEmpty()
+    }
+
     private fun detect(): String? {
         prop("ro.mi.os.version.name")?.let { name ->
             // "OS2.0" and the like
