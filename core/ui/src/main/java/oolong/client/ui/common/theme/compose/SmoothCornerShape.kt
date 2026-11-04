@@ -1,5 +1,6 @@
 package oolong.client.ui.common.theme.compose
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -14,7 +15,6 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.math.sqrt
 import kotlin.math.tan
 
 /**
@@ -23,15 +23,16 @@ import kotlin.math.tan
  * has no visible kink where edge and corner meet. [smoothing] is how much of the corner the
  * easing curves take, from 0 (a plain circular corner) to 1.
  *
- * When the shape is too small for the full corner, the smoothing gives way first and then the
- * radius, so a capsule ends in plain semicircles.
+ * Where a side is too short for the full corner, the smoothing gives way first, on that side
+ * only, and then the radius. A capsule ([Capsule]) so keeps its easing along the long sides, and
+ * the curvature still builds up gradually into its round ends.
  *
  * Without [top] or [bottom], the corners on that side are square, as for the first or last row of
  * a group whose rows are shaped one by one.
  */
 @Immutable
 class SmoothCornerShape(
-    private val radius: Dp,
+    val radius: Dp,
     private val smoothing: Float = DefaultSmoothing,
     private val top: Boolean = true,
     private val bottom: Boolean = true,
@@ -58,9 +59,19 @@ class SmoothCornerShape(
 
     override fun toString(): String = "SmoothCornerShape(radius=$radius, smoothing=$smoothing, top=$top, bottom=$bottom)"
 
+    /**
+     * The same shape with plain circular corners, for drawing that takes only those, such as
+     * Haze's glass. A smooth corner lies just inside it.
+     */
+    fun toCircular(): RoundedCornerShape =
+        if (radius == Dp.Infinity) RoundedCornerShape(percent = 50) else RoundedCornerShape(radius)
+
     companion object {
         /** The smoothing every corner in the app uses. */
         const val DefaultSmoothing = 0.6f
+
+        /** Round ends across the shorter side: buttons, bars, switches. */
+        val Capsule = SmoothCornerShape(Dp.Infinity)
     }
 }
 
@@ -68,58 +79,70 @@ private fun Size.toRect() = androidx.compose.ui.geometry.Rect(Offset.Zero, this)
 
 /** Adds a [width] × [height] rectangle at the origin with smooth corners, going clockwise. */
 fun Path.addSmoothRect(width: Float, height: Float, radius: Float, smoothing: Float) {
-    val budget = min(width, height) / 2
-    smoothCorner(Offset(width, 0f), Offset(1f, 0f), Offset(0f, 1f), radius, smoothing, budget, first = true)
-    smoothCorner(Offset(width, height), Offset(0f, 1f), Offset(-1f, 0f), radius, smoothing, budget, first = false)
-    smoothCorner(Offset(0f, height), Offset(-1f, 0f), Offset(0f, -1f), radius, smoothing, budget, first = false)
-    smoothCorner(Offset(0f, 0f), Offset(0f, -1f), Offset(1f, 0f), radius, smoothing, budget, first = false)
+    val r = min(radius, min(width, height) / 2)
+    // Each side gives each of its two corners half its length
+    val across = sideSmoothing(width / 2, r, smoothing)
+    val down = sideSmoothing(height / 2, r, smoothing)
+    smoothCorner(Offset(width, 0f), Offset(1f, 0f), Offset(0f, 1f), r, across, down, first = true)
+    smoothCorner(Offset(width, height), Offset(0f, 1f), Offset(-1f, 0f), r, down, across, first = false)
+    smoothCorner(Offset(0f, height), Offset(-1f, 0f), Offset(0f, -1f), r, across, down, first = false)
+    smoothCorner(Offset(0f, 0f), Offset(0f, -1f), Offset(1f, 0f), r, down, across, first = false)
     close()
 }
 
+/** The smoothing a corner of [radius] can have along a side that gives it [budget] of its length. */
+private fun sideSmoothing(budget: Float, radius: Float, smoothing: Float): Float =
+    max(0f, min(smoothing.coerceIn(0f, 1f), budget / radius - 1))
+
 /**
- * One corner at [corner], reached along [inward] and left along [outward] (unit vectors): a cubic
- * from the straight edge into the arc, the arc itself, and a mirrored cubic back out.
+ * One corner of [radius] at [corner], reached along [inward] and left along [outward] (unit
+ * vectors): a cubic easing from the straight edge into the arc, the arc itself, and a cubic easing
+ * back out. Each easing takes the smoothing of its own side, [sIn] and [sOut], turning 45° times
+ * it, and reaches (1 + its smoothing) × [radius] along that side.
  */
 private fun Path.smoothCorner(
     corner: Offset,
     inward: Offset,
     outward: Offset,
     radius: Float,
-    smoothing: Float,
-    budget: Float,
+    sIn: Float,
+    sOut: Float,
     first: Boolean,
 ) {
-    val r = min(radius, budget)
-    var s = smoothing.coerceIn(0f, 1f)
-    // How far along each edge the corner reaches
-    var reach = (1 + s) * r
-    if (reach > budget) {
-        s = max(0f, min(s, budget / r - 1))
-        reach = min(reach, budget)
-    }
-    val arcAngle = 90f * (1 - s)
-    val arcChord = sin(rad(arcAngle / 2)) * r * sqrt(2f)
-    val alpha = (90f - arcAngle) / 2
-    val beta = 45f * s
-    val c = r * tan(rad(alpha / 2)) * cos(rad(beta))
-    val d = c * tan(rad(beta))
-    val b = (reach - arcChord - c - d) / 3
-    val a = 2 * b
+    val r = radius
+    val turnIn = 45f * sIn
+    val turnOut = 45f * sOut
+    val arcAngle = 90f - turnIn - turnOut
 
-    val start = corner - inward * reach
-    val end = corner + outward * reach
-    val arcStart = start + inward * (a + b + c) + outward * d
-    val arcEnd = end - outward * (a + b + c) - inward * d
+    // The easing on one side: from the edge [reach] before the corner, a cubic with handles a and
+    // a + b along the edge, ending at the arc c further along the edge and d in from it
+    fun easing(s: Float, turn: Float): FloatArray {
+        val reach = (1 + s) * r
+        val c = r * tan(rad(turn / 2)) * cos(rad(turn))
+        val d = c * tan(rad(turn))
+        // The arc starts r × (1 - sin turn) short of the corner along the edge
+        val b = (reach - r * (1 - sin(rad(turn))) - c) / 3
+        return floatArrayOf(reach, 2 * b, b, c, d)
+    }
+    val (reachIn, aIn, bIn, cIn, dIn) = easing(sIn, turnIn)
+    val (reachOut, aOut, bOut, cOut, dOut) = easing(sOut, turnOut)
+
+    val start = corner - inward * reachIn
+    val end = corner + outward * reachOut
+    val arcStart = start + inward * (aIn + bIn + cIn) + outward * dIn
+    val arcEnd = end - outward * (aOut + bOut + cOut) - inward * dOut
     // The arc as a cubic, with handles along its end tangents
     val handle = 4f / 3f * tan(rad(arcAngle) / 4) * r
-    val startTangent = inward * cos(rad(beta)) + outward * sin(rad(beta))
-    val endTangent = inward * sin(rad(beta)) + outward * cos(rad(beta))
+    val startTangent = inward * cos(rad(turnIn)) + outward * sin(rad(turnIn))
+    val endTangent = inward * sin(rad(turnOut)) + outward * cos(rad(turnOut))
 
     if (first) moveTo(start.x, start.y) else lineTo(start.x, start.y)
-    cubicTo(start + inward * a, start + inward * (a + b), arcStart)
+    cubicTo(start + inward * aIn, start + inward * (aIn + bIn), arcStart)
     cubicTo(arcStart + startTangent * handle, arcEnd - endTangent * handle, arcEnd)
-    cubicTo(end - outward * (a + b), end - outward * a, end)
+    cubicTo(end - outward * (aOut + bOut), end - outward * aOut, end)
 }
+
+private operator fun FloatArray.component5() = this[4]
 
 private fun Path.cubicTo(c1: Offset, c2: Offset, to: Offset) = cubicTo(c1.x, c1.y, c2.x, c2.y, to.x, to.y)
 

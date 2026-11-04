@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,6 +56,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import kotlin.math.roundToInt
 
 /**
@@ -224,7 +224,7 @@ fun Slider(
         val growWidth = HeldGrowthWidth * held
         val knobWidth = KnobWidth + growWidth
         val knobHeight = KnobHeight + HeldGrowthHeight * held
-        val knobShape = RoundedCornerShape(percent = 50)
+        val knobShape = SmoothCornerShape.Capsule
         Box(
             Modifier
                 .offset {

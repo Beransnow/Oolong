@@ -93,6 +93,7 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Refocus
@@ -183,7 +184,7 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
         }
     }
     val rail: @Composable () -> Unit = {
-        Box(modifier = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)) {
+        Box(modifier = Modifier.floatingGlass(SmoothCornerShape.Capsule, barButton = false)) {
             // The bubble slides to the chosen tool
             val selected = state.tool?.let { tools[it] }
             val first = tools[EditorTool.Crop]
@@ -205,7 +206,7 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
                         alpha = bubble
                     }
                     .size(ToolWidth, ToolHeight)
-                    .background(BubbleColor, RoundedCornerShape(percent = 50)),
+                    .background(BubbleColor, SmoothCornerShape.Capsule),
             )
             val buttons: @Composable () -> Unit = {
                 for (tool in EditorTool.entries) {
@@ -284,7 +285,7 @@ private fun ToolButton(tool: EditorTool, selected: Boolean, onClick: () -> Unit,
     Column(
         modifier = modifier
             .size(ToolWidth, ToolHeight)
-            .clip(RoundedCornerShape(percent = 50))
+            .clip(SmoothCornerShape.Capsule)
             .clickable(role = Role.Tab, onClick = onClick)
             .semantics { this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -83,6 +83,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.isGlassAvailable
@@ -121,7 +122,7 @@ fun rememberReplyChromeState(): ReplyChromeState = remember { ReplyChromeState()
 
 /** Height of each capsule at rest. */
 val ReplyCapsuleHeight = 52.dp
-private val CapsuleShape = RoundedCornerShape(percent = 50)
+private val CapsuleShape = SmoothCornerShape.Capsule
 private val SideMargin = 16.dp
 private val BottomMargin = 8.dp
 private val ComposerMargin = 8.dp

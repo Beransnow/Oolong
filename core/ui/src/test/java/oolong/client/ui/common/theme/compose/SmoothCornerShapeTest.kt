@@ -56,6 +56,28 @@ class SmoothCornerShapeTest {
     }
 
     @Test
+    fun aCapsuleEasesAlongItsLongSidesIntoRoundEnds() {
+        val path = (outline(SmoothCornerShape.Capsule, Size(400f, 100f)) as Outline.Generic).path.asAndroidPath()
+        val region = Region().apply { setPath(path, Region(0, 0, 400, 100)) }
+        // Its ends still reach the middle of each short side
+        assertTrue(region.contains(1, 50))
+        assertTrue(region.contains(398, 50))
+        // Easing in along the long side, it bends away before a circular end would: one covers
+        // x >= 40 at y = 1, the smooth one starts near x = 44
+        assertTrue(region.contains(46, 1))
+        assertFalse(region.contains(42, 1))
+    }
+
+    @Test
+    fun aSquareCapsuleIsACircle() {
+        val path = (outline(SmoothCornerShape.Capsule, Size(100f, 100f)) as Outline.Generic).path.asAndroidPath()
+        val region = Region().apply { setPath(path, Region(0, 0, 100, 100)) }
+        // On the circle of radius 50 at 45°: 50 - 35.4 = 14.6 from each side
+        assertTrue(region.contains(16, 16))
+        assertFalse(region.contains(13, 13))
+    }
+
+    @Test
     fun equalShapesAreEqual() {
         assertEquals(SmoothCornerShape(12.dp), SmoothCornerShape(12.dp))
         assertEquals(SmoothCornerShape(12.dp).hashCode(), SmoothCornerShape(12.dp).hashCode())

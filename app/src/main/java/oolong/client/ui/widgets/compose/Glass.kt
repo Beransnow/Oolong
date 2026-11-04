@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -72,6 +73,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.ShadowAmbient
 import oolong.client.ui.common.theme.compose.ShadowSpot
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.utils.ThemeUtil
 
 /**
@@ -391,7 +393,7 @@ internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
 @OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.floatingGlass(
-    shape: RoundedCornerShape,
+    shape: Shape,
     barButton: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     alpha: Float = 1f,
@@ -485,7 +487,7 @@ fun Modifier.floatingGlass(
             val style = remember(shape, colors.background, frost, bar, interactionSource != null, alpha) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
-                    shape(shape)
+                    shape(shape.glassShape())
                     backgroundColor(colors.background)
                     lightPosition(LightAbove)
                     // Regular blurs a compact control only partly, keeping the content under it
@@ -665,13 +667,13 @@ fun Modifier.lensTarget(): Modifier {
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
+fun Modifier.glassLens(shape: Shape): Modifier {
     val source = currentGlassSource()
     if (source == null || currentGlassTier() != GlassTier.Glass) return this
     val background = ExtendedTheme.colors.background
     val style = remember(shape, background) {
         GlassStyle.clear.then {
-            shape(shape)
+            shape(shape.glassShape())
             backgroundColor(background)
             // A lens magnifies what is under it; it does not frost it.
             optics(UnblurredClearOptics)
@@ -679,7 +681,7 @@ fun Modifier.glassLens(shape: RoundedCornerShape): Modifier {
     }
     // Not inside any source of this state, so it sees the content and the lens targets. A lens is
     // looked through, so it renders at full quality; it is small and only shown while pressed.
-    return hazeGlass(
+    return clipToSmooth(shape).hazeGlass(
         input = source.input,
         style = style,
         performanceMode = HazePerformanceMode.Quality,
@@ -713,17 +715,17 @@ fun isGlassAvailable(): Boolean = currentGlassTier() == GlassTier.Glass
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.controlLens(state: HazeState, shape: RoundedCornerShape, alpha: Float): Modifier {
+fun Modifier.controlLens(state: HazeState, shape: Shape, alpha: Float): Modifier {
     if (alpha <= 0f || currentGlassTier() != GlassTier.Glass) return this
     val style = remember(shape, alpha) {
         GlassStyle.clear.then {
-            shape(shape)
+            shape(shape.glassShape())
             backgroundColor(Color.Transparent)
             optics(ControlLensOptics)
             alpha(alpha)
         }
     }
-    return hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
+    return clipToSmooth(shape).hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
 }
 
 /**
@@ -748,18 +750,18 @@ private val ControlLensOptics = GlassOptics(
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.loupeLens(state: HazeState, shape: RoundedCornerShape): Modifier {
+fun Modifier.loupeLens(state: HazeState, shape: Shape): Modifier {
     if (currentGlassTier() != GlassTier.Glass) return this
     // On the page's ground, as pages leave theirs to the window and what lies under the lens would show
     val background = ExtendedTheme.colors.background
     val style = remember(shape, background) {
         GlassStyle.clear.then {
-            shape(shape)
+            shape(shape.glassShape())
             backgroundColor(background)
             optics(LoupeOptics)
         }
     }
-    return hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
+    return clipToSmooth(shape).hazeGlass(input = HazeInput.Sources(state), style = style, performanceMode = HazePerformanceMode.Quality)
 }
 
 /** Clear glass, unblurred, with a deep rim for a lens a hundred dp or more across. */
@@ -769,6 +771,19 @@ private val LoupeOptics = GlassOptics.clear.copy(
     refractionProfile = RefractionProfile.Edge(40.dp),
     blurRadius = OpticalSizeValue.Fixed(0.dp),
 )
+
+/**
+ * The shape as Haze's glass takes it, with circular corners: a smooth one lies just inside, and is
+ * cut to by the glass's clip ([clipToSmooth] for a lens).
+ */
+private fun Shape.glassShape(): RoundedCornerShape = when (this) {
+    is RoundedCornerShape -> this
+    is SmoothCornerShape -> toCircular()
+    else -> RoundedCornerShape(0)
+}
+
+/** Cuts a lens drawn by Haze, which knows only circular corners, to a smooth [shape]. */
+private fun Modifier.clipToSmooth(shape: Shape): Modifier = if (shape is SmoothCornerShape) clip(shape) else this
 
 /** Above the scaffold content, which is captured at the default zIndex of 0. */
 private const val LensTargetZIndex = 1f

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -58,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import kotlin.math.roundToInt
 
 /** The height of a [GlassTopBar]'s row of icons and title, below the status bar. */
@@ -70,7 +70,7 @@ private val TopBarRowPadding = 12.dp
 private val TitlePadding = 8.dp
 
 /** The navigation icon's and the actions' glass. */
-private val TopBarCapsule = RoundedCornerShape(percent = 50)
+private val TopBarCapsule = SmoothCornerShape.Capsule
 
 /** Where the title starts without a navigation icon, past the row's padding. */
 private val BareTitlePadding = 4.dp

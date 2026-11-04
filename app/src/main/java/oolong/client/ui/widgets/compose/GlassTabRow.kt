@@ -22,7 +22,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
@@ -71,6 +70,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.pressScale
 import kotlin.math.abs
 import kotlin.math.floor
@@ -82,7 +82,7 @@ val GlassTabRowHeight = 48.dp
 /** Space between the capsule's edge and its tabs. */
 private val TabInset = 4.dp
 
-private val TabCapsule = RoundedCornerShape(percent = 50)
+private val TabCapsule = SmoothCornerShape.Capsule
 
 /** Where each tab was last laid out, for the bubble and for scrolling a tab into view. */
 private class TabSpans {

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +43,7 @@ import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import kotlin.math.roundToInt
 
 /**
@@ -149,7 +149,7 @@ fun Switch(
         val knobWidth = KnobWidth + growWidth
         val knobHeight = KnobHeight + HeldGrowthHeight * held
         val p = if (rtl) 1f - position.value else position.value
-        val knobShape = RoundedCornerShape(percent = 50)
+        val knobShape = SmoothCornerShape.Capsule
         Box(
             Modifier
                 .offset {

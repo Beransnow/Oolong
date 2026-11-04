@@ -87,6 +87,7 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ConfirmDialog
@@ -322,7 +323,7 @@ private fun UndoRedo(state: EditorState, vertical: Boolean = false) {
             Icon(imageVector = Symbols.Redo, contentDescription = stringResource(id = R.string.editor_redo))
         }
     }
-    val glass = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)
+    val glass = Modifier.floatingGlass(SmoothCornerShape.Capsule, barButton = false)
     if (vertical) Column(modifier = glass) { buttons() } else Row(modifier = glass) { buttons() }
 }
 
@@ -821,7 +822,7 @@ private fun DeleteButton(state: EditorState, selection: Edit) {
             }
         },
     ) {
-        Box(modifier = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)) {
+        Box(modifier = Modifier.floatingGlass(SmoothCornerShape.Capsule, barButton = false)) {
             IconButton(onClick = state::deleteSelection) {
                 Icon(imageVector = Symbols.Delete, contentDescription = stringResource(id = R.string.editor_delete), tint = ExtendedTheme.colors.text)
             }

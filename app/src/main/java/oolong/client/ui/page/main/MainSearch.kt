@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ContentAlpha
@@ -77,6 +76,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.navigation.ForumKey
@@ -448,7 +448,7 @@ private fun FieldButton(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-private val CapsuleShape = RoundedCornerShape(percent = 50)
+private val CapsuleShape = SmoothCornerShape.Capsule
 private val FieldHeight = 48.dp
 private val CloseGap = 8.dp
 private val FieldIconGap = 10.dp

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.TextStyles
 
@@ -71,7 +71,7 @@ fun GlassToast(
     }
 }
 
-private val ToastShape = RoundedCornerShape(percent = 50)
+private val ToastShape = SmoothCornerShape.Capsule
 private val ToastBlur = 8.dp
 private val ToastRise = 12.dp
 private const val ToastScale = 0.9f

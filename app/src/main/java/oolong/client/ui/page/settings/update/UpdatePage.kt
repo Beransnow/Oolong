@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
@@ -369,7 +368,7 @@ private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? =
             .fillMaxWidth()
             .height(52.dp)
             .pressScale(interactionSource)
-            .clip(RoundedCornerShape(50))
+            .clip(SmoothCornerShape.Capsule)
             .background(if (progress != null) colors.emphasis.copy(alpha = 0.18f) else colors.emphasis)
             .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, enabled = enabled && progress == null, onClick = onClick),
         contentAlignment = Alignment.Center,

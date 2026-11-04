@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +52,7 @@ import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.TextStyles
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -217,7 +217,7 @@ fun SegmentedControl(
 
 private val TrackInset = 3.dp
 
-private val PillShape = RoundedCornerShape(percent = 50)
+private val PillShape = SmoothCornerShape.Capsule
 
 /** How much the pill grows while held, as a switch's knob does. */
 private val HeldGrowthWidth = 16.dp

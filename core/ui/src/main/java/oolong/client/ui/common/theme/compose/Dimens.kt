@@ -1,6 +1,5 @@
 package oolong.client.ui.common.theme.compose
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
@@ -31,7 +30,7 @@ object Corners {
     val xl: Shape = SmoothCornerShape(Radius.xl)
 
     /** Capsules: buttons, bars, switches. */
-    val full: Shape = RoundedCornerShape(percent = 50)
+    val full: Shape = SmoothCornerShape.Capsule
 }
 
 /** Spacing on a 4dp grid (design-system.md §5). */

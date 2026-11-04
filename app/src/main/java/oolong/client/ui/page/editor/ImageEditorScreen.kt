@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -61,6 +60,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.GlassScaffold
@@ -151,7 +151,7 @@ fun ImageEditorScreen(
 private fun EditorTools(content: @Composable () -> Unit) {
     Row(
         modifier = Modifier
-            .floatingGlass(RoundedCornerShape(percent = 50), barButton = false)
+            .floatingGlass(SmoothCornerShape.Capsule, barButton = false)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) { content() }

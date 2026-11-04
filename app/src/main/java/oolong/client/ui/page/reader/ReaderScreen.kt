@@ -47,7 +47,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -712,7 +711,7 @@ private fun BarTool(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-private val BarShape = RoundedCornerShape(percent = 50)
+private val BarShape = SmoothCornerShape.Capsule
 
 /** A sheet over the reader that closes when swiped down, the scrim is tapped or back is pressed. */
 @OptIn(ExperimentalMaterialApi::class)

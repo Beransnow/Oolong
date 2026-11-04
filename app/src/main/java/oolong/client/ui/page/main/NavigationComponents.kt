@@ -41,7 +41,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -91,6 +90,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.White
 import oolong.client.ui.common.theme.compose.pressScale
@@ -251,7 +251,7 @@ private fun NavItemIcon(
 
 private val AvatarRing = 1.5.dp
 
-private val NavPillShape = RoundedCornerShape(percent = 50)
+private val NavPillShape = SmoothCornerShape.Capsule
 private val NavPillPadding = 6.dp
 private val NavItemWidth = 68.dp
 private val NavItemCollapsedWidth = 52.dp
