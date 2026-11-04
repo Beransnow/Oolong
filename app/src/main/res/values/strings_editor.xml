@@ -46,4 +46,6 @@
     <string name="editor_color_grey">灰色</string>
     <string name="editor_color_custom">自选颜色</string>
     <string name="editor_color_done">完成选色</string>
+    <string name="editor_eraser">橡皮擦</string>
+    <string name="editor_unmask">擦除</string>
 </resources>

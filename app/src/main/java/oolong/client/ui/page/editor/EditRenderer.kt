@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -28,6 +30,15 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+
+/** Which layer a stroke is drawn on or rubs out. */
+private val Edit.layer: Edit.Layer?
+    get() = when (this) {
+        is Edit.Mask -> Edit.Layer.Masks
+        is Edit.Mark -> Edit.Layer.Marks
+        is Edit.Erase -> layer
+        else -> null
+    }
 
 /** A highlighter's breadth, in widths of the pen at the same size. */
 private const val HighlighterWidth = 3.5f
@@ -84,12 +95,18 @@ class EditRenderer(val picture: Bitmap) {
         hidden: Int? = null,
     ) {
         val orient = orient(framing)
+        val all = if (live != null) strokes + live else strokes
         canvas.withMatrix(orient) {
             drawBitmap(picture, 0f, 0f, bitmapPaint)
-            // Numbered dots count up in the order they were put
-            number = 0
-            for (stroke in strokes) drawStroke(this, stroke)
-            if (live != null) drawStroke(this, live)
+            // Masks, then marks, each on a layer of their own, so rubbing out one leaves the other
+            // and shows the picture under it
+            for (layer in Edit.Layer.entries) {
+                val save = saveLayer(0f, 0f, size.width, size.height, null)
+                // Numbered dots count up in the order they were put
+                number = 0
+                for (stroke in all) if (stroke.layer == layer) drawStroke(this, stroke)
+                restoreToCount(save)
+            }
         }
         for (caption in captions) if (caption.id != hidden) drawCaption(canvas, caption, orient.map(caption.center))
     }
@@ -180,6 +197,8 @@ class EditRenderer(val picture: Bitmap) {
                     MarkKind.Number -> drawNumber(canvas, from, edit.width, edit.color, number)
                 }
             }
+
+            is Edit.Erase -> canvas.drawPath(smooth(edit.points), strokePaint(edit.width).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) })
 
             else -> Unit
         }

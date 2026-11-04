@@ -51,6 +51,7 @@ gesture
 hd
 heart_broken
 image
+ink_eraser
 keep
 keep fill
 keyboard

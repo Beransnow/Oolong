@@ -61,10 +61,25 @@ sealed interface Edit {
     data class Frame(val framing: Framing) : Edit
 
     /** Hides what lies under a stroke through [points], [width] wide, or the box they span. */
-    data class Mask(val points: List<Offset>, val width: Float, val style: MaskStyle, val shape: MaskShape = MaskShape.Brush) : Edit
+    data class Mask(
+        val id: Int,
+        val points: List<Offset>,
+        val width: Float,
+        val style: MaskStyle,
+        val shape: MaskShape = MaskShape.Brush,
+    ) : Edit
 
     /** A [kind] of mark through or between [points], [width] wide. */
-    data class Mark(val kind: MarkKind, val points: List<Offset>, val width: Float, val color: Color) : Edit
+    data class Mark(val id: Int, val kind: MarkKind, val points: List<Offset>, val width: Float, val color: Color) : Edit
+
+    /**
+     * Rubs out what was drawn on [layer] before it, along a stroke through [points], [width] wide;
+     * under rubbed-out masks the picture shows again.
+     */
+    data class Erase(val points: List<Offset>, val width: Float, val layer: Layer) : Edit
+
+    /** What an [Erase] rubs out: masks or marks. */
+    enum class Layer { Masks, Marks }
 
     /**
      * Text centred on [center], [size] pixels high, always upright however the picture is turned.
@@ -98,8 +113,8 @@ class EditHistory(private val whole: Framing) {
 
     val framing: Framing get() = applied.lastOrNull { it is Edit.Frame }?.let { (it as Edit.Frame).framing } ?: whole
 
-    /** The strokes, masks and marks together, in the order they were made. */
-    val strokes: List<Edit> get() = applied.filter { it is Edit.Mask || it is Edit.Mark }
+    /** The strokes, masks, marks and what rubs them out, in the order they were made. */
+    val strokes: List<Edit> get() = applied.filter { it is Edit.Mask || it is Edit.Mark || it is Edit.Erase }
 
     /** The captions as they stand, each once, in the order they were added. */
     val captions: List<Edit.Caption>
@@ -109,8 +124,18 @@ class EditHistory(private val whole: Framing) {
             return latest.values.filter { it.text.isNotBlank() }
         }
 
-    /** An id no caption has had. */
-    val nextCaptionId: Int get() = (steps.filterIsInstance<Edit.Caption>().maxOfOrNull { it.id } ?: 0) + 1
+    /** An id nothing drawn or written has had. */
+    val nextId: Int
+        get() = (
+            steps.maxOfOrNull {
+                when (it) {
+                    is Edit.Caption -> it.id
+                    is Edit.Mask -> it.id
+                    is Edit.Mark -> it.id
+                    else -> 0
+                }
+            } ?: 0
+            ) + 1
 
     fun push(edit: Edit) {
         while (steps.size > position) steps.removeAt(steps.lastIndex)

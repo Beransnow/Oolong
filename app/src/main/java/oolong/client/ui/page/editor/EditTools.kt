@@ -328,6 +328,8 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                         options = MaskStyle.entries,
                         selected = state.maskStyle,
                         onSelect = { state.maskStyle = it },
+                        // Rubbing out has no style
+                        enabled = state.maskShape != null,
                         label = { stringResource(id = it.label) },
                         modifier = Modifier.fillMaxWidth(),
                         fill = true,
@@ -345,33 +347,52 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                 // How it is laid, and how broad, where marks and text keep their colours and sizes
                 OptionRow {
                     Options(
-                        options = MaskShape.entries,
+                        options = MaskChoices,
                         selected = state.maskShape,
                         onSelect = { state.maskShape = it },
-                        label = { stringResource(id = if (it == MaskShape.Brush) R.string.editor_brush else R.string.editor_rect) },
+                        label = {
+                            stringResource(
+                                id = when (it) {
+                                    MaskShape.Brush -> R.string.editor_brush
+                                    MaskShape.Rect -> R.string.editor_rect
+                                    null -> R.string.editor_unmask
+                                },
+                            )
+                        },
                         modifier = Modifier.weight(1f),
                         fill = true,
                     ) { shape, on ->
                         Icon(
-                            imageVector = if (shape == MaskShape.Brush) Symbols.Gesture else Symbols.Select,
+                            imageVector = when (shape) {
+                                MaskShape.Brush -> Symbols.Gesture
+                                MaskShape.Rect -> Symbols.Select
+                                null -> Symbols.InkEraser
+                            },
                             contentDescription = null,
                             tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
                         )
                     }
                     RowDivider()
                     // A box needs no breadth
-                    Sizes(selected = state.maskSize, onSelect = { state.maskSize = it }, enabled = state.maskShape == MaskShape.Brush)
+                    Sizes(selected = state.maskSize, onSelect = { state.maskSize = it }, enabled = state.maskShape != MaskShape.Rect)
                 }
             }
 
             EditorTool.Mark -> {
                 OptionRow {
                     Options(
-                        options = MarkKind.entries,
+                        options = MarkChoices,
                         selected = state.markKind,
                         onSelect = { state.markKind = it },
-                        label = { stringResource(id = it.label) },
-                    ) { kind, _ -> MarkPreview(kind, state.markColor) }
+                        label = { stringResource(id = it?.label ?: R.string.editor_eraser) },
+                        width = { 37.dp },
+                    ) { kind, on ->
+                        if (kind != null) {
+                            MarkPreview(kind, state.markColor)
+                        } else {
+                            Icon(imageVector = Symbols.InkEraser, contentDescription = null, tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary)
+                        }
+                    }
                 }
                 if (picking) {
                     HuePicker(color = state.markColor, onPick = { state.markColor = it }, onDone = { picking = false })
@@ -379,6 +400,8 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     ColorRow(
                         selected = state.markColor,
                         onSelect = { state.markColor = it },
+                        // A rubber has no colour
+                        enabled = state.markKind != null,
                         onCustom = { picking = true },
                         step = state.markSize,
                         onStep = { state.markSize = it },
@@ -445,11 +468,14 @@ private fun <T> Options(
     label: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     fill: Boolean = false,
+    enabled: Boolean = true,
     width: (T) -> Dp = { 40.dp },
     content: @Composable (T, Boolean) -> Unit,
 ) {
+    val alpha by animateFloatAsState(if (enabled) 1f else 0.38f, Motion.snap(), label = "options")
     Row(
         modifier = modifier
+            .graphicsLayer { this.alpha = alpha }
             .background(TrackColor, CircleShape)
             .padding(2.dp),
     ) {
@@ -461,7 +487,7 @@ private fun <T> Options(
                     .then(if (fill) Modifier.weight(1f).height(36.dp) else Modifier.size(width(option), 36.dp))
                     .clip(CircleShape)
                     .background(if (on) BubbleColor else Color.Transparent)
-                    .clickable(role = Role.RadioButton) { onSelect(option) }
+                    .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(option) }
                     .semantics {
                         contentDescription = description
                         this.selected = on
@@ -564,7 +590,15 @@ private fun CaptionPreview(style: CaptionStyle) {
  * colour; the three sizes stay put at the end.
  */
 @Composable
-private fun ColorRow(selected: Color, onSelect: (Color) -> Unit, onCustom: () -> Unit, step: Int, onStep: (Int) -> Unit) {
+private fun ColorRow(
+    selected: Color,
+    onSelect: (Color) -> Unit,
+    onCustom: () -> Unit,
+    step: Int,
+    onStep: (Int) -> Unit,
+    enabled: Boolean = true,
+) {
+    val alpha by animateFloatAsState(if (enabled) 1f else 0.38f, Motion.snap(), label = "colors")
     val labels = listOf(
         R.string.editor_color_red, R.string.editor_color_orange, R.string.editor_color_yellow, R.string.editor_color_green,
         R.string.editor_color_blue, R.string.editor_color_purple, R.string.editor_color_white, R.string.editor_color_black,
@@ -576,7 +610,10 @@ private fun ColorRow(selected: Color, onSelect: (Color) -> Unit, onCustom: () ->
         Row(
             modifier = Modifier
                 .weight(1f)
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                    this.alpha = alpha
+                }
                 .drawWithContent {
                     drawContent()
                     val fade = 28.dp.toPx() / size.width
@@ -598,10 +635,10 @@ private fun ColorRow(selected: Color, onSelect: (Color) -> Unit, onCustom: () ->
             verticalAlignment = Alignment.CenterVertically,
         ) {
             EditorColors.forEachIndexed { i, color ->
-                Swatch(color = color, chosen = color == selected, label = stringResource(id = labels[i])) { onSelect(color) }
+                Swatch(color = color, chosen = color == selected, label = stringResource(id = labels[i]), enabled = enabled) { onSelect(color) }
             }
             val own = selected !in EditorColors
-            Swatch(color = if (own) selected else null, chosen = own, label = stringResource(id = R.string.editor_color_custom), onClick = onCustom)
+            Swatch(color = if (own) selected else null, chosen = own, label = stringResource(id = R.string.editor_color_custom), enabled = enabled, onClick = onCustom)
         }
         RowDivider()
         Sizes(selected = step, onSelect = onStep)
@@ -610,12 +647,12 @@ private fun ColorRow(selected: Color, onSelect: (Color) -> Unit, onCustom: () ->
 
 /** A colour to pick; [color] null draws the wheel that stands for picking one's own. */
 @Composable
-private fun Swatch(color: Color?, chosen: Boolean, label: String, onClick: () -> Unit) {
+private fun Swatch(color: Color?, chosen: Boolean, label: String, enabled: Boolean = true, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(30.dp)
             .clip(CircleShape)
-            .clickable(role = Role.RadioButton, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics {
                 contentDescription = label
                 selected = chosen
@@ -748,3 +785,9 @@ private val CaptionStyle.label: Int
         CaptionStyle.Filled -> R.string.editor_filled
         CaptionStyle.Plain -> R.string.editor_plain
     }
+
+/** The marks to draw, then the rubber. */
+private val MarkChoices: List<MarkKind?> = MarkKind.entries + null
+
+/** The ways to lay a mask, then rubbing masks out. */
+private val MaskChoices: List<MaskShape?> = MaskShape.entries + null

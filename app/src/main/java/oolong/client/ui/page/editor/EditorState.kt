@@ -62,9 +62,13 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
 
     var ratio by mutableStateOf(CropRatio.Free)
     var maskStyle by mutableStateOf(MaskStyle.Mosaic)
-    var maskShape by mutableStateOf(MaskShape.Brush)
+
+    /** How masks are laid; null rubs masks out instead, showing the picture again. */
+    var maskShape by mutableStateOf<MaskShape?>(MaskShape.Brush)
     var maskSize by mutableIntStateOf(1)
-    var markKind by mutableStateOf(MarkKind.Pen)
+
+    /** What marks draw; null rubs marks out instead. */
+    var markKind by mutableStateOf<MarkKind?>(MarkKind.Pen)
     var markColor by mutableStateOf(EditorColors[0])
     var markSize by mutableIntStateOf(1)
     var captionStyle by mutableStateOf(CaptionStyle.Outline)
@@ -260,19 +264,32 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     /** Starts a stroke at [screen] with the tool in hand. */
     fun beginStroke(screen: Offset) {
         val point = toPicture(toTurned(screen))
+        val maskShape = maskShape
+        val markKind = markKind
         live = when (tool) {
-            EditorTool.Mask -> Edit.Mask(
-                if (maskShape == MaskShape.Rect) listOf(point, point) else listOf(point),
-                MaskWidths[maskSize] * density / scale,
-                maskStyle,
-                maskShape,
-            )
-            EditorTool.Mark -> Edit.Mark(
-                markKind,
-                if (markKind.traced || markKind == MarkKind.Number) listOf(point) else listOf(point, point),
-                MarkWidths[markSize] * density / scale,
-                markColor,
-            )
+            EditorTool.Mask -> if (maskShape == null) {
+                Edit.Erase(listOf(point), MaskWidths[maskSize] * density / scale, Edit.Layer.Masks)
+            } else {
+                Edit.Mask(
+                    history.nextId,
+                    if (maskShape == MaskShape.Rect) listOf(point, point) else listOf(point),
+                    MaskWidths[maskSize] * density / scale,
+                    maskStyle,
+                    maskShape,
+                )
+            }
+            EditorTool.Mark -> if (markKind == null) {
+                // A rubber as broad as a mask brush: marks are thin, and hard to hit with less
+                Edit.Erase(listOf(point), MaskWidths[markSize] * density / scale, Edit.Layer.Marks)
+            } else {
+                Edit.Mark(
+                    history.nextId,
+                    markKind,
+                    if (markKind.traced || markKind == MarkKind.Number) listOf(point) else listOf(point, point),
+                    MarkWidths[markSize] * density / scale,
+                    markColor,
+                )
+            }
             else -> null
         }
     }
@@ -289,6 +306,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
                     else -> listOf(stroke.points.first(), point)
                 },
             )
+            is Edit.Erase -> stroke.copy(points = stroke.points + point)
             else -> stroke
         }
     }
@@ -322,7 +340,7 @@ class EditorState(val renderer: EditRenderer, private val scope: CoroutineScope)
     fun editCaption(caption: Edit.Caption? = null, screen: Offset = area.center) {
         finishCaption()
         val editing = caption ?: Edit.Caption(
-            id = history.nextCaptionId,
+            id = history.nextId,
             text = "",
             center = toPicture(toTurned(screen)),
             size = CaptionSizes[captionSize] * density / scale,
