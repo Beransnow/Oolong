@@ -85,6 +85,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedColors
@@ -342,6 +343,9 @@ fun FloatingNavBar(
         val itemHeight = lerp(NavItemHeight, NavItemCollapsedHeight, fraction)
         val density = LocalDensity.current
         val itemWidthPx = with(density) { itemWidth.toPx() }
+        // Changes while the bar collapses, which a press during a scroll overlaps, so the
+        // gesture reads it rather than restarting on it
+        val gestureItemWidthPx by rememberUpdatedState(itemWidthPx)
         // The item under the indicator, so colours follow it while it is dragged.
         val highlighted = indicator.value.roundToInt()
         Row(verticalAlignment = Alignment.Bottom) {
@@ -352,88 +356,97 @@ fun FloatingNavBar(
                         .then(if (searching) Modifier else Modifier.lensTarget().floatingGlass(NavPillShape))
                         .padding(NavPillPadding)
                         .onGloballyPositioned { pill = it }
-                        .pointerInput(navigationItems.size, itemWidthPx, menus) {
+                        .pointerInput(navigationItems.size, menus) {
                             val last = navigationItems.size - 1
-                            fun positionAt(x: Float) = (x / itemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
+                            fun indexAt(x: Float) = (x / gestureItemWidthPx).toInt().coerceIn(0, last)
+                            fun positionAt(x: Float) = (x / gestureItemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
-                                coroutineScope.launch { press.animateTo(1f, PressSpring) }
-                                coroutineScope.launch {
-                                    indicator.animateTo(
-                                        positionAt(down.position.x).roundToInt().toFloat(),
-                                        IndicatorSpring
-                                    )
-                                }
-                                var dragging = false
-                                var lastX = down.position.x
-                                var released = false
-                                var lost = false
-                                fun follow(event: PointerEvent) {
-                                    val change = event.changes.firstOrNull { it.id == down.id }
-                                    if (change == null) {
-                                        lost = true
-                                        return
-                                    }
-                                    if (!change.pressed) {
-                                        released = true
-                                        return
-                                    }
-                                    lastX = change.position.x
-                                    if (!dragging &&
-                                        abs(lastX - down.position.x) > viewConfiguration.touchSlop
-                                    ) {
-                                        dragging = true
-                                        indicatorDragged = true
-                                    }
-                                    if (dragging) {
-                                        change.consume()
-                                        coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
-                                    }
-                                }
-                                val menu = items[(down.position.x / itemWidthPx).toInt().coerceIn(0, last)].menu
-                                // Until the finger moves off or lifts, a menu waits for the press to last
-                                val held = menu != null && menus != null &&
-                                    withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                        while (!dragging && !released && !lost) follow(awaitPointerEvent())
-                                    } == null
-                                if (held && menu != null && menus != null) {
-                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                try {
+                                    coroutineScope.launch { press.animateTo(1f, PressSpring) }
                                     coroutineScope.launch {
-                                        indicator.animateTo(shown.toFloat(), IndicatorSpring)
+                                        indicator.animateTo(
+                                            positionAt(down.position.x).roundToInt().toFloat(),
+                                            IndicatorSpring
+                                        )
                                     }
-                                    val coordinates = pill ?: return@awaitEachGesture
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
-                                    while (true) {
-                                        val change = awaitPointerEvent().changes
-                                            .firstOrNull { it.id == down.id } ?: break
-                                        change.consume()
-                                        val position = coordinates.localToWindow(change.position)
-                                        if (!change.pressed) {
-                                            menus.liftFinger(position)
-                                            break
+                                    var dragging = false
+                                    var lastX = down.position.x
+                                    var released = false
+                                    var lost = false
+                                    fun follow(event: PointerEvent) {
+                                        val change = event.changes.firstOrNull { it.id == down.id }
+                                        if (change == null) {
+                                            lost = true
+                                            return
                                         }
-                                        menus.moveFinger(position)
+                                        if (!change.pressed) {
+                                            released = true
+                                            return
+                                        }
+                                        lastX = change.position.x
+                                        if (!dragging &&
+                                            abs(lastX - down.position.x) > viewConfiguration.touchSlop
+                                        ) {
+                                            dragging = true
+                                            indicatorDragged = true
+                                        }
+                                        if (dragging) {
+                                            change.consume()
+                                            coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
+                                        }
                                     }
-                                    return@awaitEachGesture
-                                }
-                                while (!released && !lost) follow(awaitPointerEvent())
-                                coroutineScope.launch { press.animateTo(0f, PressSpring) }
-                                indicatorDragged = false
-                                if (released) {
-                                    val target = if (dragging) {
-                                        positionAt(lastX).roundToInt()
+                                    val menu = items[indexAt(down.position.x)].menu
+                                    // Until the finger moves off or lifts, a menu waits for the press to last
+                                    val held = menu != null && menus != null &&
+                                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                            while (!dragging && !released && !lost) follow(awaitPointerEvent())
+                                        } == null
+                                    if (held && menu != null && menus != null) {
+                                        coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                        coroutineScope.launch {
+                                            indicator.animateTo(shown.toFloat(), IndicatorSpring)
+                                        }
+                                        val coordinates = pill ?: return@awaitEachGesture
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
+                                        while (true) {
+                                            val change = awaitPointerEvent().changes
+                                                .firstOrNull { it.id == down.id } ?: break
+                                            change.consume()
+                                            val position = coordinates.localToWindow(change.position)
+                                            if (!change.pressed) {
+                                                menus.liftFinger(position)
+                                                break
+                                            }
+                                            menus.moveFinger(position)
+                                        }
+                                        return@awaitEachGesture
+                                    }
+                                    while (!released && !lost) follow(awaitPointerEvent())
+                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                    indicatorDragged = false
+                                    if (released) {
+                                        val target = if (dragging) {
+                                            positionAt(lastX).roundToInt()
+                                        } else {
+                                            indexAt(down.position.x)
+                                        }
+                                        coroutineScope.launch {
+                                            indicator.animateTo(target.toFloat(), IndicatorSpring)
+                                        }
+                                        select(target)
                                     } else {
-                                        (down.position.x / itemWidthPx).toInt().coerceIn(0, last)
+                                        coroutineScope.launch {
+                                            indicator.animateTo(shown.toFloat(), IndicatorSpring)
+                                        }
                                     }
-                                    coroutineScope.launch {
-                                        indicator.animateTo(target.toFloat(), IndicatorSpring)
-                                    }
-                                    select(target)
-                                } else {
-                                    coroutineScope.launch {
-                                        indicator.animateTo(shown.toFloat(), IndicatorSpring)
-                                    }
+                                } catch (e: CancellationException) {
+                                    // Restarted or taken off mid-press, the gesture would leave the lens up
+                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
+                                    coroutineScope.launch { indicator.animateTo(shown.toFloat(), IndicatorSpring) }
+                                    indicatorDragged = false
+                                    throw e
                                 }
                             }
                         },
