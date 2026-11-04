@@ -146,6 +146,8 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var signDay by DataStoreDelegates.int(defaultValue = -1, key = "sign_day")
 
+    var hideIpLocation by DataStoreDelegates.boolean(defaultValue = false, key = "hideIpLocation")
+
     var showBothUsernameAndNickname by DataStoreDelegates.boolean(
         defaultValue = false,
         key = "show_both_username_and_nickname"

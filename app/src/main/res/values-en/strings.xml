@@ -181,6 +181,7 @@
     <string name="title_share_pic">Share image</string>
     <string name="tip_permission_storage_download">Used to download files</string>
     <string name="title_show_both_username_and_nickname">Show username and nickname</string>
+    <string name="title_hide_ip_location">Hide IP location</string>
     <string name="title_dialog_clip_board_tieba_url">Open link from clipboard?</string>
     <string name="subtitle_quick_preview_thread">%1$s · Replies: %2$s</string>
     <string name="subtitle_link">Web link</string>

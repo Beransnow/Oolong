@@ -109,6 +109,13 @@ fun HabitSettingsPage(
                         defaultChecked = false,
                     )
                 }
+                prefsItem {
+                    SwitchPref(
+                        key = "hideIpLocation",
+                        title = stringResource(id = R.string.title_hide_ip_location),
+                        defaultChecked = false,
+                    )
+                }
             }
             prefsGroup(collectedGroup) {
                 prefsItem {

@@ -82,6 +82,7 @@ import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberSubPostText
+import oolong.client.ui.common.shownIpLocation
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
@@ -382,7 +383,7 @@ private fun FloorBody(
             Text(
                 text = listOfNotNull(
                     relativeTime(post.time),
-                    author.ipLocation.takeIf { it.isNotEmpty() },
+                    shownIpLocation(author.ipLocation),
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.caption,
                 color = ExtendedTheme.colors.textSecondary,
@@ -744,7 +745,7 @@ fun SubPostLine(
                 Text(
                     text = listOfNotNull(
                         relativeTime(subPost.time),
-                        subPost.author.ipLocation.takeIf { it.isNotEmpty() },
+                        shownIpLocation(subPost.author.ipLocation),
                     ).joinToString(" · "),
                     style = TextStyles.footnote,
                     color = colors.textSecondary,
@@ -954,7 +955,7 @@ fun FirstPostContent(
             Text(
                 text = listOfNotNull(
                     relativeTime(post.time),
-                    author.ipLocation.takeIf { it.isNotEmpty() },
+                    shownIpLocation(author.ipLocation),
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.caption,
                 color = ExtendedTheme.colors.textSecondary,

@@ -178,6 +178,7 @@
     <string name="title_share_pic">分享图片</string>
     <string name="tip_permission_storage_download">用于下载文件</string>
     <string name="title_show_both_username_and_nickname">同时显示用户名和昵称</string>
+    <string name="title_hide_ip_location">隐藏 IP 属地</string>
     <string name="title_dialog_clip_board_tieba_url">打开剪贴板中的链接？</string>
     <string name="subtitle_quick_preview_thread">来自%1$s吧，共 %2$s 条回复</string>
     <string name="subtitle_link">网页链接</string>

@@ -40,6 +40,7 @@ import oolong.client.model.UserProfile
 import oolong.client.models.PhotoViewData
 import oolong.client.models.PicItem
 import oolong.client.ui.common.navigation.pageHeroTarget
+import oolong.client.ui.common.shownIpLocation
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -296,8 +297,8 @@ private fun ProfileFacts(user: UserProfile, onCopyId: () -> Unit) {
             Spacer(modifier = Modifier.width(3.dp))
             Icon(imageVector = Symbols.ContentCopy, contentDescription = null, tint = color, modifier = Modifier.size(12.dp))
         }
-        if (user.ipLocation.isNotEmpty()) {
-            Text(text = stringResource(id = R.string.text_profile_ip_location, user.ipLocation), style = style, color = color, maxLines = 1)
+        shownIpLocation(user.ipLocation)?.let { ipLocation ->
+            Text(text = stringResource(id = R.string.text_profile_ip_location, ipLocation), style = style, color = color, maxLines = 1)
         }
         if (user.tbAge.isNotEmpty()) {
             Text(text = stringResource(id = R.string.text_profile_tb_age, user.tbAge), style = style, color = color, maxLines = 1)
