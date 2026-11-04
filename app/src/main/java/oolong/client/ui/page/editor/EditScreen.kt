@@ -12,15 +12,19 @@ import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,8 +34,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -54,6 +60,7 @@ import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -123,6 +130,22 @@ fun EditScreen(
         Text(text = stringResource(id = R.string.editor_discard_title))
     }
 
+    BoxWithConstraints {
+        // Wide or on its side, the tools stand down the end of the screen
+        val side = maxWidth >= 600.dp || maxWidth > maxHeight
+        Scaffold(state, saving, side, leave, onDone)
+    }
+}
+
+@Composable
+private fun Scaffold(
+    state: EditorState,
+    saving: Boolean,
+    side: Boolean,
+    leave: () -> Unit,
+    onDone: (EditResult) -> Unit,
+) {
+    var railWidth by remember { mutableIntStateOf(0) }
     GlassScaffold(
         backgroundColor = Color.Black,
         topBar = {
@@ -151,9 +174,32 @@ fun EditScreen(
                 },
             )
         },
-        bottomBar = { EditorBottom(state) },
+        bottomBar = { if (!side) EditorBottom(state) },
+        overlay = {
+            if (side) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(end = 16.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Box(modifier = Modifier.onSizeChanged { railWidth = it.width }) { EditorTools(state, side = true) }
+                }
+            }
+        },
     ) { padding ->
-        Picture(state, padding)
+        val direction = LocalLayoutDirection.current
+        val end = with(LocalDensity.current) { if (side) railWidth.toDp() + 16.dp else 0.dp }
+        Picture(
+            state,
+            PaddingValues(
+                start = padding.calculateStartPadding(direction),
+                top = padding.calculateTopPadding(),
+                end = padding.calculateEndPadding(direction) + end,
+                bottom = padding.calculateBottomPadding(),
+            ),
+        )
     }
 }
 

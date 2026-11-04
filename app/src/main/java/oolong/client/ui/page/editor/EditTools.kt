@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,12 +66,15 @@ private val TrackColor = Color.White.copy(alpha = 0.08f)
 private val ToolWidth = 68.dp
 private val ToolHeight = 52.dp
 
+/** How wide a tool's options are beside a side rail. */
+private val SidePanelWidth = 340.dp
+
 /**
- * The tools along the bottom on one piece of glass, and above them the chosen tool's options,
- * which grow out of its button and go back into it.
+ * The tools on one piece of glass, along the bottom or, when [side], down the end of the screen;
+ * the chosen tool's options grow out of its button, above it or beside it, and go back into it.
  */
 @Composable
-fun EditorTools(state: EditorState) {
+fun EditorTools(state: EditorState, side: Boolean = false) {
     val tools = remember { mutableStateMapOf<EditorTool, Rect>() }
     var panelBounds by remember { mutableStateOf(Rect.Zero) }
     // The options shown: the tool's while open, the last one's while closing
@@ -88,14 +92,23 @@ fun EditorTools(state: EditorState) {
         }
     }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    val panel: @Composable () -> Unit = {
         shown?.let { tool ->
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 10.dp)
-                    .widthIn(max = 420.dp)
-                    .fillMaxWidth()
+                    .then(
+                        if (side) {
+                            Modifier
+                                .padding(end = 10.dp)
+                                .width(SidePanelWidth)
+                        } else {
+                            Modifier
+                                .padding(horizontal = 12.dp)
+                                .padding(bottom = 10.dp)
+                                .widthIn(max = 420.dp)
+                                .fillMaxWidth()
+                        }
+                    )
                     .onGloballyPositioned { panelBounds = it.boundsInRoot() }
                     .graphicsLayer {
                         // Grown out of the tool's button
@@ -103,10 +116,14 @@ fun EditorTools(state: EditorState) {
                         val from = tools[tool] ?: return@graphicsLayer
                         val panel = panelBounds
                         if (panel.width <= 0f) return@graphicsLayer
-                        transformOrigin = TransformOrigin(((from.center.x - panel.left) / panel.width).coerceIn(0f, 1f), 1f)
+                        transformOrigin = if (side) {
+                            TransformOrigin(1f, ((from.center.y - panel.top) / panel.height).coerceIn(0f, 1f))
+                        } else {
+                            TransformOrigin(((from.center.x - panel.left) / panel.width).coerceIn(0f, 1f), 1f)
+                        }
                         scaleX = lerp(from.width / panel.width, 1f, p)
                         scaleY = lerp(from.height / panel.height, 1f, p)
-                        translationY = lerp(from.bottom - panel.bottom, 0f, p)
+                        if (side) translationX = lerp(from.right - panel.right, 0f, p) else translationY = lerp(from.bottom - panel.bottom, 0f, p)
                         alpha = (p * 3f).coerceIn(0f, 1f)
                     }
                     .floatingGlass(RoundedCornerShape(26.dp), barButton = false)
@@ -119,12 +136,18 @@ fun EditorTools(state: EditorState) {
                 ) { ToolOptions(state, it) }
             }
         }
+    }
+    val rail: @Composable () -> Unit = {
         Box(modifier = Modifier.floatingGlass(RoundedCornerShape(percent = 50), barButton = false)) {
             // The bubble slides to the chosen tool
             val selected = state.tool?.let { tools[it] }
-            val row = tools[EditorTool.Crop]
-            val x by animateFloatAsState(
-                targetValue = if (selected != null && row != null) selected.left - row.left else 0f,
+            val first = tools[EditorTool.Crop]
+            val shift by animateFloatAsState(
+                targetValue = when {
+                    selected == null || first == null -> 0f
+                    side -> selected.top - first.top
+                    else -> selected.left - first.left
+                },
                 animationSpec = Motion.snap(),
                 label = "bubble",
             )
@@ -133,13 +156,13 @@ fun EditorTools(state: EditorState) {
                 modifier = Modifier
                     .padding(4.dp)
                     .graphicsLayer {
-                        translationX = x
+                        if (side) translationY = shift else translationX = shift
                         alpha = bubble
                     }
                     .size(ToolWidth, ToolHeight)
                     .background(BubbleColor, RoundedCornerShape(percent = 50)),
             )
-            Row(modifier = Modifier.padding(4.dp)) {
+            val buttons: @Composable () -> Unit = {
                 for (tool in EditorTool.entries) {
                     ToolButton(
                         tool = tool,
@@ -149,6 +172,18 @@ fun EditorTools(state: EditorState) {
                     )
                 }
             }
+            if (side) Column(modifier = Modifier.padding(4.dp)) { buttons() } else Row(modifier = Modifier.padding(4.dp)) { buttons() }
+        }
+    }
+    if (side) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            panel()
+            rail()
+        }
+    } else {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            panel()
+            rail()
         }
     }
 }
