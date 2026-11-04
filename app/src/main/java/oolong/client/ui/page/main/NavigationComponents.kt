@@ -140,7 +140,7 @@ fun NavigationRail(
     ) {
         Box(
             modifier = Modifier
-                .floatingGlass(NavPillShape)
+                .floatingGlass(NavRailShape)
                 .padding(NavPillPadding),
         ) {
             Box(
@@ -258,6 +258,12 @@ private val NavItemCollapsedWidth = 52.dp
 private val NavItemHeight = 52.dp
 private val NavItemCollapsedHeight = 40.dp
 internal val NavPillMargin = 12.dp
+
+/**
+ * The rail's ends, concentric with the item's capsule in from them: rounded like a capsule across
+ * the rail's width, they would leave a wider gap at the ends than along the sides.
+ */
+private val NavRailShape = SmoothCornerShape(NavItemHeight / 2 + NavPillPadding)
 private val SearchButtonGap = 8.dp
 
 /** Height the pill and its margins take above the navigation bar, expanded. */
