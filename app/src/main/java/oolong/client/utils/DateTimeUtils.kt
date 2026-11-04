@@ -8,8 +8,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import android.text.format.DateFormat as AndroidDateFormat
 import java.util.concurrent.ConcurrentHashMap
+import android.text.format.DateFormat as AndroidDateFormat
 
 /** How long ago something was, in the steps a post's time is told in. */
 sealed interface RelativeTime {
