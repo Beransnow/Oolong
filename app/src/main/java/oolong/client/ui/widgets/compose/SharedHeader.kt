@@ -91,12 +91,24 @@ class SharedHeaderState internal constructor(internal val page: PageScrollState)
 /**
  * A [SharedHeaderState] following [page], the [PageScrollState] given to the page's scaffold.
  * Where the header was is saved: back from a page opened on top, the lists are put in line with
- * it again, and a header taken for back at the top would take them there too.
+ * it again, and a header taken for back at the top would take them there too. So are the heights
+ * the lists leave room for, so they come back where they were from the first frame, before the
+ * header and the pinned rows are measured again; a page morphing back into one of its items
+ * would otherwise follow the item as it moves down.
  */
 @Composable
 fun rememberSharedHeaderState(page: PageScrollState): SharedHeaderState = rememberSaveable(
     page,
-    saver = Saver(save = { it.held }, restore = { held -> SharedHeaderState(page).apply { this.held = held } }),
+    saver = Saver(
+        save = { intArrayOf(it.held, it.headerHeight, it.pinnedHeight) },
+        restore = { (held, headerHeight, pinnedHeight) ->
+            SharedHeaderState(page).apply {
+                this.held = held
+                this.headerHeight = headerHeight
+                this.pinnedHeight = pinnedHeight
+            }
+        },
+    ),
 ) { SharedHeaderState(page) }
 
 /** Marks the bar's pinned rows, its margins included, which the pages' lists leave room for. */
