@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
@@ -40,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +73,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -92,9 +95,13 @@ import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.page.editor.EditPicture
+import oolong.client.ui.page.editor.EditRequest
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
+import java.io.File
+import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -320,6 +327,13 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             animationSpec = if (phase == Phase.Open && !dragging) Motion.fadeIn() else Motion.fadeOut(),
             label = "chrome",
         )
+        // The picture being edited goes to the gallery once done
+        var edited by rememberSaveable { mutableStateOf<String?>(null) }
+        val editLauncher = rememberLauncherForActivityResult(EditPicture) { written ->
+            val path = edited ?: return@rememberLauncherForActivityResult
+            edited = null
+            if (written) ImageUtil.saveToGallery(context, File(path))
+        }
         if (current != null && chrome > 0f && phase != Phase.Closing) {
             PhotoChrome(
                 picture = current,
@@ -327,6 +341,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 onShare = { share(context, current.originUrl) },
                 onSave = { ImageUtil.download(context, current.originUrl) },
                 onCopyLink = { TiebaUtil.copyText(context, current.originUrl) },
+                onEdit = {
+                    val output = File(context.cacheDir, "edited/${UUID.randomUUID()}.jpg")
+                    edited = output.path
+                    editLauncher.launch(EditRequest(current.originUrl.toUri(), output))
+                },
                 modifier = Modifier.graphicsLayer { alpha = chrome },
             )
         }
@@ -378,6 +397,7 @@ private fun PhotoChrome(
     onShare: () -> Unit,
     onSave: () -> Unit,
     onCopyLink: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -426,6 +446,7 @@ private fun PhotoChrome(
                     )
                 }
             }
+            PhotoAction(Symbols.Edit, stringResource(id = R.string.editor_edit_picture), onEdit)
             PhotoAction(Symbols.Link, stringResource(id = R.string.title_copy_link), onCopyLink)
             PhotoAction(Symbols.Share, stringResource(id = R.string.title_share_pic), onShare)
             PhotoAction(Symbols.Download, stringResource(id = R.string.desc_download_pic), onSave)
