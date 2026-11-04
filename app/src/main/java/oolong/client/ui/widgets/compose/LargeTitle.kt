@@ -11,7 +11,10 @@ internal const val LargeTitleScale = 1.5f
 internal val LargeTitleTop = 4.dp
 internal val LargeTitleBottom = 12.dp
 
-/** Where the large title starts, from the page's start edge. */
+/**
+ * Where the large title starts, from the page's start edge: in line with the cards below it and
+ * with the back arrow, which sits out to meet it while its glass is not there.
+ */
 internal val LargeTitleStart = 16.dp
 
 /**
