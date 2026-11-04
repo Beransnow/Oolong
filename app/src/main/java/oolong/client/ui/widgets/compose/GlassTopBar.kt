@@ -271,7 +271,9 @@ fun GlassTopBar(
             .measure(Constraints.fixed(foreground.width, height - hidden - uncovered + extend))
         layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
             background.place(0, 0)
-            foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }
+            // Hidden all the way, it is not placed at all: faded out, its buttons' glass would still
+            // sample the page on every frame
+            if (hiddenFraction() < 1f) foreground.placeWithLayer(0, -hidden) { alpha = 1f - hiddenFraction() }
             pinned?.place(0, foreground.height - hidden + offset)
         }
     }

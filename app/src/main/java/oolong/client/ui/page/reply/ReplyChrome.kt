@@ -322,8 +322,15 @@ fun ReplyChrome(
                 .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                 .padding(horizontal = SideMargin, vertical = BottomMargin)
                 // Moved by placing; under the app's lookahead, only a layer of its own makes the
-                // move show
-                .offset { IntOffset(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hiddenFraction()).roundToInt()) }
+                // move show. Slid all the way off, they are not placed, so their glass stops
+                // sampling the page.
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) {
+                        val hidden = hiddenFraction()
+                        if (hidden < 1f) placeable.place(0, ((ReplyChromeBarHeight + 24.dp).toPx() * hidden).roundToInt())
+                    }
+                }
                 .graphicsLayer(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
