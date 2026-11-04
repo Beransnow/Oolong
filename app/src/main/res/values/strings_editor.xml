@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_undo">撤销</string>
+    <string name="editor_redo">重做</string>
+    <string name="editor_crop">裁剪</string>
+    <string name="editor_mask">打码</string>
+    <string name="editor_mark">标注</string>
+    <string name="editor_text">文字</string>
+    <string name="editor_ratio_free">自由</string>
+    <string name="editor_ratio_original">原图</string>
+    <string name="editor_flip">翻转</string>
+    <string name="editor_mosaic">马赛克</string>
+    <string name="editor_blur">模糊</string>
+    <string name="editor_block">色块</string>
+    <string name="editor_pen">画笔</string>
+    <string name="editor_arrow">箭头</string>
+    <string name="editor_box">方框</string>
+    <string name="editor_outline">描边</string>
+    <string name="editor_filled">底色</string>
+    <string name="editor_plain">无</string>
+    <string name="editor_size_small">细</string>
+    <string name="editor_size_medium">中</string>
+    <string name="editor_size_large">粗</string>
+    <string name="editor_color_red">红色</string>
+    <string name="editor_color_yellow">黄色</string>
+    <string name="editor_color_green">绿色</string>
+    <string name="editor_color_blue">蓝色</string>
+    <string name="editor_color_white">白色</string>
+    <string name="editor_color_black">黑色</string>
+    <string name="editor_discard_title">放弃修改？</string>
+    <string name="editor_discard">放弃</string>
+    <string name="editor_keep_editing">继续编辑</string>
+</resources>

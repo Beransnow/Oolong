@@ -28,6 +28,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import coil3.size.Precision
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -74,7 +75,22 @@ object CropPicture : ActivityResultContract<CropRequest, Boolean>() {
     override fun parseResult(resultCode: Int, intent: Intent?): Boolean = resultCode == Activity.RESULT_OK
 }
 
-/** The picture editor. For now it crops; its tools sit along the bottom, where more can go. */
+/** What [EditPicture] asks for: [source] edited with every tool, and written to [output] as a JPEG. */
+data class EditRequest(val source: Uri, val output: File)
+
+/** Opens the editor with every tool; the result is whether the edited picture was written. */
+object EditPicture : ActivityResultContract<EditRequest, Boolean>() {
+    override fun createIntent(context: Context, input: EditRequest): Intent =
+        Intent(context, ImageEditorActivity::class.java)
+            .putExtra(ImageEditorViewModel.EXTRA_SOURCE, input.source)
+            .putExtra(ImageEditorViewModel.EXTRA_OUTPUT, input.output.path)
+            .putExtra(ImageEditorViewModel.EXTRA_EDIT, true)
+            .putExtra(ImageEditorViewModel.EXTRA_QUALITY, 95)
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Boolean = resultCode == Activity.RESULT_OK
+}
+
+/** The picture editor: only cropping, to a fixed shape, for [CropPicture]; every tool for [EditPicture]. */
 @AndroidEntryPoint
 class ImageEditorActivity : AppCompatActivity() {
     @Inject
@@ -97,24 +113,37 @@ class ImageEditorActivity : AppCompatActivity() {
                         finish()
                     }
                 }
+                val finish: (suspend () -> Boolean) -> Unit = { write ->
+                    saving = true
+                    scope.launch {
+                        if (write()) {
+                            setResult(RESULT_OK)
+                            finish()
+                        } else {
+                            saving = false
+                            toastShort(R.string.toast_image_unreadable)
+                        }
+                    }
+                }
+                if (viewModel.edit) {
+                    val renderer = remember(picture) { picture?.let(::EditRenderer) }
+                    if (renderer != null) {
+                        EditScreen(
+                            renderer = renderer,
+                            saving = saving,
+                            onCancel = ::finish,
+                            onDone = { result -> finish { viewModel.save(renderer, result) } },
+                        )
+                    }
+                    return@AppContent
+                }
                 ImageEditorScreen(
                     picture = picture,
                     aspect = viewModel.aspect,
                     round = viewModel.round,
                     saving = saving,
                     onCancel = ::finish,
-                    onDone = { crop ->
-                        saving = true
-                        scope.launch {
-                            if (viewModel.save(crop)) {
-                                setResult(RESULT_OK)
-                                finish()
-                            } else {
-                                saving = false
-                                toastShort(R.string.toast_image_unreadable)
-                            }
-                        }
-                    },
+                    onDone = { crop -> finish { viewModel.save(crop) } },
                 )
             }
         }
@@ -129,6 +158,7 @@ class ImageEditorViewModel(application: Application, savedState: SavedStateHandl
     private val output = File(checkNotNull(savedState.get<String>(EXTRA_OUTPUT)))
     val aspect: Float = savedState[EXTRA_ASPECT] ?: 1f
     val round: Boolean = savedState[EXTRA_ROUND] ?: false
+    val edit: Boolean = savedState[EXTRA_EDIT] ?: false
     private val maxWidth: Int = savedState[EXTRA_MAX_WIDTH] ?: 1080
     private val quality: Int = savedState[EXTRA_QUALITY] ?: 90
 
@@ -139,8 +169,12 @@ class ImageEditorViewModel(application: Application, savedState: SavedStateHandl
 
     init {
         viewModelScope.launch {
-            // Turned upright by its EXIF, and no larger than a crop can use
-            val bitmap = application.loadBitmap(source) { size(MaxSide) }
+            // Turned upright by its EXIF, and no larger than an edit can use
+            val bitmap = application.loadBitmap(source) {
+                size(MaxSide)
+                // Only ever smaller, never blown up past its own pixels
+                precision(Precision.INEXACT)
+            }
             if (bitmap == null) unreadable.trySend(Unit) else _picture.value = bitmap
         }
     }
@@ -160,8 +194,19 @@ class ImageEditorViewModel(application: Application, savedState: SavedStateHandl
         }.isSuccess
     }
 
+    /** Writes the picture as [result] leaves it; false if it could not be written. */
+    suspend fun save(renderer: EditRenderer, result: EditResult): Boolean = withContext(Dispatchers.Default) {
+        runCatching {
+            val bitmap = renderer.render(result.framing, result.strokes, result.captions, MaxSide)
+            output.parentFile?.mkdirs()
+            output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+            bitmap.recycle()
+        }.isSuccess
+    }
+
     companion object {
         const val EXTRA_SOURCE = "source"
+        const val EXTRA_EDIT = "edit"
         const val EXTRA_OUTPUT = "output"
         const val EXTRA_ASPECT = "aspect"
         const val EXTRA_ROUND = "round"

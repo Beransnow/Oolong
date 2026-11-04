@@ -13,6 +13,8 @@ auto_stories
 badge
 bar_chart
 block
+blur_on
+blur_on fill
 bookmark
 bookmark_remove
 border_color
@@ -23,8 +25,12 @@ chevron_right
 chrome_reader_mode
 close
 content_copy
+crop
+crop fill
 delete
 download
+draw
+draw fill
 edit
 edit_note
 event
@@ -36,6 +42,7 @@ fast_rewind fill
 favorite
 favorite fill
 flag
+flip
 format_color_reset
 forum
 fullscreen
@@ -65,6 +72,7 @@ photo_camera
 photo_library
 play_arrow fill
 public
+redo
 refresh
 remove
 replay fill
@@ -83,9 +91,11 @@ swap_calls
 switch_access_shortcut
 task_alt
 text_fields
+text_fields fill
 title
 toc
 tune
+undo
 unfold_less
 unfold_more
 verified
