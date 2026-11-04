@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -77,6 +78,41 @@ fun shouldLoadImage(context: Context, skipNetworkCheck: Boolean): Boolean {
         ))
 }
 
+/**
+ * A picture in a post or a list, as every one is drawn: the placeholder colour while it loads or
+ * when it can't, darkened in night mode when the user asks for it, and, while [load] is false
+ * (the data-saving setting holding it back), only what is cached already.
+ */
+@Composable
+fun ContentImage(
+    imageUri: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
+    load: Boolean = true,
+    onSuccess: ((AsyncImagePainter.State.Success) -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val darken = ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode
+    val placeholder = rememberImagePlaceholder()
+    val request = remember(imageUri, load) {
+        ImageRequest.Builder(context)
+            .data(imageUri)
+            .apply { if (!load) networkCachePolicy(CachePolicy.DISABLED) }
+            .build()
+    }
+    AsyncImage(
+        model = request,
+        contentDescription = contentDescription,
+        placeholder = placeholder,
+        error = placeholder,
+        onSuccess = onSuccess,
+        colorFilter = if (darken) DarkenFilter else null,
+        contentScale = contentScale,
+        modifier = modifier,
+    )
+}
+
 @Composable
 fun NetworkImage(
     imageUri: String,
@@ -91,22 +127,9 @@ fun NetworkImage(
     var shouldLoad by remember { mutableStateOf(shouldLoadImage(context, skipNetworkCheck)) }
     val enableClick = remember(photoViewData, shouldLoad) { photoViewData != null || !shouldLoad }
 
-    val darken = ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode
-    val placeholder = rememberImagePlaceholder()
-
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
 
     var layoutOffset by remember { mutableStateOf(Offset.Zero) }
-
-    val request = remember(imageUri, shouldLoad) {
-        ImageRequest.Builder(context)
-            .data(imageUri)
-            .apply {
-                // Until tapped, only what is cached already
-                if (!shouldLoad) networkCachePolicy(CachePolicy.DISABLED)
-            }
-            .build()
-    }
 
     var imageAspectRatio by remember { mutableFloatStateOf(0f) }
     var memoryCacheKey by remember { mutableStateOf<MemoryCache.Key?>(null) }
@@ -194,15 +217,13 @@ fun NetworkImage(
             .onGloballyPositioned { boxOffset = it.positionInWindow() }
             .then(modifier)
     ) {
-        AsyncImage(
-            model = request,
-            placeholder = placeholder,
-            error = placeholder,
+        ContentImage(
+            imageUri = imageUri,
+            load = shouldLoad,
             onSuccess = {
                 imageAspectRatio = it.result.image.height.toFloat() / it.result.image.width
                 memoryCacheKey = it.result.memoryCacheKey
             },
-            colorFilter = if (darken) DarkenFilter else null,
             modifier = Modifier
                 .fillMaxSize()
                 .onSizeChanged {
