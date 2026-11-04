@@ -21,6 +21,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.AlignmentLine
-import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
@@ -57,9 +57,6 @@ import kotlin.math.roundToInt
 val LocalChromePadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
 private enum class GlassScaffoldSlot { Content, TopBar, Fab, Snackbar, Floating, Lens }
-
-/** The bottom bar's height, reported by the floating group that holds it with the overlay. */
-private val BottomBarHeightLine = HorizontalAlignmentLine(::maxOf)
 
 /**
  * How near pieces of floating glass come before they melt together: less than the gaps they keep
@@ -162,6 +159,10 @@ fun GlassScaffold(
     val glassAvailable = isGlassAvailable()
     val lensHost = remember(glassContainer, glassAvailable) { if (glassContainer && glassAvailable) GlassLensHost() else null }
     val padding = remember { ScaffoldPadding() }
+    // The bottom bar's height, as the floating group that holds it with the overlay measured it.
+    // Not an alignment line: one read from the group stopped what is in it from moving while its
+    // size stayed, as a row scrolled sideways, under the app's lookahead.
+    val bottomBarHeightState = remember { mutableIntStateOf(0) }
     val chromePadding = LocalChromePadding.current
     var consumedInsets by remember { mutableStateOf(WindowInsets(0, 0, 0, 0)) }
     val insets = WindowInsets.systemBars
@@ -223,17 +224,17 @@ fun GlassScaffold(
                     ) { (bar, over), groupConstraints ->
                         val barPlaceables = bar.map { it.measure(groupConstraints.copy(minWidth = 0, minHeight = 0)) }
                         val barHeight = barPlaceables.maxOfOrNull { it.height } ?: 0
+                        bottomBarHeightState.intValue = barHeight
                         val overPlaceables = over.map { it.measure(groupConstraints) }
                         val groupHeight = groupConstraints.maxHeight
-                        layout(groupConstraints.maxWidth, groupHeight, mapOf(BottomBarHeightLine to barHeight)) {
+                        layout(groupConstraints.maxWidth, groupHeight) {
                             barPlaceables.forEach { it.place(0, groupHeight - barHeight) }
                             overPlaceables.forEach { it.place(0, 0) }
                         }
                     }
                 }.map { it.measure(constraints) }
-                val bottomBarHeight = floatingPlaceables.maxOfOrNull {
-                    it[BottomBarHeightLine].takeIf { line -> line != AlignmentLine.Unspecified } ?: 0
-                } ?: 0
+                // Read after the group is measured, and again when the bar's height changes
+                val bottomBarHeight = if (floatingPlaceables.isEmpty()) 0 else bottomBarHeightState.intValue
 
                 val top = if (topBarHeight > 0) topBarHeight else insets.getTop(this)
                 val bottom = if (bottomBarHeight > 0) bottomBarHeight
