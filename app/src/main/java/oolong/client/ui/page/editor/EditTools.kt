@@ -566,11 +566,11 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
 }
 
 @Composable
-private fun OptionRow(arrangement: Arrangement.Horizontal = Arrangement.Center, content: @Composable RowScope.() -> Unit) {
+private fun OptionRow(arrangement: Arrangement.Horizontal = Arrangement.Center, height: Dp = 40.dp, content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp),
+            .height(height),
         horizontalArrangement = arrangement,
         verticalAlignment = Alignment.CenterVertically,
         content = content,
@@ -901,7 +901,8 @@ private enum class MaskWay(val label: Int, val icon: ImageVector) {
 @Composable
 private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
     val download by files.download.collectAsState()
-    OptionRow(arrangement = Arrangement.SpaceBetween) {
+    // A line of words alone needs less room than a row with a button
+    OptionRow(arrangement = Arrangement.SpaceBetween, height = if (download == AutoMaskDownload.Ready) 24.dp else 40.dp) {
         val color = ExtendedTheme.colors.textSecondary
         val style = MaterialTheme.typography.body2
         when (val d = download) {
