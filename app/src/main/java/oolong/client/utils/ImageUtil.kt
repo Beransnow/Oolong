@@ -309,56 +309,43 @@ object ImageUtil {
         }
     }
 
+    /** Saves [file], a picture of the app's own such as an edited one, to the gallery. */
+    fun saveToGallery(context: Context, file: File) {
+        val save = {
+            CoroutineScope(Dispatchers.IO).launch {
+                writeToGallery(context, file.readBytes(), file.name, "image/jpeg")
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            save()
+            return
+        }
+        askPermission(
+            context,
+            PermissionData(
+                listOf(
+                    PermissionUtils.READ_EXTERNAL_STORAGE,
+                    PermissionUtils.WRITE_EXTERNAL_STORAGE
+                ),
+                context.getString(R.string.tip_permission_storage)
+            ),
+            R.string.toast_no_permission_save_photo
+        ) { save() }
+    }
+
     private fun downloadAboveQ(context: Context, url: String?) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return
         }
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val image = context.downloadImage(url)
-            if (image != null) {
-                var mimeType = "image/jpeg"
-                var fileName = URLUtil.guessFileName(url, null, mimeType)
-                image.inputStream().use { inputStream ->
-                    if (isGifFile(inputStream)) {
-                        mimeType = "image/gif"
-                        fileName = FileUtil.changeFileExtension(fileName, ".gif")
-                    }
-                }
-                image.inputStream().use { inputStream ->
-                    val relativePath =
-                        Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
-                    val values = ContentValues().apply {
-                        put(MediaStore.Images.Media.RELATIVE_PATH, relativePath)
-                        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                        put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                        put(MediaStore.Images.Media.DESCRIPTION, fileName)
-                    }
-                    val cr = context.contentResolver
-                    val uri: Uri = runCatching {
-                        cr.insert(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            values
-                        )
-                    }.getOrNull() ?: return@launch
-                    try {
-                        cr.openFileDescriptor(uri, "w")?.use {
-                            FileOutputStream(it.fileDescriptor).use { outputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        }
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_photo_saved, relativePath),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        cr.delete(uri, null, null)
-                    }
-                }
+            val image = context.downloadImage(url) ?: return@launch
+            val gif = image.inputStream().use { isGifFile(it) }
+            val fileName = URLUtil.guessFileName(url, null, "image/jpeg")
+            if (gif) {
+                writeToGallery(context, image, FileUtil.changeFileExtension(fileName, ".gif"), "image/gif")
+            } else {
+                writeToGallery(context, image, fileName, "image/jpeg")
             }
         }
     }
@@ -366,45 +353,49 @@ object ImageUtil {
     private fun downloadBelowQ(context: Context, url: String?) {
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
-            val image = context.downloadImage(url)
-            if (image != null) {
-                var fileName = URLUtil.guessFileName(url, null, "image/jpeg")
-                image.inputStream().use { inputStream ->
-                    if (isGifFile(inputStream)) {
-                        fileName = FileUtil.changeFileExtension(fileName, ".gif")
-                    }
+            val image = context.downloadImage(url) ?: return@launch
+            var fileName = URLUtil.guessFileName(url, null, "image/jpeg")
+            if (image.inputStream().use { isGifFile(it) }) {
+                fileName = FileUtil.changeFileExtension(fileName, ".gif")
+            }
+            writeToGallery(context, image, fileName, "image/jpeg")
+        }
+    }
+
+    /** Writes [image] to the app's folder in the gallery as [fileName], and says where. */
+    private suspend fun writeToGallery(context: Context, image: ByteArray, fileName: String, mimeType: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val relativePath = Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.RELATIVE_PATH, relativePath)
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                put(MediaStore.Images.Media.DESCRIPTION, fileName)
+            }
+            val cr = context.contentResolver
+            val uri: Uri = runCatching {
+                cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            }.getOrNull() ?: return
+            try {
+                cr.openFileDescriptor(uri, "w")?.use {
+                    FileOutputStream(it.fileDescriptor).use { outputStream -> outputStream.write(image) }
                 }
-                image.inputStream().use { inputStream ->
-                    val pictureFolder =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                    val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
-                    val dirExists =
-                        withContext(Dispatchers.IO) { appDir.exists() || appDir.mkdirs() }
-                    if (dirExists) {
-                        val destFile = File(appDir, fileName)
-                        if (!destFile.exists()) {
-                            withContext(Dispatchers.IO) {
-                                destFile.createNewFile()
-                            }
-                        }
-                        destFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                        context.sendBroadcast(
-                            Intent(
-                                Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,
-                                Uri.fromFile(File(destFile.path))
-                            )
-                        )
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_photo_saved, destFile.path),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, context.getString(R.string.toast_photo_saved, relativePath), Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                cr.delete(uri, null, null)
+            }
+        } else {
+            val pictureFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val appDir = File(pictureFolder, FileUtil.FILE_FOLDER)
+            if (!appDir.exists() && !appDir.mkdirs()) return
+            val destFile = File(appDir, fileName)
+            destFile.writeBytes(image)
+            context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(destFile)))
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, context.getString(R.string.toast_photo_saved, destFile.path), Toast.LENGTH_SHORT).show()
             }
         }
     }
