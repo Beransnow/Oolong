@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import oolong.client.arch.LoadStatus
 import oolong.client.arch.Pager
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
@@ -40,7 +41,8 @@ data class NotificationItem(val notification: Notification, val block: BlockVerd
 data class NotificationsState(
     val lists: ImmutableMap<NotificationType, PagerState<NotificationItem>> = persistentMapOf(),
 ) {
-    fun list(type: NotificationType): PagerState<NotificationItem> = lists[type] ?: PagerState()
+    /** A list not opened yet counts as loading: opening it starts the load. */
+    fun list(type: NotificationType): PagerState<NotificationItem> = lists[type] ?: PagerState(refresh = LoadStatus.Loading)
 }
 
 /** The replies to the user and their mentions, each list loaded the first time it is shown. */

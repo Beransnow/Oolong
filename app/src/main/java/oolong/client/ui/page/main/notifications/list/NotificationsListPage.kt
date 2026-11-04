@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -45,6 +46,7 @@ import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EmoticonText
 import oolong.client.ui.widgets.compose.EndPull
+import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MetaText
 import oolong.client.ui.widgets.compose.MyLazyColumn
@@ -54,6 +56,9 @@ import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.plus
+import oolong.client.ui.widgets.compose.states.DefaultEmptyScreen
+import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
+import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 
 @Composable
@@ -111,39 +116,51 @@ fun NotificationList(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val refreshing = list.refresh == LoadStatus.Loading
+    val error = (list.refresh as? LoadStatus.Error)?.error
     val lazyListState = rememberLazyListState()
     LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
-    PullRefresh(
-        refreshing = refreshing,
-        onRefresh = onRefresh,
-        modifier = modifier,
-        indicatorTop = contentPadding.calculateTopPadding(),
-        endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+    StateScreen(
+        isEmpty = list.items.isEmpty(),
+        isError = error != null,
+        isLoading = refreshing,
+        modifier = modifier.fillMaxSize(),
+        onReload = onRefresh,
+        errorScreen = { ErrorScreen(error = error, modifier = Modifier.padding(contentPadding)) },
+        loadingScreen = { Box(modifier = Modifier.padding(contentPadding)) { DefaultLoadingScreen() } },
+        emptyScreen = { Box(modifier = Modifier.padding(contentPadding)) { DefaultEmptyScreen() } },
     ) {
-        MyLazyColumn(
-            contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
-            state = lazyListState,
+        PullRefresh(
+            refreshing = refreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+            indicatorTop = contentPadding.calculateTopPadding(),
+            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
         ) {
-            itemsIndexed(
-                items = list.items,
-                key = { _, (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
-            ) { index, (notification, blocked) ->
-                Container {
-                    Column {
-                        BlockableContent(
-                            block = blocked,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                        ) {
-                            NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
-                        }
-                        // Divided like feed cards
-                        if (index < list.items.lastIndex) {
-                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            MyLazyColumn(
+                contentPadding = contentPadding.plus(PaddingValues(vertical = 4.dp)),
+                state = lazyListState,
+            ) {
+                itemsIndexed(
+                    items = list.items,
+                    key = { _, (it) -> "${it.postId}_${it.author?.id}_${it.time}" },
+                ) { index, (notification, blocked) ->
+                    Container {
+                        Column {
+                            BlockableContent(
+                                block = blocked,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                NotificationItemContent(type, notification, onOpen, onOpenQuote, onOpenUser)
+                            }
+                            // Divided like feed cards
+                            if (index < list.items.lastIndex) {
+                                VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            }
                         }
                     }
                 }
+                loadMoreFooter(list.append, list.hasMore, onLoadMore)
             }
-            loadMoreFooter(list.append, list.hasMore, onLoadMore)
         }
     }
 }

@@ -47,6 +47,7 @@ import oolong.client.ui.common.theme.compose.Yellow
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
@@ -55,6 +56,9 @@ import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.plus
+import oolong.client.ui.widgets.compose.states.DefaultEmptyScreen
+import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
+import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil.getShortNumString
 
 @Composable
@@ -187,36 +191,48 @@ fun HotTopicListScreen(
             )
         },
     ) { contentPaddings ->
-        PullRefresh(
-            refreshing = isRefreshing,
-            onRefresh = onRefresh,
+        val error = (state.load as? LoadStatus.Error)?.error
+        StateScreen(
+            isEmpty = topicList.isEmpty(),
+            isError = error != null,
+            isLoading = isRefreshing,
             modifier = Modifier.fillMaxSize(),
-            indicatorTop = contentPaddings.calculateTopPadding(),
+            onReload = onRefresh,
+            errorScreen = { ErrorScreen(error = error, modifier = Modifier.padding(contentPaddings)) },
+            loadingScreen = { Box(modifier = Modifier.padding(contentPaddings)) { DefaultLoadingScreen() } },
+            emptyScreen = { Box(modifier = Modifier.padding(contentPaddings)) { DefaultEmptyScreen() } },
         ) {
-            MyLazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = contentPaddings.plus(PaddingValues(16.dp))
+            PullRefresh(
+                refreshing = isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize(),
+                indicatorTop = contentPaddings.calculateTopPadding(),
             ) {
-                itemsIndexed(
-                    items = topicList,
-                    key = { _, item -> item.id },
-                ) { index, item ->
-                    if (index < 3) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            TopicImage(index = index, imageUri = item.image)
-                            TopicBody(index = index, item = item)
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TopicImage(index = index, imageUri = item.image)
-                            TopicBody(index = index, item = item)
+                MyLazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = contentPaddings.plus(PaddingValues(16.dp))
+                ) {
+                    itemsIndexed(
+                        items = topicList,
+                        key = { _, item -> item.id },
+                    ) { index, item ->
+                        if (index < 3) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                TopicImage(index = index, imageUri = item.image)
+                                TopicBody(index = index, item = item)
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                TopicImage(index = index, imageUri = item.image)
+                                TopicBody(index = index, item = item)
+                            }
                         }
                     }
                 }
