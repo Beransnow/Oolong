@@ -118,12 +118,15 @@ internal class DefaultVideoPlayerController(
                     startedPlay = playbackState != STATE_IDLE
                 )
             }
+            if (playbackState == STATE_ENDED) showControls(autoHide = false)
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             _state.set {
                 copy(isPlaying = playWhenReady)
             }
+            // A paused video keeps its controls, so it reads as paused rather than frozen
+            if (!playWhenReady) showControls(autoHide = false)
         }
 
         override fun onPlayerError(error: PlaybackException) {
