@@ -37,6 +37,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +81,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
 import oolong.client.R
+import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.Motion
@@ -351,6 +353,10 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
             animationSpec = Motion.settle(),
             label = "lift",
         )
+        val autoMask = rememberAutoMaskFiles()
+        val autoMaskDownload by autoMask.download.collectAsState()
+        TapToHide(state, autoMask)
+        val pickEffect = rememberPickEffect(state, autoMaskDownload == AutoMaskDownload.Ready)
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -375,7 +381,10 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
                     // Only the kept part shows; what lies outside it is kept for later
                     val kept = state.history.framing.rect
                     val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
-                    clipRect(shown.left, shown.top, shown.right, shown.bottom) { drawEdits(state) }
+                    clipRect(shown.left, shown.top, shown.right, shown.bottom) {
+                        drawEdits(state)
+                        pickEffect.draw(this, state)
+                    }
                     drawSelection(state)
                 }
             }
@@ -553,7 +562,12 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.gestures
                 // Strokes start on the picture; elsewhere a finger moves the view
                 val kept = state.history.framing.rect
                 val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
-                if (shown.contains(down.position)) drawOrPick(state, down, viewConfiguration.touchSlop, grip) else transform(state, down)
+                when {
+                    !shown.contains(down.position) -> transform(state, down)
+                    // A tap hides what it lands on; a drag moves the view
+                    state.tool == EditorTool.Mask && state.maskPicking -> tapToHide(state, down, viewConfiguration.touchSlop)
+                    else -> drawOrPick(state, down, viewConfiguration.touchSlop, grip)
+                }
             }
             EditorTool.Text -> caption(state, down, viewConfiguration.touchSlop)
             null -> tapOrTransform(state, down, viewConfiguration.touchSlop)
@@ -680,6 +694,20 @@ private suspend fun AwaitPointerEventScope.tapOrTransform(state: EditorState, do
         }
         hit != null -> state.pick(hit)
     }
+}
+
+/** A tap hands its point to be looked into; anything more moves the view. */
+private suspend fun AwaitPointerEventScope.tapToHide(state: EditorState, down: PointerInputChange, slop: Float) {
+    while (true) {
+        val event = awaitPointerEvent()
+        val change = event.changes.firstOrNull { it.id == down.id }
+        if (event.changes.count { it.pressed } > 1 || change == null || (change.pressed && (change.position - down.position).getDistance() > slop)) {
+            transform(state, null)
+            return
+        }
+        if (!change.pressed) break
+    }
+    if (state.pickReady) state.pendingPick = down.position
 }
 
 /** Draws the stroke begun, following the finger until it lifts. */

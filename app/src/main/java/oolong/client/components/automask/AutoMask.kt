@@ -50,10 +50,14 @@ class AutoMask internal constructor(
     fun prepare(picture: Bitmap): Prepared {
         val t0 = System.nanoTime()
         val lines = detect(picture)
-        val t1 = System.nanoTime()
+        return prepare(picture, lines, (System.nanoTime() - t0) / 1_000_000)
+    }
+
+    /** Readies [picture] for taps, its [lines] of text found already by [detect]. */
+    fun prepare(picture: Bitmap, lines: List<RectF>, detectMillis: Long = 0): Prepared {
+        val t0 = System.nanoTime()
         val (src, scale) = encode(picture)
-        val t2 = System.nanoTime()
-        return Prepared(picture.width, picture.height, lines, src, scale, (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000)
+        return Prepared(picture.width, picture.height, lines, src, scale, detectMillis, (System.nanoTime() - t0) / 1_000_000)
     }
 
     fun close() {
@@ -75,7 +79,8 @@ class AutoMask internal constructor(
 
     // Text detection
 
-    private fun detect(picture: Bitmap): List<RectF> {
+    /** The lines of text in [picture], in its pixels: quicker than the rest of preparing it. */
+    fun detect(picture: Bitmap): List<RectF> {
         // Fitted into the detector's frame, the rest left at the mean
         val scale = min(DetWidth.toFloat() / picture.width, DetHeight.toFloat() / picture.height)
         val w = (picture.width * scale).roundToInt().coerceIn(1, DetWidth)

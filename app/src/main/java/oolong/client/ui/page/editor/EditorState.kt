@@ -131,6 +131,38 @@ class EditorState(
     var maskShape by mutableStateOf<MaskShape?>(MaskShape.Brush)
     var maskSize by mutableIntStateOf(1)
 
+    /**
+     * Whether a tap hides what it lands on, a line of text or a thing found around it, rather
+     * than masks being laid by hand. What is found is hidden as a masked box, as one drawn is.
+     */
+    var maskPicking by mutableStateOf(false)
+
+    /** The picture's lines of text, in its pixels, once found: shown while the rest is made ready. */
+    var pickLines by mutableStateOf<List<Rect>?>(null)
+
+    /** Whether the picture is ready for taps. */
+    var pickReady by mutableStateOf(false)
+
+    /** A tap waiting to be looked into, on screen. */
+    var pendingPick by mutableStateOf<Offset?>(null)
+
+    /** The last tap looked into: where it was, and the box it hid, or none when it found nothing to. */
+    class Picked(val at: Offset, val box: Rect?)
+
+    var picked by mutableStateOf<Picked?>(null)
+        private set
+
+    /** Hides [box], in picture pixels, found by a tap [at] a point on screen. */
+    fun hidePicked(at: Offset, box: Rect) {
+        history.push(Edit.Mask(history.nextId, listOf(box.topLeft, box.bottomRight), MaskWidths[maskSize] * density / scale, maskStyle, MaskShape.Rect))
+        picked = Picked(at, box)
+    }
+
+    /** A tap [at] a point on screen that found nothing small enough to be one thing. */
+    fun missedPick(at: Offset) {
+        picked = Picked(at, null)
+    }
+
     /** What marks draw; null rubs marks out instead. */
     var markKind by mutableStateOf<MarkKind?>(MarkKind.Pen)
     var markColor by mutableStateOf(EditorColors[0])

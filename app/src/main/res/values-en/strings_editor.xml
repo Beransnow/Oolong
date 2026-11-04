@@ -47,6 +47,14 @@
     <string name="editor_color_custom">Custom color</string>
     <string name="editor_color_done">Done picking</string>
     <string name="editor_eraser">Eraser</string>
+    <string name="editor_pick">Tap</string>
+    <string name="editor_pick_download">About %1$d MB to download the first time</string>
+    <string name="editor_pick_download_action">Download</string>
+    <string name="editor_pick_failed">Download failed</string>
+    <string name="editor_pick_retry">Retry</string>
+    <string name="editor_pick_downloading">Downloading %1$d%%</string>
+    <string name="editor_pick_looking">Looking the picture over</string>
+    <string name="editor_pick_ready">Tap what to hide</string>
     <string name="editor_unmask">Erase</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_straighten">Straighten</string>

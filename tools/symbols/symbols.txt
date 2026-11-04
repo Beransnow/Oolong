@@ -98,6 +98,7 @@ text_fields
 text_fields fill
 title
 toc
+touch_app
 tune
 tune fill
 undo

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +38,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,12 +82,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import oolong.client.R
+import oolong.client.components.automask.AutoMaskDownload
+import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
@@ -439,41 +444,42 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                     }
                 }
                 // How it is laid, and how broad, where marks and text keep their colours and sizes
+                val autoMask = rememberAutoMaskFiles()
                 OptionRow {
+                    val ways = if (autoMask.supported) MaskWay.entries else MaskWay.entries - MaskWay.Pick
                     Options(
-                        options = MaskChoices,
-                        selected = state.maskShape,
+                        options = ways,
+                        selected = when {
+                            state.maskPicking -> MaskWay.Pick
+                            state.maskShape == null -> MaskWay.Erase
+                            state.maskShape == MaskShape.Rect -> MaskWay.Rect
+                            else -> MaskWay.Brush
+                        },
                         onSelect = {
                             // Another way to lay masks puts down what was picked up
                             state.deselect()
-                            state.maskShape = it
+                            state.maskPicking = it == MaskWay.Pick
+                            state.maskShape = when (it) {
+                                MaskWay.Brush -> MaskShape.Brush
+                                MaskWay.Rect, MaskWay.Pick -> MaskShape.Rect
+                                MaskWay.Erase -> null
+                            }
                         },
-                        label = {
-                            stringResource(
-                                id = when (it) {
-                                    MaskShape.Brush -> R.string.editor_brush
-                                    MaskShape.Rect -> R.string.editor_rect
-                                    null -> R.string.editor_unmask
-                                },
-                            )
-                        },
+                        label = { stringResource(id = it.label) },
                         modifier = Modifier.weight(1f),
                         fill = true,
-                    ) { shape, on ->
+                    ) { way, on ->
                         Icon(
-                            imageVector = when (shape) {
-                                MaskShape.Brush -> Symbols.Gesture
-                                MaskShape.Rect -> Symbols.Select
-                                null -> Symbols.InkEraser
-                            },
+                            imageVector = way.icon,
                             contentDescription = null,
                             tint = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
                         )
                     }
                     RowDivider()
                     // A box needs no breadth
-                    Sizes(selected = state.maskSize, onSelect = { state.maskSize = it }, enabled = state.maskShape != MaskShape.Rect)
+                    Sizes(selected = state.maskSize, onSelect = { state.maskSize = it }, enabled = state.maskShape == MaskShape.Brush && !state.maskPicking)
                 }
+                if (state.maskPicking) PickStatus(state, autoMask)
             }
 
             EditorTool.Mark -> {
@@ -882,8 +888,53 @@ private val CaptionStyle.label: Int
 /** The marks to draw, then the rubber. */
 private val MarkChoices: List<MarkKind?> = MarkKind.entries + null
 
-/** The ways to lay a mask, then rubbing masks out. */
-private val MaskChoices: List<MaskShape?> = MaskShape.entries + null
+/** The ways masks are laid, as the options offer them: by hand, by a tap, or rubbed out. */
+private enum class MaskWay(val label: Int, val icon: ImageVector) {
+    Brush(R.string.editor_brush, Symbols.Gesture),
+    Rect(R.string.editor_rect, Symbols.Select),
+    Pick(R.string.editor_pick, Symbols.TouchApp),
+    Erase(R.string.editor_unmask, Symbols.InkEraser),
+}
+
+/** Where tap-to-hide stands, under its option: what it needs fetched, then whether it is ready. */
+@Composable
+private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
+    val download by files.download.collectAsState()
+    OptionRow(arrangement = Arrangement.SpaceBetween) {
+        val color = ExtendedTheme.colors.textSecondary
+        val style = MaterialTheme.typography.body2
+        when (val d = download) {
+            is AutoMaskDownload.Missing -> {
+                Text(stringResource(R.string.editor_pick_download, (d.bytes / 1_000_000).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
+                TextButton(onClick = files::startDownload, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_download_action)) }
+            }
+            is AutoMaskDownload.Failed -> {
+                Text(stringResource(R.string.editor_pick_failed), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
+                TextButton(onClick = files::startDownload, color = ExtendedTheme.colors.text) { Text(stringResource(R.string.editor_pick_retry)) }
+            }
+            is AutoMaskDownload.Running -> {
+                Text(stringResource(R.string.editor_pick_downloading, (d.progress * 100).toInt()), color = color, style = style, modifier = Modifier.padding(start = 12.dp))
+                Box(
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .width(120.dp)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(TrackColor),
+                ) {
+                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(d.progress).background(ExtendedTheme.colors.text))
+                }
+            }
+            AutoMaskDownload.Ready -> Text(
+                stringResource(if (state.pickReady) R.string.editor_pick_ready else R.string.editor_pick_looking),
+                color = color,
+                style = style,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
 
 /** The most a picture straightens either way, in degrees. */
 private const val MostStraighten = 45f
