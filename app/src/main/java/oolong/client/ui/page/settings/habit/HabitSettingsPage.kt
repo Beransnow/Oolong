@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import oolong.client.R
 import oolong.client.dataStore
+import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.ListPref
 import oolong.client.ui.common.prefs.widgets.SwitchPref
@@ -107,6 +108,18 @@ fun HabitSettingsPage(
                         key = "show_both_username_and_nickname",
                         title = stringResource(id = R.string.title_show_both_username_and_nickname),
                         defaultChecked = false,
+                    )
+                }
+                prefsItem {
+                    ListPref(
+                        key = "subPostSort",
+                        title = stringResource(id = R.string.title_sub_post_sort),
+                        entries = mapOf(
+                            SubPostSort.Hot.value to stringResource(id = R.string.sub_post_sort_hot),
+                            SubPostSort.Earliest.value to stringResource(id = R.string.sub_post_sort_earliest),
+                        ),
+                        useSelectedAsSummary = true,
+                        defaultValue = SubPostSort.Hot.value,
                     )
                 }
                 prefsItem {

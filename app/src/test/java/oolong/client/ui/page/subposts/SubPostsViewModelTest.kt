@@ -69,7 +69,7 @@ class SubPostsViewModelTest {
     )
 
     private fun respond(vararg pages: PbFloorResponseData) {
-        coEvery { remote.floor(any(), any(), any(), any(), any()) } returnsMany pages.toList()
+        coEvery { remote.floor(any(), any(), any(), any(), any(), any()) } returnsMany pages.toList()
     }
 
     private fun TestScope.createViewModel(
@@ -128,7 +128,7 @@ class SubPostsViewModelTest {
         viewModel.loadMore()
         runCurrent()
 
-        coVerify { remote.floor(9_000, 302, 0, 1, 302) }
+        coVerify { remote.floor(9_000, 302, 0, 1, 302, true) }
         coVerify { remote.floor(9_000, 77, 52, 4, 0) }
         assertTrue(viewModel.state.value.subPosts.hasPrevious)
     }
@@ -182,7 +182,7 @@ class SubPostsViewModelTest {
         viewModel.onReplySent(newSubPostId = 250)
         runCurrent()
 
-        coVerify { remote.floor(9_000, 77, 52, 1, 250) }
+        coVerify { remote.floor(9_000, 77, 52, 1, 250, true) }
         assertEquals(listOf(201L, 250L), viewModel.state.value.subPosts.items.map { it.subPost.id })
         assertEquals(listOf<SubPostsEffect>(SubPostsEffect.ScrollToSubPost(250)), effects)
     }

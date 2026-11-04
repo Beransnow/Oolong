@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +45,7 @@ import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.model.SubPost
+import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.reply.Content
@@ -72,6 +75,8 @@ import oolong.client.ui.widgets.compose.MyScaffold
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.TitleCentredToolbar
 import oolong.client.ui.widgets.compose.WavyLoader
+import oolong.client.ui.widgets.compose.choiceMenuItems
+import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.plus
@@ -267,12 +272,17 @@ private fun SubPostsContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(ExtendedTheme.colors.background)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(start = 16.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = pluralStringResource(id = R.plurals.title_sub_posts_header, count = state.totalCount, state.totalCount),
-                        style = MaterialTheme.typography.subtitle1
+                        style = MaterialTheme.typography.subtitle1,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 8.dp),
                     )
+                    SubPostSortButton(sort = state.sort, onSort = { onEvent(SubPostsEvent.SetSort(it)) })
                 }
             }
             if (subPosts.hasPrevious) {
@@ -313,4 +323,24 @@ internal fun SubPostsState.indexOfSubPost(subPostId: Long): Int? {
     if (index == -1) return null
     // The post and the reply count header come first, then the load-previous row when shown
     return 2 + (if (subPosts.hasPrevious) 1 else 0) + index
+}
+
+/** The order of the replies, shown as its name, picked from a menu. */
+@Composable
+private fun SubPostSortButton(sort: SubPostSort, onSort: (SubPostSort) -> Unit) {
+    val options = listOf(
+        SubPostSort.Hot to stringResource(id = R.string.sub_post_sort_hot),
+        SubPostSort.Earliest to stringResource(id = R.string.sub_post_sort_earliest),
+    )
+    val color = ExtendedTheme.colors.textSecondary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(CircleShape)
+            .clickMenu(items = { choiceMenuItems(options, sort, onSort) })
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+    ) {
+        Text(text = options.first { it.first == sort }.second, style = MaterialTheme.typography.body2, color = color)
+        Icon(imageVector = Symbols.UnfoldMore, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+    }
 }

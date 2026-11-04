@@ -3,6 +3,7 @@ package oolong.client.repository
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import oolong.client.api.models.protos.PbContent
 import oolong.client.api.models.protos.VideoInfo
@@ -122,6 +123,28 @@ data class FloorPage(
     val tbs: String?,
 )
 
+/** The order of the replies inside a post, both the few shown under it and all of them. */
+enum class SubPostSort(val value: String) {
+    /** The hottest first, then the rest by time. */
+    Hot("hot"),
+
+    /** By time, earliest first. */
+    Earliest("earliest"),
+    ;
+
+    companion object {
+        fun of(value: String?): SubPostSort = entries.firstOrNull { it.value == value } ?: Hot
+    }
+}
+
+/** Where the [SubPostSort] the user chose is kept. */
+interface SubPostSortStore {
+    var sort: SubPostSort
+
+    /** The sort as it is now and then each time it changes, wherever it is changed. */
+    val changes: Flow<SubPostSort>
+}
+
 /**
  * A page of a thread as its list loads it: the [page], or null when asking for the posts newer
  * than the last one found none, which the server answers with nothing at all, not even the thread.
@@ -136,6 +159,7 @@ class ThreadRepository @Inject constructor(
     private val emoticons: EmoticonRegistry,
     @IoDispatcher private val io: CoroutineDispatcher,
     client: QueryClient,
+    private val subPostSort: SubPostSortStore? = null,
 ) {
     /**
      * The posts of threads as the thread page shows them, kept a little: a thread peeked at and
@@ -189,13 +213,17 @@ class ThreadRepository @Inject constructor(
             forumId = query.forumId ?: 0,
             stType = if (query.fromStore) "store_thread" else "",
             mark = if (query.fromStore) 1 else 0,
+            subPostsByTime = subPostSort?.sort == SubPostSort.Earliest,
         )
     }
 
     /** A page of the replies inside post [postId] of thread [threadId]. */
     suspend fun floor(threadId: Long, postId: Long, forumId: Long, cursor: FloorCursor): FloorPage =
         withContext(io) {
-            remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId).toFloorPage(emoticons)
+            // Loading around a reply goes by time, so the pages before and after it are the replies
+            // written before and after it
+            val byTime = cursor.subPostId != 0L || subPostSort?.sort == SubPostSort.Earliest
+            remote.floor(threadId, postId, forumId, cursor.page, cursor.subPostId, byTime).toFloorPage(emoticons)
         }
 
     /** Deletes a post, or with [isSubPost] a reply inside one, from the sub-post page. */

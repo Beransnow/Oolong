@@ -1,6 +1,7 @@
 package oolong.client.repository
 
 import android.content.Context
+import androidx.datastore.preferences.core.stringPreferencesKey
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -8,6 +9,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import oolong.client.arch.ApplicationScope
 import oolong.client.arch.query.QueryClient
+import oolong.client.dataStore
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.appPreferences
 import javax.inject.Singleton
@@ -41,6 +44,18 @@ abstract class RepositoryModule {
         @Provides
         fun provideVideoThreadFilter(@ApplicationContext context: Context): VideoThreadFilter =
             VideoThreadFilter { context.appPreferences.blockVideo }
+
+        @Provides
+        fun provideSubPostSortStore(@ApplicationContext context: Context): SubPostSortStore = object : SubPostSortStore {
+            override var sort: SubPostSort
+                get() = SubPostSort.of(context.appPreferences.subPostSort)
+                set(value) {
+                    context.appPreferences.subPostSort = value.value
+                }
+            override val changes: Flow<SubPostSort> = context.dataStore.data
+                .map { SubPostSort.of(it[stringPreferencesKey("subPostSort")]) }
+                .distinctUntilChanged()
+        }
 
         @Provides
         fun provideConcernFeedStore(@ApplicationContext context: Context): ConcernFeedStore = object : ConcernFeedStore {

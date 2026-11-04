@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
@@ -65,6 +66,7 @@ import oolong.client.repository.BlockVerdict
 import oolong.client.repository.Blockable
 import oolong.client.repository.FloorCursor
 import oolong.client.repository.Posts
+import oolong.client.repository.SubPostSortStore
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.ThreadCursor
 import oolong.client.repository.ThreadHistory
@@ -140,6 +142,7 @@ class ThreadViewModel @AssistedInject constructor(
     private val messages: MessageController,
     @ApplicationScope private val applicationScope: CoroutineScope,
     readerPositions: ReaderPositions,
+    subPostSort: SubPostSortStore? = null,
 ) : ViewModel() {
     private val query = MutableStateFlow(args.query())
 
@@ -277,6 +280,13 @@ class ThreadViewModel @AssistedInject constructor(
             .debounce(HISTORY_DELAY)
             .onEach { (thread, postId) -> history.save(thread, query.value.seeLz, findPost(postId)) }
             .launchIn(viewModelScope)
+        // The replies under each post come in the new order, and those opened go back to them
+        subPostSort?.changes?.drop(1)?.onEach {
+            openingJobs.values.forEach { it.cancel() }
+            openingJobs.clear()
+            opened.value = persistentMapOf()
+            repository.changed(args.threadId)
+        }?.launchIn(viewModelScope)
     }
 
     /** Loads the thread again from its start, or from its newest post when newest first. */

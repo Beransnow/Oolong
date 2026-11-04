@@ -17,6 +17,7 @@ import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
 import oolong.client.model.wordText
+import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.settings.block.BlockMenuLabels
@@ -53,6 +54,7 @@ sealed interface SubPostsEvent {
     data object AgreePost : SubPostsEvent
     data class AgreeSubPost(val subPostId: Long) : SubPostsEvent
     data class OpenUser(val userId: Long) : SubPostsEvent
+    data class SetSort(val sort: SubPostSort) : SubPostsEvent
 
     /** Reply in the post, to its author when [subPost] is null or to the author of [subPost]. */
     data class Reply(val post: Post, val subPost: SubPost? = null) : SubPostsEvent

@@ -41,6 +41,8 @@ class ThreadRemoteDataSource(
      * @param lastPostId newest post already loaded, to load the posts after it; 0 for none
      * @param stType where the thread was opened from, for openings that report one
      * @param mark 1 when opened from the thread store
+     * @param subPostsByTime whether the few replies shown under each post are the earliest ones
+     *   rather than the hottest
      */
     suspend fun page(
         threadId: Long,
@@ -54,6 +56,7 @@ class ThreadRemoteDataSource(
         forumId: Long = 0,
         stType: String = "",
         mark: Int = 0,
+        subPostsByTime: Boolean = false,
     ): PbPageResponseData {
         val request = PbPageRequest(
             PbPageRequestData(
@@ -73,7 +76,7 @@ class ThreadRemoteDataSource(
                 banner = 0,
                 broadcast_id = 0,
                 floor_rn = 4,
-                floor_sort_type = 1,
+                floor_sort_type = if (subPostsByTime) 0 else 1,
                 from_push = 0,
                 from_smart_frs = 0,
                 immersion_video_comment_source = 0,
@@ -110,6 +113,8 @@ class ThreadRemoteDataSource(
      * One page of the replies inside post [postId].
      *
      * @param subPostId a reply to load the page around, 0 for none
+     * @param byTime whether the replies come earliest first, rather than the hottest first and the
+     *   rest after them by time
      */
     suspend fun floor(
         threadId: Long,
@@ -117,6 +122,7 @@ class ThreadRemoteDataSource(
         forumId: Long,
         page: Int,
         subPostId: Long = 0,
+        byTime: Boolean = false,
     ): PbFloorResponseData {
         val request = PbFloorRequest(
             PbFloorRequestData(
@@ -131,6 +137,7 @@ class ThreadRemoteDataSource(
                 scr_w = device.screenWidth,
                 is_comm_reverse = 0,
                 ori_ugc_type = 0,
+                sort = if (byTime) 0 else 2,
             )
         )
         return checkNotNull(floorService.floor(ProtobufBody(request)).data_)

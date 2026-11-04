@@ -112,6 +112,7 @@ fun SubPostsRoute(
             SubPostsEvent.AgreePost -> viewModel.agreePost()
             is SubPostsEvent.AgreeSubPost -> viewModel.agreeSubPost(event.subPostId)
             is SubPostsEvent.OpenUser -> navigator.navigate(UserProfileKey(event.userId))
+            is SubPostsEvent.SetSort -> viewModel.setSort(event.sort)
             is SubPostsEvent.Reply -> reply(event.subPost)
             SubPostsEvent.ReplyToPost -> reply()
             is SubPostsEvent.Copy -> copySheets?.show(event.content)

@@ -170,6 +170,7 @@ class ThreadRemoteDataSourceTest {
             scr_w = 1080,
             is_comm_reverse = 0,
             ori_ugc_type = 0,
+            sort = 2,
         )
         assertEquals(expected, PbFloorRequest.ADAPTER.decode(parts[0].second).data_)
         assertEquals(data, returned)

@@ -284,7 +284,7 @@ class ThreadRepositoryTest {
             SubPostList(id = 201, author = lz, content = listOf(PbContent(type = 0, text = "楼主回复")), agree = ProtoAgree(diffAgreeNum = 2, hasAgree = 1)),
             SubPostList(id = 202, author = replier, content = listOf(PbContent(type = 0, text = "又一条"))),
         )
-        coEvery { remote.floor(9_000, 77, 52, 2, 201) } returns PbFloorResponseData(
+        coEvery { remote.floor(9_000, 77, 52, 2, 201, true) } returns PbFloorResponseData(
             post = post(77, 5),
             subpost_list = replies,
             page = ProtoPage(current_page = 2, total_page = 3, total_count = 25),
@@ -307,7 +307,7 @@ class ThreadRepositoryTest {
 
     @Test
     fun `the last page of replies has no next page`() = runTest {
-        coEvery { remote.floor(any(), any(), any(), any(), any()) } returns PbFloorResponseData(
+        coEvery { remote.floor(any(), any(), any(), any(), any(), any()) } returns PbFloorResponseData(
             post = post(77, 5),
             subpost_list = listOf(SubPostList(id = 201, author = lz)),
             page = ProtoPage(current_page = 1, total_page = 1),

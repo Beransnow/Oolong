@@ -38,6 +38,8 @@ import oolong.client.repository.BlockVerdict
 import oolong.client.repository.Blockable
 import oolong.client.repository.FloorCursor
 import oolong.client.repository.FloorPage
+import oolong.client.repository.SubPostSort
+import oolong.client.repository.SubPostSortStore
 import oolong.client.repository.SubPosts
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.ThreadRepository
@@ -64,6 +66,7 @@ data class SubPostsState(
     val totalCount: Int = 0,
     /** The logged-in user's id, or null for a guest. */
     val viewerId: Long? = null,
+    val sort: SubPostSort = SubPostSort.Hot,
 )
 
 sealed interface SubPostsEffect {
@@ -89,6 +92,7 @@ class SubPostsViewModel @AssistedInject constructor(
     blockRuleSource: BlockRuleSource,
     private val messages: MessageController,
     private val sessionProvider: SessionProvider,
+    private val sortStore: SubPostSortStore? = null,
 ) : ViewModel() {
     private val threadId: Long = key.threadId
     private val subPostId: Long = key.subPostId
@@ -98,6 +102,7 @@ class SubPostsViewModel @AssistedInject constructor(
     private var forumId: Long = key.forumId
 
     private val floor = MutableStateFlow<FloorPage?>(null)
+    private val sort = MutableStateFlow(sortStore?.sort ?: SubPostSort.Hot)
     private val effects = Channel<SubPostsEffect>(Channel.BUFFERED)
     val effect: Flow<SubPostsEffect> = effects.receiveAsFlow()
     private val actions = Actions(viewModelScope)
@@ -138,7 +143,7 @@ class SubPostsViewModel @AssistedInject constructor(
     /** The post as liked here or anywhere else it shows. */
     private val latestFloor = floor.withLatestEntities(client) { it?.copy(post = post(it.post)) }
 
-    val state: StateFlow<SubPostsState> = combine(latestFloor, subPosts.state, blockRuleSource.rules) { floor, pager, rules ->
+    val state: StateFlow<SubPostsState> = combine(latestFloor, subPosts.state, blockRuleSource.rules, sort) { floor, pager, rules, sort ->
         val forumName = floor?.forum?.name
         val threadAuthorId = floor?.threadAuthorId ?: 0L
         fun check(author: User, content: List<PostContent>) = rules.check(
@@ -162,12 +167,24 @@ class SubPostsViewModel @AssistedInject constructor(
             ),
             totalCount = floor?.totalCount ?: 0,
             viewerId = sessionProvider.currentSession()?.uid?.toLongOrNull(),
+            sort = sort,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SubPostsState(threadId))
 
     fun retry() = subPosts.refresh(firstKey)
 
     fun refresh() = subPosts.refresh(FloorCursor(1))
+
+    /**
+     * Orders the replies by [sort] from now on, here and under the posts of threads, and loads
+     * them again from the start.
+     */
+    fun setSort(sort: SubPostSort) {
+        if (sort == this.sort.value) return
+        sortStore?.sort = sort
+        this.sort.value = sort
+        subPosts.refresh(FloorCursor(1))
+    }
 
     fun loadMore() = subPosts.loadMore()
 
