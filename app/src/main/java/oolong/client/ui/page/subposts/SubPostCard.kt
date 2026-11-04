@@ -27,11 +27,13 @@ import oolong.client.ui.page.settings.block.blockMenuLabels
 import oolong.client.ui.page.thread.PostMenuLabels
 import oolong.client.ui.page.thread.SubPostBranch
 import oolong.client.ui.page.thread.SubPostLine
+import oolong.client.ui.page.thread.SubPostStyle
 import oolong.client.ui.page.thread.UserNameText
 import oolong.client.ui.page.thread.bawuName
 import oolong.client.ui.page.thread.floorIndent
 import oolong.client.ui.page.thread.floorRuleColor
 import oolong.client.ui.page.thread.postMenuLabels
+import oolong.client.ui.page.thread.rememberSubPostStyle
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
@@ -66,7 +68,7 @@ sealed interface SubPostsEvent {
 
 /**
  * A reply inside the post, as a floor shows its replies but in full: on a branch off the rule that
- * runs down from the post, the last one ending it.
+ * runs down from the post, the last one ending it, or in the classic style with no rule at all.
  */
 @Composable
 internal fun SubPostReply(
@@ -87,7 +89,8 @@ internal fun SubPostReply(
         modifier = Modifier.fillMaxWidth().floorIndent(),
     ) {
         // BlockableContent only lays out its tip with the modifier, so the reply takes its own
-        SubPostBranch(rule = floorRuleColor(), modifier = Modifier.fillMaxWidth().floorIndent(), rail = true, last = last) {
+        val rule = floorRuleColor().takeIf { rememberSubPostStyle() == SubPostStyle.Timeline }
+        SubPostBranch(rule = rule, modifier = Modifier.fillMaxWidth().floorIndent(), rail = true, last = last) {
             SubPostLine(
                 subPost = subPost,
                 isLz = subPost.author.id == threadAuthorId,

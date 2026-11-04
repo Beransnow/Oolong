@@ -658,11 +658,12 @@ fun Modifier.floorIndent(): Modifier = padding(start = GutterStart, end = 16.dp)
 
 /**
  * [content], a reply, on a branch off a floor's rule. Inside a floor the floor draws the rule;
- * elsewhere [rail] draws it here too, on down to the next reply unless this is the [last].
+ * elsewhere [rail] draws it here too, on down to the next reply unless this is the [last]. With no
+ * [rule], as in the classic style, the reply only keeps its place past the rule's column.
  */
 @Composable
 fun SubPostBranch(
-    rule: Color,
+    rule: Color?,
     modifier: Modifier = Modifier,
     rail: Boolean = false,
     last: Boolean = false,
@@ -670,6 +671,7 @@ fun SubPostBranch(
 ) {
     Row(modifier = modifier.height(IntrinsicSize.Min)) {
         Canvas(modifier = Modifier.width(Gutter).fillMaxSize()) {
+            rule ?: return@Canvas
             val x = Gutter.toPx() / 2
             val y = ReplyAvatarCenter.toPx()
             val r = BranchRadius.toPx()
