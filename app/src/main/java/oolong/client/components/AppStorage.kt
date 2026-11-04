@@ -5,6 +5,7 @@ import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
+import android.system.Os
 import android.webkit.WebView
 import coil3.imageLoader
 import kotlinx.coroutines.Dispatchers
@@ -162,10 +163,11 @@ object AppStorage {
         }
     }
 
-    private fun sizeOf(file: File?): Long = when {
-        file == null || !file.exists() -> 0
-        file.isDirectory -> file.listFiles()?.sumOf(::sizeOf) ?: 0
-        else -> file.length()
+    /** What [file] takes on the disk, in whole blocks as the system counts it, not its length. */
+    private fun sizeOf(file: File?): Long {
+        if (file == null || !file.exists()) return 0
+        val own = runCatching { Os.lstat(file.path).st_blocks * 512 }.getOrElse { file.length() }
+        return if (file.isDirectory) own + (file.listFiles()?.sumOf(::sizeOf) ?: 0) else own
     }
 
     private const val RecentMillis = 10 * 60 * 1000L

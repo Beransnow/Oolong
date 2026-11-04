@@ -8,7 +8,7 @@
     <string name="storage_web">Web pages</string>
     <string name="storage_temporary">Temporary files</string>
     <string name="storage_clear_cache_confirm">Clear all cache?</string>
-    <string name="storage_clear_cache_note">It loads again when needed.</string>
+    <string name="storage_clear_cache_note">It is loaded again when needed.</string>
     <string name="storage_group_extensions">Smart extensions</string>
     <string name="storage_extensions_note">Downloaded when needed, run on this device</string>
     <string name="storage_runtime">Core components</string>
@@ -23,8 +23,8 @@
     <string name="storage_download_note">About %1$s.</string>
     <string name="storage_download">Download</string>
     <string name="storage_delete_confirm">Delete %1$s?</string>
-    <string name="storage_delete_text_note">Auto masking and tap to mask will need to download it again.</string>
-    <string name="storage_delete_region_note">Tap to mask will need to download it again.</string>
+    <string name="storage_delete_text_note">Auto masking and tap to mask will need it downloaded again.</string>
+    <string name="storage_delete_region_note">Tap to mask will need it downloaded again.</string>
     <string name="storage_delete">Delete</string>
     <string name="storage_group_data">Data</string>
     <string name="storage_app">App</string>
