@@ -23,7 +23,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
-enum class EditorTool { Crop, Mask, Mark, Text }
+enum class EditorTool { Crop, Adjust, Mask, Mark, Text }
 
 /**
  * A frame shape: any, the picture's own, or a fixed one given by its longer side over its
@@ -77,6 +77,32 @@ class EditorState(
 ) {
     val whole = Framing.whole(renderer.size)
     val history = EditHistory(whole).apply { restore(initial) }
+
+    /** Which adjustment the ruler changes. */
+    var adjusting by mutableStateOf(Adjustment.Exposure)
+
+    /** The adjustments while the ruler is dragged, before they become a step. */
+    var draftAdjustments by mutableStateOf<Map<Adjustment, Float>?>(null)
+
+    /** The adjustments as shown now, a drag included. */
+    val adjustments: Map<Adjustment, Float> get() = draftAdjustments ?: history.adjustments
+
+    /** The adjustment picked set to [value], as the ruler moves. */
+    fun adjust(value: Float) {
+        draftAdjustments = adjustments + (adjusting to value)
+    }
+
+    fun commitAdjust() {
+        val values = draftAdjustments ?: return
+        draftAdjustments = null
+        if (values.filterValues { it != 0f } != history.adjustments.filterValues { it != 0f }) history.push(Edit.Adjust(values.filterValues { it != 0f }))
+    }
+
+    /** Every adjustment back to none. */
+    fun resetAdjustments() {
+        draftAdjustments = null
+        if (!history.adjustments.changesNothing()) history.push(Edit.Adjust(NoAdjustments))
+    }
 
     /** Whether anything differs from how the editor opened, which leaving would lose. */
     // A copy, as a slice of the history's list compares by identity, not by what is in it

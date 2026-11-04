@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -75,6 +76,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withMatrix
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
@@ -108,6 +112,7 @@ class EditResult(
     val captions: List<Edit.Caption>,
     /** The steps that led here, kept so the picture can be edited again from where it was left. */
     val steps: List<Edit>,
+    val adjustments: Map<Adjustment, Float> = NoAdjustments,
 )
 
 /**
@@ -130,6 +135,18 @@ fun EditScreen(
     state.hidden = pictureHidden
     // Once the picture has its place, whoever opened the editor may fly a copy to it
     LaunchedEffect(state, state.laidOut) { if (state.laidOut) onReady(state) }
+    // The screen shows an adjusted copy, as large as a screen needs, made again as the ruler moves;
+    // a newer change drops the one being made
+    LaunchedEffect(state) {
+        snapshotFlow { state.adjustments }.collectLatest { values ->
+            val picture = renderer.picture
+            renderer.base = if (values.changesNothing()) {
+                picture
+            } else {
+                withContext(Dispatchers.Default) { adjust(picture, values, previewSide(picture.width, picture.height)) }
+            }
+        }
+    }
     state.density = density.density
     val discardDialog = rememberDialogState()
     val leave = {
@@ -201,7 +218,7 @@ private fun Scaffold(
     val done: () -> Unit = {
         state.finishCaption()
         val history = state.history
-        onDone(EditResult(history.framing, history.strokes, history.captions, history.applied.toList()))
+        onDone(EditResult(history.framing, history.strokes, history.captions, history.applied.toList(), history.adjustments))
     }
     GlassScaffold(
         backgroundColor = Color.Black,
@@ -518,6 +535,8 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.gestures
             return@awaitEachGesture
         }
         when (state.tool) {
+            // Adjusting is done on the ruler; on the picture a finger moves the view
+            EditorTool.Adjust -> transform(state, down)
             EditorTool.Crop -> {
                 val hold = frameHold(state, down.position, grip)
                 if (hold == null) transform(state, down) else dragFrame(state, down, hold)

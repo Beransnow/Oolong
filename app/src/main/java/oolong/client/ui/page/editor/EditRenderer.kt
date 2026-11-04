@@ -14,6 +14,9 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -58,22 +61,53 @@ class EditRenderer(val picture: Bitmap) {
 
     private val bitmapPaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
-    /** Mosaic cells as big as about half a line of text in a screenshot, so it can't be read back. */
-    private val mosaic: Shader by lazy {
-        val cell = max(8f, min(size.width, size.height) / 45f)
-        val small = shrink(picture, ceil(size.width / cell).toInt(), ceil(size.height / cell).toInt())
-        BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
-            setLocalMatrix(Matrix().apply { setScale(size.width / small.width, size.height / small.height) })
-        }
+    /**
+     * What is drawn as the picture: the picture itself, or a copy adjusted, perhaps smaller, drawn
+     * stretched to the picture's size. Masks take their colours from it too.
+     */
+    var base by mutableStateOf(picture)
+
+    private var masksFrom: Bitmap? = null
+    private var mosaicShader: Shader? = null
+    private var blurShader: Shader? = null
+
+    /** The mask shaders for [base], made again when it changes. */
+    private fun maskShaders() {
+        if (masksFrom === base) return
+        masksFrom = base
+        mosaicShader = null
+        blurShader = null
     }
 
-    private val blur: Shader by lazy {
-        val factor = max(4f, min(size.width, size.height) / 135f)
-        val small = shrink(picture, ceil(size.width / factor).toInt(), ceil(size.height / factor).toInt())
-        repeat(3) { boxBlur(small, radius = 2) }
-        BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
-            setLocalMatrix(Matrix().apply { setScale(size.width / small.width, size.height / small.height) })
+    /** Mosaic cells as big as about half a line of text in a screenshot, so it can't be read back. */
+    private val mosaic: Shader
+        get() {
+            maskShaders()
+            return mosaicShader ?: run {
+                val cell = max(8f, min(size.width, size.height) / 45f)
+                val small = shrink(base, ceil(size.width / cell).toInt(), ceil(size.height / cell).toInt())
+                BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                    setLocalMatrix(Matrix().apply { setScale(size.width / small.width, size.height / small.height) })
+                }.also { mosaicShader = it }
+            }
         }
+
+    private val blur: Shader
+        get() {
+            maskShaders()
+            return blurShader ?: run {
+                val factor = max(4f, min(size.width, size.height) / 135f)
+                val small = shrink(base, ceil(size.width / factor).toInt(), ceil(size.height / factor).toInt())
+                repeat(3) { boxBlur(small, radius = 2) }
+                BitmapShader(small, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                    setLocalMatrix(Matrix().apply { setScale(size.width / small.width, size.height / small.height) })
+                }.also { blurShader = it }
+            }
+        }
+
+    private fun Canvas.drawBase() {
+        val base = base
+        if (base === picture) drawBitmap(picture, 0f, 0f, bitmapPaint) else drawBitmap(base, null, RectF(0f, 0f, size.width, size.height), bitmapPaint)
     }
 
     /** From the picture's pixels to the turned picture's, as [framing] turns it. */
@@ -98,7 +132,7 @@ class EditRenderer(val picture: Bitmap) {
         val orient = orient(framing)
         val all = if (live != null) strokes + live else strokes
         canvas.withMatrix(orient) {
-            drawBitmap(picture, 0f, 0f, bitmapPaint)
+            drawBase()
             // Masks, then marks, each on a layer of their own, so rubbing out one leaves the other
             // and shows the picture under it
             for (layer in Edit.Layer.entries) {
@@ -151,7 +185,7 @@ class EditRenderer(val picture: Bitmap) {
         Canvas(result).apply {
             scale(scale, scale)
             translate(-(size.width - side) / 2, -(size.height - side * height / width) / 2)
-            drawBitmap(picture, 0f, 0f, bitmapPaint)
+            drawBase()
             drawRect(0f, 0f, size.width, size.height, maskPaint(style))
         }
         return result

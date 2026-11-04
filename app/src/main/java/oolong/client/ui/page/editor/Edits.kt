@@ -114,6 +114,9 @@ sealed interface Edit {
     /** Takes away the mask, mark or caption [id]. */
     data class Remove(val id: Int) : Edit
 
+    /** Adjusts the picture's tone and colour by [values], in place of any adjustment before. */
+    data class Adjust(val values: Map<Adjustment, Float>) : Edit
+
     /**
      * Text centred on [center], [size] pixels high, always upright however the picture is turned.
      * A later caption with the same [id] replaces it; one with blank [text] removes it.
@@ -143,6 +146,10 @@ class EditHistory(private val whole: Framing) {
     val canRedo: Boolean get() = position < steps.size
 
     val applied: List<Edit> get() = steps.subList(0, position)
+
+    /** The picture's adjustments as they stand. */
+    val adjustments: Map<Adjustment, Float>
+        get() = applied.lastOrNull { it is Edit.Adjust }?.let { (it as Edit.Adjust).values } ?: NoAdjustments
 
     val framing: Framing get() = applied.lastOrNull { it is Edit.Frame }?.let { (it as Edit.Frame).framing } ?: whole
 

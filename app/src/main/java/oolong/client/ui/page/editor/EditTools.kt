@@ -102,7 +102,7 @@ private val BubbleColor = Color.White.copy(alpha = 0.16f)
 /** The track of a choice on the options' glass. */
 private val TrackColor = Color.White.copy(alpha = 0.08f)
 
-private val ToolWidth = 68.dp
+private val ToolWidth = 60.dp
 private val ToolHeight = 52.dp
 
 /** How wide a tool's options are beside a side rail. */
@@ -258,6 +258,7 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
 private val EditorTool.label: Int
     get() = when (this) {
         EditorTool.Crop -> R.string.editor_crop
+        EditorTool.Adjust -> R.string.editor_adjust
         EditorTool.Mask -> R.string.editor_mask
         EditorTool.Mark -> R.string.editor_mark
         EditorTool.Text -> R.string.editor_text
@@ -265,6 +266,7 @@ private val EditorTool.label: Int
 
 private fun EditorTool.icon(selected: Boolean): ImageVector = when (this) {
     EditorTool.Crop -> if (selected) Symbols.CropFill else Symbols.Crop
+    EditorTool.Adjust -> if (selected) Symbols.TuneFill else Symbols.Tune
     EditorTool.Mask -> if (selected) Symbols.BlurOnFill else Symbols.BlurOn
     EditorTool.Mark -> if (selected) Symbols.DrawFill else Symbols.Draw
     EditorTool.Text -> if (selected) Symbols.TextFieldsFill else Symbols.TextFields
@@ -349,6 +351,60 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                         Icon(imageVector = Symbols.Flip, contentDescription = stringResource(id = R.string.editor_flip), tint = LocalContentColor.current)
                     }
                 }
+            }
+
+            EditorTool.Adjust -> {
+                // Which to change, in words, as their icons wouldn't be known; a dot marks those changed
+                OptionRow {
+                    val scroll = rememberScrollState()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .scrollFade(scroll)
+                            .horizontalScroll(scroll),
+                    ) {
+                        Options(
+                            options = Adjustment.entries,
+                            selected = state.adjusting,
+                            onSelect = { state.adjusting = it },
+                            label = { stringResource(id = it.label) },
+                            width = { 64.dp },
+                        ) { adjustment, on ->
+                            val changed = (state.adjustments[adjustment] ?: 0f) != 0f
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(id = adjustment.label),
+                                    color = if (on) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary,
+                                    style = MaterialTheme.typography.body2,
+                                )
+                                if (changed) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(start = 3.dp)
+                                            .size(4.dp)
+                                            .background(ExtendedTheme.colors.text, CircleShape),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    TextButton(
+                        onClick = state::resetAdjustments,
+                        enabled = !state.adjustments.changesNothing(),
+                        color = ExtendedTheme.colors.text,
+                    ) { Text(text = stringResource(id = R.string.button_restore)) }
+                }
+                Ruler(
+                    value = state.adjustments[state.adjusting] ?: 0f,
+                    range = -100f..100f,
+                    onChange = state::adjust,
+                    onCommit = state::commitAdjust,
+                    label = stringResource(id = state.adjusting.label),
+                    format = { value -> value.roundToInt().let { if (it > 0) "+$it" else "$it" } },
+                    modifier = Modifier.fillMaxWidth(),
+                    unitWidth = 1.4.dp,
+                    tick = 5f,
+                )
             }
 
             EditorTool.Mask -> {
@@ -864,4 +920,15 @@ private fun Modifier.scrollFade(scroll: ScrollState): Modifier = this
             ),
             blendMode = BlendMode.DstIn,
         )
+    }
+
+private val Adjustment.label: Int
+    get() = when (this) {
+        Adjustment.Exposure -> R.string.editor_exposure
+        Adjustment.Brightness -> R.string.editor_brightness
+        Adjustment.Contrast -> R.string.editor_contrast
+        Adjustment.Highlights -> R.string.editor_highlights
+        Adjustment.Shadows -> R.string.editor_shadows
+        Adjustment.Saturation -> R.string.editor_saturation
+        Adjustment.Warmth -> R.string.editor_warmth
     }

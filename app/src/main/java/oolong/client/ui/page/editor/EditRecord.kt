@@ -65,6 +65,7 @@ private fun Edit.toStep(): EditRecord.Step = when (this) {
     is Edit.Erase -> EditRecord.Step("erase", points = points.flat(), width = width, kind = layer.name)
     is Edit.Caption -> EditRecord.Step("caption", id, listOf(center.x, center.y), size, color.toArgb().toLong(), style.name, text)
     is Edit.Remove -> EditRecord.Step("remove", id)
+    is Edit.Adjust -> EditRecord.Step("adjust", points = Adjustment.entries.map { values[it] ?: 0f })
 }
 
 private fun EditRecord.Step.toEdit(): Edit = when (type) {
@@ -77,5 +78,6 @@ private fun EditRecord.Step.toEdit(): Edit = when (type) {
     "erase" -> Edit.Erase(points.offsets(), width, Edit.Layer.valueOf(kind))
     "caption" -> Edit.Caption(id, text, Offset(points[0], points[1]), width, Color(color.toInt()), CaptionStyle.valueOf(kind))
     "remove" -> Edit.Remove(id)
+    "adjust" -> Edit.Adjust(Adjustment.entries.zip(points).toMap().filterValues { it != 0f })
     else -> error("Unknown step $type")
 }

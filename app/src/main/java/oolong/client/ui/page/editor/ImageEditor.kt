@@ -428,7 +428,9 @@ private class EditorWork(private val context: Context, private val request: Edit
     /** Writes the picture as [result] leaves it; false if it could not be written. */
     suspend fun save(renderer: EditRenderer, result: EditResult): Boolean = withContext(Dispatchers.Default) {
         runCatching {
-            val bitmap = renderer.render(result.framing, result.strokes, result.captions, MaxSide)
+            // Adjusted at the picture's own size, not the screen's
+            val full = if (result.adjustments.changesNothing()) renderer else EditRenderer(adjust(renderer.picture, result.adjustments))
+            val bitmap = full.render(result.framing, result.strokes, result.captions, MaxSide)
             request.output.parentFile?.mkdirs()
             request.output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, EditQuality, it) }
             bitmap.recycle()
