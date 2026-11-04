@@ -60,6 +60,8 @@ enum class MonetStyle(val value: String) {
  * @param monetStyle how [ColorStyle.Monet] makes its palette
  * @param darkTheme the dark theme's name, used whenever the app is dark
  * @param wallpaper whether the page shows the picked wallpaper
+ * @param oppositeWhile while following the system, the system's darkness for which the other look
+ *   is shown instead, as the night switch asks; it lapses once the system turns
  */
 data class ThemeSettings(
     val appearance: Appearance = Appearance.System,
@@ -68,6 +70,7 @@ data class ThemeSettings(
     val monetStyle: MonetStyle = MonetStyle.TonalSpot,
     val darkTheme: String = ThemeUtil.THEME_AMOLED_DARK,
     val wallpaper: Boolean = false,
+    val oppositeWhile: Boolean? = null,
 ) {
     /** Whether the colour is the system's, as the system takes it from its wallpaper. */
     val isSystemColor: Boolean get() = accent == ACCENT_DYNAMIC
@@ -80,8 +83,22 @@ data class ThemeSettings(
     fun isDark(systemDark: Boolean): Boolean = when (appearance) {
         Appearance.Light -> false
         Appearance.Dark -> true
-        Appearance.System -> systemDark
+        Appearance.System -> if (oppositeWhile == systemDark) !systemDark else systemDark
     }
+
+    /**
+     * Light made dark or dark made light. A fixed look is swapped for the other; while following
+     * the system the other look is shown only until the system turns, and the choice is kept.
+     */
+    fun toggledDark(systemDark: Boolean): ThemeSettings = when (appearance) {
+        Appearance.Light -> copy(appearance = Appearance.Dark)
+        Appearance.Dark -> copy(appearance = Appearance.Light)
+        Appearance.System -> copy(oppositeWhile = if (oppositeWhile == systemDark) null else systemDark)
+    }
+
+    /** These settings once the system is [systemDark], the other look dropped if it has turned since. */
+    fun settled(systemDark: Boolean): ThemeSettings =
+        if (oppositeWhile != null && oppositeWhile != systemDark) copy(oppositeWhile = null) else this
 
     /** The name of the theme to draw, as the colours are looked up by. */
     fun themeName(systemDark: Boolean): String = themeNameWhen(isDark(systemDark))
@@ -106,6 +123,7 @@ data class ThemeSettings(
         prefs[MonetStyleKey] = monetStyle.value
         prefs[DarkThemeKey] = darkTheme
         prefs[BackgroundKey] = if (wallpaper) BACKGROUND_WALLPAPER else BACKGROUND_DEFAULT
+        if (oppositeWhile != null) prefs[OppositeWhileKey] = oppositeWhile else prefs.remove(OppositeWhileKey)
     }
 
     companion object {
@@ -152,6 +170,7 @@ data class ThemeSettings(
         internal val BackgroundKey = stringPreferencesKey("theme_background")
         internal val StyleKey = stringPreferencesKey("theme_color_style")
         internal val MonetStyleKey = stringPreferencesKey("theme_monet_style")
+        private val OppositeWhileKey = booleanPreferencesKey("theme_opposite_while_dark")
         val CustomColorKey = stringPreferencesKey("custom_primary_color")
         private val OldWallpaperColorKey = stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_PRIMARY_COLOR)
 
@@ -186,6 +205,7 @@ data class ThemeSettings(
                 monetStyle = MonetStyle.of(prefs[MonetStyleKey]) ?: defaults.monetStyle,
                 darkTheme = darkOrNull(prefs[DarkThemeKey]) ?: defaults.darkTheme,
                 wallpaper = prefs[BackgroundKey] == BACKGROUND_WALLPAPER,
+                oppositeWhile = prefs[OppositeWhileKey],
             )
         }
 

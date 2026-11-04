@@ -87,7 +87,13 @@ object ThemeUtil {
     /** Works out the theme drawn now again, as after the system turns dark or light. */
     fun refresh() {
         ensureLoaded()
-        val name = settingsState.value.themeName(isSystemDark())
+        val systemDark = isSystemDark()
+        val settled = settingsState.value.settled(systemDark)
+        if (settled != settingsState.value) {
+            settingsState.value = settled
+            save()
+        }
+        val name = settled.themeName(systemDark)
         if (themeState.value != name) themeState.value = name
     }
 
@@ -98,6 +104,10 @@ object ThemeUtil {
         if (settings == settingsState.value) return
         settingsState.value = settings
         refresh()
+        save()
+    }
+
+    private fun save() {
         MainScope().launch(Dispatchers.IO) {
             // Saves are not done in the order they are started: each saves the settings as they
             // are by then, so that the last done holds the last change
@@ -117,12 +127,10 @@ object ThemeUtil {
 
     fun selectMonetStyle(style: MonetStyle) = updateSettings { it.copy(monetStyle = style) }
 
-    fun setAppearance(appearance: Appearance) = updateSettings { it.copy(appearance = appearance) }
+    fun setAppearance(appearance: Appearance) = updateSettings { it.copy(appearance = appearance, oppositeWhile = null) }
 
-    /** Switches between light and dark, no longer following the system. */
-    fun toggleDark() = updateSettings {
-        it.copy(appearance = if (it.isDark(isSystemDark())) Appearance.Light else Appearance.Dark)
-    }
+    /** Switches between light and dark; see [ThemeSettings.toggledDark]. */
+    fun toggleDark() = updateSettings { it.toggledDark(isSystemDark()) }
 
     @JvmStatic
     fun isNightMode(): Boolean {

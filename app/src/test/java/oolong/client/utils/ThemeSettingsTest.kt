@@ -144,4 +144,35 @@ class ThemeSettingsTest {
         assertEquals("pink", settings.themeName(systemDark = false))
         assertEquals("blue_dark", settings.themeName(systemDark = true))
     }
+
+    @Test
+    fun `the night switch swaps a fixed look for the other`() {
+        assertEquals(Appearance.Dark, ThemeSettings(Appearance.Light).toggledDark(systemDark = true).appearance)
+        assertEquals(Appearance.Light, ThemeSettings(Appearance.Dark).toggledDark(systemDark = false).appearance)
+    }
+
+    @Test
+    fun `while following the system the night switch shows the other look until the system turns`() {
+        val switched = ThemeSettings(Appearance.System).toggledDark(systemDark = false)
+        assertEquals(Appearance.System, switched.appearance)
+        assertTrue(switched.isDark(systemDark = false))
+
+        val turned = switched.settled(systemDark = true)
+        assertEquals(ThemeSettings(Appearance.System), turned)
+        assertFalse(turned.settled(systemDark = false).isDark(systemDark = false))
+    }
+
+    @Test
+    fun `the night switch pressed again goes back to following the system`() {
+        val settings = ThemeSettings(Appearance.System)
+        assertEquals(settings, settings.toggledDark(systemDark = true).toggledDark(systemDark = true))
+    }
+
+    @Test
+    fun `the other look is kept while the system has not turned`() {
+        val switched = ThemeSettings(Appearance.System).toggledDark(systemDark = true)
+        assertEquals(switched, switched.settled(systemDark = true))
+        val prefs = mutablePreferencesOf().also { switched.writeTo(it) }
+        assertEquals(switched, ThemeSettings.from(prefs))
+    }
 }
