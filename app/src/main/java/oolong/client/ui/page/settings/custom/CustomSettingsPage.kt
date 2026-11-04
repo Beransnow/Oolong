@@ -43,6 +43,7 @@ import oolong.client.ui.navigation.FontSizeKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.SearchPlacementKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.main.MainTabSwipeKey
 import oolong.client.ui.page.main.SearchAtTopKey
 import oolong.client.ui.page.thread.SubPostStyle
 import oolong.client.ui.page.thread.SubPostStyleKey
@@ -246,6 +247,13 @@ fun CustomSettingsPage(
                         key = PredictiveBackKey.name,
                         title = stringResource(id = R.string.title_settings_predictive_back),
                         summary = stringResource(id = R.string.summary_settings_predictive_back),
+                        defaultChecked = true,
+                    )
+                }
+                prefsItem {
+                    SwitchPref(
+                        key = MainTabSwipeKey.name,
+                        title = stringResource(id = R.string.title_settings_main_tab_swipe),
                         defaultChecked = true,
                     )
                 }

@@ -751,6 +751,7 @@
     <string name="glass_material_solid">不透明</string>
     <string name="title_glass_clarity">通透度</string>
     <string name="title_settings_predictive_back">预测性返回</string>
+    <string name="title_settings_main_tab_swipe">左右滑动切换页面</string>
     <string name="summary_settings_predictive_back">拖动返回手势时预览上一页</string>
     <string name="title_appearance">外观</string>
     <string name="appearance_light">浅色</string>

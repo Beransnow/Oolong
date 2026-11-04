@@ -758,6 +758,7 @@
     <string name="glass_material_solid">Opaque</string>
     <string name="title_glass_clarity">Clarity</string>
     <string name="title_settings_predictive_back">Predictive back</string>
+    <string name="title_settings_main_tab_swipe">Swipe between tabs</string>
     <string name="summary_settings_predictive_back">Preview the previous page while dragging the back gesture</string>
     <string name="title_appearance">Appearance</string>
     <string name="appearance_light">Light</string>

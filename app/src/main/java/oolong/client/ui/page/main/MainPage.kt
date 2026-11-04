@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.drop
@@ -124,6 +125,8 @@ fun MainPage(
     }
     val searchShown by remember { derivedStateOf { search.progress.value > 0f } }
     val searchKeptAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
+    // Beside the rail, whose tabs run down the side, the pages don't swipe
+    val swipeTabs by rememberPreferenceAsState(MainTabSwipeKey, true)
     // Beside the rail there is no bar to put it by: it stands at the top of the list
     val searchAtTop = searchKeptAtTop || !showBottomNavigation
 
@@ -200,7 +203,7 @@ fun MainPage(
                         .fillMaxSize()
                         .graphicsLayer { alpha = 1f - search.progress.value },
                     verticalAlignment = Alignment.Top,
-                    userScrollEnabled = !search.open,
+                    userScrollEnabled = swipeTabs && showBottomNavigation && !search.open,
                 ) { page ->
                     // Only the tab in view, so the field search opens from is the one that shows
                     CompositionLocalProvider(LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage }) {
@@ -253,3 +256,6 @@ fun MainPage(
         if (searchUiState.keyword.isNotEmpty()) searchViewModel.search("") else closeSearch()
     }
 }
+
+/** Whether the main tabs swipe, on a phone where their bar is at the bottom. */
+val MainTabSwipeKey = booleanPreferencesKey("mainTabSwipe")
