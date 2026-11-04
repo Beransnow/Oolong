@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import dagger.hilt.EntryPoint
@@ -63,6 +64,7 @@ internal fun rememberAutoMaskFiles(): AutoMaskFiles {
 internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
     val download by files.download.collectAsState()
     val view = LocalView.current
+    val density = LocalDensity.current
     var prepared by remember(state.renderer) { mutableStateOf<AutoMask.Prepared?>(null) }
     LaunchedEffect(state.maskPicking, download) {
         if (!state.maskPicking || download != AutoMaskDownload.Ready || prepared != null) return@LaunchedEffect
@@ -90,8 +92,10 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
             val ready = prepared ?: return@collect
             val engine = files.engine() ?: return@collect
             val point = state.toPicture(state.toTurned(at))
+            // Near enough is a fingertip on screen, however far the picture is zoomed out
+            val reach = with(density) { TextReach.toPx() } / state.scale
             val found = try {
-                withContext(Dispatchers.Default) { engine.tap(ready, point.x, point.y) }
+                withContext(Dispatchers.Default) { engine.tap(ready, point.x, point.y, reach) }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Log.w("TapToHide", "could not look into a tap", e)
@@ -249,3 +253,6 @@ internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEf
     }
     return effect
 }
+
+/** How far from a line of text, on screen, a tap still counts as on it. */
+private val TextReach = 12.dp

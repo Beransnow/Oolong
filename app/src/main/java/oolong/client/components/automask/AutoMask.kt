@@ -66,10 +66,13 @@ class AutoMask internal constructor(
         decoder.close()
     }
 
-    fun tap(prepared: Prepared, x: Float, y: Float): Found {
+    /**
+     * Looks into a tap at [x], [y]; a line of text within [reach] of it counts as tapped, at least
+     * about 20px at a 1080 width.
+     */
+    fun tap(prepared: Prepared, x: Float, y: Float, reach: Float = 0f): Found {
         val t0 = System.nanoTime()
-        // Near a line of text, within about 20px at a 1080 width, counts as on it
-        val reach = 20f * prepared.width / 1080
+        val reach = max(reach, 20f * prepared.width / 1080)
         fun gap(r: RectF) = max(max(r.left - x, 0f), x - r.right) + max(max(r.top - y, 0f), y - r.bottom)
         val line = prepared.lines.filter { gap(it) <= reach }.minByOrNull { gap(it) * 1e6f + it.width() * it.height() }
         if (line != null) return Found(line, text = true, millis = (System.nanoTime() - t0) / 1_000_000)
