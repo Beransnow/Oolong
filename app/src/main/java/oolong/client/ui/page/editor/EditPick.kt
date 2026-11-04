@@ -1,6 +1,7 @@
 package oolong.client.ui.page.editor
 
 import android.os.Build
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -36,6 +37,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -71,10 +73,19 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
         val engine = files.engine() ?: return@LaunchedEffect
         val picture = state.renderer.picture
         val whole = Rect(0f, 0f, picture.width.toFloat(), picture.height.toFloat())
-        val lines = withContext(Dispatchers.Default) { engine.detect(picture) }
-        state.pickLines = lines.map { Rect(it.left, it.top, it.right, it.bottom).intersect(whole) }
-        prepared = withContext(Dispatchers.Default) { engine.prepare(picture, lines) }
-        state.pickReady = true
+        try {
+            val lines = withContext(Dispatchers.Default) { engine.detect(picture) }
+            state.pickLines = lines.map { Rect(it.left, it.top, it.right, it.bottom).intersect(whole) }
+            prepared = withContext(Dispatchers.Default) { engine.prepare(picture, lines) }
+            state.pickReady = true
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            // Left to boxing by hand, as before it was chosen
+            Log.w("TapToHide", "could not look the picture over", e)
+            state.pickLines = null
+            state.maskPicking = false
+            state.maskShape = MaskShape.Rect
+        }
     }
     LaunchedEffect(state) {
         snapshotFlow { state.pendingPick }.filterNotNull().collect { at ->
@@ -82,7 +93,13 @@ internal fun TapToHide(state: EditorState, files: AutoMaskFiles) {
             val ready = prepared ?: return@collect
             val engine = files.engine() ?: return@collect
             val point = state.toPicture(state.toTurned(at))
-            val found = withContext(Dispatchers.Default) { engine.tap(ready, point.x, point.y) }
+            val found = try {
+                withContext(Dispatchers.Default) { engine.tap(ready, point.x, point.y) }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.w("TapToHide", "could not look into a tap", e)
+                return@collect
+            }
             val box = found.box
             if (box != null) {
                 state.hidePicked(at, Rect(box.left, box.top, box.right, box.bottom))

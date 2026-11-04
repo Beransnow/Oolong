@@ -3,6 +3,7 @@ package oolong.client.components.automask
 import android.content.Context
 import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -88,14 +89,27 @@ class AutoMaskFiles @Inject constructor(
         }
     }
 
-    /** The engine, its runtime and models loaded the first time; null until they are downloaded. */
+    /**
+     * The engine, its runtime and models loaded the first time; null until they are downloaded,
+     * or when they would not load, which has them fetched again.
+     */
     suspend fun engine(): AutoMask? = loading.withLock {
         engine?.let { return it }
         if (!downloaded()) return null
         withContext(io) {
-            // LiteRT finds no runtime in the APK and lets this one stand in
-            System.load(File(folder, RuntimeName).absolutePath)
-            AutoMask.load(folder, threads = 4).also { engine = it }
+            try {
+                // Native code is only loaded from a file nothing can write to, as Android 17 asks
+                val runtime = File(folder, RuntimeName).apply { setReadOnly() }
+                // LiteRT finds no runtime in the APK and lets this one stand in
+                System.load(runtime.absolutePath)
+                AutoMask.load(folder, threads = 4).also { engine = it }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                // Not to be loaded as it is: fetched afresh the next time
+                folder.deleteRecursively()
+                _download.value = AutoMaskDownload.Failed(missingBytes(), e as? Exception ?: IOException(e))
+                null
+            }
         }
     }
 
@@ -138,7 +152,9 @@ class AutoMaskFiles @Inject constructor(
                 part.delete()
                 throw IOException("${remote.name} is not the file it should be")
             }
-            if (!part.renameTo(File(folder, remote.name))) throw IOException("could not keep ${remote.name}")
+            val kept = File(folder, remote.name)
+            if (!part.renameTo(kept)) throw IOException("could not keep ${remote.name}")
+            kept.setReadOnly()
         }
     }
 
