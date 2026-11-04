@@ -117,7 +117,8 @@ fun rememberScrollProgress(anchor: Any, page: PageScrollState? = LocalPageScroll
 @Composable
 fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
     val page = LocalPageScroll.current ?: return this
-    return onGloballyPositioned { page.anchors[key] = it.boundsInWindow() }
+    // Unclipped: an anchor off the screen's edge, as on a page sliding away, is still where it is
+    return onGloballyPositioned { page.anchors[key] = it.boundsInWindow(clipBounds = false) }
 }
 
 /**
@@ -130,7 +131,7 @@ fun Modifier.matchedGeometryAnchor(key: Any): Modifier {
 fun Modifier.matchedGeometry(key: Any, progress: ScrollProgress): Modifier {
     val page = LocalPageScroll.current ?: return this
     val own = remember { mutableStateOf(Rect.Zero) }
-    return onGloballyPositioned { own.value = it.boundsInWindow() }
+    return onGloballyPositioned { own.value = it.boundsInWindow(clipBounds = false) }
         .graphicsLayer {
             val anchor = page.anchors[key]
             val self = own.value
