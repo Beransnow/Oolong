@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -72,6 +71,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.MyScaffold
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.TitleCentredToolbar
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.plus
@@ -225,7 +225,7 @@ private fun SubPostsContent(
                 remember { StateScreenScope { onEvent(SubPostsEvent.Retry) } }
                     .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
             } else {
-                CircularProgressIndicator(color = ExtendedTheme.colors.emphasis)
+                WavyLoader()
             }
         }
         return
