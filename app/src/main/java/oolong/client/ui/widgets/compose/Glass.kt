@@ -250,7 +250,7 @@ private val ExtendedColors.isTranslucent: Boolean
  * full down to [TopBarBlurFade] above the bottom edge, which the bar sets [TopBarEdgeExtend] below
  * its own, so content is blurred soon after it passes under the bar and fully by the title.
  *
- * Without a blur, an opaque background fades out over the last [TopBarSolidFade] instead.
+ * Without a blur, the veil alone eases out the same way, thicker.
  */
 @Composable
 fun Modifier.topBarGlass(): Modifier {
@@ -291,22 +291,15 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
     val clear by remember(shown) { derivedStateOf { shown() == 0f } }
     // Where the fades start. The bar can change height, such as a header collapsing inside it,
     // so these follow its size; a bar shorter than a fade fades over all of it.
-    val solidFadePx = with(density) { TopBarSolidFade.toPx() }
-    val solidEdge = if (height > 0) (1f - solidFadePx / height).coerceIn(0f, 1f) else 0f
     val blurFadePx = with(density) { TopBarBlurFade.toPx() }
     val blurEdge = if (height > 0) (1f - blurFadePx / height).coerceIn(0f, 1f) else 0f
     val measured = onSizeChanged { height = it.height }
     // Nothing to draw, and no blur to run, while the bar is clear
     if (clear) return measured
     if (solid) {
-        val veil = color.copy(alpha = if (colors.isTranslucent) TranslucentTopBarTint else SolidTopBarTint)
-        val brush = remember(veil, solidEdge, top) {
-            if (top) {
-                Brush.verticalGradient(0f to veil, solidEdge to veil, 1f to veil.copy(alpha = 0f))
-            } else {
-                Brush.verticalGradient(0f to veil.copy(alpha = 0f), 1f - solidEdge to veil, 1f to veil)
-            }
-        }
+        // The tint's curve on its own, thicker, as nothing blurs what it lets show
+        val veil = if (colors.isTranslucent) TranslucentTopBarTint else SolidTopBarTint
+        val brush = remember(color, veil, top) { scrollEdgeTint(color, veil, top) }
         return measured.graphicsLayer { alpha = shown() }.background(brush)
     }
     val style = remember(color, tint, blurEdge, frost, top, shown) {
@@ -328,21 +321,7 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
                     endIntensity = 0f,
                 )
             )
-            colorEffects(
-                listOf(
-                    HazeColorEffect.tint(
-                        Brush.verticalGradient(
-                            *Array(TopBarTintStops + 1) { i ->
-                                val t = i / TopBarTintStops.toFloat()
-                                val fromEdge = if (top) t else 1f - t
-                                // A smootherstep over the whole height: no flat band, no line
-                                val gone = fromEdge * fromEdge * fromEdge * (fromEdge * (fromEdge * 6f - 15f) + 10f)
-                                t to color.copy(alpha = tint * strength * (1f - gone))
-                            }
-                        )
-                    )
-                )
-            )
+            colorEffects(listOf(HazeColorEffect.tint(scrollEdgeTint(color, tint * strength, top))))
         }
     }
     // At the lowest resolution: at full resolution this blur alone took about half a frame of an
@@ -369,14 +348,25 @@ internal val TopBarEdgeExtend = 24.dp
 /** The veil at the top of the scroll edge, of the page's background colour. */
 private const val TopBarTint = 0.5f
 
-/** How far above its bottom edge an unblurred top bar fades out, kept short so it stays even. */
-private val TopBarSolidFade = 16.dp
-
 /**
- * The unblurred top bar's veil: thick enough to keep the status bar and the title clear of the
- * content under them, thin enough that the content still shows, as a tall status bar takes room.
+ * The unblurred top bar's veil at the screen's edge: thick enough to keep the status bar and the
+ * title clear of the content under them, thin enough that the content still shows, as a tall
+ * status bar takes room.
  */
 private const val SolidTopBarTint = 0.85f
+
+/**
+ * A scroll edge's veil of [color], [alpha] at the [top] or bottom edge of the screen and gone at
+ * its inner edge, by a smootherstep over the whole height: no flat band, no line.
+ */
+private fun scrollEdgeTint(color: Color, alpha: Float, top: Boolean) = Brush.verticalGradient(
+    *Array(TopBarTintStops + 1) { i ->
+        val t = i / TopBarTintStops.toFloat()
+        val fromEdge = if (top) t else 1f - t
+        val gone = fromEdge * fromEdge * fromEdge * (fromEdge * (fromEdge * 6f - 15f) + 10f)
+        t to color.copy(alpha = alpha * (1f - gone))
+    }
+)
 
 /** The translucent theme's lighter tint, which keeps the wallpaper showing through. */
 private const val TranslucentTopBarTint = 0.45f
@@ -440,7 +430,8 @@ fun Modifier.floatingGlass(
     )
     val chrome = if (bar == null) {
         // Glass stands off the page by its own light and refraction, so it casts no shadow; frosted
-        // and opaque chrome have only a hairline and keep theirs. A shadow cast from here would
+        // chrome has only a hairline and keeps its, while opaque chrome lies flat, as most of the
+        // page does without glass. A shadow cast from here would
         // also lie over the glass of a glass container, which draws under everything in it. The
         // layer stays: under the app's lookahead, a part without one that only moves, as the
         // keyboard moves a search field, is moved in the lookahead pass but left where it was drawn.
@@ -455,7 +446,7 @@ fun Modifier.floatingGlass(
             // Faded by a layer that is always there: one added only while fading would change the
             // modifiers around the blur as it updates, which froze the page
             graphicsLayer { this.alpha = alpha }
-                .shadow(elevation = FloatingElevation, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
+                .shadow(elevation = if (tier == GlassTier.Blur) FloatingElevation else 0.dp, shape = shape, ambientColor = ShadowAmbient, spotColor = ShadowSpot)
         }
     } else {
         onSizeChanged { empty = it.width == 0 || it.height == 0 }.pointerInput(Unit) {
@@ -476,8 +467,8 @@ fun Modifier.floatingGlass(
             transformOrigin = if (pressedAt.isSpecified && size.width > 0f) {
                 TransformOrigin(pressedAt.x / size.width, pressedAt.y / size.height)
             } else TransformOrigin.Center
-            // Glass casts none, as other floating glass
-            shadowElevation = if (tier == GlassTier.Glass) 0f else FloatingElevation.toPx() * shown()
+            // Only frosted chrome casts one, as other floating chrome
+            shadowElevation = if (tier == GlassTier.Blur) FloatingElevation.toPx() * shown() else 0f
             this.shape = shape
             ambientShadowColor = ShadowAmbient
             spotShadowColor = ShadowSpot
