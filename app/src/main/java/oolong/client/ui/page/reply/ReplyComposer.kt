@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -437,7 +438,7 @@ private fun ToggleChip(
             .height(26.dp)
             .clip(ChipShape)
             .background(background)
-            .clickable(role = Role.Checkbox) { onCheckedChange(!checked) }
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
             .padding(start = 7.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
