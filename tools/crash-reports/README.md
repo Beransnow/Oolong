@@ -9,6 +9,8 @@ lines, in a Worker within the free plan's 10 ms of CPU per invocation. The desig
 - `src/shards.js` looks records up in the shards.
 - `scripts/shard.mjs` writes a build's shards.
 
+Commands below run from this directory.
+
 ## Shards
 
 A build's mapping is kept under `mapping/<versionName>/` in R2, `versionName` exactly as the app
@@ -28,7 +30,7 @@ At 4096 shards a mapping of 20,000 classes makes 13 MB, a file per shard of at m
 trace costs about 2 ms of CPU (4 ms at the 95th percentile) over some 8 files.
 
 ```sh
-node scripts/shard.mjs app/build/outputs/mapping/release/mapping.txt 1.0.0 out 4096
+node scripts/shard.mjs ../../app/build/outputs/mapping/release/mapping.txt 1.0.0 out 4096
 ```
 
 ## Tests
@@ -44,7 +46,7 @@ reaching every kind of entry in it, retraces them both ways and reports the diff
 ```sh
 JAVA=/usr/lib/jvm/java-17-openjdk-amd64/bin/java \
 R8_JAR=$(ls ~/.gradle/caches/modules-2/files-2.1/com.android.tools.build/builder/<agp>/*/builder-<agp>.jar) \
-node test/compare.mjs app/build/outputs/mapping/release/mapping.txt 2000
+node test/compare.mjs ../../app/build/outputs/mapping/release/mapping.txt 2000
 ```
 
 Use the R8 that wrote the mapping (`# compiler_version` at its top); AGP's builder jar carries it.

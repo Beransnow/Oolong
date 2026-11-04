@@ -10,7 +10,7 @@
 // the Worker does, instead of in the parsed mapping.
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -126,6 +126,7 @@ const jar = process.env.R8_JAR ?? join(homedir(), "android-sdk/cmdline-tools/lat
 const expected = execFileSync(process.env.JAVA ?? "java", ["-cp", jar, "com.android.tools.r8.retrace.Retrace", mappingPath, join(dir, "trace.txt")], {
     maxBuffer: 1 << 30,
 }).toString().replace(/\n$/, "");
+rmSync(dir, { recursive: true });
 
 let lookup = (name) => classes.get(name);
 if (process.env.SHARDS) {
