@@ -13,7 +13,7 @@ const CLASS_NAME = /^[A-Za-z_$][\w$]*(?:\.[\w$]+)*$/;
  * Retraces [text]. [lookup](class, method) gives the record of an obfuscated class name, or null
  * when the class isn't in the mapping; with a method, the record must hold that method's groups if
  * it has any. It may be async. Returns the retraced text and, per exception in the trace, its class
- * and frames, for grouping.
+ * and frames, for grouping; frames before any exception, as in a thread dump, come under a null one.
  */
 export async function retrace(text, lookup) {
     const cache = new Map();
@@ -40,10 +40,15 @@ export async function retrace(text, lookup) {
             outline = resolved?.outline ?? null;
             if (resolved?.outline !== undefined) continue;
             const frames = resolved?.frames ?? [{ c: cls, n: method, f: file, l: number, raw: inside }];
+            if (!current) {
+                // Frames before any exception, as in a thread dump
+                current = { exception: null, cause: false, frames: [] };
+                exceptions.push(current);
+            }
             frames.forEach((f, i) => {
                 const prefix = i === 0 || !resolved?.ambiguous ? `${indent}at ` : `${indent}<OR> at `;
                 out.push(`${prefix}${f.c}.${f.n}(${f.raw ?? formatInside(f)})${rest}`);
-                current?.frames.push(f);
+                current.frames.push(f);
             });
             continue;
         }
