@@ -14,10 +14,17 @@ CREATE INDEX IF NOT EXISTS messages_date ON messages (date);
 CREATE TABLE IF NOT EXISTS feedback (
     message_id INTEGER PRIMARY KEY,
     marked_at INTEGER NOT NULL,
+    -- open, planned (taken into other work), fixed, declined or duplicate
     status TEXT NOT NULL DEFAULT 'open',
+    -- What was done or decided, in a line
     note TEXT,
+    -- The commit that fixed it
+    fixed_by TEXT,
     context TEXT NOT NULL,
     -- The model's write-up as JSON; null until it succeeds, with the last failure beside it
     summary TEXT,
     summary_error TEXT
 );
+
+-- Added after the table was created:
+-- ALTER TABLE feedback ADD COLUMN fixed_by TEXT;

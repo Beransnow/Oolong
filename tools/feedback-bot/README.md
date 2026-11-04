@@ -35,5 +35,8 @@ answers and five messages either side. Taking the reaction back removes it while
 
 ```sh
 npx wrangler d1 execute oolong-feedback --remote --command "SELECT * FROM feedback WHERE status = 'open'"
-npx wrangler d1 execute oolong-feedback --remote --command "UPDATE feedback SET status = 'done', note = '…' WHERE message_id = …"
+npx wrangler d1 execute oolong-feedback --remote --command "UPDATE feedback SET status = 'fixed', fixed_by = '<commit>', note = '…' WHERE message_id = …"
 ```
+
+`status` is `open`, `planned` (taken into other work), `fixed`, `declined` or `duplicate`. Taking the
+👀 back removes an item only while it is `open`.
