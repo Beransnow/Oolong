@@ -72,6 +72,8 @@ fun SegmentedControl(
     trackColor: Color = ExtendedTheme.colors.chip,
 ) {
     val colors = ExtendedTheme.colors
+    // The page's own colour; on the translucent theme, which has none, that of an opaque surface
+    val pillColor = if (colors.background.alpha < 1f) colors.sheet else colors.background
     // Where the pill is, in options; follows the finger while held
     val position = remember { Animatable(selected.toFloat(), Motion.ProgressThreshold) }
     var holding by remember { mutableStateOf(false) }
@@ -110,7 +112,7 @@ fun SegmentedControl(
                     val height = size.height - inset * 2
                     drawRoundRect(
                         // The pill gives way to the glass while held, where glass is drawn
-                        color = colors.background.copy(alpha = if (glassAvailable) 1f - held else 1f),
+                        color = pillColor.copy(alpha = if (glassAvailable) 1f - held else 1f),
                         topLeft = Offset(inset + width * position.value, inset),
                         size = Size(width, height),
                         cornerRadius = CornerRadius(height / 2),
