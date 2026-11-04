@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -609,9 +610,19 @@ fun ReplyChrome(
                     )
                 }
             }
+        }
+        if (menu != null) {
+            // Composed and laid out while it is closed too, only not placed, so opening it doesn't
+            // begin with a frame that builds all of it
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) {
+                            if (state.surface == ChromeSurface.Menu || grow.value > 0f || move.value > 0f) placeable.place(0, 0)
+                        }
+                    }
                     .windowInsetsPadding(bars.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
                     .padding(horizontal = SideMargin, vertical = BottomMargin)
                     .width(MenuWidth.coerceAtMost(maxWidth - SideMargin * 2))
