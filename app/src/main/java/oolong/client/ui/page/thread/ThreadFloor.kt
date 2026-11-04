@@ -419,6 +419,11 @@ private fun TimelineSubPosts(
     val labels = postMenuLabels()
     val subPosts = replies?.subPosts ?: post.subPosts
     val blocks = replies?.blocks ?: item.subPostBlocks
+    val remaining = if (replies?.complete == true) 0 else (post.subPostCount - subPosts.size).coerceAtLeast(0)
+    // With nothing else to say under the replies, the link to fold them ends the last one's line
+    // rather than taking a row of its own, unless the rules fold that reply away
+    val linkRow = replies?.loading == true || replies?.failed == true || remaining > 0
+    val collapseOnLast = onCollapse != null && !linkRow && subPosts.lastOrNull()?.let { blocks[it.id] == null } == true
     Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
         subPosts.forEach { subPost ->
             key(subPost.id) {
@@ -437,13 +442,17 @@ private fun TimelineSubPosts(
                             onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
                             menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
                             foldLong = true,
+                            trailing = if (collapseOnLast && subPost === subPosts.last()) {
+                                { CollapseLink(onCollapse!!) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
             }
         }
-        val remaining = if (replies?.complete == true) 0 else (post.subPostCount - subPosts.size).coerceAtLeast(0)
-        if (replies?.loading != true && replies?.failed != true && remaining == 0 && onCollapse == null) {
+        if (!linkRow && (onCollapse == null || collapseOnLast)) {
             Spacer(modifier = Modifier.height(8.dp))
             return@Column
         }
@@ -467,16 +476,20 @@ private fun TimelineSubPosts(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            if (onCollapse != null) {
-                SubPostsLink(
-                    text = stringResource(id = R.string.button_show_fewer_sub_posts),
-                    color = ExtendedTheme.colors.textSecondary,
-                    weight = FontWeight.Normal,
-                    onClick = onCollapse,
-                )
-            }
+            if (onCollapse != null) CollapseLink(onCollapse)
         }
     }
+}
+
+/** The link that folds a floor's replies back into their capsule. */
+@Composable
+private fun CollapseLink(onClick: () -> Unit) {
+    SubPostsLink(
+        text = stringResource(id = R.string.button_show_fewer_sub_posts),
+        color = ExtendedTheme.colors.textSecondary,
+        weight = FontWeight.Normal,
+        onClick = onClick,
+    )
 }
 
 /** A link under a floor's replies, in the row lined up with their avatars. */
@@ -691,7 +704,8 @@ fun SubPostBranch(
 /**
  * A reply inside a post: the avatar, then who and what in one paragraph, then when. In a floor it
  * shows its likes, and with [foldLong] a long one shows its first lines and a link to the rest; on
- * the replies' own page it shows in full, with [onAgree] a like button.
+ * the replies' own page it shows in full, with [onAgree] a like button. [trailing] ends the line
+ * with when, after the likes.
  */
 @Composable
 fun SubPostLine(
@@ -702,6 +716,7 @@ fun SubPostLine(
     modifier: Modifier = Modifier,
     foldLong: Boolean = false,
     onAgree: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = ExtendedTheme.colors
     Box(modifier = modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
@@ -756,6 +771,10 @@ fun SubPostLine(
                         style = TextStyles.footnote,
                         color = colors.textSecondary,
                     )
+                }
+                if (trailing != null) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    trailing()
                 }
             }
         }
