@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -331,15 +332,22 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
         ) {
             state.area = Rect(room.left, room.top, size.width - room.right, size.height - room.bottom)
             showHomeOnce(state)
-            if (state.tool == EditorTool.Crop) {
-                drawEdits(state)
-                drawFrame(state)
-            } else {
-                // Only the kept part shows; what lies outside it is kept for later
-                val kept = state.history.framing.rect
-                val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
-                clipRect(shown.left, shown.top, shown.right, shown.bottom) { drawEdits(state) }
-                drawSelection(state)
+            // A turn or a mirroring just made, still coming round
+            withTransform({
+                val fit = state.turningFit()
+                rotate(state.turning.value, pivot = state.area.center)
+                scale(state.mirroring.value * fit, fit, pivot = state.area.center)
+            }) {
+                if (state.tool == EditorTool.Crop) {
+                    drawEdits(state)
+                    drawFrame(state)
+                } else {
+                    // Only the kept part shows; what lies outside it is kept for later
+                    val kept = state.history.framing.rect
+                    val shown = Rect(state.toScreen(kept.topLeft), state.toScreen(kept.bottomRight))
+                    clipRect(shown.left, shown.top, shown.right, shown.bottom) { drawEdits(state) }
+                    drawSelection(state)
+                }
             }
         }
         state.draft?.let { draft ->

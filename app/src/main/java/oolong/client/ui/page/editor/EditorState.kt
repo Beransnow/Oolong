@@ -227,9 +227,50 @@ class EditorState(
         goHome()
     }
 
-    fun rotate() = frame(history.framing.rotated(renderer.size))
+    /** A quarter turn still being shown, in degrees clockwise, easing to none. */
+    val turning = Animatable(0f)
 
-    fun flip() = frame(history.framing.mirrored(renderer.size))
+    /** A mirroring still being shown, across: from -1, as it was, to 1. */
+    val mirroring = Animatable(1f)
+
+    /**
+     * How much smaller the picture shows while it is part way through a turn, so that, turned,
+     * it still fits on screen whole: none at a quarter, most near an eighth.
+     */
+    fun turningFit(): Float {
+        val degrees = turning.value
+        if (degrees == 0f || area.width <= 0f) return 1f
+        val shown = home.size * scale
+        val radians = Math.toRadians(degrees.toDouble())
+        val cos = abs(kotlin.math.cos(radians)).toFloat()
+        val sin = abs(kotlin.math.sin(radians)).toFloat()
+        val width = shown.width * cos + shown.height * sin
+        val height = shown.width * sin + shown.height * cos
+        return min(1f, min(area.width / width, area.height / height))
+    }
+
+    /**
+     * Turns the picture a quarter anticlockwise. It is turned at once and shown where it ends up;
+     * the screen starts from how it looked and turns to it.
+     */
+    fun rotate() {
+        history.push(Edit.Frame(history.framing.rotated(renderer.size)))
+        scope.launch { region.snapTo(home) }
+        scope.launch {
+            turning.snapTo(turning.value + 90f)
+            turning.animateTo(0f, Motion.settle())
+        }
+    }
+
+    /** Mirrors the picture, turning it over on screen. */
+    fun flip() {
+        history.push(Edit.Frame(history.framing.mirrored(renderer.size)))
+        scope.launch { region.snapTo(home) }
+        scope.launch {
+            mirroring.snapTo(-mirroring.value)
+            mirroring.animateTo(1f, Motion.settle())
+        }
+    }
 
     fun restore() {
         ratio = CropRatio.Free
