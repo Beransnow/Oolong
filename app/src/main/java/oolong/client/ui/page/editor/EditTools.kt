@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -295,15 +296,32 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         when (tool) {
             EditorTool.Crop -> CompositionLocalProvider(LocalContentColor provides ExtendedTheme.colors.text) {
-                val portrait = state.history.framing.turned(state.renderer.size).let { it.height > it.width }
-                OptionRow(Arrangement.SpaceBetween) {
-                    Options(
-                        options = CropRatio.entries,
-                        selected = state.ratio,
-                        onSelect = state::pickRatio,
-                        label = { ratioLabel(it, portrait) },
-                        width = { if (it == CropRatio.Free || it == CropRatio.Original) 52.dp else 40.dp },
-                    ) { ratio, _ -> RatioShape(ratio, portrait) }
+                val portrait = state.portrait
+                OptionRow {
+                    // More shapes than fit: they scroll, fading at an end with more past it
+                    val scroll = rememberScrollState()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .scrollFade(scroll)
+                            .horizontalScroll(scroll),
+                    ) {
+                        Options(
+                            options = CropRatio.entries,
+                            selected = state.ratio,
+                            onSelect = state::pickRatio,
+                            label = { ratioLabel(it, portrait) },
+                            width = { if (it == CropRatio.Free || it == CropRatio.Original) 52.dp else 40.dp },
+                        ) { ratio, _ -> RatioShape(ratio, portrait) }
+                    }
+                    // Which way round fixed shapes stand; free, original and square have none
+                    IconButton(onClick = state::turnRatio, enabled = state.ratio.oriented) {
+                        Icon(
+                            imageVector = if (portrait) Symbols.CropPortrait else Symbols.CropLandscape,
+                            contentDescription = stringResource(id = R.string.editor_ratio_turn),
+                            tint = LocalContentColor.current,
+                        )
+                    }
                     // In words: its icon would pass for rotating's
                     TextButton(
                         onClick = state::restore,
@@ -532,9 +550,7 @@ private fun <T> Options(
 private fun ratioLabel(ratio: CropRatio, portrait: Boolean): String = when (ratio) {
     CropRatio.Free -> stringResource(id = R.string.editor_ratio_free)
     CropRatio.Original -> stringResource(id = R.string.editor_ratio_original)
-    CropRatio.Square -> "1:1"
-    CropRatio.Classic -> if (portrait) "3:4" else "4:3"
-    CropRatio.Wide -> if (portrait) "9:16" else "16:9"
+    else -> if (portrait) "${ratio.short}:${ratio.long}" else "${ratio.long}:${ratio.short}"
 }
 
 /** A fixed ratio as its shape with the numbers in it; free and original, which have no shape, as words. */
@@ -546,11 +562,9 @@ private fun RatioShape(ratio: CropRatio, portrait: Boolean) {
         Text(text = label, color = colors.text, style = MaterialTheme.typography.body2)
         return
     }
-    val (long, short) = when (ratio) {
-        CropRatio.Square -> 17.dp to 17.dp
-        CropRatio.Classic -> 21.dp to 16.dp
-        else -> 23.dp to 13.dp
-    }
+    // The long side a set length, the short side in proportion, never so thin the numbers don't fit
+    val long = 23.dp
+    val short = (long * ratio.short / ratio.long).coerceAtLeast(13.dp)
     Box(
         modifier = Modifier
             .size(if (portrait) short else long, if (portrait) long else short)
@@ -640,25 +654,8 @@ private fun ColorRow(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .graphicsLayer {
-                    compositingStrategy = CompositingStrategy.Offscreen
-                    this.alpha = alpha
-                }
-                .drawWithContent {
-                    drawContent()
-                    val fade = 28.dp.toPx() / size.width
-                    val start = if (scroll.canScrollBackward) 0f else 1f
-                    val end = if (scroll.canScrollForward) 0f else 1f
-                    drawRect(
-                        Brush.horizontalGradient(
-                            0f to Color.Black.copy(alpha = start),
-                            fade to Color.Black,
-                            1f - fade to Color.Black,
-                            1f to Color.Black.copy(alpha = end),
-                        ),
-                        blendMode = BlendMode.DstIn,
-                    )
-                }
+                .graphicsLayer { this.alpha = alpha }
+                .scrollFade(scroll)
                 .horizontalScroll(scroll)
                 .padding(horizontal = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -894,3 +891,22 @@ private fun Straightener(state: EditorState, modifier: Modifier = Modifier) {
         drawText(text, topLeft = Offset(size.width / 2 - text.size.width / 2f, 0f))
     }
 }
+
+/** Fades out the end of a sideways scroll that has more past it. */
+private fun Modifier.scrollFade(scroll: ScrollState): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fade = 28.dp.toPx() / size.width
+        val start = if (scroll.canScrollBackward) 0f else 1f
+        val end = if (scroll.canScrollForward) 0f else 1f
+        drawRect(
+            Brush.horizontalGradient(
+                0f to Color.Black.copy(alpha = start),
+                fade to Color.Black,
+                1f - fade to Color.Black,
+                1f to Color.Black.copy(alpha = end),
+            ),
+            blendMode = BlendMode.DstIn,
+        )
+    }

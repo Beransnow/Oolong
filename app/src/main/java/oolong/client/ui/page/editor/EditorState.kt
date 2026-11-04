@@ -23,8 +23,23 @@ import kotlin.math.min
 
 enum class EditorTool { Crop, Mask, Mark, Text }
 
-/** A frame shape: width over height of the turned picture, or null for any. */
-enum class CropRatio { Free, Original, Square, Classic, Wide }
+/**
+ * A frame shape: any, the picture's own, or a fixed one given by its longer side over its
+ * shorter, which stands either way round.
+ */
+enum class CropRatio(val long: Int = 0, val short: Int = 0) {
+    Free,
+    Original,
+    Square(1, 1),
+    FourThree(4, 3),
+    ThreeTwo(3, 2),
+    SixteenNine(16, 9),
+    FiveFour(5, 4),
+    ;
+
+    /** Whether it has a long side, to stand either way round. */
+    val oriented: Boolean get() = long > short
+}
 
 /** The colours marks and captions come in, the most used first; any other can be picked too. */
 val EditorColors = listOf(
@@ -68,6 +83,19 @@ class EditorState(
         private set
 
     var ratio by mutableStateOf(CropRatio.Free)
+
+    /** Whether fixed shapes stand upright; null follows the picture. */
+    private var upright by mutableStateOf<Boolean?>(null)
+
+    /** Whether fixed shapes stand upright: as asked, or as the picture does. */
+    val portrait: Boolean
+        get() = upright ?: history.framing.turned(renderer.size).let { it.height > it.width }
+
+    /** Stands fixed shapes the other way round, and the frame with them if it has one. */
+    fun turnRatio() {
+        upright = !portrait
+        if (ratio.oriented) pickRatio(ratio)
+    }
     var maskStyle by mutableStateOf(MaskStyle.Mosaic)
 
     /** How masks are laid; null rubs masks out instead, showing the picture again. */
@@ -210,13 +238,10 @@ class EditorState(
     /** Width over height for [ratio], or null for any. */
     fun aspect(ratio: CropRatio = this.ratio): Float? {
         val turned = history.framing.turned(renderer.size)
-        val portrait = turned.height > turned.width
         return when (ratio) {
             CropRatio.Free -> null
             CropRatio.Original -> turned.width / turned.height
-            CropRatio.Square -> 1f
-            CropRatio.Classic -> if (portrait) 3f / 4f else 4f / 3f
-            CropRatio.Wide -> if (portrait) 9f / 16f else 16f / 9f
+            else -> if (portrait) ratio.short.toFloat() / ratio.long else ratio.long.toFloat() / ratio.short
         }
     }
 

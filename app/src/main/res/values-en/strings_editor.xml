@@ -50,4 +50,5 @@
     <string name="editor_unmask">Erase</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_straighten">Straighten</string>
+    <string name="editor_ratio_turn">Turn the shape</string>
 </resources>

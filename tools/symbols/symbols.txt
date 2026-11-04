@@ -27,6 +27,8 @@ close
 content_copy
 crop
 crop fill
+crop_landscape
+crop_portrait
 delete
 download
 draw
