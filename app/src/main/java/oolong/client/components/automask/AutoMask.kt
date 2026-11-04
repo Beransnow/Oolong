@@ -75,8 +75,18 @@ class AutoMask internal constructor(
         val reach = max(reach, 20f * prepared.width / 1080)
         fun gap(r: RectF) = max(max(r.left - x, 0f), x - r.right) + max(max(r.top - y, 0f), y - r.bottom)
         val line = prepared.lines.filter { gap(it) <= reach }.minByOrNull { gap(it) * 1e6f + it.width() * it.height() }
-        if (line != null) return Found(line, text = true, millis = (System.nanoTime() - t0) / 1_000_000)
         val box = segment(prepared, x, y)?.takeIf { it.width() * it.height() <= MostOfPicture * prepared.width * prepared.height }
+        if (line != null) {
+            // "Lines" wholly inside something compact and not much bigger are likely parts of a
+            // picture, as the rows of a group avatar's tiles: the whole of it is hidden instead
+            val whole = box?.takeIf { b ->
+                b.contains(line.inset(1f)) &&
+                    max(b.width(), b.height()) <= MostCompact * min(b.width(), b.height()) &&
+                    b.width() * b.height() <= LineInThing * line.width() * line.height() &&
+                    prepared.lines.all { !RectF.intersects(it, b) || b.contains(it.inset(1f)) }
+            }
+            return Found(whole ?: line, text = whole == null, millis = (System.nanoTime() - t0) / 1_000_000)
+        }
         return Found(box, text = false, millis = (System.nanoTime() - t0) / 1_000_000)
     }
 
@@ -225,6 +235,8 @@ class AutoMask internal constructor(
         )
     }
 
+    private fun RectF.inset(by: Float) = RectF(left + by, top + by, right - by, bottom - by)
+
     private class Level(val box: RectF, val area: Int, val score: Float)
 
     /** Whether this holds [other], give or take a cell. */
@@ -260,6 +272,13 @@ class AutoMask internal constructor(
 
         /** A tap's thing taking more of the picture than this is likely not one thing. */
         private const val MostOfPicture = 0.35f
+
+        /**
+         * How many times bigger than a line of text the thing holding it may be, and how much
+         * longer than wide, to be hidden whole.
+         */
+        private const val LineInThing = 5
+        private const val MostCompact = 2f
 
         /** How many times bigger than the smallest mask a surer one holding it may be, and still be taken. */
         private const val MostGrowth = 5
