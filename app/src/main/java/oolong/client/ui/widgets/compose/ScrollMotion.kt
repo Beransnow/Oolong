@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -13,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
@@ -183,6 +185,10 @@ fun rememberScrollProgress(
             onDispose { page.remove(progress) }
         }
     }
+    // Disabled by a scroll the page doesn't watch, such as one to the top by code, it still goes back
+    LaunchedEffect(progress) {
+        snapshotFlow { currentEnabled() }.collect { if (!it) progress.reset() }
+    }
     return remember(progress) { ScrollProgress { progress.value } }
 }
 
@@ -215,10 +221,15 @@ internal class DirectedProgress(
         }
     }
 
+    /** Goes back to 0, as while disabled. */
+    fun reset() {
+        run = 0f
+        animateTo(0f)
+    }
+
     fun onScroll(consumed: Float, available: Float) {
         if (!enabled()) {
-            run = 0f
-            animateTo(0f)
+            reset()
             return
         }
         if (consumed == 0f) {
