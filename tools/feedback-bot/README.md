@@ -15,22 +15,19 @@ answers and five messages either side. Taking the reaction back removes it while
    npx wrangler d1 execute oolong-feedback --remote --file schema.sql
    ```
 
-3. Deploy, then give it the group's id, the owner's Telegram user id and a secret of your own
-   for the webhook:
+3. Deploy, then give it the group's id and the owner's Telegram user id:
 
    ```sh
    npx wrangler deploy
    npx wrangler secret put GROUP_ID
    npx wrangler secret put OWNER_ID
-   npx wrangler secret put WEBHOOK_SECRET
    ```
 
-4. Point the bot at the worker:
+4. Point the bot at the worker; it takes updates only from Telegram's addresses:
 
    ```sh
    curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
      -d url=https://oolong-feedback-bot.<subdomain>.workers.dev \
-     -d secret_token=$WEBHOOK_SECRET \
      -d 'allowed_updates=["message","edited_message","message_reaction"]'
    ```
 

@@ -3,10 +3,8 @@
     "main": "src/index.js",
     "compatibility_date": "2026-10-01",
     "d1_databases": [
-        // Filled in from `wrangler d1 create oolong-feedback`
-        { "binding": "DB", "database_name": "oolong-feedback", "database_id": "" }
+        { "binding": "DB", "database_name": "oolong-feedback", "database_id": "ad6eadc8-ed64-46f4-ba9a-83d542524649" }
     ],
-    // Messages older than a few days are dropped once a day; GROUP_ID, OWNER_ID and
-    // WEBHOOK_SECRET are secrets
+    // Messages older than a few days are dropped once a day; GROUP_ID and OWNER_ID are secrets
     "triggers": { "crons": ["0 20 * * *"] }
 }

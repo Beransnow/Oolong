@@ -12,7 +12,7 @@ const AROUND = 5;
 export default {
     async fetch(request, env) {
         if (request.method !== "POST") return new Response("ok");
-        if (request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== env.WEBHOOK_SECRET) {
+        if (!fromTelegram(request.headers.get("CF-Connecting-IP"))) {
             return new Response("forbidden", { status: 403 });
         }
         const update = await request.json();
@@ -30,6 +30,18 @@ export default {
         await env.DB.prepare("DELETE FROM messages WHERE date < ?").bind(before).run();
     },
 };
+
+// The addresses Telegram sends webhooks from
+const TELEGRAM_NETWORKS = [["149.154.160.0", 20], ["91.108.4.0", 22]];
+
+function fromTelegram(ip) {
+    const value = (address) => address.split(".").reduce((n, part) => n * 256 + Number(part), 0);
+    if (!ip || !/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return false;
+    return TELEGRAM_NETWORKS.some(([base, bits]) => {
+        const size = 2 ** (32 - bits);
+        return Math.floor(value(ip) / size) === Math.floor(value(base) / size);
+    });
+}
 
 async function keep(db, message) {
     const from = message.from ?? {};
