@@ -184,7 +184,7 @@ object PageTransitions {
                 zIndex = 0f,
             )
             // Let go of, the page slides off as from any peek, unless it shrinks into its origin
-            peek -> PageTransition(
+            peek && !morph -> PageTransition(
                 {
                     EnterTransition.None togetherWith
                         slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, seeked(), targetOffset = { it })
