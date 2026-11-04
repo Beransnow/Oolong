@@ -16,8 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
@@ -98,9 +101,11 @@ fun MainPage(
             searchViewModel.search("")
         }
     }
-    // Another tab picked, from the rail too, leaves search for that tab
-    LaunchedEffect(tabs.selected) {
-        if (search.open) closeSearch()
+    // Another tab picked, from the rail too, leaves search for that tab. Only a change: the page
+    // composed again on coming back from what search opened finds search still open, and keeps it
+    val currentCloseSearch by rememberUpdatedState(closeSearch)
+    LaunchedEffect(Unit) {
+        snapshotFlow { tabs.selected }.drop(1).collect { if (search.open) currentCloseSearch() }
     }
     val searchShown by remember { derivedStateOf { search.progress.value > 0f } }
     val searchKeptAtTop by rememberPreferenceAsState(SearchAtTopKey, false)
