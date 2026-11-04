@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateValueAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -95,7 +99,6 @@ import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.IconButton
-import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.mediaChromeColors
 import oolong.client.ui.widgets.compose.pageScroll
@@ -234,7 +237,7 @@ private fun Scaffold(
                     centerTitle = true,
                     navigationIcon = { CancelButton(leave) },
                     actionsInCapsule = false,
-                    actions = { DoneButton(saving, done, Modifier.padding(end = 12.dp)) },
+                    actions = { DoneButton(saving, done) },
                 )
             }
         },
@@ -287,11 +290,25 @@ private fun Scaffold(
 /** Room above the side tools for the bar. */
 private val TopBarRoom = 64.dp
 
+/** The room around the cancel's text to press it by. */
+private val CancelRoom = 16.dp
+
+/**
+ * Bare text with room around it to press, the room reaching out past where it is put: what
+ * shows of it, its text, is on the page's margin, as the done button's pill is on the other side.
+ */
 @Composable
 private fun CancelButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(onClick = onClick, color = ExtendedTheme.colors.text, modifier = modifier) {
-        Text(text = stringResource(id = R.string.button_cancel))
-    }
+    Text(
+        text = stringResource(id = R.string.button_cancel),
+        color = ExtendedTheme.colors.text,
+        style = MaterialTheme.typography.button,
+        modifier = modifier
+            .offset(x = -CancelRoom)
+            .clip(SmoothCornerShape.Capsule)
+            .clickable(onClick = onClick)
+            .padding(horizontal = CancelRoom, vertical = 12.dp),
+    )
 }
 
 @Composable
