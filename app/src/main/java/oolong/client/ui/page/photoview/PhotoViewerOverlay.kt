@@ -282,7 +282,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 ) { page ->
                     val picture = pictures[page]
                     val zoomState = rememberCoilZoomState()
-                    LaunchedEffect(zoomState) { zoomState.zoomable.setReadMode(ReadMode.Default) }
+                    LaunchedEffect(zoomState) { zoomState.zoomable.setReadMode(TallReadMode) }
                     DisposableEffect(page, zoomState) {
                         zoomStates[page] = zoomState
                         onDispose { if (zoomStates[page] === zoomState) zoomStates.remove(page) }
@@ -523,19 +523,25 @@ internal fun share(context: Context, url: String) {
 }
 
 /**
+ * Pictures tall enough to be read down open filling the width from the top. Wide ones open whole,
+ * however wide: a strip filling the height would show only its start, and they are mostly seen at
+ * a glance.
+ */
+private val TallReadMode = ReadMode.Default.copy(sizeType = ReadMode.SIZE_TYPE_VERTICAL)
+
+/**
  * Where a picture of height over width [aspect] shows when open: whole and centred, or, when it
- * is long enough to be read along, filling the width from the top (or the height from the start).
+ * is long enough to be read down, filling the width from the top.
  */
 private fun shownRect(container: Size, aspect: Float): Rect {
     if (aspect <= 0f || container.width <= 0f || container.height <= 0f) return Rect(Offset.Zero, container)
     val containerAspect = container.height / container.width
-    val long = ReadMode.Default.accept(
+    val long = TallReadMode.accept(
         IntSizeCompat(1000, (1000 * aspect).roundToInt().coerceAtLeast(1)),
         IntSizeCompat(container.width.roundToInt(), container.height.roundToInt()),
     )
     return when {
-        long && aspect > containerAspect -> Rect(0f, 0f, container.width, container.width * aspect)
-        long -> Rect(0f, 0f, container.height / aspect, container.height)
+        long -> Rect(0f, 0f, container.width, container.width * aspect)
         aspect > containerAspect -> {
             val width = container.height / aspect
             Rect((container.width - width) / 2, 0f, (container.width + width) / 2, container.height)
