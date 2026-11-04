@@ -74,6 +74,7 @@ person_off
 photo
 photo_camera
 photo_library
+picture_in_picture_alt
 play_arrow fill drawable
 public
 redo

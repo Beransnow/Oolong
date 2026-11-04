@@ -1,9 +1,21 @@
 package oolong.client.ui.page.videoview
 
+import android.app.Activity
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.drawable.Icon
+import android.os.Build
+import android.util.Rational
 import android.view.TextureView
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.core.Animatable
@@ -81,6 +93,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.PictureInPictureModeChangedInfo
+import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -110,6 +125,7 @@ import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.utils.TiebaUtil
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 private enum class Phase { Opening, Open, Closing }
 
@@ -190,6 +206,15 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
         onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+
+    // Shrunk into a window of its own, the viewer shows only the video
+    var inPip by remember { mutableStateOf(activity?.isInPictureInPictureMode == true) }
+    DisposableEffect(activity) {
+        val host = activity as? ComponentActivity
+        val listener = Consumer<PictureInPictureModeChangedInfo> { inPip = it.isInPictureInPictureMode }
+        host?.addOnPictureInPictureModeChangedListener(listener)
+        onDispose { host?.removeOnPictureInPictureModeChangedListener(listener) }
     }
 
     var position by remember { mutableLongStateOf(player.currentPosition) }
@@ -301,6 +326,15 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             if (landscape) setLandscape(false) else close()
         }
 
+        val enterPip = pictureInPicture(
+            activity = activity,
+            enabled = phase == Phase.Open && playback.playWhenReady && !playback.ended && playback.error == null,
+            playing = playback.playWhenReady && !playback.ended,
+            aspect = aspect,
+            bounds = fitted.translate(origin),
+            onToggle = { togglePlaying() },
+        )
+
         val p = progress.value
         val black = if (phase == Phase.Closing) p * closingFade else p.coerceIn(0f, 1f) * dragFade
         Box(
@@ -365,7 +399,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                     var pendingTap: Job? = null
                     awaitEachGesture {
                         val down = awaitFirstDown()
-                        if (phase != Phase.Open) return@awaitEachGesture
+                        if (phase != Phase.Open || inPip) return@awaitEachGesture
                         val tracker = VelocityTracker()
                         tracker.addPosition(down.uptimeMillis, down.position)
                         var total = Offset.Zero
@@ -462,7 +496,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                 },
         )
 
-        val showing = phase == Phase.Open && !dragging && !fast && (chrome || sticky)
+        val showing = phase == Phase.Open && !dragging && !fast && !inPip && (chrome || sticky)
         val chromeAlpha by animateFloatAsState(
             targetValue = if (showing) 1f else 0f,
             animationSpec = if (showing) Motion.fadeIn() else Motion.fadeOut(),
@@ -470,7 +504,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         )
 
         // The middle: where a seek is going, or why the video is not playing
-        if (phase == Phase.Open && !dragging) {
+        if (phase == Phase.Open && !dragging && !inPip) {
             var loading by remember { mutableStateOf(false) }
             val waiting = playback.error == null && playback.playWhenReady &&
                 (playback.state == Player.STATE_BUFFERING || !playback.firstFrame)
@@ -511,7 +545,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             }
         }
 
-        if (phase == Phase.Open && !dragging && chromeAlpha < 1f) {
+        if (phase == Phase.Open && !dragging && !inPip && chromeAlpha < 1f) {
             ProgressLine(
                 fraction = if (duration > 0) position.toFloat() / duration else 0f,
                 modifier = Modifier
@@ -556,8 +590,12 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, video.url)
                     }
-                    runCatching { context.startActivity(Intent.createChooser(intent, context.getString(R.string.title_share))) }
+                    // Not a leaving of the app, which would shrink the video into its own window
+                    val chooser = Intent.createChooser(intent, context.getString(R.string.title_share))
+                        .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+                    runCatching { context.startActivity(chooser) }
                 },
+                onPip = enterPip,
                 saving = viewer.saving[video.key],
                 onSave = { viewer.save(context, video) },
                 modifier = Modifier.graphicsLayer { alpha = chromeAlpha },
@@ -565,6 +603,77 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         }
     }
 }
+
+/**
+ * Lets the video shrink into a picture-in-picture window, with a play and pause button, when the
+ * user leaves the app while it plays: by itself from Android 12, on leaving before that.
+ *
+ * @return what shrinks it there at once, or null where the device has no such windows
+ */
+@Composable
+private fun pictureInPicture(
+    activity: Activity?,
+    enabled: Boolean,
+    playing: Boolean,
+    aspect: Float,
+    bounds: Rect,
+    onToggle: () -> Unit,
+): (() -> Unit)? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity !is ComponentActivity) return null
+    val context = LocalContext.current
+    val supported = remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) }
+    if (!supported) return null
+    val toggle by rememberUpdatedState(onToggle)
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) = toggle()
+        }
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(PipToggle), ContextCompat.RECEIVER_NOT_EXPORTED)
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+    val playLabel = stringResource(id = R.string.btn_play)
+    val pauseLabel = stringResource(id = R.string.btn_pause)
+    val params = remember(enabled, playing, aspect, bounds) {
+        val intent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(PipToggle).setPackage(context.packageName),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val label = if (playing) pauseLabel else playLabel
+        val icon = Icon.createWithResource(context, if (playing) R.drawable.symbol_pause_fill else R.drawable.symbol_play_arrow_fill)
+        // The window takes ratios between 1:2.39 and 2.39:1 only
+        val ratio = (1f / aspect).coerceIn(1f / 2.39f, 2.39f)
+        PictureInPictureParams.Builder()
+            .setAspectRatio(Rational((ratio * 1000).roundToInt(), 1000))
+            .setActions(listOf(RemoteAction(icon, label, label, intent)))
+            .setSourceRectHint(android.graphics.Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
+            .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(enabled) }
+            .build()
+    }
+    LaunchedEffect(params) { runCatching { activity.setPictureInPictureParams(params) } }
+    val currentParams by rememberUpdatedState(params)
+    val currentEnabled by rememberUpdatedState(enabled)
+    DisposableEffect(activity) {
+        // Before Android 12 the window opens on leaving; from 12 the params above open it
+        val leave = Runnable {
+            if (currentEnabled && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                runCatching { activity.enterPictureInPictureMode(currentParams) }
+            }
+        }
+        activity.addOnUserLeaveHintListener(leave)
+        onDispose {
+            activity.removeOnUserLeaveHintListener(leave)
+            // Closed, the viewer no longer takes the app into a window
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runCatching { activity.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(false).setActions(emptyList()).build()) }
+            }
+        }
+    }
+    return { runCatching { activity.enterPictureInPictureMode(currentParams) } }
+}
+
+private const val PipToggle = "oolong.client.video.PIP_TOGGLE"
 
 /** The close button on top; who posted it, the actions and the playing controls along the bottom. */
 @Composable
@@ -585,6 +694,8 @@ private fun BoxScope.VideoChrome(
     onLandscape: () -> Unit,
     onCopyLink: () -> Unit,
     onShare: () -> Unit,
+    /** Shrinks the video into a picture-in-picture window; null where there are none. */
+    onPip: (() -> Unit)?,
     /** How much of the video is saved, 0–1 or -1 when not known; null when it is not being saved. */
     saving: Float?,
     onSave: () -> Unit,
@@ -592,19 +703,25 @@ private fun BoxScope.VideoChrome(
 ) {
     val sides = if (landscape) 40.dp else 0.dp
     Box(modifier = modifier.matchParentSize()) {
-        Box(
+        TopButton(
+            icon = Symbols.Close,
+            description = stringResource(id = R.string.btn_close),
+            onClick = onClose,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
-                .padding(start = 12.dp + sides, top = 8.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.35f))
-                .border(0.5.dp, Color.White.copy(alpha = 0.28f), CircleShape)
-                .clickable(role = Role.Button, onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(imageVector = Symbols.Close, contentDescription = stringResource(id = R.string.btn_close), tint = Color.White, modifier = Modifier.size(22.dp))
+                .padding(start = 12.dp + sides, top = 8.dp),
+        )
+        if (onPip != null) {
+            TopButton(
+                icon = Symbols.PictureInPictureAlt,
+                description = stringResource(id = R.string.video_pip),
+                onClick = onPip,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(end = 12.dp + sides, top = 8.dp),
+            )
         }
 
         Column(
@@ -809,6 +926,22 @@ private fun RoundAction(icon: ImageVector, description: String, onClick: () -> U
             .size(44.dp)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.14f))
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** A button along the top, over the video: its own small dark disc. */
+@Composable
+private fun TopButton(icon: ImageVector, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.35f))
+            .border(0.5.dp, Color.White.copy(alpha = 0.28f), CircleShape)
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

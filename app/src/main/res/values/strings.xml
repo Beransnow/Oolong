@@ -129,6 +129,7 @@
     <string name="video_sign_in">登录后才能播放</string>
     <string name="video_speed">播放速度</string>
     <string name="btn_pause">暂停</string>
+    <string name="video_pip">小窗播放</string>
     <string name="video_save">保存视频</string>
     <string name="video_save_failed">无法保存视频</string>
     <string name="video_save_no_permission">无法保存视频，需要「存储」权限</string>

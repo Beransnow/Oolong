@@ -130,6 +130,7 @@
             android:roundIcon="@mipmap/ic_launcher_new_round"
             android:launchMode="singleTop"
             android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
             android:theme="@style/Theme.Splash"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
