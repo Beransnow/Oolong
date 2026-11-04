@@ -170,6 +170,13 @@ fun HabitSettingsPage(
                 }
                 prefsItem {
                     SwitchPref(
+                        key = "videoAutoPip",
+                        title = stringResource(id = R.string.settings_video_auto_pip),
+                        defaultChecked = true,
+                    )
+                }
+                prefsItem {
+                    SwitchPref(
                         key = "hideMedia",
                         title = stringResource(id = R.string.title_hide_media),
                         defaultChecked = false

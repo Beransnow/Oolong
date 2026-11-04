@@ -353,7 +353,7 @@
     <string name="settings_group_forum">Forums</string>
     <string name="settings_group_thread">Threads</string>
     <string name="settings_group_collected">Saved threads</string>
-    <string name="settings_group_image">Images</string>
+    <string name="settings_group_image">Images and videos</string>
     <string name="title_dialog_modify_little_tail">Edit signature</string>
     <string name="no_more">No more</string>
     <string name="no_more_really">Really, that\'s all</string>
@@ -674,6 +674,7 @@
     <string name="button_expand_less_history">Show less</string>
     <string name="button_clear_all">Clear all</string>
     <string name="settings_image_darken_when_night_mode">Dim images in dark mode</string>
+    <string name="settings_video_auto_pip">Continue in picture-in-picture when leaving</string>
     <string name="title_hide_reply">Hide reply button</string>
     <string name="title_settings_use_themed_icon">Themed app icon</string>
     <string name="tip_settings_use_themed_icon_summary_not_supported">This icon doesn\'t support theming</string>

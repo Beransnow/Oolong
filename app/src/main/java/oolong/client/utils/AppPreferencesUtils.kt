@@ -110,6 +110,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var imageDarkenWhenNightMode by DataStoreDelegates.boolean(defaultValue = true)
 
+    /** Whether a playing video shrinks into a picture-in-picture window when the app is left. */
+    var videoAutoPip by DataStoreDelegates.boolean(defaultValue = true)
+
     var imageLoadType by DataStoreDelegates.string(
         key = "image_load_type",
         defaultValue = "0"

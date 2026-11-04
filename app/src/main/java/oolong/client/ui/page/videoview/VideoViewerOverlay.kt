@@ -124,6 +124,7 @@ import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.utils.TiebaUtil
+import oolong.client.utils.appPreferences
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -208,6 +209,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
     }
 
+    val autoPip = remember { context.appPreferences.videoAutoPip }
     // Shrunk into a window of its own, the viewer shows only the video
     var inPip by remember { mutableStateOf(activity?.isInPictureInPictureMode == true) }
     DisposableEffect(activity) {
@@ -328,7 +330,8 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
 
         val enterPip = pictureInPicture(
             activity = activity,
-            enabled = phase == Phase.Open && playback.playWhenReady && !playback.ended && playback.error == null,
+            // Leaving takes the video into a window only when the user wants that; the button always does
+            enabled = autoPip && phase == Phase.Open && playback.playWhenReady && !playback.ended && playback.error == null,
             playing = playback.playWhenReady && !playback.ended,
             aspect = aspect,
             bounds = fitted.translate(origin),

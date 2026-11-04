@@ -349,7 +349,7 @@
     <string name="settings_group_forum">吧</string>
     <string name="settings_group_thread">帖子</string>
     <string name="settings_group_collected">收藏的帖子</string>
-    <string name="settings_group_image">图片</string>
+    <string name="settings_group_image">图片和视频</string>
     <string name="title_dialog_modify_little_tail">修改小尾巴</string>
     <string name="no_more">没有更多了</string>
     <string name="no_more_really">真没了</string>
@@ -668,6 +668,7 @@
     <string name="button_expand_less_history">收起历史</string>
     <string name="button_clear_all">清除全部</string>
     <string name="settings_image_darken_when_night_mode">夜间模式下压暗图片</string>
+    <string name="settings_video_auto_pip">离开应用时转为小窗播放</string>
     <string name="title_hide_reply">隐藏回帖入口</string>
     <string name="title_settings_use_themed_icon">应用图标使用动态取色</string>
     <string name="tip_settings_use_themed_icon_summary_not_supported">当前图标不支持动态取色</string>
