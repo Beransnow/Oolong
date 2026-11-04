@@ -396,13 +396,22 @@ private fun DrawScope.drawSelection(state: EditorState) {
     }
 }
 
-/** The frame being cut to: outside dimmed, its edges and corners, thirds while it is dragged. */
+/**
+ * The frame being cut to: the picture outside it dimmed, its edges and corners, thirds while it
+ * is dragged. Only the picture is dimmed: beyond it is black already, and a dark layer there
+ * would show through the glass over it and turn with the picture.
+ */
 private fun DrawScope.drawFrame(state: EditorState) {
     val rect = state.framing.rect
     val frame = Rect(state.toScreen(rect.topLeft), state.toScreen(rect.bottomRight))
+    val size = state.renderer.size
+    val picture = listOf(Offset.Zero, Offset(size.width, 0f), Offset(size.width, size.height), Offset(0f, size.height))
+        .map(state::pictureToScreen)
     val outside = Path().apply {
         fillType = PathFillType.EvenOdd
-        addRect(Rect(Offset.Zero, size))
+        moveTo(picture[0].x, picture[0].y)
+        picture.drop(1).forEach { lineTo(it.x, it.y) }
+        close()
         addRect(frame)
     }
     drawPath(outside, Color.Black.copy(alpha = 0.6f))

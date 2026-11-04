@@ -626,7 +626,8 @@ class EditorState(
     /** Where a point in the picture's pixels shows on screen. */
     fun pictureToScreen(point: Offset): Offset {
         val values = floatArrayOf(point.x, point.y)
-        renderer.orient(history.framing).mapPoints(values)
+        // As drawn now, a straightening being dragged included
+        renderer.orient(framing).mapPoints(values)
         return toScreen(Offset(values[0], values[1]))
     }
 
