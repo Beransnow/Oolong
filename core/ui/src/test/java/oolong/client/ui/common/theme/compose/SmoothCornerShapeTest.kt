@@ -1,6 +1,7 @@
 package oolong.client.ui.common.theme.compose
 
 import android.graphics.Region
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.asAndroidPath
@@ -75,6 +76,32 @@ class SmoothCornerShapeTest {
         // On the circle of radius 50 at 45°: 50 - 35.4 = 14.6 from each side
         assertTrue(region.contains(16, 16))
         assertFalse(region.contains(13, 13))
+    }
+
+    @Test
+    fun eachCornerTakesItsOwnRadiusByLayoutDirection() {
+        val shape = SmoothCornerShape(CornerSize(40.dp), CornerSize(0.dp), CornerSize(0.dp), CornerSize(0.dp))
+        fun region(direction: LayoutDirection): Region {
+            val path = (shape.createOutline(Size(200f, 100f), direction, density) as Outline.Generic).path.asAndroidPath()
+            return Region().apply { setPath(path, Region(0, 0, 200, 100)) }
+        }
+        // Rounded at the start of the top only: top left in LTR, top right in RTL
+        val ltr = region(LayoutDirection.Ltr)
+        assertFalse(ltr.contains(2, 2))
+        assertTrue(ltr.contains(197, 2))
+        assertTrue(ltr.contains(2, 97))
+        val rtl = region(LayoutDirection.Rtl)
+        assertTrue(rtl.contains(2, 2))
+        assertFalse(rtl.contains(197, 2))
+    }
+
+    @Test
+    fun squareSidesStaySquare() {
+        val path = (outline(SmoothCornerShape(24.dp, bottom = false), Size(200f, 60f)) as Outline.Generic).path.asAndroidPath()
+        val region = Region().apply { setPath(path, Region(0, 0, 200, 60)) }
+        assertFalse(region.contains(1, 1))
+        assertTrue(region.contains(0, 59))
+        assertTrue(region.contains(199, 59))
     }
 
     @Test
