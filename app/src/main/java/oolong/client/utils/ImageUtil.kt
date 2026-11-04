@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import oolong.client.App.Companion.INSTANCE
 import oolong.client.R
+import oolong.client.components.images.PictureFormat
 import oolong.client.components.images.downloadImage
 import oolong.client.dpToPxFloat
 import oolong.client.toastShort
@@ -322,13 +323,7 @@ object ImageUtil {
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
             val image = context.downloadImage(url) ?: return@launch saveFailed(context)
-            val gif = image.inputStream().use { isGifFile(it) }
-            val fileName = URLUtil.guessFileName(url, null, "image/jpeg")
-            if (gif) {
-                writeToGallery(context, image, FileUtil.changeFileExtension(fileName, ".gif"), "image/gif")
-            } else {
-                writeToGallery(context, image, fileName, "image/jpeg")
-            }
+            writeDownloadToGallery(context, url, image)
         }
     }
 
@@ -336,12 +331,16 @@ object ImageUtil {
         url ?: return
         CoroutineScope(Dispatchers.IO).launch {
             val image = context.downloadImage(url) ?: return@launch saveFailed(context)
-            var fileName = URLUtil.guessFileName(url, null, "image/jpeg")
-            if (image.inputStream().use { isGifFile(it) }) {
-                fileName = FileUtil.changeFileExtension(fileName, ".gif")
-            }
-            writeToGallery(context, image, fileName, "image/jpeg")
+            writeDownloadToGallery(context, url, image)
         }
+    }
+
+    /** Writes [image], downloaded from [url], to the gallery named and typed as what it really is. */
+    private suspend fun writeDownloadToGallery(context: Context, url: String, image: ByteArray) {
+        // The address may say JPEG for a WebP or a GIF
+        val format = PictureFormat.of(image) ?: PictureFormat.Jpeg
+        val fileName = FileUtil.changeFileExtension(URLUtil.guessFileName(url, null, format.mimeType), ".${format.extension}")
+        writeToGallery(context, image, fileName, format.mimeType)
     }
 
     /** Writes [image] to the app's folder in the gallery as [fileName], and says where. */
