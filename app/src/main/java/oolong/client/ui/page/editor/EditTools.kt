@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -90,6 +91,7 @@ import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.floatingGlass
+import kotlin.math.roundToInt
 
 /** The selected tool's bubble, as on the bottom bar. */
 private val BubbleColor = Color.White.copy(alpha = 0.16f)
@@ -236,7 +238,15 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
         }
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            panel()
+            // The room the options take grows and shrinks with them, so what makes way for them,
+            // the picture, moves with them both ways rather than after they have gone
+            Box(
+                modifier = Modifier.layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val height = (placeable.height * progress.value.coerceIn(0f, 1f)).roundToInt()
+                    layout(placeable.width, height) { placeable.place(0, height - placeable.height) }
+                },
+            ) { panel() }
             rail()
         }
     }

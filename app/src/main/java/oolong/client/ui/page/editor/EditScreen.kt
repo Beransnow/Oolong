@@ -301,13 +301,8 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
     val right = with(density) { padding.calculateRightPadding(direction).toPx() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // The insets around the picture, eased as the options open and close
-        val room by animateValueAsState(
-            targetValue = Rect(left + margin, top + margin, right + margin, bottom + margin),
-            typeConverter = Rect.VectorConverter,
-            animationSpec = Motion.morph(),
-            label = "room",
-        )
+        // The insets around the picture; the options' room already moves with their own motion
+        val room = Rect(left + margin, top + margin, right + margin, bottom + margin)
         // Typing near the bottom, everything rises so the caption stays above the keyboard
         val lift by animateFloatAsState(
             targetValue = state.draft?.let { draft ->
