@@ -99,9 +99,14 @@ fun PullRefresh(
     val curEnabled by rememberUpdatedState(enabled)
     val curEndPull by rememberUpdatedState(endPull)
 
-    // Back up once refreshing ends, unless a finger still holds the list
+    // A refresh started some other way than by pulling, such as tapping the tab again, lowers the
+    // list to show the loader as a pull would; it goes back up once refreshing ends, unless a
+    // finger still holds the list
     LaunchedEffect(refreshing) {
-        if (!refreshing && !state.dragging && state.offset > 0f) state.settle(0f, Motion.dismiss())
+        when {
+            refreshing && !state.dragging && state.offset == 0f -> state.settle(holdPx, Motion.snap())
+            !refreshing && !state.dragging && state.offset > 0f -> state.settle(0f, Motion.dismiss())
+        }
     }
 
     val connection = remember(state) {
