@@ -299,7 +299,7 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
     // Nothing to draw, and no blur to run, while the bar is clear
     if (clear) return measured
     if (solid) {
-        val veil = if (colors.isTranslucent) color.copy(alpha = TranslucentTopBarTint) else color
+        val veil = color.copy(alpha = if (colors.isTranslucent) TranslucentTopBarTint else SolidTopBarTint)
         val brush = remember(veil, solidEdge, top) {
             if (top) {
                 Brush.verticalGradient(0f to veil, solidEdge to veil, 1f to veil.copy(alpha = 0f))
@@ -369,8 +369,14 @@ internal val TopBarEdgeExtend = 24.dp
 /** The veil at the top of the scroll edge, of the page's background colour. */
 private const val TopBarTint = 0.5f
 
-/** How far above its bottom edge an opaque top bar fades out, kept short so it stays opaque. */
+/** How far above its bottom edge an unblurred top bar fades out, kept short so it stays even. */
 private val TopBarSolidFade = 16.dp
+
+/**
+ * The unblurred top bar's veil: thick enough to keep the status bar and the title clear of the
+ * content under them, thin enough that the content still shows, as a tall status bar takes room.
+ */
+private const val SolidTopBarTint = 0.85f
 
 /** The translucent theme's lighter tint, which keeps the wallpaper showing through. */
 private const val TranslucentTopBarTint = 0.45f
