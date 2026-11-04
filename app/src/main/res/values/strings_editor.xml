@@ -13,6 +13,7 @@
     <string name="editor_mosaic">马赛克</string>
     <string name="editor_blur">模糊</string>
     <string name="editor_block">色块</string>
+    <string name="editor_clear">抹除</string>
     <string name="editor_pen">画笔</string>
     <string name="editor_arrow">箭头</string>
     <string name="editor_box">方框</string>

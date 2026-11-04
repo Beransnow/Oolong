@@ -13,6 +13,7 @@
     <string name="editor_mosaic">Pixelate</string>
     <string name="editor_blur">Blur</string>
     <string name="editor_block">Solid</string>
+    <string name="editor_clear">Remove</string>
     <string name="editor_pen">Pen</string>
     <string name="editor_arrow">Arrow</string>
     <string name="editor_box">Box</string>

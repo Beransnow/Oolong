@@ -82,6 +82,7 @@ class EditRenderer(val picture: Bitmap) {
         mosaicShader = null
         blurShader = null
         boxShaders.clear()
+        clearShaders.clear()
     }
 
     // A boxed mask's own shader, by its style and box, while the base stays the same
@@ -94,6 +95,7 @@ class EditRenderer(val picture: Bitmap) {
      */
     private fun boxShader(style: MaskStyle, box: RectF): Shader? {
         if (style == MaskStyle.Block) return null
+        if (style == MaskStyle.Clear) return clearShader(Edit.Mask(-1, emptyList(), 0f, style, MaskShape.Rect), box, null)
         maskShaders()
         // A box being drawn is a new one on every frame
         if (boxShaders.size > 64) boxShaders.clear()
@@ -133,6 +135,63 @@ class EditRenderer(val picture: Bitmap) {
                         })
                     }
                 }
+            }
+        }
+    }
+
+    // A cleared mask's shader, by the mask, while the base stays the same: a stroke being drawn
+    // is a new one on every frame, so only the last few are kept
+    private val clearShaders = object : LinkedHashMap<Any, Shader>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Any, Shader>?) = size > 12
+    }
+
+    /**
+     * A cleared mask's shader: what lies under [box], or under the brush [path] within it, filled
+     * from the pixels around it, as if nothing were there.
+     */
+    private fun clearShader(edit: Edit.Mask, box: RectF, path: Path?): Shader {
+        maskShaders()
+        val key: Any = if (path == null) RectF(box) else edit
+        return clearShaders.getOrPut(key) {
+            // The box and a ring around it to fill from, in the base's pixels
+            val k = base.width / size.width
+            val ring = 3
+            val left = (box.left * k).toInt().minus(ring).coerceIn(0, base.width - 1)
+            val top = (box.top * k).toInt().minus(ring).coerceIn(0, base.height - 1)
+            val right = (ceil(box.right * k).toInt() + ring).coerceIn(left + 1, base.width)
+            val bottom = (ceil(box.bottom * k).toInt() + ring).coerceIn(top + 1, base.height)
+            val w = right - left
+            val h = bottom - top
+            val region = Bitmap.createBitmap(base, left, top, w, h)
+            val hole = BooleanArray(w * h)
+            if (path == null) {
+                val x0 = (box.left * k).toInt() - left
+                val y0 = (box.top * k).toInt() - top
+                val x1 = ceil(box.right * k).toInt() - left
+                val y1 = ceil(box.bottom * k).toInt() - top
+                for (y in max(y0, 0) until min(y1, h)) for (x in max(x0, 0) until min(x1, w)) hole[y * w + x] = true
+            } else {
+                // The stroke laid down a little broader, so its soft edge shows the fill, not what was there
+                val shape = createBitmap(w, h, Bitmap.Config.ALPHA_8)
+                Canvas(shape).apply {
+                    translate(-left.toFloat(), -top.toFloat())
+                    scale(k, k)
+                    drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        style = Paint.Style.STROKE
+                        strokeWidth = edit.width + 2f / k
+                        strokeCap = Paint.Cap.ROUND
+                        strokeJoin = Paint.Join.ROUND
+                    })
+                }
+                val alpha = ByteArray(w * h)
+                shape.copyPixelsToBuffer(java.nio.ByteBuffer.wrap(alpha))
+                for (i in hole.indices) hole[i] = alpha[i] != 0.toByte()
+            }
+            BitmapShader(filled(region, hole), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(Matrix().apply {
+                    setScale(1f / k, 1f / k)
+                    postTranslate(left / k, top / k)
+                })
             }
         }
     }
@@ -216,6 +275,8 @@ class EditRenderer(val picture: Bitmap) {
                 isFilterBitmap = true
             }
             MaskStyle.Block -> color = BlockColor.toArgb()
+            // Its shader is made for each mask
+            MaskStyle.Clear -> isFilterBitmap = true
         }
     }
 
@@ -268,7 +329,13 @@ class EditRenderer(val picture: Bitmap) {
                     boxShader(edit.style, box)?.let { paint.shader = it }
                     canvas.drawSmoothRect(box, radius, paint.apply { style = Paint.Style.FILL })
                 } else {
-                    canvas.drawPath(smooth(edit.points), paint)
+                    val path = smooth(edit.points)
+                    if (edit.style == MaskStyle.Clear) {
+                        val bounds = RectF().also { path.computeBounds(it, true) }
+                        bounds.inset(-edit.width / 2 - 2, -edit.width / 2 - 2)
+                        paint.shader = clearShader(edit, bounds, path)
+                    }
+                    canvas.drawPath(path, paint)
                 }
             }
 

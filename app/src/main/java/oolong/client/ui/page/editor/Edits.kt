@@ -69,7 +69,8 @@ data class Framing(val turns: Int, val flipped: Boolean, val rect: Rect, val ang
     }
 }
 
-enum class MaskStyle { Mosaic, Blur, Block }
+/** How a mask hides: in big cells, blurred, under a solid block, or cleared to what lies around it. */
+enum class MaskStyle { Mosaic, Blur, Block, Clear }
 
 /** How a mask is laid: painted along the finger, or as a box dragged corner to corner. */
 enum class MaskShape { Brush, Rect }

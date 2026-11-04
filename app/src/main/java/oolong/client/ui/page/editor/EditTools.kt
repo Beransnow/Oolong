@@ -868,6 +868,7 @@ private val MaskStyle.label: Int
         MaskStyle.Mosaic -> R.string.editor_mosaic
         MaskStyle.Blur -> R.string.editor_blur
         MaskStyle.Block -> R.string.editor_block
+        MaskStyle.Clear -> R.string.editor_clear
     }
 
 private val MarkKind.label: Int
