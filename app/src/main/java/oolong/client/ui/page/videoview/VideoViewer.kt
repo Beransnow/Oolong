@@ -307,6 +307,9 @@ internal object VideoCache {
         ).also { cache = it }
     }
 
+    /** How much of the videos is kept, not counting the cache's own records. */
+    fun size(context: Context): Long = cache(context.applicationContext).cacheSpace
+
     /** Forgets every video kept; one playing reads on from the network. */
     fun clear(context: Context) {
         val cache = cache(context.applicationContext)

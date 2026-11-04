@@ -17,27 +17,28 @@ import java.io.File
 
 /**
  * How much of the phone the app takes, as the system's app details count it, and what of it is
- * what: the parts it can tell apart, and the rest of each kind as one.
+ * what. Each kind of cache counts only what clearing it removes: what each cache keeps to find
+ * its way around stays, and counts with the rest of what the app keeps.
  */
 class StorageUse(
     /** The app: its package and what the system compiled of it. */
     val app: Long,
     /** What the app keeps, its caches included. */
     val data: Long,
-    /** What it keeps that can go and come back: part of [data]. */
-    val cache: Long,
     val images: Long,
     val videos: Long,
     val web: Long,
-    /** The models and their runtime, downloaded: part of [data], not of [cache]. */
+    /** Cached files besides pictures, videos and web pages: what was made to send or share, and the like. */
+    val temporary: Long,
+    /** The models and their runtime, downloaded: part of [data]. */
     val extensions: Long,
 ) {
     val total: Long get() = app + data
 
-    /** Cache besides pictures, videos and web pages: files kept for a moment, and the like. */
-    val temporary: Long get() = (cache - images - videos - web).coerceAtLeast(0)
+    /** What clearing the cache removes. */
+    val cache: Long get() = images + videos + web + temporary
 
-    /** What is kept that is not cache or the models: the account, settings, history. */
+    /** What is kept besides the cache and the models: the account, settings, history. */
     val records: Long get() = (data - cache - extensions).coerceAtLeast(0)
 }
 
@@ -56,12 +57,26 @@ object AppStorage {
         StorageUse(
             app = app + compiled,
             data = data - compiled,
-            cache = cache - compiled,
-            images = imageDirs(context).sumOf(::sizeOf),
-            videos = sizeOf(File(context.cacheDir, VideoDir)),
-            web = sizeOf(File(context.cacheDir, WebDir)),
+            images = (context.imageLoader.diskCache?.size ?: 0) + oldImageDirs(context).sumOf(::sizeOf),
+            videos = VideoCache.size(context),
+            web = webFiles(File(context.cacheDir, WebDir)),
+            temporary = temporaryFiles(context).sumOf(::sizeOf),
             extensions = extensions,
         )
+    }
+
+    /** The pages a web view keeps under [dir]: its cache's own files, not its indexes or its other workings. */
+    private fun webFiles(dir: File): Long = dir.walkTopDown()
+        .filter { it.isFile && it.path.contains("Cache") && !it.name.startsWith("index") && it.name != "the-real-index" }
+        .sumOf(::sizeOf)
+
+    /** The cached files no other kind of cache owns, each a file or a folder of them. */
+    private fun temporaryFiles(context: Context): List<File> {
+        val owned = (imageDirs(context) + compiledDirs(context) + File(context.cacheDir, VideoDir) + File(context.cacheDir, WebDir))
+            .map { it.absoluteFile }
+        return listOfNotNull(context.cacheDir, context.externalCacheDir).flatMap { base ->
+            base.listFiles().orEmpty().filter { it.absoluteFile !in owned }
+        }
     }
 
     /** How much the app takes in all, quicker than [measure]. */
@@ -120,16 +135,12 @@ object AppStorage {
      * being written.
      */
     private suspend fun clearTemporary(context: Context) = withContext(Dispatchers.IO) {
-        val skip = (imageDirs(context) + compiledDirs(context) + File(context.cacheDir, VideoDir) + File(context.cacheDir, WebDir))
-            .map { it.absoluteFile }
         val now = System.currentTimeMillis()
         val inUse = mapOf(
             File(context.cacheDir, UpdateRepository.UpdateDir).absoluteFile to now - RecentMillis,
             File(context.cacheDir, EditedDir).absoluteFile to now - EditedMillis,
         )
-        for (base in listOfNotNull(context.cacheDir, context.externalCacheDir)) {
-            base.listFiles()?.filter { it.absoluteFile !in skip }?.forEach { deleteOlder(it, inUse[it.absoluteFile] ?: Long.MAX_VALUE) }
-        }
+        temporaryFiles(context).forEach { deleteOlder(it, inUse[it.absoluteFile] ?: Long.MAX_VALUE) }
     }
 
     /**
