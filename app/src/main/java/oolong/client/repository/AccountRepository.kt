@@ -11,7 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -114,7 +114,8 @@ class AccountRepository @Inject constructor(
             portrait = login.user.portrait
             tbs = login.anti.tbs
             if (uuid.isNullOrBlank()) uuid = UUID.randomUUID().toString()
-            this.zid = zid ?: SofireUtils.fetchZid().first()
+            // Ad blockers often stop the request for a new one; requests go without it then
+            this.zid = zid ?: SofireUtils.fetchZid().firstOrNull()
         }
         runCatching { remote.userInfo(account.uid.toLong(), bduss, sToken) }.onSuccess { user ->
             account.nameShow = user.nameShow
