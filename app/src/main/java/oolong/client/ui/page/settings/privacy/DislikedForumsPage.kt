@@ -100,6 +100,7 @@ fun DislikedForumsPage(
     ) { padding ->
         val error = (list.refresh as? LoadStatus.Error)?.error
         StateScreen(
+            modifier = Modifier.fillMaxSize(),
             isEmpty = list.items.isEmpty(),
             isError = error != null,
             isLoading = list.refresh == LoadStatus.Loading,
