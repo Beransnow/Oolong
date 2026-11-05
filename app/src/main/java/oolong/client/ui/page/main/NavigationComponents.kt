@@ -103,7 +103,6 @@ import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
-import oolong.client.ui.widgets.compose.lensTarget
 import oolong.client.ui.widgets.compose.longPressMenu
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -375,8 +374,7 @@ fun FloatingNavBar(
             Box(modifier = Modifier.padding(top = (NavItemHeight - itemHeight))) {
                 Box(
                     modifier = Modifier
-                        .then(if (searching) Modifier else Modifier.lensTarget())
-                        .floatingGlass(NavPillShape)
+                        .floatingGlass(NavPillShape, lensTarget = !searching)
                         .padding(NavPillPadding)
                         .onGloballyPositioned { pill = it }
                         .pointerInput(navigationItems.size, menus) {

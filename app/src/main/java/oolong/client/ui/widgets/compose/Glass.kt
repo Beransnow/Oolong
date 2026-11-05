@@ -184,6 +184,17 @@ class GlassSource(val state: HazeState, val key: Any? = null) {
     } else {
         HazeInput.Sources(state, HazeSourceSelection.Behind.where { it.key === key || it.key === WallpaperKey })
     }
+
+    /**
+     * [input] without chrome marked with [lensTarget], for the material of such chrome. Haze leaves
+     * out the source a material is drawn inside only once it has found it among its ancestors,
+     * which it can miss while the modifiers change, as the glass tier does, and drawing it then
+     * throws; this never takes it.
+     */
+    val belowLensTargets: HazeInput.Sources = HazeInput.Sources(
+        state,
+        HazeSourceSelection.Behind.where { (key == null || it.key === key || it.key === WallpaperKey) && it.zIndex < LensTargetZIndex },
+    )
 }
 
 /**
@@ -319,9 +330,10 @@ private fun Modifier.scrollEdgeGlass(top: Boolean, shown: () -> Float): Modifier
         }
     }
     // At the lowest resolution: at full resolution this blur alone took about half a frame of an
-    // older phone's GPU, and on a phone's screen the edge where it fades out looks the same
+    // older phone's GPU, and on a phone's screen the edge where it fades out looks the same.
+    // It leaves out lens targets, as a top bar is one itself
     return measured.hazeBlur(
-        input = source!!.input,
+        input = source!!.belowLensTargets,
         style = style,
         performanceMode = HazePerformanceMode.Performance,
     )
@@ -390,19 +402,37 @@ internal val LocalBarButtons = staticCompositionLocalOf<BarButtons?> { null }
  * as one piece: it swells a little towards the finger and settles back, lit from where it was
  * touched. Its buttons then leave their own press feedback to it. A control with its own, such as
  * a tab row, passes false.
+ *
+ * As a [lensTarget], it is also marked as one, for glass drawn over it, such as the bubble lifting
+ * off the navigation pill; its own glass then leaves it out.
  */
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.floatingGlass(
     shape: Shape,
     barButton: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     alpha: Float = 1f,
+    lensTarget: Boolean = false,
+): Modifier = if (lensTarget) {
+    lensTarget().floatingGlassOf(shape, barButton, interactionSource, alpha, onLensTarget = true)
+} else {
+    floatingGlassOf(shape, barButton, interactionSource, alpha, onLensTarget = false)
+}
+
+@OptIn(ExperimentalHazeApi::class)
+@Composable
+private fun Modifier.floatingGlassOf(
+    shape: Shape,
+    barButton: Boolean,
+    interactionSource: MutableInteractionSource?,
+    alpha: Float,
+    onLensTarget: Boolean,
 ): Modifier {
     // On a classic bar the band is the ground
     if (LocalOnClassicBar.current || alpha <= 0f) return this
     val bar = if (barButton) LocalBarButtons.current else null
     val source = currentGlassSource()
+    val input = if (onLensTarget) source?.belowLensTargets else source?.input
     val tier = if (source == null) GlassTier.Solid else currentGlassTier()
     val colors = ExtendedTheme.colors
     val frost = glassFrost()
@@ -479,7 +509,7 @@ fun Modifier.floatingGlass(
         val style = if (bar == null) TranslucentFloatingStyle else remember(shown) { TranslucentFloatingStyle.then { alpha(shown()) } }
         return chrome
             .clip(shape)
-            .hazeBlur(input = source!!.input, style = style)
+            .hazeBlur(input = input!!, style = style)
             .then(pressVeil)
             .then(edged)
     }
@@ -521,7 +551,7 @@ fun Modifier.floatingGlass(
             }
             chrome
                 .hazeGlass(
-                    input = source!!.input,
+                    input = input!!,
                     style = style,
                     interactionSource = if (bar == null) interactionSource else null,
                     interactionTransformTarget = GlassTransformTarget.MaterialAndContent,
@@ -541,7 +571,7 @@ fun Modifier.floatingGlass(
             }
             chrome
                 .clip(shape)
-                .hazeBlur(input = source!!.input, style = style)
+                .hazeBlur(input = input!!, style = style)
                 .then(pressVeil)
                 .then(edged)
         }
