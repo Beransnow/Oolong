@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +43,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -85,9 +87,13 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -203,8 +209,9 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         onDispose { player.removeListener(playback) }
     }
 
-    LightSystemBars()
-    FullColorWindow()
+    // Shrunk to a window over the pages, which go on as they were
+    var mini by remember { mutableStateOf(false) }
+    val shrink = remember { Animatable(0f) }
 
     // Turning sideways is the viewer's own, and ends with it
     val activity = remember(context) { context.findActivity() }
@@ -232,6 +239,12 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         val listener = Consumer<PictureInPictureModeChangedInfo> { inPip = it.isInPictureInPictureMode }
         host?.addOnPictureInPictureModeChangedListener(listener)
         onDispose { host?.removeOnPictureInPictureModeChangedListener(listener) }
+    }
+    // In the system's own window the video fills it, mini or not
+    val shrunk = mini && !inPip
+    if (!shrunk) {
+        LightSystemBars()
+        FullColorWindow()
     }
 
     var position by remember { mutableLongStateOf(player.currentPosition) }
@@ -296,6 +309,43 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             phase = Phase.Open
         }
 
+        // The mini window: in one of the corners of the space the pages leave clear, or under a finger
+        val density = LocalDensity.current
+        val direction = LocalLayoutDirection.current
+        val safe = WindowInsets.safeDrawing
+        val clear = with(density) {
+            val margin = MiniMargin.toPx()
+            Rect(
+                safe.getLeft(density, direction) + margin,
+                safe.getTop(density) + MiniTopClearance.toPx() + margin,
+                container.width - safe.getRight(density, direction) - margin,
+                container.height - safe.getBottom(density) - MiniBottomClearance.toPx() - margin,
+            )
+        }
+        val miniSize = with(density) {
+            if (aspect <= 1f) {
+                Size(MiniWide.toPx(), MiniWide.toPx() * aspect)
+            } else {
+                val height = minOf(MiniTall.toPx() * aspect, MiniTallest.toPx())
+                Size(height / aspect, height)
+            }
+        }
+        fun corners() = listOf(
+            Offset(clear.left, clear.top),
+            Offset(clear.right - miniSize.width, clear.top),
+            Offset(clear.left, clear.bottom - miniSize.height),
+            Offset(clear.right - miniSize.width, clear.bottom - miniSize.height),
+        )
+        fun nearestCorner(to: Offset) = corners().minBy { (it - to).getDistanceSquared() }
+        val miniAt = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+        var miniPlaced by remember { mutableStateOf(false) }
+        var miniHeld by remember { mutableStateOf<Offset?>(null) }
+        // Turned or resized, the window keeps to its corner
+        LaunchedEffect(clear, miniSize) {
+            if (miniPlaced && miniHeld == null) miniAt.snapTo(nearestCorner(miniAt.value))
+        }
+        val miniRect = Rect(miniHeld ?: miniAt.value, miniSize)
+
         fun close() {
             if (phase == Phase.Closing) return
             viewer.leave(video.key, player.currentPosition, duration)
@@ -306,6 +356,45 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             closingFade = dragFade
             drag = Offset.Zero
             dragging = false
+            phase = Phase.Closing
+            scope.launch {
+                progress.snapTo(1f)
+                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                viewer.closed()
+            }
+        }
+
+        fun minimize() {
+            if (phase != Phase.Open || mini) return
+            // The pages are upright; so is the window over them
+            if (landscape) activity?.requestedOrientation = requested
+            mini = true
+            chrome = false
+            scope.launch {
+                if (!miniPlaced) {
+                    miniAt.snapTo(corners().last())
+                    miniPlaced = true
+                }
+                shrink.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
+            }
+        }
+
+        fun expand() {
+            if (phase != Phase.Open || !mini) return
+            mini = false
+            chrome = true
+            touched++
+            scope.launch { shrink.animateTo(0f, Motion.settle(Motion.ProgressThreshold)) }
+        }
+
+        // Closed from the window: it fades and shrinks where it is
+        fun closeMini() {
+            if (phase == Phase.Closing) return
+            viewer.leave(video.key, player.currentPosition, duration)
+            player.pause()
+            far = miniRect
+            near = null
+            closingFade = 0f
             phase = Phase.Closing
             scope.launch {
                 progress.snapTo(1f)
@@ -339,35 +428,56 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         }
 
         val onClose by rememberUpdatedState<() -> Unit> { close() }
-        BackHandler(enabled = phase != Phase.Closing) {
+        BackHandler(enabled = phase != Phase.Closing && !mini) {
             if (landscape) setLandscape(false) else close()
         }
 
-        val enterPip = pictureInPicture(
+        // Leaving the app takes the video, full or mini, into the system's window, when the user wants that
+        pictureInPicture(
             activity = activity,
-            // Leaving takes the video into a window only when the user wants that; the button always does
             enabled = autoPip && phase == Phase.Open && playback.playWhenReady && !playback.ended && playback.error == null,
             playing = playback.playWhenReady && !playback.ended,
             aspect = aspect,
-            bounds = fitted.translate(origin),
+            bounds = (if (shrunk) miniRect else fitted).translate(origin),
             onToggle = { togglePlaying() },
         )
 
         val p = progress.value
-        val black = if (phase == Phase.Closing) p * closingFade else p.coerceIn(0f, 1f) * dragFade
+        val m = if (inPip) 0f else shrink.value
+        val black = (if (phase == Phase.Closing) p * closingFade else p.coerceIn(0f, 1f) * dragFade) * (1f - m)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = black }
-                .background(Color.Black)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+                .background(Color.Black),
         )
+        // Full, the viewer takes every touch; mini, the pages under it get them
+        if (!shrunk) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+            )
+        }
 
         // The video, flying between its cover (near; null to fade in place) and where it plays
-        val open = fitted.dragged(drag, dragScale, container)
+        val full = fitted.dragged(drag, dragScale, container)
+        val open = if (m > 0f) lerp(full, miniRect, m) else full
         val target = if (phase == Phase.Closing) far ?: open else open
         val rect = near?.let { lerp(it, target, p) } ?: target.scaledAround(lerp(0.9f, 1f, p))
-        val corner = if (near != null) lerp(8f, 0f, p.coerceIn(0f, 1f)) else 0f
+        // The cover's corners as it grows out of it, the mini window's as it shrinks
+        val corner = maxOf(if (near != null) lerp(8f, 0f, p.coerceIn(0f, 1f)) else 0f, MiniCorner * m)
+        // The window's shadow, which the clipped video can't cast itself
+        if (m > 0f) {
+            Box(
+                modifier = Modifier
+                    .offsetTo(rect)
+                    .graphicsLayer {
+                        shadowElevation = MiniElevation.toPx() * m * p.coerceIn(0f, 1f)
+                        shape = SmoothCornerShape(corner.dp)
+                    },
+            )
+        }
         val coverAlpha by animateFloatAsState(
             targetValue = if (playback.firstFrame) 0f else 1f,
             animationSpec = Motion.fadeOut(),
@@ -405,12 +515,12 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             }
         }
 
-        if (phase == Phase.Open && (playback.ended || playback.error != null)) {
+        if (phase == Phase.Open && !mini && (playback.ended || playback.error != null)) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
         }
 
         // Fingers on the video
-        Box(
+        if (!shrunk) Box(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
@@ -517,7 +627,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                 },
         )
 
-        val showing = phase == Phase.Open && !dragging && !fast && !inPip && (chrome || sticky)
+        val showing = phase == Phase.Open && !dragging && !fast && !inPip && !mini && (chrome || sticky)
         val chromeAlpha by animateFloatAsState(
             targetValue = if (showing) 1f else 0f,
             animationSpec = if (showing) Motion.fadeIn() else Motion.fadeOut(),
@@ -526,7 +636,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
 
         ProvideMediaGlass(glass) {
             // The middle: where a seek is going, or why the video is not playing
-            if (phase == Phase.Open && !dragging && !inPip) {
+            if (phase == Phase.Open && !dragging && !inPip && !mini) {
                 var loading by remember { mutableStateOf(false) }
                 val waiting = playback.error == null && playback.playWhenReady &&
                     (playback.state == Player.STATE_BUFFERING || !playback.firstFrame)
@@ -571,7 +681,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                 }
             }
 
-            if (phase == Phase.Open && !dragging && !inPip && chromeAlpha < 1f) {
+            if (phase == Phase.Open && !dragging && !inPip && !mini && chromeAlpha < 1f) {
                 ProgressLine(
                     fraction = if (duration > 0) position.toFloat() / duration else 0f,
                     modifier = Modifier
@@ -621,15 +731,145 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                             .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
                         runCatching { context.startActivity(chooser) }
                     },
-                    onPip = enterPip,
+                    onPip = { minimize() },
                     saving = viewer.saving[video.key],
                     onSave = { viewer.save(context, video) },
                     modifier = Modifier.graphicsLayer { alpha = chromeAlpha },
                 )
             }
+
+            if (shrunk && phase == Phase.Open) {
+                MiniWindow(
+                    playing = playback.playWhenReady && !playback.ended,
+                    ended = playback.ended,
+                    controlsAlpha = m,
+                    onTogglePlaying = { togglePlaying() },
+                    onExpand = { expand() },
+                    onClose = { closeMini() },
+                    onMove = { by -> miniHeld = (miniHeld ?: miniAt.value) + by },
+                    onRelease = { velocity ->
+                        val from = miniHeld ?: miniAt.value
+                        // Where the throw would carry it: off a side closes it, else the nearest corner
+                        val thrown = from + velocity * MiniThrow
+                        val middle = thrown.x + miniSize.width / 2
+                        if (middle < 0f || middle > container.width) {
+                            closeMini()
+                        } else {
+                            scope.launch {
+                                miniAt.snapTo(from)
+                                miniHeld = null
+                                miniAt.animateTo(nearestCorner(thrown), Motion.settle(), initialVelocity = velocity)
+                            }
+                        }
+                    },
+                    modifier = Modifier.offsetTo(miniRect),
+                )
+            }
         }
     }
 }
+
+/**
+ * The video shrunk to a window over the pages: a tap opens it again, a drag moves it, and it is
+ * closed by its button or thrown off a side. It holds only a play and pause button and a close
+ * button.
+ */
+@Composable
+private fun MiniWindow(
+    playing: Boolean,
+    ended: Boolean,
+    controlsAlpha: Float,
+    onTogglePlaying: () -> Unit,
+    onExpand: () -> Unit,
+    onClose: () -> Unit,
+    onMove: (Offset) -> Unit,
+    onRelease: (velocity: Offset) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentMove by rememberUpdatedState(onMove)
+    val currentRelease by rememberUpdatedState(onRelease)
+    val currentExpand by rememberUpdatedState(onExpand)
+    val expandLabel = stringResource(id = R.string.btn_full_screen)
+    Box(
+        modifier = modifier
+            .pointerInput(Unit) {
+                val slop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val tracker = VelocityTracker()
+                    tracker.addPosition(down.uptimeMillis, down.position)
+                    var total = Offset.Zero
+                    var moving = false
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            // A button under the finger took the tap
+                            if (!moving && !change.isConsumed) currentExpand()
+                            break
+                        }
+                        val delta = change.positionChange()
+                        total += delta
+                        tracker.addPosition(change.uptimeMillis, change.position)
+                        if (!moving && total.getDistance() > slop) {
+                            moving = true
+                            currentMove(total)
+                        } else if (moving) {
+                            currentMove(delta)
+                        }
+                        if (moving) change.consume()
+                    }
+                    if (moving) {
+                        val v = tracker.calculateVelocity()
+                        currentRelease(Offset(v.x, v.y))
+                    }
+                }
+            }
+            .semantics {
+                onClick(label = expandLabel) {
+                    currentExpand()
+                    true
+                }
+            },
+    ) {
+        Box(modifier = Modifier.matchParentSize().graphicsLayer { alpha = controlsAlpha }) {
+            MediaGlassIconButton(
+                icon = Symbols.Close,
+                description = stringResource(id = R.string.btn_close),
+                onClick = onClose,
+                size = 30.dp,
+                iconSize = 18.dp,
+                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+            )
+            MediaGlassIconButton(
+                icon = when {
+                    ended -> Symbols.ReplayFill
+                    playing -> Symbols.PauseFill
+                    else -> Symbols.PlayArrowFill
+                },
+                description = stringResource(id = if (playing) R.string.btn_pause else R.string.btn_play),
+                onClick = onTogglePlaying,
+                size = 30.dp,
+                iconSize = 18.dp,
+                modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
+            )
+        }
+    }
+}
+
+/** The mini window's width for a wide video, and its height for a tall one, at most [MiniTallest]. */
+private val MiniWide = 208.dp
+private val MiniTall = 128.dp
+private val MiniTallest = 228.dp
+private const val MiniCorner = 12f
+private val MiniElevation = 12.dp
+private val MiniMargin = 16.dp
+
+/** Kept clear of the top bar and the navigation bar, whose buttons the window would cover. */
+private val MiniTopClearance = 56.dp
+private val MiniBottomClearance = 72.dp
+
+/** How far ahead of a throw, in seconds of its speed, the window is taken to land. */
+private const val MiniThrow = 0.12f
 
 /**
  * Lets the video shrink into a picture-in-picture window, with a play and pause button, when the
@@ -721,7 +961,7 @@ private fun BoxScope.VideoChrome(
     onLandscape: () -> Unit,
     onCopyLink: () -> Unit,
     onShare: () -> Unit,
-    /** Shrinks the video into a picture-in-picture window; null where there are none. */
+    /** Shrinks the video into a window over the pages; null for no such button. */
     onPip: (() -> Unit)?,
     /** How much of the video is saved, 0–1 or -1 when not known; null when it is not being saved. */
     saving: Float?,
