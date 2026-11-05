@@ -2,6 +2,7 @@ package oolong.client.ui.page.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -74,6 +75,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -84,11 +86,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
 import oolong.client.findActivity
+import oolong.client.models.PhotoViewData
+import oolong.client.models.PicItem
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
 import oolong.client.ui.widgets.compose.AccompanistWebViewClient
 import oolong.client.ui.widgets.compose.Button
@@ -110,6 +115,7 @@ import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.pageScroll
+import oolong.client.utils.TiebaUtil
 import kotlin.coroutines.resume
 import android.graphics.Rect as AndroidRect
 
@@ -158,6 +164,7 @@ internal fun WebPageScaffold(
         derivedStateOf { state.errorsForCurrentRequest.firstOrNull { it.isPageFailure() }?.error }
     }
     val menus = LocalContextMenus.current
+    val targetMenu = rememberTargetMenu()
     // Immersive: how far the page has pushed the bar up, going up after it
     var consumedInset by remember { mutableIntStateOf(0) }
     var insetPx by remember { mutableIntStateOf(0) }
@@ -256,6 +263,10 @@ internal fun WebPageScaffold(
             navigator = navigator,
             onCreated = {
                 it.setBackgroundColor(background)
+                it.onLongPressTarget { target ->
+                    val items = targetMenu(target)
+                    if (menus != null && items.isNotEmpty()) menus.show(items, anchor = Rect(target.at, Size(1f, 1f)))
+                }
                 it.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
@@ -519,5 +530,43 @@ private fun StatusBarIcons(dark: Boolean) {
         val before = controller.isAppearanceLightStatusBars
         controller.isAppearanceLightStatusBars = dark
         onDispose { controller.isAppearanceLightStatusBars = before }
+    }
+}
+
+/** The menu for a picture or link pressed and held on the page. */
+@Composable
+private fun rememberTargetMenu(): (PageTarget) -> List<ContextMenuItem> {
+    val context = LocalContext.current
+    val photoViewer = LocalPhotoViewer.current
+    val viewImage = stringResource(id = R.string.web_view_image)
+    val copyImageLink = stringResource(id = R.string.web_copy_image_link)
+    val copyLink = stringResource(id = R.string.title_copy_link)
+    val openInBrowser = stringResource(id = R.string.title_open_in_browser)
+    val share = stringResource(id = R.string.title_share)
+    return remember(context, photoViewer) {
+        { target ->
+            buildList {
+                target.image?.let { image ->
+                    if (photoViewer != null) {
+                        add(
+                            ContextMenuItem(Symbols.Image, viewImage) {
+                                val item = PicItem(picId = image, picIndex = 1, url = image, originUrl = image, showOriginBtn = false, originSize = 0)
+                                photoViewer.open(PhotoViewData(picItems = persistentListOf(item)))
+                            }
+                        )
+                    }
+                    add(ContextMenuItem(Symbols.ContentCopy, copyImageLink) { TiebaUtil.copyText(context, image) })
+                }
+                target.link?.let { link ->
+                    add(ContextMenuItem(Symbols.Link, copyLink, startsGroup = target.image != null) { TiebaUtil.copyText(context, link) })
+                    add(
+                        ContextMenuItem(Symbols.OpenInBrowser, openInBrowser) {
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, link.toUri())) }
+                        }
+                    )
+                    add(ContextMenuItem(Symbols.Share, share) { TiebaUtil.shareText(context, link) })
+                }
+            }
+        }
     }
 }

@@ -26,6 +26,8 @@
     <string name="title_open_in_browser">在浏览器中打开</string>
     <string name="web_not_secure">不安全</string>
     <string name="title_login_baidu">登录百度账号</string>
+    <string name="web_view_image">查看图片</string>
+    <string name="web_copy_image_link">复制图片链接</string>
     <string name="web_error_title">无法打开网页</string>
     <string name="web_error_not_found">找不到该网站</string>
     <string name="web_error_no_response">网站没有响应</string>
