@@ -195,6 +195,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
     val player = viewer.player ?: return
     val video = opening.video
     val context = LocalContext.current
+    val shareTitle = stringResource(id = R.string.title_share)
     val scope = rememberCoroutineScope()
     val playback = remember(player) { Playback(player) }
     DisposableEffect(player) {
@@ -616,7 +617,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                             putExtra(Intent.EXTRA_TEXT, video.url)
                         }
                         // Not a leaving of the app, which would shrink the video into its own window
-                        val chooser = Intent.createChooser(intent, context.getString(R.string.title_share))
+                        val chooser = Intent.createChooser(intent, shareTitle)
                             .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
                         runCatching { context.startActivity(chooser) }
                     },
