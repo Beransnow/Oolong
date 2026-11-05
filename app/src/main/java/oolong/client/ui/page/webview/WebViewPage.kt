@@ -1,6 +1,5 @@
 package oolong.client.ui.page.webview
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -14,55 +13,28 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.location.LocationManagerCompat
 import androidx.core.net.toUri
 import com.hjq.permissions.Permission
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.launch
 import oolong.client.App
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
 import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
-import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.ui.navigation.Navigator
@@ -71,14 +43,7 @@ import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
 import oolong.client.ui.widgets.compose.AccompanistWebViewClient
 import oolong.client.ui.widgets.compose.AppDialog
 import oolong.client.ui.widgets.compose.AppDialogs
-import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ContextMenuItem
-import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.LazyLoad
-import oolong.client.ui.widgets.compose.LoadingState
-import oolong.client.ui.widgets.compose.MenuIconButton
-import oolong.client.ui.widgets.compose.WebView
 import oolong.client.ui.widgets.compose.rememberSaveableWebViewState
 import oolong.client.ui.widgets.compose.rememberWebViewNavigator
 import oolong.client.utils.PermissionUtils
@@ -94,7 +59,6 @@ import oolong.client.utils.toTiebaKey
 import java.lang.ref.WeakReference
 import java.util.UUID
 
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun WebViewPage(
     initialUrl: String,
@@ -105,143 +69,27 @@ fun WebViewPage(
     val coroutineScope = rememberCoroutineScope()
     val webViewState = rememberSaveableWebViewState()
     val webViewNavigator = rememberWebViewNavigator()
-    var loaded by rememberSaveable {
-        mutableStateOf(false)
-    }
-    var pageTitle by rememberSaveable {
-        mutableStateOf("")
-    }
-    val displayPageTitle by remember {
-        derivedStateOf {
-            pageTitle.ifEmpty {
-                context.getString(R.string.title_default)
-            }
-        }
-    }
-    val currentHost by remember {
-        derivedStateOf {
-            webViewState.lastLoadedUrl?.toUri()?.host.orEmpty().lowercase()
-        }
-    }
-    val isExternalHost by remember {
-        derivedStateOf {
-            currentHost.isNotEmpty() && !isInternalHost(currentHost)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        val job = coroutineScope.launch {
-            snapshotFlow { webViewState.pageTitle }
-                .filterNotNull()
-                .filter { it.isNotEmpty() }
-                .cancellable()
-                .collect {
-                    pageTitle = it
-                }
-        }
-        onDispose {
-            job.cancel()
-        }
-    }
-
-    LazyLoad(loaded = loaded) {
-        webViewNavigator.loadUrl(initialUrl)
-        loaded = true
-    }
-
-    val isLoading by remember {
-        derivedStateOf {
-            webViewState.loadingState is LoadingState.Loading
-        }
-    }
-
-    val progress by remember {
-        derivedStateOf {
-            webViewState.loadingState.let {
-                if (it is LoadingState.Loading) {
-                    it.progress
-                } else {
-                    0f
-                }
-            }
-        }
-    }
-
-    val animatedProgress by animateFloatAsState(targetValue = progress, animationSpec = Motion.settle(), label = "progress")
-
-    GlassScaffold(
-        sampleContent = false,
-        topBar = {
-            GlassTopBar(
-                title = {
-                    Column {
-                        Text(
-                            text = displayPageTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (isExternalHost) {
-                            Text(
-                                text = currentHost,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = ExtendedTheme.colors.topBarContentSecondary,
-                                style = MaterialTheme.typography.caption
-                            )
-                        }
-                    }
+    val copyLink = stringResource(id = R.string.title_copy_link)
+    val openInBrowser = stringResource(id = R.string.title_open_in_browser)
+    val refresh = stringResource(id = R.string.title_refresh)
+    WebPageScaffold(
+        initialUrl = initialUrl,
+        state = webViewState,
+        navigator = webViewNavigator,
+        client = remember(navigator) { MyWebViewClient(navigator) { account } },
+        chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
+        onClose = { navigator.navigateUp() },
+        menuItems = {
+            val url = webViewState.webView?.url ?: initialUrl
+            listOf(
+                ContextMenuItem(Symbols.Link, copyLink) { TiebaUtil.copyText(context, url) },
+                ContextMenuItem(Symbols.OpenInBrowser, openInBrowser) {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
-                actions = {
-                    val copyLink = stringResource(id = R.string.title_copy_link)
-                    val openInBrowser = stringResource(id = R.string.title_open_in_browser)
-                    val refresh = stringResource(id = R.string.title_refresh)
-                    MenuIconButton(
-                        icon = Symbols.MoreVert,
-                        contentDescription = stringResource(id = R.string.btn_more),
-                        items = {
-                            val url = webViewState.webView?.url ?: initialUrl
-                            listOf(
-                                ContextMenuItem(Symbols.Link, copyLink) { TiebaUtil.copyText(context, url) },
-                                ContextMenuItem(Symbols.OpenInBrowser, openInBrowser) {
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-                                },
-                                ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() },
-                            )
-                        },
-                    )
-                },
+                ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() },
             )
-        }
-    ) { paddingValues ->
-        Box {
-            WebView(
-                state = webViewState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                navigator = webViewNavigator,
-                onCreated = {
-                    it.settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                    }
-                },
-                client = remember(navigator) { MyWebViewClient(navigator) { account } },
-                chromeClient = remember { MyWebChromeClient(context, coroutineScope) }
-            )
-
-            if (isLoading) {
-                LinearProgressIndicator(
-                    progress = animatedProgress,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
+        },
+    )
 }
 
 open class MyWebViewClient(
@@ -508,10 +356,6 @@ class MyWebChromeClient(
         }
         return true
     }
-}
-
-@Composable
-fun MyWebView() {
 }
 
 /** The key a site's answer is kept under: what it asked about, and for whom. */
