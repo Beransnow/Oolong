@@ -2,23 +2,29 @@ package oolong.client.ui.page.webview
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.location.LocationManager
 import android.net.Uri
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.JsResult
 import android.webkit.ValueCallback
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import android.widget.FrameLayout
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +32,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.getSystemService
 import androidx.core.location.LocationManagerCompat
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.hjq.permissions.Permission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filter
@@ -33,6 +42,7 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
+import oolong.client.findActivity
 import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Symbols
@@ -255,6 +265,51 @@ class MyWebChromeClient(
             uploadMessage?.onReceiveValue(FileChooserParams.parseResult(it.resultCode, it.intent))
             uploadMessage = null
         }
+    }
+
+    /** Whether a video on the page is full screen, over the whole window. */
+    var isFullscreen by mutableStateOf(false)
+        private set
+    private var fullscreenCallback: CustomViewCallback? = null
+    private var leaveFullscreen: (() -> Unit)? = null
+
+    override fun onShowCustomView(view: View, callback: CustomViewCallback) {
+        val activity = context.findActivity()
+        if (leaveFullscreen != null || activity == null) {
+            callback.onCustomViewHidden()
+            return
+        }
+        val decor = activity.window.decorView as ViewGroup
+        view.setBackgroundColor(android.graphics.Color.BLACK)
+        decor.addView(view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        val controller = WindowCompat.getInsetsController(activity.window, decor)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        // Videos on the web are nearly all wide; the phone may be turned either way
+        val orientation = activity.requestedOrientation
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        fullscreenCallback = callback
+        leaveFullscreen = {
+            decor.removeView(view)
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            activity.requestedOrientation = orientation
+        }
+        isFullscreen = true
+    }
+
+    override fun onHideCustomView() {
+        leaveFullscreen?.invoke()
+        leaveFullscreen = null
+        fullscreenCallback = null
+        isFullscreen = false
+    }
+
+    /** Leaves full screen, as on back or when the page goes. */
+    fun exitFullscreen() {
+        val callback = fullscreenCallback ?: return
+        // The page is told first, and may already hide the view itself
+        callback.onCustomViewHidden()
+        onHideCustomView()
     }
 
     private fun isEnabledLocationFunction(): Boolean {

@@ -17,6 +17,7 @@ import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebResourceError
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
@@ -313,6 +314,10 @@ internal fun WebPageScaffold(
                 }
             },
         )
+        // A video full screen covers the page; back leaves full screen first, and so does leaving
+        val fullscreen = chromeClient as? MyWebChromeClient
+        BackHandler(enabled = fullscreen?.isFullscreen == true) { fullscreen?.exitFullscreen() }
+        DisposableEffect(fullscreen) { onDispose { fullscreen?.exitFullscreen() } }
         error?.let {
             Box(
                 modifier = Modifier
