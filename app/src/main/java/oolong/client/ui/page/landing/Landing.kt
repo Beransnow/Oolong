@@ -155,8 +155,9 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
         onPauseOrDispose {}
     }
 
-    // Usage statistics are asked on the welcome only; after an import the update's own question comes later
-    var usageStats by rememberSaveable { mutableStateOf(false) }
+    // Usage statistics are asked on the welcome only; after an import the update's own question comes later.
+    // Checked to start with: they carry nothing that tells devices apart, and can be turned off here or in settings
+    var usageStats by rememberSaveable { mutableStateOf(true) }
     val usageStatsDialog = rememberDialogState()
     UsageStatsContentDialog(usageStatsDialog)
 
