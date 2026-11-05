@@ -37,7 +37,7 @@ class AccountRepositoryTest {
     fun tearDown() = database.close()
 
     private fun TestScope.repository() =
-        AccountRepository(context, dao, mockk(), TestScope(UnconfinedTestDispatcher(testScheduler)))
+        AccountRepository(context, dao, mockk(), TestScope(UnconfinedTestDispatcher(testScheduler)), { mockk(relaxed = true) })
 
     private suspend fun TestScope.withAccounts(vararg names: String): AccountRepository {
         val repository = repository()

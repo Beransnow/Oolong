@@ -1,6 +1,5 @@
 package oolong.client.ui.page.login
 
-import android.webkit.CookieManager
 import android.webkit.WebView
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
@@ -15,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.api.retrofit.exception.userMessage
+import oolong.client.components.web.WebSessions
 import oolong.client.repository.AccountActions
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.theme.compose.Symbols
@@ -53,6 +53,8 @@ fun LoginPage(
         chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
         onClose = { navigator.navigateUp() },
         menuItems = { listOf(ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() }) },
+        // A session with no login in it, so the current account isn't found logged in already
+        attachSession = { WebSessions.instance.attachForLogin(it) },
         title = stringResource(id = R.string.title_login_baidu),
         scaffoldState = scaffoldState,
     )
@@ -66,8 +68,6 @@ class LoginWebViewClient(
 ) : MyWebViewClient(nativeNavigator) {
     private var isLoadingAccount = false
 
-    override fun injectCookies(url: String) {}
-
     override fun onPageFinished(view: WebView, url: String?) {
         super.onPageFinished(view, url)
         if (url == null) {
@@ -76,7 +76,8 @@ class LoginWebViewClient(
         if (isLoadingAccount) {
             return
         }
-        val cookieStr = CookieManager.getInstance().getCookie(url) ?: return
+        // Read from the page's own session, which the login is made in
+        val cookieStr = WebSessions.instance.cookies(view, url) ?: return
         val cookies = parseCookie(cookieStr).mapKeys { it.key.uppercase() }
         val bduss = cookies["BDUSS"]
         val sToken = cookies["STOKEN"]
@@ -101,6 +102,7 @@ class LoginWebViewClient(
                 runCatching { accounts.logIn(bduss, sToken, cookieStr) }
                     .onSuccess { account ->
                         isLoadingAccount = false
+                        WebSessions.instance.adoptLogin(view, account)
                         accounts.switchTo(account.id)
                         snackbarHostState.currentSnackbarData?.dismiss()
                         launch {

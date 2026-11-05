@@ -3,12 +3,10 @@ package oolong.client.ui.page.webview
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.graphics.Bitmap
 import android.location.LocationManager
 import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.JsResult
 import android.webkit.ValueCallback
@@ -42,8 +40,8 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
+import oolong.client.components.web.WebSessions
 import oolong.client.findActivity
-import oolong.client.models.database.Account
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.currentColors
@@ -60,11 +58,9 @@ import oolong.client.utils.PermissionUtils
 import oolong.client.utils.PermissionUtils.PermissionData
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
-import oolong.client.utils.bdussCookie
 import oolong.client.utils.compose.launchActivityForResult
 import oolong.client.utils.isInternalHost
 import oolong.client.utils.isTiebaHost
-import oolong.client.utils.parseCookie
 import oolong.client.utils.toTiebaKey
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -86,9 +82,10 @@ fun WebViewPage(
         initialUrl = initialUrl,
         state = webViewState,
         navigator = webViewNavigator,
-        client = remember(navigator) { MyWebViewClient(navigator) { account } },
+        client = remember(navigator) { MyWebViewClient(navigator) },
         chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
         onClose = { navigator.navigateUp() },
+        attachSession = { WebSessions.instance.attach(it, account) },
         immersive = true,
         menuItems = {
             val url = webViewState.webView?.url ?: initialUrl
@@ -105,8 +102,6 @@ fun WebViewPage(
 
 open class MyWebViewClient(
     protected val nativeNavigator: Navigator? = null,
-    /** The account whose login the pages get. */
-    private val account: () -> Account? = { null },
 ) : AccompanistWebViewClient() {
     val context: Context
         get() = state.webView?.context ?: App.INSTANCE
@@ -221,22 +216,6 @@ open class MyWebViewClient(
                 ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP), host
             )
         }
-    }
-
-    open fun injectCookies(url: String) {
-        val cookieStr = CookieManager.getInstance().getCookie(url) ?: ""
-        val cookies = parseCookie(cookieStr)
-        val BDUSS = cookies["BDUSS"]
-        val currentAccountBDUSS = account()?.bduss
-        if (currentAccountBDUSS != null && BDUSS != currentAccountBDUSS) {
-            CookieManager.getInstance()
-                .setCookie(url, bdussCookie(currentAccountBDUSS))
-        }
-    }
-
-    override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-        super.onPageStarted(view, url, favicon)
-        injectCookies(url ?: "")
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest?): Boolean {

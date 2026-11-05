@@ -1,7 +1,6 @@
 package oolong.client.repository
 
 import android.content.Context
-import android.webkit.CookieManager
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import oolong.client.arch.ApplicationScope
+import oolong.client.components.web.WebSessions
 import oolong.client.database.AccountDao
 import oolong.client.database.AccountEntity
 import oolong.client.models.database.Account
@@ -33,7 +33,7 @@ interface AccountActions {
     fun switchTo(id: Int): Boolean
 
     /**
-     * Removes the current account and its cookies, and switches to the next one, which is
+     * Removes the current account and its web login, and switches to the next one, which is
      * returned; null when none is left.
      */
     fun logOut(): Account?
@@ -52,6 +52,8 @@ class AccountRepository @Inject constructor(
     private val dao: AccountDao,
     private val remote: AccountRemoteDataSource,
     @ApplicationScope private val scope: CoroutineScope,
+    // Lazy: making it loads the web view, which only logging out needs
+    private val webSessions: dagger.Lazy<WebSessions>,
 ) : AccountActions {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -137,7 +139,7 @@ class AccountRepository @Inject constructor(
         val remaining = accounts.value.filterNot { it.id == account.id }
         _accounts.value = remaining
         scope.launch { dao.delete(account.id) }
-        CookieManager.getInstance().removeAllCookies(null)
+        webSessions.get().remove(account)
         val next = remaining.firstOrNull()
         if (next != null) {
             switchTo(next.id)

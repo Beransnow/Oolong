@@ -13,7 +13,6 @@ import android.text.format.Formatter
 import android.view.ContextThemeWrapper
 import android.view.PixelCopy
 import android.view.View
-import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebResourceError
 import android.webkit.WebViewClient
@@ -89,6 +88,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
+import oolong.client.components.web.WebSessions
 import oolong.client.findActivity
 import oolong.client.models.PhotoViewData
 import oolong.client.models.PicItem
@@ -134,6 +134,7 @@ import android.graphics.Rect as AndroidRect
  * @param initialUrl loaded once, when the page first shows.
  * @param title shown in place of the page's own title, as on the login page.
  * @param menuItems the bar's menu; none leaves the menu out.
+ * @param attachSession gives the web view, before it loads anything, the login it is to have; see [WebSessions].
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -145,6 +146,7 @@ internal fun WebPageScaffold(
     chromeClient: AccompanistWebChromeClient,
     onClose: () -> Unit,
     menuItems: () -> List<ContextMenuItem>,
+    attachSession: (android.webkit.WebView) -> Unit,
     title: String? = null,
     immersive: Boolean = false,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
@@ -271,13 +273,16 @@ internal fun WebPageScaffold(
                 .pageScroll(scrollable = null) { 0 },
             navigator = navigator,
             onCreated = {
+                // Before anything loads: whose login the page gets
+                attachSession(it)
                 it.setBackgroundColor(background)
                 it.setDownloadListener { url, userAgent, disposition, mimeType, length ->
                     // The load became a download and never finishes as a page
                     state.loadingState = LoadingState.Finished
                     // Opened only for the file, the page has nothing to show afterwards
                     val opened = state.webView?.copyBackForwardList()?.size ?: 0
-                    askDownload(url, userAgent, disposition, mimeType, length) { if (opened == 0) onClose() }
+                    val cookie = WebSessions.instance.cookies(it, url)
+                    askDownload(url, userAgent, cookie, disposition, mimeType, length) { if (opened == 0) onClose() }
                 }
                 it.onLongPressTarget { target ->
                     val items = targetMenu(target)
@@ -596,14 +601,14 @@ private fun rememberTargetMenu(): (PageTarget) -> List<ContextMenuItem> {
  * system's downloads with the page's cookies, which a download behind a login needs.
  */
 @Composable
-private fun rememberDownloadAsk(): (url: String, userAgent: String?, disposition: String?, mimeType: String?, length: Long, onAnswered: () -> Unit) -> Unit {
+private fun rememberDownloadAsk(): (url: String, userAgent: String?, cookie: String?, disposition: String?, mimeType: String?, length: Long, onAnswered: () -> Unit) -> Unit {
     val context = LocalContext.current
     val title = stringResource(id = R.string.web_download_title)
     val download = stringResource(id = R.string.web_download)
     val cancel = stringResource(id = R.string.button_cancel)
     val started = stringResource(id = R.string.web_download_started)
     return remember(context) {
-        { url, userAgent, disposition, mimeType, length, onAnswered ->
+        { url, userAgent, cookie, disposition, mimeType, length, onAnswered ->
             val fileName = URLUtil.guessFileName(url, disposition, mimeType)
             val size = if (length > 0) "（${Formatter.formatShortFileSize(context, length)}）" else ""
             AppDialogs.show(
@@ -613,7 +618,7 @@ private fun rememberDownloadAsk(): (url: String, userAgent: String?, disposition
                     confirm = download,
                     onConfirm = {
                         val headers = buildMap {
-                            CookieManager.getInstance().getCookie(url)?.let { put("Cookie", it) }
+                            cookie?.let { put("Cookie", it) }
                             userAgent?.let { put("User-Agent", it) }
                         }
                         FileUtil.downloadBySystem(context, FileUtil.FILE_TYPE_DOWNLOAD, url, fileName, headers, mimeType)

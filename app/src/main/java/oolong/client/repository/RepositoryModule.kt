@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import oolong.client.arch.ApplicationScope
 import oolong.client.arch.query.QueryClient
+import oolong.client.components.web.WebSessions
 import oolong.client.dataStore
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.appPreferences
@@ -25,6 +26,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
     @Binds
     abstract fun bindBlockRuleSource(source: DatabaseBlockRuleSource): BlockRuleSource
 
@@ -41,6 +43,9 @@ abstract class RepositoryModule {
     abstract fun bindOwnProfileCache(cache: AccountOwnProfileCache): OwnProfileCache
 
     companion object {
+        @Provides
+        fun provideWebSessions(): WebSessions = WebSessions.instance
+
         @Provides
         fun provideVideoThreadFilter(@ApplicationContext context: Context): VideoThreadFilter =
             VideoThreadFilter { context.appPreferences.blockVideo }
