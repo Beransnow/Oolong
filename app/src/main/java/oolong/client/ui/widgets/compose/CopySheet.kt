@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -58,11 +60,14 @@ import oolong.client.utils.TiebaUtil
  */
 @Stable
 class CopySheets {
-    internal var content by mutableStateOf<List<PostContent>?>(null)
+    internal var request by mutableStateOf<Request?>(null)
 
     fun show(content: List<PostContent>) {
-        this.content = content
+        request = Request(content)
     }
+
+    /** One opening of the sheet; a new one starts a fresh sheet even while another is up. */
+    internal class Request(val content: List<PostContent>)
 }
 
 val LocalCopySheets = staticCompositionLocalOf<CopySheets?> { null }
@@ -71,8 +76,10 @@ private val Whitespace = Regex("\\s+")
 
 @Composable
 fun CopySheetHost(sheets: CopySheets) {
-    val content = sheets.content ?: return
-    CopySheet(content = content, onDismiss = { sheets.content = null })
+    val request = sheets.request ?: return
+    key(request) {
+        CopySheet(content = request.content, onDismiss = { if (sheets.request === request) sheets.request = null })
+    }
 }
 
 /**
@@ -107,9 +114,13 @@ private fun CopySheet(content: List<PostContent>, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val state = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, animationSpec = Motion.settle(), skipHalfExpanded = true)
     LaunchedEffect(state) {
-        state.show()
-        // Swiped down or the scrim tapped
-        snapshotFlow { state.currentValue }.first { it == ModalBottomSheetValue.Hidden }
+        // A drag or a tap on the scrim can cut the opening short, which ends show() with a
+        // cancellation; the sheet is then hidden all the same and must still be dismissed
+        launch { state.show() }
+        // Swiped down, the scrim tapped, or closed: open first, then hidden and going nowhere
+        snapshotFlow { state.currentValue == ModalBottomSheetValue.Hidden && state.targetValue == ModalBottomSheetValue.Hidden }
+            .dropWhile { it }
+            .first { it }
         onDismiss()
     }
     fun close(then: () -> Unit = {}) {
