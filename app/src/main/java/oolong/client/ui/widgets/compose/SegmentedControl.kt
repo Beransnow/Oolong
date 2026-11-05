@@ -198,6 +198,7 @@ fun SegmentedControl(
                 val height = trackSize.height - inset * 2
                 val growWidth = with(density) { HeldGrowthWidth.toPx() } * held
                 val growHeight = with(density) { HeldGrowthHeight.toPx() } * held
+                val optics = remember(height, density) { liquidLensOptics(with(density) { (height.toFloat()).toDp() + HeldGrowthHeight }) }
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
@@ -208,7 +209,8 @@ fun SegmentedControl(
                             )
                         }
                         .requiredSize(with(density) { (width + growWidth).toDp() }, with(density) { (height + growHeight).toDp() })
-                        .controlLens(glassState, PillShape, held)
+                        // Bent as the navigation bar's lens is, for its size
+                        .controlLens(glassState, PillShape, held, optics)
                 )
             }
         }

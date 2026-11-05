@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.Preferences
@@ -758,13 +759,13 @@ fun isGlassAvailable(): Boolean = currentGlassTier() == GlassTier.Glass
  */
 @OptIn(ExperimentalHazeApi::class)
 @Composable
-fun Modifier.controlLens(state: HazeState, shape: Shape, alpha: Float): Modifier {
+fun Modifier.controlLens(state: HazeState, shape: Shape, alpha: Float, optics: GlassOptics = ControlLensOptics): Modifier {
     if (alpha <= 0f || currentGlassTier() != GlassTier.Glass) return this
-    val style = remember(shape, alpha) {
+    val style = remember(shape, alpha, optics) {
         GlassStyle.clear.then {
             shape(shape.glassShape())
             backgroundColor(Color.Transparent)
-            optics(ControlLensOptics)
+            optics(optics)
             alpha(alpha)
         }
     }
@@ -785,6 +786,20 @@ private val ControlLensOptics = GlassOptics(
     blurRadius = OpticalSizeValue.Fixed(0.dp),
     refractionDetailIntensity = 0.76f,
 )
+
+/**
+ * The navigation bar's lens bent to a part [height] tall: its rim as deep, and what it covers moved
+ * as far, for the part's size, so a held pill reads as the same glass on a smaller scale.
+ */
+@OptIn(ExperimentalHazeApi::class)
+fun liquidLensOptics(height: Dp): GlassOptics = UnblurredClearOptics.copy(
+    refractionDisplacement = height * NavLensDisplacement,
+    refractionProfile = RefractionProfile.Edge(height * NavLensRim),
+)
+
+/** [UnblurredClearOptics]' displacement and rim for the navigation bar's lens, as parts of its height. */
+private const val NavLensDisplacement = 0.72f
+private const val NavLensRim = 0.36f
 
 /**
  * A large clear lens over [state], such as the one lifted off the icon on the about page: like

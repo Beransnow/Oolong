@@ -179,6 +179,9 @@ fun GlassTabRow(
         if (!holding) lensActive = false
     }
     val inset = with(LocalDensity.current) { TabInset.roundToPx() }
+    // As much as the navigation bar's lens outgrows its item
+    val growth: (Float) -> Float = { it * (LensScale - 1f) }
+    val lensOptics = remember { liquidLensOptics((GlassTabRowHeight - TabInset * 2) * LensScale) }
 
     Box(modifier = modifier.height(GlassTabRowHeight)) {
         Box(
@@ -303,22 +306,24 @@ fun GlassTabRow(
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
                         .offset {
                             if (spans.starts.isEmpty()) return@offset IntOffset.Zero
-                            val (start, _) = spans.at(lens.value)
+                            val (start, width) = spans.at(lens.value)
+                            val tabHeight = GlassTabRowHeight.toPx() - inset * 2
                             IntOffset(
-                                (inset + start - scroll.value - HeldGrowthWidth.toPx() * held / 2).roundToInt(),
-                                (inset - HeldGrowthHeight.toPx() * held / 2).roundToInt(),
+                                (inset + start - scroll.value - growth(width) * held / 2).roundToInt(),
+                                (inset - growth(tabHeight) * held / 2).roundToInt(),
                             )
                         }
                         .layout { measurable, _ ->
                             if (spans.starts.isEmpty()) return@layout layout(0, 0) {}
                             val (_, width) = spans.at(lens.value)
                             val tabHeight = GlassTabRowHeight.toPx() - inset * 2
-                            val w = (width + HeldGrowthWidth.toPx() * held).roundToInt()
-                            val h = (tabHeight + HeldGrowthHeight.toPx() * held).roundToInt()
+                            val w = (width + growth(width) * held).roundToInt()
+                            val h = (tabHeight + growth(tabHeight) * held).roundToInt()
                             val placeable = measurable.measure(Constraints.fixed(w, h))
                             layout(w, h) { placeable.place(0, 0) }
                         }
-                        .controlLens(glassState, TabCapsule, held)
+                        // Bent as the navigation bar's lens is, for its size
+                        .controlLens(glassState, TabCapsule, held, lensOptics)
                 )
             }
         }
@@ -334,9 +339,8 @@ fun GlassTabRow(
     }
 }
 
-/** How much the bubble grows as it lifts off, as a switch's knob does. */
-private val HeldGrowthWidth = 16.dp
-private val HeldGrowthHeight = 14.dp
+/** How much the lens outgrows the tab, as the navigation bar's outgrows its item. */
+private const val LensScale = 1.4f
 
 /** How near an end of the row the dragged lens scrolls it, and by how much a move. */
 private val LensScrollEdge = 32.dp
