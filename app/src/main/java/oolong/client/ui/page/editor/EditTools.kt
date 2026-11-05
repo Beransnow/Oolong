@@ -911,12 +911,37 @@ private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
     val spotted = state.spotted
     val color = ExtendedTheme.colors.textSecondary
     val style = MaterialTheme.typography.body2
+    val phase = when {
+        download != AutoMaskDownload.Ready -> PickPhase.Download
+        state.spotting || state.spotAsked -> PickPhase.Spotting
+        spotted != null -> PickPhase.Spotted
+        state.pickReady -> PickPhase.Ready
+        else -> PickPhase.Looking
+    }
+    // One height whatever it shows, each state refocusing into the next in place
+    Refocus(targetState = phase, modifier = Modifier.fillMaxWidth()) { shown ->
+        PickStatusRow(shown, state, files, download, color, style)
+    }
+}
+
+private enum class PickPhase { Download, Looking, Ready, Spotting, Spotted }
+
+@Composable
+private fun PickStatusRow(
+    phase: PickPhase,
+    state: EditorState,
+    files: AutoMaskFiles,
+    download: AutoMaskDownload,
+    color: Color,
+    style: TextStyle,
+) {
+    val spotted = state.spotted
     when {
-        download != AutoMaskDownload.Ready -> DownloadRow(download, R.string.editor_pick_download, files::startDownload)
-        state.spotting || state.spotAsked -> OptionRow(height = 24.dp) {
+        phase == PickPhase.Download -> DownloadRow(download, R.string.editor_pick_download, files::startDownload)
+        phase == PickPhase.Spotting -> OptionRow {
             Text(stringResource(R.string.editor_pick_spotting), color = color, style = style)
         }
-        spotted != null -> OptionRow(arrangement = Arrangement.SpaceBetween) {
+        phase == PickPhase.Spotted && spotted != null -> OptionRow(arrangement = Arrangement.SpaceBetween) {
             val count = spotted.count { it.on }
             Text(
                 if (spotted.isEmpty()) stringResource(R.string.editor_pick_spotted_none) else stringResource(R.string.editor_pick_spotted, count),
@@ -933,14 +958,14 @@ private fun PickStatus(state: EditorState, files: AutoMaskFiles) {
         }
         else -> OptionRow(arrangement = Arrangement.SpaceBetween) {
             Text(
-                stringResource(if (state.pickReady) R.string.editor_pick_ready else R.string.editor_pick_looking),
+                stringResource(if (phase == PickPhase.Ready) R.string.editor_pick_ready else R.string.editor_pick_looking),
                 color = color,
                 style = style,
                 modifier = Modifier.padding(start = 12.dp),
             )
             TextButton(
                 onClick = { state.spotAsked = true },
-                enabled = state.pickReady,
+                enabled = phase == PickPhase.Ready,
                 color = ExtendedTheme.colors.text,
             ) { Text(stringResource(R.string.editor_pick_auto)) }
         }
