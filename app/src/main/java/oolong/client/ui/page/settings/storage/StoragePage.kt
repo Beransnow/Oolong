@@ -234,7 +234,10 @@ private fun AskedDialog(asked: Asked?, dialog: DialogState, files: AutoMaskFiles
         Text(
             when (what) {
                 Asked.ClearCache -> stringResource(R.string.storage_clear_cache_note)
-                is Asked.Download -> stringResource(R.string.storage_download_note, size(missingBytes(files.state(what.ability).value)))
+                is Asked.Download -> {
+                    val download by files.state(what.ability).collectAsState()
+                    stringResource(R.string.storage_download_note, size(missingBytes(download)))
+                }
                 is Asked.Delete -> stringResource(if (what.ability == Ability.Text) R.string.storage_delete_text_note else R.string.storage_delete_region_note)
                 Asked.ClearAll -> stringResource(R.string.storage_clear_all_note)
             },
