@@ -55,8 +55,21 @@ import oolong.client.utils.ImageUtil
 import oolong.client.utils.NetworkUtil
 import oolong.client.utils.appPreferences
 
-/** Darkens images in night mode, when the user asks for it. */
-private val DarkenFilter = ColorFilter.tint(Color(0x99000000), BlendMode.SrcAtop)
+/** How much black lies over pictures in night mode, when the user asks for it. */
+private const val NightDim = 0.3f
+
+private val DarkenFilter = ColorFilter.tint(Color.Black.copy(alpha = NightDim), BlendMode.SrcAtop)
+
+/** The night dim pictures in pages carry now: 0 by day or when the user turned it off. */
+@Composable
+fun nightImageDim(): Float {
+    val context = LocalContext.current
+    return if (ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode) NightDim else 0f
+}
+
+/** A picture darkened by [dim] of black, or null when there is nothing to darken. */
+fun dimFilter(dim: Float): ColorFilter? =
+    if (dim <= 0f) null else ColorFilter.tint(Color.Black.copy(alpha = dim.coerceAtMost(1f)), BlendMode.SrcAtop)
 
 /** What images show while they load, or when they cannot: a flat block of the placeholder colour. */
 @Composable
@@ -93,7 +106,7 @@ fun ContentImage(
     onSuccess: ((AsyncImagePainter.State.Success) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val darken = ExtendedTheme.colors.isNightMode && context.appPreferences.imageDarkenWhenNightMode
+    val darken = nightImageDim() > 0f
     val placeholder = rememberImagePlaceholder()
     val request = remember(imageUri, load) {
         ImageRequest.Builder(context)
