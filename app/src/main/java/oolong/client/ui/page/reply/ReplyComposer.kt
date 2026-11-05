@@ -486,6 +486,12 @@ private fun Modifier.springHeight(): Modifier {
 
 private const val Unmeasured = -1f
 
+/** A picture added to the reply, as it shows under the text. */
+private val ThumbnailSize = 80.dp
+
+/** Where a tap on a picture's corner removes it. */
+private val RemoveTarget = 36.dp
+
 /**
  * Shows [value]'s line while it is not null: the line opens on a spring and its content condenses
  * in from a blur; going, it blurs away as the line closes, still showing the last value.
@@ -670,7 +676,7 @@ private fun PictureStrip(
         itemsIndexed(images, key = { _, uri -> uri }) { index, uri ->
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(ThumbnailSize)
                     .clip(Corners.sm)
                     .background(colors.chip)
             ) {
@@ -679,27 +685,33 @@ private fun PictureStrip(
                     contentDescription = stringResource(id = R.string.desc_image),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(ThumbnailSize)
                         // Where the editor grows out of, and goes back to
                         .onGloballyPositioned { onPlaced(index, it.boundsInWindow()) }
                         .clickable(role = Role.Button) { onEdit(index) },
                 )
+                // Taken in a larger corner than the round mark shows, to be easy to hit
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(3.dp)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.55f))
+                        .size(RemoveTarget)
                         .clickable(role = Role.Button) { onRemove(index) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        imageVector = Symbols.Close,
-                        contentDescription = stringResource(id = R.string.desc_remove_image),
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.55f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Symbols.Close,
+                            contentDescription = stringResource(id = R.string.desc_remove_image),
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
                 }
             }
         }
@@ -707,7 +719,7 @@ private fun PictureStrip(
             item {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(ThumbnailSize)
                         .clip(Corners.sm)
                         .background(colors.chip)
                         .clickable(role = Role.Button, onClick = onAdd),
