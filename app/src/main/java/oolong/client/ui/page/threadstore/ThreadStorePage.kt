@@ -63,6 +63,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
+import oolong.client.ui.widgets.compose.inlineContentSafe
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -234,6 +235,7 @@ private fun StoreItem(
             }
             Text(
                 text = title,
+                modifier = Modifier.inlineContentSafe(),
                 fontSize = 15.sp,
                 color = if (isDeleted) ExtendedTheme.colors.textDisabled else ExtendedTheme.colors.text,
                 inlineContent = mapOf(

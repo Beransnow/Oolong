@@ -24,6 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.layout.ApproachLayoutModifierNode
+import androidx.compose.ui.layout.ApproachMeasureScope
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
@@ -44,6 +51,7 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
@@ -271,7 +279,7 @@ fun IconText(
         }
     Text(
         text,
-        modifier,
+        modifier.inlineContentSafe(),
         color,
         fontSize,
         fontStyle,
@@ -553,4 +561,40 @@ fun HighlightText(
         onTextLayout = onTextLayout,
         style = style,
     )
+}
+
+/**
+ * Lays a text with inline content out alike in the lookahead and the approach pass, as the
+ * lookahead found it, for a text whose pieces of inline content are measured in only one pass
+ * crashes in the other.
+ *
+ * A text measures the inline content its layout keeps and leaves out what an ellipsis cuts. Where
+ * the two passes give it different widths, as a page resized under a shared transition does when
+ * the screen turns, a piece kept in the approach but cut in the lookahead is placed there unmeasured.
+ */
+fun Modifier.inlineContentSafe(): Modifier = this then LookaheadConstraintsElement
+
+private data object LookaheadConstraintsElement : ModifierNodeElement<LookaheadConstraintsNode>() {
+    override fun create() = LookaheadConstraintsNode()
+    override fun update(node: LookaheadConstraintsNode) = Unit
+    override fun InspectorInfo.inspectableProperties() {
+        name = "inlineContentSafe"
+    }
+}
+
+private class LookaheadConstraintsNode : Modifier.Node(), ApproachLayoutModifierNode {
+    private var lookahead: Constraints? = null
+
+    override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        lookahead = constraints
+        val placeable = measurable.measure(constraints)
+        return layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+
+    override fun isMeasurementApproachInProgress(lookaheadSize: IntSize): Boolean = false
+
+    override fun ApproachMeasureScope.approachMeasure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        val placeable = measurable.measure(lookahead ?: constraints)
+        return layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
 }

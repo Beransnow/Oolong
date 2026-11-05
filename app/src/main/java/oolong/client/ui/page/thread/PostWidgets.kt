@@ -30,6 +30,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.buildChipInlineContent
+import oolong.client.ui.widgets.compose.inlineContentSafe
 import oolong.client.utils.StringUtil.getShortNumString
 import oolong.client.utils.Util.getIconColorByLevel
 
@@ -114,7 +115,7 @@ fun UserNameText(
             ),
             "Lz" to buildChipInlineContent(stringResource(id = R.string.tip_lz)),
         ),
-        modifier = modifier
+        modifier = modifier.inlineContentSafe()
     )
 }
 
