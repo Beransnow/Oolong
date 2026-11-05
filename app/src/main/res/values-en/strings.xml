@@ -27,6 +27,11 @@
     <string name="title_open_in_browser">Open in browser</string>
     <string name="web_not_secure">Not secure</string>
     <string name="title_login_baidu">Sign in to Baidu</string>
+    <string name="web_error_title">Can’t open this page</string>
+    <string name="web_error_not_found">This site can’t be found</string>
+    <string name="web_error_no_response">The site isn’t responding</string>
+    <string name="web_error_insecure">Can’t make a secure connection</string>
+    <string name="web_error_other">Try again later</string>
     <string name="title_pure_read">Reader</string>
     <string name="tip_login">Sign in to view</string>
     <string name="text_loading">Loading…</string>

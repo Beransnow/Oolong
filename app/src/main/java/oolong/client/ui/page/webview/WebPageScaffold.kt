@@ -1,11 +1,19 @@
 package oolong.client.ui.page.webview
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.view.ContextThemeWrapper
+import android.webkit.WebResourceError
+import android.webkit.WebViewClient
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,10 +44,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -58,7 +68,10 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
 import oolong.client.ui.widgets.compose.AccompanistWebViewClient
+import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.ErrorTipScreen
+import oolong.client.ui.widgets.compose.ErrorType
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
@@ -67,7 +80,9 @@ import oolong.client.ui.widgets.compose.LazyLoad
 import oolong.client.ui.widgets.compose.LoadingState
 import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.MenuIconButton
+import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.WebView
+import oolong.client.ui.widgets.compose.WebViewError
 import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
 import oolong.client.ui.widgets.compose.floatingGlass
@@ -110,6 +125,11 @@ internal fun WebPageScaffold(
     // Before the first page starts, the one it is going to
     val currentUrl by remember { derivedStateOf { state.lastLoadedUrl ?: initialUrl } }
     val fill = rememberLoadProgress(state)
+    // The page could not be reached: said by the app, with a way to try again, instead of the web
+    // view's own error page, whose title is not the page's either
+    val error by remember {
+        derivedStateOf { state.errorsForCurrentRequest.firstOrNull { it.isPageFailure() }?.error }
+    }
     val menus = LocalContextMenus.current
 
     GlassScaffold(
@@ -120,7 +140,7 @@ internal fun WebPageScaffold(
                 title = {
                     var bounds by remember { mutableStateOf(Rect.Zero) }
                     AddressCapsule(
-                        title = title ?: pageTitle,
+                        title = title ?: if (error != null) "" else pageTitle,
                         url = currentUrl,
                         fill = fill,
                         modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() },
@@ -184,8 +204,65 @@ internal fun WebPageScaffold(
                 )
             },
         )
+        error?.let {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(colors.background),
+                contentAlignment = Alignment.Center,
+            ) {
+                PageError(error = it, onReload = { navigator.reload() })
+            }
+        }
     }
 }
+
+/**
+ * Why the page could not open: no network at all, which the app's other pages say the same way, or
+ * what went wrong with the site.
+ */
+@Composable
+private fun PageError(error: WebResourceError, onReload: () -> Unit) {
+    val context = LocalContext.current
+    val offline = remember(error) { !hasNetwork(context) }
+    val reload: @Composable ColumnScope.() -> Unit = {
+        Button(onClick = onReload) {
+            Text(text = stringResource(id = R.string.btn_reload))
+        }
+    }
+    if (offline) {
+        ErrorTipScreen(errorType = ErrorType.NETWORK, errorMessage = "", actions = reload)
+        return
+    }
+    TipScreen(
+        title = { Text(text = stringResource(id = R.string.web_error_title)) },
+        message = {
+            Text(
+                text = stringResource(
+                    id = when (error.errorCode) {
+                        WebViewClient.ERROR_HOST_LOOKUP -> R.string.web_error_not_found
+                        WebViewClient.ERROR_CONNECT, WebViewClient.ERROR_TIMEOUT, WebViewClient.ERROR_IO -> R.string.web_error_no_response
+                        WebViewClient.ERROR_FAILED_SSL_HANDSHAKE -> R.string.web_error_insecure
+                        else -> R.string.web_error_other
+                    }
+                )
+            )
+        },
+        actions = reload,
+    )
+}
+
+/** Whether the device has a network that reaches the internet at all, checked or not. */
+private fun hasNetwork(context: Context): Boolean {
+    val manager = context.getSystemService<ConnectivityManager>() ?: return true
+    val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
+
+/** Whether it is the page itself that failed, not something on it, nor a load that was called off. */
+private fun WebViewError.isPageFailure(): Boolean =
+    request?.isForMainFrame == true && error.description?.contains("ERR_ABORTED") != true
 
 /** How far the page has loaded, and how much the fill showing it shows. */
 @Stable
