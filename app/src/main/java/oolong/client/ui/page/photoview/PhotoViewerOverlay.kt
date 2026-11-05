@@ -109,6 +109,8 @@ import oolong.client.ui.widgets.compose.MediaGlassActions
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.ui.widgets.compose.clickMenu
+import oolong.client.ui.widgets.compose.dimFilter
+import oolong.client.ui.widgets.compose.nightImageDim
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 import oolong.client.utils.download
@@ -349,6 +351,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             }
         }
 
+        // The thumbnail's night dim, lifting as the picture flies out and settling back as it lands
+        val nightDim = nightImageDim()
         if (phase != Phase.Open || pictures.isEmpty()) {
             val request = flying
             if (request != null) {
@@ -367,6 +371,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                         model = request,
                         contentDescription = null,
                         contentScale = if (flyingCrops) ContentScale.Crop else ContentScale.Fit,
+                        colorFilter = dimFilter(nightDim * (1f - p.coerceIn(0f, 1f))),
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
