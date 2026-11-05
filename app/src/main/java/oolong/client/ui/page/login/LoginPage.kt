@@ -53,6 +53,7 @@ fun LoginPage(
         chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
         onClose = { navigator.navigateUp() },
         menuItems = { listOf(ContextMenuItem(Symbols.Refresh, refresh) { webViewNavigator.reload() }) },
+        title = stringResource(id = R.string.title_login_baidu),
         scaffoldState = scaffoldState,
     )
 }

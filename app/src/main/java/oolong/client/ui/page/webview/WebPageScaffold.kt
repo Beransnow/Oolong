@@ -1,19 +1,24 @@
 package oolong.client.ui.page.webview
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,29 +26,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
 import oolong.client.ui.widgets.compose.AccompanistWebViewClient
-import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
+import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.LazyLoad
 import oolong.client.ui.widgets.compose.LoadingState
+import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.MenuIconButton
 import oolong.client.ui.widgets.compose.WebView
 import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
-import oolong.client.utils.isInternalHost
+import oolong.client.ui.widgets.compose.floatingGlass
 
 /**
  * A page showing a web page: the bar with its title and address over the web view, which starts
@@ -80,13 +103,10 @@ internal fun WebPageScaffold(
         loaded = true
     }
 
-    val currentHost by remember {
-        derivedStateOf { state.lastLoadedUrl?.toUri()?.host.orEmpty().lowercase() }
-    }
-    val progress by remember {
-        derivedStateOf { (state.loadingState as? LoadingState.Loading)?.progress }
-    }
-    val animatedProgress by animateFloatAsState(targetValue = progress ?: 0f, animationSpec = Motion.settle(), label = "progress")
+    // Before the first page starts, the one it is going to
+    val currentUrl by remember { derivedStateOf { state.lastLoadedUrl ?: initialUrl } }
+    val fill = rememberLoadProgress(state)
+    val menus = LocalContextMenus.current
 
     GlassScaffold(
         scaffoldState = scaffoldState,
@@ -94,24 +114,27 @@ internal fun WebPageScaffold(
         topBar = {
             GlassTopBar(
                 title = {
-                    Column {
-                        Text(
-                            text = title ?: pageTitle.ifEmpty { stringResource(id = R.string.title_default) },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    var bounds by remember { mutableStateOf(Rect.Zero) }
+                    AddressCapsule(
+                        title = title ?: pageTitle,
+                        url = currentUrl,
+                        fill = fill,
+                        modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() },
+                        onClick = {
+                            val items = menuItems()
+                            if (menus != null && items.isNotEmpty()) menus.show(items, anchor = bounds)
+                        },
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            imageVector = Symbols.Close,
+                            contentDescription = stringResource(id = R.string.btn_close),
+                            tint = ExtendedTheme.colors.topBarContent,
                         )
-                        if (currentHost.isNotEmpty() && !isInternalHost(currentHost)) {
-                            Text(
-                                text = currentHost,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = ExtendedTheme.colors.topBarContentSecondary,
-                                style = MaterialTheme.typography.caption
-                            )
-                        }
                     }
                 },
-                navigationIcon = { BackNavigationIcon(onBackPressed = onClose) },
                 actions = {
                     MenuIconButton(
                         icon = Symbols.MoreVert,
@@ -122,32 +145,152 @@ internal fun WebPageScaffold(
             )
         }
     ) { paddingValues ->
-        Box {
-            WebView(
-                state = state,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                navigator = navigator,
-                onCreated = {
-                    it.settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
-                    }
-                },
-                client = client,
-                chromeClient = chromeClient,
-            )
+        WebView(
+            state = state,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            navigator = navigator,
+            onCreated = {
+                it.settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    setSupportZoom(true)
+                    builtInZoomControls = true
+                    displayZoomControls = false
+                }
+            },
+            client = client,
+            chromeClient = chromeClient,
+        )
+    }
+}
 
-            if (progress != null) {
-                LinearProgressIndicator(
-                    progress = animatedProgress,
-                    modifier = Modifier.fillMaxWidth()
+/** How far the page has loaded, and how much the fill showing it shows. */
+@Stable
+private class LoadProgress {
+    val value = Animatable(0f)
+    val shown = Animatable(0f)
+}
+
+/**
+ * Follows [state]'s loading: the fill shows only for loads that take longer than [ProgressDelay],
+ * never goes back within a load, and on finishing runs to the end before it fades.
+ */
+@Composable
+private fun rememberLoadProgress(state: WebViewState): LoadProgress {
+    val progress = remember { LoadProgress() }
+    LaunchedEffect(state) {
+        snapshotFlow { state.loadingState is LoadingState.Loading }
+            .distinctUntilChanged()
+            .collectLatest { loading ->
+                if (loading) {
+                    progress.value.snapTo(0f)
+                    progress.shown.snapTo(0f)
+                    coroutineScope {
+                        launch {
+                            delay(ProgressDelay)
+                            progress.shown.animateTo(1f, Motion.fadeIn())
+                        }
+                        snapshotFlow { (state.loadingState as? LoadingState.Loading)?.progress ?: 0f }
+                            .collect { reported ->
+                                if (reported > progress.value.targetValue) {
+                                    launch { progress.value.animateTo(reported, Motion.settle(Motion.ProgressThreshold)) }
+                                }
+                            }
+                    }
+                } else if (progress.shown.value > 0f) {
+                    progress.value.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
+                    progress.shown.animateTo(0f, Motion.fadeOut())
+                }
+            }
+    }
+    return progress
+}
+
+/** Loads quicker than this show no progress, so a fast page doesn't flash it. */
+private const val ProgressDelay = 200L
+
+/**
+ * The page's title and, under it, the site it is on, in a capsule that fills from its start as the
+ * page loads. The domain loses its start rather than its end when it is too long, as its end names
+ * the site; a page over plain HTTP is marked as not secure. Until the page gives a title, the
+ * domain stands alone in its place. Tapping it opens the page's menu.
+ */
+@Composable
+private fun AddressCapsule(
+    title: String,
+    url: String?,
+    fill: LoadProgress,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = ExtendedTheme.colors
+    val uri = remember(url) { url?.toUri() }
+    val host = uri?.host.orEmpty().lowercase().removePrefix("www.")
+    val insecure = host.isNotEmpty() && uri?.scheme.equals("http", ignoreCase = true)
+    val fillColor = colors.accent.copy(alpha = if (colors.isNightMode) 0.20f else 0.16f)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(GlassTopBarItemHeight)
+            .floatingGlass(CapsuleShape)
+            .clip(CapsuleShape)
+            // Always in the chain, drawing nothing while idle: the glass under it must not see its
+            // modifiers change while it draws
+            .drawBehind {
+                val shown = fill.shown.value
+                if (shown > 0f) {
+                    drawRect(
+                        color = fillColor.copy(alpha = fillColor.alpha * shown),
+                        size = Size(size.width * fill.value.value, size.height),
+                    )
+                }
+            }
+            // The glass answers the press
+            .clickable(interactionSource = null, indication = null, onClick = onClick)
+            .padding(horizontal = 18.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        if (title.isNotEmpty() || host.isEmpty()) {
+            Text(
+                text = title,
+                style = TextStyles.label,
+                color = colors.topBarContent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (host.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (insecure) {
+                    val warning = MaterialTheme.colors.error
+                    Icon(
+                        imageVector = Symbols.Warning,
+                        contentDescription = null,
+                        tint = warning,
+                        modifier = Modifier.size(12.dp),
+                    )
+                    Text(
+                        text = stringResource(id = R.string.web_not_secure),
+                        style = TextStyles.footnote,
+                        fontWeight = FontWeight.Medium,
+                        color = warning,
+                        modifier = Modifier.padding(start = 2.dp, end = 4.dp),
+                        maxLines = 1,
+                    )
+                }
+                val alone = title.isEmpty()
+                Text(
+                    text = host,
+                    style = if (alone) TextStyles.label else TextStyles.footnote,
+                    color = if (alone) colors.topBarContent else colors.topBarContentSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.StartEllipsis,
                 )
             }
         }
     }
 }
+
+private val CapsuleShape = SmoothCornerShape.Capsule
