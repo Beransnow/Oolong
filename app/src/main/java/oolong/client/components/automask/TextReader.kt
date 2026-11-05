@@ -44,6 +44,8 @@ class TextReader internal constructor(private val model: Interpreter, private va
         Canvas(line).drawBitmap(picture, Rect(left, top, right, bottom), Rect(0, 0, width, Height), Paint(Paint.FILTER_BITMAP_FLAG))
         val pixels = IntArray(width * Height).also { line.getPixels(it, 0, width, 0, 0, width, Height) }
         val chars = mutableListOf<String>()
+        // How sure the model is of each, the most it gave it over its steps
+        val sure = mutableListOf<Float>()
         val spans = mutableListOf<ClosedFloatingPointRange<Float>>()
         var start = 0
         // Characters whose middle falls in a window's own part, the overlap shared with the next
@@ -90,10 +92,12 @@ class TextReader internal constructor(private val model: Interpreter, private va
                     current = middle in ownFrom until ownTo
                     if (current) {
                         chars += characters[best]
+                        sure += bestScore
                         spans += from.toFloat()..(from + StepWidth).toFloat()
                     }
                 } else if (best != 0 && current) {
                     spans[spans.lastIndex] = spans.last().start..(from + StepWidth).toFloat()
+                    sure[sure.lastIndex] = max(sure.last(), bestScore)
                 }
                 if (best == 0) current = false
                 previous = best
@@ -101,6 +105,18 @@ class TextReader internal constructor(private val model: Interpreter, private va
             if (last) break
             ownFrom = start + Width - Overlap / 2
             start += Width - Overlap
+        }
+        // What the model was hardly sure of is more often wrong than right, and a lone such
+        // character on a line of its own is mostly an icon read as one
+        val kept = chars.indices.filter { sure[it] >= LeastSure }
+        if (kept.size == 1 && sure[kept[0]] < LeastSureAlone) return ReadLine("", emptyList(), left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
+        if (kept.size < chars.size) {
+            val keptChars = kept.map { chars[it] }
+            val keptSpans = kept.map { spans[it] }
+            chars.clear()
+            chars += keptChars
+            spans.clear()
+            spans += keptSpans
         }
         return ReadLine(
             chars.joinToString(""),
@@ -121,6 +137,14 @@ class TextReader internal constructor(private val model: Interpreter, private va
         private const val Width = 640
         private const val Steps = 80
         private const val StepWidth = Width / Steps
+
+        /**
+         * How sure the model must be of a character to keep it, and of a line's only character.
+         * Measured on screenshots: below 0.3 a character was always wrong; a lone one under 0.7
+         * was an icon each time, while lone digits came at 1.
+         */
+        private const val LeastSure = 0.3f
+        private const val LeastSureAlone = 0.7f
 
         /** How much of a long line two windows read twice, so no character is cut in half. */
         private const val Overlap = 64
