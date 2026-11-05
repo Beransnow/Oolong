@@ -2,11 +2,18 @@ package oolong.client.ui.page.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.ContextThemeWrapper
+import android.view.PixelCopy
+import android.view.View
 import android.webkit.WebResourceError
 import android.webkit.WebViewClient
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,21 +22,29 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,16 +56,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import kotlinx.coroutines.coroutineScope
@@ -60,7 +81,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
+import oolong.client.findActivity
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -86,6 +109,9 @@ import oolong.client.ui.widgets.compose.WebViewError
 import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.pageScroll
+import kotlin.coroutines.resume
+import android.graphics.Rect as AndroidRect
 
 /**
  * A page showing a web page: the bar with its title and address over the web view, which starts
@@ -106,6 +132,7 @@ internal fun WebPageScaffold(
     onClose: () -> Unit,
     menuItems: () -> List<ContextMenuItem>,
     title: String? = null,
+    immersive: Boolean = false,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
 ) {
     var loaded by rememberSaveable { mutableStateOf(false) }
@@ -131,12 +158,38 @@ internal fun WebPageScaffold(
         derivedStateOf { state.errorsForCurrentRequest.firstOrNull { it.isPageFailure() }?.error }
     }
     val menus = LocalContextMenus.current
+    // Immersive: how far the page has pushed the bar up, going up after it
+    var consumedInset by remember { mutableIntStateOf(0) }
+    var insetPx by remember { mutableIntStateOf(0) }
+    var pageScrollY by remember { mutableIntStateOf(0) }
+    // The colour along the page's top, which the status bar and the bar lie on, so they and the
+    // page are one piece
+    var pageColor by remember { mutableStateOf<Color?>(null) }
+    LaunchedEffect(state) {
+        snapshotFlow { Triple(state.loadingState is LoadingState.Finished, consumedInset, pageScrollY) }
+            .collectLatest { (finished, _, _) ->
+                if (!finished) return@collectLatest
+                // Once the page has settled
+                delay(PageColorDelay)
+                state.webView?.let { view -> sampleTopColor(view)?.let { pageColor = it } }
+            }
+    }
+    val colors = ExtendedTheme.colors
+    val ground by animateColorAsState(
+        targetValue = if (error != null) colors.background else pageColor ?: colors.background,
+        animationSpec = Motion.fadeIn(),
+        label = "pageColor",
+    )
+    StatusBarIcons(dark = ground.luminance() > 0.5f)
 
     GlassScaffold(
         scaffoldState = scaffoldState,
         sampleContent = false,
+        backgroundColor = ground,
         topBar = {
             GlassTopBar(
+                glassButtons = true,
+                hiddenFraction = { if (insetPx > 0) consumedInset.toFloat() / insetPx else 0f },
                 title = {
                     var bounds by remember { mutableStateOf(Rect.Zero) }
                     AddressCapsule(
@@ -169,16 +222,37 @@ internal fun WebPageScaffold(
             )
         }
     ) { paddingValues ->
-        val colors = ExtendedTheme.colors
         // Until the page first draws, the web view shows the page's background, not white
         val background = colors.background.toArgb()
         LaunchedEffect(state.webView, background) { state.webView?.setBackgroundColor(background) }
         val night = colors.isNightMode
+        // Immersive, the page starts below the bar and pushes it up as it scrolls, up to the status
+        // bar and never under it, where a header the page keeps at its top would be hidden
+        val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val inset = with(LocalDensity.current) { (paddingValues.calculateTopPadding() - statusBar).roundToPx().coerceAtLeast(0) }
+        SideEffect { insetPx = inset }
+        LaunchedEffect(state.webView, inset) { (state.webView as? InsetWebView)?.topInset = inset }
+        // A new page starts at its top, below the bar
+        LaunchedEffect(state.webView, currentUrl) { (state.webView as? InsetWebView)?.showInset() }
+        val layoutDirection = LocalLayoutDirection.current
         WebView(
             state = state,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            modifier = if (immersive) {
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = statusBar,
+                        start = paddingValues.calculateStartPadding(layoutDirection),
+                        end = paddingValues.calculateEndPadding(layoutDirection),
+                        bottom = paddingValues.calculateBottomPadding(),
+                    )
+            } else {
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            }
+                // Nothing ever comes under the bar, so its scroll edge never shows
+                .pageScroll(scrollable = null) { 0 },
             navigator = navigator,
             onCreated = {
                 it.setBackgroundColor(background)
@@ -199,9 +273,18 @@ internal fun WebPageScaffold(
             // The web view takes its light or dark look from its context's theme, which follows the
             // app's appearance rather than the system's
             factory = { context ->
-                android.webkit.WebView(
-                    ContextThemeWrapper(context, if (night) R.style.ThemeOverlay_WebView_Dark else R.style.ThemeOverlay_WebView_Light),
-                )
+                val themed = ContextThemeWrapper(context, if (night) R.style.ThemeOverlay_WebView_Dark else R.style.ThemeOverlay_WebView_Light)
+                if (immersive) {
+                    InsetWebView(themed).apply {
+                        topInset = inset
+                        onScrolled = { consumed, scrollY ->
+                            consumedInset = consumed
+                            pageScrollY = scrollY
+                        }
+                    }
+                } else {
+                    android.webkit.WebView(themed)
+                }
             },
         )
         error?.let {
@@ -392,3 +475,49 @@ private fun AddressCapsule(
 }
 
 private val CapsuleShape = SmoothCornerShape.Capsule
+
+/** How long the page must stay still before its colour is taken. */
+private const val PageColorDelay = 150L
+
+/** How many points along the page's top its colour is taken from. */
+private const val ColorSamples = 24
+
+/**
+ * The colour most of the page's top row has, as drawn on screen, so dimmed in the dark appearance as
+ * the page is. Null before Android 8, where the screen can't be read back.
+ */
+private suspend fun sampleTopColor(view: View): Color? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !view.isAttachedToWindow || view.width == 0) return null
+    val window = view.context.findActivity()?.window ?: return null
+    val location = IntArray(2)
+    // In the window, with the view's move taken in
+    view.getLocationInWindow(location)
+    val top = location[1] + 1
+    val bitmap = Bitmap.createBitmap(ColorSamples, 1, Bitmap.Config.ARGB_8888)
+    val copied = suspendCancellableCoroutine { continuation ->
+        PixelCopy.request(
+            window,
+            AndroidRect(location[0], top, location[0] + view.width, top + 2),
+            bitmap,
+            { result -> continuation.resume(result == PixelCopy.SUCCESS) },
+            Handler(Looper.getMainLooper()),
+        )
+    }
+    if (!copied) return null
+    val pixels = IntArray(ColorSamples).also { bitmap.getPixels(it, 0, ColorSamples, 0, 0, ColorSamples, 1) }
+    bitmap.recycle()
+    return Color(pixels.toList().groupingBy { it }.eachCount().maxBy { it.value }.key)
+}
+
+/** Dark or light status bar icons while the page shows, as the colour under them needs. */
+@Composable
+private fun StatusBarIcons(dark: Boolean) {
+    val view = LocalView.current
+    val activity = LocalContext.current.findActivity() ?: return
+    DisposableEffect(activity, dark) {
+        val controller = WindowCompat.getInsetsController(activity.window, view)
+        val before = controller.isAppearanceLightStatusBars
+        controller.isAppearanceLightStatusBars = dark
+        onDispose { controller.isAppearanceLightStatusBars = before }
+    }
+}

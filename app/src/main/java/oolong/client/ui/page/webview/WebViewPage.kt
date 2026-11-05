@@ -79,6 +79,7 @@ fun WebViewPage(
         client = remember(navigator) { MyWebViewClient(navigator) { account } },
         chromeClient = remember { MyWebChromeClient(context, coroutineScope) },
         onClose = { navigator.navigateUp() },
+        immersive = true,
         menuItems = {
             val url = webViewState.webView?.url ?: initialUrl
             listOf(

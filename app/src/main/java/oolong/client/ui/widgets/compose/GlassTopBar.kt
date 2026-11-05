@@ -113,6 +113,8 @@ val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
  * of its own, such as Save.
  * @param wash a colour washed over the glass, strongest at the top and gone at the bottom edge,
  * such as a forum's own colour on its page.
+ * @param glassButtons keeps the buttons on glass at the top of the page too, for a page whose
+ * content never comes under the bar, where they would otherwise always be bare.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -126,6 +128,7 @@ fun GlassTopBar(
     hiddenFraction: () -> Float = { 0f },
     pinnedOffset: () -> Int = { 0 },
     wash: Color = Color.Unspecified,
+    glassButtons: Boolean = false,
     pinnedContent: (@Composable ColumnScope.() -> Unit)? = null,
     // Last, so a trailing lambda passes the bar's rows, which the content is padded for
     content: (@Composable ColumnScope.() -> Unit)? = null,
@@ -142,7 +145,7 @@ fun GlassTopBar(
     // bar. Over a large title they keep their glass: its edge is what lines up with the title
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
     // Beside the rail they also keep it next to what the host puts at the end, which is always glass
-    val glassAlways = largeTitle != null || (besideRail && LocalTopBarEnd.current != null)
+    val glassAlways = glassButtons || largeTitle != null || (besideRail && LocalTopBarEnd.current != null)
     val barButtons = remember(scrollEdge, revealPx, glassAlways) {
         BarButtons { if (glassAlways) 1f else scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     }
