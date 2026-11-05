@@ -14,4 +14,12 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
+    <style name="ThemeOverlay.WebView.Light" parent="">
+        <item name="android:isLightTheme">true</item>
+    </style>
+
+    <style name="ThemeOverlay.WebView.Dark" parent="">
+        <item name="android:isLightTheme">false</item>
+    </style>
+
 </resources>

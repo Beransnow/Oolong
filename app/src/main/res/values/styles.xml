@@ -101,4 +101,9 @@
         <item name="android:overlapAnchor">true</item>
     </style>
 
+    <!-- What a web view takes for the app's appearance: dark lets it darken pages (API 29+) -->
+    <style name="ThemeOverlay.WebView.Light" parent="" />
+
+    <style name="ThemeOverlay.WebView.Dark" parent="" />
+
 </resources>

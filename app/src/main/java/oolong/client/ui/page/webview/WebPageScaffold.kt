@@ -1,6 +1,7 @@
 package oolong.client.ui.page.webview
 
 import android.annotation.SuppressLint
+import android.view.ContextThemeWrapper
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
@@ -39,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -145,6 +149,11 @@ internal fun WebPageScaffold(
             )
         }
     ) { paddingValues ->
+        val colors = ExtendedTheme.colors
+        // Until the page first draws, the web view shows the page's background, not white
+        val background = colors.background.toArgb()
+        LaunchedEffect(state.webView, background) { state.webView?.setBackgroundColor(background) }
+        val night = colors.isNightMode
         WebView(
             state = state,
             modifier = Modifier
@@ -152,6 +161,7 @@ internal fun WebPageScaffold(
                 .padding(paddingValues),
             navigator = navigator,
             onCreated = {
+                it.setBackgroundColor(background)
                 it.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
@@ -159,9 +169,20 @@ internal fun WebPageScaffold(
                     builtInZoomControls = true
                     displayZoomControls = false
                 }
+                // Pages without a dark look of their own are darkened in the dark appearance
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                    WebSettingsCompat.setAlgorithmicDarkeningAllowed(it.settings, true)
+                }
             },
             client = client,
             chromeClient = chromeClient,
+            // The web view takes its light or dark look from its context's theme, which follows the
+            // app's appearance rather than the system's
+            factory = { context ->
+                android.webkit.WebView(
+                    ContextThemeWrapper(context, if (night) R.style.ThemeOverlay_WebView_Dark else R.style.ThemeOverlay_WebView_Light),
+                )
+            },
         )
     }
 }
