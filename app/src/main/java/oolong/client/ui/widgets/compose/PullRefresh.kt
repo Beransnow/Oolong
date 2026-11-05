@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -28,9 +30,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -39,9 +44,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
+import oolong.client.ui.common.theme.compose.TextStyles
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.sign
 
 /** How far the list must be pulled down to refresh, and where it waits while refreshing. */
@@ -81,6 +90,10 @@ internal val LocalPullOffset = compositionLocalOf<() -> Float> { { 0f } }
  * With [revealUnpulled], a refresh started some other way, such as tapping the selected tab again,
  * lowers the list to show the loader as a pull would. Only lists whose [refreshing] means a refresh
  * of what they show want it, not those that are also refreshing while they first load.
+ *
+ * [result] says what the refresh that just ended brought. Given when refreshing ends, the loader
+ * opens into a capsule saying it, and the list waits a moment before going back up, or until a
+ * finger takes it. [onResultShown] is called as it is taken, after which [result] should be null.
  */
 @Composable
 fun PullRefresh(
@@ -91,6 +104,8 @@ fun PullRefresh(
     indicatorTop: Dp = 0.dp,
     endPull: EndPull = EndPull.None,
     revealUnpulled: Boolean = false,
+    result: String? = null,
+    onResultShown: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -103,13 +118,45 @@ fun PullRefresh(
     val curOnRefresh by rememberUpdatedState(onRefresh)
     val curEnabled by rememberUpdatedState(enabled)
     val curEndPull by rememberUpdatedState(endPull)
+    val curResult by rememberUpdatedState(result)
+    val curOnResultShown by rememberUpdatedState(onResultShown)
+    // The result in place of the loader, and how far the loader has opened into it
+    var shownResult by remember { mutableStateOf<String?>(null) }
+    val reveal = remember { Animatable(0f) }
 
     // The list goes back up once refreshing ends, unless a finger still holds it
     LaunchedEffect(refreshing) {
-        when {
-            refreshing && revealUnpulled && !state.dragging && state.offset == 0f -> state.settle(holdPx, Motion.snap())
-            !refreshing && !state.dragging && state.offset > 0f -> state.settle(0f, Motion.dismiss())
+        if (refreshing) {
+            reveal.snapTo(0f)
+            shownResult = null
+            if (revealUnpulled && !state.dragging && state.offset == 0f) state.settle(holdPx, Motion.snap())
+            return@LaunchedEffect
         }
+        val text = curResult
+        if (text != null) curOnResultShown()
+        if (state.dragging || state.offset <= 0f) return@LaunchedEffect
+        if (text != null) {
+            shownResult = text
+            reveal.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
+            withTimeoutOrNull(ResultHold) { snapshotFlow { state.dragging }.first { it } }
+        }
+        if (!state.dragging) state.settle(0f, Motion.dismiss())
+    }
+    // A finger taking the list puts the loader back for it
+    LaunchedEffect(state) {
+        snapshotFlow { state.dragging }.collect { dragging ->
+            if (dragging && shownResult != null) {
+                reveal.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                shownResult = null
+            }
+        }
+    }
+    // Gone with the gap it stood in
+    LaunchedEffect(shownResult) {
+        if (shownResult == null) return@LaunchedEffect
+        snapshotFlow { state.offset <= 0f }.first { it }
+        reveal.snapTo(0f)
+        shownResult = null
     }
 
     val connection = remember(state) {
@@ -177,13 +224,75 @@ fun PullRefresh(
                 content()
             }
         }
-        RefreshIndicator(state, refreshing, indicatorTop, refreshPx)
+        RefreshIndicator(state, refreshing, indicatorTop, refreshPx, reveal = { reveal.value })
+        shownResult?.let { text ->
+            ResultCapsule(
+                text = text,
+                reveal = { reveal.value },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer {
+                        val offset = state.offset.coerceAtLeast(0f)
+                        translationY = indicatorTop.toPx() + offset / 2 - size.height / 2
+                        alpha = (offset / (holdPx * 0.6f)).coerceIn(0f, 1f)
+                    },
+            )
+        }
     }
 }
 
+/**
+ * What a refresh brought, in the gap the loader was in: a glass capsule that starts as a circle
+ * the loader's size and widens to fit [text] as [reveal] goes to 1.
+ */
+@Composable
+private fun ResultCapsule(text: String, reveal: () -> Float, modifier: Modifier) {
+    val style = TextStyles.label
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val textWidth = remember(text, style, density) { measurer.measure(text, style, maxLines = 1).size.width }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .layout { measurable, constraints ->
+                val height = ResultHeight.roundToPx()
+                val full = (textWidth + ResultPadding.roundToPx() * 2).coerceAtMost(constraints.maxWidth)
+                val start = LoaderSize.roundToPx()
+                val p = reveal().coerceIn(0f, 1f)
+                val width = (start + (full - start) * p).roundToInt()
+                val size = (start + (height - start) * p).roundToInt()
+                val placeable = measurable.measure(Constraints.fixed(width, size))
+                layout(width, size) { placeable.place(0, 0) }
+            }
+            .floatingGlass(SmoothCornerShape.Capsule, barButton = false),
+    ) {
+        Text(
+            text = text,
+            style = style,
+            color = ExtendedTheme.colors.text,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .wrapContentWidth(unbounded = true)
+                .graphicsLayer { alpha = ((reveal() - 0.4f) / 0.6f).coerceIn(0f, 1f) },
+        )
+    }
+}
+
+/** How long a refresh's result stays before the list goes back up. */
+private const val ResultHold = 1_200L
+private val ResultHeight = 36.dp
+private val ResultPadding = 16.dp
+
 /** The loader in the gap above a list pulled down: an arc drawn as far as the pull has come. */
 @Composable
-private fun BoxScope.RefreshIndicator(state: PullState, refreshing: Boolean, top: Dp, refreshPx: Float) {
+private fun BoxScope.RefreshIndicator(
+    state: PullState,
+    refreshing: Boolean,
+    top: Dp,
+    refreshPx: Float,
+    reveal: () -> Float,
+) {
     val haptic = LocalHapticFeedback.current
     val color = ExtendedTheme.colors.emphasis
     val armed by remember(refreshPx) { derivedStateOf { state.offset >= refreshPx } }
@@ -215,7 +324,8 @@ private fun BoxScope.RefreshIndicator(state: PullState, refreshing: Boolean, top
                 val offset = state.offset.coerceAtLeast(0f)
                 val progress = (offset / refreshPx).coerceAtMost(1f)
                 translationY = top.toPx() + offset / 2 - size.height / 2
-                alpha = (offset / (refreshPx * 0.45f)).coerceIn(0f, 1f)
+                // Gives way to a result opening out of it
+                alpha = (offset / (refreshPx * 0.45f)).coerceIn(0f, 1f) * (1f - reveal() * 2.5f).coerceAtLeast(0f)
                 val scale = (0.6f + 0.4f * progress) * bump.value
                 scaleX = scale
                 scaleY = scale

@@ -12,6 +12,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -54,13 +55,15 @@ data class RecommendedItem(
     val dislikeOptions: ImmutableList<DislikeOption> = persistentListOf(),
 )
 
-/** What the last refresh brought. */
+/** What a refresh of a list already shown brought. */
 @Immutable
 data class FeedRefresh(
     /** How many threads it added in front of the list. */
     val count: Int,
     /** Counts the refreshes, so that one bringing as many threads as the last still shows. */
     val id: Int,
+    /** Whether it failed, leaving the list as it was. */
+    val failed: Boolean = false,
 )
 
 @Immutable
@@ -74,10 +77,14 @@ data class PersonalizedState(
      */
     val undoable: ImmutableMap<Long, String?> = persistentMapOf(),
     /**
-     * How many threads at the top the last refresh put in front of those already read, which the
-     * list marks; 0 when the list was empty before.
+     * The thread that was first before the last refresh: the threads above it are new, and the
+     * list marks where it begins. Null before any refresh of a list already shown.
      */
-    val newCount: Int = 0,
+    val seenFrom: Long? = null,
+    /**
+     * The refresh that just ended, until [PersonalizedViewModel.refreshShown] says it was shown;
+     * null while one is still loading, so it comes together with the threads it brought.
+     */
     val lastRefresh: FeedRefresh? = null,
 )
 
@@ -105,8 +112,10 @@ class PersonalizedViewModel @Inject constructor(
     private data class Local(
         val disliked: Set<Long> = emptySet(),
         val undoable: Map<Long, String?> = emptyMap(),
-        val newCount: Int = 0,
+        val seenFrom: Long? = null,
         val lastRefresh: FeedRefresh? = null,
+        /** The id of the last refresh shown. */
+        val shownRefresh: Int = 0,
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -119,8 +128,9 @@ class PersonalizedViewModel @Inject constructor(
             list = list.withItems(blocked.map(rules, list.items) { RecommendedItem(rules.feedThread(it.thread), it.dislikeOptions) }),
             disliked = local.disliked.toImmutableSet(),
             undoable = local.undoable.toImmutableMap(),
-            newCount = local.newCount,
-            lastRefresh = local.lastRefresh,
+            seenFrom = local.seenFrom,
+            lastRefresh = local.lastRefresh
+                ?.takeIf { it.id != local.shownRefresh && list.refresh != LoadStatus.Loading },
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PersonalizedState())
 
@@ -132,6 +142,11 @@ class PersonalizedViewModel @Inject constructor(
     fun refresh() = pager().refresh()
 
     fun loadMore() = pager().loadMore()
+
+    /** Marks refresh [id] shown, so that coming back to the list doesn't show it again. */
+    fun refreshShown(id: Int) {
+        local.update { it.copy(shownRefresh = maxOf(it.shownRefresh, id)) }
+    }
 
     fun agree(thread: ThreadSummary) = actions.launch("agree-${thread.id}") {
         runCatching { threads.agree(thread, !thread.agree.agreed) }
@@ -171,8 +186,13 @@ class PersonalizedViewModel @Inject constructor(
             refreshMode = RefreshMode.Prepend,
         ) { page ->
             val loaded = pager.value?.state?.value?.items.orEmpty()
-            val threads = repository.recommended(refresh = page == 1, page = page)
-            if (page == 1) onRefreshed(loaded, threads)
+            val threads = try {
+                repository.recommended(refresh = page == 1, page = page)
+            } catch (e: Exception) {
+                if (page == 1 && loaded.isNotEmpty() && e !is CancellationException) onRefreshFailed()
+                throw e
+            }
+            if (page == 1 && loaded.isNotEmpty()) onRefreshed(loaded, threads)
             Page(threads, next = page + 1)
         }.also { pager.value = it }
     }
@@ -182,10 +202,14 @@ class PersonalizedViewModel @Inject constructor(
         val count = threads.distinctBy { it.thread.id }.count { it.thread.id !in loadedIds }
         local.update {
             it.copy(
-                newCount = if (loaded.isEmpty()) 0 else count,
+                seenFrom = loaded.first().thread.id,
                 lastRefresh = FeedRefresh(count, (it.lastRefresh?.id ?: 0) + 1),
             )
         }
+    }
+
+    private fun onRefreshFailed() {
+        local.update { it.copy(lastRefresh = FeedRefresh(0, (it.lastRefresh?.id ?: 0) + 1, failed = true)) }
     }
 
     private companion object {

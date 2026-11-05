@@ -65,7 +65,7 @@ internal object ExplorePreviewData {
             hasMore = true,
         ),
         disliked = persistentSetOf(3L),
-        newCount = 2,
+        seenFrom = threads[2].id,
     )
 
     val hot = HotState(

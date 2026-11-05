@@ -64,16 +64,33 @@ class PersonalizedViewModelTest {
 
         viewModel.open()
         runCurrent()
-        assertEquals(0, viewModel.state.value.newCount)
+        assertEquals(null, viewModel.state.value.seenFrom)
+        assertEquals(null, viewModel.state.value.lastRefresh)
         viewModel.loadMore()
         runCurrent()
         viewModel.refresh()
         runCurrent()
 
         assertEquals(listOf(3L, 1L, 2L, 4L), viewModel.ids)
-        assertEquals(1, viewModel.state.value.newCount)
+        assertEquals(1L, viewModel.state.value.seenFrom)
         assertEquals(1, viewModel.state.value.lastRefresh?.count)
-        assertEquals(2, viewModel.state.value.lastRefresh?.id)
+
+        viewModel.refreshShown(viewModel.state.value.lastRefresh!!.id)
+        runCurrent()
+        assertEquals(null, viewModel.state.value.lastRefresh)
+    }
+
+    @Test
+    fun `a failed refresh of a shown list says so and keeps the list`() = runTest {
+        coEvery { repository.recommended(true, 1) } returns listOf(thread(1)) andThenThrows IllegalStateException()
+        val viewModel = createViewModel()
+        viewModel.open()
+        runCurrent()
+        viewModel.refresh()
+        runCurrent()
+
+        assertEquals(listOf(1L), viewModel.ids)
+        assertEquals(true, viewModel.state.value.lastRefresh?.failed)
     }
 
     @Test

@@ -168,7 +168,9 @@
         <item quantity="other">更新了 %1$d 条动态</item>
     </plurals>
     <string name="tip_disliked">将减少此类推荐</string>
-    <string name="tip_refresh">上次看到这里，点按刷新</string>
+    <string name="tip_seen_here">上次看到这里</string>
+    <string name="toast_feed_no_new">暂无新动态</string>
+    <string name="toast_feed_refresh_failed">刷新失败</string>
     <string name="button_finish">完成</string>
     <string name="button_rotate">旋转</string>
     <string name="button_restore">还原</string>

@@ -171,7 +171,9 @@
         <item quantity="other">%1$d new updates</item>
     </plurals>
     <string name="tip_disliked">You\'ll see less like this</string>
-    <string name="tip_refresh">You were here. Tap to refresh</string>
+    <string name="tip_seen_here">You were here</string>
+    <string name="toast_feed_no_new">No new updates</string>
+    <string name="toast_feed_refresh_failed">Couldn\'t refresh</string>
     <string name="button_finish">Done</string>
     <string name="button_rotate">Rotate</string>
     <string name="button_restore">Reset</string>
