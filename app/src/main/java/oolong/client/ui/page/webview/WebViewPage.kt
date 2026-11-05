@@ -194,7 +194,7 @@ open class MyWebViewClient(
             AppDialog.Permission(
                 key = permissionKey("${host}_$scheme", PERMISSION_START_APP),
                 title = context.getString(R.string.title_start_app_permission, host, appName),
-                icon = R.drawable.ic_round_exit_to_app,
+                icon = Symbols.OpenInNew,
             ) { granted, _ -> if (granted) context.startActivity(intent) }
         )
     }
@@ -307,10 +307,11 @@ class MyWebChromeClient(
                 key = permissionKey(origin, PERMISSION_LOCATION),
                 title = context.getString(
                     R.string.title_ask_permission,
-                    origin,
+                    // The site, as the address shows it, not the whole origin
+                    origin.toUri().host ?: origin,
                     context.getString(R.string.common_permission_location)
                 ),
-                icon = R.drawable.ic_round_location_on,
+                icon = Symbols.LocationOn,
             ) { granted, isForever ->
                 if (!granted) {
                     callback.invoke(origin, false, false)
@@ -375,7 +376,7 @@ class MyWebChromeClient(
                     AppDialog.Permission(
                         key = permissionKey(uri.host!!, PERMISSION_CLIPBOARD_COPY),
                         title = context.getString(R.string.title_ask_permission_clipboard_copy, uri.host),
-                        icon = R.drawable.ic_round_file_copy,
+                        icon = Symbols.ContentCopy,
                     ) { granted, _ -> if (granted) result.confirm() else result.cancel() }
                 )
             }

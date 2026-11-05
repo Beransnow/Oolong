@@ -360,6 +360,12 @@ fun BaseDialog(
     }
 }
 
+/**
+ * How far a row with a checkbox at its start sits in from a dialog's edges, so the box, past the
+ * checkbox's own touch margin, lines up with the title.
+ */
+val CheckboxRowInset = 8.dp
+
 /** Below this the window is a phone's, where dialogs rise from the bottom edge. */
 private val CompactWindowMaxWidth = 600.dp
 

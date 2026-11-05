@@ -3,9 +3,9 @@ package oolong.client.ui.widgets.compose
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import oolong.client.R
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.ScreenshotFrame
+import oolong.client.ui.common.theme.compose.Symbols
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +39,7 @@ class AppDialogsScreenshotTest {
 
     @Test
     fun sitePermission() {
-        capture(AppDialog.Permission("example.com_0", "“example.com”想要使用你的位置信息", R.drawable.ic_round_location_on) { _, _ -> })
+        capture(AppDialog.Permission("example.com_0", "要允许 example.com 访问你的定位吗？", Symbols.LocationOn) { _, _ -> })
     }
 
     @Test

@@ -31,6 +31,7 @@ import oolong.client.repository.BlackSettings
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.client.ui.widgets.compose.CheckboxRowInset
 import oolong.client.ui.widgets.compose.Dialog
 import oolong.client.ui.widgets.compose.DialogNegativeButton
 import oolong.client.ui.widgets.compose.DialogPositiveButton
@@ -69,7 +70,8 @@ fun BlackDialog(
                 CircularProgressIndicator(color = ExtendedTheme.colors.accent, modifier = Modifier.size(28.dp))
             }
         } else {
-            Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            // The boxes, past the checkbox's own margin, in line with the title
+            Column(modifier = Modifier.padding(horizontal = CheckboxRowInset)) {
                 BarRow(stringResource(R.string.black_follow), current.follow) { chosen = current.copy(follow = it) }
                 BarRow(stringResource(R.string.black_interact), current.interact) { chosen = current.copy(interact = it) }
                 BarRow(stringResource(R.string.black_chat), current.chat) { chosen = current.copy(chat = it) }

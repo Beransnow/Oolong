@@ -1,7 +1,6 @@
 package oolong.client.ui.widgets.compose
 
 import android.content.Context
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -40,8 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +55,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.utils.SharedPreferencesUtil
 
 /** A dialog asked for by code outside of Compose, as the web page's callbacks, shown by [AppDialogHost]. */
@@ -76,7 +77,8 @@ sealed interface AppDialog {
     class Permission(
         val key: String,
         val title: String,
-        @DrawableRes val icon: Int,
+        /** What is asked for, shown above the question. */
+        val icon: ImageVector,
         val onResult: (granted: Boolean, remembered: Boolean) -> Unit,
     ) : AppDialog
 
@@ -160,6 +162,7 @@ fun AppDialogHost() {
 private fun HostedDialog(
     dialog: AppDialog,
     title: String?,
+    icon: ImageVector? = null,
     cancelable: Boolean = true,
     buttons: @Composable DialogScope.() -> Unit,
     content: @Composable DialogScope.() -> Unit,
@@ -174,7 +177,25 @@ private fun HostedDialog(
         dialogState = state,
         cancelable = cancelable,
         cancelableOnTouchOutside = cancelable,
-        title = title?.let { { Text(text = it) } },
+        title = title?.let {
+            {
+                Column {
+                    // Above the title, at its start, so the dialog is laid out as any other
+                    if (icon != null) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .padding(bottom = 12.dp)
+                                .size(DialogIconSize)
+                                .background(ExtendedTheme.colors.accent.copy(alpha = 0.12f), CircleShape),
+                        ) {
+                            Icon(imageVector = icon, contentDescription = null, tint = ExtendedTheme.colors.accent, modifier = Modifier.size(22.dp))
+                        }
+                    }
+                    Text(text = it)
+                }
+            }
+        },
         buttons = buttons,
         content = content,
     )
@@ -210,9 +231,12 @@ private fun PermissionDialog(dialog: AppDialog.Permission) {
         if (remember) AppDialogs.remember(context, dialog, granted)
         dialog.onResult(granted, remember)
     }
+    // As the app's other dialogs: the question as the title, under what is asked for, and the choice
+    // to keep the answer under it as the block dialog's rows are, its box in line with the title
     HostedDialog(
         dialog = dialog,
-        title = null,
+        title = dialog.title,
+        icon = dialog.icon,
         cancelable = false,
         buttons = {
             DialogPositiveButton(text = stringResource(id = R.string.button_allow), onClick = { answer(true) })
@@ -220,33 +244,21 @@ private fun PermissionDialog(dialog: AppDialog.Permission) {
         },
     ) {
         val colors = ExtendedTheme.colors
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(horizontal = CheckboxRowInset)
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(Corners.sm)
+                .clickable { remember = !remember },
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(52.dp).background(colors.accent.copy(alpha = 0.12f), CircleShape),
-            ) {
-                Icon(painterResource(id = dialog.icon), contentDescription = null, tint = colors.accent, modifier = Modifier.size(26.dp))
-            }
-            Text(text = dialog.title, color = colors.text, fontSize = 16.sp, lineHeight = 23.sp, fontWeight = FontWeight.Medium)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(Corners.md)
-                    .clickable { remember = !remember }
-                    .padding(end = 8.dp),
-            ) {
-                Checkbox(
-                    checked = remember,
-                    onCheckedChange = { remember = it },
-                    colors = CheckboxDefaults.colors(checkedColor = colors.emphasis, uncheckedColor = colors.textSecondary),
-                )
-                Text(text = stringResource(id = R.string.title_not_ask), color = colors.textSecondary, fontSize = 14.sp)
-            }
+            Checkbox(
+                checked = remember,
+                onCheckedChange = { remember = it },
+                colors = CheckboxDefaults.colors(checkedColor = colors.emphasis, uncheckedColor = colors.textSecondary),
+            )
+            Text(text = stringResource(id = R.string.title_not_ask), style = TextStyles.bodyCompact, color = colors.text)
         }
     }
 }
@@ -287,3 +299,5 @@ private fun PermissionTipBanner(tip: AppDialog.PermissionTip) {
         Text(text = tip.message, color = colors.textSecondary, fontSize = 14.sp, lineHeight = 20.sp)
     }
 }
+
+private val DialogIconSize = 40.dp
