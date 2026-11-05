@@ -1,6 +1,5 @@
 package oolong.client.ui.page.reply
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,9 +31,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.flow.collectLatest
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -192,7 +195,7 @@ fun ReplyComposerContent(
                     } else {
                         // A new line opens on a spring, which the composer's glass follows
                         Modifier
-                            .animateContentSize(Motion.settle())
+                            .springHeight()
                             .heightIn(min = 26.dp, max = MaxCompactTextHeight)
                     }
                 ),
@@ -457,6 +460,31 @@ private fun ToggleChip(
         Text(text = text, fontSize = 12.sp, color = content)
     }
 }
+
+/**
+ * Follows the content's height on a spring, as `animateContentSize` would, but towards the height
+ * the content measures to on screen. The editor is a View, which takes its new height only there:
+ * `animateContentSize` aims for the height measured ahead, which stays at the first line.
+ */
+@Composable
+private fun Modifier.springHeight(): Modifier {
+    val height = remember { Animatable(Unmeasured) }
+    var target by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(height) {
+        snapshotFlow { target }.collectLatest { to ->
+            if (to < 0) return@collectLatest
+            if (height.value == Unmeasured) height.snapTo(to.toFloat()) else height.animateTo(to.toFloat(), Motion.settle())
+        }
+    }
+    return clipToBounds().layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        target = placeable.height
+        val shown = if (height.value == Unmeasured) placeable.height else height.value.roundToInt()
+        layout(placeable.width, shown.coerceIn(constraints.minHeight, constraints.maxHeight)) { placeable.place(0, 0) }
+    }
+}
+
+private const val Unmeasured = -1f
 
 /**
  * Shows [value]'s line while it is not null: the line opens on a spring and its content condenses
