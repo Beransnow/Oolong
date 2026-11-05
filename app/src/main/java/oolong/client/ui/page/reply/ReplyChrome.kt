@@ -48,6 +48,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
@@ -224,7 +225,7 @@ fun ReplyChrome(
         }
         // From floating over the navigation bar to resting on the keyboard as one piece with it,
         // over the first stretch of the keyboard's way up
-        val dock = if (composing) ((keyboardTop - navBottom) / with(density) { DockDistance.toPx() }).coerceIn(0f, 1f) else 0f
+        val keyboardDock = if (composing) ((keyboardTop - navBottom) / with(density) { DockDistance.toPx() }).coerceIn(0f, 1f) else 0f
 
         // Where things are, in this box's pixels: the capsules at rest and the open surfaces
         var replyCapsuleBounds by remember { mutableStateOf<Rect?>(null) }
@@ -284,6 +285,9 @@ fun ReplyChrome(
             fullProgress.animateTo(if (full) 1f else 0f, Motion.snap(Motion.ProgressThreshold), fullVelocity)
             fullVelocity = 0f
         }
+        // Full screen, it stays one piece with the bottom of the window when the keyboard goes down,
+        // rather than floating off it as a card
+        val dock = if (composing) maxOf(keyboardDock, fullProgress.value.coerceIn(0f, 1f)) else 0f
 
         // Behind a full-screen composer the page dims; tapping it goes back to the compact one.
         // Menus take no scrim.
@@ -589,7 +593,10 @@ fun ReplyChrome(
                         )
                         clip = true
                         condensed(open.value)
-                    },
+                    }
+                    // Full screen, its own ground: the glass is placed from where the composer was
+                    // a frame before, which as the keyboard slides would leave its bottom bare
+                    .drawBehind { if (fullNow > 0f) drawRect(colors.sheet.copy(alpha = fullNow.coerceIn(0f, 1f))) },
             ) {
                 composer(handle, heightPx != null)
             }
@@ -669,6 +676,19 @@ fun ReplyChrome(
                     content = menuFooter,
                 )
             }
+        }
+
+        // Full screen, the composer reaches down over the navigation bar, and under the keyboard,
+        // which as it slides is drawn a frame apart from where it says it is
+        if (composerShown && !panelUp && fullProgress.value > 0f && keyboardTop > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(with(density) { keyboardTop.toDp() })
+                    .graphicsLayer { alpha = (fullProgress.value * open.value).coerceIn(0f, 1f) }
+                    .background(colors.sheet),
+            )
         }
 
         // In place of the keyboard
