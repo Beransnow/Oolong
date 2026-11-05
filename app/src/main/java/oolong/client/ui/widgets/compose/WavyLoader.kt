@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.PI
@@ -84,23 +85,35 @@ internal fun rememberLoaderTime(running: Boolean): State<Float> {
     return time
 }
 
-/** Draws [frame] as a round-capped line whose radius waves by [wave] (0 is a plain arc). */
-internal fun DrawScope.drawWavyArc(frame: ArcFrame, wave: Float, phase: Float, color: Color, path: Path = Path()) {
-    val radius = LoaderRadius.toPx()
-    val amplitude = WaveAmplitude.toPx() * wave
+/**
+ * Draws [frame] as a round-capped line whose radius waves by [wave] (0 is a plain arc), at the
+ * loader's size unless given another, as a larger ring.
+ */
+internal fun DrawScope.drawWavyArc(
+    frame: ArcFrame,
+    wave: Float,
+    phase: Float,
+    color: Color,
+    path: Path = Path(),
+    radius: Dp = LoaderRadius,
+    stroke: Dp = LoaderStroke,
+    amplitude: Dp = WaveAmplitude,
+) {
+    val ringRadius = radius.toPx()
+    val waveAmplitude = amplitude.toPx() * wave
     val closed = frame.sweep >= 0.999f
     val sweep = frame.sweep.coerceIn(0.001f, 1f)
     val steps = max(2, ceil(sweep * 120).toInt())
     path.reset()
     for (i in 0..steps) {
         val angle = (frame.start + sweep * i / steps) * 2 * PI.toFloat() + (frame.rotation - 90f) * PI.toFloat() / 180f
-        val r = radius + amplitude * sin(WaveCount * angle - phase)
+        val r = ringRadius + waveAmplitude * sin(WaveCount * angle - phase)
         val x = center.x + r * cos(angle)
         val y = center.y + r * sin(angle)
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
     if (closed) path.close()
-    drawPath(path, color, style = Stroke(width = LoaderStroke.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawPath(path, color, style = Stroke(width = stroke.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
 /** A [LoaderSize] box drawn by [draw] with a path kept between frames. */

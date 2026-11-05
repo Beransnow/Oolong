@@ -26,6 +26,11 @@
     <string name="title_open_in_browser">在浏览器中打开</string>
     <string name="web_not_secure">不安全</string>
     <string name="title_login_baidu">登录百度账号</string>
+    <string name="login_in_progress">正在登录</string>
+    <string name="login_succeeded">登录成功</string>
+    <string name="login_failed_title">登录失败</string>
+    <string name="login_back_to_page">返回网页</string>
+    <string name="login_signed_in_as">已登录 %1$s</string>
     <string name="web_download_title">下载文件</string>
     <string name="web_download">下载</string>
     <string name="web_download_started">已开始下载</string>
@@ -732,8 +737,6 @@
     <string name="toast_black_save_failed">无法保存拉黑设置 %1$s</string>
     <string name="btn_block">屏蔽选项</string>
     <string name="text_god_verify">%s领域大神</string>
-    <string name="text_login_failed">无法登录 %s</string>
-    <string name="text_login_success">已登录，即将跳转</string>
     <string name="button_ok">我知道了</string>
     <string name="button_sure">确定(%1$d)</string>
     <string name="button_sure_default">确定</string>

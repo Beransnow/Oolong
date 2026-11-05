@@ -27,6 +27,11 @@
     <string name="title_open_in_browser">Open in browser</string>
     <string name="web_not_secure">Not secure</string>
     <string name="title_login_baidu">Sign in to Baidu</string>
+    <string name="login_in_progress">Signing in</string>
+    <string name="login_succeeded">Signed in</string>
+    <string name="login_failed_title">Couldn’t sign in</string>
+    <string name="login_back_to_page">Back to page</string>
+    <string name="login_signed_in_as">Signed in as %1$s</string>
     <string name="web_download_title">Download file</string>
     <string name="web_download">Download</string>
     <string name="web_download_started">Download started</string>
@@ -739,8 +744,6 @@
     <string name="toast_black_save_failed">Couldn\'t save block settings: %1$s</string>
     <string name="btn_block">Hide or block</string>
     <string name="text_god_verify">%s expert</string>
-    <string name="text_login_failed">Couldn\'t sign in: %s</string>
-    <string name="text_login_success">Signed in. Redirecting…</string>
     <string name="button_ok">OK</string>
     <string name="button_sure">OK (%1$d)</string>
     <string name="button_sure_default">OK</string>

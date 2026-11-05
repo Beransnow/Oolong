@@ -23,6 +23,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScaffoldState
@@ -61,8 +63,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -135,6 +139,8 @@ import android.graphics.Rect as AndroidRect
  * @param title shown in place of the page's own title, as on the login page.
  * @param menuItems the bar's menu; none leaves the menu out.
  * @param attachSession gives the web view, before it loads anything, the login it is to have; see [WebSessions].
+ * @param recede how far the page has stepped back, dimmed and taken no touches, for [overlay] to stand
+ * over it: 0 not at all, 1 fully.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -147,6 +153,8 @@ internal fun WebPageScaffold(
     onClose: () -> Unit,
     menuItems: () -> List<ContextMenuItem>,
     attachSession: (android.webkit.WebView) -> Unit,
+    recede: () -> Float = { 0f },
+    overlay: @Composable BoxScope.() -> Unit = {},
     title: String? = null,
     immersive: Boolean = false,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
@@ -270,7 +278,16 @@ internal fun WebPageScaffold(
                     .padding(paddingValues)
             }
                 // Nothing ever comes under the bar, so its scroll edge never shows
-                .pageScroll(scrollable = null) { 0 },
+                .pageScroll(scrollable = null) { 0 }
+                // Stepped back behind the overlay: smaller, rounded and dimmed
+                .graphicsLayer {
+                    val r = recede()
+                    val scale = 1f - RecedeScale * r
+                    scaleX = scale
+                    scaleY = scale
+                    shape = RoundedCornerShape(RecedeCorner * r)
+                    clip = r > 0f
+                },
             navigator = navigator,
             onCreated = {
                 // Before anything loads: whose login the page gets
@@ -334,8 +351,22 @@ internal fun WebPageScaffold(
                 PageError(error = it, onReload = { navigator.reload() })
             }
         }
+        val receded by remember { derivedStateOf { recede() > 0f } }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind { drawRect(Color.Black.copy(alpha = RecedeDim * recede())) }
+                // While stepped back, the page takes no touches
+                .then(if (receded) Modifier.pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } } else Modifier),
+            contentAlignment = Alignment.Center,
+            content = overlay,
+        )
     }
 }
+
+private const val RecedeScale = 0.08f
+private val RecedeCorner = 24.dp
+private const val RecedeDim = 0.35f
 
 /**
  * Why the page could not open: no network at all, which the app's other pages say the same way, or

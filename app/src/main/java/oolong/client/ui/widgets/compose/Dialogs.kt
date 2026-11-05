@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -429,19 +430,23 @@ private val ButtonInset = 14.dp
 
 /** A dialog's panel (design-system.md §2.5): the temporary layer, opaque in its own window. */
 @Composable
-private fun Modifier.dialogSurface(): Modifier {
+private fun Modifier.dialogSurface(): Modifier = temporarySurface(DialogShape)
+
+/** The temporary layer's opaque panel in [shape], as a dialog's, for panels like one shown on a page. */
+@Composable
+fun Modifier.temporarySurface(shape: Shape): Modifier {
     val colors = ExtendedTheme.colors
     val night = colors.isNightMode
     return this
         .shadow(
             elevation = if (night) 32.dp else 24.dp,
-            shape = DialogShape,
+            shape = shape,
             ambientColor = Color.Black.copy(alpha = if (night) 0.16f else 0.14f),
             spotColor = Color.Black.copy(alpha = if (night) 0.26f else 0.22f),
         )
-        .clip(DialogShape)
+        .clip(shape)
         .background(colors.sheet)
-        .border(0.5.dp, colors.glassEdge, DialogShape)
+        .border(0.5.dp, colors.glassEdge, shape)
 }
 
 /**
