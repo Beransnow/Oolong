@@ -8,28 +8,47 @@ import android.os.Build
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.View
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -42,13 +61,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -63,9 +85,12 @@ import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.components.automask.PictureText
 import oolong.client.components.automask.ReadLine
 import oolong.client.components.images.downloadImage
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.MediaGlassPill
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.utils.TiebaUtil
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -87,6 +112,10 @@ internal class PhotoTextState(
 
     /** The picture as read, the selection's and the lines' pixels its own. */
     var picture by mutableStateOf<Bitmap?>(null)
+        private set
+
+    /** Where the lines light up from, in the picture's pixels: where it was pressed, or its top. */
+    var origin by mutableStateOf<Offset?>(null)
         private set
 
     /** The lines found, lit while they are read. */
@@ -143,6 +172,7 @@ internal class PhotoTextState(
                 val reader = files.reader() ?: return@launch stopAfterMiss(onMissed)
                 val lines = withContext(Dispatchers.Default) { finder.find(bitmap) }
                 if (lines.isEmpty()) return@launch stopAfterMiss(onMissed)
+                origin = pressed?.let { Offset(it.x * bitmap.width, it.y * bitmap.height) } ?: Offset(bitmap.width / 2f, 0f)
                 found = lines
                 // The line pressed first, picked whole, the rest after
                 val at = pressed?.let { Offset(it.x * bitmap.width, it.y * bitmap.height) }
@@ -218,6 +248,7 @@ internal class PhotoTextState(
         url = null
         picture = null
         found = emptyList()
+        origin = null
         text = null
         selection = null
         reading = false
@@ -237,6 +268,22 @@ internal class PhotoTextState(
     fun selectAll() {
         val text = text ?: return
         if (!text.isEmpty) selection = 0..text.glyphs.lastIndex
+    }
+
+    /** Where what is picked shows on screen, the picture shown in [display]; null when nothing is. */
+    fun selectionBounds(display: Rect): Rect? {
+        val text = text ?: return null
+        val picture = picture ?: return null
+        val picked = selection ?: return null
+        if (display.isEmpty) return null
+        val k = display.width / picture.width
+        val glyphs = picked.map { text.glyphs[it] }
+        return Rect(
+            display.left + glyphs.minOf { it.left } * k,
+            display.top + glyphs.minOf { it.top } * k,
+            display.left + glyphs.maxOf { it.right } * k,
+            display.top + glyphs.maxOf { it.bottom } * k,
+        )
     }
 
     val selectedText: String
@@ -267,6 +314,11 @@ internal class PhotoTextState(
 internal enum class Handle { Start, End }
 
 private val SelectionColor = Color(0xFF4C8DFF)
+
+private val ToolbarColor = Color(0xF2242426)
+
+/** How long the lines found take to light up, from the press out to the furthest. */
+private const val SweepMillis = 450
 
 /**
  * Lets a finger drag the selection's handles, character by character, the text as read at each
@@ -347,6 +399,9 @@ internal fun Modifier.selectionHandles(state: PhotoTextState, display: () -> Rec
 internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
     val pulse = rememberInfiniteTransition(label = "reading")
         .animateFloat(0.12f, 0.3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
+    // The lines found light up outward from where it was pressed, as a ripple through the text
+    val sweep = remember(state.found) { Animatable(0f) }
+    LaunchedEffect(state.found) { if (state.found.isNotEmpty()) sweep.animateTo(1f, tween(SweepMillis)) }
     Canvas(modifier = modifier.fillMaxSize()) {
         val picture = state.picture ?: return@Canvas
         val rect = display()
@@ -355,9 +410,14 @@ internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifi
         fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
         // The lines found: brighter while being read
         val lit = if (state.reading) pulse.value else 0.12f
+        val from = state.origin ?: Offset.Zero
+        val reach = hypot(max(from.x, picture.width - from.x), max(from.y, picture.height - from.y)).coerceAtLeast(1f)
         for (line in state.found) {
             val r = box(line)
-            drawRoundRect(Color.White.copy(alpha = lit), r.topLeft, r.size, CornerRadius(r.height * 0.2f))
+            // Lit once the ripple reaches it, over the last part of its way
+            val distance = hypot(line.centerX() - from.x, line.centerY() - from.y) / reach
+            val shown = ((sweep.value * 1.25f - distance) / 0.25f).coerceIn(0f, 1f)
+            if (shown > 0f) drawRoundRect(Color.White.copy(alpha = lit * shown), r.topLeft, r.size, CornerRadius(r.height * 0.2f))
         }
         val text = state.text ?: return@Canvas
         val picked = state.selection ?: return@Canvas
@@ -422,39 +482,129 @@ internal fun shareOf(rect: Rect, p: Offset): Offset? {
     return Offset((p.x - rect.left) / rect.width, (p.y - rect.top) / rect.height)
 }
 
+/** What the bar at the bottom says while text is picked, each refocusing into the next. */
+private enum class BarPhase { Missing, Failed, Downloading, Reading, Picking }
+
 /**
- * The bar while text is picked from a picture: what text recognition still needs, that the
- * picture is being read, or what can be done with what is picked.
+ * The bar at the bottom while text is picked from a picture: what text recognition still needs,
+ * that the picture is being read, or, nothing picked yet, picking all. What is picked is acted
+ * on beside it instead, by [SelectionToolbar].
  */
 @Composable
 internal fun PhotoTextBar(state: PhotoTextState, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
     val download by state.download.collectAsState()
-    Box(modifier = modifier.navigationBarsPadding().padding(bottom = 24.dp)) {
+    val phase = when {
+        !state.active -> null
+        state.waiting != null -> when (download) {
+            is AutoMaskDownload.Missing -> BarPhase.Missing
+            is AutoMaskDownload.Failed -> BarPhase.Failed
+            is AutoMaskDownload.Running -> BarPhase.Downloading
+            AutoMaskDownload.Ready -> BarPhase.Reading
+        }
+        state.text == null -> BarPhase.Reading
+        state.selection == null -> BarPhase.Picking
+        else -> null
+    }
+    AnimatedVisibility(
+        visible = phase != null,
+        enter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f),
+        exit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.92f),
+        modifier = modifier.navigationBarsPadding().padding(bottom = 24.dp),
+    ) {
+        // Kept while it leaves, so it fades out as it was
+        val shown = remember { mutableStateOf(BarPhase.Reading) }
+        if (phase != null) shown.value = phase
         MediaGlassPill {
-            when {
-                state.waiting != null -> when (val now = download) {
-                    is AutoMaskDownload.Missing -> {
-                        Label(stringResource(R.string.photo_extract_download, ((now.bytes + 999_999) / 1_000_000).toInt()))
-                        Action(stringResource(R.string.photo_download), state::fetch)
+            Refocus(targetState = shown.value) { now ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when (now) {
+                        BarPhase.Missing -> {
+                            Label(stringResource(R.string.photo_extract_download, ((((download as? AutoMaskDownload.Missing)?.bytes ?: 0L) + 999_999) / 1_000_000).toInt()))
+                            Action(stringResource(R.string.photo_download), state::fetch)
+                        }
+                        BarPhase.Failed -> {
+                            Label(stringResource(R.string.photo_download_failed))
+                            Action(stringResource(R.string.photo_retry), state::fetch)
+                        }
+                        BarPhase.Downloading -> Label(stringResource(R.string.photo_downloading, (((download as? AutoMaskDownload.Running)?.progress ?: 0f) * 100).toInt()))
+                        BarPhase.Reading -> Label(stringResource(R.string.photo_reading))
+                        BarPhase.Picking -> Action(stringResource(R.string.photo_select_all), state::selectAll)
                     }
-                    is AutoMaskDownload.Failed -> {
-                        Label(stringResource(R.string.photo_download_failed))
-                        Action(stringResource(R.string.photo_retry), state::fetch)
-                    }
-                    is AutoMaskDownload.Running -> Label(stringResource(R.string.photo_downloading, (now.progress * 100).toInt()))
-                    AutoMaskDownload.Ready -> Label(stringResource(R.string.photo_reading))
                 }
-                state.text == null -> Label(stringResource(R.string.photo_reading))
-                state.selection != null -> {
-                    // Copied, it is done with
-                    Action(stringResource(R.string.photo_copy)) {
-                        TiebaUtil.copyText(context, state.selectedText)
-                        state.stop()
-                    }
-                    Action(stringResource(R.string.photo_select_all), state::selectAll)
+            }
+        }
+    }
+}
+
+/**
+ * What can be done with what is picked, beside it: above it, or below it near the top of the
+ * screen. It moves with the picture as it pans, glides to a new selection, and makes way while
+ * a handle is dragged.
+ */
+@Composable
+internal fun SelectionToolbar(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val top = WindowInsets.statusBars.getTop(density)
+    val bottom = WindowInsets.navigationBars.getBottom(density)
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    // Where it goes, given the picture as shown now and how big it is
+    fun target(width: Int, height: Int): Offset? {
+        val bounds = state.selectionBounds(display()) ?: return null
+        val gap = with(density) { 14.dp.toPx() }
+        val margin = with(density) { 16.dp.toPx() }
+        val x = (bounds.center.x - size.width / 2f).coerceIn(margin, (width - size.width - margin).coerceAtLeast(margin))
+        val highest = top + margin
+        val lowest = (height - bottom - margin - size.height).coerceAtLeast(highest)
+        val above = bounds.top - gap - size.height
+        val below = bounds.bottom + gap * 2
+        // Above it, else below it; a selection filling the screen has it over its own top
+        val y = when {
+            above >= highest -> above
+            below <= lowest -> below
+            else -> (bounds.top + gap).coerceIn(highest, lowest)
+        }
+        return Offset(x, y)
+    }
+    val place = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    var placed by remember { mutableStateOf(false) }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        // A new selection is glided to; the picture panning is followed at once
+        LaunchedEffect(state.selection, size) {
+            val to = target(width, height) ?: return@LaunchedEffect
+            // Its first place, or its size just known: put there, not glided to
+            if (placed && size != IntSize.Zero) place.animateTo(to, Motion.settle()) else place.snapTo(to)
+            placed = size != IntSize.Zero
+        }
+        LaunchedEffect(Unit) {
+            snapshotFlow { display() }.collect { if (!place.isRunning) target(width, height)?.let { place.snapTo(it) } }
+        }
+        AnimatedVisibility(
+            visible = state.selection != null && state.held == null,
+            enter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.9f),
+            exit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.9f),
+            modifier = Modifier
+                .offset { place.value.round() }
+                .onSizeChanged { size = it },
+        ) {
+            // Solid, as a system's text menu is: it sits right on the text, over whatever the
+            // picture has there, and clear glass over a light picture would leave it unreadable
+            Row(
+                modifier = Modifier
+                    .shadow(8.dp, SmoothCornerShape.Capsule)
+                    .clip(SmoothCornerShape.Capsule)
+                    .background(ToolbarColor),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Copied, it is done with
+                Action(stringResource(R.string.photo_copy)) {
+                    TiebaUtil.copyText(context, state.selectedText)
+                    state.stop()
                 }
-                else -> Action(stringResource(R.string.photo_select_all), state::selectAll)
+                Action(stringResource(R.string.photo_select_all), state::selectAll)
             }
         }
     }

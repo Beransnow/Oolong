@@ -407,7 +407,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                 modifier = Modifier.graphicsLayer { alpha = chrome },
             )
         }
-        if (current != null && phase == Phase.Open && text.active) ProvideMediaGlass(glass) {
+        // Always there, so the bar comes and goes in place of the actions rather than popping
+        if (current != null && phase == Phase.Open) ProvideMediaGlass(glass) {
+            if (text.url == current.originUrl) {
+                SelectionToolbar(text, display = { currentZoom?.zoomable?.contentDisplayRectF ?: Rect.Zero })
+            }
             PhotoTextBar(text, modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
