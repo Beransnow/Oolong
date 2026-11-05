@@ -26,9 +26,13 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,7 +141,8 @@ fun GlassTopBar(
     // The buttons are bare at the top of a page, and float on glass once content is under the
     // bar. Over a large title they keep their glass: its edge is what lines up with the title
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
-    val glassAlways = largeTitle != null
+    // Beside the rail they also keep it next to what the host puts at the end, which is always glass
+    val glassAlways = largeTitle != null || (besideRail && LocalTopBarEnd.current != null)
     val barButtons = remember(scrollEdge, revealPx, glassAlways) {
         BarButtons { if (glassAlways) 1f else scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     }
@@ -311,6 +316,34 @@ val LocalNavigationRailShown = compositionLocalOf { false }
 /** How far from the rail's edge the bar's glass fades in. */
 private val RailEdgeFade = 40.dp
 
+/**
+ * Keeps what [LocalTopBarEnd] puts at the end of a set of pages' bars, such as search on the main
+ * tabs, one size across them. Each bar gives it the least room any of them has had at the same
+ * width, and no more than it would have beside a centred title [CentreAllowance] wide, so it has
+ * that size from the first page shown on, whichever page has a centred title.
+ */
+@Stable
+class TopBarEndRoom {
+    private var forWidth = -1
+    private var least by mutableIntStateOf(Int.MAX_VALUE)
+
+    internal fun room(width: Int, own: Int, besideCentre: Int): Int {
+        // A new width, as on turning the device, starts over
+        if (width != forWidth) {
+            forWidth = width
+            least = Int.MAX_VALUE
+        }
+        if (own < least) least = own
+        return minOf(least, besideCentre)
+    }
+}
+
+/** Shared by the bars under it, see [TopBarEndRoom]; without it each bar gives its end all its room. */
+val LocalTopBarEndRoom = staticCompositionLocalOf<TopBarEndRoom?> { null }
+
+/** The width of a centred title [TopBarEndRoom] keeps room for, about that of three tabs. */
+private val CentreAllowance = 200.dp
+
 /** Between the bar's actions and what [LocalTopBarEnd] puts after them. */
 private val EndGap = 12.dp
 
@@ -331,6 +364,7 @@ private fun TitleRow(
     centerTitle: Boolean,
     barButtons: BarButtons,
 ) {
+    val endRoom = LocalTopBarEndRoom.current
     // The bar's own buttons, and any glass in its title, come in with the scroll
     ProvideContentColor(color = ExtendedTheme.colors.text) {
         CompositionLocalProvider(LocalBarButtons provides barButtons) {
@@ -349,11 +383,14 @@ private fun TitleRow(
                 val titleStart = (nav?.width ?: 0) + (if (nav != null) TitlePadding else BareTitlePadding).roundToPx()
                 val titleRoom = if (centerTitle) width else width - titleStart - TitlePadding.roundToPx() - acts.width - gap - least
                 val text = subcompose(TopBarSlot.Title) { Box { title() } }.first().measure(loose.copy(maxWidth = titleRoom.coerceAtLeast(0)))
-                val room = if (centerTitle) {
+                val own = if (centerTitle) {
                     (width - text.width) / 2 - TitlePadding.roundToPx() - acts.width - gap
                 } else {
                     width - titleStart - text.width - TitlePadding.roundToPx() - acts.width - gap
-                }.coerceAtLeast(least)
+                }
+                val besideCentre = (width - CentreAllowance.roundToPx()) / 2 - TitlePadding.roundToPx()
+                val shared = endRoom?.takeIf { end != null }?.room(width, own, besideCentre)
+                val room = (shared ?: own).coerceAtLeast(least)
                 val ending = end?.let { slot ->
                     subcompose(TopBarSlot.End) {
                         // Its own glass, not a bar button's that comes in with the scroll

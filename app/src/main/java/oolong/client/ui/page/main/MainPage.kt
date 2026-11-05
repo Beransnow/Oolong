@@ -53,8 +53,10 @@ import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.LocalNavigationRailShown
 import oolong.client.ui.widgets.compose.LocalTopBarEnd
+import oolong.client.ui.widgets.compose.LocalTopBarEndRoom
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.SwipeToDismissSnackbarHost
+import oolong.client.ui.widgets.compose.TopBarEndRoom
 import oolong.client.ui.widgets.compose.rememberPageScrollState
 import oolong.client.ui.widgets.compose.rememberScrollProgress
 
@@ -192,6 +194,8 @@ fun MainPage(
             }
             CompositionLocalProvider(LocalChromePadding provides chromePadding) {
                 // Beside the rail, the field stands at the end of the top bar of the tab in view
+                // One size on every tab, however much room each tab's title leaves it
+                val barSearchRoom = remember { TopBarEndRoom() }
                 val barSearch: (@Composable (Dp) -> Unit)? = if (showBottomNavigation) null else { room ->
                     TopBarSearchField(state = search, room = room, onOpen = openSearch)
                 }
@@ -206,7 +210,10 @@ fun MainPage(
                     userScrollEnabled = swipeTabs && showBottomNavigation && !search.open,
                 ) { page ->
                     // Only the tab in view, so the field search opens from is the one that shows
-                    CompositionLocalProvider(LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage }) {
+                    CompositionLocalProvider(
+                        LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage },
+                        LocalTopBarEndRoom provides barSearchRoom,
+                    ) {
                         when (navigationItems[page].id) {
                             MainTabs.HOME -> HomePage(
                                 canOpenExplore = navigationItems.any { item -> item.id == MainTabs.EXPLORE },
