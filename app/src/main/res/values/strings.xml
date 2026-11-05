@@ -142,6 +142,7 @@
     <string name="button_follow">关注</string>
     <string name="button_unfollow">取消关注</string>
     <string name="error_unknown">未知错误</string>
+    <string name="error_network">网络连接失败</string>
     <string name="title_top_forum">置顶</string>
     <string name="title_settings_read_habit">浏览</string>
     <string name="settings_collect_thread_see_lz">打开时只看楼主</string>
@@ -401,7 +402,7 @@
     <string name="title_no_internet_connectivity">无法连接网络</string>
     <string name="title_api_error">无法加载</string>
     <string name="title_unknown_error">发生了一个奇怪的错误…</string>
-    <string name="message_no_internet_connectivity">%s。检查网络后重试</string>
+    <string name="message_no_internet_connectivity">检查网络后重试</string>
     <string name="message_unknown_error">哦我的老伙计，我向你保证这真的是一个奇怪的错误……</string>
     <string name="btn_reload">重新加载</string>
     <string name="title_not_logged_in">未登录</string>

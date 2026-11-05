@@ -7,6 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import oolong.client.api.retrofit.exception.getErrorMessage
+import oolong.client.api.retrofit.exception.userMessage
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,4 +29,6 @@ class ToastMessageController @Inject constructor(
             Toast.makeText(context, context.getString(message, *args), Toast.LENGTH_SHORT).show()
         }
     }
+
+    override fun showError(message: Int, error: Throwable) = show(message, error.userMessage(context))
 }

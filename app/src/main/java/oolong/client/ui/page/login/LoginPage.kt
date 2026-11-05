@@ -42,7 +42,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.api.retrofit.exception.getErrorMessage
+import oolong.client.api.retrofit.exception.userMessage
 import oolong.client.repository.AccountActions
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -275,7 +275,7 @@ class LoginWebViewClient(
                         navigator.loadUrl(LOGIN_URL)
                         snackbarHostState.currentSnackbarData?.dismiss()
                         snackbarHostState.showSnackbar(
-                            context.getString(R.string.text_login_failed, it.getErrorMessage()),
+                            context.getString(R.string.text_login_failed, it.userMessage(context)),
                             duration = SnackbarDuration.Short
                         )
                     }

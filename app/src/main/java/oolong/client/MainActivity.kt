@@ -82,7 +82,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import oolong.client.api.retrofit.exception.getErrorMessage
+import oolong.client.api.retrofit.exception.userMessage
 import oolong.client.arch.AppContent
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                toastShort(e.getErrorMessage())
+                toastShort(e.userMessage(this@MainActivity))
                 e.printStackTrace()
             }
         }

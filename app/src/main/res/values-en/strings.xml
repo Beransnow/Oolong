@@ -144,6 +144,7 @@
     <string name="button_follow">Follow</string>
     <string name="button_unfollow">Unfollow</string>
     <string name="error_unknown">Unknown error</string>
+    <string name="error_network">Network connection failed</string>
     <string name="title_top_forum">Pinned</string>
     <string name="title_settings_read_habit">Browsing</string>
     <string name="settings_collect_thread_see_lz">Open in OP-only view</string>
@@ -406,7 +407,7 @@
     <string name="title_no_internet_connectivity">Can\'t connect</string>
     <string name="title_api_error">Couldn\'t load</string>
     <string name="title_unknown_error">An unusual error occurred…</string>
-    <string name="message_no_internet_connectivity">%s. Check your connection and try again.</string>
+    <string name="message_no_internet_connectivity">Check your connection and try again.</string>
     <string name="message_unknown_error">This error is unusual. Try again later.</string>
     <string name="btn_reload">Reload</string>
     <string name="title_not_logged_in">Not signed in</string>

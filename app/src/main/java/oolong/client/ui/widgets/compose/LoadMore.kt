@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import oolong.client.R
-import oolong.client.api.retrofit.exception.NoConnectivityException
+import oolong.client.api.retrofit.exception.isNetworkError
 import oolong.client.arch.LoadStatus
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 
@@ -64,7 +64,7 @@ fun LazyListScope.loadMoreFooter(
                 append == LoadStatus.Loading -> WavyLoader()
 
                 append is LoadStatus.Error -> {
-                    val message = if (append.error is NoConnectivityException) R.string.title_no_internet_connectivity else R.string.title_api_error
+                    val message = if (append.error.isNetworkError()) R.string.title_no_internet_connectivity else R.string.title_api_error
                     Text(
                         text = stringResource(id = message),
                         color = ExtendedTheme.colors.textSecondary,
