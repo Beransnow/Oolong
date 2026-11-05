@@ -41,13 +41,23 @@ class PictureTextTest {
     }
 
     @Test
+    fun chineseAndLatinAreSpacedApart() {
+        assertEquals("与 Google 服务器通信，共 3 次", PictureText(listOf(line("与Google服务器通信，共3次", 0f))).text())
+        // A space read already is not doubled, punctuation is left as it is
+        assertEquals("用 iPhone 拍的：OK", PictureText(listOf(line("用 iPhone拍的：OK", 0f))).text())
+        // Nor beside an emoji
+        assertEquals("ok\uD83D\uDE00", PictureText(listOf(ReadLine("ok\uD83D\uDE00", listOf(0f..10f, 10f..20f, 20f..30f), 0f, 0f, 30f, 30f))).text())
+    }
+
+    @Test
     fun aRareCharacterKeepsItsLine() {
         // 𠀀 takes two places in the string but is one character read, with one span
         val rare = "a\uD840\uDC00b"
         val line = ReadLine(rare, listOf(0f..10f, 10f..20f, 20f..30f), 0f, 0f, 30f, 30f)
         val text = PictureText(listOf(line))
         assertEquals(3, text.glyphs.size)
-        assertEquals(rare, text.text())
+        // A Chinese character all the same, spaced from the letters
+        assertEquals("a \uD840\uDC00 b", text.text())
         assertEquals(20f..30f, line.spanAt(3))
     }
 

@@ -27,13 +27,23 @@ class PictureText(lines: List<ReadLine>) {
 
     val isEmpty: Boolean get() = glyphs.isEmpty()
 
-    /** The characters [from] to [to], both included, as text: lines of a paragraph run on, paragraphs on their own lines. */
+    /**
+     * The characters [from] to [to], both included, as text: lines of a paragraph run on,
+     * paragraphs on their own lines, and a space between Chinese and Latin letters or digits,
+     * as is written, whether the reading kept one or not.
+     */
     fun text(from: Int = 0, to: Int = glyphs.lastIndex): String {
         if (glyphs.isEmpty() || from > to) return ""
         val out = StringBuilder()
         for (i in from..to) {
             if (i > from && glyphs[i].line != glyphs[i - 1].line) out.append(joins[glyphs[i - 1].line])
-            out.append(glyphs[i].text)
+            val char = glyphs[i].text
+            if (out.isNotEmpty() && char.isNotEmpty()) {
+                val before = Character.codePointBefore(out, out.length)
+                val first = char.codePointAt(0)
+                if (before.isHan() && first.isLatinOrDigit() || before.isLatinOrDigit() && first.isHan()) out.append(' ')
+            }
+            out.append(char)
         }
         return out.toString()
     }
@@ -92,6 +102,13 @@ class PictureText(lines: List<ReadLine>) {
             val start = b.text.trimStart().firstOrNull()
             return if (end != null && start != null && end.isLatin() && start.isLatin()) " " else ""
         }
+
+        /** A Chinese character, rare ones too, or Japanese kana: written apart from Latin words. */
+        private fun Int.isHan() = Character.UnicodeScript.of(this).let {
+            it == Character.UnicodeScript.HAN || it == Character.UnicodeScript.HIRAGANA || it == Character.UnicodeScript.KATAKANA
+        }
+
+        private fun Int.isLatinOrDigit() = this in 'a'.code..'z'.code || this in 'A'.code..'Z'.code || this in '0'.code..'9'.code
 
         private fun Char.isLatin() = this.code < 0x2E80 && (isLetterOrDigit() || this in ",.;:!?)")
 
