@@ -71,8 +71,8 @@ class AutoMaskFiles @Inject constructor(
     private val abilityFiles: Map<Ability, List<Remote>> = mapOf(
         Ability.Text to listOf(
             Remote("models/automask/$Version/$Detector", Detector, "ed1a220aa9c52642c84075cd0d9e9923a0bb1985a1ea9e23d21b0bd8ba1fea55", 5_115_728),
-            Remote("models/automask/$Version/$Recognizer", Recognizer, "2fdd5dd8b89e00e9267e1c0918077497026d1ea7f18274489400dbe571bc94e7", 8_319_400),
-            Remote("models/automask/$Version/$Characters", Characters, "d1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b", 74_012),
+            Remote("models/automask/$Version/$Recognizer", Recognizer, "04cdb1ee330967b475b7a7ecc9c1c3528b4bd2ef3eb87e7660520224cd91af24", 10_681_428),
+            Remote("models/automask/$Version/$Characters", Characters, "b5f2bfe2bdd9448429e3e82b51c789775d9b42f2403d082b00662eb77e401c5d", 74_947),
         ),
         Ability.Region to listOf(
             Remote("models/automask/$Version/$Encoder", Encoder, "1089090d59f9e6d159c84415c23fab2b97ae73b99b9453f50092d5c2887c1007", 14_244_036),
@@ -89,6 +89,14 @@ class AutoMaskFiles @Inject constructor(
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    init {
+        // Files of models since replaced, left from before: nothing reads them any more
+        scope.launch(io) {
+            val known = (abilityFiles.values.flatten() + listOfNotNull(runtime)).map { it.name }.toSet()
+            folder.listFiles()?.filter { it.isFile && it.name !in known && !it.name.endsWith(".part") }?.forEach { it.delete() }
+        }
+    }
 
     private val states: Map<Ability, MutableStateFlow<AutoMaskDownload>> = Ability.entries.associateWith { MutableStateFlow(settled(setOf(it))) }
 
@@ -332,8 +340,10 @@ class AutoMaskFiles @Inject constructor(
         const val Encoder = "sam_encoder.tflite"
         const val Decoder = "sam_decoder.tflite"
         const val Gaussian = "sam_pe_gaussian.bin"
-        const val Recognizer = "text_recognizer.tflite"
-        const val Characters = "text_recognizer_dict.txt"
+
+        // PP-OCRv6's: reads about twice as well as the v5 one before it, whose files go
+        const val Recognizer = "text_recognizer_v6.tflite"
+        const val Characters = "text_recognizer_v6_dict.txt"
         private const val RuntimeName = "libtensorflowlite_jni.so"
 
         private val Runtimes = mapOf(
