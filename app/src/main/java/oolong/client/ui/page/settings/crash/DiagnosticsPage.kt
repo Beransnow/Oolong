@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +63,7 @@ fun DiagnosticsPage(
     navigator: Navigator = LocalNavigator.current,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val channel by produceState<String?>(initialValue = null) {
         value = context.dataStore.data.first()[UpdateRepository.ChannelKey] ?: UpdateChannel.default.key
     }
@@ -103,7 +105,7 @@ fun DiagnosticsPage(
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding,
         ) {
-            prefsGroup(context.getString(R.string.diagnostics_device)) {
+            prefsGroup(resources.getString(R.string.diagnostics_device)) {
                 prefsItem {
                     Column(modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm)) {
                         rows.forEach { (label, value) -> InfoRow(label, value) }
@@ -115,7 +117,7 @@ fun DiagnosticsPage(
                     }
                 }
             }
-            prefsGroup(context.getString(R.string.diagnostics_usage_stats)) {
+            prefsGroup(resources.getString(R.string.diagnostics_usage_stats)) {
                 prefsItem {
                     Column(
                         modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
@@ -151,7 +153,7 @@ fun DiagnosticsPage(
                     }
                 }
             }
-            prefsGroup(context.getString(R.string.diagnostics_crash_logs)) {
+            prefsGroup(resources.getString(R.string.diagnostics_crash_logs)) {
                 prefsItem {
                     Text(
                         text = stringResource(id = R.string.diagnostics_crash_fields),

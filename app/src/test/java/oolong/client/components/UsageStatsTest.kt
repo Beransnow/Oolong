@@ -22,8 +22,9 @@ class UsageStatsTest {
         romVersion = "OS2.0.6.0.VMCCNXM",
         locale = "zh-CN",
     )
-    private val today = LocalDate.of(2026, 11, 5) // a Thursday
+    private val today = LocalDate.of(2026, 11, 5).toEpochDay() // a Thursday
     private fun at(day: LocalDate) = day.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    private fun at(day: Long) = at(LocalDate.ofEpochDay(day))
 
     @Test
     fun `marks the first heartbeat of the week and of the month`() {
@@ -50,16 +51,23 @@ class UsageStatsTest {
     @Test
     fun `sends the install week only in the first 8 weeks`() {
         val week = { installed: LocalDate -> UsageStats.heartbeat(device, today, null, null, false, at(installed)) }
-        assertEquals(0, week(today).getInt("installWeek"))
+        assertEquals(0, week(LocalDate.ofEpochDay(today)).getInt("installWeek"))
         assertEquals(1, week(LocalDate.of(2026, 11, 1)).getInt("installWeek")) // the Sunday before
-        assertEquals(7, week(today.minusWeeks(7)).getInt("installWeek"))
-        assertFalse(week(today.minusWeeks(8)).has("installWeek"))
+        assertEquals(7, week(LocalDate.ofEpochDay(today).minusWeeks(7)).getInt("installWeek"))
+        assertFalse(week(LocalDate.ofEpochDay(today).minusWeeks(8)).has("installWeek"))
     }
 
     @Test
     fun `takes days in UTC`() {
         val sundayNightUtc = LocalDate.of(2026, 11, 1).atTime(23, 30).toInstant(ZoneOffset.UTC).toEpochMilli()
-        assertEquals(LocalDate.of(2026, 11, 1), UsageStats.utcDay(sundayNightUtc))
+        assertEquals(LocalDate.of(2026, 11, 1).toEpochDay(), UsageStats.utcDay(sundayNightUtc))
+    }
+
+    @Test
+    fun `writes days as java_time does`() {
+        for (day in listOf(-719_528L, -1L, 0L, 59L, 11_016L, 20_397L, 20_762L, 2_932_896L) + (20_000L..21_000L)) {
+            assertEquals(LocalDate.ofEpochDay(day).toString(), UsageStats.date(day))
+        }
     }
 
     @Test

@@ -20,12 +20,6 @@ import oolong.client.utils.appPreferences
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.random.Random
 
@@ -76,8 +70,8 @@ object UsageStats {
         val preferences = preferences(context)
         val now = System.currentTimeMillis()
         val today = utcDay(now)
-        if (preferences.getString(LastDay, null) == today.toString()) return
-        val month = today.toString().take(7)
+        if (preferences.getString(LastDay, null) == date(today)) return
+        val month = date(today).take(7)
         // Drawn once a month, so that a device either counts all month or not at all
         if (preferences.getString(SampleMonth, null) != month) {
             val rate = preferences.getFloat(Rate, 1f)
@@ -87,7 +81,7 @@ object UsageStats {
             }
         }
         if (!preferences.getBoolean(Sampled, true)) {
-            preferences.edit { putString(LastDay, today.toString()) }
+            preferences.edit { putString(LastDay, date(today)) }
             return
         }
         val channel = context.dataStore.data.first()[UpdateRepository.ChannelKey] ?: UpdateChannel.default.key
@@ -101,8 +95,8 @@ object UsageStats {
         )
         val rate = post(beat) ?: return
         preferences.edit {
-            putString(LastDay, today.toString())
-            putString(LastWeek, isoWeek(today).toString())
+            putString(LastDay, date(today))
+            putString(LastWeek, date(isoWeek(today)))
             putString(LastMonth, month)
             putLong(LastSent, now)
             putFloat(Rate, rate)
@@ -119,13 +113,13 @@ object UsageStats {
     }
 
     /**
-     * A heartbeat for [device] sent on [today], after the last ones of [lastWeek] (its Monday) and
-     * [lastMonth] (YYYY-MM). The install week goes along only in the first 8 weeks.
+     * A heartbeat for [device] sent on [today] (a UTC epoch day), after the last ones of [lastWeek]
+     * (its Monday) and [lastMonth] (YYYY-MM). The install week goes along only in the first 8 weeks.
      */
-    internal fun heartbeat(device: Device, today: LocalDate, lastWeek: String?, lastMonth: String?, crashed: Boolean, installed: Long): JSONObject {
-        val week = isoWeek(today).toString() != lastWeek
-        val month = today.toString().take(7) != lastMonth
-        val weeks = ChronoUnit.WEEKS.between(isoWeek(utcDay(installed)), isoWeek(today))
+    internal fun heartbeat(device: Device, today: Long, lastWeek: String?, lastMonth: String?, crashed: Boolean, installed: Long): JSONObject {
+        val week = date(isoWeek(today)) != lastWeek
+        val month = date(today).take(7) != lastMonth
+        val weeks = (isoWeek(today) - isoWeek(utcDay(installed))) / 7
         return JSONObject()
             .put("version", device.version)
             .put("channel", device.channel)
@@ -137,7 +131,7 @@ object UsageStats {
             .put("week", week)
             .put("month", month)
             .apply {
-                if (weeks in 0..7) put("installWeek", weeks.toInt())
+                if (weeks in 0L..7L) put("installWeek", weeks.toInt())
                 if (month) {
                     put("model", device.model)
                     put("romVersion", device.romVersion)
@@ -146,9 +140,27 @@ object UsageStats {
             }
     }
 
-    internal fun utcDay(time: Long): LocalDate = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC).toLocalDate()
+    // Days are counted from 1970-01-01 in UTC; java.time needs API 26
 
-    private fun isoWeek(day: LocalDate): LocalDate = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    /** The UTC epoch day [time] falls on. */
+    internal fun utcDay(time: Long): Long = Math.floorDiv(time, DayMillis)
+
+    /** The Monday of [day]'s ISO week; 1970-01-01 was a Thursday. */
+    private fun isoWeek(day: Long): Long = day - Math.floorMod(day + 3, 7L)
+
+    /** [day] as YYYY-MM-DD, by the civil-from-days algorithm. */
+    internal fun date(day: Long): String {
+        val z = day + 719_468
+        val era = Math.floorDiv(z, 146_097L)
+        val dayOfEra = z - era * 146_097
+        val yearOfEra = (dayOfEra - dayOfEra / 1460 + dayOfEra / 36_524 - dayOfEra / 146_096) / 365
+        val dayOfYear = dayOfEra - (365 * yearOfEra + yearOfEra / 4 - yearOfEra / 100)
+        val mp = (5 * dayOfYear + 2) / 153
+        val dayOfMonth = dayOfYear - (153 * mp + 2) / 5 + 1
+        val month = if (mp < 10) mp + 3 else mp - 9
+        val year = yearOfEra + era * 400 + if (month <= 2) 1 else 0
+        return String.format(Locale.ROOT, "%04d-%02d-%02d", year, month, dayOfMonth)
+    }
 
     private fun form(context: Context): String = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
@@ -196,4 +208,5 @@ object UsageStats {
     private const val LastPayload = "last_payload"
     private const val LastPayloadTime = "last_payload_time"
     private const val Timeout = 15_000
+    private const val DayMillis = 86_400_000L
 }
