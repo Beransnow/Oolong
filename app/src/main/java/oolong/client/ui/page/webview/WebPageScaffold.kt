@@ -9,9 +9,12 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.format.Formatter
 import android.view.ContextThemeWrapper
 import android.view.PixelCopy
 import android.view.View
+import android.webkit.CookieManager
+import android.webkit.URLUtil
 import android.webkit.WebResourceError
 import android.webkit.WebViewClient
 import androidx.compose.animation.animateColorAsState
@@ -88,6 +91,7 @@ import oolong.client.R
 import oolong.client.findActivity
 import oolong.client.models.PhotoViewData
 import oolong.client.models.PicItem
+import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -96,6 +100,8 @@ import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
 import oolong.client.ui.widgets.compose.AccompanistWebViewClient
+import oolong.client.ui.widgets.compose.AppDialog
+import oolong.client.ui.widgets.compose.AppDialogs
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.ErrorTipScreen
@@ -115,6 +121,7 @@ import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.pageScroll
+import oolong.client.utils.FileUtil
 import oolong.client.utils.TiebaUtil
 import kotlin.coroutines.resume
 import android.graphics.Rect as AndroidRect
@@ -165,6 +172,7 @@ internal fun WebPageScaffold(
     }
     val menus = LocalContextMenus.current
     val targetMenu = rememberTargetMenu()
+    val askDownload = rememberDownloadAsk()
     // Immersive: how far the page has pushed the bar up, going up after it
     var consumedInset by remember { mutableIntStateOf(0) }
     var insetPx by remember { mutableIntStateOf(0) }
@@ -263,6 +271,13 @@ internal fun WebPageScaffold(
             navigator = navigator,
             onCreated = {
                 it.setBackgroundColor(background)
+                it.setDownloadListener { url, userAgent, disposition, mimeType, length ->
+                    // The load became a download and never finishes as a page
+                    state.loadingState = LoadingState.Finished
+                    // Opened only for the file, the page has nothing to show afterwards
+                    val opened = state.webView?.copyBackForwardList()?.size ?: 0
+                    askDownload(url, userAgent, disposition, mimeType, length) { if (opened == 0) onClose() }
+                }
                 it.onLongPressTarget { target ->
                     val items = targetMenu(target)
                     if (menus != null && items.isNotEmpty()) menus.show(items, anchor = Rect(target.at, Size(1f, 1f)))
@@ -567,6 +582,43 @@ private fun rememberTargetMenu(): (PageTarget) -> List<ContextMenuItem> {
                     add(ContextMenuItem(Symbols.Share, share) { TiebaUtil.shareText(context, link) })
                 }
             }
+        }
+    }
+}
+
+/**
+ * Asks before downloading a file the page links to, naming it and its size, then hands it to the
+ * system's downloads with the page's cookies, which a download behind a login needs.
+ */
+@Composable
+private fun rememberDownloadAsk(): (url: String, userAgent: String?, disposition: String?, mimeType: String?, length: Long, onAnswered: () -> Unit) -> Unit {
+    val context = LocalContext.current
+    val title = stringResource(id = R.string.web_download_title)
+    val download = stringResource(id = R.string.web_download)
+    val cancel = stringResource(id = R.string.button_cancel)
+    val started = stringResource(id = R.string.web_download_started)
+    return remember(context) {
+        { url, userAgent, disposition, mimeType, length, onAnswered ->
+            val fileName = URLUtil.guessFileName(url, disposition, mimeType)
+            val size = if (length > 0) "（${Formatter.formatShortFileSize(context, length)}）" else ""
+            AppDialogs.show(
+                AppDialog.Message(
+                    message = fileName + size,
+                    title = title,
+                    confirm = download,
+                    onConfirm = {
+                        val headers = buildMap {
+                            CookieManager.getInstance().getCookie(url)?.let { put("Cookie", it) }
+                            userAgent?.let { put("User-Agent", it) }
+                        }
+                        FileUtil.downloadBySystem(context, FileUtil.FILE_TYPE_DOWNLOAD, url, fileName, headers, mimeType)
+                        context.toastShort(started)
+                        onAnswered()
+                    },
+                    cancel = cancel,
+                    onCancel = onAnswered,
+                )
+            )
         }
     }
 }

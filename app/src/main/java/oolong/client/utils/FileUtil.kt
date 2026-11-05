@@ -170,9 +170,13 @@ object FileUtil {
         fileType: Int,
         url: String?,
         fileName: String,
+        headers: Map<String, String>,
+        mimeType: String?,
     ) {
         // 指定下载地址
         val request = DownloadManager.Request(url?.toUri() ?: return)
+        headers.forEach { (name, value) -> request.addRequestHeader(name, value) }
+        mimeType?.let { request.setMimeType(it) }
         // 允许媒体扫描，根据下载的文件类型被加入相册、音乐等媒体库
         request.allowScanningByMediaScanner()
         // 设置通知的显示类型，下载进行时和完成后显示通知
@@ -198,9 +202,17 @@ object FileUtil {
         downloadManager.enqueue(request)
     }
 
-    fun downloadBySystem(context: Context, fileType: Int, url: String?, fileName: String) {
+    /** Downloads [url] as [fileName] with the system's downloads, sending [headers] such as the cookies of the page it came from. */
+    fun downloadBySystem(
+        context: Context,
+        fileType: Int,
+        url: String?,
+        fileName: String,
+        headers: Map<String, String> = emptyMap(),
+        mimeType: String? = null,
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            downloadBySystemWithPermission(context, fileType, url, fileName)
+            downloadBySystemWithPermission(context, fileType, url, fileName, headers, mimeType)
             return
         }
         askPermission(
@@ -213,7 +225,7 @@ object FileUtil {
                 context.getString(R.string.tip_permission_storage_download)
             )
         ) {
-            downloadBySystemWithPermission(context, fileType, url, fileName)
+            downloadBySystemWithPermission(context, fileType, url, fileName, headers, mimeType)
             null
         }
     }

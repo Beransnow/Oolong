@@ -26,6 +26,9 @@
     <string name="title_open_in_browser">在浏览器中打开</string>
     <string name="web_not_secure">不安全</string>
     <string name="title_login_baidu">登录百度账号</string>
+    <string name="web_download_title">下载文件</string>
+    <string name="web_download">下载</string>
+    <string name="web_download_started">已开始下载</string>
     <string name="web_view_image">查看图片</string>
     <string name="web_copy_image_link">复制图片链接</string>
     <string name="web_error_title">无法打开网页</string>
