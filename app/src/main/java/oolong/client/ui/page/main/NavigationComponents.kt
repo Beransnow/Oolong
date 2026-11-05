@@ -394,6 +394,7 @@ fun FloatingNavBar(
                                     var dragging = false
                                     var lastX = down.position.x
                                     var released = false
+                                    var releasedAt = 0L
                                     var lost = false
                                     fun follow(event: PointerEvent) {
                                         val change = event.changes.firstOrNull { it.id == down.id }
@@ -403,6 +404,7 @@ fun FloatingNavBar(
                                         }
                                         if (!change.pressed) {
                                             released = true
+                                            releasedAt = change.uptimeMillis
                                             return
                                         }
                                         lastX = change.position.x
@@ -456,7 +458,11 @@ fun FloatingNavBar(
                                         coroutineScope.launch {
                                             indicator.animateTo(target.toFloat(), IndicatorSpring)
                                         }
-                                        select(target)
+                                        // Only a tap on the shown tab asks it again; a lens dragged
+                                        // or held there and let go just goes back
+                                        val tapped = !dragging &&
+                                            releasedAt - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis
+                                        if (target != shown || tapped) select(target)
                                     } else {
                                         coroutineScope.launch {
                                             indicator.animateTo(shown.toFloat(), IndicatorSpring)
