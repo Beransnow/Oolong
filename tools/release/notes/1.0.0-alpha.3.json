@@ -1,0 +1,90 @@
+{
+  "zh": {
+    "新增": [
+      "视频播放\n视频在单独的播放页打开，可调节播放速度、保存到相册，也可缩成小窗边看边逛；小窗可拖到任意角落，离开应用时可自动转为小窗",
+      "提取文字\n看图时可识别图片中的文字，选中后复制",
+      "自动打码与点选打码\n编辑图片时，一键找出手机号、身份证号、银行卡号、邮箱、车牌、二维码等信息并打码；也可点按要遮住的内容，或按住滑过一次遮住多处",
+      "图片编辑新工具\n新增拉直、调节与擦除；已画的标注和打码可再选中修改；裁剪支持常用比例",
+      "隐私\n可查看黑名单与推荐中屏蔽的吧，并移出或取消屏蔽",
+      "隐藏 IP 属地\n可不显示楼层与个人主页上的 IP 属地",
+      "楼中楼排序\n楼中楼可按「热门」或「最早」排序，热门顺序与楼层下显示的一致",
+      "左右滑动切换页面\n首页、动态、消息与「我」之间可左右滑动切换，可在设置中关闭",
+      "存储空间\n查看应用占用的空间，按类别清除缓存，管理智能扩展"
+    ],
+    "改进": [
+      "图片更清晰\n上传的图片保持原有清晰度与方向，长截图不再被压成细条；看图时显示广色域与 HDR 色彩",
+      "视频更好用\n列表中显示视频时长；无法播放时可重试；来电、拔出耳机或离开应用时自动暂停",
+      "看图界面更通透\n看图与看视频时，按钮改为玻璃样式",
+      "推荐中的回复\n推荐中出现的回复，在原帖中打开对应楼层",
+      "加载状态更明确\n消息、热门与话题页在首次加载、出错或没有内容时都有提示；没有网络时提示「无法连接网络」",
+      "再点一次刷新\n在消息页再点一次底栏即可刷新",
+      "纯色材质更清爽\n关闭毛玻璃后，顶栏淡淡透出下方的内容，悬浮按钮不再带阴影",
+      "界面更整齐\n顶栏按钮与页面内容左右对齐，圆角与胶囊的过渡更顺滑",
+      "按压效果更统一\n按住顶部标签与分段控件时，与底栏的效果一致",
+      "滑动更流畅\n减少滑动与打开搜索时的卡顿",
+      "回复面板\n图片缩略图更大，删除按钮更容易点按"
+    ],
+    "修复": [
+      "回复框未展开时只显示一行文字",
+      "回复框展开后收起键盘，显示异常",
+      "多次复制后无法复制，也无法返回",
+      "帖子回复加载失败时显示为已到底部",
+      "系统字体调大后，帖子行距与标签显示异常",
+      "楼层号较长时换行",
+      "没有昵称的用户不显示名字",
+      "楼中楼页未使用「经典」样式",
+      "从搜索打开页面后返回，搜索消失",
+      "部分图片保存或分享后格式不正确",
+      "宽图打开时未完整显示",
+      "视频暂停或播完后，播放控制消失",
+      "页面返回动画中无法点按",
+      "侧滑返回时标题位置跳动",
+      "平板上各页面的搜索栏宽度不一致",
+      "旋转屏幕时偶尔闪退"
+    ]
+  },
+  "en": {
+    "New": [
+      "Video player\nVideos open in a player of their own: change the speed, save to the gallery, or shrink to picture in picture and keep browsing. Drag the window to any corner; it can take over when you leave the app",
+      "Extract text\nRead the text in a picture while viewing it, then select and copy it",
+      "Auto masking and tap to mask\nWhen editing a picture, mask phone, ID and bank card numbers, emails, number plates, QR codes and more in one step; or tap what to cover, or hold and slide over several things at once",
+      "New editing tools\nStraighten, Adjust and Erase; pick up a mark or mask again to change it; crop to common ratios",
+      "Privacy\nSee your blacklist and the forums hidden from For you, and remove or unhide them",
+      "Hide IP location\nLeave IP locations off replies and profiles",
+      "Comment order\nSort comments by Top or Oldest; Top matches the comments shown under a reply",
+      "Swipe between tabs\nSwipe between Home, Explore, Inbox and Me; turn it off in Settings",
+      "Storage\nSee what the app takes up, clear its cache by kind and manage smart extensions"
+    ],
+    "Improved": [
+      "Sharper pictures\nUploaded pictures keep their sharpness and orientation, and long screenshots no longer shrink to a strip; the viewer shows wide colour and HDR",
+      "Better videos\nLists show how long a video runs; retry a video that can't play; videos pause for calls, unplugged headphones and leaving the app",
+      "Clearer viewers\nThe picture and video viewers' buttons are now glass",
+      "Replies in For you\nA reply recommended to you opens at its reply in the thread",
+      "Clearer loading\nInbox, Hot and topic pages say when they are loading, fail or have nothing to show; without a network they say Can't connect",
+      "Tap again to refresh\nTap Inbox in the bottom bar again to refresh it",
+      "Cleaner solid material\nWith blur off, content shows faintly under the top bar, and floating buttons cast no shadow",
+      "Tidier layout\nTop bar buttons line up with the page's content, and corners and capsules round off more smoothly",
+      "Consistent press feedback\nHolding the top tabs or a segmented control feels like the bottom bar",
+      "Smoother scrolling\nLess stutter while scrolling and opening search",
+      "Reply panel\nLarger picture thumbnails with an easier remove button"
+    ],
+    "Fixed": [
+      "The reply box showed only one line while collapsed",
+      "Hiding the keyboard in the expanded reply box looked wrong",
+      "After copying several times, copying and going back stopped working",
+      "Replies that failed to load showed as the end of the thread",
+      "Line spacing and chips in posts looked wrong with large system text",
+      "Long reply numbers wrapped",
+      "Users without a nickname showed no name",
+      "The comments page didn't follow the Classic style",
+      "Going back to search from a page it opened closed search",
+      "Some saved or shared pictures had the wrong format",
+      "Wide pictures didn't open in full",
+      "Video controls disappeared once a video paused or ended",
+      "Taps didn't reach a page while going back to it",
+      "Titles jumped while swiping back",
+      "On tablets, search had different widths on different tabs",
+      "Turning the screen occasionally crashed the app"
+    ]
+  }
+}
