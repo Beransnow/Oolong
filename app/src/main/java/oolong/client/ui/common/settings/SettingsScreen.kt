@@ -57,7 +57,9 @@ fun <S> SettingsContent(page: SettingsPage<S>, modifier: Modifier = Modifier, co
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        page.groups.forEach { group -> group(group, state, environment, hidden) }
+        page.groups.forEach { group ->
+            if (group.available.isMet(environment)) group(group, state, environment, hidden)
+        }
     }
 }
 
@@ -66,13 +68,8 @@ internal fun rememberSettingsEnvironment() = SettingsEnvironment(LocalContext.cu
 
 private fun <S> PrefsScope.group(group: SettingsGroup<S>, state: S, environment: SettingsEnvironment, hidden: Set<SettingsRow<S>>) {
     val rows: PrefsScope.() -> Unit = {
-        group.items.forEach { item ->
-            when (item) {
-                is SettingsRow -> if (item.available.isMet(environment) && item !in hidden) {
-                    prefsItem { item.content(state, Modifier) }
-                }
-                is SettingsFooter -> prefsFooter { item.text(state) }
-            }
+        group.items.filterIsInstance<SettingsRow<S>>().forEach { row ->
+            if (row.available.isMet(environment) && row !in hidden) prefsItem { row.content(state, Modifier) }
         }
     }
     when (val header = group.header) {
@@ -81,4 +78,6 @@ private fun <S> PrefsScope.group(group: SettingsGroup<S>, state: S, environment:
         is SettingsHeader.Gap -> prefsGroup(header = { Spacer(modifier = Modifier.height(header.height)) }, items = rows)
         is SettingsHeader.Custom -> prefsGroup(header = { header.content(state) }, items = rows)
     }
+    // Notes go under the group's block and the gap after it
+    group.items.filterIsInstance<SettingsFooter<S>>().forEach { footer -> prefsFooter { footer.text(state) } }
 }

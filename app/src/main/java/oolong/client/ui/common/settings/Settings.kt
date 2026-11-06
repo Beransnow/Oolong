@@ -78,7 +78,12 @@ sealed interface SettingsHeader<in S> {
  * Rows in one block under their [header], with a gap after them; without a header, rows on their
  * own at the top of a page that has no groups.
  */
-class SettingsGroup<S>(val header: SettingsHeader<S>?, val items: List<SettingsItem<S>>)
+class SettingsGroup<S>(
+    val header: SettingsHeader<S>?,
+    val items: List<SettingsItem<S>>,
+    /** Whether the group, its header and its notes exist here at all, as a row's [SettingsRow.available]. */
+    val available: Availability = Availability.Always,
+)
 
 /** What a group holds: rows, and notes under them. */
 sealed interface SettingsItem<S>
@@ -116,10 +121,11 @@ annotation class SettingsDsl
 class SettingsScope<S> internal constructor() {
     internal val groups = mutableListOf<SettingsGroup<S>>()
 
-    fun group(@StringRes title: Int, rows: GroupScope<S>.() -> Unit) = group(SettingsHeader.Title(title), rows)
+    fun group(@StringRes title: Int, available: Availability = Availability.Always, rows: GroupScope<S>.() -> Unit) =
+        group(SettingsHeader.Title(title), available, rows)
 
-    fun group(header: SettingsHeader<S>, rows: GroupScope<S>.() -> Unit) {
-        groups += SettingsGroup(header, GroupScope<S>().apply(rows).items)
+    fun group(header: SettingsHeader<S>, available: Availability = Availability.Always, rows: GroupScope<S>.() -> Unit) {
+        groups += SettingsGroup(header, GroupScope<S>().apply(rows).items, available)
     }
 
     /** Rows with no header or gap, for a page too short to group. */
