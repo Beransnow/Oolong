@@ -242,9 +242,16 @@
     <string name="sign_done_chip">Done</string>
     <string name="title_oksign_fail">Couldn\'t check in</string>
     <string name="text_login_first">Sign in to check in</string>
-    <string name="title_history_today">Earlier today</string>
-    <string name="title_history_before">Yesterday or earlier</string>
-    <string name="title_history_thread">Threads</string>
+    <string name="title_history_today">Today</string>
+    <string name="title_history_before">Earlier</string>
+    <string name="title_history_yesterday">Yesterday</string>
+    <string name="title_history_tab_threads">Threads</string>
+    <string name="title_history_tab_forums">Forums</string>
+    <string name="history_read_up_to_floor">Read to floor %1$d</string>
+    <plurals name="history_visits">
+        <item quantity="one">%1$d visit</item>
+        <item quantity="other">%1$d visits</item>
+    </plurals>
     <string name="title_history_forum">Recent forums</string>
     <string name="title_thread_header">Replies %1$s</string>
     <string name="title_oksign_slow_mode">Slow check-in</string>

@@ -23,21 +23,52 @@ import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
 import oolong.client.model.HistoryEntry
 import oolong.client.repository.HistoryRepository
-import oolong.client.utils.DateTimeUtils
+import java.util.Calendar
+import java.util.TimeZone
 import javax.inject.Inject
 
 /** The kinds of history, each in its own tab. */
 enum class HistoryTab { Threads, Forums }
 
-/** One tab's history, split into today's visits and the earlier ones. */
+/** The days visits are grouped under. */
+enum class HistoryDay { Today, Yesterday, Earlier }
+
+/** The visits of one [day], latest first. */
+@Immutable
+data class HistorySection<T : HistoryEntry>(val day: HistoryDay, val entries: ImmutableList<T>)
+
+/** One tab's history, grouped by day; days without visits are left out. */
 @Immutable
 data class HistoryList<T : HistoryEntry>(
-    val today: ImmutableList<T> = persistentListOf(),
-    val before: ImmutableList<T> = persistentListOf(),
+    val sections: ImmutableList<HistorySection<T>> = persistentListOf(),
     /** Whether older visits remain to be shown. */
     val hasMore: Boolean = false,
 ) {
-    val isEmpty: Boolean get() = today.isEmpty() && before.isEmpty()
+    val isEmpty: Boolean get() = sections.isEmpty()
+}
+
+/** [entries], latest first, under the day each was visited on as of [now]. */
+internal fun <T : HistoryEntry> sectionsOf(entries: List<T>, now: Long, zone: TimeZone = TimeZone.getDefault()): ImmutableList<HistorySection<T>> {
+    val today = Calendar.getInstance(zone).apply {
+        timeInMillis = now
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    val startOfToday = today.timeInMillis
+    val startOfYesterday = today.apply { add(Calendar.DAY_OF_MONTH, -1) }.timeInMillis
+    return entries
+        .groupBy {
+            when {
+                it.time >= startOfToday -> HistoryDay.Today
+                it.time >= startOfYesterday -> HistoryDay.Yesterday
+                else -> HistoryDay.Earlier
+            }
+        }
+        .toSortedMap()
+        .map { (day, visits) -> HistorySection(day, visits.toImmutableList()) }
+        .toImmutableList()
 }
 
 @Immutable
@@ -78,8 +109,7 @@ class HistoryViewModel @Inject constructor(
     private fun <T : HistoryEntry> list(tab: HistoryTab, entries: (limit: Int) -> Flow<List<T>>): Flow<HistoryList<T>> =
         limits.map { it.getValue(tab) }.distinctUntilChanged().flatMapLatest { limit ->
             entries(limit).map { list ->
-                val (today, before) = list.partition { DateTimeUtils.isToday(it.time) }
-                HistoryList(today.toImmutableList(), before.toImmutableList(), hasMore = list.size >= limit)
+                HistoryList(sectionsOf(list, System.currentTimeMillis()), hasMore = list.size >= limit)
             }
         }
 

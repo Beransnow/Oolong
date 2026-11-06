@@ -1,12 +1,9 @@
 package oolong.client.ui.page.history
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.Icon
-import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,8 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -32,11 +27,10 @@ import oolong.client.ui.page.history.list.HistoryListContent
 import oolong.client.ui.page.thread.ThreadPageFrom
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassTab
+import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
-import oolong.client.ui.widgets.compose.PagerTabIndicator
-import oolong.client.ui.widgets.compose.TabRow
 
 @Composable
 fun HistoryPage(
@@ -66,8 +60,7 @@ fun HistoryPage(
     )
 }
 
-/** The visited threads and forums, in two tabs. */
-@OptIn(ExperimentalFoundationApi::class)
+/** The visited threads and forums, in two tabs that are the bar's title. */
 @Composable
 fun HistoryScreen(
     state: HistoryState,
@@ -77,17 +70,41 @@ fun HistoryScreen(
     onDelete: (HistoryEntry) -> Unit,
     onOpen: (HistoryEntry) -> Unit,
 ) {
-    val pagerState = rememberPagerState { 2 }
+    val pagerState = rememberPagerState { HistoryTab.entries.size }
     val coroutineScope = rememberCoroutineScope()
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
             GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_history)) },
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = onBack)
+                title = {
+                    GlassTabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        pagerState = pagerState,
+                        onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
+                    ) {
+                        HistoryTab.entries.forEachIndexed { index, tab ->
+                            GlassTab(
+                                text = {
+                                    Text(
+                                        text = stringResource(
+                                            id = when (tab) {
+                                                HistoryTab.Threads -> R.string.title_history_tab_threads
+                                                HistoryTab.Forums -> R.string.title_history_tab_forums
+                                            }
+                                        )
+                                    )
+                                },
+                                selected = pagerState.currentPage == index,
+                                selectedContentColor = ExtendedTheme.colors.text,
+                                unselectedContentColor = ExtendedTheme.colors.textSecondary,
+                                onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                            )
+                        }
+                    }
                 },
+                centerTitle = true,
+                navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
                 actions = {
                     IconButton(onClick = onClear) {
                         Icon(
@@ -97,56 +114,6 @@ fun HistoryScreen(
                         )
                     }
                 },
-                content = {
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        indicator = { tabPositions ->
-                            PagerTabIndicator(
-                                pagerState = pagerState,
-                                tabPositions = tabPositions
-                            )
-                        },
-                        divider = {},
-                        backgroundColor = Color.Transparent,
-                        contentColor = ExtendedTheme.colors.emphasis,
-                        modifier = Modifier
-                            .width(100.dp * 2)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Tab(
-                            text = {
-                                Text(
-                                    text = stringResource(id = R.string.title_history_thread),
-                                    fontSize = 13.sp
-                                )
-                            },
-                            selected = pagerState.currentPage == 0,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(0)
-                                }
-                            },
-                            selectedContentColor = ExtendedTheme.colors.topBarContent,
-                            unselectedContentColor = ExtendedTheme.colors.topBarContentSecondary
-                        )
-                        Tab(
-                            text = {
-                                Text(
-                                    text = stringResource(id = R.string.title_history_forum),
-                                    fontSize = 13.sp
-                                )
-                            },
-                            selected = pagerState.currentPage == 1,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(1)
-                                }
-                            },
-                            selectedContentColor = ExtendedTheme.colors.topBarContent,
-                            unselectedContentColor = ExtendedTheme.colors.topBarContentSecondary
-                        )
-                    }
-                }
             )
         }
     ) { contentPaddings ->
@@ -155,18 +122,17 @@ fun HistoryScreen(
             modifier = Modifier.fillMaxSize(),
             key = { it },
             verticalAlignment = Alignment.Top,
-            userScrollEnabled = true,
-        ) {
-            if (it == 0) {
-                HistoryListContent(
+        ) { page ->
+            when (HistoryTab.entries[page]) {
+                HistoryTab.Threads -> HistoryListContent(
                     list = state.threads,
                     onLoadMore = { onLoadMore(HistoryTab.Threads) },
                     onOpen = onOpen,
                     onDelete = onDelete,
                     contentPadding = contentPaddings,
                 )
-            } else {
-                HistoryListContent(
+
+                HistoryTab.Forums -> HistoryListContent(
                     list = state.forums,
                     onLoadMore = { onLoadMore(HistoryTab.Forums) },
                     onOpen = onOpen,

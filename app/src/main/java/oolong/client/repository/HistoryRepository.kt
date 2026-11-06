@@ -63,4 +63,5 @@ private fun HistoryEntity.toForum() = HistoryEntry.Forum(
     avatar = avatar.orEmpty(),
     name = data,
     title = title,
+    visits = count,
 )

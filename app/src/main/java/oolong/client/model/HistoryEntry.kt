@@ -38,5 +38,7 @@ sealed interface HistoryEntry {
         override val avatar: String,
         val name: String,
         val title: String,
+        /** How many times it was visited. */
+        val visits: Int = 0,
     ) : HistoryEntry
 }
