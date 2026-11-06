@@ -254,7 +254,7 @@ internal fun forumRepository(
     likeRemote: LikeRemoteDataSource = mockk(),
     signRemote: SignRemoteDataSource = mockk(),
     videoFilter: VideoThreadFilter = VideoThreadFilter { false },
-) = ForumRepository(remote, likeRemote, signRemote, videoFilter, Dispatchers.Unconfined, { _, _ -> })
+) = ForumRepository(remote, likeRemote, signRemote, mockk(relaxed = true), videoFilter, Dispatchers.Unconfined, { _, _ -> })
 
 internal fun forumRuleData(
     rules: List<ForumRule> = listOf(

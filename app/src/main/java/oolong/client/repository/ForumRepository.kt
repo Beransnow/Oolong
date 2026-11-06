@@ -62,6 +62,7 @@ class ForumRepository @Inject constructor(
     private val remote: ForumRemoteDataSource,
     private val likeRemote: LikeRemoteDataSource,
     private val signRemote: SignRemoteDataSource,
+    private val followed: FollowedForums,
     private val videoFilter: VideoThreadFilter,
     @IoDispatcher private val io: CoroutineDispatcher,
     private val emoticons: EmoticonRegistry,
@@ -147,6 +148,7 @@ class ForumRepository @Inject constructor(
 
     suspend fun like(forum: ForumDetail, tbs: String?): ForumDetail = withContext(io) {
         val info = likeRemote.like(forum.id, forum.name, forum.hasHead, tbs).info
+        followed.changed()
         forum.copy(
             liked = true,
             score = info?.curScore?.toIntOrNull() ?: forum.score,
@@ -160,16 +162,18 @@ class ForumRepository @Inject constructor(
     /** Follows the forum [name], known by [id], as from a list that has no more of it. */
     suspend fun like(id: Long, name: String) = withContext(io) {
         likeRemote.like(id, name, hasHead = false)
-        Unit
+        followed.changed()
     }
 
     suspend fun unlike(forum: ForumDetail, tbs: String?): ForumDetail = withContext(io) {
         likeRemote.unfavolike(forum.id, forum.name, tbs)
+        followed.changed()
         forum.copy(liked = false)
     }
 
     suspend fun signIn(forum: ForumDetail, tbs: String?): ForumSignIn = withContext(io) {
         val info = checkNotNull(signRemote.sign(forum.id, forum.name, tbs).userInfo)
+        followed.changed()
         val bonus = info.signBonusPoint?.toIntOrNull() ?: 0
         val levelUpScore = info.levelUpScore?.toIntOrNull() ?: forum.levelUpScore
         val level = info.allLevelInfo.lastOrNull { (it.score.toIntOrNull() ?: 0) < levelUpScore }?.id?.toIntOrNull()

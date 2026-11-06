@@ -25,6 +25,7 @@ import oolong.client.R
 import oolong.client.models.SignDataBean
 import oolong.client.pendingIntentFlagImmutable
 import oolong.client.repository.AccountRepository
+import oolong.client.repository.FollowedForums
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.utils.ProgressListener
 import oolong.client.utils.SingleAccountSigner
@@ -45,6 +46,9 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     @Inject
     lateinit var accounts: AccountRepository
+
+    @Inject
+    lateinit var followed: FollowedForums
 
     private var job: Job = Job()
     override val coroutineContext: CoroutineContext
@@ -264,6 +268,8 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
 
     override fun onFinish(success: Boolean, signedCount: Int, total: Int) {
         AutoSign.record(this, signedCount, total, success)
+        // The followed forums shown now pick up their new signed state
+        followed.changed()
         val launch = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }

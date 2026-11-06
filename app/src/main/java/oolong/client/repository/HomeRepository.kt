@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import oolong.client.arch.IoDispatcher
+import oolong.client.arch.query.QueryState
 import oolong.client.database.HistoryDao
 import oolong.client.database.HistoryEntity
 import oolong.client.database.TopForumDao
@@ -19,30 +20,23 @@ import javax.inject.Inject
 /** What the home page lists: the forums the user follows, pins and visited lately. */
 class HomeRepository @Inject constructor(
     private val likeRemote: LikeRemoteDataSource,
+    private val followed: FollowedForums,
     private val topForumDao: TopForumDao,
     private val historyDao: HistoryDao,
     private val historyOwner: HistoryOwner,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    /** Every followed forum, loaded page by page. */
-    suspend fun followedForums(): List<FollowedForum> = withContext(io) {
-        val forums = mutableListOf<FollowedForum>()
-        var page = 1
-        do {
-            val response = likeRemote.forumGuide(page++)
-            val pageForums = response.likeForum.orEmpty().mapNotNull { forum ->
-                FollowedForum(
-                    id = forum.forumId.toLongOrNull() ?: return@mapNotNull null,
-                    name = forum.forumName,
-                    avatar = forum.avatar.orEmpty(),
-                    level = forum.levelId?.toIntOrNull() ?: 0,
-                    signedIn = forum.isSign == "1",
-                )
-            }
-            forums += pageForums
-        } while (response.hasMore && pageForums.isNotEmpty())
-        forums.distinctBy { it.id }
-    }
+    /** The account whose forums these are, by uid; empty when no one is logged in. */
+    val account: Flow<String> get() = historyOwner.uid
+
+    /** The forums account [uid] follows, kept, loaded when stale and again whenever they change. */
+    fun followedForums(uid: String): Flow<QueryState<List<FollowedForum>>> = followed.query.observe(uid)
+
+    /** Loads the followed forums of [uid] again, even if fresh, and returns them. */
+    suspend fun reloadFollowedForums(uid: String): List<FollowedForum> = followed.query.reload(uid)
+
+    /** Loads the followed forums of [uid] again if they are stale. */
+    fun freshenFollowedForums(uid: String) = followed.query.prefetch(uid)
 
     /** The ids of the forums pinned to the top of the home page. */
     val pinnedForumIds: Flow<Set<Long>> =
@@ -63,6 +57,7 @@ class HomeRepository @Inject constructor(
     suspend fun unfollow(forum: FollowedForum) = withContext(io) {
         likeRemote.unfavolike(forum.id, forum.name)
         topForumDao.delete(forum.id.toString())
+        followed.changed()
     }
 
     private companion object {

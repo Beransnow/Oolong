@@ -6,10 +6,12 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import oolong.client.arch.query.QueryClient
 import oolong.client.database.AppDatabase
 import oolong.client.database.HistoryEntity
 import oolong.client.model.FollowedForum
@@ -31,6 +33,7 @@ class HomeRepositoryTest {
     private val likeRemote = mockk<LikeRemoteDataSource>(relaxed = true)
     private val repository = HomeRepository(
         likeRemote,
+        FollowedForums(likeRemote, Dispatchers.Unconfined, QueryClient(CoroutineScope(Dispatchers.Unconfined))),
         database.topForumDao(),
         database.historyDao(),
         object : HistoryOwner {
@@ -50,7 +53,7 @@ class HomeRepositoryTest {
         coEvery { likeRemote.forumGuide(1, any()) } returns ForumGuideResponse(listOf(forum(1, signed = true), forum(2)), "true")
         coEvery { likeRemote.forumGuide(2, any()) } returns ForumGuideResponse(listOf(forum(2), forum(3)), "false")
 
-        val forums = repository.followedForums()
+        val forums = repository.reloadFollowedForums("1")
 
         assertEquals(listOf(1L, 2L, 3L), forums.map { it.id })
         assertEquals(FollowedForum(1, "吧1", "a1", level = 3, signedIn = true), forums.first())
