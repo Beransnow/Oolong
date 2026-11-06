@@ -1,0 +1,70 @@
+{
+  "zh": {
+    "新增": [
+      "热门榜单\n「热门」页显示近一天的热议话题、帖子榜与吧榜；帖子榜按浏览或点赞排行，吧榜可直接关注",
+      "话题页\n话题有了单独的页面，显示简介、相关的吧与讨论帖；帖子中的 #话题# 可点按打开",
+      "无痕浏览\n在「我」页开启后，看帖、逛吧和搜索都不留下记录，关闭应用后自动结束",
+      "搜索设置\n在设置首页搜索设置项，打开后直接定位到该项",
+      "减弱动态效果\n在「界面效果」中开启后，页面与图片以淡入淡出代替缩放；系统关闭动画时自动开启",
+      "网页下载与全屏\n网页中的文件链接可下载，视频可全屏播放；长按图片或链接可查看、复制或分享"
+    ],
+    "改进": [
+      "最近逛的吧\n首页「经过贴吧」改为一行五个，下拉即可展开全部",
+      "浏览记录\n按今天、昨天与更早分组，显示帖子所在的吧、图片与读到的楼层；可按标题、作者或吧名搜索",
+      "管理浏览记录\n可多选删除，或清除最近一小时、今天的记录，清除前会先确认",
+      "记录按账号分开\n浏览记录与搜索记录按账号分别保存",
+      "字体大小\n可跟随系统字体大小，范围扩大到 80%–200%；字号较大时，顶栏、底栏与按钮的文字不会超出",
+      "刷新结果\n刷新推荐后，在刷新处显示带来了几条新动态",
+      "网页浏览\n顶栏显示网页标题与网站，并在其中显示加载进度；深色模式下网页随之变暗；无法打开时说明原因并可重新加载；向上滑动时顶栏让出空间",
+      "登录更顺畅\n登录成功后直接完成，无需等待网页加载；各账号的网页登录互不影响",
+      "夜间看图\n夜间模式下图片调暗程度减轻，打开大图时逐渐恢复亮度",
+      "吧内搜索\n布局与首页搜索一致"
+    ],
+    "修复": [
+      "添加账号时可能重复保存当前账号",
+      "登录失败后，已输入的内容丢失",
+      "打开帖子时未定位到对应的楼层或回复",
+      "切换回某个页面时意外刷新",
+      "吧内搜索结果未应用屏蔽规则",
+      "吧内搜索显示其他吧的搜索记录",
+      "楼中楼页的回复数固定在顶栏下，遮挡内容",
+      "读屏朗读浏览记录时读出分隔符号",
+      "看图时加载更多图片偶尔闪退",
+      "滑动页面时切换为液态玻璃材质偶尔闪退"
+    ]
+  },
+  "en": {
+    "New": [
+      "Trending charts\nTrending shows the last day's hot topics, top threads and top forums; threads rank by views or likes, and forums can be followed from the list",
+      "Topic pages\nEach topic has a page of its own with what it is about, its forums and its threads; tap a #topic# in a post to open it",
+      "Incognito\nTurn it on from Me: no threads, forums or searches are recorded, and it ends when the app closes",
+      "Search settings\nSearch from the top of Settings and go straight to the setting",
+      "Reduce motion\nTurn it on under Effects and pages and pictures fade instead of zooming; it is on whenever the system's animations are off",
+      "Downloads and full screen on the web\nDownload files that web pages link to and watch their videos full screen; hold a picture or link to view, copy or share it"
+    ],
+    "Improved": [
+      "Recent forums\nRecent forums on Home sit five to a row; pull down to open them all",
+      "History\nGrouped into today, yesterday and earlier, with each thread's forum, picture and the floor you read to; search by title, author or forum",
+      "Managing history\nChoose several entries to delete, or clear the last hour or today, each asking first",
+      "History by account\nHistory and search history are kept for each account",
+      "Font size\nFollow the system's text size, or choose from 80% to 200%; large text stays within bars and buttons",
+      "Refresh results\nAfter refreshing For you, see how many new threads came where the loader was",
+      "Web pages\nThe bar shows the page's title and site and fills as it loads; pages darken in the dark appearance; a page that can't open says why and can be reloaded; the bar moves away as you scroll up",
+      "Smoother sign-in\nSigning in finishes without waiting for the page to load, and each account's web login is kept apart",
+      "Pictures at night\nNight mode dims pictures less, and they brighten as they open",
+      "Forum search\nLaid out like the main search"
+    ],
+    "Fixed": [
+      "Adding an account could save the current one again",
+      "What was typed was lost when signing in failed",
+      "Threads didn't scroll to the floor or reply they were opened for",
+      "Some tabs refreshed when you came back to them",
+      "Block rules didn't apply to forum search results",
+      "Forum search showed other forums' search history",
+      "The reply count on the comments page stayed under the bar and covered the replies",
+      "Screen readers read out the dots in history entries",
+      "The picture viewer occasionally crashed as more pictures loaded",
+      "Switching to liquid glass while scrolling occasionally crashed the app"
+    ]
+  }
+}
