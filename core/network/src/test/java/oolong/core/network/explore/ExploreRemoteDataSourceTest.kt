@@ -145,4 +145,68 @@ class ExploreRemoteDataSourceTest {
             entry,
         )
     }
+
+    @Test
+    fun `asks for a thread ranking signed, as the client's own pages, and reads why each thread is on it`() = runTest {
+        server.enqueue(
+            """{"error_code":0,"data":{"tab_list":[{"name":"浏览最多贴","tab_code":"thread_uv_num","sort_rule":"近一天吧友浏览最多的贴",""" +
+                """"label_list":["近一天2.6W吧友看过"],"thread_list":[{"id":9,"tid":9,"title":"t","fname":"f","create_time":"100",""" +
+                """"media":[{"type":3,"big_pic":"b","src_pic":"s","width":10,"height":20}],"first_post_content":[{"type":18,"text":"#话题#","link":"l"}],""" +
+                """"thread_recommend_infos":[{"recommend_reason":"话题","topic_id":7}]}]}]}}"""
+        )
+
+        val tab = dataSource.threadRanking("thread_uv_num")!!
+
+        val url = server.takeRequest().url
+        assertEquals("/c/f/material/threadbang", url.encodedPath)
+        assertEquals("thread_uv_num", url.queryParameter("tab_code"))
+        assertEquals("0", url.queryParameter("is_need_tab"))
+        assertEquals("tieba", url.queryParameter("subapp_type"))
+        assertSigned(url.queryParameterNames.map { it to url.queryParameter(it)!! }, withSig = false)
+        assertEquals(listOf("近一天2.6W吧友看过"), tab.labels)
+        val thread = tab.threads.single()
+        assertEquals(100, thread.createTime)
+        assertEquals(listOf(WebThread.Reason("话题", 7)), thread.reasons)
+        assertEquals("b", thread.media.single().toMedia().bigPic)
+        assertEquals("#话题#", thread.firstPost.single().toPbContent().text)
+    }
+
+    @Test
+    fun `asks for a forum ranking and reads each forum's score`() = runTest {
+        server.enqueue(
+            """{"error_code":0,"data":{"tab_list":[{"name":"涨粉最多","tab_code":"forum_like_num",""" +
+                """"forum_list":[{"forum_id":5,"forum_name":"f","member_count":12,"is_like":1,"score_desc":"吧关注+2992"}]}]}}"""
+        )
+
+        val tab = dataSource.forumRanking("forum_like_num")!!
+
+        val url = server.takeRequest().url
+        assertEquals("/c/f/material/forumbang", url.encodedPath)
+        assertEquals("forum_like_num", url.queryParameter("tab_code"))
+        assertEquals(listOf(ForumRankingResponse.Forum(5, "f", "", 12, 1, "吧关注+2992")), tab.forums)
+    }
+
+    @Test
+    fun `asks for a topic by name and page, and reads its cards`() = runTest {
+        server.enqueue(
+            """{"error_code":"0","has_more":1,"topic_info":{"topic_id":7,"topic_name":"n","idx_num":3},""" +
+                """"theme_color":{"day":{"common_color":"9B8F37"}},"area_card_list":[{"card_data":[""" +
+                """{"card_type":"relate_forum","data":{"forum_list":[{"id":5,"name":"f","member_num":12}]}},""" +
+                """{"card_type":"relate_thread","data":{"thread_info":{"id":9,"title":"t"}}},{"card_type":"game_card","data":{}}]}]}"""
+        )
+
+        val topic = dataSource.topic(topicId = 0, name = "n", page = 2, lastThreadId = 99)
+
+        val url = server.takeRequest().url
+        assertEquals("/c/f/hottopic/topicDetail", url.encodedPath)
+        assertEquals("0", url.queryParameter("topic_id"))
+        assertEquals("n", url.queryParameter("topic_name"))
+        assertEquals("2", url.queryParameter("pn"))
+        assertEquals("10", url.queryParameter("offset"))
+        assertEquals("99", url.queryParameter("last_id"))
+        assertEquals(7, topic.topic!!.id)
+        assertEquals("9B8F37", topic.themeColor?.day?.common)
+        assertEquals(listOf("relate_forum", "relate_thread", "game_card"), topic.areas.single().cards.map { it.type })
+        assertEquals("t", topic.areas.single().cards[1].data?.thread?.title)
+    }
 }

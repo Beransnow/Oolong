@@ -36,6 +36,7 @@ class ExploreRemoteDataSource(
     private val formService = network.service<ExploreFormService>(formProfile)
     private val webProfile = TiebaProfile.WEB_12_52
     private val dislikedForumService = network.service<DislikedForumService>(webProfile)
+    private val hotListService = network.service<HotListService>(webProfile)
 
     // Recommendations come as the newer clients get them, with their newer ways of disliking a thread
     private val personalizedProfile = TiebaProfile.PROTO_22_FLOOR
@@ -125,6 +126,40 @@ class ExploreRemoteDataSource(
         return checkNotNull(service.topicList(ProtobufBody(request, commonParams.stokenField())).data_)
     }
 
+    /** The threads that did best over the last day by the measure [tabCode], such as `thread_uv_num` for most read. */
+    suspend fun threadRanking(tabCode: String): ThreadRankingResponse.Tab? {
+        val response = hotListService.threadRanking(rankingParams("tab_code" to tabCode, "is_need_tab" to "0"))
+        return response.data?.tabs?.firstOrNull { it.threads.isNotEmpty() }
+    }
+
+    /** The forums that did best over the last day by the measure [tabCode], such as `forum_like_num` for most followed. */
+    suspend fun forumRanking(tabCode: String): ForumRankingResponse.Tab? {
+        val response = hotListService.forumRanking(rankingParams("tab_code" to tabCode, "is_need_tab" to "0"))
+        return response.data?.tabs?.firstOrNull { it.forums.isNotEmpty() }
+    }
+
+    /**
+     * Page [page] (from 1) of the hot topic [topicId], or of the one named [name] when the id isn't
+     * known, as in links in posts that carry only the name.
+     *
+     * @param lastThreadId the id of the last thread of the page before, 0 for the first
+     */
+    suspend fun topic(topicId: Long, name: String, page: Int, lastThreadId: Long): TopicResponse =
+        hotListService.topic(
+            mapOf(
+                "topic_id" to topicId.toString(),
+                "topic_name" to name,
+                "is_new" to "1",
+                "is_share" to "1",
+                "pn" to page.toString(),
+                "rn" to TopicPageSize.toString(),
+                "offset" to ((page - 1) * TopicPageSize).toString(),
+                "last_id" to lastThreadId.toString(),
+                "_client_type" to "2",
+                "_client_version" to webProfile.version,
+            )
+        )
+
     /**
      * Tells the server the user doesn't want to see threads like [threadId].
      *
@@ -160,4 +195,9 @@ class ExploreRemoteDataSource(
 
     private fun webParams(vararg params: Pair<String, String>): Map<String, String> =
         commonParams.signedWebQuery(webProfile, params.toList() + ("client_type" to "8"))
+
+    private fun rankingParams(vararg params: Pair<String, String>): Map<String, String> =
+        commonParams.signedWebQuery(webProfile, params.toList(), subapp = "tieba")
 }
+
+private const val TopicPageSize = 10
