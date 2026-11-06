@@ -6,6 +6,7 @@ import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.staticCompositionLocalOf
 import kotlin.math.PI
 
 /**
@@ -53,6 +54,13 @@ object Motion {
      */
     const val ProgressThreshold = 0.001f
 }
+
+/**
+ * Whether motion is reduced (design-system.md §7.2), by the app's setting or with the system's
+ * animations off: what grows out of something else, such as a page out of a card or a picture
+ * out of its thumbnail, fades in place instead, and what comes into focus only fades.
+ */
+val LocalReduceMotion = staticCompositionLocalOf { false }
 
 private fun <T> motionSpring(damping: Float, response: Float, visibilityThreshold: T?): SpringSpec<T> {
     val omega = 2 * PI.toFloat() / response

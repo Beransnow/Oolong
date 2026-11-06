@@ -99,6 +99,7 @@ import kotlinx.coroutines.launch
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.navigation.pageOriginStandIn
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.MenuShadow
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Radius
@@ -281,14 +282,16 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     // to carry: the menu simply grows from where the finger is.
     val move = remember { Animatable(0f) }
     val grow = remember { Animatable(0f) }
-    // A preview grows out of what was pressed, and its menu follows a moment later
+    // A preview grows out of what was pressed, and its menu follows a moment later. With motion
+    // reduced it only fades in where it ends up.
     val lift = remember { Animatable(0f) }
+    val reduced = LocalReduceMotion.current
     var closing by remember { mutableStateOf(false) }
     // Once it is closing, taps go through to the page again while it shrinks away
     var letGo by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (preview != null) {
-            launch { lift.animateTo(1f, Motion.morph(Motion.ProgressThreshold)) }
+            launch { lift.animateTo(1f, if (reduced) Motion.fadeIn() else Motion.morph(Motion.ProgressThreshold)) }
             delay(PreviewLead)
         }
         if (fromButton) {
@@ -310,7 +313,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                 move.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 shrink.join()
             } else {
-                val sink = launch { lift.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
+                val sink = launch { lift.animateTo(0f, if (reduced) Motion.fadeOut() else Motion.dismiss(Motion.ProgressThreshold)) }
                 grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 sink.join()
             }
@@ -326,7 +329,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         scope.launch {
             launch { grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
             origin.awaitOpened()
-            lift.snapTo(0f)
+            // Nothing grew out of it with motion reduced: it fades away over the page sliding in
+            if (reduced) lift.animateTo(0f, Motion.fadeOut()) else lift.snapTo(0f)
             menus.closed(request.id)
         }
     }
@@ -520,7 +524,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     transformOrigin = TransformOrigin(0f, 0f)
                     translationX = now.left - final.left
                     translationY = now.top - final.top
-                    val corner = Radius.lg.toPx() * lift.value.coerceIn(0f, 1f) / scale
+                    val corner = Radius.lg.toPx() * (if (reduced) 1f else lift.value.coerceIn(0f, 1f)) / scale
                     shape = PreviewClip(now.height / scale, corner)
                     clip = true
                     shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * lift.value.coerceIn(0f, 1f)
@@ -529,8 +533,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                     // Comes out of the card blurred and clears as it grows, so neither the card
                     // giving way nor the preview taking its place is a cut
                     val l = lift.value
-                    alpha = (l / 0.35f).coerceIn(0f, 1f)
-                    val blur = IconBlur.toPx() * (1f - ((l - 0.35f) / 0.5f).coerceIn(0f, 1f))
+                    alpha = if (reduced) l.coerceIn(0f, 1f) else (l / 0.35f).coerceIn(0f, 1f)
+                    val blur = if (reduced) 0f else IconBlur.toPx() * (1f - ((l - 0.35f) / 0.5f).coerceIn(0f, 1f))
                     renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                 },
             ) {
@@ -581,7 +585,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             val previewTop = preview.from.translate(-origin).top.coerceIn(top, (bottom - total).coerceAtLeast(top))
             val previewLeft = (constraints.maxWidth - width) / 2
             val final = Rect(Offset(previewLeft, previewTop), Size(width, placeable.height.toFloat()))
-            val l = lift.value
+            // With motion reduced it stays where it ends up, only fading
+            val l = if (reduced) 1f else lift.value
             val from = preview.from.translate(-origin)
             geometry.preview = final
             geometry.previewNow = Rect(

@@ -32,6 +32,7 @@ import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import kotlin.random.Random
 
 /**
@@ -43,6 +44,12 @@ import kotlin.random.Random
  */
 @Stable
 class PageOrigins {
+    /**
+     * With motion reduced ([LocalReduceMotion]) pages slide as usual: nothing grows out of its
+     * origin and no image flies, though an image taken along still shows until the page has its own.
+     */
+    internal var reduced = false
+
     /** The origin the next page opened leaves from, set just before it opens. */
     private var pending: PageOriginKey? = null
 
@@ -107,17 +114,18 @@ class PageOrigins {
     internal fun morphs(from: Any, to: Any, opening: Boolean, peek: Boolean, kept: Set<Any>): Boolean {
         val origin = pending.also { pending = null }
         morph = when {
+            reduced -> null
             opening -> origin?.let { Morph(page = to, origin = it, opening = true) }
             else -> opened[from]?.let { Morph(page = from, origin = it, opening = false) }
         }
         if (!peek) opened.keys.retainAll(kept)
-        if (opening && origin != null) opened[to] = origin
+        if (opening && origin != null && !reduced) opened[to] = origin
         // An image taken along flies with the page sliding in, and back with it going, but not
         // past a peek: the page shrinks as a whole there, and the image would come away from it
         val hero = pendingHero.also { pendingHero = null }
         if (opening && hero != null) heroes[to] = hero
         flight = when {
-            peek -> null
+            peek || reduced -> null
             opening -> to.takeIf { hero != null }
             else -> from.takeIf { heroes.containsKey(from) }
         }
@@ -165,6 +173,8 @@ val LocalPageSharedTransitionScope = staticCompositionLocalOf<SharedTransitionSc
 @Composable
 fun PageMorphHost(content: @Composable () -> Unit) {
     val origins = remember { PageOrigins() }
+    val reduced = LocalReduceMotion.current
+    SideEffect { origins.reduced = reduced }
     SharedTransitionLayout {
         CompositionLocalProvider(
             LocalPageSharedTransitionScope provides this,
@@ -199,6 +209,7 @@ class PageOrigin internal constructor(private val origins: PageOrigins?, val key
      */
     suspend fun awaitOpened() {
         val origins = origins ?: return
+        if (origins.reduced) return
         val leaving = visibility ?: return
         // The morph starts once the page is told to come, and the origin's page to go
         withTimeoutOrNull(StartTimeoutMillis) {

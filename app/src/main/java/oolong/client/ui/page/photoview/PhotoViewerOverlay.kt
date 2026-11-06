@@ -95,6 +95,7 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.images.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
 import oolong.client.toastShort
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -143,6 +144,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
+        // With motion reduced the picture fades in and out in place instead of flying
+        val reduced = LocalReduceMotion.current
         val from = remember { opening.from?.translate(-origin) }
         val aspect = opening.aspect.takeIf { it > 0f } ?: from?.let { it.height / it.width } ?: 0f
 
@@ -150,7 +153,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val progress = remember { Animatable(0f) }
         var phase by remember { mutableStateOf(Phase.Opening) }
         // The picture flies between the thumbnail's side (near; null to fade in place) and the viewer's (far)
-        var near by remember { mutableStateOf(from) }
+        var near by remember { mutableStateOf(from?.takeUnless { reduced }) }
         var far by remember { mutableStateOf(shownRect(container, aspect)) }
         var flying by remember {
             mutableStateOf(openedItem?.let { request(context, it.originUrl, opening.thumbnail) })
@@ -209,7 +212,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             val picId = picture?.picId ?: openedItem?.picId
             val shown = currentZoom?.zoomable?.contentDisplayRectF?.takeIf { !it.isEmpty } ?: far
             far = shown.dragged(drag, dragScale, container)
-            near = picId?.let { viewer.thumbnails[it] }?.takeIf { it.visible }?.bounds?.translate(-origin)
+            near = picId?.let { viewer.thumbnails[it] }?.takeIf { it.visible && !reduced }?.bounds?.translate(-origin)
             val placeholder = picId?.let { loadedKeys[it] } ?: opening.thumbnail.takeIf { picId == openedItem?.picId }
             flying = (picture?.originUrl ?: openedItem?.originUrl)?.let { request(context, it, placeholder) }
             flyingCrops = true
@@ -358,7 +361,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         if (phase != Phase.Open || pictures.isEmpty()) {
             val request = flying
             if (request != null) {
-                val rect = near?.let { lerp(it, far, p) } ?: far.scaledAround(lerp(0.9f, 1f, p))
+                val rect = near?.let { lerp(it, far, p) } ?: far.scaledAround(if (reduced) 1f else lerp(0.9f, 1f, p))
                 val corner = if (near != null) lerp(8f, 0f, p.coerceIn(0f, 1f)) else 0f
                 Box(
                     modifier = Modifier

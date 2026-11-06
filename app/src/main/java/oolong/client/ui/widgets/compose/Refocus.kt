@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 
 /** How blurred content is as it leaves, and as it starts to come into focus. */
@@ -39,18 +40,20 @@ fun <T> Refocus(
     modifier: Modifier = Modifier,
     content: @Composable (T) -> Unit,
 ) {
+    // With motion reduced the two only cross-fade
+    val reduced = LocalReduceMotion.current
     AnimatedContent(
         targetState = targetState,
         modifier = modifier,
         contentAlignment = Alignment.Center,
         transitionSpec = {
-            (fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f)) togetherWith
-                fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() }
+            val enter = if (reduced) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f)
+            enter togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() }
         },
         label = "Refocus",
     ) { state ->
         val blur by transition.animateFloat(transitionSpec = { Motion.settle() }, label = "RefocusBlur") {
-            if (it == EnterExitState.Visible) 0f else 1f
+            if (it == EnterExitState.Visible || reduced) 0f else 1f
         }
         Box(modifier = Modifier.blurred({ blur })) { content(state) }
     }

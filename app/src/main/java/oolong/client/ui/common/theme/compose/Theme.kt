@@ -298,7 +298,11 @@ fun TiebaLiteTheme(
     }.collectAsState(initial = context.appPreferences.fontScale)
     val density = Density(LocalDensity.current.density, fontScale)
 
-    CompositionLocalProvider(LocalExtendedColors provides extendedColors, LocalDensity provides density) {
+    CompositionLocalProvider(
+        LocalExtendedColors provides extendedColors,
+        LocalDensity provides density,
+        LocalReduceMotion provides rememberReduceMotion(),
+    ) {
         MaterialTheme(
             colors = colors,
             typography = Typography,

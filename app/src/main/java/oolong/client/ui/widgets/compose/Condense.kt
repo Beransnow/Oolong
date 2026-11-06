@@ -1,6 +1,7 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
@@ -9,6 +10,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 
 /**
  * Comes into focus: from blurred, a little lower and smaller, and transparent, to sharp as
@@ -16,13 +18,20 @@ import androidx.compose.ui.unit.offset
  * The layer is drawn with room around the content, which the blur spreads into instead of being
  * cut off square at the content's edges; the room takes no space in the layout.
  */
+@Composable
 fun Modifier.condense(
     progress: () -> Float,
     blur: Dp,
     rise: Dp = 0.dp,
     scale: Float = 1f,
     fadeFaster: Float = 1f,
-): Modifier = this
+): Modifier {
+    // With motion reduced it only fades
+    if (LocalReduceMotion.current) return graphicsLayer { alpha = (progress() * fadeFaster).coerceIn(0f, 1f) }
+    return condensing(progress, blur, rise, scale, fadeFaster)
+}
+
+private fun Modifier.condensing(progress: () -> Float, blur: Dp, rise: Dp, scale: Float, fadeFaster: Float): Modifier = this
     .layout { measurable, constraints ->
         val room = (blur * 2).roundToPx()
         val placeable = measurable.measure(constraints.offset(room * 2, room * 2))

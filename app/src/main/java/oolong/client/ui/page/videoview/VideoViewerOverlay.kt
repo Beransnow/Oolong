@@ -127,6 +127,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.findActivity
 import oolong.client.ui.common.LocalAccount
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -276,7 +277,9 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
 
         val progress = remember { Animatable(0f) }
         var phase by remember { mutableStateOf(Phase.Opening) }
-        var near by remember { mutableStateOf(opening.from?.translate(-origin)) }
+        // With motion reduced the video fades in and out in place instead of flying
+        val reduced = LocalReduceMotion.current
+        var near by remember { mutableStateOf(opening.from?.translate(-origin)?.takeUnless { reduced }) }
         var far by remember { mutableStateOf<Rect?>(null) }
         var drag by remember { mutableStateOf(Offset.Zero) }
         var dragging by remember { mutableStateOf(false) }
@@ -352,7 +355,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             player.pause()
             far = fitted.dragged(drag, dragScale, container)
             // Turned sideways, the cover is no longer where it was: fade out in place instead
-            near = viewer.thumbnails[video.key]?.takeIf { it.visible && !landscape }?.bounds?.translate(-origin)
+            near = viewer.thumbnails[video.key]?.takeIf { it.visible && !landscape && !reduced }?.bounds?.translate(-origin)
             closingFade = dragFade
             drag = Offset.Zero
             dragging = false
@@ -464,7 +467,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         val full = fitted.dragged(drag, dragScale, container)
         val open = if (m > 0f) lerp(full, miniRect, m) else full
         val target = if (phase == Phase.Closing) far ?: open else open
-        val rect = near?.let { lerp(it, target, p) } ?: target.scaledAround(lerp(0.9f, 1f, p))
+        val rect = near?.let { lerp(it, target, p) } ?: target.scaledAround(if (reduced) 1f else lerp(0.9f, 1f, p))
         // The cover's corners as it grows out of it, the mini window's as it shrinks
         val corner = maxOf(if (near != null) lerp(8f, 0f, p.coerceIn(0f, 1f)) else 0f, MiniCorner * m)
         // The window's shadow, which the clipped video can't cast itself

@@ -38,6 +38,7 @@ import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.ListPref
 import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
+import oolong.client.ui.common.theme.compose.ReduceMotionKey
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.FontSizeKey
 import oolong.client.ui.navigation.Navigator
@@ -248,6 +249,13 @@ fun CustomSettingsPage(
                         title = stringResource(id = R.string.title_settings_predictive_back),
                         summary = stringResource(id = R.string.summary_settings_predictive_back),
                         defaultChecked = true,
+                    )
+                }
+                prefsItem {
+                    SwitchPref(
+                        key = ReduceMotionKey.name,
+                        title = stringResource(id = R.string.title_settings_reduce_motion),
+                        defaultChecked = false,
                     )
                 }
                 prefsItem {

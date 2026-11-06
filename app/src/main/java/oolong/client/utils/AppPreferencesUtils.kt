@@ -99,6 +99,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var fontScale by DataStoreDelegates.float(defaultValue = 1.0f)
 
+    /** Whether motion is reduced; read once at start, before the setting's flow arrives. */
+    var reduceMotion by DataStoreDelegates.boolean(defaultValue = false, key = "reduceMotion")
+
     var forumFabFunction by DataStoreDelegates.string(defaultValue = "hide")
 
     /** The name of a [oolong.client.ui.page.thread.SubPostStyle]. */
