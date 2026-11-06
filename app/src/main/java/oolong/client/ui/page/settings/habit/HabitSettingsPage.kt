@@ -1,188 +1,63 @@
 package oolong.client.ui.page.settings.habit
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import oolong.client.R
-import oolong.client.dataStore
 import oolong.client.repository.SubPostSort
-import oolong.client.ui.common.prefs.PrefsScreen
-import oolong.client.ui.common.prefs.widgets.ListPref
-import oolong.client.ui.common.prefs.widgets.SwitchPref
+import oolong.client.ui.common.settings.SettingsScreen
+import oolong.client.ui.common.settings.settingsPage
+import oolong.client.ui.navigation.HabitSettingsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.ui.widgets.compose.BackNavigationIcon
-import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.page.ProvideNavigator
 
 /** Browsing: the home page, forums, threads and pictures. */
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
-@Composable
-fun HabitSettingsPage(
-    navigator: Navigator = LocalNavigator.current
-) {
-    val context = LocalContext.current
-    val homeGroup = stringResource(id = R.string.settings_group_home)
-    val forumGroup = stringResource(id = R.string.settings_group_forum)
-    val threadGroup = stringResource(id = R.string.settings_group_thread)
-    val collectedGroup = stringResource(id = R.string.settings_group_collected)
-    val imageGroup = stringResource(id = R.string.settings_group_image)
-    GlassScaffold(
-        largeTitle = true,
-        backgroundColor = Color.Transparent,
-        topBar = {
-            GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_settings_read_habit)) },
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
-                }
-            )
-        },
-    ) { paddingValues ->
-        PrefsScreen(
-            dataStore = context.dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = paddingValues,
-        ) {
-            prefsGroup(homeGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "listSingle",
-                        title = stringResource(id = R.string.settings_forum_single),
-                        defaultChecked = false,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "homePageShowHistoryForum",
-                        title = stringResource(id = R.string.settings_home_page_show_history_forum),
-                        defaultChecked = true,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "hideExplore",
-                        title = stringResource(id = R.string.title_hide_explore),
-                        defaultChecked = false,
-                    )
-                }
-            }
-            prefsGroup(forumGroup) {
-                prefsItem {
-                    ListPref(
-                        key = "default_sort_type",
-                        title = stringResource(id = R.string.title_settings_default_sort_type),
-                        entries = mapOf(
-                            "0" to stringResource(id = R.string.title_sort_by_reply),
-                            "1" to stringResource(id = R.string.title_sort_by_send),
-                        ),
-                        useSelectedAsSummary = true,
-                        defaultValue = "0",
-                    )
-                }
-                prefsItem {
-                    ListPref(
-                        key = "forumFabFunction",
-                        title = stringResource(id = R.string.settings_forum_fab_function),
-                        defaultValue = "hide",
-                        useSelectedAsSummary = true,
-                        entries = mapOf(
-                            "refresh" to stringResource(id = R.string.btn_refresh),
-                            "back_to_top" to stringResource(id = R.string.btn_back_to_top),
-                            "hide" to stringResource(id = R.string.btn_hide)
-                        )
-                    )
-                }
-            }
-            prefsGroup(threadGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "show_both_username_and_nickname",
-                        title = stringResource(id = R.string.title_show_both_username_and_nickname),
-                        defaultChecked = false,
-                    )
-                }
-                prefsItem {
-                    ListPref(
-                        key = "subPostSort",
-                        title = stringResource(id = R.string.title_sub_post_sort),
-                        entries = mapOf(
-                            SubPostSort.Hot.value to stringResource(id = R.string.sub_post_sort_hot),
-                            SubPostSort.Earliest.value to stringResource(id = R.string.sub_post_sort_earliest),
-                        ),
-                        useSelectedAsSummary = true,
-                        defaultValue = SubPostSort.Hot.value,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "hideIpLocation",
-                        title = stringResource(id = R.string.title_hide_ip_location),
-                        defaultChecked = false,
-                    )
-                }
-            }
-            prefsGroup(collectedGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "collect_thread_see_lz",
-                        title = stringResource(id = R.string.settings_collect_thread_see_lz),
-                        defaultChecked = true,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "collect_thread_desc_sort",
-                        title = stringResource(id = R.string.settings_collect_thread_desc_sort),
-                        defaultChecked = false,
-                    )
-                }
-            }
-            prefsGroup(imageGroup) {
-                prefsItem {
-                    ListPref(
-                        key = "image_load_type",
-                        title = stringResource(id = R.string.title_settings_image_load_type),
-                        entries = mapOf(
-                            "0" to stringResource(id = R.string.title_image_load_type_smart_origin),
-                            "1" to stringResource(id = R.string.title_image_load_type_smart_load),
-                            "2" to stringResource(id = R.string.title_image_load_type_all_origin),
-                            "3" to stringResource(id = R.string.title_image_load_type_all_no)
-                        ),
-                        useSelectedAsSummary = true,
-                        defaultValue = "0",
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "imageDarkenWhenNightMode",
-                        title = stringResource(id = R.string.settings_image_darken_when_night_mode),
-                        defaultChecked = true,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "videoAutoPip",
-                        title = stringResource(id = R.string.settings_video_auto_pip),
-                        defaultChecked = true,
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "hideMedia",
-                        title = stringResource(id = R.string.title_hide_media),
-                        defaultChecked = false
-                    )
-                }
-            }
-        }
+val HabitSettings = settingsPage(R.string.title_settings_read_habit, HabitSettingsKey) {
+    group(R.string.settings_group_home) {
+        switch("listSingle", R.string.settings_forum_single, default = false)
+        switch("homePageShowHistoryForum", R.string.settings_home_page_show_history_forum, default = true)
+        switch("hideExplore", R.string.title_hide_explore, default = false)
     }
+    group(R.string.settings_group_forum) {
+        choice(
+            "default_sort_type", R.string.title_settings_default_sort_type, default = "0",
+            "0" to R.string.title_sort_by_reply,
+            "1" to R.string.title_sort_by_send,
+        )
+        choice(
+            "forumFabFunction", R.string.settings_forum_fab_function, default = "hide",
+            "refresh" to R.string.btn_refresh,
+            "back_to_top" to R.string.btn_back_to_top,
+            "hide" to R.string.btn_hide,
+        )
+    }
+    group(R.string.settings_group_thread) {
+        switch("show_both_username_and_nickname", R.string.title_show_both_username_and_nickname, default = false)
+        choice(
+            "subPostSort", R.string.title_sub_post_sort, default = SubPostSort.Hot.value,
+            SubPostSort.Hot.value to R.string.sub_post_sort_hot,
+            SubPostSort.Earliest.value to R.string.sub_post_sort_earliest,
+        )
+        switch("hideIpLocation", R.string.title_hide_ip_location, default = false)
+    }
+    group(R.string.settings_group_collected) {
+        switch("collect_thread_see_lz", R.string.settings_collect_thread_see_lz, default = true)
+        switch("collect_thread_desc_sort", R.string.settings_collect_thread_desc_sort, default = false)
+    }
+    group(R.string.settings_group_image) {
+        choice(
+            "image_load_type", R.string.title_settings_image_load_type, default = "0",
+            "0" to R.string.title_image_load_type_smart_origin,
+            "1" to R.string.title_image_load_type_smart_load,
+            "2" to R.string.title_image_load_type_all_origin,
+            "3" to R.string.title_image_load_type_all_no,
+        )
+        switch("imageDarkenWhenNightMode", R.string.settings_image_darken_when_night_mode, default = true)
+        switch("videoAutoPip", R.string.settings_video_auto_pip, default = true)
+        switch("hideMedia", R.string.title_hide_media, default = false)
+    }
+}
+
+@Composable
+fun HabitSettingsPage(navigator: Navigator = LocalNavigator.current) {
+    ProvideNavigator(navigator) { SettingsScreen(HabitSettings) }
 }
