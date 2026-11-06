@@ -96,6 +96,10 @@ data object ThreadStoreKey : Key
 @Serializable
 data object HotTopicListKey : Key
 
+/** A hot topic, by [id], or by [name] alone when only that is known, as in links in posts. */
+@Serializable
+data class TopicKey(val id: Long, val name: String) : Key
+
 @Serializable
 data class WebViewKey(val initialUrl: String) : Key
 
