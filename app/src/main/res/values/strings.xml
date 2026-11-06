@@ -448,6 +448,8 @@
     <string name="button_followed">已关注</string>
     <string name="topic_rank">热议第 %1$d 名</string>
     <string name="topic_forums">相关的吧</string>
+    <string name="desc_expand_recent_forums">展开全部最近逛的吧</string>
+    <string name="desc_collapse_recent_forums">收起最近逛的吧</string>
     <string name="title_topic">话题</string>
     <string name="toast_follow_forum_failed">无法关注 %1$s吧</string>
     <string name="hot_num">热度 %s</string>

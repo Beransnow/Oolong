@@ -455,6 +455,8 @@
     <string name="button_followed">Following</string>
     <string name="topic_rank">#%1$d in hot topics</string>
     <string name="topic_forums">Related forums</string>
+    <string name="desc_expand_recent_forums">Show all recent forums</string>
+    <string name="desc_collapse_recent_forums">Show fewer recent forums</string>
     <string name="title_topic">Topic</string>
     <string name="toast_follow_forum_failed">Couldn\'t follow %1$s</string>
     <string name="hot_num">Heat %s</string>

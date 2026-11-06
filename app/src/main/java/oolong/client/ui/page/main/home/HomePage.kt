@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenuItem
@@ -33,6 +34,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +49,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -57,7 +61,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -65,7 +71,9 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.LoadStatus
@@ -77,6 +85,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.LocalTextScale
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -425,7 +434,6 @@ sealed interface HomeEvent {
     data object Refresh : HomeEvent
     data object Search : HomeEvent
     data object OneKeySign : HomeEvent
-    data object ToggleHistory : HomeEvent
     data class OpenForum(val name: String) : HomeEvent
     data class Pin(val forum: FollowedForum) : HomeEvent
     data class Unpin(val forum: FollowedForum) : HomeEvent
@@ -447,6 +455,12 @@ fun HomePage(
     val navigator = LocalNavigator.current
 
     onGlobalEvent<GlobalEvent.Refresh>(filter = { it.key == "home" }) { viewModel.refresh() }
+    // Back from elsewhere, the followed forums load again if they have gone stale
+    LifecycleResumeEffect(viewModel) {
+        viewModel.freshen()
+        onPauseOrDispose {}
+    }
+    val guideShown by remember { context.dataStore.data.map { it[RecentForumsGuideKey] ?: false } }.collectAsState(initial = true)
 
     var unfollowForum by remember { mutableStateOf<FollowedForum?>(null) }
     val confirmUnfollowDialog = rememberDialogState()
@@ -471,12 +485,13 @@ fun HomePage(
         searchField = searchField,
         onOpenExplore = onOpenExplore,
         onToggleListSingle = { context.appPreferences.listSingle = !listSingle },
+        showRecentForumsGuide = !guideShown,
+        onRecentForumsGuideShown = { MainScope().launch { context.dataStore.edit { it[RecentForumsGuideKey] = true } } },
         onEvent = { event ->
             when (event) {
                 HomeEvent.Refresh -> viewModel.refresh()
                 HomeEvent.Search -> navigator.navigate(SearchKey())
                 HomeEvent.OneKeySign -> TiebaUtil.startSign(context)
-                HomeEvent.ToggleHistory -> viewModel.toggleHistory()
                 is HomeEvent.OpenForum -> navigator.navigate(ForumKey(event.name))
                 is HomeEvent.Pin -> viewModel.pin(event.forum)
                 is HomeEvent.Unpin -> viewModel.unpin(event.forum)
@@ -503,6 +518,8 @@ fun HomeScreen(
     searchField: (@Composable () -> Unit)? = null,
     onOpenExplore: () -> Unit = {},
     onToggleListSingle: () -> Unit = {},
+    showRecentForumsGuide: Boolean = false,
+    onRecentForumsGuideShown: () -> Unit = {},
 ) {
     // Forum names don't fit two to a row once text is larger than the bars allow
     val single = listSingle || LocalTextScale.current > TextScale.ChromeMax
@@ -512,6 +529,20 @@ fun HomeScreen(
     val showHistoryForum = showHistory && state.visited.isNotEmpty()
     val isLoading = state.load == LoadStatus.Loading
     val error = (state.load as? LoadStatus.Error)?.error
+    val gridState = rememberLazyGridState()
+    val expansion = rememberRecentForumsExpansion()
+    expansion.inView = { gridState.layoutInfo.visibleItemsInfo.any { it.key == RecentForumsKey } }
+    // Once there is a second row to pull out, show once that it is there
+    val density = LocalDensity.current.density
+    val reduceMotion = LocalReduceMotion.current
+    LaunchedEffect(showRecentForumsGuide, expansion.canExpand, isLoading) {
+        if (!showRecentForumsGuide || !expansion.canExpand || isLoading) return@LaunchedEffect
+        if (gridState.firstVisibleItemIndex == 0 && !reduceMotion) {
+            kotlinx.coroutines.delay(GuideDelay)
+            expansion.peek(GuidePeek, density)
+        }
+        onRecentForumsGuideShown()
+    }
 
     GlassScaffold(
         largeTitle = true,
@@ -549,7 +580,8 @@ fun HomeScreen(
         }
         val listPadding = contentPaddings.plus(PaddingValues(bottom = 12.dp))
         PullRefresh(
-            refreshing = isLoading && forums.isNotEmpty(),
+            refreshing = state.refreshing,
+            enabled = expansion.refreshAllowed,
             revealUnpulled = true,
             onRefresh = { onEvent(HomeEvent.Refresh) },
             indicatorTop = contentPaddings.calculateTopPadding(),
@@ -583,15 +615,24 @@ fun HomeScreen(
             ) {
                 MyLazyVerticalGrid(
                     columns = gridCells,
+                    state = gridState,
                     contentPadding = listPadding,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(expansion.connection),
                 ) {
                     item(key = "SearchBox", span = { GridItemSpan(maxLineSpan) }) {
                         searchBox()
                     }
                     if (showHistoryForum) {
-                        item(key = "HistoryForums", span = { GridItemSpan(maxLineSpan) }) {
-                            VisitedForums(state.visited, state.historyExpanded, onEvent)
+                        item(key = RecentForumsKey, span = { GridItemSpan(maxLineSpan) }) {
+                            RecentForums(
+                                visited = state.visited,
+                                expansion = expansion,
+                                // Five to a row, four once their names are larger than the bars allow
+                                columns = if (LocalTextScale.current > TextScale.ChromeMax) 4 else 5,
+                                onOpen = { onEvent(HomeEvent.OpenForum(it.name)) },
+                            )
                         }
                     }
                     if (pinned.isNotEmpty()) {
@@ -631,60 +672,6 @@ fun HomeScreen(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun VisitedForums(visited: ImmutableList<VisitedForum>, expanded: Boolean, onEvent: (HomeEvent) -> Unit) {
-    val rotate by animateFloatAsState(targetValue = if (expanded) 90f else 0f, animationSpec = Motion.snap(), label = "rotate")
-    Column {
-        Row(
-            verticalAlignment = CenterVertically,
-            modifier = Modifier
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { onEvent(HomeEvent.ToggleHistory) }
-                .padding(vertical = 8.dp)
-                .padding(end = 16.dp)
-        ) {
-            Header(text = stringResource(id = R.string.title_history_forum), invert = false)
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                imageVector = Symbols.ChevronRight,
-                contentDescription = stringResource(id = R.string.desc_show),
-                modifier = Modifier
-                    .size(24.dp)
-                    .rotate(rotate)
-            )
-        }
-        AnimatedVisibility(visible = expanded) {
-            LazyRow(contentPadding = PaddingValues(bottom = 8.dp)) {
-                item(key = "Spacer1") { Spacer(modifier = Modifier.width(12.dp)) }
-                items(visited, key = { it.name }) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .height(IntrinsicSize.Min)
-                            .clip(Corners.full)
-                            .background(color = ExtendedTheme.colors.chip)
-                            .clickable { onEvent(HomeEvent.OpenForum(it.name)) }
-                            .padding(4.dp),
-                        verticalAlignment = CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Avatar(data = it.avatar, contentDescription = null, size = 24.dp, shape = CircleShape)
-                        Text(
-                            text = it.title,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                    }
-                }
-                item(key = "Spacer2") { Spacer(modifier = Modifier.width(12.dp)) }
             }
         }
     }
@@ -812,3 +799,8 @@ fun EmptyScreen(
         },
     )
 }
+
+private const val RecentForumsKey = "HistoryForums"
+private val RecentForumsGuideKey = booleanPreferencesKey("recentForumsGuideShown")
+private val GuidePeek = 44.dp
+private const val GuideDelay = 600L

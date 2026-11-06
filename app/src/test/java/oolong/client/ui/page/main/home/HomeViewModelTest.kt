@@ -10,15 +10,16 @@ import kotlinx.coroutines.test.runTest
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.arch.query.QueryState
 import oolong.client.model.FollowedForum
 import oolong.client.model.VisitedForum
 import oolong.client.repository.HomeRepository
 import oolong.client.testing.MainDispatcherRule
-import oolong.core.network.identity.Session
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -28,14 +29,21 @@ class HomeViewModelTest {
 
     private val pinned = MutableStateFlow(emptySet<Long>())
     private val visited = MutableStateFlow(emptyList<VisitedForum>())
+    private val account = MutableStateFlow("99")
+    private val followed = MutableStateFlow(QueryState<List<FollowedForum>>(status = LoadStatus.Loading))
     private val repository = mockk<HomeRepository>(relaxed = true) {
         every { pinnedForumIds } returns pinned
         every { visitedForums } returns visited
+        every { this@mockk.account } returns this@HomeViewModelTest.account
+        every { followedForums(any()) } returns followed
     }
     private val shown = mutableListOf<Int>()
-    private var session: Session? = Session(uid = "99", name = "me", bduss = "b", stoken = null, tbs = null, zid = null)
 
     private fun forum(id: Long) = FollowedForum(id, "吧$id", "", level = 1, signedIn = false)
+
+    private fun loaded(vararg ids: Long) {
+        followed.value = QueryState(data = ids.map(::forum))
+    }
 
     private fun createViewModel() = HomeViewModel(
         repository = repository,
@@ -44,12 +52,11 @@ class HomeViewModelTest {
                 shown += message
             }
         },
-        sessionProvider = { session },
     )
 
     @Test
     fun `lists the followed forums with the pinned ones and the visited ones`() = runTest {
-        coEvery { repository.followedForums() } returns listOf(forum(1), forum(2), forum(3))
+        loaded(1, 2, 3)
         pinned.value = setOf(3L)
         visited.value = listOf(VisitedForum("吧9", "吧9吧", ""))
 
@@ -66,38 +73,68 @@ class HomeViewModelTest {
 
     @Test
     fun `starts out loading rather than as a guest`() = runTest {
-        coEvery { repository.followedForums() } returns listOf(forum(1))
-
         val viewModel = createViewModel()
+        runCurrent()
 
         assertEquals(LoadStatus.Loading, viewModel.state.value.load)
     }
 
     @Test
     fun `a guest has nothing to load`() = runTest {
-        session = null
+        account.value = ""
 
         val viewModel = createViewModel()
         runCurrent()
 
         assertEquals(false, viewModel.state.value.loggedIn)
         assertEquals(LoadStatus.Idle, viewModel.state.value.load)
-        coVerify(exactly = 0) { repository.followedForums() }
+        coVerify(exactly = 0) { repository.followedForums(any()) }
     }
 
     @Test
-    fun `a failed load keeps its error`() = runTest {
-        coEvery { repository.followedForums() } throws IOException("network")
+    fun `a failed first load keeps its error, and a quiet reload behind loaded forums shows nothing`() = runTest {
+        followed.value = QueryState(status = LoadStatus.Error(IOException("network")))
+        val viewModel = createViewModel()
+        runCurrent()
+        assertIs<LoadStatus.Error>(viewModel.state.value.load)
 
+        followed.value = QueryState(data = listOf(forum(1)), status = LoadStatus.Loading)
+        runCurrent()
+
+        assertEquals(LoadStatus.Idle, viewModel.state.value.load)
+        assertFalse(viewModel.state.value.refreshing)
+    }
+
+    @Test
+    fun `refreshing on request shows it, and says so when it fails`() = runTest {
+        loaded(1)
+        coEvery { repository.reloadFollowedForums("99") } throws IOException("network")
         val viewModel = createViewModel()
         runCurrent()
 
-        assertIs<LoadStatus.Error>(viewModel.state.value.load)
+        viewModel.refresh()
+        runCurrent()
+
+        coVerify { repository.reloadFollowedForums("99") }
+        assertFalse(viewModel.state.value.refreshing)
+        assertEquals(listOf(R.string.toast_load_failed), shown)
     }
 
     @Test
-    fun `unfollowing removes the forum, and a failure says so`() = runTest {
-        coEvery { repository.followedForums() } returns listOf(forum(1), forum(2))
+    fun `follows the account that is logged in`() = runTest {
+        loaded(1)
+        val viewModel = createViewModel()
+        runCurrent()
+
+        account.value = "100"
+        runCurrent()
+
+        coVerify { repository.followedForums("100") }
+    }
+
+    @Test
+    fun `unfollowing removes the forum at once, and a failure brings it back and says so`() = runTest {
+        loaded(1, 2)
         coEvery { repository.unfollow(forum(2)) } throws IOException("network")
         val viewModel = createViewModel()
         runCurrent()
@@ -112,7 +149,7 @@ class HomeViewModelTest {
 
     @Test
     fun `pinning goes through the repository`() = runTest {
-        coEvery { repository.followedForums() } returns listOf(forum(1))
+        loaded(1)
         val viewModel = createViewModel()
         runCurrent()
 

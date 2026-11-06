@@ -10,20 +10,25 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.arch.query.QueryState
 import oolong.client.model.FollowedForum
 import oolong.client.model.VisitedForum
 import oolong.client.repository.HomeRepository
-import oolong.core.network.identity.SessionProvider
 import javax.inject.Inject
 
 @Immutable
@@ -31,61 +36,77 @@ data class HomeState(
     val forums: ImmutableList<FollowedForum> = persistentListOf(),
     val pinnedIds: ImmutableSet<Long> = persistentSetOf(),
     val visited: ImmutableList<VisitedForum> = persistentListOf(),
-    /** How loading the followed forums went. */
+    /** How loading the followed forums went, as long as there are none to show yet. */
     val load: LoadStatus = LoadStatus.Idle,
-    val historyExpanded: Boolean = true,
+    /** Whether the user asked for the followed forums again and they are on their way. */
+    val refreshing: Boolean = false,
     val loggedIn: Boolean = false,
 ) {
     /** The followed forums the user pinned, in the order they are followed. */
     val pinned: ImmutableList<FollowedForum> get() = forums.filter { it.id in pinnedIds }.toImmutableList()
 }
 
-/** The home page: the forums the user follows, with the pinned ones first and the visited ones above. */
+/**
+ * The home page: the forums the user follows, with the pinned ones first and the visited ones
+ * above. The followed forums are the account's kept ones, which load again when stale and
+ * whenever a forum is followed, unfollowed or signed in to anywhere; they load quietly behind
+ * what is shown, unless the user asked.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: HomeRepository,
     private val messages: MessageController,
-    private val sessionProvider: SessionProvider,
 ) : ViewModel() {
-    private val local = MutableStateFlow(Local())
     private val actions = Actions(viewModelScope)
+    private val refreshing = MutableStateFlow(false)
 
-    private data class Local(
-        val forums: List<FollowedForum> = emptyList(),
-        // Loading until refresh() knows whether there is anyone to load for, so a logged-in user
-        // never sees the guest page first
-        val load: LoadStatus = LoadStatus.Loading,
-        val historyExpanded: Boolean = true,
-        val loggedIn: Boolean = false,
-    )
+    /** Forums unfollowed here, left out until the list loads without them. */
+    private val unfollowed = MutableStateFlow(emptySet<Long>())
 
-    val state: StateFlow<HomeState> =
-        combine(local, repository.pinnedForumIds, repository.visitedForums) { local, pinned, visited ->
-            HomeState(
-                forums = local.forums.toImmutableList(),
-                pinnedIds = pinned.toImmutableSet(),
-                visited = visited.toImmutableList(),
-                load = local.load,
-                historyExpanded = local.historyExpanded,
-                loggedIn = local.loggedIn,
-            )
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState(load = LoadStatus.Loading))
+    private val account = repository.account.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    init {
-        refresh()
+    private val followed: Flow<Pair<String, QueryState<List<FollowedForum>>>?> = account.flatMapLatest { uid ->
+        when {
+            uid == null -> flowOf(null)
+            uid.isEmpty() -> flowOf(uid to QueryState(data = emptyList()))
+            else -> repository.followedForums(uid).map { uid to it }
+        }
     }
 
-    /** Loads the followed forums again, as the account that is logged in now. */
+    val state: StateFlow<HomeState> = combine(
+        followed,
+        unfollowed,
+        refreshing,
+        repository.pinnedForumIds,
+        repository.visitedForums,
+    ) { followed, unfollowed, refreshing, pinned, visited ->
+        val (uid, query) = followed ?: (null to QueryState(status = LoadStatus.Loading))
+        val forums = query.data
+        HomeState(
+            forums = forums.orEmpty().filterNot { it.id in unfollowed }.toImmutableList(),
+            pinnedIds = pinned.toImmutableSet(),
+            visited = visited.toImmutableList(),
+            // Until anything is known, it is loading, so a logged-in user never sees the guest page first
+            load = if (forums == null) query.status.takeUnless { it == LoadStatus.Idle } ?: LoadStatus.Loading else LoadStatus.Idle,
+            refreshing = refreshing,
+            loggedIn = uid?.isNotEmpty() ?: true,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState(load = LoadStatus.Loading))
+
+    /** Loads the followed forums again because the user asked, saying so if it fails. */
     fun refresh() = actions.launch("refresh") {
-        val loggedIn = sessionProvider.currentSession() != null
-        if (!loggedIn) {
-            local.update { it.copy(forums = emptyList(), load = LoadStatus.Idle, loggedIn = false) }
-            return@launch
-        }
-        local.update { it.copy(load = LoadStatus.Loading, loggedIn = true) }
-        runCatching { repository.followedForums() }
-            .onSuccess { forums -> local.update { it.copy(forums = forums, load = LoadStatus.Idle) } }
-            .onFailure { e -> local.update { it.copy(load = LoadStatus.Error(e)) } }
+        val uid = account.value?.takeIf(String::isNotEmpty) ?: return@launch
+        refreshing.value = true
+        runCatching { repository.reloadFollowedForums(uid) }
+            .onSuccess { unfollowed.value = emptySet() }
+            .onFailure { if (state.value.forums.isNotEmpty()) messages.showError(R.string.toast_load_failed, it) }
+        refreshing.value = false
+    }
+
+    /** Loads the followed forums again if they are stale, as when the page shows again. */
+    fun freshen() {
+        account.value?.takeIf(String::isNotEmpty)?.let(repository::freshenFollowedForums)
     }
 
     fun pin(forum: FollowedForum) = actions.launch("pin-${forum.id}") {
@@ -97,10 +118,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun unfollow(forum: FollowedForum) = actions.launch("unfollow-${forum.id}") {
+        unfollowed.update { it + forum.id }
         runCatching { repository.unfollow(forum) }
-            .onSuccess { local.update { state -> state.copy(forums = state.forums.filterNot { it.id == forum.id }) } }
-            .onFailure { messages.showError(R.string.toast_unlike_failed, it) }
+            .onFailure {
+                unfollowed.update { ids -> ids - forum.id }
+                messages.showError(R.string.toast_unlike_failed, it)
+            }
     }
-
-    fun toggleHistory() = local.update { it.copy(historyExpanded = !it.historyExpanded) }
 }

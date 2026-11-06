@@ -2,7 +2,6 @@ package oolong.client.ui.page.main.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.arch.LoadStatus
@@ -20,7 +19,9 @@ internal object HomePreviewData {
     val loaded = HomeState(
         forums = forums,
         pinnedIds = persistentSetOf(2L),
-        visited = persistentListOf(VisitedForum("测试", "测试吧", ""), VisitedForum("安卓", "安卓吧", "")),
+        visited = listOf("测试", "安卓", "minecraft", "一个名字很长的吧", "steam", "原神", "数码", "壁纸")
+            .map { VisitedForum(it, "${it}吧", "") }
+            .toImmutableList(),
         loggedIn = true,
     )
 
