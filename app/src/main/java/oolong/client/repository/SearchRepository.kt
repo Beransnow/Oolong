@@ -34,8 +34,8 @@ class SearchRepository @Inject constructor(
         entries.map { SearchHistoryItem(it.id, it.content) }
     }
 
-    /** The keywords searched for in any forum. */
-    val forumHistory: Flow<List<SearchHistoryItem>> = historyDao.allInForumsFlow().map { entries ->
+    /** The keywords searched for in [forumName]. */
+    fun forumHistory(forumName: String): Flow<List<SearchHistoryItem>> = historyDao.inForumFlow(forumName).map { entries ->
         entries.map { SearchHistoryItem(it.id, it.content, it.forumName) }
     }
 
@@ -53,7 +53,7 @@ class SearchRepository @Inject constructor(
 
     suspend fun clearHistory() = withContext(io) { historyDao.clear() }
 
-    suspend fun clearForumHistory() = withContext(io) { historyDao.clearInForums() }
+    suspend fun clearForumHistory(forumName: String) = withContext(io) { historyDao.clearInForum(forumName) }
 
     suspend fun forums(keyword: String): SearchMatches<SearchedForum> = withContext(io) {
         val data = remote.forums(keyword)

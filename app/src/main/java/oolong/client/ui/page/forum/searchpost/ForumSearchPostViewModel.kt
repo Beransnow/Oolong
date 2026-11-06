@@ -51,7 +51,7 @@ data class ForumSearchPostState(
     val list: PagerState<SearchedPost> = PagerState(refresh = LoadStatus.Loading),
     /** What block rules say of the results, by [SearchedPost.key]; those they let through are left out. */
     val blocks: ImmutableMap<String, BlockVerdict> = persistentMapOf(),
-    /** The keywords searched for in any forum. */
+    /** The keywords searched for in this forum. */
     val history: ImmutableList<SearchHistoryItem> = persistentListOf(),
 )
 
@@ -80,7 +80,7 @@ class ForumSearchPostViewModel @AssistedInject constructor(
     val state: StateFlow<ForumSearchPostState> = combine(
         local,
         pager.flatMapLatest { it?.state ?: flowOf(PagerState(refresh = LoadStatus.Loading)) },
-        repository.forumHistory,
+        repository.forumHistory(forumName),
         blockRuleSource.rules,
     ) { local, list, history, rules ->
         ForumSearchPostState(
@@ -133,7 +133,7 @@ class ForumSearchPostViewModel @AssistedInject constructor(
     }
 
     fun clearHistory() = actions.launch("clear") {
-        runCatching { repository.clearForumHistory() }
+        runCatching { repository.clearForumHistory(forumName) }
             .onSuccess { messages.show(R.string.toast_clear_success) }
             .onFailure { messages.showError(R.string.toast_clear_failure, it) }
     }

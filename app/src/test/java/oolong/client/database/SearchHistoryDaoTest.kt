@@ -3,6 +3,7 @@ package oolong.client.database
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.runner.RunWith
@@ -37,5 +38,15 @@ class SearchHistoryDaoTest {
         dao.addInForum("a", "吧一", timestamp = 3)
 
         assertEquals(listOf("吧一", "吧二"), dao.allInForums().map { it.forumName })
+    }
+
+    @Test
+    fun `a forum shows and clears only its own keywords`() = runBlocking {
+        dao.addInForum("a", "吧一", timestamp = 1)
+        dao.addInForum("b", "吧二", timestamp = 2)
+
+        assertEquals(listOf("a"), dao.inForumFlow("吧一").first().map { it.content })
+        dao.clearInForum("吧一")
+        assertEquals(listOf("吧二"), dao.allInForums().map { it.forumName })
     }
 }

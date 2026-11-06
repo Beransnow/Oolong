@@ -25,7 +25,7 @@ class ForumSearchPostViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = mockk<SearchRepository>(relaxed = true) {
-        every { forumHistory } returns flowOf(emptyList())
+        every { forumHistory(any()) } returns flowOf(emptyList())
         coEvery { threadsInForum(any(), any(), any(), any(), any(), any()) } returns Page(emptyList())
     }
 

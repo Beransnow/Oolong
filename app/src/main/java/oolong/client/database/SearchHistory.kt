@@ -60,8 +60,9 @@ interface SearchHistoryDao {
     @Query("SELECT * FROM forum_search_history ORDER BY timestamp DESC")
     suspend fun allInForums(): List<ForumSearchHistoryEntity>
 
-    @Query("SELECT * FROM forum_search_history ORDER BY timestamp DESC")
-    fun allInForumsFlow(): Flow<List<ForumSearchHistoryEntity>>
+    /** The keywords searched for in [forumName], latest first, followed as they change. */
+    @Query("SELECT * FROM forum_search_history WHERE forum_name = :forumName ORDER BY timestamp DESC")
+    fun inForumFlow(forumName: String): Flow<List<ForumSearchHistoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertInForum(history: ForumSearchHistoryEntity): Long
@@ -79,6 +80,6 @@ interface SearchHistoryDao {
     @Query("DELETE FROM forum_search_history WHERE id = :id")
     suspend fun deleteInForum(id: Long)
 
-    @Query("DELETE FROM forum_search_history")
-    suspend fun clearInForums()
+    @Query("DELETE FROM forum_search_history WHERE forum_name = :forumName")
+    suspend fun clearInForum(forumName: String)
 }
