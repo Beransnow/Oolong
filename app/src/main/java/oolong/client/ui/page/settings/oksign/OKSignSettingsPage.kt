@@ -5,8 +5,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.text.format.DateFormat
 import android.text.format.DateUtils
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,9 +15,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -33,17 +31,18 @@ import oolong.client.R
 import oolong.client.dataStore
 import oolong.client.services.AutoSign
 import oolong.client.ui.common.prefs.PrefsExternal
-import oolong.client.ui.common.prefs.PrefsScreen
-import oolong.client.ui.common.prefs.depend
-import oolong.client.ui.common.prefs.widgets.SwitchPref
 import oolong.client.ui.common.prefs.widgets.TextPref
-import oolong.client.ui.common.prefs.widgets.TimePickerPerf
+import oolong.client.ui.common.settings.Availability
+import oolong.client.ui.common.settings.SettingsHeader
+import oolong.client.ui.common.settings.SettingsPage
+import oolong.client.ui.common.settings.SettingsScope
+import oolong.client.ui.common.settings.SettingsScreen
+import oolong.client.ui.common.settings.res
+import oolong.client.ui.common.settings.stored
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.ui.widgets.compose.BackNavigationIcon
-import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 import oolong.client.utils.BackgroundSettings
 import oolong.client.utils.PermissionUtils
@@ -53,24 +52,53 @@ import oolong.client.utils.requestIgnoreBatteryOptimizations
 import oolong.client.utils.requestPermission
 import java.util.Date
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
-@Composable
-fun OKSignSettingsPage(
-    navigator: Navigator = LocalNavigator.current,
+/** What the sign-in page knows only while it shows: what the system allows, and ways to ask for it. */
+class OKSignState(
+    val conditions: RunConditions,
+    /** The system's prompt for notifications, after a word on what they are for; its settings once it no longer asks. */
+    val requestNotifications: () -> Unit,
+    private val snackbar: SnackbarHostState,
+    private val scope: CoroutineScope,
+    private val testScheduled: String,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    GlassScaffold(
-        largeTitle = true,
-        backgroundColor = Color.Transparent,
-        topBar = {
-            GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_oksign)) },
-                navigationIcon = {
-                    BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
-                }
-            )
-        },
-    ) { paddingValues ->
+    /** Says when the test sign-in will run. */
+    fun sayTestScheduled(time: String) {
+        scope.launch { snackbar.showSnackbar(testScheduled.format(time)) }
+    }
+}
+
+/** Signing in to every followed forum: at once, and each day by itself. */
+@OptIn(ExperimentalMaterialApi::class)
+object OKSignSettings : SettingsPage<OKSignState>(R.string.title_oksign, OKSignSettingsKey) {
+    @Composable
+    override fun rememberState(): OKSignState {
+        val context = LocalContext.current
+        // What the system allows is read again on coming back from its settings
+        var resumes by remember { mutableIntStateOf(0) }
+        LifecycleResumeEffect(Unit) {
+            resumes++
+            onPauseOrDispose {}
+        }
+        val conditions = remember(resumes) { RunConditions.read(context) }
+        val requestNotifications: () -> Unit = {
+            context.requestPermission {
+                permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
+                description = context.getString(R.string.desc_permission_post_notifications)
+                onGranted = { resumes++ }
+                onDeniedForever = { BackgroundSettings.openNotifications(context) }
+            }
+        }
+        return OKSignState(
+            conditions = conditions,
+            requestNotifications = requestNotifications,
+            snackbar = LocalSnackbarHostState.current,
+            scope = rememberCoroutineScope(),
+            testScheduled = stringResource(id = R.string.toast_auto_sign_test_scheduled),
+        )
+    }
+
+    @Composable
+    override fun Effects(state: OKSignState) {
         val context = LocalContext.current
         val dataStore = context.dataStore
         // Reschedule the daily sign-in as soon as it is turned on or off or its time changes
@@ -81,23 +109,6 @@ fun OKSignSettingsPage(
                 .drop(1)
                 .collect { AutoSign.schedule(context) }
         }
-        // What the system allows is read again on coming back from its settings
-        var resumes by remember { mutableIntStateOf(0) }
-        LifecycleResumeEffect(Unit) {
-            resumes++
-            onPauseOrDispose {}
-        }
-        val state = remember(resumes) { RunConditions.read(context) }
-        // The system's own prompt, after a word on what the notifications are for; its settings
-        // only once it no longer asks
-        val requestNotifications: () -> Unit = {
-            context.requestPermission {
-                permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
-                description = context.getString(R.string.desc_permission_post_notifications)
-                onGranted = { resumes++ }
-                onDeniedForever = { BackgroundSettings.openNotifications(context) }
-            }
-        }
         // Turning signing in automatically on is when its results start to need notifications
         LaunchedEffect(dataStore) {
             dataStore.data
@@ -106,160 +117,104 @@ fun OKSignSettingsPage(
                 .drop(1)
                 .collect { on ->
                     if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !RunConditions.read(context).notifications) {
-                        requestNotifications()
+                        state.requestNotifications()
                     }
                 }
         }
-        val snackbarHostState = LocalSnackbarHostState.current
-        val oneKeyGroup = stringResource(id = R.string.settings_group_sign_mode)
-        val autoGroup = stringResource(id = R.string.title_auto_sign)
-        val conditionsGroup = stringResource(id = R.string.settings_group_auto_sign_conditions)
-        val allowed = stringResource(id = R.string.value_allowed)
-        val notAllowed = stringResource(id = R.string.value_not_allowed)
-        val lastRun = lastRunText(state.lastRun)
-        val vendorTip = vendorTip()
-        val testScheduled = stringResource(id = R.string.toast_auto_sign_test_scheduled)
-        PrefsScreen(
-            dataStore = dataStore,
-            dividerThickness = 0.dp,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = paddingValues,
-        ) {
-            prefsGroup(oneKeyGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "oksign_slow_mode",
-                        title = stringResource(id = R.string.title_oksign_slow_mode),
-                        defaultChecked = true,
-                        summary = stringResource(id = R.string.summary_oksign_slow_mode),
-                    )
-                }
-                prefsItem {
-                    SwitchPref(
-                        key = "oksign_use_official_oksign",
-                        title = stringResource(id = R.string.title_oksign_use_official_oksign),
-                        defaultChecked = true,
-                        summary = stringResource(id = R.string.summary_oksign_use_official_oksign),
-                    )
-                }
-            }
-            prefsGroup(autoGroup) {
-                prefsItem {
-                    SwitchPref(
-                        key = "auto_sign",
-                        title = stringResource(id = R.string.title_auto_sign),
-                        defaultChecked = false,
-                    )
-                }
-                prefsItem {
-                    TimePickerPerf(
-                        key = "auto_sign_time",
-                        title = stringResource(id = R.string.title_auto_sign_time),
-                        defaultValue = "09:00",
-                        dialogTitle = stringResource(id = R.string.title_auto_sign_time),
-                        enabled = depend(key = "auto_sign")
-                    )
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_auto_sign_last),
-                        darkenOnDisable = false,
-                        trailingContent = { Text(text = lastRun) },
-                    )
-                }
-            }
-            prefsGroup(conditionsGroup) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    prefsItem {
-                        TextPref(
-                            title = stringResource(id = R.string.title_exact_alarms),
-                            trailingContent = { PrefsExternal(text = if (state.exactAlarms) allowed else notAllowed) },
-                            onClick = { BackgroundSettings.openExactAlarms(context) },
-                        )
+    }
+
+    override fun SettingsScope<OKSignState>.content() {
+        group(R.string.settings_group_sign_mode) {
+            switch("oksign_slow_mode", R.string.title_oksign_slow_mode, default = true, summary = { stringResource(id = R.string.summary_oksign_slow_mode) })
+            switch(
+                "oksign_use_official_oksign", R.string.title_oksign_use_official_oksign, default = true,
+                summary = { stringResource(id = R.string.summary_oksign_use_official_oksign) },
+            )
+        }
+        group(R.string.title_auto_sign) {
+            switch("auto_sign", R.string.title_auto_sign, default = false)
+            time("auto_sign_time", R.string.title_auto_sign_time, default = "09:00", enabled = { stored(booleanPreferencesKey("auto_sign"), true) })
+            info(R.string.title_auto_sign_last, value = { lastRunText(conditions.lastRun) })
+        }
+        group(R.string.settings_group_auto_sign_conditions) {
+            action(
+                R.string.title_exact_alarms,
+                value = { allowed(conditions.exactAlarms) },
+                external = true,
+                available = Availability.sdk(Build.VERSION_CODES.S),
+                onClick = { BackgroundSettings.openExactAlarms(context) },
+            )
+            // The system's state, and the system's dialog to change it; on Xiaomi's systems this
+            // opens its own battery saver page
+            action(
+                R.string.title_ignore_battery_optimization,
+                value = {
+                    stringResource(id = if (conditions.batteryIgnored) R.string.summary_battery_optimization_ignored else R.string.value_battery_optimization_on)
+                },
+                external = true,
+                onClick = {
+                    if (state.conditions.batteryIgnored) BackgroundSettings.openAppDetails(context) else context.requestIgnoreBatteryOptimizations()
+                },
+            )
+            action(
+                R.string.title_auto_start,
+                value = {
+                    when (conditions.autoStart) {
+                        BackgroundSettings.State.On -> allowed(true)
+                        BackgroundSettings.State.Off -> allowed(false)
+                        BackgroundSettings.State.Unknown -> null
                     }
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_ignore_battery_optimization),
-                        // The system's state, and the system's dialog to change it; on Xiaomi's
-                        // systems this opens its own battery saver page
-                        trailingContent = {
-                            PrefsExternal(
-                                text = stringResource(
-                                    id = if (state.batteryIgnored) R.string.summary_battery_optimization_ignored else R.string.value_battery_optimization_on,
-                                ),
-                            )
-                        },
-                        onClick = {
-                            if (state.batteryIgnored) BackgroundSettings.openAppDetails(context)
-                            else context.requestIgnoreBatteryOptimizations()
-                        },
-                    )
-                }
-                if (BackgroundSettings.vendor != BackgroundSettings.Vendor.Other) {
-                    prefsItem {
-                        TextPref(
-                            title = stringResource(id = R.string.title_auto_start),
-                            trailingContent = {
-                                PrefsExternal(
-                                    text = when (state.autoStart) {
-                                        BackgroundSettings.State.On -> allowed
-                                        BackgroundSettings.State.Off -> notAllowed
-                                        BackgroundSettings.State.Unknown -> null
-                                    },
-                                )
-                            },
-                            onClick = { BackgroundSettings.openAutoStart(context) },
-                        )
-                    }
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    prefsItem {
-                        TextPref(
-                            title = stringResource(id = R.string.title_system_notifications),
-                            summary = stringResource(id = R.string.summary_auto_sign_notifications),
-                            // Not yet allowed, the row asks here rather than leaving the app
-                            trailingContent = if (state.notifications) {
-                                { PrefsExternal(text = allowed) }
-                            } else {
-                                { Text(text = notAllowed) }
-                            },
-                            onClick = { if (state.notifications) BackgroundSettings.openNotifications(context) else requestNotifications() },
-                        )
-                    }
-                }
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_auto_sign_test),
-                        summary = stringResource(id = R.string.summary_auto_sign_test),
-                        trailingContent = null,
-                        onClick = {
-                            val time = AutoSign.test(context, TestDelayMillis)
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(testScheduled.format(DateFormat.getTimeFormat(context).format(Date(time))))
-                            }
-                        },
-                    )
-                }
+                },
+                external = true,
+                available = { BackgroundSettings.vendor != BackgroundSettings.Vendor.Other },
+                onClick = { BackgroundSettings.openAutoStart(context) },
+            )
+            // Not yet allowed, the row asks here rather than leaving the app
+            custom(R.string.title_system_notifications, available = Availability.sdk(Build.VERSION_CODES.TIRAMISU)) { modifier ->
+                val context = LocalContext.current
+                TextPref(
+                    title = stringResource(id = R.string.title_system_notifications),
+                    modifier = modifier,
+                    summary = stringResource(id = R.string.summary_auto_sign_notifications),
+                    trailingContent = if (conditions.notifications) {
+                        { PrefsExternal(text = allowed(true)) }
+                    } else {
+                        { Text(text = allowed(false)) }
+                    },
+                    onClick = { if (conditions.notifications) BackgroundSettings.openNotifications(context) else requestNotifications() },
+                )
             }
-            prefsFooter { vendorTip }
-            prefsGroup(header = {}) {
-                prefsItem {
-                    TextPref(
-                        title = stringResource(id = R.string.title_background_guide),
-                        trailingContent = { PrefsExternal() },
-                        onClick = {
-                            launchUrl(context, navigator, "https://dontkillmyapp.com/${BackgroundSettings.vendor.dontKillMyApp}")
-                        },
-                    )
-                }
-            }
+            action(
+                R.string.title_auto_sign_test,
+                summary = { stringResource(id = R.string.summary_auto_sign_test) },
+                searchable = false,
+                onClick = {
+                    val time = AutoSign.test(context, TestDelayMillis)
+                    state.sayTestScheduled(DateFormat.getTimeFormat(context).format(Date(time)))
+                },
+            )
+            footer { vendorTip() }
+        }
+        group(SettingsHeader.Gap(0.dp)) {
+            action(
+                R.string.title_background_guide,
+                external = true,
+                onClick = { launchUrl(context, navigator, "https://dontkillmyapp.com/${BackgroundSettings.vendor.dontKillMyApp}") },
+            )
         }
     }
 }
 
+@Composable
+fun OKSignSettingsPage(navigator: Navigator = LocalNavigator.current) {
+    ProvideNavigator(navigator) { SettingsScreen(OKSignSettings) }
+}
+
+@Composable
+private fun allowed(yes: Boolean) = stringResource(id = if (yes) R.string.value_allowed else R.string.value_not_allowed)
+
 /** What the system lets the daily sign-in do, as it stands now. */
-private class RunConditions(
+class RunConditions(
     val exactAlarms: Boolean,
     val batteryIgnored: Boolean,
     val autoStart: BackgroundSettings.State,
