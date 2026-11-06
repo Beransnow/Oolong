@@ -59,6 +59,7 @@ import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.settings.account.AccountSettings
 import oolong.client.ui.page.settings.block.BlockSettings
 import oolong.client.ui.page.settings.custom.CustomSettings
+import oolong.client.ui.page.settings.custom.FontSizeSettings
 import oolong.client.ui.page.settings.habit.HabitSettings
 import oolong.client.ui.page.settings.more.MoreSettings
 import oolong.client.ui.page.settings.oksign.OKSignSettings
@@ -178,6 +179,7 @@ val AllSettingsPages: List<SettingsPage<*>> by lazy {
         SettingsHub,
         CustomSettings,
         ThemeSettingsPage,
+        FontSizeSettings,
         HabitSettings,
         PostSettings,
         BlockSettings,

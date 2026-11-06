@@ -30,6 +30,7 @@ import oolong.client.ui.common.settings.SettingsScreen
 import oolong.client.ui.common.settings.settingsPage
 import oolong.client.ui.common.settings.stored
 import oolong.client.ui.common.theme.compose.ReduceMotionKey
+import oolong.client.ui.common.theme.compose.TextScale
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.CustomSettingsKey
 import oolong.client.ui.navigation.FontSizeKey
@@ -83,7 +84,7 @@ val CustomSettings = settingsPage(R.string.title_settings_custom, CustomSettings
         switch(SubPostsCollapsedKey.name, R.string.title_sub_posts_collapsed, default = false)
     }
     group(R.string.settings_group_text_and_icon) {
-        link(R.string.title_custom_font_size, to = FontSizeKey, aliases = R.string.search_aliases_font_size, value = { "${(LocalContext.current.appPreferences.fontScale * 100).roundToInt()}%" })
+        link(R.string.title_custom_font_size, to = FontSizeKey, aliases = R.string.search_aliases_font_size, value = { fontSizeValue() })
         custom(R.string.settings_app_icon) { modifier -> AppIconPref(modifier) }
         switch(
             "useThemedIcon", R.string.title_settings_use_themed_icon, default = false,
@@ -223,5 +224,16 @@ private fun GlassClarityPref() {
             onValueChange = { clarity = it },
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
         )
+    }
+}
+
+/** The text size as the appearance page shows it: following the system, or the percentage chosen. */
+@Composable
+private fun fontSizeValue(): String {
+    val chosen = stored(TextScale.ScaleKey, 1f)
+    return if (stored(TextScale.FollowSystemKey, TextScale.followsByDefault(chosen))) {
+        stringResource(id = R.string.title_follow_system_font_size)
+    } else {
+        "${(chosen * 100).roundToInt()}%"
     }
 }

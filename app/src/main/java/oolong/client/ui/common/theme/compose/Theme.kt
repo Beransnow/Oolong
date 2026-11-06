@@ -16,13 +16,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import oolong.client.dataStore
 import oolong.client.ui.widgets.compose.ProvideChromeStyle
 import oolong.client.ui.widgets.compose.ProvideGlassChoice
@@ -291,16 +293,19 @@ fun TiebaLiteTheme(
 
     val colors = getColorPalette(extendedColors)
 
-    // The app's own text size, in place of the system's
+    // The system's text size, or the app's own in its place
     val context = LocalContext.current
-    val fontScale by remember {
-        context.dataStore.data.map { it[FontScaleKey] ?: 1f }.distinctUntilChanged()
-    }.collectAsState(initial = context.appPreferences.fontScale)
-    val density = Density(LocalDensity.current.density, fontScale)
+    val textScale by remember {
+        context.dataStore.data.map { it.textScaleChoice() }.distinctUntilChanged()
+    }.collectAsState(initial = remember { runBlocking { context.dataStore.data.first() }.textScaleChoice() })
+    val systemDensity = LocalDensity.current
+    val scale = if (textScale.followSystem) LocalConfiguration.current.fontScale else textScale.scale
+    val density = if (textScale.followSystem) systemDensity else textScaledDensity(systemDensity.density, scale)
 
     CompositionLocalProvider(
         LocalExtendedColors provides extendedColors,
         LocalDensity provides density,
+        LocalTextScale provides scale,
         LocalReduceMotion provides rememberReduceMotion(),
     ) {
         MaterialTheme(
@@ -317,7 +322,6 @@ fun TiebaLiteTheme(
 }
 
 private val TranslucentTextKey = intPreferencesKey("translucent_background_theme")
-private val FontScaleKey = floatPreferencesKey("fontScale")
 
 object ExtendedTheme {
     val colors: ExtendedColors

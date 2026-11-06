@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import oolong.client.R
 import oolong.client.pxToDp
@@ -157,10 +159,15 @@ fun EmoticonText(
         )
     )
     val sizePx = calcLineHeightPx(mergedStyle)
-    // Back to sp with the density it was measured in, whose text scale is the app's own, not the system's
+    // As a multiple of the font size: back in sp it would be scaled up again where large text
+    // grows less than small text, so a line would end up taller than measured
     val density = LocalDensity.current
-    val spacingLineHeight =
-        remember(sizePx, lineSpacing, density) { with(density) { (sizePx + lineSpacing.toPx()).toSp() } }
+    val spacingLineHeight = remember(sizePx, lineSpacing, density, mergedStyle.fontSize) {
+        with(density) {
+            val fontPx = if (mergedStyle.fontSize.isSpecified) mergedStyle.fontSize.toPx() else 0f
+            if (fontPx > 0f) ((sizePx + lineSpacing.toPx()) / fontPx).em else (sizePx + lineSpacing.toPx()).toSp()
+        }
+    }
     val emoticonInlineContent =
         remember(sizePx, density) { EmoticonManager.getEmoticonInlineContent(sizePx * emoticonSize, density) }
     IconText(

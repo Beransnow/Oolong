@@ -97,8 +97,6 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var doNotUsePhotoPicker by DataStoreDelegates.boolean(defaultValue = false)
 
-    var fontScale by DataStoreDelegates.float(defaultValue = 1.0f)
-
     /** Whether motion is reduced; read once at start, before the setting's flow arrives. */
     var reduceMotion by DataStoreDelegates.boolean(defaultValue = false, key = "reduceMotion")
 

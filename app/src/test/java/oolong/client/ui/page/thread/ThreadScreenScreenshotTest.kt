@@ -27,7 +27,7 @@ class ThreadScreenScreenshotTest {
         captureScreenshot { ThreadScreen(state = ThreadPreviewData.loaded, onEvent = {}) }
     }
 
-    /** The app's text size stands in for the system's, so a large system one changes nothing. */
+    /** Text follows the system's size until one is chosen, large text growing less; the bars cap it. */
     @Test
     fun loadedWithLargeSystemText() {
         RuntimeEnvironment.setFontScale(2f)
