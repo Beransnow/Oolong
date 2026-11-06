@@ -1,5 +1,6 @@
 package oolong.client.ui.page.thread
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarDuration
@@ -14,13 +15,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
@@ -71,12 +78,24 @@ fun ThreadRoute(
     val hideBlocked by rememberPreferenceAsState(booleanPreferencesKey("hideBlockedContent"), false)
 
     LaunchedEffect(viewModel) {
+        var scrolling: Job? = null
         viewModel.effect.collect { effect ->
             when (effect) {
                 ThreadEffect.NavigateUp -> navigator.navigateUp()
-                ThreadEffect.ScrollToFirstReply -> listState.scrollToItem(FIRST_REPLY_INDEX)
-                is ThreadEffect.ScrollToPost -> viewModel.state.value.indexOfPost(effect.postId)
-                    ?.let { listState.scrollToItem(it) }
+                // To the reply count above the replies, once the first reply is under it
+                ThreadEffect.ScrollToFirstReply -> {
+                    scrolling?.cancel()
+                    scrolling = launch {
+                        listState.scrollOnceShown(viewModel.state, itemsAfter = 1) { state ->
+                            FIRST_REPLY_INDEX.takeIf { state.thread != null && state.posts.items.isNotEmpty() }
+                        }
+                    }
+                }
+
+                is ThreadEffect.ScrollToPost -> {
+                    scrolling?.cancel()
+                    scrolling = launch { listState.scrollOnceShown(viewModel.state) { it.indexOfPost(effect.postId) } }
+                }
             }
         }
     }
@@ -241,3 +260,24 @@ fun ThreadRoute(
 /** The words of a post, for quoting it: its text, without pictures or other media. */
 private fun List<PostContent>.plainText(): String =
     filterIsInstance<PostContent.Text>().joinToString("") { text -> text.spans.joinToString("") { it.text } }.trim()
+
+/**
+ * Scrolls to the item [indexIn] finds, once the list shows it and [itemsAfter] more. A scroll
+ * asked for comes with the page that brought what it scrolls to, ahead of the state and the list
+ * that show that page; one made at once would find the item missing, or stop short at the end of
+ * a list too short yet to bring it to the top. Gives up after a while, as when the page never
+ * shows.
+ */
+private suspend fun LazyListState.scrollOnceShown(
+    state: Flow<ThreadState>,
+    itemsAfter: Int = 0,
+    indexIn: (ThreadState) -> Int?,
+) {
+    withTimeoutOrNull(SCROLL_WAIT_MILLIS) {
+        val index = state.mapNotNull(indexIn).first()
+        snapshotFlow { layoutInfo.totalItemsCount }.first { it > index + itemsAfter }
+        scrollToItem(index)
+    }
+}
+
+private const val SCROLL_WAIT_MILLIS = 5_000L
