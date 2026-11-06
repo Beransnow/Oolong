@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -217,14 +219,24 @@ private fun ThreadRow(thread: HistoryEntry.Thread) {
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (thread.forumName.isNotEmpty()) {
+            val forum = if (thread.forumName.isNotEmpty()) stringResource(id = R.string.title_forum, thread.forumName) else null
+            val details = listOfNotNull(
+                thread.authorName.ifEmpty { null },
+                if (thread.floor > 1) stringResource(id = R.string.history_read_up_to_floor, thread.floor) else null,
+                relativeTime(thread.time),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                // Read out as the words, not the dots between them
+                modifier = Modifier.clearAndSetSemantics { contentDescription = listOfNotNull(forum).plus(details).joinToString(SpokenSeparator) },
+            ) {
+                if (forum != null) {
                     if (thread.forumAvatar.isNotEmpty()) {
                         Avatar(data = thread.forumAvatar, size = ForumIconSize, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(
-                        text = stringResource(id = R.string.title_forum, thread.forumName),
+                        text = forum,
                         style = TextStyles.caption,
                         fontWeight = FontWeight.SemiBold,
                         color = ExtendedTheme.colors.text.copy(alpha = 0.75f),
@@ -233,11 +245,7 @@ private fun ThreadRow(thread: HistoryEntry.Thread) {
                     Dot()
                 }
                 Text(
-                    text = listOfNotNull(
-                        thread.authorName.ifEmpty { null },
-                        if (thread.floor > 1) stringResource(id = R.string.history_read_up_to_floor, thread.floor) else null,
-                        relativeTime(thread.time),
-                    ).joinToString(MetaSeparator),
+                    text = details.joinToString(MetaSeparator),
                     style = TextStyles.caption,
                     color = ExtendedTheme.colors.textSecondary,
                     maxLines = 1,
@@ -274,11 +282,13 @@ private fun ForumRow(forum: HistoryEntry.Forum) {
         Avatar(data = forum.avatar, size = 40.dp, contentDescription = null)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = forum.title, style = TextStyles.name, fontWeight = FontWeight.Bold, color = ExtendedTheme.colors.text, maxLines = 1)
+            val details = listOfNotNull(
+                relativeTime(forum.time),
+                if (forum.visits > 0) pluralStringResource(id = R.plurals.history_visits, forum.visits, forum.visits) else null,
+            )
             Text(
-                text = listOfNotNull(
-                    relativeTime(forum.time),
-                    if (forum.visits > 0) pluralStringResource(id = R.plurals.history_visits, forum.visits, forum.visits) else null,
-                ).joinToString(MetaSeparator),
+                text = details.joinToString(MetaSeparator),
+                modifier = Modifier.clearAndSetSemantics { contentDescription = details.joinToString(SpokenSeparator) },
                 style = TextStyles.caption,
                 color = ExtendedTheme.colors.textSecondary,
                 maxLines = 1,
@@ -288,5 +298,6 @@ private fun ForumRow(forum: HistoryEntry.Forum) {
 }
 
 private const val MetaSeparator = " · "
+private const val SpokenSeparator = ", "
 private val ForumIconSize = 16.dp
 private val ThumbnailSize = 64.dp
