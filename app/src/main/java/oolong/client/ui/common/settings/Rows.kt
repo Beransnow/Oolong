@@ -185,13 +185,15 @@ class GroupScope<S> internal constructor() {
 
     /**
      * A row that does something: [onClick]. [external] marks one that leaves the app, for the
-     * system's settings or a web page; [destructive] colours one that deletes.
+     * system's settings or a web page; [more] one that goes on to a dialog; [destructive] colours
+     * one that deletes.
      */
     fun action(
         @StringRes title: Int,
         summary: (@Composable S.() -> String?)? = null,
         value: (@Composable S.() -> String?)? = null,
         external: Boolean = false,
+        more: Boolean = false,
         destructive: Boolean = false,
         enabled: @Composable S.() -> Boolean = { true },
         available: Availability = Availability.Always,
@@ -212,6 +214,7 @@ class GroupScope<S> internal constructor() {
             trailingContent = when {
                 external -> ({ PrefsExternal(text = shownValue) })
                 shownValue != null -> ({ Text(text = shownValue) })
+                more -> ({ PrefsChevron() })
                 else -> null
             },
         )
@@ -261,19 +264,19 @@ class GroupScope<S> internal constructor() {
         key: String,
         @StringRes title: Int,
         summary: (@Composable S.() -> String?)? = null,
+        @StringRes dialogTitle: Int = title,
         default: String = "",
         available: Availability = Availability.Always,
         shown: (@Composable S.() -> Boolean)? = null,
         @StringRes aliases: Int? = null,
         searchable: Boolean = true,
     ) = row(title, SettingsRow.Kind.Value, available, shown, aliases, searchable) { modifier ->
-        val text = stringResource(id = title)
         EditTextPref(
             key = key,
-            title = text,
+            title = stringResource(id = title),
             modifier = modifier,
             summary = summary?.invoke(this),
-            dialogTitle = text,
+            dialogTitle = stringResource(id = dialogTitle),
             defaultValue = default,
         )
     }
