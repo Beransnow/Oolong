@@ -9,6 +9,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,69 +18,85 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.arch.Actions
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
-import oolong.client.arch.query.QueryClient
-import oolong.client.arch.query.withLatestEntities
-import oolong.client.model.HotCategory
-import oolong.client.model.HotTopic
-import oolong.client.model.ThreadSummary
+import oolong.client.model.ForumMeasure
+import oolong.client.model.ForumRanking
+import oolong.client.model.RankedForum
+import oolong.client.model.RankedThread
+import oolong.client.model.RankedTopic
+import oolong.client.model.ThreadMeasure
+import oolong.client.repository.BlockPlace
 import oolong.client.repository.BlockRuleSource
+import oolong.client.repository.BlockVerdict
 import oolong.client.repository.ExploreRepository
-import oolong.client.repository.ThreadActions
-import oolong.client.repository.Threads
-import oolong.client.ui.page.main.explore.FeedThread
-import oolong.client.ui.page.main.explore.feedThread
+import oolong.client.repository.ForumRepository
+import oolong.client.repository.check
 import javax.inject.Inject
+
+/** A thread on the ranking, and how the block rules block it, if they do. */
+@Immutable
+data class HotThread(val ranked: RankedThread, val block: BlockVerdict? = null)
 
 @Immutable
 data class HotState(
-    val topics: ImmutableList<HotTopic> = persistentListOf(),
-    val categories: ImmutableList<HotCategory> = persistentListOf(),
-    /** The code of the category whose threads are listed. */
-    val category: String = HotCategory.ALL,
-    val threads: ImmutableList<FeedThread> = persistentListOf(),
+    /** The top of the hot topics ranking. */
+    val topics: ImmutableList<RankedTopic> = persistentListOf(),
+    val threadMeasure: ThreadMeasure = ThreadMeasure.MostRead,
+    val threads: ImmutableList<HotThread> = persistentListOf(),
+    /** Whether the threads of another measure are on their way. */
+    val switchingThreads: Boolean = false,
+    val forumMeasure: ForumMeasure = ForumMeasure.MostFollowed,
+    val forums: ForumRanking? = null,
+    val switchingForums: Boolean = false,
     /** How loading the whole page went. */
     val load: LoadStatus = LoadStatus.Loading,
-    /** Whether the threads of another category are on their way. */
-    val switching: Boolean = false,
 )
 
-/** The hot threads ranking, with its categories and the top hot topics; loaded the first time the tab shows. */
+/**
+ * The day's hot topics, threads and forums, each ranking by one measure the user picks; loaded
+ * the first time the tab shows. Each measure is loaded once until the page is refreshed.
+ */
 @HiltViewModel
 class HotViewModel @Inject constructor(
     private val repository: ExploreRepository,
-    client: QueryClient,
-    private val threads: ThreadActions,
+    private val forumRepository: ForumRepository,
     private val messages: MessageController,
     blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
-    private val actions = Actions(viewModelScope)
     private val local = MutableStateFlow(Local())
     private var loadJob: Job? = null
+    private var threadJob: Job? = null
+    private var forumJob: Job? = null
 
     private data class Local(
-        val topics: List<HotTopic> = emptyList(),
-        val categories: List<HotCategory> = emptyList(),
-        val category: String = HotCategory.ALL,
-        val threads: List<ThreadSummary> = emptyList(),
+        val topics: List<RankedTopic> = emptyList(),
+        val threadMeasure: ThreadMeasure = ThreadMeasure.MostRead,
+        val threads: Map<ThreadMeasure, List<RankedThread>> = emptyMap(),
+        val switchingThreads: Boolean = false,
+        val forumMeasure: ForumMeasure = ForumMeasure.MostFollowed,
+        val forums: Map<ForumMeasure, ForumRanking> = emptyMap(),
+        val switchingForums: Boolean = false,
+        /** Forums followed from here, shown followed whatever the ranking says. */
+        val followed: Set<Long> = emptySet(),
         val load: LoadStatus = LoadStatus.Loading,
-        val switching: Boolean = false,
         val opened: Boolean = false,
     )
 
-    val state: StateFlow<HotState> = combine(
-        local.withLatestEntities(client) { it.copy(threads = it.threads.map { thread -> Threads(thread) }) },
-        blockRuleSource.rules,
-    ) { local, rules ->
+    val state: StateFlow<HotState> = combine(local, blockRuleSource.rules) { local, rules ->
         HotState(
-            topics = local.topics.toImmutableList(),
-            categories = local.categories.toImmutableList(),
-            category = local.category,
-            threads = local.threads.map(rules::feedThread).toImmutableList(),
+            topics = local.topics.take(TopTopics).toImmutableList(),
+            threadMeasure = local.threadMeasure,
+            threads = local.threads[local.threadMeasure].orEmpty()
+                .map { HotThread(it, rules.check(it.thread, BlockPlace.Feeds)) }
+                .toImmutableList(),
+            switchingThreads = local.switchingThreads,
+            forumMeasure = local.forumMeasure,
+            forums = local.forums[local.forumMeasure]?.let { ranking ->
+                ranking.copy(forums = ranking.forums.map { it.withFollowed(local.followed) }.toImmutableList())
+            },
+            switchingForums = local.switchingForums,
             load = local.load,
-            switching = local.switching,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, HotState())
 
@@ -88,51 +105,97 @@ class HotViewModel @Inject constructor(
         if (!local.value.opened) refresh()
     }
 
-    /** Loads the whole page again, back on the ranking of every category. */
-    fun refresh() = load(HotCategory.ALL, whole = true)
-
-    fun selectCategory(code: String) {
-        if (code != local.value.category) load(code, whole = false)
-    }
-
-    fun agree(thread: ThreadSummary) = actions.launch("agree-${thread.id}") {
-        runCatching { threads.agree(thread, !thread.agree.agreed) }
-            .onFailure { messages.showError(R.string.toast_agree_failed, it) }
-    }
-
-    private fun load(code: String, whole: Boolean) {
+    /** Loads every section again, on the measures picked. */
+    fun refresh() {
         loadJob?.cancel()
-        val previous = local.value.category
-        local.update {
-            if (whole) it.copy(load = LoadStatus.Loading, switching = false, opened = true)
-            else it.copy(category = code, switching = true)
-        }
+        threadJob?.cancel()
+        forumJob?.cancel()
+        local.update { it.copy(load = LoadStatus.Loading, opened = true, switchingThreads = false, switchingForums = false) }
         loadJob = viewModelScope.launch {
+            val current = local.value
+            val topics = async { runCatching { repository.topics() } }
+            val threads = async { runCatching { repository.threadRanking(current.threadMeasure) } }
+            val forums = async { runCatching { repository.forumRanking(current.forumMeasure) } }
+            val results = listOf(topics.await(), threads.await(), forums.await())
+            results.firstNotNullOfOrNull { it.exceptionOrNull() as? CancellationException }?.let { throw it }
+            if (results.all { it.isFailure }) {
+                local.update { it.copy(load = LoadStatus.Error(results.first().exceptionOrNull()!!)) }
+                return@launch
+            }
+            local.update {
+                it.copy(
+                    topics = topics.await().getOrDefault(emptyList()),
+                    threads = threads.await().getOrNull()?.let { list -> mapOf(it.threadMeasure to list) }.orEmpty(),
+                    forums = forums.await().getOrNull()?.let { ranking -> mapOf(it.forumMeasure to ranking) }.orEmpty(),
+                    followed = emptySet(),
+                    load = LoadStatus.Idle,
+                )
+            }
+        }
+    }
+
+    fun selectThreadMeasure(measure: ThreadMeasure) {
+        val previous = local.value.threadMeasure
+        if (measure == previous) return
+        threadJob?.cancel()
+        if (measure in local.value.threads) {
+            local.update { it.copy(threadMeasure = measure, switchingThreads = false) }
+            return
+        }
+        local.update { it.copy(threadMeasure = measure, switchingThreads = true) }
+        threadJob = viewModelScope.launch {
             try {
-                val hot = repository.hotThreads(code)
-                local.update {
-                    if (whole) {
-                        it.copy(
-                            topics = hot.topics,
-                            categories = hot.categories,
-                            category = code,
-                            threads = hot.threads,
-                            load = LoadStatus.Idle,
-                        )
-                    } else {
-                        it.copy(threads = hot.threads, switching = false)
-                    }
-                }
+                val threads = repository.threadRanking(measure)
+                local.update { it.copy(threads = it.threads + (measure to threads), switchingThreads = false) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                if (whole) {
-                    local.update { it.copy(load = LoadStatus.Error(e)) }
-                } else {
-                    local.update { it.copy(category = previous, switching = false) }
-                    messages.show(R.string.toast_load_failed)
-                }
+                local.update { it.copy(threadMeasure = previous, switchingThreads = false) }
+                messages.show(R.string.toast_load_failed)
+            }
+        }
+    }
+
+    fun selectForumMeasure(measure: ForumMeasure) {
+        val previous = local.value.forumMeasure
+        if (measure == previous) return
+        forumJob?.cancel()
+        if (measure in local.value.forums) {
+            local.update { it.copy(forumMeasure = measure, switchingForums = false) }
+            return
+        }
+        local.update { it.copy(forumMeasure = measure, switchingForums = true) }
+        forumJob = viewModelScope.launch {
+            try {
+                val forums = repository.forumRanking(measure)
+                local.update { it.copy(forums = it.forums + (measure to forums), switchingForums = false) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                local.update { it.copy(forumMeasure = previous, switchingForums = false) }
+                messages.show(R.string.toast_load_failed)
+            }
+        }
+    }
+
+    /** Follows [forum], showing it followed at once and taking that back if it fails. */
+    fun follow(forum: RankedForum) {
+        val id = forum.forum.id
+        if (forum.liked) return
+        local.update { it.copy(followed = it.followed + id) }
+        viewModelScope.launch {
+            try {
+                forumRepository.like(id, forum.forum.name)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                local.update { it.copy(followed = it.followed - id) }
+                messages.show(R.string.toast_follow_forum_failed, forum.forum.name)
             }
         }
     }
 }
+
+private fun RankedForum.withFollowed(followed: Set<Long>) = if (forum.id in followed) copy(liked = true) else this
+
+private const val TopTopics = 5

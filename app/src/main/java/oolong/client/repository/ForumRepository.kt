@@ -157,6 +157,12 @@ class ForumRepository @Inject constructor(
         )
     }
 
+    /** Follows the forum [name], known by [id], as from a list that has no more of it. */
+    suspend fun like(id: Long, name: String) = withContext(io) {
+        likeRemote.like(id, name, hasHead = false)
+        Unit
+    }
+
     suspend fun unlike(forum: ForumDetail, tbs: String?): ForumDetail = withContext(io) {
         likeRemote.unfavolike(forum.id, forum.name, tbs)
         forum.copy(liked = false)

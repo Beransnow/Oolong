@@ -40,22 +40,6 @@ data class RankedTopic(
     val tag: HotTopic.Tag = HotTopic.Tag.None,
 )
 
-/** A category of the hot threads ranking. */
-@Immutable
-data class HotCategory(val code: String, val name: String) {
-    companion object {
-        /** The code of the ranking of every category. */
-        const val ALL = "all"
-    }
-}
-
-/** The hot threads ranking of one category, with the categories and the top hot topics. */
-data class HotThreads(
-    val topics: List<HotTopic>,
-    val categories: List<HotCategory>,
-    val threads: List<ThreadSummary>,
-)
-
 /** A forum the user keeps out of their recommendations. */
 @Immutable
 data class DislikedForum(val id: Long, val name: String, val avatar: String, val slogan: String)

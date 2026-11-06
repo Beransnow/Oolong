@@ -42,7 +42,17 @@ class ExploreScreenshotTest {
     @Test
     fun hot() {
         captureScreenshot {
-            HotScreen(state = ExplorePreviewData.hot, events = FeedThreadEvents(), onRefresh = {}, onSelectCategory = {}, onOpenTopics = {})
+            HotScreen(
+                state = ExplorePreviewData.hot,
+                events = FeedThreadEvents(),
+                onRefresh = {},
+                onSelectThreadMeasure = {},
+                onSelectForumMeasure = {},
+                onOpenTopics = {},
+                onOpenTopic = {},
+                onOpenForum = {},
+                onFollowForum = {},
+            )
         }
     }
 }

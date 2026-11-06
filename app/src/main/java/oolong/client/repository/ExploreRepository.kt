@@ -11,8 +11,6 @@ import oolong.client.model.DislikeOption
 import oolong.client.model.ForumMeasure
 import oolong.client.model.ForumRanking
 import oolong.client.model.ForumSummary
-import oolong.client.model.HotCategory
-import oolong.client.model.HotThreads
 import oolong.client.model.HotTopic
 import oolong.client.model.RankedForum
 import oolong.client.model.RankedThread
@@ -60,18 +58,6 @@ class ExploreRepository @Inject constructor(
         if (first) concernStore.lastRequestUnix = response.requestUnix
         val threads = response.threadInfo.filter { it.recommendType == 1 }.mapNotNull { it.threadList?.toThreadSummary(emoticons) }
         Page(threads, next = response.pageTag.takeIf { response.hasMore == 1 && it.isNotEmpty() })
-    }
-
-    /** The hot threads of the category [code], [HotCategory.ALL] for all of them. */
-    suspend fun hotThreads(code: String = HotCategory.ALL): HotThreads = withContext(io) {
-        val response = remote.hotThreads(code)
-        HotThreads(
-            topics = response.topicList.map { topic ->
-                HotTopic(topic.topicId, topic.topicName, topicTag(topic.tag))
-            },
-            categories = response.hotThreadTabInfo.map { HotCategory(it.tabCode, it.tabName) },
-            threads = response.threadInfo.map { it.toThreadSummary(emoticons) },
-        )
     }
 
     /** The threads of the last day ranked by [measure]. */

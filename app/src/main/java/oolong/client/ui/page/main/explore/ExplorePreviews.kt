@@ -13,14 +13,21 @@ import oolong.client.api.models.protos.User
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.model.DislikeOption
-import oolong.client.model.HotCategory
+import oolong.client.model.ForumRanking
+import oolong.client.model.ForumSummary
 import oolong.client.model.HotTopic
+import oolong.client.model.RankReason
+import oolong.client.model.RankedForum
+import oolong.client.model.RankedThread
+import oolong.client.model.RankedTopic
+import oolong.client.model.TopicRef
 import oolong.client.repository.EmoticonRegistry
 import oolong.client.repository.toThreadSummary
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.page.main.explore.concern.ConcernScreen
 import oolong.client.ui.page.main.explore.hot.HotScreen
 import oolong.client.ui.page.main.explore.hot.HotState
+import oolong.client.ui.page.main.explore.hot.HotThread
 import oolong.client.ui.page.main.explore.personalized.PersonalizedScreen
 import oolong.client.ui.page.main.explore.personalized.PersonalizedState
 import oolong.client.ui.page.main.explore.personalized.RecommendedItem
@@ -70,14 +77,34 @@ internal object ExplorePreviewData {
 
     val hot = HotState(
         topics = persistentListOf(
-            HotTopic(1, "第一个话题", HotTopic.Tag.Hot),
-            HotTopic(2, "第二个话题", HotTopic.Tag.New),
-            HotTopic(3, "第三个话题"),
-            HotTopic(4, "第四个话题"),
-            HotTopic(5, "第五个话题"),
+            RankedTopic(1, "第一个话题", "", "", 2_748_069, HotTopic.Tag.Hot),
+            RankedTopic(2, "第二个话题", "", "", 1_687_770, HotTopic.Tag.Hot),
+            RankedTopic(3, "第三个话题有一个很长很长的名字", "", "", 1_510_626, HotTopic.Tag.Hot),
+            RankedTopic(4, "第四个话题", "", "", 1_264_150, HotTopic.Tag.New),
+            RankedTopic(5, "第五个话题", "", "", 1_159_000),
         ),
-        categories = persistentListOf(HotCategory("game", "游戏"), HotCategory("ent", "娱乐"), HotCategory("sport", "体育")),
-        threads = concern.items,
+        threads = threads.mapIndexed { index, thread ->
+            HotThread(
+                RankedThread(
+                    rank = index + 1,
+                    thread = thread,
+                    reason = RankReason.Readers(26_000L - index * 3_000),
+                    topic = TopicRef(1, "第一个话题").takeIf { index == 1 },
+                )
+            )
+        }.toImmutableList(),
+        forums = ForumRanking(
+            rule = "近一天关注量上涨最快的吧",
+            forums = listOf("孙笑川", "抗压背锅", "deepseek").mapIndexed { index, name ->
+                RankedForum(
+                    rank = index + 1,
+                    forum = ForumSummary(100L + index, name, ""),
+                    members = 7_937_010L / (index + 1),
+                    liked = index == 1,
+                    reason = RankReason.NewFollowers(2992L - index * 800),
+                )
+            }.toImmutableList(),
+        ),
         load = LoadStatus.Idle,
     )
 }
@@ -106,6 +133,16 @@ private fun PreviewPersonalizedScreen() {
 @Composable
 private fun PreviewHotScreen() {
     TiebaLiteTheme {
-        HotScreen(state = ExplorePreviewData.hot, events = FeedThreadEvents(), onRefresh = {}, onSelectCategory = {}, onOpenTopics = {})
+        HotScreen(
+            state = ExplorePreviewData.hot,
+            events = FeedThreadEvents(),
+            onRefresh = {},
+            onSelectThreadMeasure = {},
+            onSelectForumMeasure = {},
+            onOpenTopics = {},
+            onOpenTopic = {},
+            onOpenForum = {},
+            onFollowForum = {},
+        )
     }
 }

@@ -6,12 +6,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import oolong.client.api.models.protos.AlaLiveInfo
-import oolong.client.api.models.protos.FrsTabInfo
-import oolong.client.api.models.protos.RecommendTopicList
 import oolong.client.api.models.protos.SimpleForum
 import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.api.models.protos.VideoInfo
-import oolong.client.api.models.protos.hotThreadList.HotThreadListResponseData
 import oolong.client.api.models.protos.personalized.DislikeReason
 import oolong.client.api.models.protos.personalized.PersonalizedResponseData
 import oolong.client.api.models.protos.personalized.ThreadPersonalized
@@ -21,7 +18,6 @@ import oolong.client.api.models.protos.userLike.ConcernData
 import oolong.client.api.models.protos.userLike.UserLikeResponseData
 import oolong.client.model.DislikeOption
 import oolong.client.model.ForumSummary
-import oolong.client.model.HotCategory
 import oolong.client.model.HotTopic
 import oolong.client.model.RankReason
 import oolong.client.model.RankedTopic
@@ -89,21 +85,6 @@ class ExploreRepositoryTest {
         assertEquals("next", first.next)
         assertNull(second.next)
         assertEquals(200L, store.lastRequestUnix)
-    }
-
-    @Test
-    fun `maps the hot topics and categories`() = runTest {
-        coEvery { remote.hotThreads(HotCategory.ALL) } returns HotThreadListResponseData(
-            topicList = listOf(RecommendTopicList(topicId = 1, topicName = "热", tag = 2), RecommendTopicList(topicId = 2, topicName = "新", tag = 1)),
-            hotThreadTabInfo = listOf(FrsTabInfo(tabName = "游戏", tabCode = "game")),
-            threadInfo = listOf(ThreadInfo(id = 9)),
-        )
-
-        val hot = repository.hotThreads()
-
-        assertEquals(listOf(HotTopic(1, "热", HotTopic.Tag.Hot), HotTopic(2, "新", HotTopic.Tag.New)), hot.topics)
-        assertEquals(listOf(HotCategory("game", "游戏")), hot.categories)
-        assertEquals(listOf(9L), hot.threads.map { it.id })
     }
 
     @Test
