@@ -100,6 +100,7 @@ import oolong.client.ui.widgets.compose.ChromeStyle
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.LocalContextMenus
+import oolong.client.ui.widgets.compose.OwnAvatar
 import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
@@ -211,7 +212,7 @@ private fun NavItemIcon(
             // The snap spring overshoots: a width going to none would dip below zero
             val ringAnimated by animateDpAsState(if (selected) AvatarRing else 0.dp, Motion.snap(), label = "ring")
             val ring = ringAnimated.coerceAtLeast(0.dp)
-            Avatar(
+            OwnAvatar(
                 data = navigationItem.avatar,
                 contentDescription = title,
                 modifier = Modifier

@@ -3,6 +3,7 @@ package oolong.client.repository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import oolong.client.Incognito
 import oolong.client.arch.ApplicationScope
 import oolong.client.database.HistoryDao
 import oolong.client.database.HistoryEntity
@@ -25,6 +26,7 @@ class DatabaseThreadHistory @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) : ThreadHistory {
     override fun save(thread: ThreadDetail, seeLz: Boolean, readUpTo: Post?, firstPost: Post?) {
+        if (Incognito.on.value) return
         val entry = HistoryEntity(
             owner = owner.uid.value,
             type = HistoryEntity.TYPE_THREAD,

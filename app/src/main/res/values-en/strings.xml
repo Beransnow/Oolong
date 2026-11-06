@@ -269,6 +269,10 @@
     <string name="history_clear_today_title">Clear today\'s history?</string>
     <string name="history_clear_all_title">Clear all history?</string>
     <string name="history_clear_message">The threads and forums visited are removed, and the home page\'s visited forums update too.</string>
+    <string name="incognito_on">Turn on incognito</string>
+    <string name="incognito_off">Turn off incognito</string>
+    <string name="incognito_explain">Threads, forums and searches leave no history here, until the app is closed. Tieba\'s own records aren\'t affected.</string>
+    <string name="incognito_on_hint">Browsing incognito</string>
     <plurals name="history_visits">
         <item quantity="one">%1$d visit</item>
         <item quantity="other">%1$d visits</item>

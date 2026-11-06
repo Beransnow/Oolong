@@ -4,6 +4,8 @@ import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -11,7 +13,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -26,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import oolong.client.Incognito
+import oolong.client.R
+import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -185,4 +193,35 @@ fun Avatar(
             .size(size)
             .clip(CircleShape),
     )
+}
+
+/**
+ * The viewer's own avatar from [data], or, while browsing incognito, a mask in its place, so it
+ * shows wherever the viewer's face would that nothing is being kept.
+ */
+@Composable
+fun OwnAvatar(
+    data: String?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+) {
+    val incognito by Incognito.on.collectAsState()
+    if (incognito) {
+        val colors = ExtendedTheme.colors
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .clip(CircleShape)
+                .background(colors.text),
+        ) {
+            Icon(
+                imageVector = ImageVector.vectorResource(id = R.drawable.ic_me_incognito_on),
+                contentDescription = contentDescription,
+                tint = colors.background,
+                modifier = Modifier.fillMaxSize(0.72f),
+            )
+        }
+    } else {
+        Avatar(data = data, contentDescription = contentDescription, modifier = modifier)
+    }
 }

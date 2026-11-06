@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import oolong.client.Incognito
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.database.SearchHistoryDao
@@ -47,8 +48,9 @@ class SearchRepository @Inject constructor(
 
     suspend fun suggestions(keyword: String): List<String> = withContext(io) { remote.suggestions(keyword) }
 
-    /** Remembers [keyword], or moves it to the top if it was searched for before. */
+    /** Remembers [keyword], or moves it to the top if it was searched for before; browsing incognito, nothing. */
     suspend fun remember(keyword: String, forumName: String? = null) = withContext(io) {
+        if (Incognito.on.value) return@withContext
         val now = System.currentTimeMillis()
         val uid = owner.uid.value
         if (forumName == null) historyDao.add(uid, keyword, now) else historyDao.addInForum(uid, keyword, forumName, now)

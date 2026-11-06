@@ -263,6 +263,10 @@
     <string name="history_clear_today_title">清除今天的浏览记录？</string>
     <string name="history_clear_all_title">清除全部浏览记录？</string>
     <string name="history_clear_message">看过的帖子和逛过的吧都会删除，首页的「经过贴吧」也会随之更新。</string>
+    <string name="incognito_on">开启无痕浏览</string>
+    <string name="incognito_off">关闭无痕浏览</string>
+    <string name="incognito_explain">看帖、逛吧和搜索都不会留下记录，关闭 App 后自动结束。贴吧那边的记录不受影响。</string>
+    <string name="incognito_on_hint">已开启无痕浏览</string>
     <plurals name="history_visits">
         <item quantity="other">来过 %1$d 次</item>
     </plurals>

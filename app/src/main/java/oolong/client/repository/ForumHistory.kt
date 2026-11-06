@@ -5,6 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import oolong.client.Incognito
 import oolong.client.R
 import oolong.client.arch.ApplicationScope
 import oolong.client.database.HistoryDao
@@ -25,6 +26,7 @@ class DatabaseForumHistory @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) : ForumHistory {
     override fun save(forum: ForumDetail) {
+        if (Incognito.on.value) return
         val entry = HistoryEntity(
             owner = owner.uid.value,
             type = HistoryEntity.TYPE_FORUM,

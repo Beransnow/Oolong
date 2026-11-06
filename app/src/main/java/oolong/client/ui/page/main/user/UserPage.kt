@@ -25,7 +25,11 @@ import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -43,11 +48,15 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
+import oolong.client.Incognito
 import oolong.client.R
 import oolong.client.model.HistoryEntry
 import oolong.client.models.database.Account
+import oolong.client.rememberPreferenceAsMutableState
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -68,8 +77,10 @@ import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassToast
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.ListMenuItem
+import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -355,13 +366,57 @@ fun UserScreen(
 ) {
     val navigator = LocalNavigator.current
     val dark = ExtendedTheme.colors.isNightMode
+    val incognito by Incognito.on.collectAsState()
+    var explained by rememberPreferenceAsMutableState(IncognitoExplainedKey, false)
+    // Said each time it is turned on; the first time, with what it does and doesn't cover
+    var incognitoHint by remember { mutableStateOf(false) }
+    var explaining by remember { mutableStateOf(false) }
+    LaunchedEffect(incognitoHint) {
+        if (incognitoHint) {
+            delay(if (explaining) IncognitoExplainMillis else IncognitoHintMillis)
+            incognitoHint = false
+        }
+    }
+    LaunchedEffect(incognito) { if (!incognito) incognitoHint = false }
+    val chromeBottom = LocalChromePadding.current.calculateBottomPadding()
 
     GlassScaffold(
         backgroundColor = Color.Transparent,
+        overlay = {
+            Box(
+                contentAlignment = Alignment.BottomCenter,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = chromeBottom + IncognitoHintGap),
+            ) {
+                GlassToast(
+                    visible = incognitoHint,
+                    text = stringResource(id = R.string.incognito_on_hint),
+                    action = stringResource(id = R.string.button_undo),
+                    onAction = { Incognito.set(false) },
+                    icon = painterResource(id = R.drawable.ic_me_incognito_on),
+                    detail = if (explaining) stringResource(id = R.string.incognito_explain) else null,
+                )
+            }
+        },
         topBar = {
             GlassTopBar(
                 title = {},
                 actions = {
+                    ActionItem(
+                        icon = ImageVector.vectorResource(id = if (incognito) R.drawable.ic_me_incognito_on else R.drawable.ic_me_incognito),
+                        contentDescription = stringResource(id = if (incognito) R.string.incognito_off else R.string.incognito_on),
+                        onClick = {
+                            if (incognito) {
+                                Incognito.set(false)
+                            } else {
+                                Incognito.set(true)
+                                explaining = !explained
+                                explained = true
+                                incognitoHint = true
+                            }
+                        },
+                    )
                     ActionItem(
                         icon = ImageVector.vectorResource(id = if (dark) R.drawable.ic_me_night_on else R.drawable.ic_me_night),
                         contentDescription = stringResource(id = if (dark) R.string.night_mode_off else R.string.night_mode_on),
@@ -497,3 +552,14 @@ fun UserScreen(
 
 /** The red of the About page's new-version mark. */
 private val NewVersionDot = Color(0xFFE5484D)
+
+/** Whether browsing incognito has been explained, as it is the first time it is turned on. */
+private val IncognitoExplainedKey = booleanPreferencesKey("incognitoExplained")
+
+/** Between the incognito hint and the bottom bar under it. */
+private val IncognitoHintGap = 12.dp
+
+private const val IncognitoHintMillis = 4_000L
+
+/** Long enough to read the explanation. */
+private const val IncognitoExplainMillis = 8_000L

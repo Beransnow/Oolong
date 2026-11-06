@@ -72,6 +72,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
+import oolong.client.ui.widgets.compose.OwnAvatar
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.utils.Emoticon
 import oolong.client.utils.EmoticonManager
@@ -286,10 +287,10 @@ fun ReplyComposerContent(
 @Composable
 fun RowScope.ReplyCapsuleContent(portrait: String, draft: String) {
     val colors = ExtendedTheme.colors
-    Avatar(
+    OwnAvatar(
         data = StringUtil.getAvatarUrl(portrait),
-        size = Sizes.Tiny,
         contentDescription = null,
+        modifier = Modifier.size(Sizes.Tiny),
     )
     Text(
         text = if (draft.isBlank()) {

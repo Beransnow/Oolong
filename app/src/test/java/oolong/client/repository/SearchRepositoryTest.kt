@@ -1,6 +1,7 @@
 package oolong.client.repository
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import oolong.client.Incognito
 import oolong.client.database.SearchHistoryDao
 import oolong.client.model.ForumSearchOrder
 import oolong.client.model.QuotedPost
@@ -24,9 +26,10 @@ import kotlin.test.assertNull
 
 class SearchRepositoryTest {
     private val remote = mockk<SearchRemoteDataSource>()
+    private val historyDao = mockk<SearchHistoryDao>(relaxed = true)
     private val repository = SearchRepository(
         remote,
-        mockk<SearchHistoryDao>(relaxed = true),
+        historyDao,
         object : HistoryOwner {
             override val uid = MutableStateFlow("")
         },
@@ -107,5 +110,21 @@ class SearchRepositoryTest {
         assertEquals(1_500L, "1.5k".parseCount())
         assertEquals(42L, " 42 ".parseCount())
         assertEquals(0L, "".parseCount())
+    }
+
+    @Test
+    fun `browsing incognito, a search isn't remembered`() = runTest {
+        Incognito.set(true)
+        try {
+            repository.remember("k")
+            repository.remember("k", forumName = "吧")
+        } finally {
+            Incognito.set(false)
+        }
+        repository.remember("k2")
+
+        coVerify(exactly = 0) { historyDao.add(any(), "k", any()) }
+        coVerify(exactly = 0) { historyDao.addInForum(any(), "k", any(), any()) }
+        coVerify(exactly = 1) { historyDao.add("", "k2", any()) }
     }
 }
