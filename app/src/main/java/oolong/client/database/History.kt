@@ -49,6 +49,10 @@ interface HistoryDao {
     @Query("SELECT * FROM history WHERE owner = :owner AND type = :type ORDER BY timestamp DESC, count DESC LIMIT :limit")
     fun latest(owner: String, type: Int, limit: Int): Flow<List<HistoryEntity>>
 
+    /** All of [owner]'s entries of [type], latest first, followed as they change. */
+    @Query("SELECT * FROM history WHERE owner = :owner AND type = :type ORDER BY timestamp DESC, count DESC")
+    fun all(owner: String, type: Int): Flow<List<HistoryEntity>>
+
     @Query("SELECT * FROM history WHERE owner = :owner AND type = :type AND data = :data")
     suspend fun find(owner: String, type: Int, data: String): HistoryEntity?
 

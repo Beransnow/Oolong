@@ -21,14 +21,36 @@ class HistoryRepository @Inject constructor(
     private val owner: HistoryOwner,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    /** Up to [limit] of the latest visited threads, and the latest again whenever they change. */
-    fun threads(limit: Int): Flow<List<HistoryEntry.Thread>> = owner.uid.flatMapLatest { uid ->
-        dao.latest(uid, HistoryEntity.TYPE_THREAD, limit).map { entries -> entries.mapNotNull { it.toThread() } }
-    }
+    /**
+     * Up to [limit] of the latest visited threads, and the latest again whenever they change; with
+     * a [query], only those whose title, author or forum has it.
+     */
+    fun threads(limit: Int, query: String = ""): Flow<List<HistoryEntry.Thread>> =
+        entries(HistoryEntity.TYPE_THREAD, limit, query, { it.toThread() }) { thread, words ->
+            thread.title.contains(words, ignoreCase = true) ||
+                thread.authorName.contains(words, ignoreCase = true) ||
+                thread.forumName.contains(words, ignoreCase = true)
+        }
 
-    /** Up to [limit] of the latest visited forums, and the latest again whenever they change. */
-    fun forums(limit: Int): Flow<List<HistoryEntry.Forum>> = owner.uid.flatMapLatest { uid ->
-        dao.latest(uid, HistoryEntity.TYPE_FORUM, limit).map { entries -> entries.map { it.toForum() } }
+    /** Up to [limit] of the latest visited forums, and the latest again whenever they change; with a [query], only those whose name has it. */
+    fun forums(limit: Int, query: String = ""): Flow<List<HistoryEntry.Forum>> =
+        entries(HistoryEntity.TYPE_FORUM, limit, query, { it.toForum() }) { forum, words -> forum.title.contains(words, ignoreCase = true) }
+
+    // A history is a few thousand rows at most: searching goes through all of them in memory,
+    // which also matches the forum names kept in the extras
+    private fun <T : HistoryEntry> entries(
+        type: Int,
+        limit: Int,
+        query: String,
+        convert: (HistoryEntity) -> T?,
+        matches: (T, String) -> Boolean,
+    ): Flow<List<T>> = owner.uid.flatMapLatest { uid ->
+        val words = query.trim()
+        if (words.isEmpty()) {
+            dao.latest(uid, type, limit).map { entries -> entries.mapNotNull(convert) }
+        } else {
+            dao.all(uid, type).map { entries -> entries.asSequence().mapNotNull(convert).filter { matches(it, words) }.take(limit).toList() }
+        }
     }
 
     suspend fun delete(entry: HistoryEntry) = withContext(io) { dao.delete(entry.id) }

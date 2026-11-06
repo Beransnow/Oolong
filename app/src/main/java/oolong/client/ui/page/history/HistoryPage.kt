@@ -44,6 +44,7 @@ fun HistoryPage(
         onClear = viewModel::clear,
         onLoadMore = viewModel::loadMore,
         onDelete = viewModel::delete,
+        onSearch = viewModel::search,
         onOpen = { entry ->
             when (entry) {
                 is HistoryEntry.Forum -> navigator.navigate(ForumKey(entry.name))
@@ -69,6 +70,7 @@ fun HistoryScreen(
     onLoadMore: (HistoryTab) -> Unit,
     onDelete: (HistoryEntry) -> Unit,
     onOpen: (HistoryEntry) -> Unit,
+    onSearch: (String) -> Unit = {},
 ) {
     val pagerState = rememberPagerState { HistoryTab.entries.size }
     val coroutineScope = rememberCoroutineScope()
@@ -126,6 +128,9 @@ fun HistoryScreen(
             when (HistoryTab.entries[page]) {
                 HistoryTab.Threads -> HistoryListContent(
                     list = state.threads,
+                    query = state.query,
+                    searchHint = R.string.history_search_threads,
+                    onQueryChange = onSearch,
                     onLoadMore = { onLoadMore(HistoryTab.Threads) },
                     onOpen = onOpen,
                     onDelete = onDelete,
@@ -134,6 +139,9 @@ fun HistoryScreen(
 
                 HistoryTab.Forums -> HistoryListContent(
                     list = state.forums,
+                    query = state.query,
+                    searchHint = R.string.history_search_forums,
+                    onQueryChange = onSearch,
                     onLoadMore = { onLoadMore(HistoryTab.Forums) },
                     onOpen = onOpen,
                     onDelete = onDelete,

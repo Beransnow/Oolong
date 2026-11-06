@@ -24,9 +24,9 @@ class HistoryViewModelTest {
     @Test
     fun `groups visits by day and shows more on demand`() = runTest {
         val now = System.currentTimeMillis()
-        every { repository.threads(any()) } returns flowOf(emptyList())
-        every { repository.forums(100) } returns flowOf((1L..100L).map { forum(it, if (it == 1L) now else 0) })
-        every { repository.forums(200) } returns flowOf((1L..150L).map { forum(it, 0) })
+        every { repository.threads(any(), any()) } returns flowOf(emptyList())
+        every { repository.forums(100, "") } returns flowOf((1L..100L).map { forum(it, if (it == 1L) now else 0) })
+        every { repository.forums(200, "") } returns flowOf((1L..150L).map { forum(it, 0) })
         val viewModel = HistoryViewModel(repository, mockk<MessageController>(relaxed = true))
         runCurrent()
 

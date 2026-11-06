@@ -248,6 +248,9 @@
     <string name="title_history_tab_threads">Threads</string>
     <string name="title_history_tab_forums">Forums</string>
     <string name="history_read_up_to_floor">Read to floor %1$d</string>
+    <string name="history_search_threads">Search titles, authors or forums</string>
+    <string name="history_search_forums">Search forums</string>
+    <string name="history_search_nothing">No matching history</string>
     <plurals name="history_visits">
         <item quantity="one">%1$d visit</item>
         <item quantity="other">%1$d visits</item>

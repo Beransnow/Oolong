@@ -396,6 +396,8 @@ fun SearchBox(
     color: Color = ExtendedTheme.colors.searchField,
     contentColor: Color = ExtendedTheme.colors.onSearchField,
     elevation: Dp = 0.dp,
+    // Without it, as where the field narrows as it is typed in, the clear button stays shown
+    submitButton: Boolean = true,
 ) {
     val isKeywordNotEmpty = remember(keyword) { keyword.isNotEmpty() }
     var isFocused by remember { mutableStateOf(false) }
@@ -436,7 +438,7 @@ fun SearchBox(
                     }
             )
             appendIcon()
-            AnimatedVisibility(visible = isKeywordNotEmpty && isFocused) {
+            AnimatedVisibility(visible = isKeywordNotEmpty && (isFocused || !submitButton)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -458,7 +460,7 @@ fun SearchBox(
                     }
                 }
             }
-            AnimatedVisibility(visible = isKeywordNotEmpty) {
+            AnimatedVisibility(visible = isKeywordNotEmpty && submitButton) {
                 Box(
                     modifier = Modifier
                         .clip(Corners.full)

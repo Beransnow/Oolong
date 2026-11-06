@@ -75,6 +75,8 @@ internal fun <T : HistoryEntry> sectionsOf(entries: List<T>, now: Long, zone: Ti
 data class HistoryState(
     val threads: HistoryList<HistoryEntry.Thread> = HistoryList(),
     val forums: HistoryList<HistoryEntry.Forum> = HistoryList(),
+    /** What the lists are narrowed to; empty for all. */
+    val query: String = "",
 )
 
 /** The browsing history, which follows the database and shows more as the user scrolls. */
@@ -86,12 +88,20 @@ class HistoryViewModel @Inject constructor(
 ) : ViewModel() {
     private val actions = Actions(viewModelScope)
     private val limits = MutableStateFlow(HistoryTab.entries.associateWith { PAGE_SIZE })
+    private val query = MutableStateFlow("")
 
     val state: StateFlow<HistoryState> = combine(
         list(HistoryTab.Threads, repository::threads),
         list(HistoryTab.Forums, repository::forums),
-    ) { threads, forums -> HistoryState(threads, forums) }
+        query,
+    ) { threads, forums, query -> HistoryState(threads, forums, query) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, HistoryState())
+
+    /** Narrows both lists to visits that have [text]; empty shows them all again. */
+    fun search(text: String) {
+        query.value = text
+        limits.value = HistoryTab.entries.associateWith { PAGE_SIZE }
+    }
 
     /** Shows another page of older visits in [tab]. */
     fun loadMore(tab: HistoryTab) = limits.update { it + (tab to it.getValue(tab) + PAGE_SIZE) }
@@ -106,9 +116,9 @@ class HistoryViewModel @Inject constructor(
         runCatching { repository.clear() }.onSuccess { messages.show(R.string.toast_clear_success) }
     }
 
-    private fun <T : HistoryEntry> list(tab: HistoryTab, entries: (limit: Int) -> Flow<List<T>>): Flow<HistoryList<T>> =
-        limits.map { it.getValue(tab) }.distinctUntilChanged().flatMapLatest { limit ->
-            entries(limit).map { list ->
+    private fun <T : HistoryEntry> list(tab: HistoryTab, entries: (limit: Int, query: String) -> Flow<List<T>>): Flow<HistoryList<T>> =
+        combine(limits.map { it.getValue(tab) }, query.map { it.trim() }) { limit, query -> limit to query }.distinctUntilChanged().flatMapLatest { (limit, query) ->
+            entries(limit, query).map { list ->
                 HistoryList(sectionsOf(list, System.currentTimeMillis()), hasMore = list.size >= limit)
             }
         }

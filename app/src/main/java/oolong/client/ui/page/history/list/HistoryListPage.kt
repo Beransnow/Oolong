@@ -1,5 +1,6 @@
 package oolong.client.ui.page.history.list
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,15 +16,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import oolong.client.R
@@ -40,13 +45,20 @@ import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.NetworkImage
+import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.longPressMenu
 
-/** One tab of the history, under the days its visits were on; long pressing one offers to delete it. */
+/**
+ * One tab of the history, under the days its visits were on, with a field above that narrows it;
+ * long pressing a visit offers to delete it.
+ */
 @Composable
 fun <T : HistoryEntry> HistoryListContent(
     list: HistoryList<T>,
+    query: String,
+    @StringRes searchHint: Int,
+    onQueryChange: (String) -> Unit,
     onLoadMore: () -> Unit,
     onOpen: (T) -> Unit,
     onDelete: (T) -> Unit,
@@ -60,6 +72,20 @@ fun <T : HistoryEntry> HistoryListContent(
             state = lazyListState,
             contentPadding = contentPadding,
         ) {
+            item(key = "search", contentType = "search") { HistorySearchField(query, searchHint, onQueryChange) }
+            if (list.isEmpty && query.isNotBlank()) {
+                item(key = "nothing", contentType = "nothing") {
+                    Text(
+                        text = stringResource(id = R.string.history_search_nothing),
+                        style = TextStyles.caption,
+                        color = ExtendedTheme.colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                    )
+                }
+            }
             list.sections.forEach { section ->
                 item(key = section.day, contentType = "day") { DayHeader(section.day) }
                 entries(section.entries, onOpen, onDelete)
@@ -87,6 +113,26 @@ private fun <T : HistoryEntry> LazyListScope.entries(entries: List<T>, onOpen: (
             if (entry !== entries.last()) VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         }
     }
+}
+
+@Composable
+private fun HistorySearchField(query: String, @StringRes hint: Int, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    SearchBox(
+        keyword = query,
+        onKeywordChange = onQueryChange,
+        onKeywordSubmit = { focusManager.clearFocus() },
+        placeholder = {
+            Text(text = stringResource(id = hint), color = ExtendedTheme.colors.onSearchField.copy(alpha = ContentAlpha.medium))
+        },
+        prependIcon = { Icon(imageVector = Symbols.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+        shape = Corners.full,
+        submitButton = false,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .height(40.dp),
+    )
 }
 
 @Composable

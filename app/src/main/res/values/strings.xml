@@ -244,6 +244,9 @@
     <string name="title_history_tab_threads">帖子</string>
     <string name="title_history_tab_forums">吧</string>
     <string name="history_read_up_to_floor">读到 %1$d 楼</string>
+    <string name="history_search_threads">搜索标题、作者或吧名</string>
+    <string name="history_search_forums">搜索吧名</string>
+    <string name="history_search_nothing">没有符合的记录</string>
     <plurals name="history_visits">
         <item quantity="other">来过 %1$d 次</item>
     </plurals>
