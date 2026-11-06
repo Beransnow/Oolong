@@ -284,16 +284,17 @@ class GroupScope<S> internal constructor() {
 
     /**
      * A row drawn its own way, as a slider or a picker. Its [title] names it for search; without
-     * one it isn't searched.
+     * one it isn't searched. One that [opens] a page is found as that page, as a link is.
      */
     fun custom(
         @StringRes title: Int?,
+        opens: Key? = null,
         available: Availability = Availability.Always,
         shown: (@Composable S.() -> Boolean)? = null,
         @StringRes aliases: Int? = null,
         searchable: Boolean = title != null,
         content: @Composable S.(Modifier) -> Unit,
-    ) = row(title, SettingsRow.Kind.Custom, available, shown, aliases, searchable, content = content)
+    ) = row(title, SettingsRow.Kind.Custom, available, shown, aliases, searchable, target = opens, content = content)
 
     /** A note under the group, outside its block; it goes after the group's rows wherever it is declared. */
     fun footer(text: @Composable S.() -> String) {

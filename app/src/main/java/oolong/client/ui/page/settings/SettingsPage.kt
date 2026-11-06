@@ -129,7 +129,11 @@ fun NowAccountItem(
 @OptIn(ExperimentalMaterialApi::class)
 val SettingsHub = settingsPage(R.string.title_settings, SettingsKey) {
     group(SettingsHeader.Gap(8.dp)) {
-        custom(null) { modifier -> NowAccountItem(account = LocalAccount.current, modifier = modifier) }
+        // Named by the account it shows; search finds the page it opens by that page's name
+        custom(R.string.title_account_manage, opens = AccountManageKey, available = Availability.SignedIn) { modifier ->
+            NowAccountItem(account = LocalAccount.current, modifier = modifier)
+        }
+        custom(null, available = { !it.signedIn }) { modifier -> NowAccountItem(account = LocalAccount.current, modifier = modifier) }
     }
     group(SettingsHeader.Gap(8.dp)) {
         link(R.string.title_settings_custom, to = CustomSettingsKey, icon = Symbols.Palette)
