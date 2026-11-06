@@ -8,4 +8,7 @@ data class ThreadHistoryInfoBean(
     val pid: String? = null,
     val forumName: String? = null,
     val floor: String? = null,
+    /** A small picture of the thread: its first picture, or its video's cover. */
+    val thumbnail: String? = null,
+    val forumAvatar: String? = null,
 )

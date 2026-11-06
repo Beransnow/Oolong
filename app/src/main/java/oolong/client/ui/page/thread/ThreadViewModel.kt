@@ -278,7 +278,7 @@ class ThreadViewModel @AssistedInject constructor(
         readerPositions.left(args.threadId).onEach(::showPost).launchIn(viewModelScope)
         combine(meta.map { it.page?.thread }.filterNotNull(), readUpTo) { thread, postId -> thread to postId }
             .debounce(HISTORY_DELAY)
-            .onEach { (thread, postId) -> history.save(thread, query.value.seeLz, findPost(postId)) }
+            .onEach { (thread, postId) -> history.save(thread, query.value.seeLz, findPost(postId), meta.value.page?.firstPost) }
             .launchIn(viewModelScope)
         // The replies under each post come in the new order, and those opened go back to them
         subPostSort?.changes?.drop(1)?.onEach {

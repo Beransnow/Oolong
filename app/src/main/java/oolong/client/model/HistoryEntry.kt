@@ -22,6 +22,13 @@ sealed interface HistoryEntry {
         /** The post the user read up to, 0 if unknown. */
         val postId: Long = 0,
         val seeLz: Boolean = false,
+        /** The floor read up to, 0 if unknown. */
+        val floor: Int = 0,
+        /** Empty when not known, as for visits recorded before it was. */
+        val forumName: String = "",
+        val forumAvatar: String = "",
+        /** A small picture of the thread, empty when it has none or it wasn't recorded. */
+        val thumbnail: String = "",
     ) : HistoryEntry
 
     @Immutable

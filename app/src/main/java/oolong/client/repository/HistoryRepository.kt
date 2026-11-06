@@ -50,6 +50,10 @@ private fun HistoryEntity.toThread(): HistoryEntry.Thread? {
         authorName = username.orEmpty(),
         postId = extras?.pid?.toLongOrNull() ?: 0,
         seeLz = extras?.isSeeLz ?: false,
+        floor = extras?.floor?.toIntOrNull() ?: 0,
+        forumName = extras?.forumName.orEmpty(),
+        forumAvatar = extras?.forumAvatar.orEmpty(),
+        thumbnail = extras?.thumbnail.orEmpty(),
     )
 }
 

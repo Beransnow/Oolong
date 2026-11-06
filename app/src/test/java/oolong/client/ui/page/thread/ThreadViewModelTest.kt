@@ -117,7 +117,7 @@ class ThreadViewModelTest {
             blockRuleSource = object : BlockRuleSource {
                 override val rules = blockRules
             },
-            history = ThreadHistory { thread, _, post -> saved += thread to post },
+            history = ThreadHistory { thread, _, post, _ -> saved += thread to post },
             messages = object : MessageController {
                 override fun show(message: Int, vararg args: Any) {
                     shown += message
