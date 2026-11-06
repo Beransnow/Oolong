@@ -77,9 +77,11 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalTextScale
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.TextScale
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.navigation.SearchKey
@@ -502,7 +504,9 @@ fun HomeScreen(
     onOpenExplore: () -> Unit = {},
     onToggleListSingle: () -> Unit = {},
 ) {
-    val gridCells = if (listSingle) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
+    // Forum names don't fit two to a row once text is larger than the bars allow
+    val single = listSingle || LocalTextScale.current > TextScale.ChromeMax
+    val gridCells = if (single) GridCells.Fixed(1) else GridCells.Adaptive(180.dp)
     val forums = state.forums
     val pinned = state.pinned
     val showHistoryForum = showHistory && state.visited.isNotEmpty()
@@ -564,7 +568,7 @@ fun HomeScreen(
                 },
                 loadingScreen = {
                     HomePageSkeletonScreen(
-                        listSingle = listSingle,
+                        listSingle = single,
                         gridCells = gridCells,
                         contentPadding = listPadding,
                         header = searchBox,
@@ -599,7 +603,7 @@ fun HomeScreen(
                         items(items = pinned, key = { "Top${it.id}" }) { item ->
                             ForumItem(
                                 item,
-                                listSingle,
+                                single,
                                 onClick = { onEvent(HomeEvent.OpenForum(it.name)) },
                                 onUnfollow = { onEvent(HomeEvent.Unfollow(it)) },
                                 onAddTopForum = { onEvent(HomeEvent.Pin(it)) },
@@ -618,7 +622,7 @@ fun HomeScreen(
                     items(items = forums, key = { it.id }) { item ->
                         ForumItem(
                             item,
-                            listSingle,
+                            single,
                             onClick = { onEvent(HomeEvent.OpenForum(it.name)) },
                             onUnfollow = { onEvent(HomeEvent.Unfollow(it)) },
                             onAddTopForum = { onEvent(HomeEvent.Pin(it)) },

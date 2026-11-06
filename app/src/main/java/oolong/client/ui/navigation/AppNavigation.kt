@@ -35,6 +35,8 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.SceneStrategy
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.LocalNotificationCountFlow
@@ -50,6 +52,7 @@ import oolong.client.ui.common.navigation.PageDisplay
 import oolong.client.ui.common.navigation.PagePeek
 import oolong.client.ui.common.navigation.PageTransitions
 import oolong.client.ui.common.navigation.rememberPageScenes
+import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowHeightSizeClass
@@ -67,6 +70,7 @@ import oolong.client.ui.page.login.SignedInNoticeHost
 import oolong.client.ui.page.main.LocalMainTabs
 import oolong.client.ui.page.main.MainPage
 import oolong.client.ui.page.main.MainTabs
+import oolong.client.ui.page.main.NavigationItem
 import oolong.client.ui.page.main.NavigationRail
 import oolong.client.ui.page.main.notifications.NotificationsPage
 import oolong.client.ui.page.main.rememberMainTabItems
@@ -363,6 +367,20 @@ private fun MainRail(backStack: NavBackStack<NavKey>, tabs: MainTabs, jump: Rail
     val coroutineScope = rememberCoroutineScope()
     val items = rememberMainTabItems(tabs)
     val selectedIndex = items.indexOfFirst { it.id == tabs.selected }.coerceAtLeast(0)
+    // Chrome, its labels growing only so far with the text size, as the bars' do
+    CapTextScale { MainRailContent(backStack, tabs, jump, showLabels, coroutineScope, items, selectedIndex) }
+}
+
+@Composable
+private fun MainRailContent(
+    backStack: NavBackStack<NavKey>,
+    tabs: MainTabs,
+    jump: RailJump,
+    showLabels: Boolean,
+    coroutineScope: CoroutineScope,
+    items: ImmutableList<NavigationItem>,
+    selectedIndex: Int,
+) {
     NavigationRail(
         currentPosition = selectedIndex,
         onSelect = { index ->

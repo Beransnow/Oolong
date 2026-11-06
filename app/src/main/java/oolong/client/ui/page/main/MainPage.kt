@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.rememberPreferenceAsState
+import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.UpdateKey
@@ -142,7 +143,8 @@ fun MainPage(
             pageScroll = page,
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
-                if (showBottomNavigation) {
+                // Its labels keep their size, as the bar's height does not grow
+                if (showBottomNavigation) CapTextScale(max = 1f) {
                     FloatingNavBar(
                         currentPosition = pagerState.currentPage,
                         onChangePosition = { tabs.selected = navigationItems[it].id },

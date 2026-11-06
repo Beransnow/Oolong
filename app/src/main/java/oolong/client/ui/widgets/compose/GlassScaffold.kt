@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import kotlin.math.roundToInt
 
@@ -155,9 +156,10 @@ fun GlassScaffold(
         .exclude(consumedInsets)
 
     // Only chrome may sample the content; content that samples itself would draw recursively.
+    // Its text grows only so far with the text size, as its rows are of a fixed height
     val chrome: @Composable (@Composable () -> Unit) -> Unit = { slot ->
         CompositionLocalProvider(LocalGlassSource provides glassSource) {
-            ProvideGlassAppearance(slot)
+            CapTextScale { ProvideGlassAppearance(slot) }
         }
     }
 

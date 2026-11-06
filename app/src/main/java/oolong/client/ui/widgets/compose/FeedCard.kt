@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -82,6 +83,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageHero
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.relativeTime
+import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -350,7 +352,7 @@ fun ForumInfoChip(
     val name = nameProvider()
     Row(
         modifier = Modifier
-            .height(28.dp)
+            .heightIn(min = 28.dp)
             .clip(SmoothCornerShape.Capsule)
             .background(color = ExtendedTheme.colors.chip)
             .clickable(onClick = onClick)
@@ -954,12 +956,15 @@ internal fun FeedCardActions(
     forum: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(modifier = Modifier.weight(1f)) { forum() }
-        Row(modifier = Modifier.offset(x = ActionPadding), content = actions)
+    // Sized like the bars, so the forum keeps room beside the buttons however large the text
+    CapTextScale {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.weight(1f)) { forum() }
+            Row(modifier = Modifier.offset(x = ActionPadding), content = actions)
+        }
     }
 }
 
