@@ -208,6 +208,7 @@ fun ForumSearchPostScreen(
                             hideForum = true,
                             searchKeyword = state.keyword,
                             contentPadding = paddingValues,
+                            blockOf = { state.blocks[it.key] },
                             footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
                         )
                     }

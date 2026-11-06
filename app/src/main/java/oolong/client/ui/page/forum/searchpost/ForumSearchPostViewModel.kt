@@ -8,8 +8,11 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,6 +33,11 @@ import oolong.client.arch.pager
 import oolong.client.model.ForumSearchOrder
 import oolong.client.model.SearchHistoryItem
 import oolong.client.model.SearchedPost
+import oolong.client.model.User
+import oolong.client.repository.BlockPlace
+import oolong.client.repository.BlockRuleSource
+import oolong.client.repository.BlockVerdict
+import oolong.client.repository.Blockable
 import oolong.client.repository.SearchRepository
 import oolong.client.ui.navigation.ForumSearchPostKey
 
@@ -41,6 +49,8 @@ data class ForumSearchPostState(
     val order: ForumSearchOrder = ForumSearchOrder.Newest,
     val onlyThreads: Boolean = false,
     val list: PagerState<SearchedPost> = PagerState(refresh = LoadStatus.Loading),
+    /** What block rules say of the results, by [SearchedPost.key]; those they let through are left out. */
+    val blocks: ImmutableMap<String, BlockVerdict> = persistentMapOf(),
     /** The keywords searched for in any forum. */
     val history: ImmutableList<SearchHistoryItem> = persistentListOf(),
 )
@@ -51,6 +61,7 @@ class ForumSearchPostViewModel @AssistedInject constructor(
     @Assisted key: ForumSearchPostKey,
     private val repository: SearchRepository,
     private val messages: MessageController,
+    blockRuleSource: BlockRuleSource,
 ) : ViewModel() {
     private val forumName: String = key.forumName
     private val forumId: Long = key.forumId
@@ -70,13 +81,19 @@ class ForumSearchPostViewModel @AssistedInject constructor(
         local,
         pager.flatMapLatest { it?.state ?: flowOf(PagerState(refresh = LoadStatus.Loading)) },
         repository.forumHistory,
-    ) { local, list, history ->
+        blockRuleSource.rules,
+    ) { local, list, history, rules ->
         ForumSearchPostState(
             forumName = forumName,
             keyword = local.keyword,
             order = local.order,
             onlyThreads = local.onlyThreads,
             list = list,
+            blocks = list.items.mapNotNull { post ->
+                val author = User(post.author.id, post.author.name, post.author.nameShow, post.author.portrait)
+                rules.check(Blockable(author, post.content, BlockPlace.Forum, title = post.title, forum = forumName))
+                    ?.let { post.key to it }
+            }.toMap().toImmutableMap(),
             history = history.toImmutableList(),
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumSearchPostState(forumName))

@@ -4,12 +4,15 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
 import oolong.client.model.ForumSearchOrder
+import oolong.client.repository.BlockRuleSource
+import oolong.client.repository.BlockRules
 import oolong.client.repository.SearchRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.ui.navigation.ForumSearchPostKey
@@ -30,6 +33,9 @@ class ForumSearchPostViewModelTest {
         ForumSearchPostKey(forumName = "测试", forumId = 52L),
         repository,
         mockk<MessageController>(relaxed = true),
+        object : BlockRuleSource {
+            override val rules = MutableStateFlow(BlockRules { null })
+        },
     )
 
     @Test
