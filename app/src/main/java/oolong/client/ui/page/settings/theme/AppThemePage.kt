@@ -79,6 +79,9 @@ import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsChevron
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.prefs.widgets.TextPref
+import oolong.client.ui.common.settings.SettingsPage
+import oolong.client.ui.common.settings.SettingsScope
+import oolong.client.ui.common.settings.SettingsScreen
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -93,9 +96,11 @@ import oolong.client.ui.common.theme.compose.pickedColor
 import oolong.client.ui.common.theme.compose.rememberColorPicks
 import oolong.client.ui.common.theme.compose.systemColor
 import oolong.client.ui.common.theme.compose.themeColors
+import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.TranslucentThemeKey
 import oolong.client.ui.page.LocalNavigator
+import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.Dialog
@@ -121,118 +126,114 @@ import oolong.client.utils.appPreferences
 import oolong.client.utils.extension.toHexString
 import java.io.File
 
+/** What the theme page shows its choices with: the theme as set, the colours of each, and the wallpaper. */
+class ThemeState(
+    val settings: ThemeSettings,
+    val picks: Any?,
+    val wallpaper: File?,
+    val customColorDialog: DialogState,
+)
+
 /**
  * The theme page: light or dark and the dark background, the colour and how it is used, and the
  * wallpaper. Only the two choices made most often are shown as pictures; the rest are rows.
  */
 @OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun AppThemePage(
-    navigator: Navigator = LocalNavigator.current,
-) {
-    val context = LocalContext.current
-    val settings by remember { ThemeUtil.settingsState }
-    val picks = rememberColorPicks()
-    val wallpaperPath by remember {
-        context.dataStore.data.map { it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)] }
-    }.collectAsState(initial = null)
-    val wallpaper = wallpaperPath?.takeIf { it.isNotEmpty() }?.let(::File)
-    val customColorDialogState = rememberDialogState()
-    CustomColorDialog(customColorDialogState)
+object ThemeSettingsPage : SettingsPage<ThemeState>(R.string.title_theme, AppThemeKey) {
+    @Composable
+    override fun rememberState(): ThemeState {
+        val context = LocalContext.current
+        val settings by remember { ThemeUtil.settingsState }
+        val wallpaperPath by remember {
+            context.dataStore.data.map { it[stringPreferencesKey(ThemeUtil.KEY_TRANSLUCENT_THEME_BACKGROUND_PATH)] }
+        }.collectAsState(initial = null)
+        return ThemeState(
+            settings = settings,
+            picks = rememberColorPicks(),
+            wallpaper = wallpaperPath?.takeIf { it.isNotEmpty() }?.let(::File),
+            customColorDialog = rememberDialogState(),
+        )
+    }
 
-    GlassScaffold(
-        largeTitle = true,
-        backgroundColor = Color.Transparent,
-        topBar = {
-            GlassTopBar(
-                title = { GlassTopBarTitle(text = stringResource(id = R.string.title_theme)) },
-                navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
-            )
-        },
-    ) { paddingValues ->
-        val scroll = rememberScrollState()
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScroll(scroll)
-                .verticalScroll(scroll)
-                .padding(paddingValues)
-                .padding(bottom = 24.dp),
-        ) {
-            GroupHeader(title = stringResource(id = R.string.title_appearance))
-            ThemeGroup {
+    @Composable
+    override fun Effects(state: ThemeState) = CustomColorDialog(state.customColorDialog)
+
+    override fun SettingsScope<ThemeState>.content() {
+        group(R.string.title_appearance) {
+            custom(R.string.title_appearance, aliases = R.string.search_aliases_appearance) {
                 AppearancePicker(
                     settings = settings,
                     light = colorsOf(settings, dark = false, picks = picks),
                     dark = colorsOf(settings, dark = true, picks = picks),
                     wallpaper = wallpaper.takeIf { settings.wallpaper },
                 )
+            }
+            custom(R.string.title_dark_background) {
                 DarkBackgroundRow(settings, monetDark = colorsOf(settings.copy(darkTheme = ThemeUtil.THEME_BLUE_DARK), dark = true, picks = picks).background)
             }
-
-            GroupHeader(title = stringResource(id = R.string.title_theme_color))
-            ThemeGroup {
-                AccentGrid(
-                    settings = settings,
-                    customColor = pickedColor(context, ThemeUtil.THEME_CUSTOM),
-                    onCustom = { customColorDialogState.show() },
-                )
-                ColorStyleRow(settings.style)
-                if (settings.isMonet) MonetStyleRow(settings.monetStyle)
+        }
+        group(R.string.title_theme_color) {
+            custom(R.string.title_theme_color) {
+                AccentGrid(settings = settings, customColor = pickedColor(LocalContext.current, ThemeUtil.THEME_CUSTOM), onCustom = { customColorDialog.show() })
             }
-
-            GroupHeader(title = stringResource(id = R.string.title_background))
-            ThemeGroup {
-                TextPref(
-                    title = stringResource(id = R.string.title_wallpaper),
-                    // Read as the switch it shows, though tapping may first pick a wallpaper
-                    modifier = Modifier.semantics {
-                        role = Role.Switch
-                        toggleableState = ToggleableState(settings.wallpaper)
-                    },
-                    onClick = {
-                        when {
-                            settings.wallpaper -> ThemeUtil.setWallpaper(false)
-                            wallpaper == null -> navigator.navigate(TranslucentThemeKey)
-                            else -> ThemeUtil.setWallpaper(true)
-                        }
-                    },
-                    trailingContent = { Switch(checked = settings.wallpaper, onCheckedChange = null) },
-                )
-                if (settings.wallpaper) {
-                    TextPref(
-                        title = stringResource(id = R.string.title_wallpaper_settings),
-                        onClick = { navigator.navigate(TranslucentThemeKey) },
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                AsyncImage(
-                                    model = wallpaper,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.size(28.dp).clip(SmoothCornerShape(6.dp)),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                PrefsChevron()
-                            }
-                        },
-                    )
-                }
-            }
+            custom(R.string.title_color_style) { ColorStyleRow(settings.style) }
+            custom(R.string.title_monet_style, shown = { settings.isMonet }) { MonetStyleRow(settings.monetStyle) }
+        }
+        group(R.string.title_background) {
+            custom(R.string.title_wallpaper) { WallpaperRow(settings, wallpaper) }
+            custom(R.string.title_wallpaper_settings, shown = { settings.wallpaper }) { WallpaperSettingsRow(wallpaper) }
         }
     }
 }
 
-/** A grey block holding a group of choices, as on the settings pages. */
 @Composable
-private fun ThemeGroup(content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .fillMaxWidth()
-            .clip(Corners.md)
-            .background(ExtendedTheme.colors.chip)
-            .padding(vertical = 4.dp),
-        content = content,
+fun AppThemePage(navigator: Navigator = LocalNavigator.current) {
+    ProvideNavigator(navigator) { SettingsScreen(ThemeSettingsPage) }
+}
+
+/** Whether a wallpaper shows behind the pages; turning it on with none picked goes to pick one. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun WallpaperRow(settings: ThemeSettings, wallpaper: File?) {
+    val navigator = LocalNavigator.current
+    TextPref(
+        title = stringResource(id = R.string.title_wallpaper),
+        // Read as the switch it shows, though tapping may first pick a wallpaper
+        modifier = Modifier.semantics {
+            role = Role.Switch
+            toggleableState = ToggleableState(settings.wallpaper)
+        },
+        onClick = {
+            when {
+                settings.wallpaper -> ThemeUtil.setWallpaper(false)
+                wallpaper == null -> navigator.navigate(TranslucentThemeKey)
+                else -> ThemeUtil.setWallpaper(true)
+            }
+        },
+        trailingContent = { Switch(checked = settings.wallpaper, onCheckedChange = null) },
+    )
+}
+
+/** The wallpaper's own settings, shown by a small copy of it. */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun WallpaperSettingsRow(wallpaper: File?) {
+    val navigator = LocalNavigator.current
+    TextPref(
+        title = stringResource(id = R.string.title_wallpaper_settings),
+        onClick = { navigator.navigate(TranslucentThemeKey) },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = wallpaper,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(28.dp).clip(SmoothCornerShape(6.dp)),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                PrefsChevron()
+            }
+        },
     )
 }
 
