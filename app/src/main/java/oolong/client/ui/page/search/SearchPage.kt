@@ -1,18 +1,14 @@
 package oolong.client.ui.page.search
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +23,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -53,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,7 +55,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -70,7 +63,6 @@ import oolong.client.model.SearchOrder
 import oolong.client.model.SearchedPost
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -84,7 +76,6 @@ import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.search.forum.SearchForumList
 import oolong.client.ui.page.search.thread.SearchThreadResults
 import oolong.client.ui.page.search.user.SearchUserList
-import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassStatusBar
@@ -199,7 +190,6 @@ fun SearchScreen(
     onOpenThread: (SearchedPost) -> Unit,
     fieldPlace: SearchFieldPlace = SearchFieldPlace.Own,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val searching = state.keyword.isNotEmpty()
 
     val orderNames = persistentMapOf(
@@ -327,8 +317,6 @@ fun SearchScreen(
                         SearchHistoryList(
                             searchHistories = state.history,
                             onSearchHistoryClick = { onSearch(it.keyword) },
-                            expanded = expanded,
-                            onToggleExpand = { expanded = !expanded },
                             onDelete = onForget,
                             onClear = onClearHistory,
                         )
@@ -470,118 +458,6 @@ private fun ColumnScope.SearchTabRow(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
-@Composable
-private fun SearchHistoryList(
-    searchHistories: ImmutableList<SearchHistoryItem>,
-    onSearchHistoryClick: (SearchHistoryItem) -> Unit,
-    expanded: Boolean = false,
-    onToggleExpand: () -> Unit = {},
-    onDelete: (SearchHistoryItem) -> Unit = {},
-    onClear: () -> Unit = {},
-) {
-    val hasItem = remember(searchHistories) {
-        searchHistories.isNotEmpty()
-    }
-    val hasMore = remember(searchHistories) {
-        searchHistories.size > 6
-    }
-    val showItem = remember(expanded, hasMore, searchHistories) {
-        if (!expanded && hasMore) searchHistories.take(6) else searchHistories
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(id = R.string.title_search_history),
-                modifier = Modifier
-                    .weight(1f),
-                style = MaterialTheme.typography.subtitle1
-            )
-            if (hasItem) {
-                Text(
-                    text = stringResource(id = R.string.button_clear_all),
-                    modifier = Modifier.clickable(onClick = onClear),
-                    style = MaterialTheme.typography.button
-                )
-            }
-        }
-        FlowRow(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .animateContentSize(Motion.settle()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            showItem.fastForEach { searchHistory ->
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .clip(Corners.full)
-                        .combinedClickable(
-                            onClick = { onSearchHistoryClick(searchHistory) },
-                            onLongClickLabel = stringResource(R.string.title_delete),
-                            onLongClick = { onDelete(searchHistory) }
-                        )
-                        .background(ExtendedTheme.colors.chip)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = searchHistory.keyword
-                    )
-                }
-            }
-        }
-        if (hasMore) {
-            Button(
-                onClick = onToggleExpand,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = Color.Transparent,
-                    contentColor = ExtendedTheme.colors.text
-                )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (expanded) Symbols.ExpandLess else Symbols.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = stringResource(
-                            id = if (expanded) R.string.button_expand_less_history else R.string.button_expand_more_history
-                        ),
-                        style = MaterialTheme.typography.button,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-        if (!hasItem) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(id = R.string.tip_empty),
-                    color = ExtendedTheme.colors.textDisabled,
-                    fontSize = 16.sp
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun SearchTopBar(
     keyword: String,
@@ -636,24 +512,6 @@ fun PreviewSearchBox() {
             SearchTopBar(
                 keyword = keyword,
                 onKeywordChange = { keyword = it }
-            )
-        }
-    }
-}
-
-@Preview("SearchHistoryList")
-@Composable
-fun PreviewSearchHistoryList() {
-    TiebaLiteTheme {
-        var expanded by remember { mutableStateOf(false) }
-        Box(modifier = Modifier.background(ExtendedTheme.colors.background)) {
-            SearchHistoryList(
-                searchHistories = (0..20).map {
-                    SearchHistoryItem(id = it.toLong(), keyword = if (it % 2 == 0) "记录$it" else "搜索记录$it")
-                }.toImmutableList(),
-                onSearchHistoryClick = {},
-                expanded = expanded,
-                onToggleExpand = { expanded = !expanded },
             )
         }
     }
