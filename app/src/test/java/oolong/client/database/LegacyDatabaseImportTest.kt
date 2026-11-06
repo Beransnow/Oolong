@@ -83,8 +83,8 @@ class LegacyDatabaseImportTest {
         )
         assertEquals("草稿", db.draftDao().content("h"))
         assertEquals(listOf("52"), db.topForumDao().forumIds())
-        assertEquals(listOf("关键词"), db.searchHistoryDao().all().map { it.content })
-        assertEquals(listOf("吧名" to "吧内"), db.searchHistoryDao().allInForums().map { it.forumName to it.content })
+        assertEquals(listOf("关键词"), db.searchHistoryDao().all(owner = "42").map { it.content })
+        assertEquals(listOf(Triple("42", "吧名", "吧内")), db.searchHistoryDao().allInForums().map { Triple(it.owner, it.forumName, it.content) })
     }
 
     @Test

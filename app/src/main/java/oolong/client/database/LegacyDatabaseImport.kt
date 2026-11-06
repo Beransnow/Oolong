@@ -128,6 +128,7 @@ class LegacyDatabaseImport(
                 put("timestamp", row.long("timestamp") ?: 0L)
             }
         }
+        db.giveSearchHistoryTo(accountPrefs.getInt(KEY_CURRENT_ACCOUNT, -1))
     }
 
     /**

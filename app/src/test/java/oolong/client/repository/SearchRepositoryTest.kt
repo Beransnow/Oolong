@@ -3,6 +3,7 @@ package oolong.client.repository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -23,7 +24,14 @@ import kotlin.test.assertNull
 
 class SearchRepositoryTest {
     private val remote = mockk<SearchRemoteDataSource>()
-    private val repository = SearchRepository(remote, mockk<SearchHistoryDao>(relaxed = true), Dispatchers.Unconfined)
+    private val repository = SearchRepository(
+        remote,
+        mockk<SearchHistoryDao>(relaxed = true),
+        object : HistoryOwner {
+            override val uid = MutableStateFlow("")
+        },
+        Dispatchers.Unconfined,
+    )
 
     @Test
     fun `forums without a name are left out and the shown name falls back to the name`() = runTest {

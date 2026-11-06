@@ -32,7 +32,7 @@ class BlockMigrationTest {
     }
 
     private fun open(file: File) = Room.databaseBuilder(context, AppDatabase::class.java, file.absolutePath)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(context.getSharedPreferences("accountData", Context.MODE_PRIVATE)))
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(context.getSharedPreferences("accountData", Context.MODE_PRIVATE)), migration5To6(context.getSharedPreferences("accountData", Context.MODE_PRIVATE)))
         .build()
         .also { database = it }
 

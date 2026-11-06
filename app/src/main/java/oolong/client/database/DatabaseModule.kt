@@ -23,7 +23,7 @@ object DatabaseModule {
                     accountPrefs = accountPrefs,
                 )
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(accountPrefs))
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(accountPrefs), migration5To6(accountPrefs))
             .build()
     }
 

@@ -2,7 +2,9 @@ package oolong.client.repository
 
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import oolong.client.arch.IoDispatcher
@@ -28,15 +30,19 @@ import javax.inject.Inject
 class SearchRepository @Inject constructor(
     private val remote: SearchRemoteDataSource,
     private val historyDao: SearchHistoryDao,
+    private val owner: HistoryOwner,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    val history: Flow<List<SearchHistoryItem>> = historyDao.allFlow().map { entries ->
-        entries.map { SearchHistoryItem(it.id, it.content) }
+    /** The keywords the current account searched for. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val history: Flow<List<SearchHistoryItem>> = owner.uid.flatMapLatest { uid ->
+        historyDao.allFlow(uid).map { entries -> entries.map { SearchHistoryItem(it.id, it.content) } }
     }
 
-    /** The keywords searched for in [forumName]. */
-    fun forumHistory(forumName: String): Flow<List<SearchHistoryItem>> = historyDao.inForumFlow(forumName).map { entries ->
-        entries.map { SearchHistoryItem(it.id, it.content, it.forumName) }
+    /** The keywords the current account searched for in [forumName]. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun forumHistory(forumName: String): Flow<List<SearchHistoryItem>> = owner.uid.flatMapLatest { uid ->
+        historyDao.inForumFlow(uid, forumName).map { entries -> entries.map { SearchHistoryItem(it.id, it.content, it.forumName) } }
     }
 
     suspend fun suggestions(keyword: String): List<String> = withContext(io) { remote.suggestions(keyword) }
@@ -44,16 +50,17 @@ class SearchRepository @Inject constructor(
     /** Remembers [keyword], or moves it to the top if it was searched for before. */
     suspend fun remember(keyword: String, forumName: String? = null) = withContext(io) {
         val now = System.currentTimeMillis()
-        if (forumName == null) historyDao.add(keyword, now) else historyDao.addInForum(keyword, forumName, now)
+        val uid = owner.uid.value
+        if (forumName == null) historyDao.add(uid, keyword, now) else historyDao.addInForum(uid, keyword, forumName, now)
     }
 
     suspend fun forget(item: SearchHistoryItem) = withContext(io) {
         if (item.forumName == null) historyDao.delete(item.id) else historyDao.deleteInForum(item.id)
     }
 
-    suspend fun clearHistory() = withContext(io) { historyDao.clear() }
+    suspend fun clearHistory() = withContext(io) { historyDao.clear(owner.uid.value) }
 
-    suspend fun clearForumHistory(forumName: String) = withContext(io) { historyDao.clearInForum(forumName) }
+    suspend fun clearForumHistory(forumName: String) = withContext(io) { historyDao.clearInForum(owner.uid.value, forumName) }
 
     suspend fun forums(keyword: String): SearchMatches<SearchedForum> = withContext(io) {
         val data = remote.forums(keyword)
