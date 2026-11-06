@@ -47,6 +47,7 @@ private fun PbContent.toTextSpan(): TextSpan? = when (type) {
     1 -> TextSpan.Link(text, link, actualHost = misleadingLinkHost(text, link))
     2 -> TextSpan.Emoticon(id = text, name = c)
     4 -> TextSpan.Mention(text, uid)
+    18 -> topicName(text, link)?.let { TextSpan.Topic(text, it) } ?: TextSpan.Plain(text)
     5 -> if (src.isBlank()) TextSpan.VideoLink(text, url = text) else null
     else -> null
 }
@@ -116,3 +117,9 @@ private fun siteOf(host: String): String {
 }
 
 private val SecondLevels = setOf("com", "net", "org", "gov", "edu", "co", "ac")
+
+/** The topic a `#topic#` tag names: the link's `topic_name`, or the tag's text between its #s. */
+private fun topicName(text: String, link: String): String? {
+    val fromLink = link.toHttpUrlOrNull()?.queryParameter("topic_name")
+    return (fromLink ?: text.trim().removePrefix("#").removeSuffix("#")).trim().takeIf(String::isNotEmpty)
+}

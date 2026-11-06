@@ -163,7 +163,7 @@ private val PostContent.Image.aspectRatio: Float
     get() = if (width > 0 && height > 0) width * 1f / height else 1f
 
 /**
- * Inline text with links, mentions and video links in [accent], marked for [PbContentText] to
+ * Inline text with links, mentions, topics and video links in [accent], marked for [PbContentText] to
  * open, and emoticons as inline images. A link whose text names another site is followed by
  * where it really goes, in [warning], written with [actualHostFormat].
  */
@@ -187,6 +187,10 @@ fun List<TextSpan>.toAnnotatedString(
                             withStyle(SpanStyle(color = warning)) { append(actualHostFormat.format(host)) }
                         }
                     }
+                }
+
+                is TextSpan.Topic -> withAnnotation(tag = "topic", annotation = span.name) {
+                    withStyle(SpanStyle(color = accent)) { append(span.text) }
                 }
 
                 is TextSpan.Mention -> withAnnotation(tag = "user", annotation = "${span.userId}") {

@@ -40,6 +40,7 @@ import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
+import oolong.client.ui.navigation.TopicKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
@@ -301,7 +302,7 @@ fun PbContentText(
                 val annotation =
                     layoutResult.value?.getOffsetForPosition(change.position)?.let { offset ->
                         text.getStringAnnotations(start = offset, end = offset)
-                            .firstOrNull { it.tag == "url" || it.tag == "user" }
+                            .firstOrNull { it.tag == "url" || it.tag == "user" || it.tag == "topic" }
                     }
                 if (annotation != null) {
                     if (change.pressed != change.previousPressed) change.consume()
@@ -318,6 +319,8 @@ fun PbContentText(
                                 val uid = annotation.item.toLong()
                                 navigator.navigate(UserProfileKey(uid))
                             }
+
+                            "topic" -> navigator.navigate(TopicKey(id = 0, name = annotation.item))
                         }
                     }
                 }

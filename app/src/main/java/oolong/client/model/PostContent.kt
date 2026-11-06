@@ -64,6 +64,10 @@ sealed interface TextSpan {
     @Immutable
     data class Mention(override val text: String, val userId: Long) : TextSpan
 
+    /** A `#topic#` tag, which opens the hot topic [name]. */
+    @Immutable
+    data class Topic(override val text: String, val name: String) : TextSpan
+
     /** A link to a video that can only be opened on the web. */
     @Immutable
     data class VideoLink(override val text: String, val url: String) : TextSpan

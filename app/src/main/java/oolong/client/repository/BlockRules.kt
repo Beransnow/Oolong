@@ -70,6 +70,7 @@ fun Blockable(
                         length += letterCount(span.text)
                         if (span.text.hasEmoji()) kinds += ContentKind.Emoticon
                     }
+                    is TextSpan.Topic -> length += letterCount(span.text)
                     is TextSpan.Link -> kinds += ContentKind.Link
                     is TextSpan.VideoLink -> kinds += ContentKind.Video
                     is TextSpan.Mention -> kinds += ContentKind.Mention

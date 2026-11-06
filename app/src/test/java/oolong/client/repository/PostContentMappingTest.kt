@@ -39,6 +39,17 @@ class PostContentMappingTest {
     }
 
     @Test
+    fun `a topic tag names its topic, from its link or else its text`() {
+        val content = map(
+            PbContent(type = 18, text = "#话题一#", link = "https://tieba.baidu.com/mo/q/hotMessage?topic_id=0&topic_name=%E8%AF%9D%E9%A2%98%E4%B8%80"),
+            PbContent(type = 18, text = "#话题二#", link = ""),
+        )
+
+        val spans = (content.single() as PostContent.Text).spans
+        assertEquals(listOf<TextSpan>(TextSpan.Topic("#话题一#", "话题一"), TextSpan.Topic("#话题二#", "话题二")), spans)
+    }
+
+    @Test
     fun `emoticons are registered so they can be used in replies`() {
         map(PbContent(type = 2, text = "image_emoticon25", c = "滑稽"))
         assertEquals(listOf("image_emoticon25" to "滑稽"), registered)

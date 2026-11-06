@@ -94,7 +94,7 @@ fun copyPieces(content: List<PostContent>): List<WordPiece> = buildList {
             when (span) {
                 is TextSpan.Plain -> addAll(splitWords(span.text, punctuation = true))
                 is TextSpan.Emoticon -> add(WordPiece(span.text, isWord = true, look = WordPiece.Look.Emoticon))
-                is TextSpan.Link, is TextSpan.Mention, is TextSpan.VideoLink ->
+                is TextSpan.Link, is TextSpan.Mention, is TextSpan.VideoLink, is TextSpan.Topic ->
                     add(WordPiece(span.text, isWord = true, look = WordPiece.Look.Link))
             }
         }
