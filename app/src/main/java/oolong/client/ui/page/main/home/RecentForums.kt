@@ -196,14 +196,10 @@ fun RecentForums(
                     indication = null,
                     role = Role.Button,
                 ) { expansion.toggle() }
-                .padding(start = Spacing.md, end = Spacing.sm, top = Spacing.xs, bottom = Spacing.xxs),
+                .padding(end = Spacing.sm, top = Spacing.xs, bottom = Spacing.xxs),
         ) {
-            Text(
-                text = stringResource(R.string.title_history_forum),
-                style = TextStyles.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                color = ExtendedTheme.colors.textSecondary,
-                modifier = Modifier.weight(1f),
-            )
+            Header(text = stringResource(R.string.title_history_forum))
+            Spacer(modifier = Modifier.weight(1f))
             if (rows.size > 1) {
                 val description = stringResource(if (expansion.open) R.string.desc_collapse_recent_forums else R.string.desc_expand_recent_forums)
                 Icon(

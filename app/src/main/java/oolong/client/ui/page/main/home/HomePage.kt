@@ -172,7 +172,7 @@ fun SearchBox(
 }
 
 @Composable
-private fun Header(
+internal fun Header(
     text: String,
     modifier: Modifier = Modifier,
     invert: Boolean = false
