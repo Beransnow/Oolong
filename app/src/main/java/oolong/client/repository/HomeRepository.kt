@@ -1,7 +1,9 @@
 package oolong.client.repository
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import oolong.client.arch.IoDispatcher
@@ -19,6 +21,7 @@ class HomeRepository @Inject constructor(
     private val likeRemote: LikeRemoteDataSource,
     private val topForumDao: TopForumDao,
     private val historyDao: HistoryDao,
+    private val historyOwner: HistoryOwner,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     /** Every followed forum, loaded page by page. */
@@ -45,8 +48,12 @@ class HomeRepository @Inject constructor(
     val pinnedForumIds: Flow<Set<Long>> =
         topForumDao.forumIdsFlow().map { ids -> ids.mapNotNull { it.toLongOrNull() }.toSet() }
 
-    val visitedForums: Flow<List<VisitedForum>> = historyDao.latest(HistoryEntity.TYPE_FORUM, VISITED_LIMIT).map { entries ->
-        entries.map { VisitedForum(name = it.data, title = it.title, avatar = it.avatar.orEmpty()) }
+    /** The forums the current account visited, latest first. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val visitedForums: Flow<List<VisitedForum>> = historyOwner.uid.flatMapLatest { uid ->
+        historyDao.latest(uid, HistoryEntity.TYPE_FORUM, VISITED_LIMIT).map { entries ->
+            entries.map { VisitedForum(name = it.data, title = it.title, avatar = it.avatar.orEmpty()) }
+        }
     }
 
     suspend fun pin(forumId: Long) = withContext(io) { topForumDao.insert(TopForumEntity(forumId.toString())) }

@@ -21,10 +21,12 @@ fun interface ForumHistory {
 class DatabaseForumHistory @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dao: HistoryDao,
+    private val owner: HistoryOwner,
     @ApplicationScope private val scope: CoroutineScope,
 ) : ForumHistory {
     override fun save(forum: ForumDetail) {
         val entry = HistoryEntity(
+            owner = owner.uid.value,
             type = HistoryEntity.TYPE_FORUM,
             data = forum.name,
             title = context.getString(R.string.title_forum, forum.name),

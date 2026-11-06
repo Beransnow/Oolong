@@ -31,6 +31,9 @@ abstract class RepositoryModule {
     abstract fun bindBlockRuleSource(source: DatabaseBlockRuleSource): BlockRuleSource
 
     @Binds
+    abstract fun bindHistoryOwner(owner: AccountHistoryOwner): HistoryOwner
+
+    @Binds
     abstract fun bindThreadHistory(history: DatabaseThreadHistory): ThreadHistory
 
     @Binds

@@ -85,6 +85,7 @@ class LegacyDatabaseImport(
                 put("username", row.string("username"))
             }
         }
+        db.giveHistoryTo(accountPrefs.getInt(KEY_CURRENT_ACCOUNT, -1))
         copy(legacy, db, "block", "block_rules", "id", replace = false) { row ->
             val condition = legacyCondition(
                 type = (row.long("type") ?: 0L).toInt(),

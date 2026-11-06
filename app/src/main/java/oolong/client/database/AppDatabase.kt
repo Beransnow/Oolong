@@ -13,7 +13,7 @@ import androidx.room.RoomDatabase
         SearchHistoryEntity::class,
         ForumSearchHistoryEntity::class,
     ],
-    version = 4,
+    version = 5,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao

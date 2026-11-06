@@ -7,6 +7,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import oolong.client.database.AppDatabase
@@ -28,7 +29,15 @@ class HomeRepositoryTest {
         AppDatabase::class.java,
     ).allowMainThreadQueries().build()
     private val likeRemote = mockk<LikeRemoteDataSource>(relaxed = true)
-    private val repository = HomeRepository(likeRemote, database.topForumDao(), database.historyDao(), Dispatchers.Unconfined)
+    private val repository = HomeRepository(
+        likeRemote,
+        database.topForumDao(),
+        database.historyDao(),
+        object : HistoryOwner {
+            override val uid = MutableStateFlow("")
+        },
+        Dispatchers.Unconfined,
+    )
 
     @After
     fun tearDown() = database.close()

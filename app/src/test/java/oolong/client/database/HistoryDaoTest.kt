@@ -26,7 +26,7 @@ class HistoryDaoTest {
         dao.visit(HistoryEntity(type = 2, data = "9000", title = "旧标题", extras = "a"), timestamp = 100)
         dao.visit(HistoryEntity(type = 2, data = "9000", title = "新标题", extras = "b"), timestamp = 200)
 
-        val entry = dao.page(type = 2, limit = 10, offset = 0).single()
+        val entry = dao.page(owner = "", type = 2, limit = 10, offset = 0).single()
         assertEquals("新标题", entry.title)
         assertEquals("b", entry.extras)
         assertEquals(200, entry.timestamp)
@@ -38,15 +38,25 @@ class HistoryDaoTest {
         dao.visit(HistoryEntity(type = 1, data = "123", title = "吧"), timestamp = 100)
         dao.visit(HistoryEntity(type = 2, data = "123", title = "帖子"), timestamp = 200)
 
-        assertEquals(listOf("吧"), dao.page(type = 1, limit = 10, offset = 0).map { it.title })
-        assertEquals(listOf("帖子"), dao.page(type = 2, limit = 10, offset = 0).map { it.title })
+        assertEquals(listOf("吧"), dao.page(owner = "", type = 1, limit = 10, offset = 0).map { it.title })
+        assertEquals(listOf("帖子"), dao.page(owner = "", type = 2, limit = 10, offset = 0).map { it.title })
     }
 
     @Test
     fun `pages are most recent first`() = runBlocking {
         (1..5).forEach { dao.visit(HistoryEntity(type = 2, data = "$it"), timestamp = it.toLong()) }
 
-        assertEquals(listOf("5", "4"), dao.page(type = 2, limit = 2, offset = 0).map { it.data })
-        assertEquals(listOf("3", "2"), dao.page(type = 2, limit = 2, offset = 2).map { it.data })
+        assertEquals(listOf("5", "4"), dao.page(owner = "", type = 2, limit = 2, offset = 0).map { it.data })
+        assertEquals(listOf("3", "2"), dao.page(owner = "", type = 2, limit = 2, offset = 2).map { it.data })
+    }
+
+    @Test
+    fun `each account has its own history`() = runBlocking {
+        dao.visit(HistoryEntity(owner = "1", type = 2, data = "9000", title = "一号看的"), timestamp = 100)
+        dao.visit(HistoryEntity(owner = "2", type = 2, data = "9000", title = "二号看的"), timestamp = 200)
+        dao.clear(owner = "2")
+
+        assertEquals(listOf("一号看的" to 1), dao.page(owner = "1", type = 2, limit = 10, offset = 0).map { it.title to it.count })
+        assertEquals(emptyList(), dao.page(owner = "2", type = 2, limit = 10, offset = 0))
     }
 }

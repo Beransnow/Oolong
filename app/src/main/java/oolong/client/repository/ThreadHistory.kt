@@ -19,10 +19,12 @@ fun interface ThreadHistory {
 
 class DatabaseThreadHistory @Inject constructor(
     private val dao: HistoryDao,
+    private val owner: HistoryOwner,
     @ApplicationScope private val scope: CoroutineScope,
 ) : ThreadHistory {
     override fun save(thread: ThreadDetail, seeLz: Boolean, readUpTo: Post?) {
         val entry = HistoryEntity(
+            owner = owner.uid.value,
             type = HistoryEntity.TYPE_THREAD,
             data = thread.id.toString(),
             title = thread.title,

@@ -14,16 +14,18 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        val accountPrefs = context.getSharedPreferences("accountData", Context.MODE_PRIVATE)
+        return Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
             .addCallback(
                 LegacyDatabaseImport(
                     legacyFile = context.getDatabasePath(LegacyDatabaseImport.LEGACY_NAME),
-                    accountPrefs = context.getSharedPreferences("accountData", Context.MODE_PRIVATE),
+                    accountPrefs = accountPrefs,
                 )
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(accountPrefs))
             .build()
+    }
 
     @Provides
     fun provideAccountDao(database: AppDatabase) = database.accountDao()

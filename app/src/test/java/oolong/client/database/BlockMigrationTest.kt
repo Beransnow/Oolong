@@ -1,15 +1,10 @@
 package oolong.client.database
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import oolong.client.model.BlockRule
 import oolong.client.model.BlockRule.Condition
 import oolong.client.model.BlockRule.Pattern
@@ -36,33 +31,15 @@ class BlockMigrationTest {
         database?.close()
     }
 
-    /** A database as [version] created it, from its exported schema. */
-    private fun create(file: File, version: Int, vararg statements: String) {
-        val schema = Json.parseToJsonElement(File("schemas/${AppDatabase::class.qualifiedName}/$version.json").readText())
-            .jsonObject.getValue("database").jsonObject
-        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
-            schema.getValue("entities").jsonArray.forEach { entity ->
-                val table = entity.jsonObject.getValue("tableName").jsonPrimitive.content
-                fun sql(element: kotlinx.serialization.json.JsonElement) =
-                    element.jsonPrimitive.content.replace("\${TABLE_NAME}", table)
-                db.execSQL(sql(entity.jsonObject.getValue("createSql")))
-                entity.jsonObject["indices"]?.jsonArray?.forEach { db.execSQL(sql(it.jsonObject.getValue("createSql"))) }
-            }
-            schema.getValue("setupQueries").jsonArray.forEach { db.execSQL(it.jsonPrimitive.content) }
-            statements.forEach { db.execSQL(it) }
-            db.version = version
-        }
-    }
-
     private fun open(file: File) = Room.databaseBuilder(context, AppDatabase::class.java, file.absolutePath)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, migration4To5(context.getSharedPreferences("accountData", Context.MODE_PRIVATE)))
         .build()
         .also { database = it }
 
     @Test
     fun `rules keep what they matched, and allow list entries become exceptions`() = runBlocking {
         val file = File(folder.root, "app.db")
-        create(
+        createDatabase(
             file,
             1,
             "INSERT INTO block_rules (id, category, type, keywords, username, uid) VALUES (1, 10, 0, '[\"广告\",\"加群\"]', NULL, NULL)",
@@ -85,7 +62,7 @@ class BlockMigrationTest {
         val file = File(folder.root, "app.db")
         val columns = "id, category, type, keywords, username, uid, forum_name, display_name, level, regex, in_forum, title_only, " +
             "scope, action, expires_at, enabled, hits, last_hit_at, created_at"
-        create(
+        createDatabase(
             file,
             3,
             "INSERT INTO block_rules ($columns) VALUES (1, 10, 0, '[\"互关|互粉\"]', NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 1, 2, 9000, 0, 4, 300, 200)",

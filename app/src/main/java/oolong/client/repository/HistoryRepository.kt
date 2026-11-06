@@ -1,7 +1,9 @@
 package oolong.client.repository
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -12,22 +14,26 @@ import oolong.client.model.HistoryEntry
 import oolong.client.models.ThreadHistoryInfoBean
 import javax.inject.Inject
 
-/** The threads and forums the user visited, most recent first. */
+/** The threads and forums the current account visited, most recent first; another account's when it is switched to. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class HistoryRepository @Inject constructor(
     private val dao: HistoryDao,
+    private val owner: HistoryOwner,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     /** Up to [limit] of the latest visited threads, and the latest again whenever they change. */
-    fun threads(limit: Int): Flow<List<HistoryEntry.Thread>> =
-        dao.latest(HistoryEntity.TYPE_THREAD, limit).map { entries -> entries.mapNotNull { it.toThread() } }
+    fun threads(limit: Int): Flow<List<HistoryEntry.Thread>> = owner.uid.flatMapLatest { uid ->
+        dao.latest(uid, HistoryEntity.TYPE_THREAD, limit).map { entries -> entries.mapNotNull { it.toThread() } }
+    }
 
     /** Up to [limit] of the latest visited forums, and the latest again whenever they change. */
-    fun forums(limit: Int): Flow<List<HistoryEntry.Forum>> =
-        dao.latest(HistoryEntity.TYPE_FORUM, limit).map { entries -> entries.map { it.toForum() } }
+    fun forums(limit: Int): Flow<List<HistoryEntry.Forum>> = owner.uid.flatMapLatest { uid ->
+        dao.latest(uid, HistoryEntity.TYPE_FORUM, limit).map { entries -> entries.map { it.toForum() } }
+    }
 
     suspend fun delete(entry: HistoryEntry) = withContext(io) { dao.delete(entry.id) }
 
-    suspend fun clear() = withContext(io) { dao.clear() }
+    suspend fun clear() = withContext(io) { dao.clear(owner.uid.value) }
 }
 
 private val extrasJson = Json { ignoreUnknownKeys = true }
