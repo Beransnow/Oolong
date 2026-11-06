@@ -14,6 +14,7 @@ import oolong.client.ui.page.settings.habit.HabitSettingsPage
 import oolong.client.ui.page.settings.more.MoreSettingsPage
 import oolong.client.ui.page.settings.oksign.OKSignSettingsPage
 import oolong.client.ui.page.settings.post.PostSettingsPage
+import oolong.client.ui.page.settings.privacy.PrivacySettingsPage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -63,6 +64,11 @@ class SettingsScreenshotTest {
     @Test
     fun posting() {
         captureScreenshot { PostSettingsPage(navigator = NoOpNavigator) }
+    }
+
+    @Test
+    fun privacy() {
+        captureScreenshot { PrivacySettingsPage(navigator = NoOpNavigator) }
     }
 
     @Test
