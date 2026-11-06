@@ -1,57 +1,33 @@
 package oolong.client.ui.page.forum.searchpost
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.ContentAlpha
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumSearchOrder
@@ -59,12 +35,8 @@ import oolong.client.model.QuotedPost
 import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchHistoryItem
 import oolong.client.model.SearchedPost
-import oolong.client.ui.common.theme.compose.Corners
+import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.ui.common.theme.compose.Motion
-import oolong.client.ui.common.theme.compose.PressFeedback
-import oolong.client.ui.common.theme.compose.SmoothCornerShape
-import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.ForumSearchPostKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.SubPostsKey
@@ -72,135 +44,28 @@ import oolong.client.ui.navigation.ThreadKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.page.main.MainSearchField
+import oolong.client.ui.page.main.SearchAtTopKey
+import oolong.client.ui.page.main.mainSearchPadding
+import oolong.client.ui.page.main.rememberOpenSearchState
+import oolong.client.ui.page.search.SearchHistoryList
+import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
+import oolong.client.ui.widgets.compose.GlassStatusBar
 import oolong.client.ui.widgets.compose.GlassTopBar
-import oolong.client.ui.widgets.compose.HorizontalDivider
 import oolong.client.ui.widgets.compose.LoadMoreEffect
+import oolong.client.ui.widgets.compose.LocalChromePadding
+import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.PullRefresh
-import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.SearchThreadList
+import oolong.client.ui.widgets.compose.TabClickMenu
+import oolong.client.ui.widgets.compose.TabIndicator
+import oolong.client.ui.widgets.compose.TabRow
 import oolong.client.ui.widgets.compose.choiceMenuItems
-import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.loadMoreFooter
-import oolong.client.ui.widgets.compose.paddedStickyHeader
-import oolong.client.ui.widgets.compose.picker.ListSinglePicker
-import oolong.client.ui.widgets.compose.rememberMenuTriggerState
 import oolong.client.ui.widgets.compose.states.StateScreen
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
-@Composable
-private fun SearchHistoryList(
-    searchHistories: ImmutableList<SearchHistoryItem>,
-    onSearchHistoryClick: (SearchHistoryItem) -> Unit,
-    expanded: Boolean = false,
-    onToggleExpand: () -> Unit = {},
-    onDelete: (SearchHistoryItem) -> Unit = {},
-    onClear: () -> Unit = {},
-) {
-    val hasItem = remember(searchHistories) {
-        searchHistories.isNotEmpty()
-    }
-    val hasMore = remember(searchHistories) {
-        searchHistories.size > 6
-    }
-    val showItem = remember(expanded, hasMore, searchHistories) {
-        if (!expanded && hasMore) searchHistories.take(6) else searchHistories
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(id = R.string.title_search_history),
-                modifier = Modifier
-                    .weight(1f),
-                style = MaterialTheme.typography.subtitle1
-            )
-            if (hasItem) {
-                Text(
-                    text = stringResource(id = R.string.button_clear_all),
-                    modifier = Modifier.clickable(onClick = onClear),
-                    style = MaterialTheme.typography.button
-                )
-            }
-        }
-        FlowRow(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .animateContentSize(Motion.settle()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            showItem.fastForEach { searchHistory ->
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .clip(Corners.full)
-                        .combinedClickable(
-                            onClick = { onSearchHistoryClick(searchHistory) },
-                            onLongClickLabel = stringResource(R.string.title_delete),
-                            onLongClick = { onDelete(searchHistory) }
-                        )
-                        .background(ExtendedTheme.colors.chip)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = searchHistory.keyword
-                    )
-                }
-            }
-        }
-        if (hasMore) {
-            Button(
-                onClick = onToggleExpand,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = Color.Transparent,
-                    contentColor = ExtendedTheme.colors.text
-                )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (expanded) Symbols.ExpandLess else Symbols.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = stringResource(
-                            id = if (expanded) R.string.button_expand_less_history else R.string.button_expand_more_history
-                        ),
-                        style = MaterialTheme.typography.button,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-        if (!hasItem) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(id = R.string.tip_empty),
-                    color = ExtendedTheme.colors.textDisabled,
-                    fontSize = 16.sp
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun ForumSearchPostPage(
@@ -240,8 +105,12 @@ fun ForumSearchPostPage(
     }
 }
 
-/** Searching one forum: its history until the user searches, then the threads and replies found. */
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+/**
+ * Searching one forum: its history until the user searches, then the threads and replies found,
+ * all or threads only, in tabs. The field is where the user keeps search on the main page: above
+ * the keyboard beside a button that closes the page, or in the top bar after a back button.
+ */
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ForumSearchPostScreen(
     state: ForumSearchPostState,
@@ -258,86 +127,58 @@ fun ForumSearchPostScreen(
     onOpenQuoted: (QuotedPost) -> Unit,
     onOpenThread: (QuotedPost) -> Unit,
 ) {
-    val forumName = state.forumName
     val list = state.list
+    val searching = state.keyword.isNotEmpty()
     val isRefreshing = list.refresh == LoadStatus.Loading
     val error = (list.refresh as? LoadStatus.Error)?.error
-    var inputKeyword by rememberSaveable { mutableStateOf("") }
-
+    val focusManager = LocalFocusManager.current
+    val atTop by rememberPreferenceAsState(SearchAtTopKey, false)
+    var input by rememberSaveable { mutableStateOf(state.keyword) }
     LaunchedEffect(state.keyword) {
-        if (state.keyword.isNotEmpty()) inputKeyword = state.keyword
+        if (state.keyword.isNotEmpty()) input = state.keyword
     }
+    val search: (String) -> Unit = {
+        input = it
+        focusManager.clearFocus()
+        onSearch(it)
+    }
+    // Back from what was found goes back to the history, as on the main page's search
+    val backToHistory = { search("") }
+    MyBackHandler(enabled = searching, onBack = backToHistory)
+    // Opened afresh, the user is here to type; coming back to what was found, to read it
+    val fieldState = rememberOpenSearchState(focus = !searching)
 
-    val lazyListState = rememberLazyListState()
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    val sortTypeMapping = mapOf(
-        ForumSearchOrder.Newest to stringResource(R.string.title_search_post_sort_by_time),
-        ForumSearchOrder.Relevant to stringResource(R.string.title_search_post_sort_by_relevant),
-    )
-    val filterTypeMapping = mapOf(
-        false to stringResource(R.string.title_search_filter_all),
-        true to stringResource(R.string.title_search_filter_only_thread),
-    )
-
-    GlassScaffold(
-        topBar = {
-            GlassTopBar(
-                title = {
-                    // The bar styles its title slot as a title; the field keeps body text.
-                    ProvideTextStyle(MaterialTheme.typography.body1) {
-                        SearchBox(
-                            keyword = inputKeyword,
-                            onKeywordChange = { inputKeyword = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .padding(end = 12.dp),
-                            onKeywordSubmit = {
-                                focusRequester.freeFocus()
-                                keyboardController?.hide()
-                                onSearch(it)
-                            },
-                            placeholder = {
-                                Text(
-                                    text = stringResource(
-                                        id = R.string.hint_search_in_ba,
-                                        forumName
-                                    ),
-                                    color = ExtendedTheme.colors.onSearchField.copy(alpha = ContentAlpha.medium)
-                                )
-                            },
-                            prependIcon = {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(Corners.full)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = PressFeedback.Overlay,
-                                            role = Role.Button,
-                                            onClick = onBack
-                                        ),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Symbols.ArrowBack,
-                                        contentDescription = stringResource(id = R.string.button_back)
-                                    )
-                                }
-                            },
-                            focusRequester = focusRequester,
-                            shape = SmoothCornerShape(6.dp)
-                        )
+    CompositionLocalProvider(LocalChromePadding provides mainSearchPadding(atTop)) {
+        GlassScaffold(
+            topBar = {
+                when {
+                    // The bar's row is kept clear for the field, laid over it
+                    atTop -> GlassTopBar(title = {}) {
+                        if (searching) ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads)
                     }
-                },
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            if (state.keyword.isNotEmpty()) {
+
+                    searching -> GlassTopBar(title = null) {
+                        ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads)
+                    }
+
+                    else -> GlassStatusBar()
+                }
+            },
+            overlay = {
+                MainSearchField(
+                    state = fieldState,
+                    atTop = atTop,
+                    input = input,
+                    onInputChange = { input = it },
+                    onSearch = search,
+                    onOpen = {},
+                    // At the top it is a back button, which goes back as the system's does
+                    onClose = if (atTop && searching) backToHistory else onBack,
+                    placeholder = stringResource(id = R.string.hint_search_in_ba, state.forumName),
+                )
+            },
+        ) { paddingValues ->
+            if (searching) {
                 StateScreen(
                     modifier = Modifier.fillMaxSize(),
                     isEmpty = list.items.isEmpty(),
@@ -346,6 +187,8 @@ fun ForumSearchPostScreen(
                     onReload = onRefresh,
                     errorScreen = { ErrorScreen(error = error) }
                 ) {
+                    // Each search and each tab starts from the top
+                    val lazyListState = key(state.keyword, state.onlyThreads, state.order) { rememberLazyListState() }
                     LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
                     PullRefresh(
                         refreshing = isRefreshing,
@@ -366,94 +209,75 @@ fun ForumSearchPostScreen(
                             searchKeyword = state.keyword,
                             contentPadding = paddingValues,
                             footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
-                        ) {
-                            paddedStickyHeader(lazyListState, key = "Sort&Filter") {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .background(ExtendedTheme.colors.background)
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                            onClick = {}
-                                        )
-                                ) {
-                                    val sortMenu = rememberMenuTriggerState()
-                                    val rotate by animateFloatAsState(
-                                        targetValue = if (sortMenu.open) 180f else 0f,
-                                        animationSpec = Motion.snap(),
-                                        label = "ArrowIndicatorRotate"
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.clickMenu(
-                                            items = { choiceMenuItems(sortTypeMapping.toList(), state.order, onSetOrder) },
-                                            indication = null,
-                                            state = sortMenu,
-                                        ),
-                                    ) {
-                                        Text(
-                                            text = sortTypeMapping[state.order]
-                                                ?: "",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Icon(
-                                            imageVector = Symbols.ArrowDropDown,
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(16.dp)
-                                                .rotate(rotate)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.height(IntrinsicSize.Min)
-                                    ) {
-                                        filterTypeMapping.keys.map<Boolean, @Composable () -> Unit> { type ->
-                                            {
-                                                Text(
-                                                    text = filterTypeMapping[type] ?: "",
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (type == state.onlyThreads) {
-                                                        FontWeight.Bold
-                                                    } else {
-                                                        FontWeight.Normal
-                                                    },
-                                                    modifier = Modifier.clickable(
-                                                        interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null,
-                                                        role = Role.RadioButton,
-                                                        onClick = { onSetOnlyThreads(type) }
-                                                    )
-                                                )
-                                            }
-                                        }.forEachIndexed { index, composable ->
-                                            composable()
-                                            if (index < filterTypeMapping.size - 1) {
-                                                HorizontalDivider(
-                                                    modifier = Modifier.padding(
-                                                        horizontal = 8.dp
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        )
                     }
                 }
             } else {
-                SearchHistoryList(
-                    searchHistories = state.history,
-                    onSearchHistoryClick = { onSearch(it.keyword) },
-                    onDelete = onForget,
-                    onClear = onClearHistory
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(paddingValues)
+                ) {
+                    Container {
+                        SearchHistoryList(
+                            searchHistories = state.history,
+                            onSearchHistoryClick = { search(it.keyword) },
+                            onDelete = onForget,
+                            onClear = onClearHistory,
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+/**
+ * All that was found or threads only, as tabs; tapped again, the chosen one offers the orders, as
+ * the main page's search does for threads.
+ */
+@Composable
+private fun ColumnScope.ForumSearchTabRow(
+    state: ForumSearchPostState,
+    onSetOrder: (ForumSearchOrder) -> Unit,
+    onSetOnlyThreads: (Boolean) -> Unit,
+) {
+    val orders = listOf(
+        ForumSearchOrder.Newest to stringResource(R.string.title_search_order_new),
+        ForumSearchOrder.Relevant to stringResource(R.string.title_search_order_relevant),
+    )
+    val tabs = listOf(
+        false to R.string.title_search_filter_all,
+        true to R.string.title_search_tab_threads,
+    )
+    val selected = tabs.indexOfFirst { it.first == state.onlyThreads }
+    TabRow(
+        selectedTabIndex = selected,
+        indicator = { tabPositions -> TabIndicator(selectedTabIndex = selected, tabPositions = tabPositions) },
+        divider = {},
+        backgroundColor = Color.Transparent,
+        contentColor = ExtendedTheme.colors.topBarContent,
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .width(TabWidth * tabs.size),
+    ) {
+        tabs.forEach { (onlyThreads, text) ->
+            val chosen = onlyThreads == state.onlyThreads
+            TabClickMenu(
+                selected = chosen,
+                // A glass tab fills the height it is given, and this row gives it all there is
+                modifier = Modifier.height(TabHeight),
+                onClick = { onSetOnlyThreads(onlyThreads) },
+                text = {
+                    Text(text = stringResource(id = text), fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal)
+                },
+                items = { choiceMenuItems(orders, state.order, onSetOrder) },
+            )
+        }
+    }
+}
+
+/** The main page's search tabs' width and height, which these take too. */
+private val TabWidth = 76.dp
+private val TabHeight = 48.dp

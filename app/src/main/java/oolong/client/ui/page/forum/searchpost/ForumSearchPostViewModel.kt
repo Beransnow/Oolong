@@ -81,11 +81,14 @@ class ForumSearchPostViewModel @AssistedInject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumSearchPostState(forumName))
 
-    /** Searches for [keyword]; a blank one is ignored. */
+    /** Searches for [keyword], or with a blank one goes back to the history. */
     fun search(keyword: String) {
         val trimmed = keyword.trim()
-        if (trimmed.isEmpty()) return
         local.update { it.copy(keyword = trimmed) }
+        if (trimmed.isEmpty()) {
+            pager.value = null
+            return
+        }
         viewModelScope.launch { runCatching { repository.remember(trimmed, forumName) } }
         load()
     }

@@ -147,6 +147,19 @@ fun rememberMainSearchState(): MainSearchState {
     return state
 }
 
+/**
+ * The field of a page that is only search, as searching a forum: open from the start, with no
+ * button to grow from or shrink back into. [focus], it brings up the keyboard once it shows.
+ */
+@Composable
+fun rememberOpenSearchState(focus: Boolean): MainSearchState = remember {
+    MainSearchState(open = true).apply {
+        // Any bounds do: at rest on the field, it never moves from there
+        buttonBounds = Rect(0f, 0f, 1f, 1f)
+        wantsFocus = focus
+    }
+}
+
 /** Search kept at the top of the home page rather than beside the bottom bar. */
 val SearchAtTopKey = booleanPreferencesKey("searchAtTop")
 
@@ -254,6 +267,7 @@ fun MainSearchField(
     onSearch: (String) -> Unit,
     onOpen: () -> Unit,
     onClose: () -> Unit,
+    placeholder: String = stringResource(id = R.string.hint_search),
 ) {
     // Read once it changes rather than each frame of the motion, which would compose all this again
     val shown by remember(state) { derivedStateOf { state.progress.value > 0f } }
@@ -361,7 +375,7 @@ fun MainSearchField(
                         keyboardActions = KeyboardActions(onSearch = { onSearch(input) }),
                         placeholder = {
                             Text(
-                                text = stringResource(id = R.string.hint_search),
+                                text = placeholder,
                                 color = colors.text.copy(alpha = ContentAlpha.medium),
                                 maxLines = 1,
                             )

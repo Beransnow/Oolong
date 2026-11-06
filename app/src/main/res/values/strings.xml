@@ -223,7 +223,7 @@
     <string name="title_search_history">搜索历史</string>
     <string name="title_exact_match">推荐</string>
     <string name="title_fuzzy_match">相关吧</string>
-    <string name="title_search_filter_only_thread">只看主题帖</string>
+    <string name="title_search_tab_threads">主题帖</string>
     <string name="title_search_order_new">新帖在前</string>
     <string name="title_search_order_old">旧帖在前</string>
     <string name="title_search_order_relevant">相关度</string>
@@ -321,8 +321,6 @@
     <string name="usage_webview_location_permission">用于向当前网页提供你的位置信息。</string>
     <string name="relative_date_today">今天 %1$s</string>
     <string name="relative_date_yesterday">昨天 %1$s</string>
-    <string name="title_search_post_sort_by_time">时间倒序</string>
-    <string name="title_search_post_sort_by_relevant">相关性排序</string>
     <string name="title_activity_edit_profile">编辑资料</string>
     <string name="button_save_profile">保存修改</string>
     <string name="title_username">用户名</string>

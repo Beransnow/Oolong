@@ -226,7 +226,7 @@
     <string name="title_search_history">Recent searches</string>
     <string name="title_exact_match">Best match</string>
     <string name="title_fuzzy_match">Related forums</string>
-    <string name="title_search_filter_only_thread">Threads only</string>
+    <string name="title_search_tab_threads">Threads</string>
     <string name="title_search_order_new">Newest</string>
     <string name="title_search_order_old">Oldest</string>
     <string name="title_search_order_relevant">Relevance</string>
@@ -325,8 +325,6 @@
     <string name="usage_webview_location_permission">Used to share your location with this web page.</string>
     <string name="relative_date_today">Today %1$s</string>
     <string name="relative_date_yesterday">Yesterday %1$s</string>
-    <string name="title_search_post_sort_by_time">Newest</string>
-    <string name="title_search_post_sort_by_relevant">Relevance</string>
     <string name="title_activity_edit_profile">Edit profile</string>
     <string name="button_save_profile">Save</string>
     <string name="title_username">Username</string>
