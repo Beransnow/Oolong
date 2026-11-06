@@ -155,7 +155,7 @@ internal fun OriginThreadInfo.toSharedThread(emoticons: EmoticonRegistry) = Shar
     video = video_info?.toThreadVideo(),
 )
 
-private val TextAbstractTypes = setOf(0, 40)
+private val TextAbstractTypes = setOf(0, 18, 40)
 private const val EmoticonAbstractType = 2
 private val Spaces = Regex(" {2,}")
 

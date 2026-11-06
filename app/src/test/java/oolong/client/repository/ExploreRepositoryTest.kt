@@ -20,10 +20,19 @@ import oolong.client.api.models.protos.topicList.TopicListResponseData
 import oolong.client.api.models.protos.userLike.ConcernData
 import oolong.client.api.models.protos.userLike.UserLikeResponseData
 import oolong.client.model.DislikeOption
+import oolong.client.model.ForumSummary
 import oolong.client.model.HotCategory
 import oolong.client.model.HotTopic
+import oolong.client.model.RankReason
 import oolong.client.model.RankedTopic
+import oolong.client.model.ThreadMeasure
+import oolong.client.model.TopicForum
+import oolong.client.model.TopicRef
 import oolong.core.network.explore.ExploreRemoteDataSource
+import oolong.core.network.explore.ThreadRankingResponse
+import oolong.core.network.explore.TopicResponse
+import oolong.core.network.explore.WebContent
+import oolong.core.network.explore.WebThread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -113,5 +122,71 @@ class ExploreRepositoryTest {
         repository.dislike(thread.toThreadSummary { _, _ -> }, listOf(DislikeOption(1, "a", "e1"), DislikeOption(7, "b", "e2")), clickTime = 5)
 
         coVerify { remote.dislike(9, 52, listOf(1, 7), listOf("e1", "e2"), 5) }
+    }
+
+    @Test
+    fun `ranks threads with why each is there and the topic it is under`() = runTest {
+        coEvery { remote.threadRanking("thread_uv_num") } returns ThreadRankingResponse.Tab(
+            labels = listOf("近一天2.6W吧友看过", "说不清"),
+            threads = listOf(
+                WebThread(id = 1, tid = 1, title = "a", reasons = listOf(WebThread.Reason("话题", 7))),
+                WebThread(id = 2, tid = 2, title = "b", reasons = listOf(WebThread.Reason("最新上榜", 0))),
+            ),
+        )
+
+        val threads = repository.threadRanking(ThreadMeasure.MostRead)
+
+        assertEquals(listOf(1, 2), threads.map { it.rank })
+        assertEquals(listOf(RankReason.Readers(26_000), RankReason.Text("说不清")), threads.map { it.reason })
+        assertEquals(listOf(TopicRef(7, "话题"), null), threads.map { it.topic })
+    }
+
+    @Test
+    fun `reads the server's reasons in its several wordings`() {
+        assertEquals(RankReason.Likes(78_000), rankReason("近一天获赞7.8W次"))
+        assertEquals(RankReason.Likes(9866), rankReason("近一天获赞9866次"))
+        assertEquals(RankReason.NewFollowers(2992), rankReason("吧关注+2992"))
+        assertEquals(RankReason.NewThreads(10_000), rankReason("发贴量 +1W"))
+        assertEquals(RankReason.AnswerMinutes(6.4f), rankReason("平均6.4min被解答"))
+        assertEquals(RankReason.Reads(12_000_000), rankReason("贴子阅读量1.2KW"))
+        assertEquals(RankReason.Reads(2_649_000), rankReason("贴子阅读量264.9W"))
+    }
+
+    @Test
+    fun `a topic page puts the lead thread first and its forums apart`() = runTest {
+        coEvery { remote.topic(0, "n", 1, 0) } returns TopicResponse(
+            topic = TopicResponse.Topic(id = 7, name = "n", rank = 3, tag = 2),
+            themeColor = TopicResponse.ThemeColor(day = TopicResponse.Color("9B8F37")),
+            areas = listOf(
+                TopicResponse.Area(
+                    listOf(
+                        TopicResponse.Card("common_thread", TopicResponse.CardData(thread = WebThread(tid = 1))),
+                        TopicResponse.Card("relate_forum", TopicResponse.CardData(forums = listOf(TopicResponse.Forum(5, "f", "", 12)))),
+                        TopicResponse.Card("relate_thread", TopicResponse.CardData(thread = WebThread(tid = 2))),
+                        TopicResponse.Card("game_card", TopicResponse.CardData()),
+                    )
+                )
+            ),
+            hasMore = 1,
+        )
+
+        val page = repository.topic(0, "n", 1, 0)
+
+        assertEquals(0xFF9B8F37.toInt(), page.topic?.color)
+        assertEquals(HotTopic.Tag.Hot, page.topic?.tag)
+        assertEquals(listOf(1L to true, 2L to false), page.threads.map { it.first.id to it.second })
+        assertEquals(listOf(TopicForum(ForumSummary(5, "f", ""), 12)), page.forums)
+        assertEquals(true, page.hasMore)
+    }
+
+    @Test
+    fun `a thread without its first floor shows its abstract there, topic text kept`() {
+        val thread = WebThread(
+            tid = 3,
+            richAbstract = listOf(WebContent(type = 18, text = "#话题#"), WebContent(type = 0, text = "正文")),
+        ).toThreadSummary { _, _ -> }
+
+        assertEquals("#话题#正文", thread.abstract)
+        assertEquals(false, thread.firstPost.isEmpty())
     }
 }

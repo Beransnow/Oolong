@@ -8,12 +8,22 @@ import oolong.client.api.models.protos.personalized.ThreadPersonalized
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.model.DislikeOption
+import oolong.client.model.ForumMeasure
+import oolong.client.model.ForumRanking
+import oolong.client.model.ForumSummary
 import oolong.client.model.HotCategory
 import oolong.client.model.HotThreads
 import oolong.client.model.HotTopic
+import oolong.client.model.RankedForum
+import oolong.client.model.RankedThread
 import oolong.client.model.RankedTopic
 import oolong.client.model.RecommendedThread
+import oolong.client.model.ThreadMeasure
 import oolong.client.model.ThreadSummary
+import oolong.client.model.Topic
+import oolong.client.model.TopicForum
+import oolong.client.model.TopicPage
+import oolong.client.model.TopicRef
 import oolong.core.network.explore.ExploreRemoteDataSource
 import javax.inject.Inject
 
@@ -64,6 +74,68 @@ class ExploreRepository @Inject constructor(
         )
     }
 
+    /** The threads of the last day ranked by [measure]. */
+    suspend fun threadRanking(measure: ThreadMeasure): List<RankedThread> = withContext(io) {
+        val tab = remote.threadRanking(measure.code) ?: return@withContext emptyList()
+        tab.threads.mapIndexed { index, thread ->
+            RankedThread(
+                rank = index + 1,
+                thread = thread.toThreadSummary(emoticons),
+                reason = rankReason(tab.labels.getOrNull(index).orEmpty()),
+                topic = thread.reasons.firstOrNull { it.topicId != 0L && it.text.isNotBlank() }?.let { TopicRef(it.topicId, it.text) },
+            )
+        }
+    }
+
+    /** The forums of the last day ranked by [measure]. */
+    suspend fun forumRanking(measure: ForumMeasure): ForumRanking = withContext(io) {
+        val tab = remote.forumRanking(measure.code) ?: return@withContext ForumRanking("")
+        ForumRanking(
+            rule = tab.rule.replace("24h内", "近一天"),
+            forums = tab.forums.mapIndexed { index, forum ->
+                RankedForum(
+                    rank = index + 1,
+                    forum = ForumSummary(forum.id, forum.name, forum.avatar),
+                    members = forum.members,
+                    liked = forum.liked == 1,
+                    reason = rankReason(forum.score),
+                )
+            }.toImmutableList(),
+        )
+    }
+
+    /**
+     * Page [page] (from 1) of a topic, found by [name] when [id] is 0.
+     *
+     * @param lastThreadId the id of the last thread of the page before, 0 for the first
+     */
+    suspend fun topic(id: Long, name: String, page: Int, lastThreadId: Long): TopicPage = withContext(io) {
+        val response = remote.topic(id, name, page, lastThreadId)
+        val cards = response.areas.flatMap { it.cards }
+        TopicPage(
+            topic = response.topic?.let {
+                Topic(
+                    id = it.id,
+                    name = it.name,
+                    description = it.description,
+                    picture = it.picture,
+                    discussCount = it.discussCount,
+                    rank = it.rank,
+                    tag = topicTag(it.tag),
+                    color = response.themeColor?.day?.common?.let(::argb),
+                )
+            },
+            forums = cards.filter { it.type == RelatedForumsCard }.flatMap { it.data?.forums.orEmpty() }.map {
+                TopicForum(ForumSummary(it.id, it.name, it.avatar), it.members)
+            },
+            threads = cards.mapNotNull { card ->
+                val thread = card.data?.thread?.takeIf { card.type in ThreadCards } ?: return@mapNotNull null
+                thread.toThreadSummary(emoticons) to (card.type == LeadThreadCard)
+            },
+            hasMore = response.hasMore == 1,
+        )
+    }
+
     /** The full hot topics ranking. */
     suspend fun topics(): List<RankedTopic> = withContext(io) {
         remote.topics().topic_list.map {
@@ -97,6 +169,20 @@ class ExploreRepository @Inject constructor(
     private fun filter(threads: List<ThreadInfo>): List<ThreadInfo> {
         val hideVideos = videoFilter.hidesVideos()
         return threads.filter { it.ala_info == null && it.forumInfo != null && !(hideVideos && it.videoInfo != null) }
+    }
+}
+
+private const val LeadThreadCard = "common_thread"
+private const val RelatedForumsCard = "relate_forum"
+private val ThreadCards = setOf(LeadThreadCard, "relate_thread")
+
+/** `RRGGBB`, or `AARRGGBB`, without `#`, as an opaque ARGB colour; null when it isn't one. */
+private fun argb(hex: String): Int? {
+    val value = hex.removePrefix("#").toLongOrNull(16) ?: return null
+    return when (hex.removePrefix("#").length) {
+        6 -> (0xFF000000 or value).toInt()
+        8 -> (value or 0xFF000000).toInt()
+        else -> null
     }
 }
 
