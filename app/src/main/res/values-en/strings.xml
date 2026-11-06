@@ -17,7 +17,6 @@
     <string name="toast_copy_success">Copied to clipboard</string>
     <string name="title_share">Share</string>
     <string name="title_history">History</string>
-    <string name="title_history_delete">Clear history</string>
     <string name="toast_delete_success">Deleted</string>
     <string name="my_info_settings">Settings</string>
     <string name="title_settings">Settings</string>
@@ -251,6 +250,25 @@
     <string name="history_search_threads">Search titles, authors or forums</string>
     <string name="history_search_forums">Search forums</string>
     <string name="history_search_nothing">No matching history</string>
+    <string name="history_select">Select</string>
+    <string name="history_select_all">Select all</string>
+    <string name="history_select_none">Select none</string>
+    <plurals name="history_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="history_delete_selected">
+        <item quantity="one">Delete %1$d item</item>
+        <item quantity="other">Delete %1$d items</item>
+    </plurals>
+    <string name="history_clear">Clear</string>
+    <string name="history_clear_last_hour">Clear last hour</string>
+    <string name="history_clear_today">Clear today</string>
+    <string name="history_clear_all">Clear all</string>
+    <string name="history_clear_last_hour_title">Clear the last hour of history?</string>
+    <string name="history_clear_today_title">Clear today\'s history?</string>
+    <string name="history_clear_all_title">Clear all history?</string>
+    <string name="history_clear_message">The threads and forums visited are removed, and the home page\'s visited forums update too.</string>
     <plurals name="history_visits">
         <item quantity="one">%1$d visit</item>
         <item quantity="other">%1$d visits</item>

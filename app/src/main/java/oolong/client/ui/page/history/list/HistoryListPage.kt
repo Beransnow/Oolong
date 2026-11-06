@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -27,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,7 +53,8 @@ import oolong.client.ui.widgets.compose.longPressMenu
 
 /**
  * One tab of the history, under the days its visits were on, with a field above that narrows it;
- * long pressing a visit offers to delete it.
+ * long pressing a visit offers to delete it or start choosing. While choosing ([selected] isn't
+ * null), tapping a visit chooses it.
  */
 @Composable
 fun <T : HistoryEntry> HistoryListContent(
@@ -62,6 +65,9 @@ fun <T : HistoryEntry> HistoryListContent(
     onLoadMore: () -> Unit,
     onOpen: (T) -> Unit,
     onDelete: (T) -> Unit,
+    selected: Set<Long>? = null,
+    onSelect: (T) -> Unit = {},
+    onStartSelecting: (T) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val lazyListState = rememberLazyListState()
@@ -72,7 +78,9 @@ fun <T : HistoryEntry> HistoryListContent(
             state = lazyListState,
             contentPadding = contentPadding,
         ) {
-            item(key = "search", contentType = "search") { HistorySearchField(query, searchHint, onQueryChange) }
+            if (selected == null) {
+                item(key = "search", contentType = "search") { HistorySearchField(query, searchHint, onQueryChange) }
+            }
             if (list.isEmpty && query.isNotBlank()) {
                 item(key = "nothing", contentType = "nothing") {
                     Text(
@@ -88,26 +96,60 @@ fun <T : HistoryEntry> HistoryListContent(
             }
             list.sections.forEach { section ->
                 item(key = section.day, contentType = "day") { DayHeader(section.day) }
-                entries(section.entries, onOpen, onDelete)
+                entries(section.entries, selected, onOpen, onDelete, onSelect, onStartSelecting)
             }
         }
     }
 }
 
-private fun <T : HistoryEntry> LazyListScope.entries(entries: List<T>, onOpen: (T) -> Unit, onDelete: (T) -> Unit) {
+private fun <T : HistoryEntry> LazyListScope.entries(
+    entries: List<T>,
+    selected: Set<Long>?,
+    onOpen: (T) -> Unit,
+    onDelete: (T) -> Unit,
+    onSelect: (T) -> Unit,
+    onStartSelecting: (T) -> Unit,
+) {
     items(items = entries, key = { it.id }, contentType = { it::class }) { entry ->
         val delete = stringResource(id = R.string.title_delete)
+        val select = stringResource(id = R.string.history_select)
+        val chosen = selected != null && entry.id in selected
         Column(
             modifier = Modifier
                 .animateItem()
-                .longPressMenu(
-                    items = { listOf(ContextMenuItem(Symbols.Delete, delete, onClick = { onDelete(entry) })) },
-                    onClick = { onOpen(entry) },
+                .then(
+                    if (selected != null) {
+                        Modifier.toggleable(value = chosen, role = Role.Checkbox, onValueChange = { onSelect(entry) })
+                    } else {
+                        Modifier.longPressMenu(
+                            items = {
+                                listOf(
+                                    ContextMenuItem(Symbols.Checklist, select, onClick = { onStartSelecting(entry) }),
+                                    ContextMenuItem(Symbols.Delete, delete, onClick = { onDelete(entry) }),
+                                )
+                            },
+                            onClick = { onOpen(entry) },
+                        )
+                    }
                 ),
         ) {
-            when (entry) {
-                is HistoryEntry.Thread -> ThreadRow(entry)
-                is HistoryEntry.Forum -> ForumRow(entry)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (selected != null) {
+                    Icon(
+                        imageVector = if (chosen) Symbols.CheckCircleFill else Symbols.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (chosen) ExtendedTheme.colors.text else ExtendedTheme.colors.textDisabled,
+                        modifier = Modifier
+                            .padding(start = 16.dp)
+                            .size(24.dp),
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    when (entry) {
+                        is HistoryEntry.Thread -> ThreadRow(entry)
+                        is HistoryEntry.Forum -> ForumRow(entry)
+                    }
+                }
             }
             // Between the visits of a day, not after its last
             if (entry !== entries.last()) VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))

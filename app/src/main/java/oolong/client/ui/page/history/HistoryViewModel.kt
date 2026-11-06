@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +32,9 @@ import javax.inject.Inject
 /** The kinds of history, each in its own tab. */
 enum class HistoryTab { Threads, Forums }
 
+/** How much of the history clearing it deletes. */
+enum class HistoryRange { LastHour, Today, All }
+
 /** The days visits are grouped under. */
 enum class HistoryDay { Today, Yesterday, Earlier }
 
@@ -47,17 +52,22 @@ data class HistoryList<T : HistoryEntry>(
     val isEmpty: Boolean get() = sections.isEmpty()
 }
 
+/** The start of the day [time] is in. */
+internal fun startOfDay(time: Long, zone: TimeZone = TimeZone.getDefault()): Long = Calendar.getInstance(zone).apply {
+    timeInMillis = time
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}.timeInMillis
+
 /** [entries], latest first, under the day each was visited on as of [now]. */
 internal fun <T : HistoryEntry> sectionsOf(entries: List<T>, now: Long, zone: TimeZone = TimeZone.getDefault()): ImmutableList<HistorySection<T>> {
-    val today = Calendar.getInstance(zone).apply {
-        timeInMillis = now
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-    val startOfToday = today.timeInMillis
-    val startOfYesterday = today.apply { add(Calendar.DAY_OF_MONTH, -1) }.timeInMillis
+    val startOfToday = startOfDay(now, zone)
+    val startOfYesterday = Calendar.getInstance(zone).apply {
+        timeInMillis = startOfToday
+        add(Calendar.DAY_OF_MONTH, -1)
+    }.timeInMillis
     return entries
         .groupBy {
             when {
@@ -77,7 +87,16 @@ data class HistoryState(
     val forums: HistoryList<HistoryEntry.Forum> = HistoryList(),
     /** What the lists are narrowed to; empty for all. */
     val query: String = "",
-)
+    /** The visits chosen, by id, while choosing; null otherwise. */
+    val selected: ImmutableSet<Long>? = null,
+) {
+    val selecting: Boolean get() = selected != null
+
+    fun list(tab: HistoryTab): HistoryList<*> = when (tab) {
+        HistoryTab.Threads -> threads
+        HistoryTab.Forums -> forums
+    }
+}
 
 /** The browsing history, which follows the database and shows more as the user scrolls. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -89,13 +108,47 @@ class HistoryViewModel @Inject constructor(
     private val actions = Actions(viewModelScope)
     private val limits = MutableStateFlow(HistoryTab.entries.associateWith { PAGE_SIZE })
     private val query = MutableStateFlow("")
+    private val selected = MutableStateFlow<Set<Long>?>(null)
 
     val state: StateFlow<HistoryState> = combine(
         list(HistoryTab.Threads, repository::threads),
         list(HistoryTab.Forums, repository::forums),
         query,
-    ) { threads, forums, query -> HistoryState(threads, forums, query) }
+        selected,
+    ) { threads, forums, query, selected -> HistoryState(threads, forums, query, selected?.toImmutableSet()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, HistoryState())
+
+    /** Starts choosing visits, with [entry] chosen if given. */
+    fun startSelecting(entry: HistoryEntry? = null) {
+        selected.value = setOfNotNull(entry?.id)
+    }
+
+    fun stopSelecting() {
+        selected.value = null
+    }
+
+    /** Chooses [entry], or unchooses it if it was chosen. */
+    fun toggle(entry: HistoryEntry) = selected.update { chosen ->
+        chosen?.let { if (entry.id in it) it - entry.id else it + entry.id }
+    }
+
+    /** Chooses all the visits shown in [tab], or none if all of them were chosen. */
+    fun toggleAll(tab: HistoryTab) {
+        val shown = state.value.list(tab).sections.flatMap { section -> section.entries.map { it.id } }.toSet()
+        selected.update { chosen -> chosen?.let { if (it.containsAll(shown)) it - shown else it + shown } }
+    }
+
+    /** Deletes the visits chosen and stops choosing. */
+    fun deleteSelected() = actions.launch("delete-selected") {
+        val ids = selected.value.orEmpty()
+        if (ids.isEmpty()) return@launch
+        runCatching { repository.delete(ids) }
+            .onSuccess {
+                selected.value = null
+                messages.show(R.string.delete_history_success)
+            }
+            .onFailure { messages.showError(R.string.delete_history_failure, it) }
+    }
 
     /** Narrows both lists to visits that have [text]; empty shows them all again. */
     fun search(text: String) {
@@ -112,8 +165,17 @@ class HistoryViewModel @Inject constructor(
             .onFailure { messages.showError(R.string.delete_history_failure, it) }
     }
 
-    fun clear() = actions.launch("clear") {
-        runCatching { repository.clear() }.onSuccess { messages.show(R.string.toast_clear_success) }
+    /** Deletes the visits in [range]: the last hour's, today's or all of them. */
+    fun clear(range: HistoryRange) = actions.launch("clear") {
+        val now = System.currentTimeMillis()
+        val since = when (range) {
+            HistoryRange.LastHour -> now - HOUR_MILLIS
+            HistoryRange.Today -> startOfDay(now)
+            HistoryRange.All -> null
+        }
+        runCatching { repository.clear(since) }
+            .onSuccess { messages.show(R.string.toast_clear_success) }
+            .onFailure { messages.showError(R.string.toast_clear_failure, it) }
     }
 
     private fun <T : HistoryEntry> list(tab: HistoryTab, entries: (limit: Int, query: String) -> Flow<List<T>>): Flow<HistoryList<T>> =
@@ -125,5 +187,6 @@ class HistoryViewModel @Inject constructor(
 
     private companion object {
         const val PAGE_SIZE = 100
+        const val HOUR_MILLIS = 60 * 60 * 1000L
     }
 }

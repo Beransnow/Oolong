@@ -16,7 +16,6 @@
     <string name="toast_copy_success">已复制到剪贴板</string>
     <string name="title_share">分享</string>
     <string name="title_history">浏览记录</string>
-    <string name="title_history_delete">清空浏览记录</string>
     <string name="toast_delete_success">已删除</string>
     <string name="my_info_settings">设置</string>
     <string name="title_settings">设置</string>
@@ -247,6 +246,23 @@
     <string name="history_search_threads">搜索标题、作者或吧名</string>
     <string name="history_search_forums">搜索吧名</string>
     <string name="history_search_nothing">没有符合的记录</string>
+    <string name="history_select">选择</string>
+    <string name="history_select_all">全选</string>
+    <string name="history_select_none">全不选</string>
+    <plurals name="history_selected">
+        <item quantity="other">已选 %1$d 项</item>
+    </plurals>
+    <plurals name="history_delete_selected">
+        <item quantity="other">删除 %1$d 项</item>
+    </plurals>
+    <string name="history_clear">清除</string>
+    <string name="history_clear_last_hour">清除最近一小时</string>
+    <string name="history_clear_today">清除今天</string>
+    <string name="history_clear_all">清除全部</string>
+    <string name="history_clear_last_hour_title">清除最近一小时的浏览记录？</string>
+    <string name="history_clear_today_title">清除今天的浏览记录？</string>
+    <string name="history_clear_all_title">清除全部浏览记录？</string>
+    <string name="history_clear_message">看过的帖子和逛过的吧都会删除，首页的「经过贴吧」也会随之更新。</string>
     <plurals name="history_visits">
         <item quantity="other">来过 %1$d 次</item>
     </plurals>

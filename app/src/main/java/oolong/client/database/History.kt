@@ -80,8 +80,15 @@ interface HistoryDao {
     @Query("DELETE FROM history WHERE id = :id")
     suspend fun delete(id: Long): Int
 
+    @Query("DELETE FROM history WHERE id IN (:ids)")
+    suspend fun delete(ids: Collection<Long>): Int
+
     @Query("DELETE FROM history WHERE owner = :owner")
     suspend fun clear(owner: String)
+
+    /** Deletes [owner]'s visits from [since] on. */
+    @Query("DELETE FROM history WHERE owner = :owner AND timestamp >= :since")
+    suspend fun clearSince(owner: String, since: Long)
 }
 
 /** Gives the history kept before it was per account to the account with row id [accountId], if there is one. */

@@ -1,5 +1,6 @@
 package oolong.client.ui.page.history
 
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -12,6 +13,7 @@ import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class HistoryViewModelTest {
     @get:Rule
@@ -52,5 +54,25 @@ class HistoryViewModelTest {
         val sections = sectionsOf(listOf(forum(1, now), forum(2, now - 3_600_000), forum(3, now - 2 * 86_400_000)), now, zone)
 
         assertEquals(listOf(HistoryDay.Today, HistoryDay.Yesterday, HistoryDay.Earlier), sections.map { it.day })
+    }
+
+    @Test
+    fun `choosing all of a tab and deleting them deletes those visits and stops choosing`() = runTest {
+        every { repository.threads(any(), any()) } returns flowOf(emptyList())
+        every { repository.forums(any(), any()) } returns flowOf(listOf(forum(1, 0), forum(2, 0)))
+        val viewModel = HistoryViewModel(repository, mockk<MessageController>(relaxed = true))
+        runCurrent()
+
+        viewModel.startSelecting()
+        viewModel.toggleAll(HistoryTab.Forums)
+        runCurrent()
+        assertEquals<Set<Long>?>(setOf(1L, 2L), viewModel.state.value.selected)
+
+        viewModel.toggle(forum(2, 0))
+        viewModel.deleteSelected()
+        runCurrent()
+
+        coVerify { repository.delete(setOf(1L) as Collection<Long>) }
+        assertNull(viewModel.state.value.selected)
     }
 }

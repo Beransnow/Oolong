@@ -55,7 +55,13 @@ class HistoryRepository @Inject constructor(
 
     suspend fun delete(entry: HistoryEntry) = withContext(io) { dao.delete(entry.id) }
 
-    suspend fun clear() = withContext(io) { dao.clear(owner.uid.value) }
+    /** Deletes the entries with [ids]. */
+    suspend fun delete(ids: Collection<Long>) = withContext(io) { dao.delete(ids) }
+
+    /** Deletes the current account's visits from [since] on, or all of them when it is null. */
+    suspend fun clear(since: Long? = null) = withContext(io) {
+        if (since == null) dao.clear(owner.uid.value) else dao.clearSince(owner.uid.value, since)
+    }
 }
 
 private val extrasJson = Json { ignoreUnknownKeys = true }
