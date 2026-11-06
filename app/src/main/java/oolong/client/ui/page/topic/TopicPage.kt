@@ -1,5 +1,6 @@
 package oolong.client.ui.page.topic
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -25,17 +27,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -67,6 +76,7 @@ import oolong.client.repository.Threads
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Spacing
+import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.Navigator
@@ -198,8 +208,7 @@ fun TopicPage(
 
 /**
  * A topic: its picture, name, place and heat, what it is about, the forums it is talked about in,
- * then its threads, the one picked to lead first and marked pinned. The topic's own colour washes
- * faintly down from the top, as a forum's does on its page.
+ * then its threads, the one picked to lead first and marked pinned.
  */
 @Composable
 fun TopicScreen(
@@ -228,118 +237,162 @@ fun TopicScreen(
             indicatorTop = contentPadding.calculateTopPadding(),
             endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
         ) {
-            Box {
-                state.topic?.color?.let { TopicWash(Color(it)) }
-                MyLazyColumn(state = lazyListState, contentPadding = contentPadding, modifier = Modifier.fillMaxWidth()) {
-                    state.topic?.let { topic -> item(key = "Head") { TopicHeader(topic) } }
-                    if (state.forums.isNotEmpty()) {
-                        item(key = "Forums") { TopicForums(state.forums, onOpenForum) }
+            val topPadding = contentPadding.calculateTopPadding()
+            MyLazyColumn(
+                state = lazyListState,
+                contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                item(key = "Head") {
+                    val topic = state.topic
+                    if (topic != null) TopicHeader(topic, barHeight = topPadding) else Box(modifier = Modifier.padding(top = topPadding))
+                }
+                if (state.forums.isNotEmpty()) {
+                    item(key = "ForumsTitle") {
+                        Text(
+                            text = stringResource(R.string.topic_forums),
+                            style = TextStyles.label,
+                            color = ExtendedTheme.colors.text,
+                            modifier = Modifier.padding(horizontal = Spacing.md).padding(top = Spacing.sm, bottom = Spacing.xxs),
+                        )
                     }
-                    itemsIndexed(list.items, key = { _, item -> item.thread.id }) { index, item ->
-                        BlockableContent(block = item.block, modifier = Modifier.padding(vertical = Spacing.xs, horizontal = Spacing.md)) {
-                            Column {
-                                FeedCard(
-                                    thread = item.thread,
-                                    onClick = events.onOpen,
-                                    onClickReply = events.onOpenReplies,
-                                    onAgree = events.onAgree,
-                                    onClickForum = events.onOpenForum,
-                                    onClickUser = events.onOpenUser,
-                                    onClickShared = events.onOpenOrigin,
-                                    onLongPress = events.onPeek,
-                                    dislikeAction = { if (item.thread.id == state.leadThreadId) PinnedLabel() },
-                                )
-                                if (index < list.items.size - 1) VerticalDivider(modifier = Modifier.padding(horizontal = Spacing.md))
-                            }
+                    items(state.forums, key = { "Forum_${it.forum.id}" }) { TopicForumRow(it, onOpenForum) }
+                    item(key = "ForumsEnd") { VerticalDivider(modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs)) }
+                }
+                itemsIndexed(list.items, key = { _, item -> item.thread.id }) { index, item ->
+                    BlockableContent(block = item.block, modifier = Modifier.padding(vertical = Spacing.xs, horizontal = Spacing.md)) {
+                        Column {
+                            FeedCard(
+                                thread = item.thread,
+                                onClick = events.onOpen,
+                                onClickReply = events.onOpenReplies,
+                                onAgree = events.onAgree,
+                                onClickForum = events.onOpenForum,
+                                onClickUser = events.onOpenUser,
+                                onClickShared = events.onOpenOrigin,
+                                onLongPress = events.onPeek,
+                                dislikeAction = { if (item.thread.id == state.leadThreadId) PinnedLabel() },
+                            )
+                            if (index < list.items.size - 1) VerticalDivider(modifier = Modifier.padding(horizontal = Spacing.md))
                         }
                     }
-                    loadMoreFooter(list.append, list.hasMore, onLoadMore)
                 }
+                loadMoreFooter(list.append, list.hasMore, onLoadMore)
             }
         }
     }
 }
 
-/** The topic's colour, faint at the top and gone a little way down, behind the header. */
+/**
+ * The topic's picture, small and square, beside its name, place and heat, over the same picture
+ * blown up and blurred behind the bar, fading into the page; then what it is about. The pictures
+ * come small, so only the blurred one fills the width.
+ */
 @Composable
-private fun TopicWash(color: Color) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(320.dp)
-            .background(Brush.verticalGradient(listOf(color.copy(alpha = 0.22f), color.copy(alpha = 0.06f), Color.Transparent))),
-    )
-}
-
-@Composable
-private fun TopicHeader(topic: Topic) {
-    Column(
-        modifier = Modifier.padding(horizontal = Spacing.md).padding(top = Spacing.xs, bottom = Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
-    ) {
-        if (topic.picture.isNotEmpty()) {
-            ContentImage(
-                imageUri = topic.picture,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+private fun TopicHeader(topic: Topic, barHeight: Dp) {
+    val page = ExtendedTheme.colors.background.takeIf { it.alpha == 1f } ?: ExtendedTheme.colors.card
+    Column {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            if (topic.picture.isNotEmpty()) {
+                TopicBackdrop(topic.picture, modifier = Modifier.matchParentSize())
+            } else {
+                topic.color?.let { Box(modifier = Modifier.matchParentSize().background(Color(it).copy(alpha = 0.3f))) }
+            }
+            Box(
                 modifier = Modifier
-                    .padding(bottom = Spacing.sm)
-                    .fillMaxWidth()
-                    .aspectRatio(2.2f)
-                    .clip(Corners.lg),
+                    .matchParentSize()
+                    .background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.16f), 0.55f to page.copy(alpha = 0.15f), 1f to page)),
             )
-        }
-        Text(text = topic.name, style = TextStyles.display, color = ExtendedTheme.colors.text)
-        val stats = listOfNotNull(
-            topic.rank.takeIf { it > 0 }?.let { stringResource(R.string.topic_rank, it) },
-            stringResource(R.string.hot_num, topic.discussCount.getShortNumString()),
-        ).joinToString(" · ")
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            TopicTag(topic.tag)
-            Text(text = stats, style = TextStyles.caption, color = ExtendedTheme.colors.textSecondary)
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                modifier = Modifier
+                    .padding(top = barHeight + Spacing.xs)
+                    .padding(horizontal = Spacing.md)
+                    .padding(bottom = Spacing.lg),
+            ) {
+                if (topic.picture.isNotEmpty()) {
+                    ContentImage(
+                        imageUri = topic.picture,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(CoverSize).clip(Corners.lg),
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+                    Text(text = topic.name, style = TextStyles.title, color = ExtendedTheme.colors.text)
+                    val stats = listOfNotNull(
+                        topic.rank.takeIf { it > 0 }?.let { stringResource(R.string.topic_rank, it) },
+                        stringResource(R.string.hot_num, topic.discussCount.getShortNumString()),
+                    ).joinToString(" · ")
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        TopicTag(topic.tag)
+                        Text(text = stats, style = TextStyles.caption, color = ExtendedTheme.colors.textSecondary)
+                    }
+                }
+            }
         }
         if (topic.description.isNotEmpty()) {
             Text(
                 text = topic.description,
                 style = TextStyles.reply,
                 color = ExtendedTheme.colors.text,
-                modifier = Modifier.padding(top = Spacing.xxs),
+                modifier = Modifier.padding(horizontal = Spacing.md).padding(bottom = Spacing.xs),
             )
         }
     }
 }
 
-/** The forums a topic is talked about in, side by side, each opening its forum. */
+/**
+ * [picture] as a soft field of its colours: decoded tiny and drawn large, which blurs it on every
+ * version, and blurred further where the system can.
+ */
 @Composable
-private fun TopicForums(forums: ImmutableList<TopicForum>, onOpen: (ForumSummary) -> Unit) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = Spacing.md),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = Modifier.padding(bottom = Spacing.xs),
+private fun TopicBackdrop(picture: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val request = remember(picture) { ImageRequest.Builder(context).data(picture).size(BackdropDecodeSize).build() }
+    AsyncImage(
+        model = request,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        filterQuality = FilterQuality.High,
+        modifier = modifier
+            .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(24.dp, BlurredEdgeTreatment.Rectangle) else Modifier),
+    )
+}
+
+/** A forum the topic is talked about in: its avatar, name and how many follow it. */
+@Composable
+private fun TopicForumRow(item: TopicForum, onOpen: (ForumSummary) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpen(item.forum) }
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
     ) {
-        items(forums, key = { it.forum.id }) { item ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                modifier = Modifier
-                    .clip(Corners.full)
-                    .background(ExtendedTheme.colors.chip)
-                    .clickable { onOpen(item.forum) }
-                    .padding(start = Spacing.xxs, end = Spacing.sm, top = Spacing.xxs, bottom = Spacing.xxs),
-            ) {
-                Avatar(data = item.forum.avatar, size = 28.dp, contentDescription = null)
-                Text(
-                    text = stringResource(R.string.title_forum, item.forum.name),
-                    style = TextStyles.nameCompact,
-                    color = ExtendedTheme.colors.text,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(text = item.members.getShortNumString(), style = TextStyles.footnote, color = ExtendedTheme.colors.textSecondary)
-            }
+        Avatar(data = item.forum.avatar, size = 44.dp, contentDescription = null, shape = Corners.md)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.title_forum, item.forum.name),
+                style = TextStyles.name,
+                color = ExtendedTheme.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(R.string.forum_rank_members, item.members.getShortNumString()).replace(Regex("([万亿]) "), "$1"),
+                style = TextStyles.footnote,
+                color = ExtendedTheme.colors.textSecondary,
+            )
         }
+        Icon(imageVector = Symbols.ChevronRight, contentDescription = null, tint = ExtendedTheme.colors.textDisabled, modifier = Modifier.size(20.dp))
     }
 }
+
+private val CoverSize = 96.dp
+private const val BackdropDecodeSize = 48
 
 @Composable
 private fun PinnedLabel() {

@@ -454,6 +454,7 @@
     <string name="forum_rank_members">%1$s members</string>
     <string name="button_followed">Following</string>
     <string name="topic_rank">#%1$d in hot topics</string>
+    <string name="topic_forums">Related forums</string>
     <string name="title_topic">Topic</string>
     <string name="toast_follow_forum_failed">Couldn\'t follow %1$s</string>
     <string name="hot_num">Heat %s</string>
