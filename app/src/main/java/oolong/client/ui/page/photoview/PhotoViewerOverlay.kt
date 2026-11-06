@@ -169,9 +169,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val text = remember { PhotoTextState(context, autoMask, scope) }
         val zoomStates = remember { mutableStateMapOf<Int, CoilZoomState>() }
         val loadedKeys = remember { mutableStateMapOf<String, MemoryCache.Key>() }
-        val pageCount by rememberUpdatedState(pictures.size)
+        // The pager reads its pages, their keys and their pictures from this one state, so that
+        // they agree while more pictures arrive
+        val pagedPictures by rememberUpdatedState(pictures)
         // Made again once the pictures arrive, to start at the one opened
-        val pagerState = remember(pictures.isNotEmpty()) { PagerState(currentPage = state.currentIndex) { pageCount } }
+        val pagerState = remember(pictures.isNotEmpty()) { PagerState(currentPage = state.currentIndex) { pagedPictures.size } }
         val current = pictures.getOrNull(pagerState.currentPage)
         val currentZoom = zoomStates[pagerState.currentPage]
 
@@ -307,10 +309,10 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                     state = pagerState,
                     userScrollEnabled = !text.active,
                     pageSpacing = 16.dp,
-                    key = { "${pictures[it].picId}_${pictures[it].postId}" },
+                    key = { page -> pagedPictures.getOrNull(page)?.let { "${it.picId}_${it.postId}" } ?: page },
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
-                    val picture = pictures[page]
+                    val picture = pagedPictures.getOrNull(page) ?: return@HorizontalPager
                     val zoomState = rememberCoilZoomState()
                     LaunchedEffect(zoomState) { zoomState.zoomable.setReadMode(TallReadMode) }
                     DisposableEffect(page, zoomState) {
