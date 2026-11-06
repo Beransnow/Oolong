@@ -1,6 +1,5 @@
 package oolong.client.ui.page.subposts
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,7 +77,6 @@ import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.loadMoreFooter
-import oolong.client.ui.widgets.compose.paddedStickyHeader
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.states.StateScreenScope
@@ -267,11 +265,12 @@ private fun SubPostsContent(
                     canStore = false,
                 )
             }
-            paddedStickyHeader(listState, key = "SubPostsHeader") {
+            // Content, scrolling away with the floor, as the reply count over a thread's replies
+            // does: pinned, it showed the replies through it under the glass bar
+            item(key = "SubPostsHeader") {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(ExtendedTheme.colors.background)
                         .padding(start = 16.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
