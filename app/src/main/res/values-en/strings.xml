@@ -274,6 +274,12 @@
     <string name="incognito_explain">Threads, forums and searches leave no history here, until the app is closed. Tieba\'s own records aren\'t affected.</string>
     <string name="incognito_on_hint">Browsing incognito</string>
     <string name="search_aliases_appearance">night mode,dark mode,light,system</string>
+    <string name="search_aliases_storage">clear cache,cache,free up space</string>
+    <string name="search_aliases_font_size">text size,large text</string>
+    <string name="search_aliases_wallpaper">wallpaper blur,wallpaper dim,text colour,background image</string>
+    <string name="settings_search_hint">Search settings</string>
+    <string name="title_appearance_mode">Light and dark mode</string>
+    <string name="settings_search_nothing">No matching settings</string>
     <plurals name="history_visits">
         <item quantity="one">%1$d visit</item>
         <item quantity="other">%1$d visits</item>

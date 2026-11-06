@@ -160,7 +160,8 @@ object ThemeSettingsPage : SettingsPage<ThemeState>(R.string.title_theme, AppThe
 
     override fun SettingsScope<ThemeState>.content() {
         group(R.string.title_appearance) {
-            custom(R.string.title_appearance, aliases = R.string.search_aliases_appearance) {
+            // Named for search by what it picks; the group's title names it on the page
+            custom(R.string.title_appearance_mode, aliases = R.string.search_aliases_appearance) {
                 AppearancePicker(
                     settings = settings,
                     light = colorsOf(settings, dark = false, picks = picks),
@@ -181,7 +182,7 @@ object ThemeSettingsPage : SettingsPage<ThemeState>(R.string.title_theme, AppThe
         }
         group(R.string.title_background) {
             custom(R.string.title_wallpaper) { WallpaperRow(settings, wallpaper) }
-            custom(R.string.title_wallpaper_settings, shown = { settings.wallpaper }) { WallpaperSettingsRow(wallpaper) }
+            custom(R.string.title_wallpaper_settings, aliases = R.string.search_aliases_wallpaper, shown = { settings.wallpaper }) { WallpaperSettingsRow(wallpaper) }
         }
     }
 }

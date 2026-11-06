@@ -1,5 +1,6 @@
 package oolong.client.ui.common.prefs
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ fun PrefsScreen(
     dividerThickness: Dp = 1.dp, // 0 for no divider
     dividerIndent: Dp = 0.dp, // indents on both sides
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    scrollState: ScrollState = rememberScrollState(),
     content: PrefsScope.() -> Unit
 ) {
     LocalPrefsDataStore = staticCompositionLocalOf { dataStore }
@@ -55,7 +57,7 @@ fun PrefsScreen(
             Column(
                 modifier = modifier
                     .fillMaxSize()
-                    .verticalScrollUnderBar(rememberScrollState())
+                    .verticalScrollUnderBar(scrollState)
                     .padding(contentPadding),
             ) {
                 val items = prefsScope.prefsItems

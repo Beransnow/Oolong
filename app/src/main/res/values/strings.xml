@@ -268,6 +268,12 @@
     <string name="incognito_explain">看帖、逛吧和搜索都不会留下记录，关闭 App 后自动结束。贴吧那边的记录不受影响。</string>
     <string name="incognito_on_hint">已开启无痕浏览</string>
     <string name="search_aliases_appearance">夜间模式,深色模式,暗色,浅色,跟随系统</string>
+    <string name="search_aliases_storage">清除缓存,缓存,清理空间,占用</string>
+    <string name="search_aliases_font_size">字号,文字大小,大字</string>
+    <string name="search_aliases_wallpaper">壁纸模糊,壁纸暗度,文字颜色,背景图</string>
+    <string name="settings_search_hint">搜索设置</string>
+    <string name="title_appearance_mode">浅色与深色模式</string>
+    <string name="settings_search_nothing">没有找到相关设置</string>
     <plurals name="history_visits">
         <item quantity="other">来过 %1$d 次</item>
     </plurals>

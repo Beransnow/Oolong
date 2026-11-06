@@ -76,9 +76,10 @@ class GroupScope<S> internal constructor() {
         shown: (@Composable S.() -> Boolean)?,
         @StringRes aliases: Int?,
         searchable: Boolean,
+        target: Key? = null,
         content: @Composable S.(Modifier) -> Unit,
     ) {
-        items += SettingsRow(title, kind, available, shown, aliases, searchable, content)
+        items += SettingsRow(title, kind, available, shown, aliases, searchable, content, target)
     }
 
     /** A setting that is on or off, stored as [key]. */
@@ -171,7 +172,7 @@ class GroupScope<S> internal constructor() {
         shown: (@Composable S.() -> Boolean)? = null,
         @StringRes aliases: Int? = null,
         searchable: Boolean = true,
-    ) = row(title, SettingsRow.Kind.Link, available, shown, aliases, searchable) { modifier ->
+    ) = row(title, SettingsRow.Kind.Link, available, shown, aliases, searchable, target = to) { modifier ->
         val navigator = LocalNavigator.current
         val shownValue = value?.invoke(this)
         TextPref(
@@ -292,7 +293,7 @@ class GroupScope<S> internal constructor() {
         @StringRes aliases: Int? = null,
         searchable: Boolean = title != null,
         content: @Composable S.(Modifier) -> Unit,
-    ) = row(title, SettingsRow.Kind.Custom, available, shown, aliases, searchable, content)
+    ) = row(title, SettingsRow.Kind.Custom, available, shown, aliases, searchable, content = content)
 
     /** A note under the group, outside its block; it goes after the group's rows wherever it is declared. */
     fun footer(text: @Composable S.() -> String) {

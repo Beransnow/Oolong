@@ -90,7 +90,7 @@ object MoreSettings : SettingsPage<MoreState>(R.string.title_settings_more, More
         }
         group(R.string.settings_group_storage) {
             custom(R.string.title_import_legacy, shown = { legacySource != LegacyImport.Source.None }) { LegacyImportPref(legacySource) }
-            link(R.string.title_storage, to = StorageKey, value = {
+            link(R.string.title_storage, to = StorageKey, aliases = R.string.search_aliases_storage, value = {
                 val context = LocalContext.current
                 storageTotal?.let { Formatter.formatShortFileSize(context, it) }.orEmpty()
             })

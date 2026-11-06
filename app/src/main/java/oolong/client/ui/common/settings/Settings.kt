@@ -106,6 +106,8 @@ class SettingsRow<S>(
     @StringRes val aliases: Int?,
     val searchable: Boolean,
     val content: @Composable S.(Modifier) -> Unit,
+    /** The page a link opens, which search goes on into. */
+    val target: Key? = null,
 ) : SettingsItem<S> {
     enum class Kind { Value, Link, Action, Info, Custom }
 }

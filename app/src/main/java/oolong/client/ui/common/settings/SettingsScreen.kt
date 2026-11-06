@@ -1,13 +1,28 @@
 package oolong.client.ui.common.settings
 
+import androidx.annotation.StringRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import oolong.client.dataStore
@@ -15,11 +30,15 @@ import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsScope
 import oolong.client.ui.common.prefs.PrefsScreen
+import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.navigation.Key
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import kotlin.math.roundToInt
 
 /** [page] as a page of its own: its title large over its groups, and a back button. */
 @Composable
@@ -39,9 +58,18 @@ fun <S> SettingsScreen(page: SettingsPage<S>) {
     }
 }
 
-/** [page]'s groups, for a page that draws its own frame around them. */
+/**
+ * [page]'s groups, for a page that draws its own frame around them. [header] goes above them, as
+ * a search field; [replacement], when given, is shown instead of them, as what a search found.
+ */
 @Composable
-fun <S> SettingsContent(page: SettingsPage<S>, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(0.dp)) {
+fun <S> SettingsContent(
+    page: SettingsPage<S>,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    header: (@Composable () -> Unit)? = null,
+    replacement: (PrefsScope.() -> Unit)? = null,
+) {
     val state = page.rememberState()
     page.Effects(state)
     val environment = rememberSettingsEnvironment()
@@ -51,25 +79,49 @@ fun <S> SettingsContent(page: SettingsPage<S>, modifier: Modifier = Modifier, co
             group.items.forEach { item -> if (item is SettingsRow && item.shown?.invoke(state) == false) add(item) }
         }
     }
+    val scroll = rememberScrollState()
+    val highlight = remember(scroll) { RowHighlight(page.key, scroll) }
+    highlight.topPadding = with(LocalDensity.current) { contentPadding.calculateTopPadding().toPx() }
+    // A highlighted row that doesn't show now has nothing to light up
+    LaunchedEffect(page.key) {
+        val target = SettingsHighlight.target ?: return@LaunchedEffect
+        if (target.first == page.key && page.groups.none { group -> group.items.any { it is SettingsRow && it.title == target.second && it !in hidden } }) {
+            SettingsHighlight.target = null
+        }
+    }
     PrefsScreen(
         dataStore = LocalContext.current.dataStore,
         dividerThickness = 0.dp,
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().onGloballyPositioned { highlight.viewportTop = it.positionInRoot().y },
         contentPadding = contentPadding,
+        scrollState = scroll,
     ) {
-        page.groups.forEach { group ->
-            if (group.available.isMet(environment)) group(group, state, environment, hidden)
+        if (header != null) prefsGroup(header = { header() }) {}
+        if (replacement != null) {
+            replacement()
+        } else {
+            page.groups.forEach { group ->
+                if (group.available.isMet(environment)) group(group, state, environment, hidden, highlight)
+            }
         }
     }
 }
 
 @Composable
-internal fun rememberSettingsEnvironment() = SettingsEnvironment(LocalContext.current, signedIn = LocalAccount.current != null)
+fun rememberSettingsEnvironment() = SettingsEnvironment(LocalContext.current, signedIn = LocalAccount.current != null)
 
-private fun <S> PrefsScope.group(group: SettingsGroup<S>, state: S, environment: SettingsEnvironment, hidden: Set<SettingsRow<S>>) {
+private fun <S> PrefsScope.group(
+    group: SettingsGroup<S>,
+    state: S,
+    environment: SettingsEnvironment,
+    hidden: Set<SettingsRow<S>>,
+    highlight: RowHighlight,
+) {
     val rows: PrefsScope.() -> Unit = {
         group.items.filterIsInstance<SettingsRow<S>>().forEach { row ->
-            if (row.available.isMet(environment) && row !in hidden) prefsItem { row.content(state, Modifier) }
+            if (row.available.isMet(environment) && row !in hidden) {
+                prefsItem { Box(modifier = highlight.of(row.title)) { row.content(state, Modifier) } }
+            }
         }
     }
     when (val header = group.header) {
@@ -81,3 +133,38 @@ private fun <S> PrefsScope.group(group: SettingsGroup<S>, state: S, environment:
     // Notes go under the group's block and the gap after it
     group.items.filterIsInstance<SettingsFooter<S>>().forEach { footer -> prefsFooter { footer.text(state) } }
 }
+
+/**
+ * Brings the row [SettingsHighlight] names on this page into view, a little below the bar, and
+ * once it has stopped there lights it up twice.
+ */
+private class RowHighlight(private val page: Key, private val scroll: ScrollState) {
+    var viewportTop = 0f
+    var topPadding = 0f
+
+    @Composable
+    fun of(@StringRes title: Int?): Modifier {
+        val target = SettingsHighlight.target
+        if (title == null || target == null || target != page to title) return Modifier
+        val glow = remember { Animatable(0f) }
+        val tint = ExtendedTheme.colors.text
+        val gap = with(LocalDensity.current) { HighlightGap.toPx() }
+        var top by remember { mutableStateOf<Float?>(null) }
+        LaunchedEffect(top) {
+            val rowTop = top ?: return@LaunchedEffect
+            scroll.animateScrollTo((scroll.value + rowTop - viewportTop - topPadding - gap).roundToInt().coerceAtLeast(0), Motion.settle())
+            repeat(2) {
+                glow.animateTo(1f, tween(HighlightMillis))
+                glow.animateTo(0f, tween(HighlightMillis))
+            }
+            SettingsHighlight.target = null
+        }
+        return Modifier
+            .onGloballyPositioned { if (top == null) top = it.positionInRoot().y }
+            .drawBehind { drawRect(tint.copy(alpha = HighlightAlpha * glow.value)) }
+    }
+}
+
+private val HighlightGap = 16.dp
+private const val HighlightMillis = 280
+private const val HighlightAlpha = 0.1f

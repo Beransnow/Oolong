@@ -83,7 +83,7 @@ val CustomSettings = settingsPage(R.string.title_settings_custom, CustomSettings
         switch(SubPostsCollapsedKey.name, R.string.title_sub_posts_collapsed, default = false)
     }
     group(R.string.settings_group_text_and_icon) {
-        link(R.string.title_custom_font_size, to = FontSizeKey, value = { "${(LocalContext.current.appPreferences.fontScale * 100).roundToInt()}%" })
+        link(R.string.title_custom_font_size, to = FontSizeKey, aliases = R.string.search_aliases_font_size, value = { "${(LocalContext.current.appPreferences.fontScale * 100).roundToInt()}%" })
         custom(R.string.settings_app_icon) { modifier -> AppIconPref(modifier) }
         switch(
             "useThemedIcon", R.string.title_settings_use_themed_icon, default = false,
