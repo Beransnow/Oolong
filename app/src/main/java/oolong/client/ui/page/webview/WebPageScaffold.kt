@@ -562,15 +562,23 @@ private suspend fun sampleTopColor(view: View): Color? {
     val top = location[1] + 1
     val bitmap = Bitmap.createBitmap(ColorSamples, 1, Bitmap.Config.ARGB_8888)
     val copied = suspendCancellableCoroutine { continuation ->
-        PixelCopy.request(
-            window,
-            AndroidRect(location[0], top, location[0] + view.width, top + 2),
-            bitmap,
-            { result -> continuation.resume(result == PixelCopy.SUCCESS) },
-            Handler(Looper.getMainLooper()),
-        )
+        try {
+            PixelCopy.request(
+                window,
+                AndroidRect(location[0], top, location[0] + view.width, top + 2),
+                bitmap,
+                { result -> continuation.resume(result == PixelCopy.SUCCESS) },
+                Handler(Looper.getMainLooper()),
+            )
+        } catch (_: IllegalArgumentException) {
+            // The window has no surface to copy from, as when the app has gone to the background
+            continuation.resume(false)
+        }
     }
-    if (!copied) return null
+    if (!copied) {
+        bitmap.recycle()
+        return null
+    }
     val pixels = IntArray(ColorSamples).also { bitmap.getPixels(it, 0, ColorSamples, 0, 0, ColorSamples, 1) }
     bitmap.recycle()
     return Color(pixels.toList().groupingBy { it }.eachCount().maxBy { it.value }.key)
