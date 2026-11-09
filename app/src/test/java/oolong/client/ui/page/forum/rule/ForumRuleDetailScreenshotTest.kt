@@ -2,11 +2,11 @@ package oolong.client.ui.page.forum.rule
 
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.renders
 import oolong.client.arch.LoadState
 import oolong.client.model.ForumRuleAuthor
 import oolong.client.model.ForumRuleDetail
 import oolong.client.model.ForumRuleItem
+import oolong.client.repository.toPostContent
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.utils.EmoticonManager
@@ -49,5 +49,5 @@ class ForumRuleDetailScreenshotTest {
         captureScreenshot { ForumRuleDetailScreen(state = LoadState.Success(detail), onRetry = {}, onBack = {}) }
     }
 
-    private fun rule(vararg content: PbContent) = listOf(*content).renders
+    private fun rule(vararg content: PbContent) = listOf(*content).toPostContent { id, name -> EmoticonManager.registerEmoticon(id, name) }
 }
