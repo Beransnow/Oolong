@@ -30,14 +30,11 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -51,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -58,6 +56,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -76,8 +75,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -93,6 +94,7 @@ import oolong.client.ui.common.PostImage
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberSubPostText
 import oolong.client.ui.common.shownIpLocation
+import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
@@ -109,6 +111,7 @@ import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.ui.widgets.compose.trimToCharacters
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
@@ -119,20 +122,36 @@ private val GutterStart = 4.dp
 private val FloorAvatarSize = 36.dp
 
 /**
- * The room above a floor's first line and below its last thing, together the 24dp between floors.
- * Whatever ends a floor (its time, a reply, a link row, the capsule or block of replies) leaves
- * exactly [FloorBottom] under it; the gaps inside a floor are smaller, 4 to 12dp.
+ * The room above a floor's first line and below its last thing, together the 32dp between floors:
+ * twice the widest gap inside a floor, so floors part clearly while what belongs together stays
+ * together. Whatever ends a floor (its time, a reply, a link row, the capsule or block of replies)
+ * leaves exactly [FloorBottom] under it. Gaps inside a floor run 8, 12 and 16dp, each wider than
+ * the space between two lines of the body, and are measured between characters (see
+ * [trimToCharacters]), as they are seen.
  */
-private val FloorTop = 12.dp
-private val FloorBottom = 12.dp
+private val FloorTop = 16.dp
+private val FloorBottom = 16.dp
+
+/** Under each reply, before the next. */
+private val ReplyGap = 16.dp
+
+/** Between a floor's body and its time, which belongs to it. */
+private val BodyToTime = 12.dp
+
+/** From a floor's time to the replies under it, as between replies. */
+private val ToReplies = 16.dp
+
+/** From a reply's last line to its time. */
+private val ReplyToTime = 8.dp
+
+/** Between a floor's name and its body: they read as one, so closer than anything else in it. */
+private val NameToBody = 8.dp
+
 private val SubPostAvatarSize = 22.dp
 
 /** A reply's picture: at most this share of the text's width, and no taller than the cap. */
 private const val ReplyImageWidthFraction = 0.6f
 private val ReplyImageMaxHeight = 240.dp
-
-/** How far down a reply its avatar's centre is, on its first line, where its branch arrives. */
-private val ReplyAvatarCenter = 12.dp
 
 /** The rule down a floor and its branches: thin, and a light wash of the text colour. */
 private val RuleWidth = 1.25.dp
@@ -203,6 +222,7 @@ fun ThreadFloor(
     var floorCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val branches = remember { mutableStateMapOf<Long, LayoutCoordinates>() }
+    val replyCenter = replyLineCenter()
     val hasReplies = post.subPostCount > 0 && post.subPosts.isNotEmpty()
     BlockableContent(
         block = item.block,
@@ -235,7 +255,7 @@ fun ThreadFloor(
                         if (floor != null && floor.isAttached) {
                             branches.values.forEach { reply ->
                                 if (reply.isAttached) {
-                                    val y = floor.localPositionOf(reply, Offset.Zero).y + ReplyAvatarCenter.toPx()
+                                    val y = floor.localPositionOf(reply, Offset.Zero).y + replyCenter.toPx()
                                     branch(x, y, (GutterStart + Gutter).toPx(), BranchRadius.toPx())
                                 }
                             }
@@ -363,7 +383,6 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun FloorBody(
     post: Post,
@@ -376,8 +395,9 @@ private fun FloorBody(
     val context = LocalContext.current
     val author = post.author
     Column(modifier = Modifier.fillMaxWidth().padding(top = FloorTop, bottom = if (endsFloor) FloorBottom else 0.dp)) {
-        // As tall as the avatar beside it, so the name sits level with the avatar's centre
-        Row(modifier = Modifier.height(FloorAvatarSize), verticalAlignment = Alignment.CenterVertically) {
+        // The name's characters start level with the avatar's top, and the body follows close under
+        // them: the avatar marks where the floor starts, the name heads the body
+        Row(verticalAlignment = Alignment.CenterVertically) {
             ProvideTextStyle(
                 MaterialTheme.typography.subtitle1.copy(
                     color = ExtendedTheme.colors.text,
@@ -390,7 +410,9 @@ private fun FloorBody(
                     userLevel = author.level,
                     isLz = author.id == options.threadAuthorId,
                     bawuType = author.bawuName(),
-                    modifier = Modifier.clickable { onEvent(ThreadEvent.OpenUser(author.id)) },
+                    modifier = Modifier
+                        .clickable { onEvent(ThreadEvent.OpenUser(author.id)) }
+                        .trimToCharacters(15.sp),
                 )
             }
         }
@@ -401,33 +423,30 @@ private fun FloorBody(
                 prefixIcon = {
                     Icon(imageVector = Symbols.StarFill, contentDescription = null, modifier = Modifier.size(16.dp))
                 },
-                modifier = Modifier.padding(bottom = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
-        PostBody(content = post.content, photoViewData = photoViewData, fontSize = 16.sp, lineHeight = 27.sp)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(NameToBody))
+        PostBody(content = post.content, photoViewData = photoViewData, fontSize = 16.sp, lineHeight = 27.sp, trimEdges = true)
+        Spacer(modifier = Modifier.height(BodyToTime))
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val style = MaterialTheme.typography.caption
             Text(
                 text = listOfNotNull(
                     relativeTime(post.time),
                     shownIpLocation(author.ipLocation),
                 ).joinToString(" · "),
-                style = MaterialTheme.typography.caption,
+                style = style,
                 color = ExtendedTheme.colors.textSecondary,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).trimToCharacters(style.fontSize),
             )
-            // Its touch area reaches past it without making the row taller than the text, so the
-            // gaps under the row are the ones set here
-            CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
-                // The button pads its icon; shift it so the icon lines up with the text's right edge
-                PostAgreeBtn(
-                    hasAgreed = post.agree.agreed,
-                    agreeNum = post.agree.count,
-                    onClick = { onEvent(ThreadEvent.AgreePost(post.id)) },
-                    modifier = Modifier.offset(x = 8.dp),
-                    verticalPadding = 0.dp,
-                )
-            }
+            // The button pads its icon; shift it so the icon lines up with the text's right edge
+            PostAgreeBtn(
+                hasAgreed = post.agree.agreed,
+                agreeNum = post.agree.count,
+                onClick = { onEvent(ThreadEvent.AgreePost(post.id)) },
+                modifier = Modifier.offset(x = 8.dp).overhanging(),
+            )
         }
     }
 }
@@ -457,7 +476,9 @@ private fun TimelineSubPosts(
     // rather than taking a row of its own, unless the rules fold that reply away
     val linkRow = replies?.loading == true || replies?.failed == true || remaining > 0
     val collapseOnLast = onCollapse != null && !linkRow && subPosts.lastOrNull()?.let { blocks[it.id] == null } == true
-    Column(modifier = Modifier.padding(top = 8.dp)) {
+    val endsOnReply = !linkRow && (onCollapse == null || collapseOnLast)
+    // A reply leaves the room between replies under it, as much as ends a floor
+    Column(modifier = Modifier.padding(top = ToReplies)) {
         subPosts.forEach { subPost ->
             key(subPost.id) {
                 DisposableEffect(subPost.id) { onDispose { onGone(subPost.id) } }
@@ -488,20 +509,20 @@ private fun TimelineSubPosts(
             }
         }
         // The last reply's own bottom space then parts it from the next floor, as wide as between floors
-        if (!linkRow && (onCollapse == null || collapseOnLast)) return@Column
+        if (endsOnReply) return@Column
         val showMore = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }.takeIf { replies?.loading != true && (replies?.failed == true || remaining > 0) }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(bottom = FloorBottom - 4.dp)
+                .padding(bottom = FloorBottom)
                 .fillMaxWidth(),
         ) {
             // The whole row up to 收起 opens more, not only its words
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (showMore != null) Modifier.clickable(onClick = showMore) else Modifier)
-                    .padding(start = Gutter, top = 4.dp, bottom = 4.dp),
+                    .padding(start = Gutter)
+                    .then(if (showMore != null) Modifier.linkPress(showMore) else Modifier),
             ) {
                 when {
                     replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary)
@@ -512,29 +533,26 @@ private fun TimelineSubPosts(
                     )
                 }
             }
-            if (onCollapse != null) CollapseLink(onCollapse, modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp))
+            if (onCollapse != null) CollapseLink(onCollapse, modifier = Modifier.padding(start = 12.dp))
         }
     }
 }
 
-/**
- * The link that folds a floor's replies back into their capsule. Its touch area reaches past its
- * words, so it needs no room of its own on the line it ends.
- */
+/** The link that folds a floor's replies back into their capsule. */
 @Composable
 private fun CollapseLink(onClick: () -> Unit, modifier: Modifier = Modifier) {
     SubPostsLink(
         text = stringResource(id = R.string.button_show_fewer_sub_posts),
         color = ExtendedTheme.colors.textSecondary,
         weight = FontWeight.Normal,
-        modifier = Modifier.clickable(onClick = onClick).then(modifier),
+        modifier = modifier.linkPress(onClick),
     )
 }
 
 /** A link's words under a floor's replies, in the row lined up with their avatars. */
 @Composable
 private fun SubPostsLink(text: String, color: Color, modifier: Modifier = Modifier, weight: FontWeight = FontWeight.SemiBold) {
-    Text(text = text, style = TextStyles.caption, fontWeight = weight, color = color, modifier = modifier)
+    Text(text = text, style = TextStyles.caption, fontWeight = weight, color = color, modifier = modifier.trimToCharacters(TextStyles.caption.fontSize))
 }
 
 /**
@@ -554,7 +572,7 @@ private fun SubPostsCapsule(item: PostItem, opensInPlace: Boolean, onClick: () -
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
-            .padding(start = Gutter, top = 8.dp, bottom = FloorBottom)
+            .padding(start = Gutter, top = ToReplies, bottom = FloorBottom)
             .pressScale(interaction)
             .height(CapsuleHeight)
             .clip(SmoothCornerShape.Capsule)
@@ -615,7 +633,7 @@ private fun ClassicSubPosts(
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
-            .padding(start = Gutter, top = 8.dp, bottom = FloorBottom)
+            .padding(start = Gutter, top = ToReplies, bottom = FloorBottom)
             .fillMaxWidth()
             .clip(ClassicBlockShape)
             .background(if (colors.isNightMode) Color.White.copy(alpha = 0.05f) else colors.accent.copy(alpha = 0.06f))
@@ -727,21 +745,25 @@ fun SubPostBranch(
     last: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    Row(modifier = modifier.height(IntrinsicSize.Min)) {
-        Canvas(modifier = Modifier.width(Gutter).fillMaxSize()) {
-            rule ?: return@Canvas
+    val replyCenter = replyLineCenter()
+    // Drawn behind the row rather than as a part of it, so the row is as tall as the reply
+    Row(
+        modifier = modifier.drawBehind {
+            rule ?: return@drawBehind
             val x = Gutter.toPx() / 2
-            val y = ReplyAvatarCenter.toPx()
+            val y = replyCenter.toPx()
             val r = BranchRadius.toPx()
             val path = Path().apply {
                 if (rail) {
                     moveTo(x, 0f)
                     lineTo(x, if (last) y - r else size.height)
                 }
-                branch(x, y, size.width, r)
+                branch(x, y, Gutter.toPx(), r)
             }
             drawPath(path, rule, style = Stroke(RuleWidth.toPx()))
-        }
+        },
+    ) {
+        Spacer(modifier = Modifier.width(Gutter))
         content()
     }
 }
@@ -772,14 +794,15 @@ fun SubPostLine(
         if (imageLinks) emptyList() else subPost.content.filterIsInstance<PostContent.Image>()
     }
     Box(modifier = modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
-        Column(modifier = Modifier.padding(bottom = 12.dp)) {
+        Column(modifier = Modifier.padding(bottom = ReplyGap)) {
             Row(verticalAlignment = Alignment.Top) {
+                val center = replyLineCenter()
                 Avatar(
                     data = StringUtil.getAvatarUrl(subPost.author.portrait),
                     size = SubPostAvatarSize,
                     contentDescription = null,
-                    // Centred on the first line
-                    modifier = Modifier.padding(top = ReplyAvatarCenter - SubPostAvatarSize / 2),
+                    // Centred on the first line, and taller than it without parting the replies
+                    modifier = Modifier.overhanging(center),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 FoldingReplyText(
@@ -809,7 +832,7 @@ fun SubPostLine(
                 )
             }
             Row(
-                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = 4.dp),
+                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = ReplyToTime),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -819,7 +842,7 @@ fun SubPostLine(
                     ).joinToString(" · "),
                     style = TextStyles.footnote,
                     color = colors.textSecondary,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).trimToCharacters(TextStyles.footnote.fontSize),
                 )
                 if (onAgree != null) {
                     // The button pads its icon; shift it so the icon lines up with the text's right edge
@@ -827,7 +850,7 @@ fun SubPostLine(
                         hasAgreed = subPost.agree.agreed,
                         agreeNum = subPost.agree.count,
                         onClick = onAgree,
-                        modifier = Modifier.offset(x = 8.dp),
+                        modifier = Modifier.offset(x = 8.dp).overhanging(),
                     )
                 } else if (subPost.agree.count > 0) {
                     Icon(
@@ -893,7 +916,7 @@ private fun FoldingReplyText(text: AnnotatedString, fold: Boolean, key: Long, mo
             }
         },
         inlineContent = mapOf("Lz" to lzChip()),
-        modifier = modifier,
+        modifier = modifier.trimToCharacters(TextStyles.reply.fontSize),
     )
 }
 
@@ -1097,3 +1120,35 @@ internal fun replyPhotoViewData(context: Context, post: Post, image: PostContent
         ),
     ),
 )
+
+/** Where the middle of a reply's first line is, from the top of its characters. */
+@Composable
+private fun replyLineCenter(): Dp = with(LocalDensity.current) { (TextStyles.reply.fontSize.toPx() / 2).toDp() }
+
+/**
+ * Lays this out as no height at all, centred where it would be, or with its middle [at] a height
+ * from the top: taller than the things beside it, it doesn't push apart what is above and below.
+ */
+private fun Modifier.overhanging(at: Dp? = null): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minHeight = 0))
+    layout(placeable.width, 0) {
+        placeable.place(0, (at?.roundToPx() ?: 0) - placeable.height / 2)
+    }
+}
+
+/** How far a link's press shows past its words, all round. */
+private val LinkPressPad = 8.dp
+
+/**
+ * Makes this a link that can be pressed anywhere within [LinkPressPad] of its words, and shows the
+ * press there, while it takes only the room of its words: the space around it stays as set.
+ */
+private fun Modifier.linkPress(onClick: () -> Unit): Modifier = this
+    .layout { measurable, constraints ->
+        val pad = LinkPressPad.roundToPx()
+        val placeable = measurable.measure(constraints.offset(2 * pad, 2 * pad))
+        layout(placeable.width - 2 * pad, placeable.height - 2 * pad) { placeable.place(-pad, -pad) }
+    }
+    .clip(Corners.sm)
+    .clickable(onClick = onClick)
+    .padding(LinkPressPad)

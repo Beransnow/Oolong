@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import oolong.client.R
 import oolong.client.model.BawuType
@@ -40,9 +39,7 @@ fun PostAgreeBtn(
     hasAgreed: Boolean,
     agreeNum: Long,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    /** Above and below the icon; none keeps a row of it no taller than its text. */
-    verticalPadding: Dp = 4.dp,
+    modifier: Modifier = Modifier
 ) {
     val animatedColor by animateColorAsState(
         targetValue = if (hasAgreed) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary,
@@ -53,7 +50,7 @@ fun PostAgreeBtn(
         onClick = onClick,
         shape = Corners.xs,
         minHeight = 0.dp,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = verticalPadding),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.background,
             contentColor = animatedColor

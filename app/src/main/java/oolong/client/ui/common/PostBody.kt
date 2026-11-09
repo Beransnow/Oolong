@@ -50,6 +50,7 @@ import oolong.client.ui.page.videoview.ViewerVideo
 import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
+import oolong.client.ui.widgets.compose.trimToCharacters
 import oolong.client.utils.EmoticonUtil.emoticonInlineId
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
@@ -70,6 +71,12 @@ fun PostBody(
     lineHeight: TextUnit = TextUnit.Unspecified,
     blockSpacing: Dp = 8.dp,
     textPadding: PaddingValues = PaddingValues(0.dp),
+    /**
+     * Whether the body starts and ends at the characters of its first and last lines of text,
+     * without the room the font leaves above and below them, so the space set around the body is
+     * the space seen.
+     */
+    trimEdges: Boolean = false,
 ) {
     // Images run edge to edge of the body; padding the other blocks lets a caller bleed them
     val padded = Modifier.padding(textPadding)
@@ -77,9 +84,13 @@ fun PostBody(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(blockSpacing),
     ) {
-        content.forEach { block ->
+        content.forEachIndexed { index, block ->
             when (block) {
-                is PostContent.Text -> Box(padded) { PostText(block.spans, fontSize, lineHeight) }
+                is PostContent.Text -> {
+                    val first = trimEdges && index == 0
+                    val last = trimEdges && index == content.lastIndex
+                    Box(padded) { PostText(block.spans, fontSize, lineHeight, trimTop = first, trimBottom = last) }
+                }
                 is PostContent.Image -> PostImage(block, photoViewData(block), rounded = textPadding == PaddingValues(0.dp))
                 is PostContent.Video -> Box(padded) { PostVideo(block) }
                 is PostContent.Voice -> Box(padded) { PostVoice(block) }
@@ -89,7 +100,7 @@ fun PostBody(
 }
 
 @Composable
-private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHeight: TextUnit) {
+private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHeight: TextUnit, trimTop: Boolean, trimBottom: Boolean) {
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
     val warning = MaterialTheme.colors.error
@@ -100,6 +111,7 @@ private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHei
     }
     PbContentText(
         text = text,
+        modifier = if (trimTop || trimBottom) Modifier.trimToCharacters(fontSize, trimTop, trimBottom) else Modifier,
         fontSize = fontSize,
         lineHeight = lineHeight,
         style = MaterialTheme.typography.body1,
