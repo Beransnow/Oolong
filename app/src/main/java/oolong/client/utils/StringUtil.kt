@@ -13,13 +13,14 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withAnnotation
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import oolong.client.App
 import oolong.client.components.spans.EmoticonSpanV2
+import oolong.client.ui.common.TextLinkActions
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.utils.EmoticonManager.getEmoticonDrawable
 import oolong.client.utils.EmoticonManager.getEmoticonIdByName
@@ -116,31 +117,20 @@ object StringUtil {
         }
     }
 
-    @OptIn(ExperimentalTextApi::class)
+    /** `@name: content`, the name opening the user's profile through [links]. */
     @Stable
     fun buildAnnotatedStringWithUser(
-        userId: String,
+        userId: Long,
         username: String,
         nickname: String?,
         content: String,
+        links: TextLinkActions,
         context: Context = App.INSTANCE,
     ): AnnotatedString {
         return buildAnnotatedString {
-            withAnnotation(tag = "user", annotation = userId) {
-                withStyle(
-                    SpanStyle(
-                        color = currentColors(context).emphasis
-                    )
-                ) {
-                    append("@")
-                    append(
-                        getUsernameAnnotatedString(
-                            context,
-                            username,
-                            nickname,
-                        )
-                    )
-                }
+            withLink(links.user(userId, TextLinkStyles(SpanStyle(color = currentColors(context).emphasis)))) {
+                append("@")
+                append(getUsernameAnnotatedString(context, username, nickname))
             }
             append(": ")
             append(content)

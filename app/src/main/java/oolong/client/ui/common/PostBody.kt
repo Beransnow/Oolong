@@ -22,16 +22,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -97,7 +94,10 @@ private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHei
     val videoTag = stringResource(id = R.string.tag_video)
     val warning = MaterialTheme.colors.error
     val actualHost = stringResource(id = R.string.link_actual_host)
-    val text = remember(spans, accent, videoTag, warning, actualHost) { spans.toAnnotatedString(accent, videoTag, warning, actualHost) }
+    val links = rememberTextLinkActions()
+    val text = remember(spans, accent, videoTag, warning, actualHost, links) {
+        spans.toAnnotatedString(accent, videoTag, warning, actualHost, links)
+    }
     PbContentText(
         text = text,
         fontSize = fontSize,
@@ -175,47 +175,42 @@ private val PostContent.Image.aspectRatio: Float
     get() = if (width > 0 && height > 0) width * 1f / height else 1f
 
 /**
- * Inline text with links, mentions, topics and video links in [accent], marked for [PbContentText] to
- * open, and emoticons as inline images. A link whose text names another site is followed by
+ * Inline text with links, mentions, topics and video links in [accent], each opening through
+ * [links], and emoticons as inline images. A link whose text names another site is followed by
  * where it really goes, in [warning], written with [actualHostFormat].
  */
-@OptIn(ExperimentalTextApi::class)
 fun List<TextSpan>.toAnnotatedString(
     accent: Color,
     videoTag: String,
     warning: Color,
     actualHostFormat: String,
+    links: TextLinkActions,
 ): AnnotatedString =
     buildAnnotatedString {
+        val accentLink = TextLinkStyles(SpanStyle(color = accent))
         forEach { span ->
             when (span) {
                 is TextSpan.Plain -> append(span.text)
                 is TextSpan.Emoticon -> append(span.text.emoticonString)
                 is TextSpan.Link -> {
                     appendInlineContent("link_icon", alternateText = "🔗")
-                    withAnnotation(tag = "url", annotation = span.url) {
-                        withStyle(SpanStyle(color = accent)) { append(span.text) }
-                        span.actualHost?.let { host ->
-                            withStyle(SpanStyle(color = warning)) { append(actualHostFormat.format(host)) }
+                    withLink(links.url(span.url, accentLink)) { append(span.text) }
+                    span.actualHost?.let { host ->
+                        withLink(links.url(span.url, TextLinkStyles(SpanStyle(color = warning)))) {
+                            append(actualHostFormat.format(host))
                         }
                     }
                 }
 
-                is TextSpan.Topic -> withAnnotation(tag = "topic", annotation = span.name) {
-                    withStyle(SpanStyle(color = accent)) { append(span.text) }
-                }
+                is TextSpan.Topic -> withLink(links.topic(span.name, accentLink)) { append(span.text) }
 
-                is TextSpan.Mention -> withAnnotation(tag = "user", annotation = "${span.userId}") {
-                    withStyle(SpanStyle(color = accent)) { append(span.text) }
-                }
+                is TextSpan.Mention -> withLink(links.user(span.userId, accentLink)) { append(span.text) }
 
                 is TextSpan.VideoLink -> {
                     appendInlineContent("video_icon", alternateText = "🎥")
-                    withAnnotation(tag = "url", annotation = span.url) {
-                        withStyle(SpanStyle(color = accent)) {
-                            append(videoTag)
-                            append(span.text)
-                        }
+                    withLink(links.url(span.url, accentLink)) {
+                        append(videoTag)
+                        append(span.text)
                     }
                 }
             }
@@ -227,7 +222,6 @@ fun List<TextSpan>.toAnnotatedString(
  * [isLz], then what they said. With [onImage], each of its pictures is a link that calls it;
  * without, only the text of the reply is kept.
  */
-@OptIn(ExperimentalTextApi::class)
 @Composable
 fun rememberSubPostText(
     subPost: SubPost,
@@ -241,22 +235,20 @@ fun rememberSubPostText(
     val warning = MaterialTheme.colors.error
     val actualHost = stringResource(id = R.string.link_actual_host)
     val imageLink = stringResource(id = R.string.link_view_image)
+    val links = rememberTextLinkActions()
     val currentOnImage by rememberUpdatedState(onImage)
     val imageLinks = onImage != null
-    return remember(subPost, isLz, nameColor, accent, videoTag, warning, actualHost, imageLink, imageLinks) {
+    return remember(subPost, isLz, nameColor, accent, videoTag, warning, actualHost, imageLink, imageLinks, links) {
         buildAnnotatedString {
-            withAnnotation("user", "${subPost.author.id}") {
-                withStyle(SpanStyle(color = nameColor, fontWeight = FontWeight.Bold)) {
-                    append(
-                        StringUtil.getUsernameAnnotatedString(context, subPost.author.name, subPost.author.nameShow)
-                    )
-                }
-                if (isLz) appendInlineContent("Lz")
-                append(": ")
+            val nameStyle = TextLinkStyles(SpanStyle(color = nameColor, fontWeight = FontWeight.Bold))
+            withLink(links.user(subPost.author.id, nameStyle)) {
+                append(StringUtil.getUsernameAnnotatedString(context, subPost.author.name, subPost.author.nameShow))
             }
+            if (isLz) appendInlineContent("Lz")
+            append(": ")
             subPost.content.forEachIndexed { index, block ->
                 when {
-                    block is PostContent.Text -> append(block.spans.toAnnotatedString(accent, videoTag, warning, actualHost))
+                    block is PostContent.Text -> append(block.spans.toAnnotatedString(accent, videoTag, warning, actualHost, links))
                     block is PostContent.Image && imageLinks -> {
                         if (index > 0) append(" ")
                         val style = TextLinkStyles(SpanStyle(color = accent, textDecoration = TextDecoration.None))
