@@ -189,9 +189,11 @@ fun GlassTabRow(
             modifier = Modifier
                 .fillMaxHeight()
                 .then(if (fill) Modifier.fillMaxWidth() else Modifier)
-                .floatingGlass(TabCapsule, barButton = false)
+                // What the lens sees, with what is behind the capsule: the capsule, its tabs and the
+                // bubble, which fades from under it
+                .floatingGlass(TabCapsule, barButton = false, lensTarget = true)
                 .clip(TabCapsule)
-                // What the lens sees: the tabs and the bubble, which fades from under it
+                // The same outside floating chrome, without what is behind
                 .hazeSource(glassState),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -327,7 +329,7 @@ fun GlassTabRow(
                             layout(w, h) { placeable.place(0, 0) }
                         }
                         // Bent as the navigation bar's lens is, for its size
-                        .controlLens(glassState, TabCapsule, held, lensOptics)
+                        .chromeControlLens(glassState, TabCapsule, held, lensOptics)
                 )
             }
         }
