@@ -30,11 +30,14 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -114,6 +117,14 @@ import oolong.client.utils.StringUtil.getShortNumString
 private val Gutter = 52.dp
 private val GutterStart = 4.dp
 private val FloorAvatarSize = 36.dp
+
+/**
+ * The room above a floor's first line and below its last thing, together the 24dp between floors.
+ * Whatever ends a floor (its time, a reply, a link row, the capsule or block of replies) leaves
+ * exactly [FloorBottom] under it; the gaps inside a floor are smaller, 4 to 12dp.
+ */
+private val FloorTop = 12.dp
+private val FloorBottom = 12.dp
 private val SubPostAvatarSize = 22.dp
 
 /** A reply's picture: at most this share of the text's width, and no taller than the cap. */
@@ -192,6 +203,7 @@ fun ThreadFloor(
     var floorCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val branches = remember { mutableStateMapOf<Long, LayoutCoordinates>() }
+    val hasReplies = post.subPostCount > 0 && post.subPosts.isNotEmpty()
     BlockableContent(
         block = item.block,
         tip = { reason, onShow ->
@@ -214,7 +226,7 @@ fun ThreadFloor(
             if (style == SubPostStyle.Timeline) {
                 Canvas(modifier = Modifier.matchParentSize()) {
                     val x = (GutterStart + Gutter / 2).toPx()
-                    val top = if (startsRule) (FloorAvatarSize / 2 + 10.dp).toPx() else 0f
+                    val top = if (startsRule) (FloorTop + FloorAvatarSize / 2).toPx() else 0f
                     val floor = floorCoordinates
                     // One path, so a branch leaving the rule doesn't paint over it a second time
                     val path = Path().apply {
@@ -242,10 +254,10 @@ fun ThreadFloor(
                 ) {
                     Row {
                         Spacer(modifier = Modifier.width(Gutter))
-                        FloorBody(post, options, isStoreMark, photoViewData, onEvent)
+                        FloorBody(post, options, isStoreMark, photoViewData, onEvent, endsFloor = !hasReplies)
                     }
                 }
-                if (post.subPostCount > 0 && post.subPosts.isNotEmpty()) {
+                if (hasReplies) {
                     // Full width, so only the height moves between the capsule and the replies
                     Box(modifier = Modifier.fillMaxWidth().animateContentSize(Motion.settle())) {
                         when {
@@ -287,7 +299,7 @@ fun ThreadFloor(
                 post = post,
                 onClick = { onEvent(ThreadEvent.OpenUser(post.author.id)) },
                 modifier = Modifier
-                    .padding(start = GutterStart, top = 10.dp)
+                    .padding(start = GutterStart, top = FloorTop)
                     .width(Gutter)
                     .offset {
                         val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
@@ -351,6 +363,7 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun FloorBody(
     post: Post,
@@ -358,10 +371,11 @@ private fun FloorBody(
     isStoreMark: Boolean,
     photoViewData: (PostContent.Image) -> PhotoViewData?,
     onEvent: (ThreadEvent) -> Unit,
+    endsFloor: Boolean,
 ) {
     val context = LocalContext.current
     val author = post.author
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = FloorTop, bottom = if (endsFloor) FloorBottom else 0.dp)) {
         // As tall as the avatar beside it, so the name sits level with the avatar's centre
         Row(modifier = Modifier.height(FloorAvatarSize), verticalAlignment = Alignment.CenterVertically) {
             ProvideTextStyle(
@@ -391,7 +405,7 @@ private fun FloorBody(
             )
         }
         PostBody(content = post.content, photoViewData = photoViewData, fontSize = 16.sp, lineHeight = 27.sp)
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = listOfNotNull(
@@ -402,13 +416,18 @@ private fun FloorBody(
                 color = ExtendedTheme.colors.textSecondary,
                 modifier = Modifier.weight(1f),
             )
-            // The button pads its icon; shift it so the icon lines up with the text's right edge
-            PostAgreeBtn(
-                hasAgreed = post.agree.agreed,
-                agreeNum = post.agree.count,
-                onClick = { onEvent(ThreadEvent.AgreePost(post.id)) },
-                modifier = Modifier.offset(x = 8.dp),
-            )
+            // Its touch area reaches past it without making the row taller than the text, so the
+            // gaps under the row are the ones set here
+            CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                // The button pads its icon; shift it so the icon lines up with the text's right edge
+                PostAgreeBtn(
+                    hasAgreed = post.agree.agreed,
+                    agreeNum = post.agree.count,
+                    onClick = { onEvent(ThreadEvent.AgreePost(post.id)) },
+                    modifier = Modifier.offset(x = 8.dp),
+                    verticalPadding = 0.dp,
+                )
+            }
         }
     }
 }
@@ -438,14 +457,14 @@ private fun TimelineSubPosts(
     // rather than taking a row of its own, unless the rules fold that reply away
     val linkRow = replies?.loading == true || replies?.failed == true || remaining > 0
     val collapseOnLast = onCollapse != null && !linkRow && subPosts.lastOrNull()?.let { blocks[it.id] == null } == true
-    Column(modifier = Modifier.padding(top = 6.dp)) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
         subPosts.forEach { subPost ->
             key(subPost.id) {
                 DisposableEffect(subPost.id) { onDispose { onGone(subPost.id) } }
                 BlockableContent(
                     block = blocks[subPost.id],
                     tip = { reason, onShow ->
-                        BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(start = Gutter, end = 16.dp, bottom = 4.dp))
+                        BlockTip(reason = reason, onShow = onShow, boxed = false, modifier = Modifier.padding(start = Gutter, end = 16.dp, bottom = 12.dp))
                     },
                 ) {
                     Row(modifier = Modifier.onPlaced { onPlaced(subPost.id, it) }) {
@@ -474,7 +493,7 @@ private fun TimelineSubPosts(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(bottom = 6.dp)
+                .padding(bottom = FloorBottom - 4.dp)
                 .fillMaxWidth(),
         ) {
             // The whole row up to 收起 opens more, not only its words
@@ -535,7 +554,7 @@ private fun SubPostsCapsule(item: PostItem, opensInPlace: Boolean, onClick: () -
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
-            .padding(start = Gutter, top = 2.dp, bottom = 14.dp)
+            .padding(start = Gutter, top = 8.dp, bottom = FloorBottom)
             .pressScale(interaction)
             .height(CapsuleHeight)
             .clip(SmoothCornerShape.Capsule)
@@ -594,13 +613,13 @@ private fun ClassicSubPosts(
     val labels = postMenuLabels()
     val colors = ExtendedTheme.colors
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
-            .padding(start = Gutter, top = 2.dp, bottom = 14.dp)
+            .padding(start = Gutter, top = 8.dp, bottom = FloorBottom)
             .fillMaxWidth()
             .clip(ClassicBlockShape)
             .background(if (colors.isNightMode) Color.White.copy(alpha = 0.05f) else colors.accent.copy(alpha = 0.06f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(12.dp),
     ) {
         post.subPosts.forEach { subPost ->
             BlockableContent(
@@ -783,14 +802,14 @@ fun SubPostLine(
                     image = image,
                     photoViewData = photoViewData(image),
                     size = Modifier
-                        .padding(start = SubPostAvatarSize + 8.dp, top = 6.dp)
+                        .padding(start = SubPostAvatarSize + 8.dp, top = 8.dp)
                         .fillMaxWidth(ReplyImageWidthFraction)
                         .wrapContentWidth(Alignment.Start)
                         .heightIn(max = ReplyImageMaxHeight),
                 )
             }
             Row(
-                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = 3.dp),
+                modifier = Modifier.padding(start = SubPostAvatarSize + 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
