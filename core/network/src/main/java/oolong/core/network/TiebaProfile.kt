@@ -72,10 +72,11 @@ enum class TiebaProfile(
     ),
 
     /**
-     * `pb/floor` only returns sub-post images to 22.x clients. Remove once every API moves to a
-     * 22.x version.
+     * For the endpoints that answer a 22.x client better: `pb/page` and `pb/floor`, which only
+     * send the pictures of replies inside posts to it, and the recommended feed. Remove once every
+     * API moves to a 22.x version.
      */
-    PROTO_22_FLOOR(
+    PROTO_22_10(
         version = "22.10.1.0",
         frameworkVersion = "4220001",
         sdkVersion = "3.36.0",

@@ -75,7 +75,7 @@ class CommonParamsTest {
 
     @Test
     fun `uses the version constants of the profile`() {
-        val common = commonParams().protobuf(TiebaProfile.PROTO_22_FLOOR)
+        val common = commonParams().protobuf(TiebaProfile.PROTO_22_10)
 
         assertEquals("22.10.1.0", common._client_version)
         assertEquals("4220001", common.framework_ver)

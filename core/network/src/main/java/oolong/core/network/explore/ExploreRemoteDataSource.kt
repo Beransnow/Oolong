@@ -39,7 +39,7 @@ class ExploreRemoteDataSource(
     private val hotListService = network.service<HotListService>(webProfile)
 
     // Recommendations come as the newer clients get them, with their newer ways of disliking a thread
-    private val personalizedProfile = TiebaProfile.PROTO_22_FLOOR
+    private val personalizedProfile = TiebaProfile.PROTO_22_10
     private val personalizedService = network.service<ExploreService>(personalizedProfile)
 
     /** How many times recommendations were asked for, which the server counts as the feed goes on. */

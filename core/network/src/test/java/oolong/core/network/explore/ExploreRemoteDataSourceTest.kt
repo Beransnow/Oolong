@@ -61,7 +61,7 @@ class ExploreRemoteDataSourceTest {
         dataSource.personalized(refresh = false, page = 3)
 
         val target = "/c/f/excellent/personalized?cmd=309264&format=protobuf"
-        val refresh = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_FLOOR)).data_!!
+        val refresh = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_10)).data_!!
         assertEquals(1, refresh.load_type)
         assertEquals(1, refresh.pn)
         assertEquals(0, refresh.page_thread_count)
@@ -70,9 +70,9 @@ class ExploreRemoteDataSourceTest {
         assertEquals(1, refresh.is_newfeed)
         assertEquals(2, refresh.q_type)
         assertEquals(1, refresh.cache_column_style)
-        assertEquals(commonParams.protobuf(TiebaProfile.PROTO_22_FLOOR), refresh.common)
+        assertEquals(commonParams.protobuf(TiebaProfile.PROTO_22_10), refresh.common)
         assertEquals(commonParams.appPos(), refresh.app_pos)
-        val more = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_FLOOR)).data_!!
+        val more = PersonalizedRequest.ADAPTER.decode(sentData(target, TiebaProfile.PROTO_22_10)).data_!!
         assertEquals(2, more.load_type)
         assertEquals(3, more.pn)
         assertEquals(12, more.page_thread_count)

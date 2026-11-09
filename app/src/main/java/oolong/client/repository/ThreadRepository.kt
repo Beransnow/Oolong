@@ -364,7 +364,7 @@ internal class PostMapper(users: List<ProtoUser>, private val emoticons: Emotico
     fun subPost(subPost: ProtoSubPost) = SubPost(
         id = subPost.id,
         author = author(subPost.author, subPost.author_id),
-        content = subPost.content.toPostContent(emoticons),
+        content = subPost.content.withoutLeadingColon().toPostContent(emoticons),
         time = subPost.time.toLong(),
         agree = subPost.agree.toAgree(),
     )
@@ -382,6 +382,16 @@ internal class PostMapper(users: List<ProtoUser>, private val emoticons: Emotico
         subPosts = post.sub_post_list?.sub_post_list.orEmpty().map(::subPost).toImmutableList(),
         subPostCount = post.sub_post_number,
     )
+}
+
+/**
+ * A reply's content without the " : " some versions of the page start it with, after where the
+ * author's name went, nor the spaces before 「回复」.
+ */
+private fun List<PbContent>.withoutLeadingColon(): List<PbContent> {
+    val rest = if (firstOrNull()?.let { it.type == 0 && it.text.trim() == ":" } == true) drop(1) else this
+    val first = rest.firstOrNull()?.takeIf { it.type == 0 } ?: return rest
+    return listOf(first.copy(text = first.text.trimStart())) + rest.drop(1)
 }
 
 internal fun ProtoUser.toUser() = User(

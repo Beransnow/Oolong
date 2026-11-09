@@ -189,6 +189,25 @@ class ThreadRepositoryTest {
     }
 
     @Test
+    fun `a reply loses the colon and spaces the page may start it with`() = runTest {
+        val replies = listOf(
+            SubPostList(id = 201, author = replier, content = listOf(PbContent(type = 0, text = " : "), PbContent(type = 0, text = "说得对"))),
+            SubPostList(
+                id = 202,
+                author = replier,
+                content = listOf(PbContent(type = 0, text = " 回复 "), PbContent(type = 4, text = "楼主", uid = 10), PbContent(type = 0, text = " :嗯")),
+            ),
+        )
+        val withReplies = post(2, 2, replier).copy(sub_post_list = SubPost(sub_post_list = replies), sub_post_number = 2)
+        respond(data(listOf(withReplies)))
+
+        val subPosts = repository.page(ThreadQuery(9_000), ThreadCursor.Number(0)).posts.items.single().subPosts
+
+        assertEquals("说得对", (subPosts[0].content.single() as PostContent.Text).spans.joinToString("") { it.text })
+        assertEquals("回复 楼主 :嗯", (subPosts[1].content.single() as PostContent.Text).spans.joinToString("") { it.text })
+    }
+
+    @Test
     fun `a thread's poll comes with the page and votes go to the thread`() = runTest {
         val poll = PollInfo(title = "选哪个", options = listOf(PollOption(id = 1, text = "甲"), PollOption(id = 2, text = "乙")))
         respond(data(listOf(post(1, 1, lz)), thread = ThreadInfo(id = 9_000, author = lz, poll_info = poll)))

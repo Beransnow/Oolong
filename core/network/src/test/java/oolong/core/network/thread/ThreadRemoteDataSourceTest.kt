@@ -43,7 +43,7 @@ class ThreadRemoteDataSourceTest {
     private fun sentPageRequest(): PbPageRequestData {
         val request = server.takeRequest()
         assertEquals("/c/f/pb/page?cmd=302001&format=protobuf", request.target)
-        commonParams.headers(TiebaProfile.PROTO_12_52).forEach { (name, value) ->
+        commonParams.headers(TiebaProfile.PROTO_22_10).forEach { (name, value) ->
             assertEquals(value, request.headers[name], name)
         }
         val parts = multipartParts(request.headers["Content-Type"]!!, request.body!!)
@@ -53,13 +53,13 @@ class ThreadRemoteDataSourceTest {
     }
 
     @Test
-    fun `requests a page as the 12_52 client`() = runTest {
+    fun `requests a page as the 22_10 client`() = runTest {
         enqueue(PbPageResponse(data_ = PbPageResponseData()))
 
         dataSource.page(threadId = 9_000, page = 2, forumId = 52)
 
         val expected = PbPageRequestData(
-            common = commonParams.protobuf(TiebaProfile.PROTO_12_52),
+            common = commonParams.protobuf(TiebaProfile.PROTO_22_10),
             kz = 9_000,
             pid = 0,
             pn = 2,
@@ -153,13 +153,13 @@ class ThreadRemoteDataSourceTest {
 
         val request = server.takeRequest()
         assertEquals("/c/f/pb/floor?cmd=302002&format=protobuf", request.target)
-        commonParams.headers(TiebaProfile.PROTO_22_FLOOR).forEach { (name, value) ->
+        commonParams.headers(TiebaProfile.PROTO_22_10).forEach { (name, value) ->
             assertEquals(value, request.headers[name], name)
         }
         val parts = multipartParts(request.headers["Content-Type"]!!, request.body!!)
         assertEquals(listOf("data"), parts.map { it.first })
         val expected = PbFloorRequestData(
-            common = commonParams.protobuf(TiebaProfile.PROTO_22_FLOOR),
+            common = commonParams.protobuf(TiebaProfile.PROTO_22_10),
             forum_id = 52,
             kz = 9_000,
             pid = 77,
