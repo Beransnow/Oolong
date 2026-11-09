@@ -2,6 +2,7 @@ package oolong.client.ui.page.forum.detail
 
 import android.graphics.Typeface
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,8 +37,10 @@ import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumIntro
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.navigation.ForumDetailKey
+import oolong.client.ui.navigation.ForumRuleDetailKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
@@ -58,15 +64,23 @@ fun ForumDetailPage(
     viewModel: ForumDetailViewModel = hiltViewModel<ForumDetailViewModel, ForumDetailViewModel.Factory> { it.create(key) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    ForumDetailScreen(state = state, onBack = { navigator.navigateUp() }, onReload = viewModel::refresh)
+    ForumDetailScreen(
+        state = state,
+        onBack = { navigator.navigateUp() },
+        onReload = viewModel::refresh,
+        ruleTitle = key.ruleTitle,
+        onOpenRule = { navigator.navigate(ForumRuleDetailKey(key.forumId)) },
+    )
 }
 
-/** A forum's avatar, counts, slogan and introduction. */
+/** A forum's avatar, counts, slogan and introduction, then its rules when it has them. */
 @Composable
 fun ForumDetailScreen(
     state: ForumDetailState,
     onBack: () -> Unit,
     onReload: () -> Unit,
+    ruleTitle: String? = null,
+    onOpenRule: () -> Unit = {},
 ) {
     val error = (state.load as? LoadStatus.Error)?.error
     StateScreen(
@@ -93,6 +107,8 @@ fun ForumDetailScreen(
                 state.intro?.let {
                     ForumDetailContent(
                         forumInfo = it,
+                        ruleTitle = ruleTitle,
+                        onOpenRule = onOpenRule,
                         contentPadding = paddingValues,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -105,6 +121,8 @@ fun ForumDetailScreen(
 @Composable
 private fun ForumDetailContent(
     forumInfo: ForumIntro,
+    ruleTitle: String?,
+    onOpenRule: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
@@ -155,6 +173,33 @@ private fun ForumDetailContent(
                 Text(text = forumInfo.intro, style = MaterialTheme.typography.body1)
             }
         }
+        if (!ruleTitle.isNullOrEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Chip(text = stringResource(id = R.string.desc_forum_rule))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(Corners.sm)
+                        .clickable(onClick = onOpenRule)
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = ruleTitle,
+                        style = MaterialTheme.typography.body1,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = Symbols.ChevronRight,
+                        contentDescription = null,
+                        tint = ExtendedTheme.colors.textSecondary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -192,6 +237,8 @@ fun PreviewForumDetailPage() {
     TiebaLiteTheme {
         ForumDetailContent(
             forumInfo = ForumDetailPreviewData.intro,
+            ruleTitle = "测试吧吧规",
+            onOpenRule = {},
             modifier = Modifier.fillMaxWidth()
         )
     }

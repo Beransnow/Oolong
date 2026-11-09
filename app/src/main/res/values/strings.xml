@@ -782,6 +782,10 @@
     <string name="desc_search_sug">搜索联想：%s</string>
     <string name="title_forum_intro">本吧简介</string>
     <string name="title_forum_rule">本吧吧规</string>
+    <plurals name="button_unfold_forum_tops">
+        <item quantity="other">展开全部 %d 条置顶</item>
+    </plurals>
+    <string name="button_fold_forum_tops">收起</string>
     <string name="desc_forum_rule">吧规</string>
     <string name="text_stat_agrees">获赞</string>
     <string name="text_profile_ip_location">IP 属地：%s</string>

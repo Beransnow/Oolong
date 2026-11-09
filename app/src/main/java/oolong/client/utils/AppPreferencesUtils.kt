@@ -51,6 +51,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var ignoreBatteryOptimizationsDialog by DataStoreDelegates.boolean(defaultValue = false)
 
+    /** Whether a forum's rules and pinned threads are folded into one row, in every forum. */
+    var forumTopsFolded by DataStoreDelegates.boolean(defaultValue = false, key = "forum_tops_folded")
+
     /** Whether the first-launch landing page has been seen through. */
     var landingShown by DataStoreDelegates.boolean(defaultValue = false, key = "landing_shown")
 

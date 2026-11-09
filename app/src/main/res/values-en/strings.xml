@@ -792,6 +792,11 @@
     <string name="desc_search_sug">Suggestion: %s</string>
     <string name="title_forum_intro">About this forum</string>
     <string name="title_forum_rule">Forum rules</string>
+    <plurals name="button_unfold_forum_tops">
+        <item quantity="one">Show %d pinned thread</item>
+        <item quantity="other">Show all %d pinned threads</item>
+    </plurals>
+    <string name="button_fold_forum_tops">Collapse</string>
     <string name="desc_forum_rule">Rules</string>
     <string name="text_stat_agrees">Likes</string>
     <string name="text_profile_ip_location">IP location: %s</string>

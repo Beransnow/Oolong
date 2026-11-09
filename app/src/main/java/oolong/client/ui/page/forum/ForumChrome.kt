@@ -165,8 +165,8 @@ internal fun ForumBarTitle(forum: ForumDetail, onEvent: (ForumEvent) -> Unit) {
 /**
  * Below the forum's name: its figures and the viewer's level, then a full-width button to follow
  * or sign in. A visitor also sees how many signed in today; once the viewer has signed in, the
- * button turns tonal and stays where it was, so the header keeps its shape. The rules are the
- * first item of the latest threads, not a button here.
+ * button turns tonal and stays where it was, so the header keeps its shape. The rules are on the
+ * forum's details page, which its name opens, not a button here.
  */
 @Composable
 private fun ForumHeaderDetails(

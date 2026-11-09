@@ -20,14 +20,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -56,6 +60,7 @@ import oolong.client.ui.widgets.compose.sharedHeaderPinned
 import oolong.client.ui.widgets.compose.states.DefaultErrorScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.ui.widgets.compose.underSharedHeader
+import oolong.client.utils.appPreferences
 
 /** What the floating button does, as set in the settings. */
 enum class ForumFab { Refresh, BackToTop, Hidden }
@@ -87,6 +92,9 @@ fun ForumScreen(
         }
     }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    // One choice for every tab and every forum
+    var topsFolded by remember { mutableStateOf(context.appPreferences.forumTopsFolded) }
     // Saved, so each tab keeps its place while another page is open on top
     val listStates = tabs.associateWith { tab -> key(tab) { rememberLazyListState() } }
 
@@ -197,7 +205,11 @@ fun ForumScreen(
                         onEvent = onEvent,
                         listState = listStates.getValue(tab),
                         contentPadding = listPadding,
-                        ruleTitle = forum.ruleTitle.takeIf { tab == ForumTab.Latest },
+                        topsFolded = topsFolded,
+                        onFoldTops = {
+                            topsFolded = it
+                            context.appPreferences.forumTopsFolded = it
+                        },
                     )
                 }
             }

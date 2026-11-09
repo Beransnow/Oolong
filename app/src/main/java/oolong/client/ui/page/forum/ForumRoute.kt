@@ -53,7 +53,7 @@ fun ForumRoute(
         when (event) {
             ForumEvent.Back -> navigator.navigateUp()
             ForumEvent.Search -> forum?.let { navigator.navigate(ForumSearchPostKey(it.name, it.id)) }
-            ForumEvent.OpenDetail -> forum?.let { navigator.navigate(ForumDetailKey(forumId = it.id)) }
+            ForumEvent.OpenDetail -> forum?.let { navigator.navigate(ForumDetailKey(forumId = it.id, ruleTitle = it.ruleTitle)) }
             ForumEvent.OpenRule -> forum?.let { navigator.navigate(ForumRuleDetailKey(it.id)) }
             ForumEvent.Share -> shareForum(context, state.forumName)
             ForumEvent.SendToDesktop -> forum?.let {

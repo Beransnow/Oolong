@@ -62,7 +62,11 @@ data class SubPostsSheetKey(
 data class ForumKey(val forumName: String) : Key
 
 @Serializable
-data class ForumDetailKey(val forumId: Long) : Key
+data class ForumDetailKey(
+    val forumId: Long,
+    /** The title of the forum's rules, which its page names; null when it has none. */
+    val ruleTitle: String? = null,
+) : Key
 
 @Serializable
 data class ForumRuleDetailKey(val forumId: Long) : Key
