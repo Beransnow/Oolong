@@ -438,7 +438,7 @@ private fun TimelineSubPosts(
     // rather than taking a row of its own, unless the rules fold that reply away
     val linkRow = replies?.loading == true || replies?.failed == true || remaining > 0
     val collapseOnLast = onCollapse != null && !linkRow && subPosts.lastOrNull()?.let { blocks[it.id] == null } == true
-    Column(modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
+    Column(modifier = Modifier.padding(top = 6.dp)) {
         subPosts.forEach { subPost ->
             key(subPost.id) {
                 DisposableEffect(subPost.id) { onDispose { onGone(subPost.id) } }
@@ -468,58 +468,54 @@ private fun TimelineSubPosts(
                 }
             }
         }
-        if (!linkRow && (onCollapse == null || collapseOnLast)) {
-            Spacer(modifier = Modifier.height(8.dp))
-            return@Column
-        }
+        // The last reply's own bottom space then parts it from the next floor, as wide as between floors
+        if (!linkRow && (onCollapse == null || collapseOnLast)) return@Column
+        val showMore = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) }.takeIf { replies?.loading != true && (replies?.failed == true || remaining > 0) }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(start = Gutter, bottom = 12.dp)
+                .padding(bottom = 6.dp)
                 .fillMaxWidth(),
         ) {
-            when {
-                replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary, onClick = null)
-                replies?.failed == true -> SubPostsLink(
-                    text = stringResource(id = R.string.sub_posts_load_failed),
-                    color = ExtendedTheme.colors.accent,
-                    onClick = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) },
-                )
-                remaining > 0 -> SubPostsLink(
-                    text = pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining),
-                    color = ExtendedTheme.colors.accent,
-                    onClick = { onEvent(ThreadEvent.ShowMoreSubPosts(post)) },
-                )
+            // The whole row up to 收起 opens more, not only its words
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (showMore != null) Modifier.clickable(onClick = showMore) else Modifier)
+                    .padding(start = Gutter, top = 4.dp, bottom = 4.dp),
+            ) {
+                when {
+                    replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary)
+                    replies?.failed == true -> SubPostsLink(text = stringResource(id = R.string.sub_posts_load_failed), color = ExtendedTheme.colors.accent)
+                    remaining > 0 -> SubPostsLink(
+                        text = pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining),
+                        color = ExtendedTheme.colors.accent,
+                    )
+                }
             }
-            Spacer(modifier = Modifier.weight(1f))
-            if (onCollapse != null) CollapseLink(onCollapse)
+            if (onCollapse != null) CollapseLink(onCollapse, modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp))
         }
     }
 }
 
-/** The link that folds a floor's replies back into their capsule. */
+/**
+ * The link that folds a floor's replies back into their capsule. Its touch area reaches past its
+ * words, so it needs no room of its own on the line it ends.
+ */
 @Composable
-private fun CollapseLink(onClick: () -> Unit) {
+private fun CollapseLink(onClick: () -> Unit, modifier: Modifier = Modifier) {
     SubPostsLink(
         text = stringResource(id = R.string.button_show_fewer_sub_posts),
         color = ExtendedTheme.colors.textSecondary,
         weight = FontWeight.Normal,
-        onClick = onClick,
+        modifier = Modifier.clickable(onClick = onClick).then(modifier),
     )
 }
 
-/** A link under a floor's replies, in the row lined up with their avatars. */
+/** A link's words under a floor's replies, in the row lined up with their avatars. */
 @Composable
-private fun SubPostsLink(text: String, color: Color, onClick: (() -> Unit)?, weight: FontWeight = FontWeight.SemiBold) {
-    Text(
-        text = text,
-        style = TextStyles.caption,
-        fontWeight = weight,
-        color = color,
-        modifier = Modifier
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 4.dp),
-    )
+private fun SubPostsLink(text: String, color: Color, modifier: Modifier = Modifier, weight: FontWeight = FontWeight.SemiBold) {
+    Text(text = text, style = TextStyles.caption, fontWeight = weight, color = color, modifier = modifier)
 }
 
 /**
@@ -626,7 +622,10 @@ private fun ClassicSubPosts(
                 style = TextStyles.caption,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.accent,
-                modifier = Modifier.clickable { onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0)) },
+                // The block's whole width opens them, not only the words
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0)) },
             )
         }
     }
