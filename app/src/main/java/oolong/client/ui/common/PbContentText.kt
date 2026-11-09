@@ -3,6 +3,7 @@ package oolong.client.ui.common
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -42,7 +43,7 @@ fun PbContentText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     PbContentText(
-        text = text.emoticonString,
+        text = remember(text) { text.emoticonString },
         modifier = modifier,
         color = color,
         fontSize = fontSize,

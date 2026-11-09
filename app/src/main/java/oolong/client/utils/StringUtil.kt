@@ -24,6 +24,7 @@ import oolong.client.ui.common.TextLinkActions
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.utils.EmoticonManager.getEmoticonDrawable
 import oolong.client.utils.EmoticonManager.getEmoticonIdByName
+import oolong.client.utils.EmoticonUtil.emoticonString
 import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.roundToInt
@@ -133,7 +134,7 @@ object StringUtil {
                 append(getUsernameAnnotatedString(context, username, nickname))
             }
             append(": ")
-            append(content)
+            append(content.emoticonString)
         }
     }
 

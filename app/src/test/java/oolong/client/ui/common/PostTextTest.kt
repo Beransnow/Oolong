@@ -6,6 +6,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import oolong.client.model.TextSpan
+import oolong.client.utils.EmoticonUtil
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -67,5 +68,21 @@ class PostTextTest {
             linksOf(text),
         )
         assertEquals(listOf("url https://evil.example", "url https://evil.example"), opened)
+    }
+
+    @Test
+    fun `emoticons are inline content by id, written as their names`() {
+        val text = render(TextSpan.Plain("好"), TextSpan.Emoticon("image_emoticon25", "滑稽"), TextSpan.Emoticon("image_emoticon2", "哈哈"))
+
+        assertEquals("好#(滑稽)#(哈哈)", text.text)
+        val inline = text.getStringAnnotations(EmoticonUtil.INLINE_CONTENT_TAG, 0, text.length)
+            .map { Triple(it.item, it.start, it.end) }
+        assertEquals(listOf(Triple("Emoticon#image_emoticon25", 1, 6), Triple("Emoticon#image_emoticon2", 6, 11)), inline)
+        assertEquals(setOf("image_emoticon25", "image_emoticon2"), EmoticonUtil.emoticonIds(text))
+    }
+
+    @Test
+    fun `text without emoticons needs no inline images`() {
+        assertEquals(emptySet(), EmoticonUtil.emoticonIds(render(TextSpan.Link("链接", url = "https://example.com"))))
     }
 }

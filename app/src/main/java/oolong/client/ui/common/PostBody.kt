@@ -50,7 +50,7 @@ import oolong.client.ui.page.videoview.ViewerVideo
 import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
-import oolong.client.utils.EmoticonUtil.emoticonString
+import oolong.client.utils.EmoticonUtil.emoticonInlineId
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.appPreferences
@@ -191,7 +191,7 @@ fun List<TextSpan>.toAnnotatedString(
         forEach { span ->
             when (span) {
                 is TextSpan.Plain -> append(span.text)
-                is TextSpan.Emoticon -> append(span.text.emoticonString)
+                is TextSpan.Emoticon -> appendInlineContent(emoticonInlineId(span.id), alternateText = span.text)
                 is TextSpan.Link -> {
                     appendInlineContent("link_icon", alternateText = "🔗")
                     withLink(links.url(span.url, accentLink)) { append(span.text) }
