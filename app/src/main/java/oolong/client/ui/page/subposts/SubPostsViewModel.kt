@@ -46,6 +46,7 @@ import oolong.client.repository.ThreadRepository
 import oolong.client.repository.check
 import oolong.client.repository.post
 import oolong.client.ui.navigation.SubPostsKey
+import oolong.core.network.TiebaServerException
 import oolong.core.network.identity.SessionProvider
 
 /** A reply inside the post and how the block rules block it, if they do. */
@@ -121,7 +122,14 @@ class SubPostsViewModel @AssistedInject constructor(
         itemKey = { subPost: SubPost -> subPost.id },
         normalize = { SubPosts(it) },
     ) { key ->
-        val page = repository.floor(threadId, postId, forumId, key, previewIds)
+        val page = try {
+            repository.floor(threadId, postId, forumId, key, previewIds)
+        } catch (e: TiebaServerException) {
+            // A reply a feed recommends may be a floor itself, which isn't found as a reply inside one
+            if (key.subPostId == 0L || e.code != NotFoundCode) throw e
+            scrollToSubPost = null
+            repository.floor(threadId, key.subPostId, forumId, FloorCursor(key.page), previewIds)
+        }
         postId = page.post.id
         forumId = page.forum.id
         floor.value = page
@@ -240,3 +248,6 @@ class SubPostsViewModel @AssistedInject constructor(
         fun create(key: SubPostsKey): SubPostsViewModel
     }
 }
+
+/** The server's code for a post or reply it can't find. */
+private const val NotFoundCode = 4

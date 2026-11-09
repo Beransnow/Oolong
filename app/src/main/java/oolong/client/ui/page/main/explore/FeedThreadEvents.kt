@@ -50,8 +50,8 @@ fun rememberFeedThreadEvents(onAgree: (ThreadSummary) -> Unit): FeedThreadEvents
             onOpenUser = { navigator.navigate(UserProfileKey(it.id)) },
             onOpenOrigin = { navigator.navigate(ThreadKey(threadId = it.id, forumId = it.forumId)) },
             onOpenFeedReply = { thread ->
-                // The reply may be a floor or a reply inside one, which only pb/floor tells apart:
-                // it opens the floor with its replies either way
+                // The reply may be a floor or a reply inside one, which the feed doesn't tell
+                // apart: the replies page tries it as a reply first, then as a floor
                 thread.reply?.let {
                     navigator.navigate(SubPostsKey(threadId = it.threadId, forumId = thread.forum.id, subPostId = it.postId, loadFromSubPost = true))
                 }

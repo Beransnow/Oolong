@@ -27,6 +27,7 @@ import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions
 import oolong.client.ui.navigation.SubPostsKey
+import oolong.core.network.TiebaServerException
 import oolong.core.network.agree.AgreeRemoteDataSource
 import oolong.core.network.identity.Session
 import oolong.core.network.thread.ThreadRemoteDataSource
@@ -131,6 +132,17 @@ class SubPostsViewModelTest {
         coVerify { remote.floor(9_000, 302, 0, 1, 302, true) }
         coVerify { remote.floor(9_000, 77, 52, 4, 0) }
         assertTrue(viewModel.state.value.subPosts.hasPrevious)
+    }
+
+    @Test
+    fun `opened from a reply that is a floor itself it loads that floor`() = runTest {
+        coEvery { remote.floor(9_000, 0, 0, 1, 77, true) } throws TiebaServerException(4, "主题不存在", null)
+        coEvery { remote.floor(9_000, 77, 0, 1, 0, false) } returns floor(listOf(reply(201)))
+        val viewModel = createViewModel(postId = 0, subPostId = 77, loadFromSubPost = true)
+        runCurrent()
+
+        assertEquals(77L, viewModel.state.value.post?.id)
+        assertEquals(listOf(201L), viewModel.state.value.subPosts.items.map { it.subPost.id })
     }
 
     @Test
