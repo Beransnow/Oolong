@@ -8,7 +8,7 @@
     "改进": [
       "吧规与置顶\n吧规移至「关于本吧」，点按吧名即可打开；置顶帖可收起，收起后只显示第一条与总数",
       "帖子中的链接\n读屏与键盘可以找到帖子中的链接、@ 与话题",
-      "楼层间距\n楼层之间的距离统一，不再随楼中楼的有无而变化"
+      "楼层排版\n同一楼的名字、正文、时间与楼中楼排得更紧凑，楼与楼之间留出更清楚的间隔，与有无楼中楼无关"
     ],
     "修复": [
       "底栏收起后，切换页面或返回时意外展开",
@@ -30,7 +30,7 @@
     "Improved": [
       "Rules and pinned threads\nA forum's rules are now in About this forum, which its name opens; pinned threads can fold to the first one and their count",
       "Links in posts\nScreen readers and keyboards can reach the links, mentions and topics in posts",
-      "Space between floors\nFloors are evenly spaced, with or without replies under them"
+      "Floor layout\nA floor's name, text, time and replies sit closer together, and floors are set clearly apart, with or without replies"
     ],
     "Fixed": [
       "The folded bottom bar unfolded when switching tabs or going back",
