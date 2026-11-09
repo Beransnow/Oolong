@@ -198,8 +198,12 @@ fun MainPage(
                 // Beside the rail, the field stands at the end of the top bar of the tab in view
                 // One size on every tab, however much room each tab's title leaves it
                 val barSearchRoom = remember { TopBarEndRoom() }
-                val barSearch: (@Composable (Dp) -> Unit)? = if (showBottomNavigation) null else { room ->
-                    TopBarSearchField(state = search, room = room, onOpen = openSearch)
+                val barSearch: (@Composable (Dp) -> Unit)? = when {
+                    !showBottomNavigation -> { room -> TopBarSearchField(state = search, room = room, onOpen = openSearch) }
+                    // Kept at the top on a phone, it is a round button at the end of the feeds' and
+                    // the messages' bars; the home page has its field under its title
+                    searchAtTop -> { _ -> TopSearchField(state = search, onOpen = openSearch, compact = true) }
+                    else -> null
                 }
                 LazyLoadHorizontalPager(
                     state = pagerState,
@@ -213,7 +217,10 @@ fun MainPage(
                 ) { page ->
                     // Only the tab in view, so the field search opens from is the one that shows
                     CompositionLocalProvider(
-                        LocalTopBarEnd provides barSearch.takeIf { page == pagerState.currentPage },
+                        LocalTopBarEnd provides barSearch.takeIf {
+                            page == pagerState.currentPage &&
+                                (!showBottomNavigation || navigationItems[page].id in TopSearchButtonTabs)
+                        },
                         LocalTopBarEndRoom provides barSearchRoom,
                     ) {
                         when (navigationItems[page].id) {
@@ -265,6 +272,9 @@ fun MainPage(
         if (searchUiState.keyword.isNotEmpty()) searchViewModel.search("") else closeSearch()
     }
 }
+
+/** The tabs that, on a phone with search kept at the top, have a search button in their bar. */
+private val TopSearchButtonTabs = setOf(MainTabs.EXPLORE, MainTabs.NOTIFICATIONS)
 
 /** Whether the main tabs swipe, on a phone where their bar is at the bottom. */
 val MainTabSwipeKey = booleanPreferencesKey("mainTabSwipe")
