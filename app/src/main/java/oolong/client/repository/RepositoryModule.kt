@@ -21,6 +21,7 @@ import oolong.client.components.web.WebSessions
 import oolong.client.dataStore
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.appPreferences
+import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -73,6 +74,11 @@ abstract class RepositoryModule {
                     context.appPreferences.userLikeLastRequestUnix = value
                 }
         }
+
+        @Provides
+        @Singleton
+        fun provideFeedSnapshots(@ApplicationContext context: Context, accounts: AccountRepository): FeedSnapshots =
+            FileFeedSnapshots(File(context.cacheDir, "feeds"), uid = { accounts.current.value?.uid })
 
         @Provides
         fun providePosterName(accounts: AccountRepository): PosterName = PosterName { accounts.current.value?.nameShow }

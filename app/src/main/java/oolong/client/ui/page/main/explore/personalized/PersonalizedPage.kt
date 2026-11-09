@@ -49,11 +49,13 @@ import oolong.client.arch.LoadStatus
 import oolong.client.arch.onGlobalEvent
 import oolong.client.model.DislikeOption
 import oolong.client.model.ThreadSummary
+import oolong.client.repository.FeedPosition
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.main.explore.FeedThreadEvents
+import oolong.client.ui.page.main.explore.KeepFeedPosition
 import oolong.client.ui.page.main.explore.ThreadPeeker
 import oolong.client.ui.page.main.explore.rememberFeedThreadEvents
 import oolong.client.ui.page.main.explore.rememberThreadPeeker
@@ -78,8 +80,12 @@ fun PersonalizedPage(
     LaunchedEffect(Unit) { viewModel.open() }
     onGlobalEvent<GlobalEvent.Refresh>(filter = { it.key == "personalized" }) { viewModel.refresh() }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val keptPosition by viewModel.keptPosition.collectAsStateWithLifecycle()
     PersonalizedScreen(
         state = state,
+        keptPosition = keptPosition,
+        onPositionRestored = viewModel::positionRestored,
+        onLeave = viewModel::leave,
         events = rememberFeedThreadEvents(onAgree = viewModel::agree),
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
@@ -105,11 +111,21 @@ fun PersonalizedScreen(
     onUndoDislike: (threadId: Long) -> Unit = {},
     onRefreshShown: (id: Int) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    keptPosition: FeedPosition? = null,
+    onPositionRestored: () -> Unit = {},
+    onLeave: (FeedPosition?) -> Unit = {},
 ) {
     val list = state.list
     val refreshing = list.refresh == LoadStatus.Loading
     val error = (list.refresh as? LoadStatus.Error)?.error
     val lazyListState = rememberLazyListState()
+    KeepFeedPosition(
+        state = lazyListState,
+        ids = { list.items.map { it.feed.thread.id } },
+        restore = keptPosition,
+        onRestored = onPositionRestored,
+        onLeave = onLeave,
+    )
 
     val lastRefresh = state.lastRefresh
     // The new threads arrive in front of the one in view, which the list would otherwise keep in

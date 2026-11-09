@@ -17,6 +17,8 @@ import oolong.client.model.RecommendedThread
 import oolong.client.repository.BlockRuleSource
 import oolong.client.repository.BlockRules
 import oolong.client.repository.ExploreRepository
+import oolong.client.repository.FeedPosition
+import oolong.client.repository.KeptFeed
 import oolong.client.repository.toThreadSummary
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
@@ -32,7 +34,10 @@ class PersonalizedViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = mockk<ExploreRepository>()
+    private val repository = mockk<ExploreRepository> {
+        coEvery { keptRecommended() } returns null
+        coEvery { leaveRecommended(any(), any()) } returns Unit
+    }
     private val messages = mockk<MessageController>(relaxed = true)
 
     private fun thread(id: Long) = RecommendedThread(ThreadInfo(id = id, threadId = id, agree = Agree(hasAgree = 0)).toThreadSummary { _, _ -> })
@@ -53,14 +58,14 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `refreshing puts the new threads in front and marks where the old ones begin`() = runTest {
-        coEvery { repository.recommended(true, 1) } returnsMany listOf(
+        coEvery { repository.recommended(true, 1, any()) } returnsMany listOf(
             listOf(thread(1), thread(2)),
             listOf(thread(3), thread(1)),
         )
-        coEvery { repository.recommended(false, 2) } returns listOf(thread(4))
+        coEvery { repository.recommended(false, 2, any()) } returns listOf(thread(4))
         val viewModel = createViewModel()
         runCurrent()
-        coVerify(exactly = 0) { repository.recommended(any(), any()) }
+        coVerify(exactly = 0) { repository.recommended(any(), any(), any()) }
 
         viewModel.open()
         runCurrent()
@@ -82,7 +87,7 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `a failed refresh of a shown list says so and keeps the list`() = runTest {
-        coEvery { repository.recommended(true, 1) } returns listOf(thread(1)) andThenThrows IllegalStateException()
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1)) andThenThrows IllegalStateException()
         val viewModel = createViewModel()
         viewModel.open()
         runCurrent()
@@ -95,7 +100,7 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `a disliked thread stays hidden even if telling the server fails`() = runTest {
-        coEvery { repository.recommended(true, 1) } returns listOf(thread(1), thread(2))
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1), thread(2))
         coEvery { repository.dislike(any(), any(), any()) } throws IOException()
         val viewModel = createViewModel()
         viewModel.open()
@@ -114,7 +119,7 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `a dislike taken back in time never reaches the server`() = runTest {
-        coEvery { repository.recommended(true, 1) } returns listOf(thread(1), thread(2))
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1), thread(2))
         val viewModel = createViewModel()
         viewModel.open()
         runCurrent()
@@ -131,7 +136,7 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `a failed like is undone`() = runTest {
-        coEvery { repository.recommended(true, 1) } returns listOf(thread(1))
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1))
         coEvery { agreeRemote.opAgree(any(), any(), any(), any()) } throws IOException()
         val viewModel = createViewModel()
         viewModel.open()
@@ -146,7 +151,7 @@ class PersonalizedViewModelTest {
 
     @Test
     fun `a like made on another page shows in the list`() = runTest {
-        coEvery { repository.recommended(true, 1) } returns listOf(thread(1))
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1))
         val client = queryClient()
         val viewModel = createViewModel(client)
         viewModel.open()
@@ -156,5 +161,40 @@ class PersonalizedViewModelTest {
         runCurrent()
 
         assertEquals(true, viewModel.state.value.list.items.single().feed.thread.agree.agreed)
+    }
+
+    @Test
+    fun `after a restart the list comes back as it was left, and a pull loads what is new`() = runTest {
+        coEvery { repository.keptRecommended() } returns KeptFeed(listOf(thread(1), thread(2), thread(3)), next = 4, FeedPosition(2, 30), disliked = setOf(3L))
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(5), thread(1))
+        val viewModel = createViewModel()
+        viewModel.open()
+        runCurrent()
+
+        assertEquals(listOf(1L, 2L, 3L), viewModel.ids)
+        assertEquals(setOf(3L), viewModel.state.value.disliked)
+        assertEquals(FeedPosition(2, 30), viewModel.keptPosition.value)
+        coVerify(exactly = 0) { repository.recommended(any(), any(), any()) }
+        viewModel.positionRestored()
+        assertEquals(null, viewModel.keptPosition.value)
+
+        viewModel.refresh()
+        runCurrent()
+        assertEquals(listOf(5L, 1L, 2L, 3L), viewModel.ids)
+        assertEquals(1, viewModel.state.value.lastRefresh?.count)
+        coVerify { repository.recommended(true, 1, false) }
+    }
+
+    @Test
+    fun `leaving the list notes where it is and what was disliked`() = runTest {
+        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1))
+        val viewModel = createViewModel()
+        viewModel.open()
+        runCurrent()
+
+        viewModel.leave(FeedPosition(1, 0))
+        runCurrent()
+
+        coVerify { repository.leaveRecommended(FeedPosition(1, 0), emptySet()) }
     }
 }

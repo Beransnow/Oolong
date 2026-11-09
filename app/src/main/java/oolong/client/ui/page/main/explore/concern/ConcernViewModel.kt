@@ -11,10 +11,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.arch.Page
 import oolong.client.arch.Pager
 import oolong.client.arch.PagerState
 import oolong.client.arch.query.QueryClient
@@ -22,6 +24,7 @@ import oolong.client.arch.query.pager
 import oolong.client.model.ThreadSummary
 import oolong.client.repository.BlockRuleSource
 import oolong.client.repository.ExploreRepository
+import oolong.client.repository.FeedPosition
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.Threads
 import oolong.client.ui.page.main.explore.FeedThread
@@ -49,6 +52,23 @@ class ConcernViewModel @Inject constructor(
         list.mapItems(rules::feedThread)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PagerState(refresh = LoadStatus.Loading))
 
+    /** Whether the list as it was left has been looked for, which is done once, before the first load. */
+    private var keptTried = false
+    private val _keptPosition = MutableStateFlow<FeedPosition?>(null)
+
+    /** Where the list kept from before was left, to scroll to once it shows; null after. */
+    val keptPosition: StateFlow<FeedPosition?> = _keptPosition
+
+    /** Says the list has been scrolled to where it was left. */
+    fun positionRestored() {
+        _keptPosition.value = null
+    }
+
+    /** Notes where the list is as the user leaves it, to come back to after the app restarts. */
+    fun leave(position: FeedPosition?) {
+        viewModelScope.launch { repository.leaveFollowedUsersThreads(position) }
+    }
+
     /** Starts loading the list unless it already has. */
     fun open() {
         pager()
@@ -71,6 +91,14 @@ class ConcernViewModel @Inject constructor(
             itemKey = { thread: ThreadSummary -> thread.id },
             normalize = { Threads(it) },
         ) { pageTag ->
+            // After a restart, the list comes back as it was left
+            if (pageTag.isEmpty() && !keptTried) {
+                keptTried = true
+                repository.keptFollowedUsersThreads()?.let { kept ->
+                    _keptPosition.value = kept.position
+                    return@pager Page(kept.items, next = kept.next)
+                }
+            }
             repository.followedUsersThreads(pageTag)
         }.also { pager.value = it }
     }

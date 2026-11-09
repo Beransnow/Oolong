@@ -41,6 +41,7 @@ import oolong.client.model.ThreadSummary
 import oolong.client.repository.BlockMemo
 import oolong.client.repository.BlockRuleSource
 import oolong.client.repository.ExploreRepository
+import oolong.client.repository.FeedPosition
 import oolong.client.repository.ThreadActions
 import oolong.client.repository.Threads
 import oolong.client.ui.page.main.explore.FeedThread
@@ -109,6 +110,13 @@ class PersonalizedViewModel @Inject constructor(
 
     private val pendingDislikes = mutableMapOf<Long, Job>()
 
+    /** Whether the list as it was left has been looked for, which is done once, before the first load. */
+    private var keptTried = false
+    private val _keptPosition = MutableStateFlow<FeedPosition?>(null)
+
+    /** Where the list kept from before was left, to scroll to once it shows; null after. */
+    val keptPosition: StateFlow<FeedPosition?> = _keptPosition
+
     private data class Local(
         val disliked: Set<Long> = emptySet(),
         val undoable: Map<Long, String?> = emptyMap(),
@@ -142,6 +150,17 @@ class PersonalizedViewModel @Inject constructor(
     fun refresh() = pager().refresh()
 
     fun loadMore() = pager().loadMore()
+
+    /** Says the list has been scrolled to where it was left. */
+    fun positionRestored() {
+        _keptPosition.value = null
+    }
+
+    /** Notes where the list is as the user leaves it, to come back to after the app restarts. */
+    fun leave(position: FeedPosition?) {
+        val disliked = local.value.disliked
+        viewModelScope.launch { repository.leaveRecommended(position, disliked) }
+    }
 
     /** Marks refresh [id] shown, so that coming back to the list doesn't show it again. */
     fun refreshShown(id: Int) {
@@ -186,8 +205,17 @@ class PersonalizedViewModel @Inject constructor(
             refreshMode = RefreshMode.Prepend,
         ) { page ->
             val loaded = pager.value?.state?.value?.items.orEmpty()
+            // After a restart, the list comes back as it was left
+            if (page == 1 && loaded.isEmpty() && !keptTried) {
+                keptTried = true
+                repository.keptRecommended()?.let { kept ->
+                    local.update { it.copy(disliked = it.disliked + kept.disliked) }
+                    _keptPosition.value = kept.position
+                    return@pager Page(kept.items, next = kept.next ?: 2)
+                }
+            }
             val threads = try {
-                repository.recommended(refresh = page == 1, page = page)
+                repository.recommended(refresh = page == 1, page = page, newList = loaded.isEmpty())
             } catch (e: Exception) {
                 if (page == 1 && loaded.isNotEmpty() && e !is CancellationException) onRefreshFailed()
                 throw e

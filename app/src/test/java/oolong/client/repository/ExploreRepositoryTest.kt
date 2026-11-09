@@ -39,8 +39,23 @@ class ExploreRepositoryTest {
         override var lastRequestUnix = 100L
     }
     private var hideVideos = false
+    private val snapshots = object : FeedSnapshots {
+        val pages = mutableMapOf<String, MutableList<ByteArray>>()
+        var next: String? = null
+        override fun read(feed: String) = pages[feed]?.let { FeedSnapshot(it, next, FeedPosition(it.size.toLong(), 0), emptySet()) }
+        override fun write(feed: String, page: ByteArray, place: FeedSnapshots.Place, next: String?) {
+            val list = pages.getOrPut(feed) { mutableListOf() }
+            when (place) {
+                FeedSnapshots.Place.Replace -> list.apply { clear() }.add(page)
+                FeedSnapshots.Place.Front -> list.add(0, page)
+                FeedSnapshots.Place.Back -> list.add(page)
+            }
+            this.next = next
+        }
+        override fun leave(feed: String, position: FeedPosition?, disliked: Set<Long>) = Unit
+    }
     private val repository = ExploreRepository(
-        remote, store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> },
+        remote, store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> }, snapshots,
     )
 
     @Test
@@ -64,6 +79,30 @@ class ExploreRepositoryTest {
 
         assertEquals(listOf(1L), threads.map { it.thread.id })
         assertEquals(listOf(DislikeOption(2, "看过了", "x")), threads.single().dislikeOptions)
+    }
+
+    @Test
+    fun `the recommended pages are kept in the list's order and read back through the same filters`() = runTest {
+        val forum = SimpleForum(id = 52)
+        coEvery { remote.personalized(true, 1) } returnsMany listOf(
+            PersonalizedResponseData(thread_list = listOf(ThreadInfo(id = 1, threadId = 1, forumInfo = forum))),
+            PersonalizedResponseData(thread_list = listOf(ThreadInfo(id = 3, threadId = 3, forumInfo = forum), ThreadInfo(id = 9, threadId = 9, forumInfo = forum, thread_type = 80))),
+        )
+        coEvery { remote.personalized(false, 2) } returns PersonalizedResponseData(thread_list = listOf(ThreadInfo(id = 2, threadId = 2, forumInfo = forum)))
+
+        repository.recommended(refresh = true, page = 1, newList = true)
+        repository.recommended(refresh = false, page = 2)
+        repository.recommended(refresh = true, page = 1)
+        val kept = repository.keptRecommended()!!
+
+        assertEquals(listOf(3L, 1L, 2L), kept.items.map { it.thread.id })
+        assertEquals(2, kept.next)
+    }
+
+    @Test
+    fun `nothing kept means nothing to show`() = runTest {
+        assertNull(repository.keptRecommended())
+        assertNull(repository.keptFollowedUsersThreads())
     }
 
     @Test
