@@ -771,6 +771,7 @@
     <string name="button_select_all">全选</string>
     <string name="button_deselect_all">取消全选</string>
     <string name="title_copy">复制</string>
+    <string name="link_view_image">查看图片</string>
     <string name="desc_photo">图片</string>
     <plurals name="btn_open_photos">
         <item quantity="other">查看图片（%d）</item>

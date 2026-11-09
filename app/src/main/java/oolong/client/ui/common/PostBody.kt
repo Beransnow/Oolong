@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -21,10 +23,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withAnnotation
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -106,8 +112,14 @@ private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHei
 private fun mediaWidthFraction(): Float =
     if (LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact) 1f else 0.5f
 
+/** A picture of a post, at its own shape; [size] sets its width, the full media width by default. */
 @Composable
-private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?, rounded: Boolean = true) {
+fun PostImage(
+    image: PostContent.Image,
+    photoViewData: PhotoViewData?,
+    rounded: Boolean = true,
+    size: Modifier = Modifier.fillMaxWidth(mediaWidthFraction()),
+) {
     val context = LocalContext.current
     val url = remember(image) {
         ImageUtil.getUrl(context, true, image.originUrl, *image.urls.toTypedArray())
@@ -116,8 +128,8 @@ private fun PostImage(image: PostContent.Image, photoViewData: PhotoViewData?, r
         imageUri = url,
         contentDescription = null,
         modifier = Modifier
+            .then(size)
             .clip(SmoothCornerShape(if (rounded) context.appPreferences.radius.dp else 0.dp))
-            .fillMaxWidth(mediaWidthFraction())
             .aspectRatio(image.aspectRatio),
         photoViewData = photoViewData,
         contentScale = ContentScale.Crop,
@@ -212,17 +224,26 @@ fun List<TextSpan>.toAnnotatedString(
 
 /**
  * A reply inside a post as one line: the author's name in [nameColor], a thread author tag when
- * [isLz], then what they said. Only the text of the reply is kept.
+ * [isLz], then what they said. With [onImage], each of its pictures is a link that calls it;
+ * without, only the text of the reply is kept.
  */
 @OptIn(ExperimentalTextApi::class)
 @Composable
-fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = ExtendedTheme.colors.emphasis): AnnotatedString {
+fun rememberSubPostText(
+    subPost: SubPost,
+    isLz: Boolean,
+    nameColor: Color = ExtendedTheme.colors.emphasis,
+    onImage: ((PostContent.Image) -> Unit)? = null,
+): AnnotatedString {
     val context = LocalContext.current
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
     val warning = MaterialTheme.colors.error
     val actualHost = stringResource(id = R.string.link_actual_host)
-    return remember(subPost, isLz, nameColor, accent, videoTag, warning, actualHost) {
+    val imageLink = stringResource(id = R.string.link_view_image)
+    val currentOnImage by rememberUpdatedState(onImage)
+    val imageLinks = onImage != null
+    return remember(subPost, isLz, nameColor, accent, videoTag, warning, actualHost, imageLink, imageLinks) {
         buildAnnotatedString {
             withAnnotation("user", "${subPost.author.id}") {
                 withStyle(SpanStyle(color = nameColor, fontWeight = FontWeight.Bold)) {
@@ -233,8 +254,18 @@ fun rememberSubPostText(subPost: SubPost, isLz: Boolean, nameColor: Color = Exte
                 if (isLz) appendInlineContent("Lz")
                 append(": ")
             }
-            subPost.content.forEach { block ->
-                if (block is PostContent.Text) append(block.spans.toAnnotatedString(accent, videoTag, warning, actualHost))
+            subPost.content.forEachIndexed { index, block ->
+                when {
+                    block is PostContent.Text -> append(block.spans.toAnnotatedString(accent, videoTag, warning, actualHost))
+                    block is PostContent.Image && imageLinks -> {
+                        if (index > 0) append(" ")
+                        val style = TextLinkStyles(SpanStyle(color = accent, textDecoration = TextDecoration.None))
+                        withLink(LinkAnnotation.Clickable("image$index", style) { currentOnImage?.invoke(block) }) {
+                            appendInlineContent("photo_icon", alternateText = "🖼")
+                            append(imageLink)
+                        }
+                    }
+                }
             }
         }
     }

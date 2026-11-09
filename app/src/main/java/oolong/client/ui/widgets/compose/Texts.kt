@@ -267,6 +267,21 @@ fun IconText(
                         )
                     }
                 ),
+                "photo_icon" to InlineTextContent(
+                    placeholder = Placeholder(
+                        width = sizeSp,
+                        height = sizeSp,
+                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+                    ),
+                    children = {
+                        Icon(
+                            Symbols.Photo,
+                            contentDescription = stringResource(id = R.string.desc_photo),
+                            modifier = Modifier.size(sizeDp),
+                            tint = ExtendedTheme.colors.accent,
+                        )
+                    }
+                ),
                 "user_icon" to InlineTextContent(
                     placeholder = Placeholder(
                         width = sizeSp,

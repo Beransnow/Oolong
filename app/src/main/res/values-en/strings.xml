@@ -780,6 +780,7 @@
     <string name="button_select_all">Select all</string>
     <string name="button_deselect_all">Deselect all</string>
     <string name="title_copy">Copy</string>
+    <string name="link_view_image">View image</string>
     <string name="desc_photo">Image</string>
     <plurals name="btn_open_photos">
         <item quantity="one">View image (%d)</item>

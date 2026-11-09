@@ -35,6 +35,7 @@ import oolong.client.ui.page.thread.floorIndent
 import oolong.client.ui.page.thread.floorRuleColor
 import oolong.client.ui.page.thread.postMenuLabels
 import oolong.client.ui.page.thread.rememberSubPostStyle
+import oolong.client.ui.page.thread.replyPhotoViewData
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
@@ -99,6 +100,7 @@ internal fun SubPostReply(
                 onClick = { onEvent(SubPostsEvent.Reply(post, subPost)) }.takeUnless { hideReply },
                 menuItems = { replyMenuItems(context, blockLabels, post, subPost, hideReply, canDelete, shortcuts, onEvent) },
                 onAgree = { onEvent(SubPostsEvent.AgreeSubPost(subPost.id)) },
+                photoViewData = { image -> replyPhotoViewData(context, post, image) },
             )
         }
     }

@@ -1,5 +1,6 @@
 package oolong.client.ui.page.thread
 
+import android.content.Context
 import android.graphics.Typeface
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
@@ -18,11 +19,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
@@ -72,14 +75,17 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
 import oolong.client.models.PhotoViewData
+import oolong.client.models.PicItem
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.PostBody
+import oolong.client.ui.common.PostImage
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberSubPostText
 import oolong.client.ui.common.shownIpLocation
@@ -90,6 +96,7 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
+import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.settings.block.LocalBlockShortcuts
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BlockTip
@@ -98,6 +105,7 @@ import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
 
@@ -106,6 +114,10 @@ private val Gutter = 52.dp
 private val GutterStart = 4.dp
 private val FloorAvatarSize = 36.dp
 private val SubPostAvatarSize = 22.dp
+
+/** A reply's picture: at most this share of the text's width, and no taller than the cap. */
+private const val ReplyImageWidthFraction = 0.6f
+private val ReplyImageMaxHeight = 240.dp
 
 /** How far down a reply its avatar's centre is, on its first line, where its branch arrives. */
 private val ReplyAvatarCenter = 12.dp
@@ -443,6 +455,8 @@ private fun TimelineSubPosts(
                             onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
                             menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
                             foldLong = true,
+                            photoViewData = { image -> replyPhotoViewData(context, post, image) },
+                            imageLinks = true,
                             trailing = if (collapseOnLast && subPost === subPosts.last()) {
                                 { CollapseLink(onCollapse!!) }
                             } else {
@@ -599,6 +613,7 @@ private fun ClassicSubPosts(
                 ClassicSubPostLine(
                     subPost = subPost,
                     isLz = subPost.author.id == options.threadAuthorId,
+                    photoViewData = { image -> replyPhotoViewData(context, post, image) },
                     onClick = { onEvent(ThreadEvent.OpenSubPosts(post, subPost.id)) },
                     menuItems = { subPostMenuItems(labels, context, post, subPost, options.hideReply, shortcuts, onEvent) },
                 )
@@ -621,11 +636,21 @@ private fun ClassicSubPosts(
 private fun ClassicSubPostLine(
     subPost: SubPost,
     isLz: Boolean,
+    photoViewData: (PostContent.Image) -> PhotoViewData?,
     onClick: () -> Unit,
     menuItems: () -> List<ContextMenuItem>,
 ) {
     val colors = ExtendedTheme.colors
-    val text = rememberSubPostText(subPost, isLz, nameColor = colors.text)
+    val photoViewer = LocalPhotoViewer.current
+    val text = rememberSubPostText(
+        subPost,
+        isLz,
+        nameColor = colors.text,
+        onImage = { image ->
+            val data = photoViewData(image)
+            if (data != null) photoViewer?.open(data)
+        },
+    )
     val time = relativeTime(subPost.time)
     val paragraph = remember(text, time, colors.textSecondary) {
         buildAnnotatedString {
@@ -706,7 +731,8 @@ fun SubPostBranch(
  * A reply inside a post: the avatar, then who and what in one paragraph, then when. In a floor it
  * shows its likes, and with [foldLong] a long one shows its first lines and a link to the rest; on
  * the replies' own page it shows in full, with [onAgree] a like button. [trailing] ends the line
- * with when, after the likes.
+ * with when, after the likes. Its pictures, opened in the viewer with [photoViewData], follow the
+ * text, or with [imageLinks] are links in it.
  */
 @Composable
 fun SubPostLine(
@@ -718,8 +744,14 @@ fun SubPostLine(
     foldLong: Boolean = false,
     onAgree: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
+    photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
+    imageLinks: Boolean = false,
 ) {
     val colors = ExtendedTheme.colors
+    val photoViewer = LocalPhotoViewer.current
+    val images = remember(subPost.content, imageLinks) {
+        if (imageLinks) emptyList() else subPost.content.filterIsInstance<PostContent.Image>()
+    }
     Box(modifier = modifier.fillMaxWidth().longPressMenu(items = menuItems, onClick = onClick)) {
         Column(modifier = Modifier.padding(bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -732,10 +764,29 @@ fun SubPostLine(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 FoldingReplyText(
-                    text = rememberSubPostText(subPost, isLz, nameColor = colors.text),
+                    text = rememberSubPostText(
+                        subPost,
+                        isLz,
+                        nameColor = colors.text,
+                        onImage = { image: PostContent.Image ->
+                            val data = photoViewData(image)
+                            if (data != null) photoViewer?.open(data)
+                        }.takeIf { imageLinks },
+                    ),
                     fold = foldLong,
                     key = subPost.id,
                     modifier = Modifier.weight(1f),
+                )
+            }
+            images.forEach { image ->
+                PostImage(
+                    image = image,
+                    photoViewData = photoViewData(image),
+                    size = Modifier
+                        .padding(start = SubPostAvatarSize + 8.dp, top = 6.dp)
+                        .fillMaxWidth(ReplyImageWidthFraction)
+                        .wrapContentWidth(Alignment.Start)
+                        .heightIn(max = ReplyImageMaxHeight),
                 )
             }
             Row(
@@ -1012,3 +1063,18 @@ private fun rememberNumeralFamily(): FontFamily {
 
 /** Loaded once for every floor: loading it took about a millisecond each time a floor came in. */
 private var numeralFamily: FontFamily? = null
+
+/** A reply's picture alone in the viewer: the thread's picture list doesn't have the replies' pictures. */
+internal fun replyPhotoViewData(context: Context, post: Post, image: PostContent.Image) = PhotoViewData(
+    picItems = persistentListOf(
+        PicItem(
+            picId = image.id,
+            picIndex = 1,
+            url = ImageUtil.getUrl(context, true, image.originUrl, *image.urls.toTypedArray()),
+            originUrl = image.originUrl,
+            showOriginBtn = image.showOriginButton,
+            originSize = image.originSize,
+            postId = post.id,
+        ),
+    ),
+)
