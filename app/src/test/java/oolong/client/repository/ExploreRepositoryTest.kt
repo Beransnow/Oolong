@@ -53,6 +53,7 @@ class ExploreRepositoryTest {
                 ThreadInfo(id = 2, threadId = 2, forumInfo = forum, ala_info = AlaLiveInfo()),
                 ThreadInfo(id = 3, threadId = 3, forumInfo = forum, videoInfo = VideoInfo()),
                 ThreadInfo(id = 4, threadId = 4),
+                ThreadInfo(id = 5, threadId = 5, forumInfo = forum, thread_type = 80),
             ),
             thread_personalized = listOf(
                 ThreadPersonalized(tid = 1, dislikeResource = listOf(DislikeReason(dislikeReason = "看过了", dislikeId = 2, extra = "x"))),

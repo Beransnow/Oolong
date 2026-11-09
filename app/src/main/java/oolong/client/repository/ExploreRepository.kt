@@ -39,7 +39,7 @@ class ExploreRepository @Inject constructor(
     private val emoticons: EmoticonRegistry,
 ) {
     /**
-     * A page of recommended threads, without live streams and, if the user hides them, videos.
+     * A page of recommended threads, without adverts, live streams and, if the user hides them, videos.
      *
      * @param refresh whether the user pulled to refresh, which asks for new threads rather than the next page
      */
@@ -151,13 +151,19 @@ class ExploreRepository @Inject constructor(
         )
     }
 
-    /** Drops live streams, videos if hidden, and adverts from outside any forum, which carry no forum. */
+    /**
+     * Drops live streams, videos if hidden, and adverts: those from outside any forum, which carry
+     * no forum, and promoted threads, which the server marks with their own thread type.
+     */
     private fun filter(threads: List<ThreadInfo>): List<ThreadInfo> {
         val hideVideos = videoFilter.hidesVideos()
-        return threads.filter { it.ala_info == null && it.forumInfo != null && !(hideVideos && it.videoInfo != null) }
+        return threads.filter {
+            it.ala_info == null && it.forumInfo != null && it.thread_type != PromotedThreadType && !(hideVideos && it.videoInfo != null)
+        }
     }
 }
 
+private const val PromotedThreadType = 80
 private const val LeadThreadCard = "common_thread"
 private const val RelatedForumsCard = "relate_forum"
 private val ThreadCards = setOf(LeadThreadCard, "relate_thread")
