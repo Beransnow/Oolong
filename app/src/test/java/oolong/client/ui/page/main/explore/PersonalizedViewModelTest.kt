@@ -17,7 +17,6 @@ import oolong.client.model.RecommendedThread
 import oolong.client.repository.BlockRuleSource
 import oolong.client.repository.BlockRules
 import oolong.client.repository.ExploreRepository
-import oolong.client.repository.FeedPosition
 import oolong.client.repository.KeptFeed
 import oolong.client.repository.toThreadSummary
 import oolong.client.testing.MainDispatcherRule
@@ -36,7 +35,6 @@ class PersonalizedViewModelTest {
 
     private val repository = mockk<ExploreRepository> {
         coEvery { keptRecommended() } returns null
-        coEvery { leaveRecommended(any(), any()) } returns Unit
     }
     private val messages = mockk<MessageController>(relaxed = true)
 
@@ -164,8 +162,8 @@ class PersonalizedViewModelTest {
     }
 
     @Test
-    fun `after a restart the list comes back as it was left, and a pull loads what is new`() = runTest {
-        coEvery { repository.keptRecommended() } returns KeptFeed(listOf(thread(1), thread(2), thread(3)), next = 4, FeedPosition(2, 30), disliked = setOf(3L))
+    fun `without loading anew as the app opens, the list shows as last loaded, and a pull loads what is new`() = runTest {
+        coEvery { repository.keptRecommended() } returns KeptFeed(listOf(thread(1), thread(2), thread(3)), next = 4, hidden = setOf(3L))
         coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(5), thread(1))
         val viewModel = createViewModel()
         viewModel.open()
@@ -173,28 +171,12 @@ class PersonalizedViewModelTest {
 
         assertEquals(listOf(1L, 2L, 3L), viewModel.ids)
         assertEquals(setOf(3L), viewModel.state.value.disliked)
-        assertEquals(FeedPosition(2, 30), viewModel.keptPosition.value)
         coVerify(exactly = 0) { repository.recommended(any(), any(), any()) }
-        viewModel.positionRestored()
-        assertEquals(null, viewModel.keptPosition.value)
 
         viewModel.refresh()
         runCurrent()
         assertEquals(listOf(5L, 1L, 2L, 3L), viewModel.ids)
         assertEquals(1, viewModel.state.value.lastRefresh?.count)
         coVerify { repository.recommended(true, 1, false) }
-    }
-
-    @Test
-    fun `leaving the list notes where it is and what was disliked`() = runTest {
-        coEvery { repository.recommended(true, 1, any()) } returns listOf(thread(1))
-        val viewModel = createViewModel()
-        viewModel.open()
-        runCurrent()
-
-        viewModel.leave(FeedPosition(1, 0))
-        runCurrent()
-
-        coVerify { repository.leaveRecommended(FeedPosition(1, 0), emptySet()) }
     }
 }

@@ -76,6 +76,10 @@ abstract class RepositoryModule {
         }
 
         @Provides
+        fun provideFeedAutoRefresh(@ApplicationContext context: Context): FeedAutoRefresh =
+            FeedAutoRefresh { context.appPreferences.feedAutoRefresh }
+
+        @Provides
         @Singleton
         fun provideFeedSnapshots(@ApplicationContext context: Context, accounts: AccountRepository): FeedSnapshots =
             FileFeedSnapshots(File(context.cacheDir, "feeds"), uid = { accounts.current.value?.uid })

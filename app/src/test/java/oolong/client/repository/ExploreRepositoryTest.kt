@@ -42,7 +42,8 @@ class ExploreRepositoryTest {
     private val snapshots = object : FeedSnapshots {
         val pages = mutableMapOf<String, MutableList<ByteArray>>()
         var next: String? = null
-        override fun read(feed: String) = pages[feed]?.let { FeedSnapshot(it, next, FeedPosition(it.size.toLong(), 0), emptySet()) }
+        val hidden = mutableSetOf<Long>()
+        override fun read(feed: String) = pages[feed]?.let { FeedSnapshot(it, next, hidden) }
         override fun write(feed: String, page: ByteArray, place: FeedSnapshots.Place, next: String?) {
             val list = pages.getOrPut(feed) { mutableListOf() }
             when (place) {
@@ -52,10 +53,13 @@ class ExploreRepositoryTest {
             }
             this.next = next
         }
-        override fun leave(feed: String, position: FeedPosition?, disliked: Set<Long>) = Unit
+        override fun hide(feed: String, threadId: Long) {
+            hidden += threadId
+        }
     }
+    private var autoRefresh = false
     private val repository = ExploreRepository(
-        remote, store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> }, snapshots,
+        remote, store, { hideVideos }, Dispatchers.Unconfined, { _, _ -> }, snapshots, { autoRefresh },
     )
 
     @Test
@@ -103,6 +107,17 @@ class ExploreRepositoryTest {
     fun `nothing kept means nothing to show`() = runTest {
         assertNull(repository.keptRecommended())
         assertNull(repository.keptFollowedUsersThreads())
+    }
+
+    @Test
+    fun `loading anew as the app opens shows nothing kept, and disliked threads stay hidden`() = runTest {
+        coEvery { remote.personalized(true, 1) } returns PersonalizedResponseData(thread_list = listOf(ThreadInfo(id = 1, threadId = 1, forumInfo = SimpleForum(id = 52))))
+        repository.recommended(refresh = true, page = 1, newList = true)
+        repository.dislike(ThreadInfo(id = 1, threadId = 1, forumInfo = SimpleForum(id = 52)).toThreadSummary { _, _ -> }, emptyList(), 0)
+
+        assertEquals(setOf(1L), repository.keptRecommended()!!.hidden)
+        autoRefresh = true
+        assertNull(repository.keptRecommended())
     }
 
     @Test

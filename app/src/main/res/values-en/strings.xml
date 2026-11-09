@@ -140,6 +140,8 @@
     <string name="name_multi_app">an app</string>
     <string name="settings_forum_single">Single-column forum list</string>
     <string name="title_hide_explore">Hide “Explore”</string>
+    <string name="title_feed_auto_refresh">Refresh “Explore” on open</string>
+    <string name="summary_feed_auto_refresh">Load new For you and Following threads when the app opens</string>
     <string name="toast_clear_success">Cleared</string>
     <string name="button_retry">Retry</string>
     <string name="video_play_failed">Can\'t play</string>

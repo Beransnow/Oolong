@@ -27,6 +27,11 @@ import oolong.client.model.TopicRef
 import oolong.core.network.explore.ExploreRemoteDataSource
 import javax.inject.Inject
 
+/** Whether the feeds load anew when the app opens, rather than showing what was last loaded. */
+fun interface FeedAutoRefresh {
+    fun enabled(): Boolean
+}
+
 /** Remembers when the followed users' feed was last loaded from the top, which the server wants back. */
 interface ConcernFeedStore {
     var lastRequestUnix: Long
@@ -40,10 +45,11 @@ class ExploreRepository @Inject constructor(
     @IoDispatcher private val io: CoroutineDispatcher,
     private val emoticons: EmoticonRegistry,
     private val snapshots: FeedSnapshots,
+    private val autoRefresh: FeedAutoRefresh,
 ) {
     /**
      * A page of recommended threads, without adverts, live streams and, if the user hides them, videos.
-     * It is kept to show again after the app restarts, see [keptRecommended].
+     * It is kept to show again when the app opens next, see [keptRecommended].
      *
      * @param refresh whether the user pulled to refresh, which asks for new threads rather than the next page
      * @param newList whether the page starts the list over, rather than going in front of it on a refresh
@@ -59,18 +65,17 @@ class ExploreRepository @Inject constructor(
         response.recommendedThreads()
     }
 
-    /** The recommended threads as they were left, with the page to load after them, unless that was too long ago. */
+    /**
+     * The recommended threads as they were last loaded, with the page to load after them; null
+     * when the feeds load anew as the app opens, or nothing was kept.
+     */
     suspend fun keptRecommended(): KeptFeed<Int, RecommendedThread>? = withContext(io) {
+        if (autoRefresh.enabled()) return@withContext null
         val kept = snapshots.read(RecommendedFeed) ?: return@withContext null
         runCatching {
             val threads = kept.pages.flatMap { PersonalizedResponseData.ADAPTER.decode(it).recommendedThreads() }.distinctBy { it.thread.id }
-            KeptFeed(threads, next = kept.next?.toIntOrNull(), kept.position, kept.disliked)
+            KeptFeed(threads, next = kept.next?.toIntOrNull(), kept.hidden)
         }.getOrNull()?.takeIf { it.items.isNotEmpty() }
-    }
-
-    /** Notes where the recommended threads were left, and which the user said they don't want. */
-    suspend fun leaveRecommended(position: FeedPosition?, disliked: Set<Long>) = withContext(io) {
-        snapshots.leave(RecommendedFeed, position, disliked)
     }
 
     private fun PersonalizedResponseData.recommendedThreads(): List<RecommendedThread> {
@@ -82,7 +87,7 @@ class ExploreRepository @Inject constructor(
 
     /**
      * A page of the threads the users the user follows posted; the key is the server's page tag,
-     * empty for the first. It is kept to show again after the app restarts, see [keptFollowedUsersThreads].
+     * empty for the first. It is kept to show again when the app opens next, see [keptFollowedUsersThreads].
      */
     suspend fun followedUsersThreads(pageTag: String): Page<String, ThreadSummary> = withContext(io) {
         val first = pageTag.isEmpty()
@@ -93,18 +98,17 @@ class ExploreRepository @Inject constructor(
         page
     }
 
-    /** The followed users' threads as they were left, with the tag of the page after them, unless that was too long ago. */
+    /**
+     * The followed users' threads as they were last loaded, with the tag of the page after them;
+     * null when the feeds load anew as the app opens, or nothing was kept.
+     */
     suspend fun keptFollowedUsersThreads(): KeptFeed<String, ThreadSummary>? = withContext(io) {
+        if (autoRefresh.enabled()) return@withContext null
         val kept = snapshots.read(FollowedFeed) ?: return@withContext null
         runCatching {
             val threads = kept.pages.flatMap { UserLikeResponseData.ADAPTER.decode(it).followedThreads().items }.distinctBy { it.id }
-            KeptFeed(threads, next = kept.next, kept.position, kept.disliked)
+            KeptFeed(threads, next = kept.next, kept.hidden)
         }.getOrNull()?.takeIf { it.items.isNotEmpty() }
-    }
-
-    /** Notes where the followed users' threads were left. */
-    suspend fun leaveFollowedUsersThreads(position: FeedPosition?) = withContext(io) {
-        snapshots.leave(FollowedFeed, position, emptySet())
     }
 
     private fun UserLikeResponseData.followedThreads(): Page<String, ThreadSummary> {
@@ -194,6 +198,8 @@ class ExploreRepository @Inject constructor(
      * @param clickTime when the user opened the menu, in Unix milliseconds
      */
     suspend fun dislike(thread: ThreadSummary, reasons: List<DislikeOption>, clickTime: Long) = withContext(io) {
+        // Hidden from the list kept too, whether or not the server hears of it
+        snapshots.hide(RecommendedFeed, thread.id)
         remote.dislike(
             threadId = thread.id,
             forumId = thread.forum.id,
@@ -215,8 +221,8 @@ class ExploreRepository @Inject constructor(
     }
 }
 
-/** A feed as it was left: its threads, the key of the page after them, where it was read to and what was hidden. */
-class KeptFeed<K, T>(val items: List<T>, val next: K?, val position: FeedPosition?, val disliked: Set<Long>)
+/** A feed as it was last loaded: its threads, the key of the page after them, and the threads hidden from it. */
+class KeptFeed<K, T>(val items: List<T>, val next: K?, val hidden: Set<Long>)
 
 private const val RecommendedFeed = "recommended"
 private const val FollowedFeed = "followed"

@@ -138,6 +138,8 @@
     <string name="name_multi_app">应用</string>
     <string name="settings_forum_single">吧列表单列显示</string>
     <string name="title_hide_explore">隐藏「动态」入口</string>
+    <string name="title_feed_auto_refresh">自动刷新「动态」</string>
+    <string name="summary_feed_auto_refresh">打开应用时加载新的推荐与关注</string>
     <string name="toast_clear_success">清除成功啦( •̀ ω •́ )✧</string>
     <string name="button_retry">重试</string>
     <string name="video_play_failed">无法播放</string>

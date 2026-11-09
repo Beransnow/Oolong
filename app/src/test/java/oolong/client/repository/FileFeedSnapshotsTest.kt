@@ -12,8 +12,7 @@ class FileFeedSnapshotsTest {
     val folder = TemporaryFolder()
 
     private var uid: String? = "1"
-    private var now = 1_000L
-    private val snapshots by lazy { FileFeedSnapshots(folder.root, { uid }, { now }, maxPages = 3, maxAge = 100) }
+    private val snapshots by lazy { FileFeedSnapshots(folder.root, { uid }, maxPages = 3) }
 
     private fun FeedSnapshot.texts() = pages.map { String(it) }
 
@@ -43,28 +42,14 @@ class FileFeedSnapshotsTest {
     }
 
     @Test
-    fun `where the list was left comes back, and leaving keeps it fresh`() {
+    fun `hidden threads are kept until the list starts over`() {
         snapshots.write("feed", "a".toByteArray(), FeedSnapshots.Place.Replace, next = null)
-        now += 90
-        snapshots.leave("feed", FeedPosition(7, 40), setOf(3L))
-        now += 90
+        snapshots.hide("feed", 3)
+        snapshots.write("feed", "b".toByteArray(), FeedSnapshots.Place.Front, next = null)
+        assertEquals(setOf(3L), snapshots.read("feed")!!.hidden)
 
-        val kept = snapshots.read("feed")!!
-        assertEquals(FeedPosition(7, 40), kept.position)
-        assertEquals(setOf(3L), kept.disliked)
-
-        now += 20
-        assertNull(snapshots.read("feed"))
-    }
-
-    @Test
-    fun `starting the list over forgets where it was left`() {
-        snapshots.write("feed", "a".toByteArray(), FeedSnapshots.Place.Replace, next = null)
-        snapshots.leave("feed", FeedPosition(7, 40), setOf(3L))
-        snapshots.write("feed", "b".toByteArray(), FeedSnapshots.Place.Replace, next = null)
-
-        assertNull(snapshots.read("feed")!!.position)
-        assertEquals(emptySet(), snapshots.read("feed")!!.disliked)
+        snapshots.write("feed", "c".toByteArray(), FeedSnapshots.Place.Replace, next = null)
+        assertEquals(emptySet(), snapshots.read("feed")!!.hidden)
     }
 
     @Test

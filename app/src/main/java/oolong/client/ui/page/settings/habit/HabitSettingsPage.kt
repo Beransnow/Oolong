@@ -1,6 +1,7 @@
 package oolong.client.ui.page.settings.habit
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import oolong.client.R
 import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.settings.SettingsScreen
@@ -16,6 +17,7 @@ val HabitSettings = settingsPage(R.string.title_settings_read_habit, HabitSettin
         switch("listSingle", R.string.settings_forum_single, default = false)
         switch("homePageShowHistoryForum", R.string.settings_home_page_show_history_forum, default = true)
         switch("hideExplore", R.string.title_hide_explore, default = false)
+        switch("feedAutoRefresh", R.string.title_feed_auto_refresh, default = true, summary = { stringResource(id = R.string.summary_feed_auto_refresh) })
     }
     group(R.string.settings_group_forum) {
         choice(

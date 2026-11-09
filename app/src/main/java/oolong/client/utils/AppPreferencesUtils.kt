@@ -114,6 +114,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
 
     var hideExplore by DataStoreDelegates.boolean(defaultValue = false)
 
+    /** Whether the feeds load anew when the app opens, rather than showing what was last loaded. */
+    var feedAutoRefresh by DataStoreDelegates.boolean(defaultValue = true)
+
     var hideMedia by DataStoreDelegates.boolean(defaultValue = false)
 
     var hideReply by DataStoreDelegates.boolean(defaultValue = false)
