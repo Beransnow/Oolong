@@ -65,6 +65,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -850,9 +851,9 @@ private fun FoldingReplyText(text: AnnotatedString, fold: Boolean, key: Long, mo
         buildAnnotatedString {
             append(text.subSequence(0, end))
             append("…")
-            withLink(LinkAnnotation.Clickable("expand") { unfolded = true }) {
-                withStyle(SpanStyle(color = colors.accent, fontWeight = FontWeight.SemiBold)) { append(more) }
-            }
+            // Styled as the link, which is otherwise underlined
+            val style = TextLinkStyles(SpanStyle(color = colors.accent, fontWeight = FontWeight.SemiBold))
+            withLink(LinkAnnotation.Clickable("expand", style) { unfolded = true }) { append(more) }
         }
     } ?: text
     val moreWidth = with(LocalDensity.current) { (TextStyles.reply.fontSize * (more.length + 1.5f)).toPx() }
