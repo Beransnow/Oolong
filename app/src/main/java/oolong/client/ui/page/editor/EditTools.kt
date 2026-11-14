@@ -91,6 +91,7 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.addSmoothRect
@@ -285,8 +286,7 @@ private fun ToolButton(tool: EditorTool, selected: Boolean, onClick: () -> Unit,
     Column(
         modifier = modifier
             .size(ToolWidth, ToolHeight)
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(role = Role.Tab, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), role = Role.Tab, onClick = onClick)
             .semantics { this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -607,8 +607,12 @@ private fun <T> Options(
                 modifier = Modifier
                     .then(if (fill) Modifier.weight(1f).height(36.dp) else Modifier.size(width(option), 36.dp))
                     .background(if (on) BubbleColor else Color.Transparent, SmoothCornerShape.Capsule)
-                    .clip(SmoothCornerShape.Capsule)
-                    .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(option) }
+                    .clickable(
+                        interactionSource = null,
+                        indication = PressFeedback.overlay(SmoothCornerShape.Capsule),
+                        enabled = enabled,
+                        role = Role.RadioButton,
+                    ) { onSelect(option) }
                     .semantics {
                         contentDescription = description
                         this.selected = on
@@ -845,8 +849,12 @@ private fun Sizes(selected: Int, onSelect: (Int) -> Unit, enabled: Boolean = tru
                 modifier = Modifier
                     .size(30.dp, 36.dp)
                     .background(if (i == selected) BubbleColor else Color.Transparent, SmoothCornerShape.Capsule)
-                    .clip(SmoothCornerShape.Capsule)
-                    .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(i) }
+                    .clickable(
+                        interactionSource = null,
+                        indication = PressFeedback.overlay(SmoothCornerShape.Capsule),
+                        enabled = enabled,
+                        role = Role.RadioButton,
+                    ) { onSelect(i) }
                     .semantics {
                         contentDescription = label
                         this.selected = i == selected

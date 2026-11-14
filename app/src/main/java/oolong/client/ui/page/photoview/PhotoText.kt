@@ -47,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -86,6 +85,7 @@ import oolong.client.components.automask.PictureText
 import oolong.client.components.automask.ReadLine
 import oolong.client.components.images.downloadImage
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.Refocus
@@ -622,8 +622,7 @@ private fun Action(text: String, onClick: () -> Unit) {
         fontSize = 14.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     )
 }

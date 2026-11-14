@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,11 +54,10 @@ fun Chip(
                 // Pressed, a tappable chip draws its edges in, as buttons do
                 .then(if (onClick != null) Modifier.pressScale(interactionSource) else Modifier)
                 .background(color = animatedBackgroundColor, shape = shape)
-                .clip(shape)
                 .clickable(
                     enabled = onClick != null,
                     interactionSource = interactionSource,
-                    indication = PressFeedback.Overlay,
+                    indication = PressFeedback.overlay(shape),
                 ) {
                     onClick?.invoke()
                 }

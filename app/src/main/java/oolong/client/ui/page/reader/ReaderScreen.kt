@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -109,6 +108,7 @@ import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Spacing
@@ -600,8 +600,7 @@ private fun ReaderBlockView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(1.dp, colors.divider, Corners.sm)
-                    .clip(Corners.sm)
-                    .clickable(onClick = onToggleNotes)
+                    .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onToggleNotes)
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
             )
             if (notesOpen) {
@@ -641,8 +640,7 @@ private fun ReaderBlockView(
                     modifier = Modifier
                         .pressScale(interaction)
                         .background(colors.chip, Corners.full)
-                        .clip(Corners.full)
-                        .clickable(interactionSource = interaction, indication = LocalIndication.current) { onOpenSubPosts(block.postId) }
+                        .clickable(interactionSource = interaction, indication = PressFeedback.overlay(Corners.full)) { onOpenSubPosts(block.postId) }
                         .padding(horizontal = Spacing.sm, vertical = Spacing.xxs),
                 )
             }
@@ -701,8 +699,7 @@ private fun BarTool(icon: ImageVector, label: String, onClick: () -> Unit) {
         modifier = Modifier
             .widthIn(min = 72.dp)
             .heightIn(min = 52.dp)
-            .clip(BarShape)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(BarShape), onClick = onClick)
             .padding(horizontal = Spacing.sm),
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = colors.text)
@@ -841,8 +838,7 @@ private fun ContentsRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (selected) colors.chip else Color.Transparent, Corners.md)
-            .clip(Corners.md)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.md), onClick = onClick)
             .semantics { this.selected = selected }
             .padding(start = if (indent) Spacing.xxl else Spacing.sm, end = Spacing.sm, top = Spacing.sm, bottom = Spacing.sm),
     ) {
@@ -947,8 +943,7 @@ private fun RowScope.Option(selected: Boolean, onClick: () -> Unit, content: @Co
             .pressScale(interaction)
             .heightIn(min = 40.dp)
             .background(if (selected) colors.emphasis else colors.chip, Corners.full)
-            .clip(Corners.full)
-            .clickable(interactionSource = interaction, indication = LocalIndication.current, role = Role.RadioButton, onClick = onClick)
+            .clickable(interactionSource = interaction, indication = PressFeedback.overlay(Corners.full), role = Role.RadioButton, onClick = onClick)
             .semantics { this.selected = selected },
     ) {
         content(if (selected) colors.onEmphasis else colors.text)

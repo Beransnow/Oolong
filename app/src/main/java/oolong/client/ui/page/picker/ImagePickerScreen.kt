@@ -49,6 +49,7 @@ import oolong.client.model.DeviceAlbum
 import oolong.client.model.DeviceImage
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -165,7 +166,6 @@ private fun AlbumSwitcher(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(Corners.full)
                 .clickMenu(
                     items = {
                         albums.mapIndexed { index, album ->
@@ -179,6 +179,7 @@ private fun AlbumSwitcher(
                         }
                     },
                     enabled = enabled && albums.isNotEmpty(),
+                    indication = PressFeedback.overlay(Corners.full),
                 )
                 .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         ) {

@@ -86,6 +86,7 @@ import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TonalPalette
@@ -275,8 +276,7 @@ internal fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick:
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .weight(1f)
-            .clip(SmoothCornerShape(16.dp))
-            .clickable(onClickLabel = name, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(16.dp)), onClickLabel = name, onClick = onClick)
             .padding(bottom = 8.dp),
     ) {
         Box(
@@ -518,8 +518,7 @@ private fun RowScope.Swatch(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .weight(1f)
-            .clip(Corners.md)
-            .clickable(onClickLabel = name, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.md), onClickLabel = name, onClick = onClick)
             .padding(vertical = 8.dp),
     ) {
         Box(

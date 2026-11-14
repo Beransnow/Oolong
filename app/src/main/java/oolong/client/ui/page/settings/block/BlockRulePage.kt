@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -68,6 +67,7 @@ import oolong.client.model.FlatCondition
 import oolong.client.model.flat
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -180,8 +180,12 @@ fun BlockRuleScreen(
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
                     .background(colors.chip, Corners.md)
-                    .clip(Corners.md)
-                    .toggleable(value = draft.enabled, role = Role.Switch) { checked -> onEdit { it.copy(enabled = checked) } }
+                    .toggleable(
+                        value = draft.enabled,
+                        interactionSource = null,
+                        indication = PressFeedback.overlay(Corners.md),
+                        role = Role.Switch,
+                    ) { checked -> onEdit { it.copy(enabled = checked) } }
                     .padding(horizontal = Spacing.md),
             ) {
                 Text(text = stringResource(id = R.string.rule_enabled), style = TextStyles.bodyCompact, color = colors.text, modifier = Modifier.weight(1f))
@@ -201,8 +205,7 @@ fun BlockRuleScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                         .background(colors.chip, Corners.md)
-                        .clip(Corners.md)
-                        .clickable { deleteDialog.show() }
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.md)) { deleteDialog.show() }
                         .padding(horizontal = Spacing.md),
                 ) {
                     Text(text = stringResource(id = R.string.rule_delete), style = TextStyles.bodyCompact, color = MaterialTheme.colors.error)
@@ -323,8 +326,7 @@ private fun ConditionRow(test: FlatCondition.Test, onChange: (FlatCondition.Test
                     tint = colors.textSecondary,
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(Corners.full)
-                        .clickable(onClick = onRemove)
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.full), onClick = onRemove)
                         .padding(8.dp),
                 )
             },
@@ -419,9 +421,8 @@ private fun Pick(text: String, color: Color = ExtendedTheme.colors.text, onClick
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.sm)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
-            .clickable { onClick(bounds) }
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm)) { onClick(bounds) }
             .padding(horizontal = Spacing.xs),
     ) {
         Text(text = text, style = TextStyles.bodyCompact, color = color, maxLines = 1)
@@ -507,9 +508,10 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
             .padding(top = Spacing.sm)
             .heightIn(min = 36.dp)
             .background(colors.chip, Corners.full)
-            .clip(Corners.full)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
-            .clickable { menus?.show(items = items, anchor = bounds, icon = Symbols.Add) }
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.full)) {
+                menus?.show(items = items, anchor = bounds, icon = Symbols.Add)
+            }
             .padding(start = Spacing.sm, end = Spacing.md),
     ) {
         Icon(Symbols.Add, contentDescription = null, tint = colors.text, modifier = Modifier.size(18.dp))

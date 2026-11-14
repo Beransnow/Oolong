@@ -30,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
@@ -106,8 +105,7 @@ fun QuotePostCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(ExtendedTheme.colors.card, SmoothCornerShape(6.dp))
-                .clip(SmoothCornerShape(6.dp))
-                .clickable {
+                .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(6.dp))) {
                     onThreadClick(thread)
                 },
             pictures = pictures,
@@ -277,8 +275,7 @@ fun SearchThreadItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
-                            .clip(SmoothCornerShape(6.dp))
-                            .clickable {
+                            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(6.dp))) {
                                 onQuotePostClick(quoted)
                             },
                         pictures = item.pictures,
@@ -291,8 +288,7 @@ fun SearchThreadItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
-                            .clip(SmoothCornerShape(6.dp))
-                            .clickable {
+                            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(6.dp))) {
                                 onMainPostClick(thread)
                             },
                         pictures = item.pictures,
@@ -455,10 +451,9 @@ fun SearchBox(
                 ) {
                     Box(
                         modifier = Modifier
-                            .clip(Corners.full)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = PressFeedback.Overlay,
+                                indication = PressFeedback.overlay(Corners.full),
                                 role = Role.Button
                             ) { onKeywordChange("") },
                         contentAlignment = Alignment.Center,
@@ -473,10 +468,9 @@ fun SearchBox(
             AnimatedVisibility(visible = isKeywordNotEmpty && submitButton) {
                 Box(
                     modifier = Modifier
-                        .clip(Corners.full)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = PressFeedback.Overlay,
+                            indication = PressFeedback.overlay(Corners.full),
                             role = Role.Button
                         ) { onKeywordSubmit(keyword) },
                     contentAlignment = Alignment.Center,

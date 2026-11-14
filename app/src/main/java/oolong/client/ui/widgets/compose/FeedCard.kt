@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -87,6 +86,7 @@ import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
@@ -356,8 +356,7 @@ fun ForumInfoChip(
         modifier = Modifier
             .heightIn(min = 28.dp)
             .background(color = ExtendedTheme.colors.chip, shape = SmoothCornerShape.Capsule)
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
             .padding(start = if (imageUri != null) 4.dp else 10.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -392,9 +391,10 @@ private fun MediaPlaceholder(
     Row(
         modifier = modifier
             .background(ExtendedTheme.colors.chip, SmoothCornerShape(6.dp))
-            .clip(SmoothCornerShape(6.dp))
             .clickable(
-                enabled = onClick != null
+                interactionSource = null,
+                indication = PressFeedback.overlay(SmoothCornerShape(6.dp)),
+                enabled = onClick != null,
             ) { onClick?.invoke() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -788,8 +788,7 @@ fun FeedCard(
                     shared = shared,
                     modifier = Modifier
                         .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
-                        .clip(SmoothCornerShape(6.dp))
-                        .clickable { onClickShared(shared) }
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(6.dp))) { onClickShared(shared) }
                         .padding(16.dp)
                 )
             }
@@ -800,8 +799,7 @@ fun FeedCard(
                     onClickUser = onClickUser,
                     modifier = Modifier
                         .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
-                        .clip(SmoothCornerShape(6.dp))
-                        .clickable { onClickFeedReply(thread) }
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape(6.dp))) { onClickFeedReply(thread) }
                         .padding(12.dp)
                 )
             }

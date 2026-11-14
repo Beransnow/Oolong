@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -78,6 +77,7 @@ import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.bottomEdgeGlass
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.clickMenu
+import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
 
@@ -250,7 +250,7 @@ private fun Settings(state: UpdateState, onAutoCheck: (Boolean) -> Unit, onChann
             .widthIn(max = 600.dp)
             .fillMaxWidth()
             .background(colors.chip, CardShape)
-            .clip(CardShape),
+            .maskTo(CardShape),
     ) {
         Row(
             modifier = Modifier
@@ -368,8 +368,12 @@ private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? =
             .height(52.dp)
             .pressScale(interactionSource)
             .background(if (progress != null) colors.emphasis.copy(alpha = 0.18f) else colors.emphasis, SmoothCornerShape.Capsule)
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, enabled = enabled && progress == null, onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = PressFeedback.overlay(SmoothCornerShape.Capsule),
+                enabled = enabled && progress == null,
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (progress == null) {
@@ -380,7 +384,7 @@ private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? =
                 modifier = Modifier
                     .matchParentSize()
                     .drawWithContent { clipRect(right = size.width * progress) { this@drawWithContent.drawContent() } }
-                    .background(colors.emphasis),
+                    .background(colors.emphasis, SmoothCornerShape.Capsule),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = text, style = label.copy(color = colors.onEmphasis))

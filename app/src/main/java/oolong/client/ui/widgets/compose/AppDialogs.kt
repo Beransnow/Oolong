@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +54,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.utils.SharedPreferencesUtil
 
@@ -250,8 +250,7 @@ private fun PermissionDialog(dialog: AppDialog.Permission) {
                 .padding(horizontal = CheckboxRowInset)
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .clip(Corners.sm)
-                .clickable { remember = !remember },
+                .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm)) { remember = !remember },
         ) {
             Checkbox(
                 checked = remember,

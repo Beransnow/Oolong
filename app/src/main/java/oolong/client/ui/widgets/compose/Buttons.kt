@@ -74,15 +74,14 @@ fun Button(
             CompositionLocalProvider(LocalContentAlpha provides contentColor.alpha) {
                 ProvideTextStyle(value = TextStyles.label) {
                     // Surface passes its minimum height on, so the row centres its content in it.
-                    // Clickable in here, where the Surface's clip keeps the press veil in shape
-                    // without cutting the Surface's fill.
+                    // Clickable in here, over the Surface's bounds, its press veil drawn in shape.
                     Row(
                         Modifier
                             .clickable(
                                 onClick = onClick,
                                 enabled = enabled,
                                 interactionSource = interactionSource,
-                                indication = PressFeedback.Overlay
+                                indication = PressFeedback.overlay(shape)
                             )
                             .padding(contentPadding),
                         horizontalArrangement = Arrangement.Center,

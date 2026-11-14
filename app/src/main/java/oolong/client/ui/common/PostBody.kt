@@ -1,6 +1,5 @@
 package oolong.client.ui.common
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +41,7 @@ import oolong.client.model.SubPost
 import oolong.client.model.TextSpan
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -166,7 +165,6 @@ private fun PostVideo(video: PostContent.Video) {
             modifier = Modifier.fillMaxWidth(mediaWidthFraction()),
         )
     } else {
-        // Only the press ripple goes through a clip, kept in the shape over the picture
         val interactions = remember { MutableInteractionSource() }
         Box(
             Modifier
@@ -184,8 +182,7 @@ private fun PostVideo(video: PostContent.Video) {
             Box(
                 Modifier
                     .matchParentSize()
-                    .clip(shape)
-                    .indication(interactions, LocalIndication.current)
+                    .indication(interactions, PressFeedback.overlay(shape))
             )
         }
     }

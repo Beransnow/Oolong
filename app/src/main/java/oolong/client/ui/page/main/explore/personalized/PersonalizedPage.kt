@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,6 +51,7 @@ import oolong.client.model.ThreadSummary
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.main.explore.FeedThreadEvents
 import oolong.client.ui.page.main.explore.ThreadPeeker
@@ -311,8 +311,7 @@ private fun SeenMark(onRefresh: () -> Unit) {
             style = TextStyles.caption,
             color = colors.accent,
             modifier = Modifier
-                .clip(Corners.sm)
-                .clickable(onClick = onRefresh)
+                .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onRefresh)
                 .padding(horizontal = 4.dp, vertical = 8.dp),
         )
         Box(modifier = Modifier.padding(start = 8.dp).weight(1f).height(1.dp).background(colors.divider))
@@ -343,8 +342,7 @@ private fun UndoDislikeRow(text: String?, onUndo: () -> Unit) {
             color = ExtendedTheme.colors.emphasis,
             style = MaterialTheme.typography.subtitle2,
             modifier = Modifier
-                .clip(Corners.sm)
-                .clickable(onClick = onUndo)
+                .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onUndo)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         )
     }

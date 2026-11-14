@@ -57,6 +57,7 @@ import oolong.client.model.tests
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Spacing
@@ -278,8 +279,7 @@ private fun StaleBanner(count: Int, onClean: () -> Unit) {
             style = TextStyles.label,
             color = colors.accent,
             modifier = Modifier
-                .clip(Corners.full)
-                .clickable(onClick = onClean)
+                .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.full), onClick = onClean)
                 .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         )
     }

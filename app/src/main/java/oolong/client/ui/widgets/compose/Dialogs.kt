@@ -31,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -452,10 +451,10 @@ fun Modifier.temporarySurface(shape: Shape): Modifier {
             spotColor = Color.Black.copy(alpha = if (night) 0.26f else 0.22f),
         )
         // Filled in its shape rather than clipped to it: some GPUs anti-alias a clip's edge
-        // coarsely or not at all. The clip is only for what is inside.
+        // coarsely or not at all. What is inside is cut by a mask.
         .background(colors.sheet, shape)
         .border(0.5.dp, colors.glassEdge, shape)
-        .clip(shape)
+        .maskTo(shape)
 }
 
 /**

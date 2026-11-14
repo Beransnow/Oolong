@@ -78,6 +78,7 @@ import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -97,6 +98,7 @@ import oolong.client.ui.widgets.compose.Dialog
 import oolong.client.ui.widgets.compose.DialogNegativeButton
 import oolong.client.ui.widgets.compose.DialogPositiveButton
 import oolong.client.ui.widgets.compose.Slider
+import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.PickMediasContract
 import oolong.client.utils.PickMediasRequest
@@ -318,7 +320,7 @@ private fun BoxScope.SettingsPanel(modifier: Modifier = Modifier, content: @Comp
             .fillMaxWidth()
             .heightIn(max = 520.dp)
             .background(ExtendedTheme.colors.sheet, SmoothCornerShape(Radius.xl, bottom = false))
-            .clip(SmoothCornerShape(Radius.xl, bottom = false))
+            .maskTo(SmoothCornerShape(Radius.xl, bottom = false))
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(vertical = 12.dp),
@@ -335,7 +337,7 @@ private fun SettingsBlock(content: @Composable ColumnScope.() -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .background(ExtendedTheme.colors.chip, Corners.md)
-            .clip(Corners.md)
+            .maskTo(Corners.md)
             .padding(vertical = 4.dp),
         content = content,
     )
@@ -370,8 +372,7 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         modifier = Modifier
             .background(if (selected) colors.accent else colors.divider, SmoothCornerShape.Capsule)
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
     )
 }
@@ -486,8 +487,7 @@ private fun ApplyButton(enabled: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .background(if (enabled) colors.accent else colors.accent.copy(alpha = 0.5f), SmoothCornerShape.Capsule)
-            .clip(SmoothCornerShape.Capsule)
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = enabled, onClick = onClick)
             .padding(vertical = 14.dp),
     )
 }

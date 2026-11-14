@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
@@ -65,6 +64,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -185,7 +185,9 @@ private fun LazyListScope.topicsSection(
         SectionHeader(text = stringResource(R.string.hot_section_topics)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clip(Corners.full).clickable(onClick = onOpenAll).padding(start = Spacing.xs, top = Spacing.xxs, bottom = Spacing.xxs),
+                modifier = Modifier
+                    .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.full), onClick = onOpenAll)
+                    .padding(start = Spacing.xs, top = Spacing.xxs, bottom = Spacing.xxs),
             ) {
                 Text(text = stringResource(R.string.text_all), style = TextStyles.caption, color = ExtendedTheme.colors.textSecondary)
                 Icon(imageVector = Symbols.ChevronRight, contentDescription = null, tint = ExtendedTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
@@ -396,8 +398,7 @@ private fun HotThreadRow(
                     modifier = Modifier
                         .padding(top = 2.dp)
                         .background(ExtendedTheme.colors.accent.copy(alpha = 0.1f), Corners.xs)
-                        .clip(Corners.xs)
-                        .clickable { onOpenTopic(topic) }
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.xs)) { onOpenTopic(topic) }
                         .padding(horizontal = 6.dp, vertical = 1.dp),
                 )
             }

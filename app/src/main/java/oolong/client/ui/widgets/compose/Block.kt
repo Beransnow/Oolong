@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -28,6 +27,7 @@ import oolong.client.model.flat
 import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.settings.block.conditionSentence
 import oolong.client.ui.page.settings.block.testSentence
@@ -51,8 +51,7 @@ fun BlockTip(
         modifier = modifier
             .fillMaxWidth()
             .then(if (boxed) Modifier.background(colors.textSecondary.copy(alpha = 0.08f), Corners.sm) else Modifier)
-            .clip(Corners.sm)
-            .clickable(onClick = onShow)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onShow)
             .padding(vertical = 8.dp, horizontal = if (boxed) 12.dp else 0.dp),
     ) {
         Text(

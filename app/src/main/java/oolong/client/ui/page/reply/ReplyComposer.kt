@@ -70,6 +70,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.OwnAvatar
@@ -425,8 +426,7 @@ private fun RowButton(text: String, onClick: () -> Unit) {
         maxLines = 1,
         modifier = Modifier
             .background(colors.sheet, ChipShape)
-            .clip(ChipShape)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(ChipShape), role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp),
     )
 }
@@ -445,8 +445,13 @@ private fun ToggleChip(
         modifier = Modifier
             .height(26.dp)
             .background(background, ChipShape)
-            .clip(ChipShape)
-            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+            .toggleable(
+                value = checked,
+                interactionSource = null,
+                indication = PressFeedback.overlay(ChipShape),
+                role = Role.Checkbox,
+                onValueChange = onCheckedChange,
+            )
             .padding(start = 7.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -721,8 +726,7 @@ private fun PictureStrip(
                     modifier = Modifier
                         .size(ThumbnailSize)
                         .background(colors.chip, Corners.sm)
-                        .clip(Corners.sm)
-                        .clickable(role = Role.Button, onClick = onAdd),
+                        .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), role = Role.Button, onClick = onAdd),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -758,8 +762,7 @@ fun EmoticonPanel(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(Corners.sm)
-                    .clickable { onEmoticonClick(emoticon) }
+                    .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm)) { onEmoticonClick(emoticon) }
                     .padding(8.dp),
             )
         }

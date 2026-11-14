@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +45,7 @@ import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
@@ -199,8 +199,7 @@ private fun ForumHeaderDetails(
                     .fillMaxWidth()
                     .height(ButtonHeight)
                     .background(if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent, SmoothCornerShape.Capsule)
-                    .clip(SmoothCornerShape.Capsule)
-                    .clickable(enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
+                    .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

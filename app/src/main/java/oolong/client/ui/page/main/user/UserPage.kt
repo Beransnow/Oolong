@@ -61,6 +61,7 @@ import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AboutKey
 import oolong.client.ui.navigation.AppThemeKey
@@ -294,8 +295,7 @@ private fun EntryBlock(
     Column(
         modifier = modifier
             .background(ExtendedTheme.colors.inset, Corners.lg)
-            .clip(Corners.lg)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.lg), role = Role.Button, onClick = onClick)
             .heightIn(min = 92.dp)
             .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.SpaceBetween,
