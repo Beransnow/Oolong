@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -21,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.asImage
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -139,20 +143,29 @@ fun Avatar(
     decodedAt: Dp? = null,
 ) {
     val placeholder = rememberImagePlaceholder()
+    val placeholderColor = (placeholder as ColorPainter).color
     val context = LocalContext.current
     val density = LocalDensity.current
-    val model = if (decodedAt == null) {
-        data
-    } else {
-        remember(data, decodedAt, density) {
-            val px = with(density) { decodedAt.roundToPx() }
-            ImageRequest.Builder(context).data(data).size(px, px).build()
-        }
+    val name = remember(data) { data?.let { avatarName(it) ?: pictureName(it) } }
+    val model = remember(data, decodedAt, density, placeholderColor) {
+        ImageRequest.Builder(context)
+            .data(data)
+            // The same avatar, a user's or a forum's, drawn before at another size or address, shows until
+            // this one is in
+            .placeholderMemoryCacheKey(name?.let { ShownPictures[it] })
+            .placeholder(ColorDrawable(placeholderColor.toArgb()).asImage())
+            .apply {
+                if (decodedAt != null) {
+                    val px = with(density) { decodedAt.roundToPx() }
+                    size(px, px)
+                }
+            }
+            .build()
     }
     AsyncImage(
         model = model,
-        placeholder = placeholder,
         error = placeholder,
+        onSuccess = { state -> name?.let { ShownPictures[it] = state.result.memoryCacheKey } },
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier.clip(shape),

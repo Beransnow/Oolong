@@ -90,6 +90,14 @@ fun rememberImagePlaceholder(): Painter {
  */
 internal fun pictureName(url: String): String? = PictureName.find(url)?.groupValues?.get(1)
 
+/**
+ * The name every copy of an avatar shares: its portrait, as in `…/portrait/item/tb.1.xxx?t=…` or
+ * `…/portraith/item/tb.1.xxx`. Null for addresses not named that way.
+ */
+internal fun avatarName(url: String): String? = AvatarName.find(url)?.groupValues?.get(1)?.let { "avatar:$it" }
+
+private val AvatarName = Regex("""/portraith?/item/([^/?#]+)""")
+
 private val PictureName = Regex("""/([0-9a-f]{40})\.(?:jpg|jpeg|png|gif|webp)(?:[?#]|$)""", RegexOption.IGNORE_CASE)
 
 /**
@@ -97,7 +105,7 @@ private val PictureName = Regex("""/([0-9a-f]{40})\.(?:jpg|jpeg|png|gif|webp)(?:
  * look and the thread itself ask for different sizes of the same picture, so the one already shown
  * stands in while the next loads, rather than the placeholder.
  */
-private object ShownPictures {
+internal object ShownPictures {
     private val keys = LruCache<String, MemoryCache.Key>(256)
 
     operator fun get(name: String): MemoryCache.Key? = keys.get(name)
