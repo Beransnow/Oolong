@@ -113,6 +113,7 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.clickMenu
+import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -229,7 +230,7 @@ private fun WallpaperSettingsRow(wallpaper: File?) {
                     model = wallpaper,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(28.dp).clip(SmoothCornerShape(6.dp)),
+                    modifier = Modifier.size(28.dp).maskTo(SmoothCornerShape(6.dp)),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 PrefsChevron()
@@ -284,8 +285,8 @@ internal fun RowScope.AppearanceOption(name: String, selected: Boolean, onClick:
                 .aspectRatio(9f / 17f)
                 .border(2.dp, if (selected) colors.emphasis else Color.Transparent, SmoothCornerShape(16.dp))
                 .padding(4.dp)
-                .clip(Corners.md)
-                .border(1.dp, colors.divider, Corners.md),
+                .border(1.dp, colors.divider, Corners.md)
+                .maskTo(Corners.md),
         ) {
             preview()
             if (selected) SelectedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))

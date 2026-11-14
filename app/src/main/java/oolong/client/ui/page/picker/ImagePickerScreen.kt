@@ -59,6 +59,7 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.clickMenu
+import oolong.client.ui.widgets.compose.maskTo
 
 /** What the picker may read of the device's pictures. */
 enum class PickerAccess {
@@ -200,7 +201,7 @@ private fun AlbumCover(album: DeviceAlbum) {
         uri = album.cover,
         modifier = Modifier
             .size(40.dp)
-            .clip(SmoothCornerShape(6.dp)),
+            .maskTo(SmoothCornerShape(6.dp)),
     )
 }
 

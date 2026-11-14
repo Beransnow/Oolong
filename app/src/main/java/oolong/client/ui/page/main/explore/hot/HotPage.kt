@@ -417,7 +417,8 @@ private fun HotThreadRow(
                 imageUri = image.small,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(ThumbnailSize).clip(Corners.md),
+                modifier = Modifier.size(ThumbnailSize),
+                shape = Corners.md,
             )
         }
     }

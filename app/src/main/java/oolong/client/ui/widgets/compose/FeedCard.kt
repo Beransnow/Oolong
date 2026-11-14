@@ -536,9 +536,8 @@ private fun ThreadMedia(
                                     NetworkImage(
                                         imageUri = remember(media) { media.url },
                                         contentDescription = null,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(MediaShape),
+                                        modifier = Modifier.fillMaxSize(),
+                                        shape = MediaShape,
                                         photoViewData = remember(index, medias, forumId, forumName, threadId) { photoViewData(index) },
                                         contentScale = ContentScale.Crop
                                     )
@@ -583,9 +582,8 @@ private fun SinglePhoto(
         NetworkImage(
             imageUri = remember(media) { media.url },
             contentDescription = null,
-            modifier = Modifier
-                .size(width, height)
-                .clip(MediaShape),
+            modifier = Modifier.size(width, height),
+            shape = MediaShape,
             photoViewData = photoViewData,
             contentScale = ContentScale.Crop
         )
@@ -916,9 +914,8 @@ private fun FeedReplyBlock(
                 imageUri = image.small,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(ReplyImageSize)
-                    .clip(MediaShape),
+                modifier = Modifier.size(ReplyImageSize),
+                shape = MediaShape,
             )
         }
     }

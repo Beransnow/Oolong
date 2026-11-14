@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
@@ -45,7 +46,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastForEachIndexed
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -60,6 +61,7 @@ import oolong.client.ui.common.rememberTextLinkActions
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
+import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
@@ -358,17 +360,20 @@ fun SearchMedia(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(mediaWidthFraction)
-                        .aspectRatio(mediaAspectRatio)
-                        .clip(Corners.sm),
+                        .aspectRatio(mediaAspectRatio),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    showMedias.fastForEach { pic ->
+                    // One rounded shape across the row: its outer corners only
+                    showMedias.fastForEachIndexed { index, pic ->
+                        val start = CornerSize(if (index == 0) Radius.sm else 0.dp)
+                        val end = CornerSize(if (index == showMedias.lastIndex) Radius.sm else 0.dp)
                         NetworkImage(
                             imageUri = pic,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .weight(1f),
+                            shape = remember(start, end) { SmoothCornerShape(start, end, end, start) },
                             contentScale = ContentScale.Crop
                         )
                     }

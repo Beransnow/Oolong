@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
@@ -44,6 +45,8 @@ import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
+import coil3.BitmapImage
+import coil3.SingletonImageLoader
 import coil3.asImage
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
@@ -138,6 +141,7 @@ fun ContentImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     load: Boolean = true,
+    shape: Shape? = null,
     onSuccess: ((AsyncImagePainter.State.Success) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -145,6 +149,17 @@ fun ContentImage(
     val placeholder = rememberImagePlaceholder()
     val placeholderColor = (placeholder as ColorPainter).color
     val name = remember(imageUri) { pictureName(imageUri) }
+    // In a shape: the still picture drawn, the stand-in from the memory cache until it is in
+    var shown by remember(imageUri, shape != null) {
+        mutableStateOf(
+            if (shape == null) {
+                null
+            } else {
+                name?.let { ShownPictures[it] }?.let { (SingletonImageLoader.get(context).memoryCache?.get(it)?.image as? BitmapImage)?.bitmap }
+            }
+        )
+    }
+    var animated by remember(imageUri) { mutableStateOf(false) }
     val request = remember(imageUri, load, placeholderColor) {
         ImageRequest.Builder(context)
             .data(imageUri)
@@ -160,11 +175,27 @@ fun ContentImage(
         error = placeholder,
         onSuccess = { state ->
             name?.let { ShownPictures[it] = state.result.memoryCacheKey }
+            if (shape != null) {
+                val image = state.result.image
+                shown = (image as? BitmapImage)?.bitmap
+                animated = image !is BitmapImage
+            }
             onSuccess?.invoke(state)
+        },
+        onError = if (shape != null) {
+            { shown = null }
+        } else {
+            null
         },
         colorFilter = if (darken) DarkenFilter else null,
         contentScale = contentScale,
-        modifier = modifier,
+        modifier = if (shape == null) {
+            modifier
+        } else {
+            modifier.shapedPicture(shape, contentScale, if (darken) DarkenFilter else null) {
+                ShapedPicture(shown, animated, placeholderColor)
+            }
+        },
     )
 }
 
@@ -176,6 +207,7 @@ fun NetworkImage(
     photoViewData: PhotoViewData? = null,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
+    shape: Shape? = null,
 ) {
     val context = LocalContext.current
 
@@ -275,6 +307,7 @@ fun NetworkImage(
         ContentImage(
             imageUri = imageUri,
             load = shouldLoad,
+            shape = shape,
             onSuccess = {
                 imageAspectRatio = it.result.image.height.toFloat() / it.result.image.width
                 memoryCacheKey = it.result.memoryCacheKey
@@ -309,6 +342,7 @@ fun NetworkImage(
     photoViewDataProvider: (() -> PhotoViewData)? = null,
     contentScale: ContentScale = ContentScale.Fit,
     skipNetworkCheck: Boolean = false,
+    shape: Shape? = null,
 ) {
     val imageUri by rememberUpdatedState(newValue = imageUriProvider())
     val photoViewData by rememberUpdatedState(newValue = photoViewDataProvider?.invoke())
@@ -320,5 +354,6 @@ fun NetworkImage(
         photoViewData = photoViewData,
         contentScale = contentScale,
         skipNetworkCheck = skipNetworkCheck,
+        shape = shape,
     )
 }

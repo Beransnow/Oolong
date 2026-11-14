@@ -74,6 +74,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.OwnAvatar
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.utils.Emoticon
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.StringUtil
@@ -676,7 +677,7 @@ private fun PictureStrip(
             Box(
                 modifier = Modifier
                     .size(ThumbnailSize)
-                    .clip(Corners.sm)
+                    .maskTo(Corners.sm)
                     .background(colors.chip)
             ) {
                 AsyncImage(

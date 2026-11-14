@@ -1,12 +1,15 @@
 package oolong.client.ui.common
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.appendInlineContent
@@ -141,8 +144,8 @@ fun PostImage(
         contentDescription = null,
         modifier = Modifier
             .then(size)
-            .clip(SmoothCornerShape(if (rounded) context.appPreferences.radius.dp else 0.dp))
             .aspectRatio(image.aspectRatio),
+        shape = if (rounded) SmoothCornerShape(context.appPreferences.radius.dp) else null,
         photoViewData = photoViewData,
         contentScale = ContentScale.Crop,
     )
@@ -153,25 +156,38 @@ private fun PostVideo(video: PostContent.Video) {
     if (video.coverUrl.isBlank()) return
     val context = LocalContext.current
     val navigator = LocalNavigator.current
-    val modifier = Modifier
-        .clip(SmoothCornerShape(context.appPreferences.radius.dp))
-        .fillMaxWidth(mediaWidthFraction())
-        .aspectRatio(video.width * 1f / video.height)
+    val shape = SmoothCornerShape(context.appPreferences.radius.dp)
     if (video.url.isNotBlank()) {
         VideoCover(
             video = remember(video) {
                 ViewerVideo(video.url, video.coverUrl, video.width, video.height, video.duration)
             },
-            shape = SmoothCornerShape(context.appPreferences.radius.dp),
+            shape = shape,
             modifier = Modifier.fillMaxWidth(mediaWidthFraction()),
         )
     } else {
-        ContentImage(
-            imageUri = video.coverUrl,
-            contentDescription = stringResource(id = R.string.desc_video),
-            modifier = modifier.clickable { navigator.navigate(WebViewKey(video.webUrl)) },
-            contentScale = ContentScale.Crop,
-        )
+        // Only the press ripple goes through a clip, kept in the shape over the picture
+        val interactions = remember { MutableInteractionSource() }
+        Box(
+            Modifier
+                .fillMaxWidth(mediaWidthFraction())
+                .aspectRatio(video.width * 1f / video.height)
+                .clickable(interactionSource = interactions, indication = null) { navigator.navigate(WebViewKey(video.webUrl)) }
+        ) {
+            ContentImage(
+                imageUri = video.coverUrl,
+                contentDescription = stringResource(id = R.string.desc_video),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                shape = shape,
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .clip(shape)
+                    .indication(interactions, LocalIndication.current)
+            )
+        }
     }
 }
 

@@ -16,7 +16,9 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.BitmapImage
+import coil3.SingletonImageLoader
 import coil3.asImage
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -38,6 +42,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import oolong.client.Incognito
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
@@ -160,13 +165,41 @@ fun Avatar(
             }
             .build()
     }
+    // A smooth shape takes the picture as a paint, as ContentImage does; a circle stays a clip
+    val shaped = shape is SmoothCornerShape
+    var shown by remember(data, shaped) {
+        mutableStateOf(
+            if (shaped) {
+                name?.let { ShownPictures[it] }?.let { (SingletonImageLoader.get(context).memoryCache?.get(it)?.image as? BitmapImage)?.bitmap }
+            } else {
+                null
+            }
+        )
+    }
+    var animated by remember(data) { mutableStateOf(false) }
     AsyncImage(
         model = model,
         error = placeholder,
-        onSuccess = { state -> name?.let { ShownPictures[it] = state.result.memoryCacheKey } },
+        onSuccess = { state ->
+            name?.let { ShownPictures[it] = state.result.memoryCacheKey }
+            if (shaped) {
+                val image = state.result.image
+                shown = (image as? BitmapImage)?.bitmap
+                animated = image !is BitmapImage
+            }
+        },
+        onError = if (shaped) {
+            { shown = null }
+        } else {
+            null
+        },
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
-        modifier = modifier.clip(shape),
+        modifier = if (shaped) {
+            modifier.shapedPicture(shape, ContentScale.Crop, null) { ShapedPicture(shown, animated, placeholderColor) }
+        } else {
+            modifier.clip(shape)
+        },
     )
 }
 

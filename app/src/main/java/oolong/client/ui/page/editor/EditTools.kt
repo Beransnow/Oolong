@@ -99,6 +99,7 @@ import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.floatingGlass
+import oolong.client.ui.widgets.compose.maskTo
 import kotlin.math.roundToInt
 
 /** The selected tool's bubble, as on the bottom bar. */
@@ -438,8 +439,8 @@ private fun ToolOptions(state: EditorState, tool: EditorTool) {
                             contentDescription = null,
                             modifier = Modifier
                                 .size(56.dp, 28.dp)
-                                .clip(SmoothCornerShape(7.dp))
-                                .border(if (on) 1.5.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else 0.2f), SmoothCornerShape(7.dp)),
+                                .border(if (on) 1.5.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else 0.2f), SmoothCornerShape(7.dp))
+                                .maskTo(SmoothCornerShape(7.dp)),
                         )
                     }
                 }
