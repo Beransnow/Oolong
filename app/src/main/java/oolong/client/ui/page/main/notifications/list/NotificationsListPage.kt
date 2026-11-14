@@ -208,9 +208,9 @@ private fun NotificationItemContent(
                 text = quoteText,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(ExtendedTheme.colors.chip, Corners.sm)
                     .clip(Corners.sm)
                     .clickable { onOpenQuote(notification) }
-                    .background(ExtendedTheme.colors.chip, Corners.sm)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 color = ExtendedTheme.colors.textSecondary,
                 fontSize = 14.sp,

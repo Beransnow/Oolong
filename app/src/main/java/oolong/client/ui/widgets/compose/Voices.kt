@@ -105,8 +105,8 @@ fun VoicePlayer(
             modifier = Modifier
                 .width(widthOf(length))
                 .height(40.dp)
+                .background(colors.accent.copy(alpha = 0.10f), SmoothCornerShape.Capsule)
                 .clip(SmoothCornerShape.Capsule)
-                .background(colors.accent.copy(alpha = 0.10f))
                 .drawBehind {
                     drawRect(colors.accent.copy(alpha = 0.22f), size = size.copy(width = size.width * fraction))
                 }

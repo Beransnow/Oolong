@@ -578,13 +578,14 @@ private fun Modifier.floatingGlassOf(
 
         GlassTier.Solid -> {
             val fill = if (colors.isTranslucent) colors.chromeTint.copy(alpha = TranslucentSolidTint) else colors.background
+            // Filled in its shape before the clip, which is only for what is on it
             chrome
-                .clip(shape)
                 .then(
-                    if (bar == null) Modifier.background(fill) else Modifier.drawBehind {
+                    if (bar == null) Modifier.background(fill, shape) else Modifier.drawBehind {
                         drawOutline(shape.createOutline(size, layoutDirection, this), fill.copy(alpha = fill.alpha * shown()))
                     }
                 )
+                .clip(shape)
                 .then(pressVeil)
                 .then(edged)
         }

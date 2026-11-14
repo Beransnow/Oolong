@@ -134,10 +134,10 @@ private fun NoticeOverlay(notice: SignedInNotice, onDone: () -> Unit) {
             modifier = Modifier
                 .offset { IntOffset(left.roundToPx(), top.roundToPx()) }
                 .size(width, height)
-                .shadow(lerp(if (colors.isNightMode) 32.dp else 24.dp, 8.dp, m), shape, ambientColor = Color.Black.copy(alpha = 0.14f), spotColor = Color.Black.copy(alpha = 0.22f))
-                .clip(shape)
-                .background(colors.sheet)
-                .border(0.5.dp, colors.glassEdge, shape),
+                .shadow(lerp(if (colors.isNightMode) 32.dp else 24.dp, 8.dp, m), shape, clip = false, ambientColor = Color.Black.copy(alpha = 0.14f), spotColor = Color.Black.copy(alpha = 0.22f))
+                .background(colors.sheet, shape)
+                .border(0.5.dp, colors.glassEdge, shape)
+                .clip(shape),
         ) {
             // The card as it was, giving way to the toast's line midway
             CardBody(

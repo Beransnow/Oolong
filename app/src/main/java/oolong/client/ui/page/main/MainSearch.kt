@@ -208,7 +208,7 @@ fun TopSearchField(state: MainSearchState, onOpen: () -> Unit, modifier: Modifie
                 .pressScale(interactionSource)
                 // The same glass as the field it turns into; over the page it can't see through, so
                 // it shows as the glass's solid form
-                .then(if (plain) Modifier.clip(CapsuleShape).background(colors.searchField) else Modifier.floatingGlass(CapsuleShape))
+                .then(if (plain) Modifier.background(colors.searchField, CapsuleShape).clip(CapsuleShape) else Modifier.floatingGlass(CapsuleShape))
                 .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, role = Role.Button, onClick = onOpen)
                 .padding(start = if (compact) 0.dp else (FieldHeight - IconSize) / 2),
         ) {

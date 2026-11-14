@@ -222,8 +222,8 @@ private fun FirstPost(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)
+                        .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                         .clip(SmoothCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.inset)
                         .clickable {
                             onEvent(ThreadEvent.OpenOriginThread(shared.id, shared.forumId))
                         }

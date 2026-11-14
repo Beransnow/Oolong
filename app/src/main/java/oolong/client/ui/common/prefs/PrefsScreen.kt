@@ -94,8 +94,8 @@ private fun SettingInGroup(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .padding(top = if (first && index == 0) 8.dp else 0.dp)
+            .background(ExtendedTheme.colors.chip, shape)
             .clip(shape)
-            .background(ExtendedTheme.colors.chip)
             .padding(top = if (first) 4.dp else 0.dp, bottom = if (last) 4.dp else 0.dp)
     ) {
         content()

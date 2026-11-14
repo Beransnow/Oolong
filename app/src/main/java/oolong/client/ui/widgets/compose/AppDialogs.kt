@@ -270,8 +270,7 @@ private fun LoadingDialog() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(Corners.xl)
-                .background(colors.sheet)
+                .background(colors.sheet, Corners.xl)
                 .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
             CircularProgressIndicator(color = colors.accent, strokeWidth = 2.5.dp, modifier = Modifier.size(22.dp))
@@ -290,9 +289,8 @@ private fun PermissionTipBanner(tip: AppDialog.PermissionTip) {
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(16.dp)
             .fillMaxWidth()
-            .shadow(12.dp, Corners.xl)
-            .clip(Corners.xl)
-            .background(colors.sheet)
+            .shadow(12.dp, Corners.xl, clip = false)
+            .background(colors.sheet, Corners.xl)
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         Text(text = tip.title, color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)

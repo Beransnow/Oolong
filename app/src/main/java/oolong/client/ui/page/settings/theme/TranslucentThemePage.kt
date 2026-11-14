@@ -317,8 +317,8 @@ private fun BoxScope.SettingsPanel(modifier: Modifier = Modifier, content: @Comp
         modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 520.dp)
+            .background(ExtendedTheme.colors.sheet, SmoothCornerShape(Radius.xl, bottom = false))
             .clip(SmoothCornerShape(Radius.xl, bottom = false))
-            .background(ExtendedTheme.colors.sheet)
             .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(vertical = 12.dp),
@@ -334,8 +334,8 @@ private fun SettingsBlock(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
+            .background(ExtendedTheme.colors.chip, Corners.md)
             .clip(Corners.md)
-            .background(ExtendedTheme.colors.chip)
             .padding(vertical = 4.dp),
         content = content,
     )
@@ -369,8 +369,8 @@ private fun Choice(text: String, selected: Boolean, onClick: () -> Unit) {
         fontSize = 14.sp,
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         modifier = Modifier
+            .background(if (selected) colors.accent else colors.divider, SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(if (selected) colors.accent else colors.divider)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
     )
@@ -485,8 +485,8 @@ private fun ApplyButton(enabled: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
+            .background(if (enabled) colors.accent else colors.accent.copy(alpha = 0.5f), SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(if (enabled) colors.accent else colors.accent.copy(alpha = 0.5f))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 14.dp),
     )

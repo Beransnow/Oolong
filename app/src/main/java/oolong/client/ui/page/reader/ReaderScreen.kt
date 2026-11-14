@@ -552,8 +552,7 @@ private fun ReaderBlockView(
             modifier = Modifier
                 .padding(bottom = size.value.dp)
                 .fillMaxWidth()
-                .clip(Corners.md)
-                .background(colors.chip)
+                .background(colors.chip, Corners.md)
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         ) {
             val chatSize = size * 0.9f
@@ -600,8 +599,8 @@ private fun ReaderBlockView(
                 color = colors.textSecondary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(Corners.sm)
                     .border(1.dp, colors.divider, Corners.sm)
+                    .clip(Corners.sm)
                     .clickable(onClick = onToggleNotes)
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
             )
@@ -641,8 +640,8 @@ private fun ReaderBlockView(
                     color = colors.textSecondary,
                     modifier = Modifier
                         .pressScale(interaction)
+                        .background(colors.chip, Corners.full)
                         .clip(Corners.full)
-                        .background(colors.chip)
                         .clickable(interactionSource = interaction, indication = LocalIndication.current) { onOpenSubPosts(block.postId) }
                         .padding(horizontal = Spacing.sm, vertical = Spacing.xxs),
                 )
@@ -739,8 +738,7 @@ private fun ReaderSheetLayout(onDismiss: () -> Unit, content: @Composable Column
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 8.dp, bottom = Spacing.sm)
                         .size(width = 36.dp, height = 5.dp)
-                        .clip(SmoothCornerShape.Capsule)
-                        .background(colors.text.copy(alpha = 0.18f)),
+                        .background(colors.text.copy(alpha = 0.18f), SmoothCornerShape.Capsule),
                 )
                 content(close)
             }
@@ -842,8 +840,8 @@ private fun ContentsRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .background(if (selected) colors.chip else Color.Transparent, Corners.md)
             .clip(Corners.md)
-            .background(if (selected) colors.chip else Color.Transparent)
             .clickable(onClick = onClick)
             .semantics { this.selected = selected }
             .padding(start = if (indent) Spacing.xxl else Spacing.sm, end = Spacing.sm, top = Spacing.sm, bottom = Spacing.sm),
@@ -948,8 +946,8 @@ private fun RowScope.Option(selected: Boolean, onClick: () -> Unit, content: @Co
             .weight(1f)
             .pressScale(interaction)
             .heightIn(min = 40.dp)
+            .background(if (selected) colors.emphasis else colors.chip, Corners.full)
             .clip(Corners.full)
-            .background(if (selected) colors.emphasis else colors.chip)
             .clickable(interactionSource = interaction, indication = LocalIndication.current, role = Role.RadioButton, onClick = onClick)
             .semantics { this.selected = selected },
     ) {

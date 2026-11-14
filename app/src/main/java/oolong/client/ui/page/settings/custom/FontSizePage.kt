@@ -243,8 +243,7 @@ private fun Ticks(systemAt: Float) {
                 modifier = Modifier
                     .offset(x = travel * (step.toFloat() / last) - 1.dp)
                     .size(width = 2.dp, height = if (step == default) 8.dp else 4.dp)
-                    .clip(Corners.full)
-                    .background(colors.text.copy(alpha = if (step == default) 0.4f else 0.2f)),
+                    .background(colors.text.copy(alpha = if (step == default) 0.4f else 0.2f), Corners.full),
             )
         }
         Text(

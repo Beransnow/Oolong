@@ -53,8 +53,7 @@ fun PollCard(
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier
-            .clip(Corners.md)
-            .background(colors.inset)
+            .background(colors.inset, Corners.md)
             .padding(Spacing.md),
     ) {
         if (poll.title.isNotBlank()) Text(text = poll.title, style = TextStyles.name, color = colors.text)
@@ -112,9 +111,9 @@ private fun ChoiceRow(option: PollOption, selected: Boolean, onClick: () -> Unit
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 44.dp)
-            .clip(Corners.sm)
-            .background(if (selected) colors.accent.copy(alpha = 0.12f) else colors.card)
+            .background(if (selected) colors.accent.copy(alpha = 0.12f) else colors.card, Corners.sm)
             .then(if (selected) Modifier.border(1.dp, colors.accent, Corners.sm) else Modifier)
+            .clip(Corners.sm)
             .clickable(onClick = onClick)
             .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
     ) {
@@ -139,8 +138,8 @@ private fun ResultRow(option: PollOption, total: Long, chosen: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 44.dp)
+            .background(colors.card, Corners.sm)
             .clip(Corners.sm)
-            .background(colors.card)
             .drawBehind { drawRect(fill, size = size.copy(width = size.width * share)) }
             .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
     ) {

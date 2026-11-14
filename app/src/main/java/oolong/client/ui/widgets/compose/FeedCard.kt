@@ -223,8 +223,7 @@ fun Badge(
 ) {
     Row(
         modifier = modifier
-            .clip(shape)
-            .background(backgroundColor)
+            .background(backgroundColor, shape)
             .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -356,8 +355,8 @@ fun ForumInfoChip(
     Row(
         modifier = Modifier
             .heightIn(min = 28.dp)
+            .background(color = ExtendedTheme.colors.chip, shape = SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(color = ExtendedTheme.colors.chip)
             .clickable(onClick = onClick)
             .padding(start = if (imageUri != null) 4.dp else 10.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -392,8 +391,8 @@ private fun MediaPlaceholder(
 ) {
     Row(
         modifier = modifier
+            .background(ExtendedTheme.colors.chip, SmoothCornerShape(6.dp))
             .clip(SmoothCornerShape(6.dp))
-            .background(ExtendedTheme.colors.chip)
             .clickable(
                 enabled = onClick != null
             ) { onClick?.invoke() }
@@ -790,8 +789,8 @@ fun FeedCard(
                 SharedThreadCard(
                     shared = shared,
                     modifier = Modifier
+                        .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                         .clip(SmoothCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.inset)
                         .clickable { onClickShared(shared) }
                         .padding(16.dp)
                 )
@@ -802,8 +801,8 @@ fun FeedCard(
                     reply = reply,
                     onClickUser = onClickUser,
                     modifier = Modifier
+                        .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                         .clip(SmoothCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.inset)
                         .clickable { onClickFeedReply(thread) }
                         .padding(12.dp)
                 )

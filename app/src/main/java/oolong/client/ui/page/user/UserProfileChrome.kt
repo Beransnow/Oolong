@@ -252,8 +252,8 @@ private fun ProfileButton(user: UserProfile, isSelf: Boolean, onClick: () -> Uni
         modifier = Modifier
             .fillMaxWidth()
             .height(ButtonHeight)
+            .background(if (filled) accent else accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f), SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(if (filled) accent else accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f))
             .clickable(role = Role.Button, onClick = onClick),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,

@@ -103,8 +103,8 @@ fun QuotePostCard(
             thread = thread,
             modifier = Modifier
                 .fillMaxWidth()
+                .background(ExtendedTheme.colors.card, SmoothCornerShape(6.dp))
                 .clip(SmoothCornerShape(6.dp))
-                .background(ExtendedTheme.colors.card)
                 .clickable {
                     onThreadClick(thread)
                 },
@@ -274,8 +274,8 @@ fun SearchThreadItem(
                         onThreadClick = onMainPostClick,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                             .clip(SmoothCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onQuotePostClick(quoted)
                             },
@@ -288,8 +288,8 @@ fun SearchThreadItem(
                         thread = thread,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                             .clip(SmoothCornerShape(6.dp))
-                            .background(ExtendedTheme.colors.inset)
                             .clickable {
                                 onMainPostClick(thread)
                             },

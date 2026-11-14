@@ -149,8 +149,7 @@ private fun ForumDetailContent(
         }
         Row(
             modifier = Modifier
-                .clip(Corners.sm)
-                .background(color = ExtendedTheme.colors.chip)
+                .background(color = ExtendedTheme.colors.chip, shape = Corners.sm)
                 .padding(vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

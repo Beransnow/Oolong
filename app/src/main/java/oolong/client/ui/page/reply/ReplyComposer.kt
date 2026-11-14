@@ -324,8 +324,7 @@ private fun ReplyToChip(replyTo: ReplyTo, onDrop: () -> Unit) {
     Row(
         modifier = Modifier
             .height(28.dp)
-            .clip(ChipShape)
-            .background(colors.chip)
+            .background(colors.chip, ChipShape)
             .padding(start = 8.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -396,8 +395,7 @@ private fun NoticeRow(
             .padding(horizontal = 12.dp, vertical = 2.dp)
             .fillMaxWidth()
             .heightIn(min = 36.dp)
-            .clip(Corners.lg)
-            .background(colors.chip)
+            .background(colors.chip, Corners.lg)
             .padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -425,8 +423,8 @@ private fun RowButton(text: String, onClick: () -> Unit) {
         color = colors.text,
         maxLines = 1,
         modifier = Modifier
+            .background(colors.sheet, ChipShape)
             .clip(ChipShape)
-            .background(colors.sheet)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp),
     )
@@ -445,8 +443,8 @@ private fun ToggleChip(
     Row(
         modifier = Modifier
             .height(26.dp)
+            .background(background, ChipShape)
             .clip(ChipShape)
-            .background(background)
             .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
             .padding(start = 7.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -721,8 +719,8 @@ private fun PictureStrip(
                 Box(
                     modifier = Modifier
                         .size(ThumbnailSize)
+                        .background(colors.chip, Corners.sm)
                         .clip(Corners.sm)
-                        .background(colors.chip)
                         .clickable(role = Role.Button, onClick = onAdd),
                     contentAlignment = Alignment.Center,
                 ) {

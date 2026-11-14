@@ -395,8 +395,8 @@ private fun HotThreadRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .padding(top = 2.dp)
+                        .background(ExtendedTheme.colors.accent.copy(alpha = 0.1f), Corners.xs)
                         .clip(Corners.xs)
-                        .background(ExtendedTheme.colors.accent.copy(alpha = 0.1f))
                         .clickable { onOpenTopic(topic) }
                         .padding(horizontal = 6.dp, vertical = 1.dp),
                 )

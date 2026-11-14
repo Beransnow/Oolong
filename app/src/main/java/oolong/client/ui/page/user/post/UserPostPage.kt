@@ -343,8 +343,8 @@ private fun UserRepliesItem(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .fillMaxWidth()
+                        .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp))
                         .clip(SmoothCornerShape(6.dp))
-                        .background(ExtendedTheme.colors.inset)
                         .clickable {
                             onClickOriginThread(post.threadId)
                         }

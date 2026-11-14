@@ -331,7 +331,7 @@ private fun BoxScope.HomePreview(colors: ExtendedColors, wallpaper: File?, overl
         repeat(2) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.fillMaxWidth().clip(SmoothCornerShape(6.dp)).background(colors.card).padding(6.dp),
+                modifier = Modifier.fillMaxWidth().background(colors.card, SmoothCornerShape(6.dp)).padding(6.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(modifier = Modifier.size(8.dp).background(colors.emphasis, CircleShape))

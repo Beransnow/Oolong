@@ -594,9 +594,8 @@ internal fun SelectionToolbar(state: PhotoTextState, display: () -> Rect, modifi
             // picture has there, and clear glass over a light picture would leave it unreadable
             Row(
                 modifier = Modifier
-                    .shadow(8.dp, SmoothCornerShape.Capsule)
-                    .clip(SmoothCornerShape.Capsule)
-                    .background(ToolbarColor),
+                    .shadow(8.dp, SmoothCornerShape.Capsule, clip = false)
+                    .background(ToolbarColor, SmoothCornerShape.Capsule),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Copied, it is done with

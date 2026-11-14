@@ -359,11 +359,9 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
             Box(
                 modifier = Modifier
                     .widthIn(max = Gutter)
-                    .clip(SmoothCornerShape.Capsule)
-                    .background(background)
+                    .background(background, SmoothCornerShape.Capsule)
                     .padding(2.dp)
-                    .clip(SmoothCornerShape.Capsule)
-                    .background(ExtendedTheme.colors.chip)
+                    .background(ExtendedTheme.colors.chip, SmoothCornerShape.Capsule)
                     .padding(horizontal = 5.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -575,8 +573,8 @@ private fun SubPostsCapsule(item: PostItem, opensInPlace: Boolean, onClick: () -
             .padding(start = Gutter, top = ToReplies, bottom = FloorBottom)
             .pressScale(interaction)
             .height(CapsuleHeight)
+            .background(colors.chip, SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(colors.chip)
             .clickable(
                 interactionSource = interaction,
                 indication = PressFeedback.Overlay,
@@ -635,8 +633,8 @@ private fun ClassicSubPosts(
         modifier = Modifier
             .padding(start = Gutter, top = ToReplies, bottom = FloorBottom)
             .fillMaxWidth()
+            .background(if (colors.isNightMode) Color.White.copy(alpha = 0.05f) else colors.accent.copy(alpha = 0.06f), ClassicBlockShape)
             .clip(ClassicBlockShape)
-            .background(if (colors.isNightMode) Color.White.copy(alpha = 0.05f) else colors.accent.copy(alpha = 0.06f))
             .padding(12.dp),
     ) {
         post.subPosts.forEach { subPost ->
@@ -1084,8 +1082,8 @@ private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick
         modifier = Modifier
             .pressScale(interactionSource)
             .height(36.dp)
+            .background(ExtendedTheme.colors.chip, SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(ExtendedTheme.colors.chip)
             .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, onClick = onClick)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,

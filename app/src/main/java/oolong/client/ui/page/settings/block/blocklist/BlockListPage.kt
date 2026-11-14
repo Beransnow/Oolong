@@ -225,8 +225,7 @@ private fun SearchField(query: String, onChange: (String) -> Unit) {
             .padding(horizontal = Spacing.md, vertical = Spacing.xs)
             .fillMaxWidth()
             .heightIn(min = 40.dp)
-            .clip(Corners.sm)
-            .background(colors.inset)
+            .background(colors.inset, Corners.sm)
             .padding(horizontal = Spacing.sm),
     ) {
         Icon(Symbols.Search, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(20.dp))
@@ -264,8 +263,7 @@ private fun StaleBanner(count: Int, onClean: () -> Unit) {
             .padding(horizontal = Spacing.md, vertical = Spacing.xs)
             .fillMaxWidth()
             .heightIn(min = 52.dp)
-            .clip(Corners.md)
-            .background(colors.chip)
+            .background(colors.chip, Corners.md)
             .padding(start = Spacing.md, end = Spacing.xs),
     ) {
         Text(
@@ -314,8 +312,7 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
             modifier = Modifier
                 .alpha(if (rule.enabled) 1f else 0.45f)
                 .size(30.dp)
-                .clip(Corners.sm)
-                .background(colors.card),
+                .background(colors.card, Corners.sm),
         ) {
             Icon(rule.icon, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(17.dp))
         }
@@ -334,7 +331,7 @@ private fun RuleRow(rule: BlockRule, now: Long, onClick: () -> Unit) {
                         text = stringResource(id = R.string.rule_exception),
                         style = TextStyles.micro,
                         color = colors.textSecondary,
-                        modifier = Modifier.clip(Corners.xs).background(colors.card).padding(horizontal = 5.dp, vertical = 1.dp),
+                        modifier = Modifier.background(colors.card, Corners.xs).padding(horizontal = 5.dp, vertical = 1.dp),
                     )
                 }
             }

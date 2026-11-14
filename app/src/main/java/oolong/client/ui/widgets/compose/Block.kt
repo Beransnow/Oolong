@@ -50,8 +50,8 @@ fun BlockTip(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
+            .then(if (boxed) Modifier.background(colors.textSecondary.copy(alpha = 0.08f), Corners.sm) else Modifier)
             .clip(Corners.sm)
-            .then(if (boxed) Modifier.background(colors.textSecondary.copy(alpha = 0.08f)) else Modifier)
             .clickable(onClick = onShow)
             .padding(vertical = 8.dp, horizontal = if (boxed) 12.dp else 0.dp),
     ) {

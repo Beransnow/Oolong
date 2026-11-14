@@ -67,8 +67,7 @@ fun AvatarIcon(
         tint = color,
         modifier = modifier
             .size(size)
-            .clip(shape)
-            .background(color = backgroundColor)
+            .background(color = backgroundColor, shape = shape)
             .padding((size - iconSize) / 2),
     )
 }
@@ -91,8 +90,7 @@ fun AvatarIcon(
         tint = color,
         modifier = modifier
             .size(size)
-            .clip(shape)
-            .background(color = backgroundColor)
+            .background(color = backgroundColor, shape = shape)
             .padding((size - iconSize) / 2),
     )
 }

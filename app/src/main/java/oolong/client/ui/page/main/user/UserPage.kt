@@ -293,8 +293,8 @@ private fun EntryBlock(
 ) {
     Column(
         modifier = modifier
+            .background(ExtendedTheme.colors.inset, Corners.lg)
             .clip(Corners.lg)
-            .background(ExtendedTheme.colors.inset)
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 92.dp)
             .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 12.dp),

@@ -202,8 +202,7 @@ private fun Notes(version: String, groups: Map<String, List<String>>, details: S
         modifier = Modifier
             .widthIn(max = 600.dp)
             .fillMaxWidth()
-            .clip(CardShape)
-            .background(colors.chip)
+            .background(colors.chip, CardShape)
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
@@ -250,8 +249,8 @@ private fun Settings(state: UpdateState, onAutoCheck: (Boolean) -> Unit, onChann
         modifier = Modifier
             .widthIn(max = 600.dp)
             .fillMaxWidth()
-            .clip(CardShape)
-            .background(colors.chip),
+            .background(colors.chip, CardShape)
+            .clip(CardShape),
     ) {
         Row(
             modifier = Modifier
@@ -368,8 +367,8 @@ private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? =
             .fillMaxWidth()
             .height(52.dp)
             .pressScale(interactionSource)
+            .background(if (progress != null) colors.emphasis.copy(alpha = 0.18f) else colors.emphasis, SmoothCornerShape.Capsule)
             .clip(SmoothCornerShape.Capsule)
-            .background(if (progress != null) colors.emphasis.copy(alpha = 0.18f) else colors.emphasis)
             .clickable(interactionSource = interactionSource, indication = PressFeedback.Overlay, enabled = enabled && progress == null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

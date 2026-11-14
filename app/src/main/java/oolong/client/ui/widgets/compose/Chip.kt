@@ -54,8 +54,8 @@ fun Chip(
             modifier = modifier
                 // Pressed, a tappable chip draws its edges in, as buttons do
                 .then(if (onClick != null) Modifier.pressScale(interactionSource) else Modifier)
+                .background(color = animatedBackgroundColor, shape = shape)
                 .clip(shape)
-                .background(color = animatedBackgroundColor)
                 .clickable(
                     enabled = onClick != null,
                     interactionSource = interactionSource,

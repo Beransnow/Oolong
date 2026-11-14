@@ -141,8 +141,8 @@ private fun RowScope.MenuTile(
             .height(TileHeight)
             .alpha(if (enabled) 1f else DisabledAlpha)
             .pressScale(interactionSource)
+            .background(background, TileShape)
             .clip(TileShape)
-            .background(background)
             .clickable(
                 interactionSource = interactionSource,
                 indication = PressFeedback.Overlay,

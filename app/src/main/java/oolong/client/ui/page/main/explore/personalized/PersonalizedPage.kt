@@ -327,8 +327,7 @@ private fun UndoDislikeRow(text: String?, onUndo: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(Corners.md)
-            .background(ExtendedTheme.colors.chip)
+            .background(ExtendedTheme.colors.chip, Corners.md)
             .padding(start = 16.dp, end = 4.dp),
     ) {
         Text(

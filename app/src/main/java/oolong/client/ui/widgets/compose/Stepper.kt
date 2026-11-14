@@ -56,8 +56,8 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
         tint = if (enabled) colors.text else colors.textDisabled,
         modifier = Modifier
             .size(32.dp)
+            .background(colors.background, Corners.full)
             .clip(Corners.full)
-            .background(colors.background)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(7.dp),
     )

@@ -219,8 +219,7 @@ private fun TypeChip(text: String, accent: Color) {
         fontWeight = FontWeight.SemiBold,
         color = accent,
         modifier = Modifier
-            .clip(SmoothCornerShape.Capsule)
-            .background(accent.copy(alpha = 0.14f))
+            .background(accent.copy(alpha = 0.14f), SmoothCornerShape.Capsule)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }

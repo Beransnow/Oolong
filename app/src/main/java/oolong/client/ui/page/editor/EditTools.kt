@@ -605,8 +605,8 @@ private fun <T> Options(
             Box(
                 modifier = Modifier
                     .then(if (fill) Modifier.weight(1f).height(36.dp) else Modifier.size(width(option), 36.dp))
+                    .background(if (on) BubbleColor else Color.Transparent, SmoothCornerShape.Capsule)
                     .clip(SmoothCornerShape.Capsule)
-                    .background(if (on) BubbleColor else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(option) }
                     .semantics {
                         contentDescription = description
@@ -788,8 +788,7 @@ private fun HuePicker(color: Color, onPick: (Color) -> Unit, onDone: () -> Unit)
                 .weight(1f)
                 .padding(end = 8.dp)
                 .height(28.dp)
-                .clip(SmoothCornerShape.Capsule)
-                .background(Brush.horizontalGradient(HueStops))
+                .background(Brush.horizontalGradient(HueStops), SmoothCornerShape.Capsule)
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
@@ -844,8 +843,8 @@ private fun Sizes(selected: Int, onSelect: (Int) -> Unit, enabled: Boolean = tru
             Box(
                 modifier = Modifier
                     .size(30.dp, 36.dp)
+                    .background(if (i == selected) BubbleColor else Color.Transparent, SmoothCornerShape.Capsule)
                     .clip(SmoothCornerShape.Capsule)
-                    .background(if (i == selected) BubbleColor else Color.Transparent)
                     .clickable(enabled = enabled, role = Role.RadioButton) { onSelect(i) }
                     .semantics {
                         contentDescription = label

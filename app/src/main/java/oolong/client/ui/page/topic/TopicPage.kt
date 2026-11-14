@@ -401,8 +401,7 @@ private fun PinnedLabel() {
         style = TextStyles.footnote,
         color = ExtendedTheme.colors.textSecondary,
         modifier = Modifier
-            .clip(Corners.xs)
-            .background(ExtendedTheme.colors.chip)
+            .background(ExtendedTheme.colors.chip, Corners.xs)
             .padding(horizontal = Spacing.xs, vertical = 2.dp),
     )
 }

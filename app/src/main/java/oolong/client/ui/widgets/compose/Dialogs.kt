@@ -447,12 +447,15 @@ fun Modifier.temporarySurface(shape: Shape): Modifier {
         .shadow(
             elevation = if (night) 32.dp else 24.dp,
             shape = shape,
+            clip = false,
             ambientColor = Color.Black.copy(alpha = if (night) 0.16f else 0.14f),
             spotColor = Color.Black.copy(alpha = if (night) 0.26f else 0.22f),
         )
-        .clip(shape)
-        .background(colors.sheet)
+        // Filled in its shape rather than clipped to it: some GPUs anti-alias a clip's edge
+        // coarsely or not at all. The clip is only for what is inside.
+        .background(colors.sheet, shape)
         .border(0.5.dp, colors.glassEdge, shape)
+        .clip(shape)
 }
 
 /**

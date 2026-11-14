@@ -179,8 +179,8 @@ fun BlockRuleScreen(
                     .padding(horizontal = Spacing.md)
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
+                    .background(colors.chip, Corners.md)
                     .clip(Corners.md)
-                    .background(colors.chip)
                     .toggleable(value = draft.enabled, role = Role.Switch) { checked -> onEdit { it.copy(enabled = checked) } }
                     .padding(horizontal = Spacing.md),
             ) {
@@ -200,8 +200,8 @@ fun BlockRuleScreen(
                         .padding(top = Spacing.md)
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
+                        .background(colors.chip, Corners.md)
                         .clip(Corners.md)
-                        .background(colors.chip)
                         .clickable { deleteDialog.show() }
                         .padding(horizontal = Spacing.md),
                 ) {
@@ -234,8 +234,7 @@ private fun ConditionList(conditions: FlatCondition, onTest: (Int, FlatCondition
         modifier = Modifier
             .padding(horizontal = Spacing.md)
             .fillMaxWidth()
-            .clip(Corners.md)
-            .background(colors.chip),
+            .background(colors.chip, Corners.md),
     ) {
         conditions.tests.forEachIndexed { index, test ->
             if (index > 0) Box(modifier = Modifier.padding(start = Spacing.sm).fillMaxWidth().height(1.dp).background(colors.divider))
@@ -438,8 +437,7 @@ private fun ValueInput(value: String, hint: String, regex: Boolean, onChange: (S
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.sm)
-            .background(colors.background)
+            .background(colors.background, Corners.sm)
             .padding(horizontal = 10.dp),
     ) {
         if (regex) Slash()
@@ -472,8 +470,7 @@ private fun LengthInput(length: Int, onChange: (Int) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .heightIn(min = 36.dp)
-            .clip(Corners.sm)
-            .background(colors.background)
+            .background(colors.background, Corners.sm)
             .padding(horizontal = 10.dp),
     ) {
         Box(modifier = Modifier.weight(1f)) {
@@ -509,8 +506,8 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
             .padding(horizontal = Spacing.md)
             .padding(top = Spacing.sm)
             .heightIn(min = 36.dp)
+            .background(colors.chip, Corners.full)
             .clip(Corners.full)
-            .background(colors.chip)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
             .clickable { menus?.show(items = items, anchor = bounds, icon = Symbols.Add) }
             .padding(start = Spacing.sm, end = Spacing.md),
@@ -694,8 +691,7 @@ private fun SentenceCard(
         modifier = Modifier
             .padding(horizontal = Spacing.md)
             .fillMaxWidth()
-            .clip(Corners.md)
-            .background(colors.chip)
+            .background(colors.chip, Corners.md)
             .padding(horizontal = Spacing.md, vertical = 14.dp),
     ) {
         Text(

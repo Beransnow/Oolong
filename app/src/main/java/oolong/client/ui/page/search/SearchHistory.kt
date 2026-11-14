@@ -96,13 +96,13 @@ fun SearchHistoryList(
                 Box(
                     modifier = Modifier
                         .padding(bottom = 8.dp)
+                        .background(ExtendedTheme.colors.chip, Corners.full)
                         .clip(Corners.full)
                         .combinedClickable(
                             onClick = { onSearchHistoryClick(searchHistory) },
                             onLongClickLabel = stringResource(R.string.title_delete),
                             onLongClick = { onDelete(searchHistory) }
                         )
-                        .background(ExtendedTheme.colors.chip)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
