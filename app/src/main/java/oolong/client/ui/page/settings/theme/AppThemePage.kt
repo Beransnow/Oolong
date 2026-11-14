@@ -257,7 +257,7 @@ private fun AppearancePicker(settings: ThemeSettings, light: ExtendedColors, dar
         AppearanceOption(stringResource(id = R.string.appearance_system), settings.appearance == Appearance.System, { ThemeUtil.setAppearance(Appearance.System) }) {
             HomePreview(light, wallpaper)
             // The lower right half dark: it turns with the system
-            Box(modifier = Modifier.fillMaxSize().clip(LowerRightHalf)) { HomePreview(dark, wallpaper, nightOverlay) }
+            Box(modifier = Modifier.fillMaxSize().maskTo(LowerRightHalf)) { HomePreview(dark, wallpaper, nightOverlay) }
         }
     }
 }

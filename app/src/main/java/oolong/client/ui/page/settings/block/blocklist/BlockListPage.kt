@@ -32,7 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
@@ -79,6 +79,7 @@ import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.rememberDialogState
 
 @Composable
@@ -194,7 +195,8 @@ fun BlockListScreen(
                     index == shown.lastIndex -> SmoothCornerShape(Radius.md, top = false)
                     else -> RectangleShape
                 }
-                Box(modifier = Modifier.padding(horizontal = Spacing.md).clip(shape)) {
+                // The first and last rows' rounded ends are masked: a clip to them is jagged on some GPUs
+                Box(modifier = Modifier.padding(horizontal = Spacing.md).then(if (shape == RectangleShape) Modifier.clipToBounds() else Modifier.maskTo(shape))) {
                     SwipeToDismiss(
                         state = dismissState,
                         directions = setOf(DismissDirection.EndToStart),
