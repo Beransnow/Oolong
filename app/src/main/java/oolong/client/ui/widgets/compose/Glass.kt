@@ -256,7 +256,7 @@ fun Modifier.topBarGlass(): Modifier {
     val scrollEdge = LocalPageScroll.current
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
     val shown: () -> Float = remember(scrollEdge, revealPx) {
-        { scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+        { scrollEdge?.blended { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     }
     return scrollEdgeGlass(top = true, shown = shown)
 }
@@ -662,7 +662,7 @@ fun Modifier.classicBarGlass(top: Boolean): Modifier {
     val revealPx = with(LocalDensity.current) { TopBarEdgeReveal.toPx() }
     val line = colors.divider
     // A page that doesn't say how far it has scrolled keeps its bar
-    val shown: () -> Float = { if (!top) 1f else scrollEdge?.scrolled?.let { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
+    val shown: () -> Float = { if (!top) 1f else scrollEdge?.blended { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     val edged = graphicsLayer { alpha = shown() }.drawWithContent {
         drawContent()
         val y = if (top) size.height - ClassicBarLine.toPx() / 2 else ClassicBarLine.toPx() / 2
