@@ -218,17 +218,18 @@ private fun Notes(version: String, groups: Map<String, List<String>>, details: S
             Text(text = group, style = TextStyles.name.copy(color = colors.text))
             Column(modifier = Modifier.padding(top = 2.dp, bottom = 20.dp)) {
                 items.forEach { item ->
-                    // "Title\nwhat it does for you", set as a settings row is; else a plain point
+                    // One kind of point for all: "Title\nwhat it does for you" sets the title as the point's
+                    // words and what it does under them, a plain item has the words alone
                     val title = item.substringBefore('\n', missingDelimiterValue = "")
-                    if (title.isNotEmpty()) {
-                        Column(modifier = Modifier.padding(top = 8.dp)) {
-                            Text(text = title, style = TextStyles.label.copy(color = colors.text))
-                            Text(text = item.substringAfter('\n'), style = TextStyles.caption.copy(color = colors.textSecondary))
-                        }
-                    } else {
-                        Row {
-                            Text(text = "·", style = TextStyles.bodyCompact.copy(color = colors.textSecondary), modifier = Modifier.padding(end = 8.dp))
-                            Text(text = item, style = TextStyles.bodyCompact.copy(color = colors.text))
+                    Row(modifier = Modifier.padding(top = 6.dp)) {
+                        Text(text = "·", style = TextStyles.bodyCompact.copy(color = colors.textSecondary), modifier = Modifier.padding(end = 8.dp))
+                        Column {
+                            if (title.isNotEmpty()) {
+                                Text(text = title, style = TextStyles.bodyCompact.copy(color = colors.text, fontWeight = FontWeight.Medium))
+                                Text(text = item.substringAfter('\n'), style = TextStyles.caption.copy(color = colors.textSecondary))
+                            } else {
+                                Text(text = item, style = TextStyles.bodyCompact.copy(color = colors.text))
+                            }
                         }
                     }
                 }
