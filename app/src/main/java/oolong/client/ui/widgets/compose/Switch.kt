@@ -1,6 +1,5 @@
 package oolong.client.ui.widgets.compose
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -17,9 +16,9 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,7 +37,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -62,11 +60,17 @@ fun Switch(
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val dragged by source.collectIsDraggedAsState()
-    val held by animateFloatAsState(
-        targetValue = if (enabled && (pressed || dragged)) 1f else 0f,
-        animationSpec = if (pressed || dragged) Motion.press() else Motion.release(),
-        label = "held",
+    // 0 off, 1 on: follows the finger while dragged; lifts into a lens while held or moved
+    val knob = rememberElasticPress(
+        initialValue = if (checked) 1f else 0f,
+        valueRange = 0f..1f,
+        pressedScale = HeldScale,
+        velocityScale = KnobVelocityScale,
     )
+    val isHeld = enabled && (pressed || dragged)
+    LaunchedEffect(isHeld) {
+        if (isHeld) knob.press() else knob.release()
+    }
 
     val haptics = LocalHapticFeedback.current
     val currentOnCheckedChange by rememberUpdatedState(onCheckedChange)
@@ -75,18 +79,20 @@ fun Switch(
         currentOnCheckedChange?.invoke(value)
     }
 
-    // 0 off, 1 on; follows the finger while dragged
-    val position = remember { Animatable(if (checked) 1f else 0f, visibilityThreshold = Motion.ProgressThreshold) }
     var dragging by remember { mutableStateOf(false) }
-    LaunchedEffect(checked, dragging) {
-        if (!dragging) position.animateTo(if (checked) 1f else 0f, Motion.snap())
+    // Toggled from anywhere, as by its row, the knob lifts, crosses and settles
+    LaunchedEffect(checked) {
+        val target = if (checked) 1f else 0f
+        if (!dragging && knob.targetValue != target) knob.moveTo(target)
     }
-    val scope = rememberCoroutineScope()
+    // Where the finger has taken the knob, which it follows through a stiff spring
+    var reach by remember { mutableFloatStateOf(0f) }
     val travelPx = with(LocalDensity.current) { KnobTravel.toPx() }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val dragState = rememberDraggableState { delta ->
         val d = if (rtl) -delta else delta
-        scope.launch { position.snapTo((position.value + d / travelPx).coerceIn(0f, 1f)) }
+        reach = (reach + d / travelPx).coerceIn(0f, 1f)
+        knob.follow(reach)
     }
 
     val colors = ExtendedTheme.colors
@@ -115,10 +121,14 @@ fun Switch(
                             orientation = Orientation.Horizontal,
                             enabled = enabled,
                             interactionSource = source,
-                            onDragStarted = { dragging = true },
+                            onDragStarted = {
+                                reach = knob.targetValue
+                                dragging = true
+                            },
                             onDragStopped = {
-                                val on = position.value > 0.5f
+                                val on = knob.targetValue >= 0.5f
                                 dragging = false
+                                knob.moveTo(if (on) 1f else 0f)
                                 if (on != checked) change(on)
                             },
                         )
@@ -133,7 +143,7 @@ fun Switch(
         // What the held knob sees: the track, and clear space around it as far as the knob reaches
         Box(
             Modifier
-                .requiredSize(TrackWidth + HeldGrowthWidth, TrackHeight + HeldGrowthHeight)
+                .requiredSize(TrackWidth + LensReachWidth, TrackHeight + LensReachHeight)
                 .hazeSource(glassState),
             contentAlignment = Alignment.Center,
         ) {
@@ -144,16 +154,18 @@ fun Switch(
                     .background(track, Corners.full)
             )
         }
-        val growWidth = HeldGrowthWidth * held
-        val knobWidth = KnobWidth + growWidth
-        val knobHeight = KnobHeight + HeldGrowthHeight * held
-        val p = if (rtl) 1f - position.value else position.value
+        // Swells a little apart on each axis, so it wobbles, and is drawn out along the way it
+        // moves when moved fast. Sized by layout, so the glass sees all it covers.
+        val held = knob.pressProgress
+        val knobWidth = KnobWidth * knob.scaleX * knob.stretchX
+        val knobHeight = KnobHeight * knob.scaleY * knob.stretchY
+        val p = if (rtl) 1f - knob.value else knob.value
         val knobShape = SmoothCornerShape.Capsule
         Box(
             Modifier
                 .offset {
-                    val x = KnobInset.toPx() + KnobTravel.toPx() * p - growWidth.toPx() / 2
-                    IntOffset(x.roundToInt(), 0)
+                    val centre = KnobInset.toPx() + KnobTravel.toPx() * p + KnobWidth.toPx() / 2
+                    IntOffset((centre - knobWidth.toPx() / 2).roundToInt(), 0)
                 }
                 .requiredSize(knobWidth, knobHeight)
                 .shadow(KnobElevation, knobShape, clip = false, ambientColor = KnobAmbient, spotColor = KnobSpot)
@@ -172,8 +184,14 @@ private val KnobInset = (TrackHeight - KnobHeight) / 2
 private val KnobTravel = TrackWidth - KnobWidth - KnobInset * 2
 
 /** How much the knob grows while held, standing out past the track like the navigation lens. */
-private val HeldGrowthWidth = 16.dp
-private val HeldGrowthHeight = 14.dp
+private const val HeldScale = 1.5f
+
+/** Travels a second at which the knob is drawn out the most. */
+private const val KnobVelocityScale = 50f
+
+/** How far past the track the held knob can reach, grown and drawn out, for its glass to see. */
+private val LensReachWidth = 30.dp
+private val LensReachHeight = 18.dp
 
 private val KnobElevation = 2.dp
 private val KnobAmbient = Color.Black.copy(alpha = 0.12f)

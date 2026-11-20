@@ -2,7 +2,7 @@ package oolong.client.ui.page.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
@@ -121,8 +122,10 @@ import oolong.client.ui.widgets.compose.glassLens
 import oolong.client.ui.widgets.compose.isLensGlass
 import oolong.client.ui.widgets.compose.liquidLensOptics
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.ui.widgets.compose.rememberElasticPress
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sign
 import androidx.compose.ui.util.lerp as lerpFloat
 
 /**
@@ -144,7 +147,7 @@ fun NavigationRail(
     val itemWidth = if (showLabels) NavItemWidth else NavItemCollapsedWidth
     val itemHeight = if (showLabels) NavItemHeight else NavItemCollapsedWidth
     val indicator = remember { Animatable(currentPosition.toFloat()) }
-    LaunchedEffect(currentPosition) { indicator.animateTo(currentPosition.toFloat(), IndicatorSpring) }
+    LaunchedEffect(currentPosition) { indicator.animateTo(currentPosition.toFloat(), Motion.snap()) }
     // A lens lifts off the item held, as off the floating pill
     val sources = remember(navigationItems.size) { List(navigationItems.size) { MutableInteractionSource() } }
     var held by remember { mutableIntStateOf(-1) }
@@ -156,9 +159,9 @@ fun NavigationRail(
                     when (interaction) {
                         is PressInteraction.Press -> {
                             held = index
-                            launch { press.animateTo(1f, PressSpring) }
+                            launch { press.animateTo(1f, Motion.press()) }
                         }
-                        is PressInteraction.Release, is PressInteraction.Cancel -> launch { press.animateTo(0f, PressSpring) }
+                        is PressInteraction.Release, is PressInteraction.Cancel -> launch { press.animateTo(0f, Motion.release()) }
                     }
                 }
             }
@@ -377,12 +380,18 @@ fun FloatingNavBar(
         return
     }
     val coroutineScope = rememberCoroutineScope()
-    val indicator = remember { Animatable(currentPosition.toFloat()) }
-    val press = remember { Animatable(0f) }
+    val lens = rememberElasticPress(
+        initialValue = currentPosition.toFloat(),
+        valueRange = 0f..(navigationItems.size - 1).coerceAtLeast(1).toFloat(),
+        pressedScale = LensScale,
+        velocityScale = LensVelocityScale,
+    )
     var indicatorDragged by remember { mutableStateOf(false) }
     LaunchedEffect(currentPosition) {
-        if (!indicatorDragged) indicator.animateTo(currentPosition.toFloat(), IndicatorSpring)
+        if (!indicatorDragged) lens.glideTo(currentPosition.toFloat())
     }
+    // How far the finger has dragged the lens, which the pill leans a little towards
+    val drift = remember { Animatable(0f) }
     // While the pages are swiped, the indicator moves with them, and springs to the tab they settle on
     val shownTab by rememberUpdatedState(currentPosition)
     LaunchedEffect(Unit) {
@@ -391,10 +400,10 @@ fun FloatingNavBar(
             if (indicatorDragged) return@collect
             if (position != null) {
                 swiping = true
-                indicator.snapTo(position)
+                lens.snapTo(position)
             } else if (swiping) {
                 swiping = false
-                indicator.animateTo(shownTab.toFloat(), IndicatorSpring)
+                lens.glideTo(shownTab.toFloat())
             }
         }
     }
@@ -438,9 +447,18 @@ fun FloatingNavBar(
         // gesture reads it rather than restarting on it
         val gestureItemWidthPx by rememberUpdatedState(itemWidthPx)
         // The item under the indicator, so colours follow it while it is dragged.
-        val highlighted = indicator.value.roundToInt()
+        val highlighted = lens.value.roundToInt()
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        val leanPx = with(density) { PillLean.toPx() }
         Row(verticalAlignment = Alignment.Bottom) {
-            Box(modifier = Modifier.padding(top = (NavItemHeight - itemHeight))) {
+            Box(
+                modifier = Modifier
+                    .padding(top = (NavItemHeight - itemHeight))
+                    .offset {
+                        val fraction = (drift.value / maxWidthPx).coerceIn(-1f, 1f)
+                        IntOffset((leanPx * sign(fraction) * EaseOut.transform(abs(fraction))).roundToInt(), 0)
+                    },
+            ) {
                 Box(
                     modifier = Modifier
                         .floatingGlass(NavPillShape, lensTarget = !searching)
@@ -452,14 +470,10 @@ fun FloatingNavBar(
                             fun positionAt(x: Float) = (x / gestureItemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
+                                fun settleDrift() = coroutineScope.launch { drift.animateTo(0f, DriftSpring) }
                                 try {
-                                    coroutineScope.launch { press.animateTo(1f, PressSpring) }
-                                    coroutineScope.launch {
-                                        indicator.animateTo(
-                                            positionAt(down.position.x).roundToInt().toFloat(),
-                                            IndicatorSpring
-                                        )
-                                    }
+                                    lens.press()
+                                    lens.glideTo(positionAt(down.position.x).roundToInt().toFloat())
                                     var dragging = false
                                     var lastX = down.position.x
                                     var released = false
@@ -485,7 +499,9 @@ fun FloatingNavBar(
                                         }
                                         if (dragging) {
                                             change.consume()
-                                            coroutineScope.launch { indicator.snapTo(positionAt(lastX)) }
+                                            lens.follow(positionAt(lastX))
+                                            val dx = change.positionChange().x
+                                            coroutineScope.launch { drift.snapTo(drift.value + dx) }
                                         }
                                     }
                                     val menu = items[indexAt(down.position.x)].menu
@@ -495,10 +511,8 @@ fun FloatingNavBar(
                                             while (!dragging && !released && !lost) follow(awaitPointerEvent())
                                         } == null
                                     if (held && menu != null && menus != null) {
-                                        coroutineScope.launch { press.animateTo(0f, PressSpring) }
-                                        coroutineScope.launch {
-                                            indicator.animateTo(shown.toFloat(), IndicatorSpring)
-                                        }
+                                        lens.glideTo(shown.toFloat())
+                                        lens.release()
                                         val coordinates = pill ?: return@awaitEachGesture
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         // Out of the item held, as from the rail
@@ -518,31 +532,30 @@ fun FloatingNavBar(
                                         return@awaitEachGesture
                                     }
                                     while (!released && !lost) follow(awaitPointerEvent())
-                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
                                     indicatorDragged = false
+                                    settleDrift()
                                     if (released) {
                                         val target = if (dragging) {
                                             positionAt(lastX).roundToInt()
                                         } else {
                                             indexAt(down.position.x)
                                         }
-                                        coroutineScope.launch {
-                                            indicator.animateTo(target.toFloat(), IndicatorSpring)
-                                        }
+                                        // Carried there lifted, settling only as it arrives
+                                        lens.moveTo(target.toFloat())
                                         // Only a tap on the shown tab asks it again; a lens dragged
                                         // or held there and let go just goes back
                                         val tapped = !dragging &&
                                             releasedAt - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis
                                         if (target != shown || tapped) select(target)
                                     } else {
-                                        coroutineScope.launch {
-                                            indicator.animateTo(shown.toFloat(), IndicatorSpring)
-                                        }
+                                        lens.glideTo(shown.toFloat())
+                                        lens.release()
                                     }
                                 } catch (e: CancellationException) {
                                     // Restarted or taken off mid-press, the gesture would leave the lens up
-                                    coroutineScope.launch { press.animateTo(0f, PressSpring) }
-                                    coroutineScope.launch { indicator.animateTo(shown.toFloat(), IndicatorSpring) }
+                                    lens.glideTo(shown.toFloat())
+                                    lens.release()
+                                    settleDrift()
                                     indicatorDragged = false
                                     throw e
                                 }
@@ -551,9 +564,9 @@ fun FloatingNavBar(
                 ) {
                     Box(
                         modifier = Modifier
-                            .offset { IntOffset((indicator.value * itemWidthPx).roundToInt(), 0) }
+                            .offset { IntOffset((lens.value * itemWidthPx).roundToInt(), 0) }
                             .size(width = itemWidth, height = itemHeight)
-                            .graphicsLayer { alpha = 1f - press.value }
+                            .graphicsLayer { alpha = 1f - lens.pressProgress }
                             .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
                     )
                     Row {
@@ -606,11 +619,12 @@ fun FloatingNavBar(
                 // Lifts off the pill while it is pressed: drawn above it, so it magnifies the pill too.
                 // Grows by layout rather than a layer scale so the glass samples the area it covers,
                 // but outside the pill's size, which would otherwise grow with it and push the
-                // search button down.
-                // A veil, without glass to lift, keeps to the item
-                val lensScale = lerpFloat(1f, if (isLensGlass()) LensScale else 1f, press.value)
-                val lensWidth = itemWidth * lensScale
-                val lensHeight = itemHeight * lensScale
+                // search button down. It swells a little apart on each axis, so it wobbles, and
+                // is drawn out along the way it moves when moved fast. A veil, without glass to
+                // lift, keeps to the item
+                val lensGlass = isLensGlass()
+                val lensWidth = itemWidth * if (lensGlass) lens.scaleX * lens.stretchX else 1f
+                val lensHeight = itemHeight * if (lensGlass) lens.scaleY * lens.stretchY else 1f
                 val lensOptics = remember(itemHeight) { liquidLensOptics(itemHeight * LensScale) }
                 Box(modifier = Modifier.matchParentSize()) {
                     Box(
@@ -621,12 +635,12 @@ fun FloatingNavBar(
                                 val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
                                 val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
                                 IntOffset(
-                                    (indicator.value * itemWidthPx).roundToInt() + padding - grownX,
+                                    (lens.value * itemWidthPx).roundToInt() + padding - grownX,
                                     padding - grownY,
                                 )
                             }
                             .size(width = lensWidth, height = lensHeight)
-                            .graphicsLayer { alpha = press.value }
+                            .graphicsLayer { alpha = lens.pressProgress }
                             .glassLens(NavPillShape, lensOptics)
                     )
                 }
@@ -754,11 +768,15 @@ private val ClassicNavBarHeight = 64.dp
 private val ClassicPillWidth = 56.dp
 private val ClassicPillHeight = 30.dp
 
-private val IndicatorSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 380f)
-private val PressSpring = spring<Float>(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)
-
 /** How much the lens outgrows the item it lifts off from. */
 private const val LensScale = 1.4f
+
+/** Tab ranges a second at which the lens is drawn out the most. */
+private const val LensVelocityScale = 10f
+
+/** How far the pill leans towards a drag of the lens. */
+private val PillLean = 4.dp
+private val DriftSpring = spring<Float>(dampingRatio = 1f, stiffness = 300f)
 
 @Immutable
 data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constructor(
