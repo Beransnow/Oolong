@@ -507,16 +507,18 @@ fun FloatingNavBar(
                                 drawContent()
                                 val g = glow.value
                                 if (g > 0f && glowAt.isSpecified) {
-                                    drawRect(Color.White.copy(alpha = GlowWash * g), blendMode = BlendMode.Plus)
                                     val centre = glowAt + Offset(padPx + glassShift[0], padPx + glassShift[1])
+                                    // Falls off smoothly, with no edge to it
                                     val light = Color.White.copy(alpha = GlowLight * g)
                                     drawRect(
                                         Brush.radialGradient(
                                             0f to light,
-                                            0.5f to light,
+                                            0.25f to light.copy(alpha = light.alpha * 0.7f),
+                                            0.5f to light.copy(alpha = light.alpha * 0.32f),
+                                            0.75f to light.copy(alpha = light.alpha * 0.08f),
                                             1f to Color.Transparent,
                                             center = centre,
-                                            radius = size.minDimension * 1.5f,
+                                            radius = size.height * GlowReach,
                                         ),
                                         blendMode = BlendMode.Plus,
                                     )
@@ -575,7 +577,7 @@ fun FloatingNavBar(
                                                 // Past the first or last item, the further the harder
                                                 val reach = lastX / gestureItemWidthPx - 0.5f
                                                 val pastPx = (reach - reach.coerceIn(0f, last.toFloat())) * gestureItemWidthPx
-                                                val resisted = sign(pastPx) * maxOverdragPx * (1f - exp(-abs(pastPx) / maxOverdragPx / 2f))
+                                                val resisted = sign(pastPx) * maxOverdragPx * (1f - exp(-abs(pastPx) / maxOverdragPx))
                                                 if (StretchPastEnds) coroutineScope.launch { overdrag.snapTo(resisted) }
                                             }
                                         }
@@ -712,7 +714,7 @@ fun FloatingNavBar(
                                 val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
                                 val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
                                 IntOffset(
-                                    (lens.value * itemWidthPx + overdrag.value).roundToInt() + padding - grownX,
+                                    (lens.value * itemWidthPx + overdrag.value * LensOverdrag).roundToInt() + padding - grownX,
                                     padding - grownY,
                                 )
                             }
@@ -855,18 +857,20 @@ private const val LensVelocityScale = 10f
 private val PillLean = 10.dp
 
 /** How much wider the pill's glass swells while pressed; it grows as much taller in proportion. */
-private val PillSwell = 16.dp
+private val PillSwell = 6.dp
 
 /** Whether the pill's glass stretches towards a lens dragged past either end. */
 private const val StretchPastEnds = true
 
 /** How far, at most, the pill's glass stretches past either end. */
-private val MaxOverdrag = 14.dp
+private val MaxOverdrag = 28.dp
+/** How much of the stretch the lens follows, staying over the end item rather than past it. */
+private const val LensOverdrag = 0.5f
 private val OverdragSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 400f)
 
-/** The light under the finger: a wash over the pill and a pool where it is touched. */
-private const val GlowWash = 0.08f
-private const val GlowLight = 0.15f
+/** The light under the finger, and how far it reaches, in the pill's heights. */
+private const val GlowLight = 0.12f
+private const val GlowReach = 1.1f
 private val GlowSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 300f)
 private val DriftSpring = spring<Float>(dampingRatio = 1f, stiffness = 300f)
 
