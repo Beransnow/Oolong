@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -430,6 +431,9 @@ internal fun pressedByGlass(): Boolean = LocalBarButtons.current != null || Loca
  * off the navigation pill; its own glass then leaves it out. [insideLensTarget] leaves it out the
  * same way for glass inside a part marked as one, such as a pill's glass laid out apart from what
  * is on it so it can swell alone.
+ *
+ * With [touchLight], the glass lights up from under the finger while it is pressed there, and the
+ * light follows each press [touchLight] is given, without giving way as a pressed control does.
  */
 @Composable
 fun Modifier.floatingGlass(
@@ -439,10 +443,11 @@ fun Modifier.floatingGlass(
     alpha: Float = 1f,
     lensTarget: Boolean = false,
     insideLensTarget: Boolean = false,
+    touchLight: InteractionSource? = null,
 ): Modifier = if (lensTarget) {
-    lensTarget().floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = true)
+    lensTarget().floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = true, touchLight)
 } else {
-    floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = insideLensTarget)
+    floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = insideLensTarget, touchLight)
 }
 
 @OptIn(ExperimentalHazeApi::class)
@@ -453,6 +458,7 @@ private fun Modifier.floatingGlassOf(
     pressable: Boolean,
     alpha: Float,
     onLensTarget: Boolean,
+    touchLight: InteractionSource?,
 ): Modifier {
     val press = rememberGlassPress()
     // On a classic bar the band is the ground, and what is pressed on it is pressed in
@@ -526,7 +532,7 @@ private fun Modifier.floatingGlassOf(
     }
     return when (tier) {
         GlassTier.Glass -> {
-            val style = remember(shape, colors.background, frost, bar, answers, alpha, shown) {
+            val style = remember(shape, colors.background, frost, bar, answers, touchLight != null, alpha, shown) {
                 // Regular is the built-in material for surfaces that carry labels.
                 GlassStyle.regular.then {
                     shape(shape.glassShape())
@@ -540,8 +546,9 @@ private fun Modifier.floatingGlassOf(
                     if (alpha < 1f) alpha(alpha)
                     // Read here, the glass follows the scroll without being rebuilt
                     if (bar != null) alpha(shown())
-                    if (answers) {
-                        // Pressed, the glass lights up where it was touched
+                    if (answers || touchLight != null) {
+                        // Pressed, or touched where it lights from under the finger, the glass
+                        // lights up where it was touched
                         pressed {
                             animate(toSpec = Motion.press(), fromSpec = Motion.release()) {
                                 lightingIntensity(1f)
@@ -555,7 +562,7 @@ private fun Modifier.floatingGlassOf(
                 .hazeGlass(
                     input = input!!,
                     style = style,
-                    interactionSource = if (answers) press.interactions else null,
+                    interactionSource = if (answers) press.interactions else touchLight,
                     interactionTransformTarget = GlassTransformTarget.MaterialAndContent,
                 )
                 .then(pressVeil)

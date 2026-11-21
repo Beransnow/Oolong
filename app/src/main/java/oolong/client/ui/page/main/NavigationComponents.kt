@@ -67,14 +67,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.isSpecified
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -131,7 +127,6 @@ import oolong.client.ui.widgets.compose.liquidLensOptics
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.rememberElasticPress
 import kotlin.math.abs
-import kotlin.math.exp
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import androidx.compose.ui.util.lerp as lerpFloat
@@ -402,9 +397,8 @@ fun FloatingNavBar(
     val drift = remember { Animatable(0f) }
     // How far the lens is dragged past either end, resisted; the whole pill is pulled that way
     val overdrag = remember { Animatable(0f) }
-    // The light under the finger, which lights the pill from where it is touched
-    val glow = remember { Animatable(0f) }
-    var glowAt by remember { mutableStateOf(Offset.Unspecified) }
+    // Presses for the pill's glass, which lights up from under them
+    val touch = remember { MutableInteractionSource() }
     // While the pages are swiped, the indicator moves with them, and springs to the tab they settle on
     val shownTab by rememberUpdatedState(currentPosition)
     LaunchedEffect(Unit) {
@@ -504,28 +498,7 @@ fun FloatingNavBar(
                                     placeable.place(left.roundToInt(), top.roundToInt())
                                 }
                             }
-                            .floatingGlass(NavPillShape, insideLensTarget = !searching)
-                            .drawWithContent {
-                                drawContent()
-                                val g = glow.value
-                                if (g > 0f && glowAt.isSpecified) {
-                                    val centre = glowAt + Offset(padPx + glassShift[0], padPx + glassShift[1])
-                                    // Falls off smoothly, with no edge to it
-                                    val light = Color.White.copy(alpha = GlowLight * g)
-                                    drawRect(
-                                        Brush.radialGradient(
-                                            0f to light,
-                                            0.25f to light.copy(alpha = light.alpha * 0.7f),
-                                            0.5f to light.copy(alpha = light.alpha * 0.32f),
-                                            0.75f to light.copy(alpha = light.alpha * 0.08f),
-                                            1f to Color.Transparent,
-                                            center = centre,
-                                            radius = size.height * GlowReach,
-                                        ),
-                                        blendMode = BlendMode.Plus,
-                                    )
-                                }
-                            }
+                            .floatingGlass(NavPillShape, insideLensTarget = !searching, touchLight = touch),
                     )
                     Box(
                         modifier = Modifier
@@ -537,16 +510,24 @@ fun FloatingNavBar(
                                 fun positionAt(x: Float) = (x / gestureItemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
                                 awaitEachGesture {
                                     val down = awaitFirstDown(requireUnconsumed = false)
+                                    // The press the glass is lit from, moved along with the finger
+                                    var lit: PressInteraction.Press? = null
+                                    fun light(at: Offset) {
+                                        val press = PressInteraction.Press(at + Offset(padPx + glassShift[0], padPx + glassShift[1]))
+                                        touch.tryEmit(press)
+                                        lit?.let { touch.tryEmit(PressInteraction.Release(it)) }
+                                        lit = press
+                                    }
                                     fun settle() {
                                         coroutineScope.launch { drift.animateTo(0f, DriftSpring) }
                                         coroutineScope.launch { overdrag.animateTo(0f, OverdragSpring) }
-                                        coroutineScope.launch { glow.animateTo(0f, GlowSpring) }
+                                        lit?.let { touch.tryEmit(PressInteraction.Release(it)) }
+                                        lit = null
                                     }
                                     // Where the finger is along the pill as it would lie unmoved
                                     val downX = down.position.x + pillShift[0]
                                     try {
-                                        glowAt = down.position
-                                        coroutineScope.launch { glow.animateTo(1f, GlowSpring) }
+                                        light(down.position)
                                         lens.press()
                                         lens.glideTo(positionAt(downX).roundToInt().toFloat())
                                         var dragging = false
@@ -567,7 +548,7 @@ fun FloatingNavBar(
                                             }
                                             val dx = change.position.x + pillShift[0] - lastX
                                             lastX += dx
-                                            glowAt = change.position
+                                            light(change.position)
                                             if (!dragging &&
                                                 abs(lastX - downX) > viewConfiguration.touchSlop
                                             ) {
@@ -578,10 +559,11 @@ fun FloatingNavBar(
                                                 change.consume()
                                                 lens.follow(positionAt(lastX))
                                                 coroutineScope.launch { drift.snapTo(drift.value + dx) }
-                                                // Past the first or last item, the further the harder
+                                                // Past the first or last item, pulled after it as by a
+                                                // rubber band: the further, the harder
                                                 val reach = lastX / gestureItemWidthPx - 0.5f
                                                 val pastPx = (reach - reach.coerceIn(0f, last.toFloat())) * gestureItemWidthPx
-                                                val resisted = sign(pastPx) * maxOverdragPx * (1f - exp(-abs(pastPx) / maxOverdragPx))
+                                                val resisted = sign(pastPx) * maxOverdragPx * (1f - 1f / (abs(pastPx) * OverdragGive / maxOverdragPx + 1f))
                                                 coroutineScope.launch { overdrag.snapTo(resisted) }
                                             }
                                         }
@@ -863,14 +845,14 @@ private val PillLean = 10.dp
 /** How much wider the pill's glass swells while pressed; it grows as much taller in proportion. */
 private val PillSwell = 6.dp
 
-/** How far, at most, the whole pill is pulled after a lens dragged past either end. */
-private val MaxOverdrag = 24.dp
-private val OverdragSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 400f)
-
-/** The light under the finger, and how far it reaches, in the pill's heights. */
-private const val GlowLight = 0.12f
-private const val GlowReach = 1.1f
-private val GlowSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 300f)
+/**
+ * How the whole pill is pulled after a lens dragged past either end: never past [MaxOverdrag],
+ * giving [OverdragGive] of the finger's move at first and less the further it goes, and springing
+ * back with a little bounce.
+ */
+private val MaxOverdrag = 48.dp
+private const val OverdragGive = 0.3f
+private val OverdragSpring = spring<Float>(dampingRatio = 0.55f, stiffness = 380f)
 private val DriftSpring = spring<Float>(dampingRatio = 1f, stiffness = 300f)
 
 @Immutable
