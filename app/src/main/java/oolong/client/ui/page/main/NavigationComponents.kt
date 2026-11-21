@@ -67,9 +67,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -79,6 +84,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -90,6 +96,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -120,10 +127,12 @@ import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
 import oolong.client.ui.widgets.compose.isLensGlass
+import oolong.client.ui.widgets.compose.lensTarget
 import oolong.client.ui.widgets.compose.liquidLensOptics
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.rememberElasticPress
 import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import androidx.compose.ui.util.lerp as lerpFloat
@@ -392,6 +401,11 @@ fun FloatingNavBar(
     }
     // How far the finger has dragged the lens, which the pill leans a little towards
     val drift = remember { Animatable(0f) }
+    // How far the lens is dragged past either end, resisted; the pill's glass stretches that way
+    val overdrag = remember { Animatable(0f) }
+    // The light under the finger, which lights the pill from where it is touched
+    val glow = remember { Animatable(0f) }
+    var glowAt by remember { mutableStateOf(Offset.Unspecified) }
     // While the pages are swiped, the indicator moves with them, and springs to the tab they settle on
     val shownTab by rememberUpdatedState(currentPosition)
     LaunchedEffect(Unit) {
@@ -450,6 +464,11 @@ fun FloatingNavBar(
         val highlighted = lens.value.roundToInt()
         val maxWidthPx = with(density) { maxWidth.toPx() }
         val leanPx = with(density) { PillLean.toPx() }
+        val swellPx = with(density) { PillSwell.toPx() }
+        val maxOverdragPx = with(density) { MaxOverdrag.toPx() }
+        val padPx = with(density) { NavPillPadding.toPx() }
+        // Where the glass is drawn from, past the pill's own top left, as it swells and stretches
+        val glassShift = remember { floatArrayOf(0f, 0f) }
         Row(verticalAlignment = Alignment.Bottom) {
             Box(
                 modifier = Modifier
@@ -459,158 +478,216 @@ fun FloatingNavBar(
                         IntOffset((leanPx * sign(fraction) * EaseOut.transform(abs(fraction))).roundToInt(), 0)
                     },
             ) {
-                Box(
-                    modifier = Modifier
-                        .floatingGlass(NavPillShape, lensTarget = !searching)
-                        .padding(NavPillPadding)
-                        .onGloballyPositioned { pill = it }
-                        .pointerInput(navigationItems.size, menus) {
-                            val last = navigationItems.size - 1
-                            fun indexAt(x: Float) = (x / gestureItemWidthPx).toInt().coerceIn(0, last)
-                            fun positionAt(x: Float) = (x / gestureItemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
-                            awaitEachGesture {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                fun settleDrift() = coroutineScope.launch { drift.animateTo(0f, DriftSpring) }
-                                try {
-                                    lens.press()
-                                    lens.glideTo(positionAt(down.position.x).roundToInt().toFloat())
-                                    var dragging = false
-                                    var lastX = down.position.x
-                                    var released = false
-                                    var releasedAt = 0L
-                                    var lost = false
-                                    fun follow(event: PointerEvent) {
-                                        val change = event.changes.firstOrNull { it.id == down.id }
-                                        if (change == null) {
-                                            lost = true
-                                            return
-                                        }
-                                        if (!change.pressed) {
-                                            released = true
-                                            releasedAt = change.uptimeMillis
-                                            return
-                                        }
-                                        lastX = change.position.x
-                                        if (!dragging &&
-                                            abs(lastX - down.position.x) > viewConfiguration.touchSlop
-                                        ) {
-                                            dragging = true
-                                            indicatorDragged = true
-                                        }
-                                        if (dragging) {
-                                            change.consume()
-                                            lens.follow(positionAt(lastX))
-                                            val dx = change.positionChange().x
-                                            coroutineScope.launch { drift.snapTo(drift.value + dx) }
-                                        }
-                                    }
-                                    val menu = items[indexAt(down.position.x)].menu
-                                    // Until the finger moves off or lifts, a menu waits for the press to last
-                                    val held = menu != null && menus != null &&
-                                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                            while (!dragging && !released && !lost) follow(awaitPointerEvent())
-                                        } == null
-                                    if (held && menu != null && menus != null) {
-                                        lens.glideTo(shown.toFloat())
-                                        lens.release()
-                                        val coordinates = pill ?: return@awaitEachGesture
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        // Out of the item held, as from the rail
-                                        val item = itemBounds[indexAt(down.position.x)] ?: Rect(coordinates.localToWindow(down.position), Size.Zero)
-                                        menus.show(menu(), anchor = item)
-                                        while (true) {
-                                            val change = awaitPointerEvent().changes
-                                                .firstOrNull { it.id == down.id } ?: break
-                                            change.consume()
-                                            val position = coordinates.localToWindow(change.position)
-                                            if (!change.pressed) {
-                                                menus.liftFinger(position)
-                                                break
-                                            }
-                                            menus.moveFinger(position)
-                                        }
-                                        return@awaitEachGesture
-                                    }
-                                    while (!released && !lost) follow(awaitPointerEvent())
-                                    indicatorDragged = false
-                                    settleDrift()
-                                    if (released) {
-                                        val target = if (dragging) {
-                                            positionAt(lastX).roundToInt()
-                                        } else {
-                                            indexAt(down.position.x)
-                                        }
-                                        // Carried there lifted, settling only as it arrives
-                                        lens.moveTo(target.toFloat())
-                                        // Only a tap on the shown tab asks it again; a lens dragged
-                                        // or held there and let go just goes back
-                                        val tapped = !dragging &&
-                                            releasedAt - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis
-                                        if (target != shown || tapped) select(target)
-                                    } else {
-                                        lens.glideTo(shown.toFloat())
-                                        lens.release()
-                                    }
-                                } catch (e: CancellationException) {
-                                    // Restarted or taken off mid-press, the gesture would leave the lens up
-                                    lens.glideTo(shown.toFloat())
-                                    lens.release()
-                                    settleDrift()
-                                    indicatorDragged = false
-                                    throw e
-                                }
-                            }
-                        },
-                ) {
+                Box(modifier = if (!searching) Modifier.lensTarget() else Modifier) {
+                    // The pill's glass, laid out apart from what is on it, so it alone swells while
+                    // pressed and stretches towards a lens dragged past either end. By layout rather
+                    // than a layer scale, so what the lens sees of it is where it is drawn.
                     Box(
                         modifier = Modifier
-                            .offset { IntOffset((lens.value * itemWidthPx).roundToInt(), 0) }
-                            .size(width = itemWidth, height = itemHeight)
-                            .graphicsLayer { alpha = 1f - lens.pressProgress }
-                            .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
+                            .matchParentSize()
+                            .layout { measurable, constraints ->
+                                val w = constraints.maxWidth
+                                val h = constraints.maxHeight
+                                val swellX = swellPx * lens.pressProgress
+                                val swellY = swellX * h / w.coerceAtLeast(1)
+                                val stretch = overdrag.value
+                                val placeable = measurable.measure(
+                                    Constraints.fixed((w + swellX + abs(stretch)).roundToInt(), (h + swellY).roundToInt())
+                                )
+                                layout(w, h) {
+                                    val left = -swellX / 2 + minOf(stretch, 0f)
+                                    val top = -swellY / 2
+                                    glassShift[0] = -left
+                                    glassShift[1] = -top
+                                    placeable.place(left.roundToInt(), top.roundToInt())
+                                }
+                            }
+                            .floatingGlass(NavPillShape, insideLensTarget = !searching)
+                            .drawWithContent {
+                                drawContent()
+                                val g = glow.value
+                                if (g > 0f && glowAt.isSpecified) {
+                                    drawRect(Color.White.copy(alpha = GlowWash * g), blendMode = BlendMode.Plus)
+                                    val centre = glowAt + Offset(padPx + glassShift[0], padPx + glassShift[1])
+                                    val light = Color.White.copy(alpha = GlowLight * g)
+                                    drawRect(
+                                        Brush.radialGradient(
+                                            0f to light,
+                                            0.5f to light,
+                                            1f to Color.Transparent,
+                                            center = centre,
+                                            radius = size.minDimension * 1.5f,
+                                        ),
+                                        blendMode = BlendMode.Plus,
+                                    )
+                                }
+                            }
                     )
-                    Row {
-                        navigationItems.fastForEachIndexed { index, navigationItem ->
-                            val selected = index == currentPosition
-                            val title = navigationItem.title(selected)
-                            val contentColor =
-                                if (index == highlighted) ExtendedTheme.colors.emphasis
-                                else themeColors.textSecondary
-                            Column(
-                                modifier = Modifier
-                                    .size(width = itemWidth, height = itemHeight)
-                                    .onGloballyPositioned { itemBounds[index] = it.boundsInWindow() }
-                                    .semantics(mergeDescendants = true) {
-                                        role = Role.Tab
-                                        this.selected = selected
-                                        onClick(label = title) {
-                                            select(index)
-                                            true
-                                        }
-                                        val menu = navigationItem.menu
-                                        if (menu != null && menus != null) {
-                                            onLongClick(label = navigationItem.menuLabel) {
-                                                val bounds = itemBounds[index] ?: return@onLongClick false
-                                                menus.show(menu(), anchor = bounds)
-                                                true
+                    Box(
+                        modifier = Modifier
+                            .padding(NavPillPadding)
+                            .onGloballyPositioned { pill = it }
+                            .pointerInput(navigationItems.size, menus) {
+                                val last = navigationItems.size - 1
+                                fun indexAt(x: Float) = (x / gestureItemWidthPx).toInt().coerceIn(0, last)
+                                fun positionAt(x: Float) = (x / gestureItemWidthPx - 0.5f).coerceIn(0f, last.toFloat())
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    fun settle() {
+                                        coroutineScope.launch { drift.animateTo(0f, DriftSpring) }
+                                        coroutineScope.launch { overdrag.animateTo(0f, OverdragSpring) }
+                                        coroutineScope.launch { glow.animateTo(0f, GlowSpring) }
+                                    }
+                                    try {
+                                        glowAt = down.position
+                                        coroutineScope.launch { glow.animateTo(1f, GlowSpring) }
+                                        lens.press()
+                                        lens.glideTo(positionAt(down.position.x).roundToInt().toFloat())
+                                        var dragging = false
+                                        var lastX = down.position.x
+                                        var released = false
+                                        var releasedAt = 0L
+                                        var lost = false
+                                        fun follow(event: PointerEvent) {
+                                            val change = event.changes.firstOrNull { it.id == down.id }
+                                            if (change == null) {
+                                                lost = true
+                                                return
+                                            }
+                                            if (!change.pressed) {
+                                                released = true
+                                                releasedAt = change.uptimeMillis
+                                                return
+                                            }
+                                            lastX = change.position.x
+                                            glowAt = change.position
+                                            if (!dragging &&
+                                                abs(lastX - down.position.x) > viewConfiguration.touchSlop
+                                            ) {
+                                                dragging = true
+                                                indicatorDragged = true
+                                            }
+                                            if (dragging) {
+                                                change.consume()
+                                                lens.follow(positionAt(lastX))
+                                                val dx = change.positionChange().x
+                                                coroutineScope.launch { drift.snapTo(drift.value + dx) }
+                                                // Past the first or last item, the further the harder
+                                                val reach = lastX / gestureItemWidthPx - 0.5f
+                                                val pastPx = (reach - reach.coerceIn(0f, last.toFloat())) * gestureItemWidthPx
+                                                val resisted = sign(pastPx) * maxOverdragPx * (1f - exp(-abs(pastPx) / maxOverdragPx / 2f))
+                                                if (StretchPastEnds) coroutineScope.launch { overdrag.snapTo(resisted) }
                                             }
                                         }
-                                    },
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                NavItemIcon(navigationItem, selected, title, contentColor)
-                                if (fraction < 1f) {
-                                    Text(
-                                        text = title,
-                                        color = contentColor,
-                                        fontSize = 11.sp,
-                                        lineHeight = 14.sp,
-                                        maxLines = 1,
-                                        modifier = Modifier
-                                            .height(14.dp * (1f - fraction))
-                                            .graphicsLayer { alpha = 1f - fraction * 2f },
-                                    )
+                                        val menu = items[indexAt(down.position.x)].menu
+                                        // Until the finger moves off or lifts, a menu waits for the press to last
+                                        val held = menu != null && menus != null &&
+                                            withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                                while (!dragging && !released && !lost) follow(awaitPointerEvent())
+                                            } == null
+                                        if (held && menu != null && menus != null) {
+                                            lens.glideTo(shown.toFloat())
+                                            lens.release()
+                                            settle()
+                                            val coordinates = pill ?: return@awaitEachGesture
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            // Out of the item held, as from the rail
+                                            val item = itemBounds[indexAt(down.position.x)] ?: Rect(coordinates.localToWindow(down.position), Size.Zero)
+                                            menus.show(menu(), anchor = item)
+                                            while (true) {
+                                                val change = awaitPointerEvent().changes
+                                                    .firstOrNull { it.id == down.id } ?: break
+                                                change.consume()
+                                                val position = coordinates.localToWindow(change.position)
+                                                if (!change.pressed) {
+                                                    menus.liftFinger(position)
+                                                    break
+                                                }
+                                                menus.moveFinger(position)
+                                            }
+                                            return@awaitEachGesture
+                                        }
+                                        while (!released && !lost) follow(awaitPointerEvent())
+                                        indicatorDragged = false
+                                        settle()
+                                        if (released) {
+                                            val target = if (dragging) {
+                                                positionAt(lastX).roundToInt()
+                                            } else {
+                                                indexAt(down.position.x)
+                                            }
+                                            // Carried there lifted, settling only as it arrives
+                                            lens.moveTo(target.toFloat())
+                                            // Only a tap on the shown tab asks it again; a lens dragged
+                                            // or held there and let go just goes back
+                                            val tapped = !dragging &&
+                                                releasedAt - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis
+                                            if (target != shown || tapped) select(target)
+                                        } else {
+                                            lens.glideTo(shown.toFloat())
+                                            lens.release()
+                                        }
+                                    } catch (e: CancellationException) {
+                                        // Restarted or taken off mid-press, the gesture would leave the lens up
+                                        lens.glideTo(shown.toFloat())
+                                        lens.release()
+                                        settle()
+                                        indicatorDragged = false
+                                        throw e
+                                    }
+                                }
+                            },
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset((lens.value * itemWidthPx).roundToInt(), 0) }
+                                .size(width = itemWidth, height = itemHeight)
+                                .graphicsLayer { alpha = 1f - lens.pressProgress }
+                                .background(ExtendedTheme.colors.emphasis.copy(alpha = 0.12f), NavPillShape)
+                        )
+                        Row {
+                            navigationItems.fastForEachIndexed { index, navigationItem ->
+                                val selected = index == currentPosition
+                                val title = navigationItem.title(selected)
+                                val contentColor =
+                                    if (index == highlighted) ExtendedTheme.colors.emphasis
+                                    else themeColors.textSecondary
+                                Column(
+                                    modifier = Modifier
+                                        .size(width = itemWidth, height = itemHeight)
+                                        .onGloballyPositioned { itemBounds[index] = it.boundsInWindow() }
+                                        .semantics(mergeDescendants = true) {
+                                            role = Role.Tab
+                                            this.selected = selected
+                                            onClick(label = title) {
+                                                select(index)
+                                                true
+                                            }
+                                            val menu = navigationItem.menu
+                                            if (menu != null && menus != null) {
+                                                onLongClick(label = navigationItem.menuLabel) {
+                                                    val bounds = itemBounds[index] ?: return@onLongClick false
+                                                    menus.show(menu(), anchor = bounds)
+                                                    true
+                                                }
+                                            }
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    NavItemIcon(navigationItem, selected, title, contentColor)
+                                    if (fraction < 1f) {
+                                        Text(
+                                            text = title,
+                                            color = contentColor,
+                                            fontSize = 11.sp,
+                                            lineHeight = 14.sp,
+                                            maxLines = 1,
+                                            modifier = Modifier
+                                                .height(14.dp * (1f - fraction))
+                                                .graphicsLayer { alpha = 1f - fraction * 2f },
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -635,7 +712,7 @@ fun FloatingNavBar(
                                 val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
                                 val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
                                 IntOffset(
-                                    (lens.value * itemWidthPx).roundToInt() + padding - grownX,
+                                    (lens.value * itemWidthPx + overdrag.value).roundToInt() + padding - grownX,
                                     padding - grownY,
                                 )
                             }
@@ -775,7 +852,22 @@ private const val LensScale = 1.4f
 private const val LensVelocityScale = 10f
 
 /** How far the pill leans towards a drag of the lens. */
-private val PillLean = 4.dp
+private val PillLean = 10.dp
+
+/** How much wider the pill's glass swells while pressed; it grows as much taller in proportion. */
+private val PillSwell = 16.dp
+
+/** Whether the pill's glass stretches towards a lens dragged past either end. */
+private const val StretchPastEnds = true
+
+/** How far, at most, the pill's glass stretches past either end. */
+private val MaxOverdrag = 14.dp
+private val OverdragSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 400f)
+
+/** The light under the finger: a wash over the pill and a pool where it is touched. */
+private const val GlowWash = 0.08f
+private const val GlowLight = 0.15f
+private val GlowSpring = spring<Float>(dampingRatio = 0.5f, stiffness = 300f)
 private val DriftSpring = spring<Float>(dampingRatio = 1f, stiffness = 300f)
 
 @Immutable

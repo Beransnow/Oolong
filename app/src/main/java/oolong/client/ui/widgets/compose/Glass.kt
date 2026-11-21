@@ -427,7 +427,9 @@ internal fun pressedByGlass(): Boolean = LocalBarButtons.current != null || Loca
  * passes false.
  *
  * As a [lensTarget], it is also marked as one, for glass drawn over it, such as the bubble lifting
- * off the navigation pill; its own glass then leaves it out.
+ * off the navigation pill; its own glass then leaves it out. [insideLensTarget] leaves it out the
+ * same way for glass inside a part marked as one, such as a pill's glass laid out apart from what
+ * is on it so it can swell alone.
  */
 @Composable
 fun Modifier.floatingGlass(
@@ -436,10 +438,11 @@ fun Modifier.floatingGlass(
     pressable: Boolean = false,
     alpha: Float = 1f,
     lensTarget: Boolean = false,
+    insideLensTarget: Boolean = false,
 ): Modifier = if (lensTarget) {
     lensTarget().floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = true)
 } else {
-    floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = false)
+    floatingGlassOf(shape, barButton, pressable, alpha, onLensTarget = insideLensTarget)
 }
 
 @OptIn(ExperimentalHazeApi::class)
