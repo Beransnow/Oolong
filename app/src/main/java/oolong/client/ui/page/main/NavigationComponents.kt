@@ -80,7 +80,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
@@ -401,7 +400,7 @@ fun FloatingNavBar(
     }
     // How far the finger has dragged the lens, which the pill leans a little towards
     val drift = remember { Animatable(0f) }
-    // How far the lens is dragged past either end, resisted; the pill's glass stretches that way
+    // How far the lens is dragged past either end, resisted; the whole pill is pulled that way
     val overdrag = remember { Animatable(0f) }
     // The light under the finger, which lights the pill from where it is touched
     val glow = remember { Animatable(0f) }
@@ -467,20 +466,24 @@ fun FloatingNavBar(
         val swellPx = with(density) { PillSwell.toPx() }
         val maxOverdragPx = with(density) { MaxOverdrag.toPx() }
         val padPx = with(density) { NavPillPadding.toPx() }
-        // Where the glass is drawn from, past the pill's own top left, as it swells and stretches
+        // Where the glass is drawn from, past the pill's own top left, as it swells
         val glassShift = remember { floatArrayOf(0f, 0f) }
+        // How far the pill is moved, so the gesture reads the finger where it would be unmoved
+        val pillShift = remember { floatArrayOf(0f) }
         Row(verticalAlignment = Alignment.Bottom) {
             Box(
                 modifier = Modifier
                     .padding(top = (NavItemHeight - itemHeight))
                     .offset {
                         val fraction = (drift.value / maxWidthPx).coerceIn(-1f, 1f)
-                        IntOffset((leanPx * sign(fraction) * EaseOut.transform(abs(fraction))).roundToInt(), 0)
+                        val shift = leanPx * sign(fraction) * EaseOut.transform(abs(fraction)) + overdrag.value
+                        pillShift[0] = shift
+                        IntOffset(shift.roundToInt(), 0)
                     },
             ) {
                 Box(modifier = if (!searching) Modifier.lensTarget() else Modifier) {
                     // The pill's glass, laid out apart from what is on it, so it alone swells while
-                    // pressed and stretches towards a lens dragged past either end. By layout rather
+                    // pressed. By layout rather
                     // than a layer scale, so what the lens sees of it is where it is drawn.
                     Box(
                         modifier = Modifier
@@ -490,12 +493,11 @@ fun FloatingNavBar(
                                 val h = constraints.maxHeight
                                 val swellX = swellPx * lens.pressProgress
                                 val swellY = swellX * h / w.coerceAtLeast(1)
-                                val stretch = overdrag.value
                                 val placeable = measurable.measure(
-                                    Constraints.fixed((w + swellX + abs(stretch)).roundToInt(), (h + swellY).roundToInt())
+                                    Constraints.fixed((w + swellX).roundToInt(), (h + swellY).roundToInt())
                                 )
                                 layout(w, h) {
-                                    val left = -swellX / 2 + minOf(stretch, 0f)
+                                    val left = -swellX / 2
                                     val top = -swellY / 2
                                     glassShift[0] = -left
                                     glassShift[1] = -top
@@ -540,13 +542,15 @@ fun FloatingNavBar(
                                         coroutineScope.launch { overdrag.animateTo(0f, OverdragSpring) }
                                         coroutineScope.launch { glow.animateTo(0f, GlowSpring) }
                                     }
+                                    // Where the finger is along the pill as it would lie unmoved
+                                    val downX = down.position.x + pillShift[0]
                                     try {
                                         glowAt = down.position
                                         coroutineScope.launch { glow.animateTo(1f, GlowSpring) }
                                         lens.press()
-                                        lens.glideTo(positionAt(down.position.x).roundToInt().toFloat())
+                                        lens.glideTo(positionAt(downX).roundToInt().toFloat())
                                         var dragging = false
-                                        var lastX = down.position.x
+                                        var lastX = downX
                                         var released = false
                                         var releasedAt = 0L
                                         var lost = false
@@ -561,10 +565,11 @@ fun FloatingNavBar(
                                                 releasedAt = change.uptimeMillis
                                                 return
                                             }
-                                            lastX = change.position.x
+                                            val dx = change.position.x + pillShift[0] - lastX
+                                            lastX += dx
                                             glowAt = change.position
                                             if (!dragging &&
-                                                abs(lastX - down.position.x) > viewConfiguration.touchSlop
+                                                abs(lastX - downX) > viewConfiguration.touchSlop
                                             ) {
                                                 dragging = true
                                                 indicatorDragged = true
@@ -572,16 +577,15 @@ fun FloatingNavBar(
                                             if (dragging) {
                                                 change.consume()
                                                 lens.follow(positionAt(lastX))
-                                                val dx = change.positionChange().x
                                                 coroutineScope.launch { drift.snapTo(drift.value + dx) }
                                                 // Past the first or last item, the further the harder
                                                 val reach = lastX / gestureItemWidthPx - 0.5f
                                                 val pastPx = (reach - reach.coerceIn(0f, last.toFloat())) * gestureItemWidthPx
                                                 val resisted = sign(pastPx) * maxOverdragPx * (1f - exp(-abs(pastPx) / maxOverdragPx))
-                                                if (StretchPastEnds) coroutineScope.launch { overdrag.snapTo(resisted) }
+                                                coroutineScope.launch { overdrag.snapTo(resisted) }
                                             }
                                         }
-                                        val menu = items[indexAt(down.position.x)].menu
+                                        val menu = items[indexAt(downX)].menu
                                         // Until the finger moves off or lifts, a menu waits for the press to last
                                         val held = menu != null && menus != null &&
                                             withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
@@ -616,7 +620,7 @@ fun FloatingNavBar(
                                             val target = if (dragging) {
                                                 positionAt(lastX).roundToInt()
                                             } else {
-                                                indexAt(down.position.x)
+                                                indexAt(downX)
                                             }
                                             // Carried there lifted, settling only as it arrives
                                             lens.moveTo(target.toFloat())
@@ -714,7 +718,7 @@ fun FloatingNavBar(
                                 val grownX = ((lensWidth - itemWidth) / 2).roundToPx()
                                 val grownY = ((lensHeight - itemHeight) / 2).roundToPx()
                                 IntOffset(
-                                    (lens.value * itemWidthPx + overdrag.value * LensOverdrag).roundToInt() + padding - grownX,
+                                    (lens.value * itemWidthPx).roundToInt() + padding - grownX,
                                     padding - grownY,
                                 )
                             }
@@ -859,13 +863,8 @@ private val PillLean = 10.dp
 /** How much wider the pill's glass swells while pressed; it grows as much taller in proportion. */
 private val PillSwell = 6.dp
 
-/** Whether the pill's glass stretches towards a lens dragged past either end. */
-private const val StretchPastEnds = true
-
-/** How far, at most, the pill's glass stretches past either end. */
-private val MaxOverdrag = 28.dp
-/** How much of the stretch the lens follows, staying over the end item rather than past it. */
-private const val LensOverdrag = 0.5f
+/** How far, at most, the whole pill is pulled after a lens dragged past either end. */
+private val MaxOverdrag = 24.dp
 private val OverdragSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 400f)
 
 /** The light under the finger, and how far it reaches, in the pill's heights. */
