@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -510,6 +511,8 @@ fun TabClickMenu(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .height(48.dp)
+                // A name that changes, as to the class chosen in its menu, takes its new width smoothly
+                .animateContentSize(Motion.snap())
                 .padding(start = 16.dp, end = 16.dp - arrowWidth * 0.75f)
         ) {
             ProvideTextStyle(value = tabTextStyle) {
