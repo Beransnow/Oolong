@@ -11,7 +11,18 @@ data class DeviceImage(
     val albumId: Long,
     val albumName: String,
     val mimeType: String,
-)
+    /** Its size as shown, upright; 0 where the device does not know it. */
+    val width: Int = 0,
+    val height: Int = 0,
+) {
+    /** Far taller than it is wide, as a screenshot of a long chat. */
+    val isLong: Boolean get() = width > 0 && height >= width * LongRatio
+
+    val isGif: Boolean get() = mimeType == "image/gif"
+}
+
+/** How many times taller than wide a picture is to count as long. */
+private const val LongRatio = 3
 
 /** A folder of pictures, with its newest one as the cover. */
 @Immutable

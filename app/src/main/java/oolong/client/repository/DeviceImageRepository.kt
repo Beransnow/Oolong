@@ -23,6 +23,9 @@ class DeviceImageRepository @Inject constructor(
             MediaStore.Images.Media.BUCKET_ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
             MediaStore.Images.Media.MIME_TYPE,
+            MediaStore.Images.Media.WIDTH,
+            MediaStore.Images.Media.HEIGHT,
+            MediaStore.Images.Media.ORIENTATION,
         )
         val cursor = context.contentResolver.query(
             collection,
@@ -36,14 +39,21 @@ class DeviceImageRepository @Inject constructor(
             val bucketId = it.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID)
             val bucketName = it.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
             val mimeType = it.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
+            val width = it.getColumnIndexOrThrow(MediaStore.Images.Media.WIDTH)
+            val height = it.getColumnIndexOrThrow(MediaStore.Images.Media.HEIGHT)
+            val orientation = it.getColumnIndexOrThrow(MediaStore.Images.Media.ORIENTATION)
             buildList(it.count) {
                 while (it.moveToNext()) {
+                    // Stored sideways, it shows the other way up
+                    val sideways = it.getInt(orientation) % 180 != 0
                     add(
                         DeviceImage(
                             uri = ContentUris.withAppendedId(collection, it.getLong(id)),
                             albumId = it.getLong(bucketId),
                             albumName = it.getString(bucketName).orEmpty(),
                             mimeType = it.getString(mimeType).orEmpty(),
+                            width = if (sideways) it.getInt(height) else it.getInt(width),
+                            height = if (sideways) it.getInt(width) else it.getInt(height),
                         )
                     )
                 }
