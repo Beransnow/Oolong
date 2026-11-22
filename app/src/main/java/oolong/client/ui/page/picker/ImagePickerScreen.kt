@@ -1,6 +1,7 @@
 package oolong.client.ui.page.picker
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -8,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -42,6 +44,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -56,12 +59,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -74,6 +80,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -90,6 +97,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContextMenuItem
@@ -116,8 +124,26 @@ enum class PickerAccess {
     DeniedForever,
 }
 
-/** The pictures a viewer was opened on, and the one it opened at. */
-private class Viewing(val pictures: List<DeviceImage>, val start: Int)
+/**
+ * The pictures a viewer was opened on, the one it opened at, and the thumbnails it grows out of
+ * and back into: the grid's, or the tray's.
+ */
+private class Viewing(val pictures: List<DeviceImage>, val start: Int, val from: Map<Uri, ThumbnailPlace>)
+
+/** Where a thumbnail lies in the window, and how round its corners are. */
+internal class ThumbnailPlace(val bounds: Rect, val corner: Dp, val visible: Boolean)
+
+/** Keeps where the thumbnail of [uri] lies in [places], while it is on screen. */
+@Composable
+private fun Modifier.placeIn(places: MutableMap<Uri, ThumbnailPlace>, uri: Uri, corner: () -> Dp): Modifier {
+    DisposableEffect(places, uri) { onDispose { places.remove(uri) } }
+    return onGloballyPositioned {
+        // The corners as drawn, scaled as a picked picture is
+        val topLeft = it.localToRoot(Offset.Zero)
+        val bottomRight = it.localToRoot(Offset(it.size.width.toFloat(), it.size.height.toFloat()))
+        places[uri] = ThumbnailPlace(Rect(topLeft, bottomRight), corner(), !it.boundsInRoot().isEmpty)
+    }
+}
 
 /**
  * The picker: the pictures of one album in a grid under a bar that switches albums, with what is
@@ -137,12 +163,17 @@ fun ImagePickerScreen(
     onMove: (from: Int, to: Int) -> Unit,
     onDone: (List<Uri>) -> Unit,
     onTakePhoto: () -> Unit,
-    onEdit: (Uri) -> Unit,
+    onEdit: (Uri, EditorPlace?) -> Unit,
     onRequestAccess: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val readable = access == PickerAccess.All || access == PickerAccess.Selected
     var viewing by remember { mutableStateOf<Viewing?>(null) }
+    var columns by rememberSaveable { mutableIntStateOf(MinColumns) }
+    val gridPlaces = remember { HashMap<Uri, ThumbnailPlace>() }
+    val trayPlaces = remember { HashMap<Uri, ThumbnailPlace>() }
+    // The picture the viewer shows, for the grid under it to keep in view
+    var following by remember { mutableStateOf<Uri?>(null) }
     GlassScaffold(
         topBar = {
             GlassTopBar(
@@ -165,9 +196,14 @@ fun ImagePickerScreen(
                     state = state,
                     onToggle = onToggle,
                     onMove = onMove,
+                    places = shown.from,
+                    onPage = { following = it.takeIf { shown.from === gridPlaces } },
                     onEdit = onEdit,
                     onDone = onDone,
-                    onClose = { viewing = null },
+                    onClose = {
+                        viewing = null
+                        following = null
+                    },
                 )
             }
         },
@@ -190,23 +226,36 @@ fun ImagePickerScreen(
                         .padding(padding),
                 )
 
-                else -> ImageGrid(
-                    state = state,
-                    selectedOnly = access == PickerAccess.Selected,
-                    contentPadding = padding,
-                    onToggle = onToggle,
-                    onSelect = onSelect,
-                    onOpen = { viewing = Viewing(state.images, it) },
-                    onTakePhoto = onTakePhoto,
-                    onSelectMore = onRequestAccess,
-                )
+                // Another album fades in over the one before, from its top
+                else -> AnimatedContent(
+                    targetState = state,
+                    contentKey = { it.albumId },
+                    transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) },
+                    label = "album",
+                ) { shown ->
+                    ImageGrid(
+                        state = shown,
+                        columns = columns,
+                        onColumns = { columns = it },
+                        selectedOnly = access == PickerAccess.Selected,
+                        contentPadding = padding,
+                        places = gridPlaces,
+                        following = following,
+                        onToggle = onToggle,
+                        onSelect = onSelect,
+                        onOpen = { viewing = Viewing(shown.images, it, gridPlaces) },
+                        onTakePhoto = onTakePhoto,
+                        onSelectMore = onRequestAccess,
+                    )
+                }
             }
             if (readable) {
                 PickedTray(
                     state = state,
-                    onOpen = { index -> viewing = Viewing(state.selected.map { pictureOf(state, it) }, index) },
+                    onOpen = { index -> viewing = Viewing(state.selected.map { pictureOf(state, it) }, index, trayPlaces) },
                     onMove = onMove,
                     onDone = onDone,
+                    places = trayPlaces,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -282,15 +331,18 @@ private const val CameraKey = "camera"
 @Composable
 private fun ImageGrid(
     state: ImagePickerState,
+    columns: Int,
+    onColumns: (Int) -> Unit,
     selectedOnly: Boolean,
     contentPadding: PaddingValues,
+    places: MutableMap<Uri, ThumbnailPlace>,
+    following: Uri?,
     onToggle: (Uri) -> Unit,
     onSelect: (List<Uri>) -> Unit,
     onOpen: (Int) -> Unit,
     onTakePhoto: () -> Unit,
     onSelectMore: () -> Unit,
 ) {
-    var columns by rememberSaveable { mutableIntStateOf(MinColumns) }
     val gridState = rememberLazyGridState()
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -299,9 +351,23 @@ private fun ImageGrid(
     val currentSelect by rememberUpdatedState(onSelect)
     val currentOpen by rememberUpdatedState(onOpen)
     val currentTakePhoto by rememberUpdatedState(onTakePhoto)
+    val currentColumns by rememberUpdatedState(columns)
     val showCamera = state.albumId == null
-    // Another album starts at its top
-    LaunchedEffect(state.albumId) { gridState.scrollToItem(0) }
+    // The grid keeps the picture the viewer over it shows in view, for the viewer to close into
+    LaunchedEffect(following) {
+        val uri = following ?: return@LaunchedEffect
+        val index = state.images.indexOfFirst { it.uri == uri }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        val item = index + (if (selectedOnly) 1 else 0) + (if (showCamera) 1 else 0)
+        val info = gridState.layoutInfo
+        val shown = info.visibleItemsInfo.firstOrNull { it.index == item }
+        val room = info.viewportSize.height - info.beforeContentPadding - info.afterContentPadding
+        if (shown == null || shown.offset.y < 0 || shown.offset.y + shown.size.height > room) {
+            // Into the middle, where it lies clear of the bars
+            gridState.scrollToItem(item)
+            val height = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == item }?.size?.height ?: 0
+            gridState.scrollBy(-(room - height) / 2f)
+        }
+    }
 
     // Where a drag across the grid is, so it scrolls on near the top or bottom; and what it picks
     // as the grid moves under a still finger
@@ -364,12 +430,12 @@ private fun ImageGrid(
                             val distance = (pressed[0].position - pressed[1].position).getDistance()
                             if (start == 0f) {
                                 start = distance
-                            } else if (distance / start > PinchStep && columns > MinColumns) {
-                                columns--
+                            } else if (distance / start > PinchStep && currentColumns > MinColumns) {
+                                onColumns(currentColumns - 1)
                                 start = distance
                                 haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            } else if (distance / start < 1 / PinchStep && columns < MaxColumns) {
-                                columns++
+                            } else if (distance / start < 1 / PinchStep && currentColumns < MaxColumns) {
+                                onColumns(currentColumns + 1)
                                 start = distance
                                 haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             }
@@ -458,6 +524,7 @@ private fun ImageGrid(
                 order = order.takeIf { it >= 0 }?.plus(1),
                 outOfReach = state.full && order < 0,
                 small = columns > MinColumns,
+                places = places,
                 onOpen = { onOpen(state.images.indexOf(image)) },
                 onToggle = { onToggle(image.uri) },
             )
@@ -553,6 +620,7 @@ private fun ImageCell(
     order: Int?,
     outOfReach: Boolean,
     small: Boolean,
+    places: MutableMap<Uri, ThumbnailPlace>,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
 ) {
@@ -583,6 +651,7 @@ private fun ImageCell(
                     scaleY = scale
                     alpha = if (outOfReach) OutOfReachAlpha else 1f
                 }
+                .placeIn(places, image.uri) { PickedCorner * picked.coerceIn(0f, 1f) }
                 .maskTo(SmoothCornerShape(CornerSize(PickedCorner * picked.coerceIn(0f, 1f)))),
         )
         val inset = TagInset + TagInset * picked.coerceIn(0f, 1f)
@@ -679,6 +748,7 @@ private fun PickedTray(
     onOpen: (Int) -> Unit,
     onMove: (from: Int, to: Int) -> Unit,
     onDone: (List<Uri>) -> Unit,
+    places: MutableMap<Uri, ThumbnailPlace>,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -702,6 +772,7 @@ private fun PickedTray(
                 state = state,
                 onOpen = onOpen,
                 onMove = onMove,
+                places = places,
                 modifier = Modifier.weight(1f),
             )
             Button(onClick = { onDone(state.result) }, contentPadding = PaddingValues(horizontal = 18.dp)) {
@@ -724,6 +795,7 @@ internal fun PickedStrip(
     onOpen: (Int) -> Unit,
     onMove: (from: Int, to: Int) -> Unit,
     modifier: Modifier = Modifier,
+    places: MutableMap<Uri, ThumbnailPlace>? = null,
     current: Uri? = null,
     filled: Color = ExtendedTheme.colors.emphasis,
     onFilled: Color = ExtendedTheme.colors.onEmphasis,
@@ -793,6 +865,7 @@ internal fun PickedStrip(
                     uri = state.edits[uri] ?: uri,
                     modifier = Modifier
                         .fillMaxSize()
+                        .then(if (places != null) Modifier.placeIn(places, uri) { ThumbCorner } else Modifier)
                         .maskTo(SmoothCornerShape(CornerSize(ThumbCorner)))
                         .then(
                             if (uri == current) Modifier.border(2.dp, Color.White, SmoothCornerShape(CornerSize(ThumbCorner)))
@@ -848,17 +921,23 @@ private fun AccessTip(
     )
 }
 
+/** A thumbnail of [uri] as the grid and the tray show it, so drawn again from memory. */
+@Composable
+internal fun rememberThumbnailRequest(uri: Uri): ImageRequest {
+    val context = LocalContext.current
+    val cellPx = with(LocalDensity.current) { ThumbnailSize.roundToPx() }
+    // A fixed size keeps the grid from flickering and decodes no more than a cell shows
+    return remember(uri, cellPx) { ImageRequest.Builder(context).data(uri).size(cellPx).build() }
+}
+
 /** About as large as a grid cell gets. */
 private val ThumbnailSize = 160.dp
 
 /** A picture on the device, cropped to fill [modifier]'s bounds. */
 @Composable
 internal fun DeviceThumbnail(uri: Uri, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val cellPx = with(LocalDensity.current) { ThumbnailSize.roundToPx() }
     AsyncImage(
-        // A fixed size keeps the grid from flickering and decodes no more than a cell shows
-        model = remember(uri, cellPx) { ImageRequest.Builder(context).data(uri).size(cellPx).build() },
+        model = rememberThumbnailRequest(uri),
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier.background(ExtendedTheme.colors.chip),

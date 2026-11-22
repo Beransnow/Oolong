@@ -61,7 +61,7 @@ internal fun ImagePickerPreviewScreen(state: ImagePickerState, access: PickerAcc
         onMove = { _, _ -> },
         onDone = {},
         onTakePhoto = {},
-        onEdit = {},
+        onEdit = { _, _ -> },
         onRequestAccess = {},
         onOpenSettings = {},
     )

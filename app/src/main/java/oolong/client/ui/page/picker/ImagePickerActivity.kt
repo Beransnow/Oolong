@@ -114,10 +114,10 @@ class ImagePickerActivity : AppCompatActivity() {
                     toastShort(R.string.toast_picker_no_camera)
                 }
             },
-            onEdit = { original ->
+            onEdit = { original, place ->
                 val output = pickerFile("edit")
                 val source = state.edits[original] ?: original
-                editor?.open(EditRequest(source, output)) { written ->
+                editor?.open(EditRequest(source, output), from = { place }, back = { place }) { written ->
                     if (written) viewModel.edited(original, shared(output))
                 }
             },
