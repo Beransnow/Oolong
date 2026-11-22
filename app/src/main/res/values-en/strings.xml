@@ -843,6 +843,16 @@
     <string name="tip_picker_selected_only">Only photos you\'ve allowed access to are shown</string>
     <string name="button_picker_select_more">Select more</string>
     <string name="toast_picker_limit">You can select up to %d images</string>
+    <string name="button_picker_add">Add %1$d</string>
+    <string name="button_picker_use">Use</string>
+    <string name="button_picker_add_this">Add this</string>
+    <string name="button_picker_use_this">Use this</string>
+    <string name="tag_picker_long">Long</string>
+    <string name="tag_picker_edited">Edited</string>
+    <string name="button_picker_take_photo">Take photo</string>
+    <string name="desc_picker_select">Select</string>
+    <string name="toast_picker_no_camera">Can\'t open the camera</string>
+    <string name="title_picker_index">%1$d / %2$d</string>
     <string name="desc_show">Show</string>
     <string name="desc_input_color">Enter color manually</string>
     <string name="release_to_load_latest_posts">Release to load newest replies</string>
