@@ -4,6 +4,7 @@ import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.os.Build
 import android.view.Window
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ private class Ask(var hdr: Boolean)
 /** Who in composition asks each window for full colour. */
 private val asking = WeakHashMap<Window, MutableList<Ask>>()
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun Window.applyColorMode(asks: List<Ask>, wideGamut: Boolean) {
     colorMode = when {
         asks.isEmpty() -> ActivityInfo.COLOR_MODE_DEFAULT
