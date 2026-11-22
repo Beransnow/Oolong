@@ -112,8 +112,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.media3.common.C
+import androidx.media3.common.ColorInfo
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
@@ -165,6 +167,9 @@ private class Playback(player: Player) : Player.Listener {
     /** Height over width of the picture, once it is known. */
     var aspect by mutableFloatStateOf(0f)
 
+    /** Whether the video playing is HDR, which only an HDR window shows brighter than white. */
+    var hdr by mutableStateOf(false)
+
     val ended get() = state == Player.STATE_ENDED
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -181,6 +186,15 @@ private class Playback(player: Player) : Player.Listener {
 
     override fun onRenderedFirstFrame() {
         firstFrame = true
+    }
+
+    @OptIn(UnstableApi::class)
+    override fun onTracksChanged(tracks: Tracks) {
+        hdr = tracks.groups.any { group ->
+            group.type == C.TRACK_TYPE_VIDEO && (0 until group.length).any { index ->
+                group.isTrackSelected(index) && ColorInfo.isTransferHdr(group.getTrackFormat(index).colorInfo)
+            }
+        }
     }
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -245,7 +259,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
     val shrunk = mini && !inPip
     if (!shrunk) {
         LightSystemBars()
-        FullColorWindow()
+        FullColorWindow(hdr = playback.hdr)
     }
 
     var position by remember { mutableLongStateOf(player.currentPosition) }
