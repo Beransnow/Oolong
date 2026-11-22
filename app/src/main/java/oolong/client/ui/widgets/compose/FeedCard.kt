@@ -102,6 +102,7 @@ import oolong.client.utils.EmoticonUtil.emoticonString
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.utils.TiebaUtil
 import oolong.client.utils.appPreferences
 import kotlin.math.max
 import kotlin.math.min
@@ -640,7 +641,7 @@ fun ThreadReplyBtn(
 fun ThreadAgreeBtn(
     hasAgree: Boolean,
     agreeNum: Int,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val contentColor =
@@ -745,6 +746,7 @@ fun FeedCard(
                 }
             }
     }
+    val context = LocalContext.current
     val author = thread.author
     val reply = thread.reply
     // The thread page opens out of the card, and closes back into it
@@ -818,7 +820,9 @@ fun FeedCard(
             ) {
                 ThreadShareBtn(
                     shareNum = thread.shareCount,
-                    onClick = {},
+                    onClick = {
+                        TiebaUtil.shareText(context, "https://tieba.baidu.com/p/${thread.id}", thread.title.takeIf(String::isNotBlank))
+                    },
                 )
                 ThreadReplyBtn(
                     replyNum = thread.replyCount,
