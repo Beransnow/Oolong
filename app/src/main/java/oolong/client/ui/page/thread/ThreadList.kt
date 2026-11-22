@@ -102,6 +102,16 @@ private const val THREAD_HEADER_KEY = "ThreadHeader"
 /** The index of the reply count header in the list, which the bar's switches stand in for once it is under the bar. */
 internal const val THREAD_HEADER_INDEX = FIRST_REPLY_INDEX
 
+/**
+ * Before the replies are swapped for another list of them (the author's posts, the other order):
+ * read past the reply header, the list goes to the start of the replies, the header just under
+ * the bar where its switches stand in for it. Otherwise the list stays where it is, kept there by
+ * the floor or the header on screen.
+ */
+internal fun LazyListState.keepRepliesStart() {
+    if (firstVisibleItemIndex > THREAD_HEADER_INDEX) requestScrollToItem(THREAD_HEADER_INDEX + 1)
+}
+
 /** The key the reply count header reports where it is by, for the bar's switches to follow. */
 internal object ReplyHeader
 
@@ -203,6 +213,9 @@ internal fun ThreadContent(
                 append = if (firstLoad) posts.refresh else posts.append,
                 hasMore = posts.hasMore,
                 pullToLoadLatest = !newestFirst && !firstLoad,
+                // While the replies load anew, as after switching to the author's posts or the
+                // other order, the floor and the reply header can stay where they were
+                fillScreen = firstLoad && state.thread != null,
                 onRetry = {
                     onEvent(
                         when {
