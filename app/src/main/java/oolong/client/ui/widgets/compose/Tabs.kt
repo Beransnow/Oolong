@@ -480,7 +480,8 @@ fun TabClickMenu(
     val menus = LocalContextMenus.current
     var bounds by remember { mutableStateOf(Rect.Zero) }
     var menuId by remember { mutableStateOf<Long?>(null) }
-    val open = menus?.isShowing(menuId) == true
+    // Turns back as soon as the menu starts to close, not once it has gone
+    val open = menus?.isOpen(menuId) == true
     GlassTab(
         selected = selected,
         onClick = {
