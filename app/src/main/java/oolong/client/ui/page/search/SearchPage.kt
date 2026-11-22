@@ -396,9 +396,11 @@ private fun ColumnScope.SearchTabRow(
         selectedTabIndex = pagerState.currentPage,
         pagerState = pagerState,
         onSelect = select,
+        // Across the page, as wide as the row of the field above it, the tabs sharing it
+        fill = true,
         modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .padding(vertical = 4.dp),
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         pages.fastForEachIndexed { index, item ->
             val selected = pagerState.currentPage == index

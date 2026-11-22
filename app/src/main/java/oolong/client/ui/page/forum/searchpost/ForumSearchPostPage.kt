@@ -3,6 +3,7 @@ package oolong.client.ui.page.forum.searchpost
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -252,9 +253,11 @@ private fun ColumnScope.ForumSearchTabRow(
     GlassTabRow(
         selectedTabIndex = selected,
         onSelect = { onSetOnlyThreads(tabs[it].first) },
+        // Across the page, as wide as the row of the field above it, the tabs sharing it
+        fill = true,
         modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .padding(vertical = 4.dp),
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         tabs.forEach { (onlyThreads, text) ->
             TabClickMenu(
