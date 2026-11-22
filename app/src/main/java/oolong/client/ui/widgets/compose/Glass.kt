@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -546,6 +547,9 @@ private fun Modifier.floatingGlassOf(
                     if (alpha < 1f) alpha(alpha)
                     // Read here, the glass follows the scroll without being rebuilt
                     if (bar != null) alpha(shown())
+                    // Lit from under a finger moving over it, the light follows it at once rather
+                    // than easing after it
+                    if (!answers && touchLight != null) interactionPositionAnimationSpec(snap())
                     if (answers || touchLight != null) {
                         // Pressed, or touched where it lights from under the finger, the glass
                         // lights up where it was touched

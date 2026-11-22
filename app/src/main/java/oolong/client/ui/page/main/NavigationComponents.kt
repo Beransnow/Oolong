@@ -2,7 +2,6 @@ package oolong.client.ui.page.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -393,8 +392,6 @@ fun FloatingNavBar(
     LaunchedEffect(currentPosition) {
         if (!indicatorDragged) lens.glideTo(currentPosition.toFloat())
     }
-    // How far the finger has dragged the lens, which the pill leans a little towards
-    val drift = remember { Animatable(0f) }
     // How far the lens is dragged past either end, resisted; the whole pill is pulled that way
     val overdrag = remember { Animatable(0f) }
     // Presses for the pill's glass, which lights up from under them
@@ -455,8 +452,6 @@ fun FloatingNavBar(
         val gestureItemWidthPx by rememberUpdatedState(itemWidthPx)
         // The item under the indicator, so colours follow it while it is dragged.
         val highlighted = lens.value.roundToInt()
-        val maxWidthPx = with(density) { maxWidth.toPx() }
-        val leanPx = with(density) { PillLean.toPx() }
         val swellPx = with(density) { PillSwell.toPx() }
         val maxOverdragPx = with(density) { MaxOverdrag.toPx() }
         val padPx = with(density) { NavPillPadding.toPx() }
@@ -469,8 +464,7 @@ fun FloatingNavBar(
                 modifier = Modifier
                     .padding(top = (NavItemHeight - itemHeight))
                     .offset {
-                        val fraction = (drift.value / maxWidthPx).coerceIn(-1f, 1f)
-                        val shift = leanPx * sign(fraction) * EaseOut.transform(abs(fraction)) + overdrag.value
+                        val shift = overdrag.value
                         pillShift[0] = shift
                         IntOffset(shift.roundToInt(), 0)
                     },
@@ -519,7 +513,6 @@ fun FloatingNavBar(
                                         lit = press
                                     }
                                     fun settle() {
-                                        coroutineScope.launch { drift.animateTo(0f, DriftSpring) }
                                         coroutineScope.launch { overdrag.animateTo(0f, OverdragSpring) }
                                         lit?.let { touch.tryEmit(PressInteraction.Release(it)) }
                                         lit = null
@@ -558,7 +551,6 @@ fun FloatingNavBar(
                                             if (dragging) {
                                                 change.consume()
                                                 lens.follow(positionAt(lastX))
-                                                coroutineScope.launch { drift.snapTo(drift.value + dx) }
                                                 // Past the first or last item, pulled after it as by a
                                                 // rubber band: the further, the harder
                                                 val reach = lastX / gestureItemWidthPx - 0.5f
@@ -839,9 +831,6 @@ private const val LensScale = 1.4f
 /** Tab ranges a second at which the lens is drawn out the most. */
 private const val LensVelocityScale = 10f
 
-/** How far the pill leans towards a drag of the lens. */
-private val PillLean = 10.dp
-
 /** How much wider the pill's glass swells while pressed; it grows as much taller in proportion. */
 private val PillSwell = 6.dp
 
@@ -853,7 +842,6 @@ private val PillSwell = 6.dp
 private val MaxOverdrag = 48.dp
 private const val OverdragGive = 0.3f
 private val OverdragSpring = spring<Float>(dampingRatio = 0.55f, stiffness = 380f)
-private val DriftSpring = spring<Float>(dampingRatio = 1f, stiffness = 300f)
 
 @Immutable
 data class NavigationItem @OptIn(ExperimentalAnimationGraphicsApi::class) constructor(
