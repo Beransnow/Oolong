@@ -678,7 +678,7 @@ private fun ClassicSubPostLine(
     val text = rememberSubPostText(
         subPost,
         isLz,
-        nameColor = colors.text,
+        nameColor = colors.textSecondary,
         onImage = { image ->
             val data = photoViewData(image)
             if (data != null) photoViewer?.open(data)
@@ -805,7 +805,7 @@ fun SubPostLine(
                     text = rememberSubPostText(
                         subPost,
                         isLz,
-                        nameColor = colors.text,
+                        nameColor = colors.textSecondary,
                         onImage = { image: PostContent.Image ->
                             val data = photoViewData(image)
                             if (data != null) photoViewer?.open(data)
