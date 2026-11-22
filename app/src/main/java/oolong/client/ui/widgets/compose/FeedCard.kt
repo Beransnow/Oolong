@@ -193,8 +193,7 @@ fun Card(
         else -> Modifier
     }
 
-    val paddingModifier = if (action != null) Modifier.padding(top = 16.dp)
-    else Modifier.padding(vertical = 16.dp)
+    val paddingModifier = Modifier.padding(vertical = 16.dp)
 
     Column(
         modifier = cardModifier
@@ -209,9 +208,14 @@ fun Card(
         ) {
             content()
         }
-        action?.invoke(this)
+        if (action != null) {
+            Spacer(modifier = Modifier.height(ActionRowTop))
+            action(this)
+        }
     }
 }
+
+private val ActionRowTop = 12.dp
 
 @Composable
 fun Badge(
@@ -971,13 +975,20 @@ internal fun FeedCardActions(
 
 private val ActionPadding = 8.dp
 
+/**
+ * As tall as the forum chip beside them, so the row is as tall as what shows in it and the card's
+ * spacing reads true. Compose widens the place a tap lands on to 48dp around each.
+ */
+private val ActionHeight = 28.dp
+
 @Composable
 private fun ActionBtnPlaceholder(
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = Modifier
-            .padding(horizontal = ActionPadding, vertical = 12.dp)
+            .height(ActionHeight)
+            .padding(horizontal = ActionPadding)
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -1005,7 +1016,8 @@ private fun ActionBtn(
     val clickableModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Row(
         modifier = clickableModifier
-            .padding(horizontal = ActionPadding, vertical = 12.dp)
+            .height(ActionHeight)
+            .padding(horizontal = ActionPadding)
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
