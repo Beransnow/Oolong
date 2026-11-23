@@ -94,8 +94,11 @@ fun GlassToast(
                 )
             }
         }
-        SecondaryButton(onClick = onAction) {
-            Text(text = action, style = TextStyles.label, color = colors.accent)
+        // Clear of the text, and tinted as it is coloured: a grey ground under accent text read as
+        // two controls in one
+        Spacer(modifier = Modifier.width(Spacing.md))
+        SecondaryButton(onClick = onAction, color = colors.accent) {
+            Text(text = action, style = TextStyles.label)
         }
     }
 }
