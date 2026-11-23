@@ -3,6 +3,7 @@ package oolong.client.ui.page.picker
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -51,6 +52,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -61,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -68,6 +71,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -81,12 +85,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.DeviceAlbum
 import oolong.client.model.DeviceImage
@@ -111,6 +117,7 @@ import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.pageScroll
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 
 /** What the picker may read of the device's pictures. */
 enum class PickerAccess {
@@ -406,128 +413,189 @@ private fun ImageGrid(
         return current.images.indexOfFirst { it.uri.toString() == key }.takeIf { it >= 0 }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        state = gridState,
-        contentPadding = PaddingValues(
-            top = contentPadding.calculateTopPadding(),
-            bottom = contentPadding.calculateBottomPadding() + TrayRoom,
-        ),
-        horizontalArrangement = Arrangement.spacedBy(CellGap),
-        verticalArrangement = Arrangement.spacedBy(CellGap),
+    // Pinching scales the grid with the fingers, around the point between them; past a step it
+    // takes a row's worth more or fewer pictures, drawn at the scale that matches what was shown,
+    // and once the fingers lift it settles to its own size
+    val scope = rememberCoroutineScope()
+    var zoom by remember { mutableFloatStateOf(1f) }
+    var zoomAt by remember { mutableStateOf(Offset.Zero) }
+    var gridSize by remember { mutableStateOf(IntSize.Zero) }
+
+    /** Changes to [to] columns, keeping the picture at [focus] where it is. */
+    fun changeColumns(to: Int, focus: Offset) {
+        val from = currentColumns
+        val anchor = itemAt(focus)
+        onColumns(to)
+        anchor ?: return
+        val within = (focus.y - topOf(anchor)) / anchor.size.height
+        scope.launch {
+            // Laid out with the new columns by the next frame
+            withFrameNanos { }
+            val placed = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == anchor.index }
+            if (placed == null) {
+                gridState.scrollToItem(anchor.index)
+                return@launch
+            }
+            gridState.scrollBy(topOf(placed) + within * placed.size.height - focus.y)
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .pageScroll(gridState)
-            // Two fingers pinching change how many pictures a row holds
+            .onSizeChanged { gridSize = it }
+            // Two fingers pinching change how many pictures a row holds. Here, outside the grid's
+            // scale, so the fingers' distance is measured as on the screen
             .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                     var start = 0f
+                    var base = 1f
+                    var pinched = false
                     do {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val pressed = event.changes.filter { it.pressed }
                         if (pressed.size >= 2) {
+                            pinched = true
+                            val focus = (pressed[0].position + pressed[1].position) / 2f
                             val distance = (pressed[0].position - pressed[1].position).getDistance()
                             if (start == 0f) {
                                 start = distance
-                            } else if (distance / start > PinchStep && currentColumns > MinColumns) {
-                                onColumns(currentColumns - 1)
-                                start = distance
-                                haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            } else if (distance / start < 1 / PinchStep && currentColumns < MaxColumns) {
-                                onColumns(currentColumns + 1)
-                                start = distance
-                                haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                base = zoom
                             }
+                            val ratio = distance / start
+                            val columns = currentColumns
+                            val next = when {
+                                ratio > PinchStep && columns > MinColumns -> columns - 1
+                                ratio < 1 / PinchStep && columns < MaxColumns -> columns + 1
+                                else -> columns
+                            }
+                            if (next != columns) {
+                                // The new cells are drawn as large as the old ones looked
+                                base *= ratio * next / columns
+                                start = distance
+                                changeColumns(next, focus)
+                                haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                zoom = base
+                            } else {
+                                // Past the last step it gives only a little
+                                val atEnd = (ratio > 1f && columns == MinColumns) || (ratio < 1f && columns == MaxColumns)
+                                zoom = base * if (atEnd) ratio.pow(EndResistance) else ratio
+                            }
+                            zoomAt = focus
                             event.changes.forEach { it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
-                }
-            }
-            // A tap opens a picture, or its circle picks it; a drag from the circle, or from a
-            // long press, picks or puts back every picture it passes over
-            .pointerInput(Unit) {
-                val circlePx = CircleTouch.toPx()
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                    val item = itemAt(down.position) ?: return@awaitEachGesture
-                    val state = current
-                    if (item.key == CameraKey) {
-                        if (awaitPress(down.id, down.position) == Press.Tap) currentTakePhoto()
-                        return@awaitEachGesture
-                    }
-                    val index = state.images.indexOfFirst { it.uri.toString() == item.key }
-                    if (index < 0) return@awaitEachGesture
-                    val uri = state.images[index].uri
-                    val onCircle = down.position.x >= item.offset.x + item.size.width - circlePx &&
-                        down.position.y < topOf(item) + circlePx
-                    val press = if (onCircle) {
-                        down.consume()
-                        if (state.multiple) Press.Hold else awaitPress(down.id, down.position, consume = true)
-                    } else {
-                        awaitPress(down.id, down.position)
-                    }
-                    when {
-                        press == Press.Tap && onCircle -> currentToggle(uri)
-                        press == Press.Tap -> currentOpen(index)
-                        press == Press.Hold && state.multiple -> {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            // Picks, or puts back, from where it started to where it is
-                            val base = state.selected
-                            val adding = uri !in base
-                            var at = index
-                            fun cover(to: Int) {
-                                at = to
-                                val passed = current.images.subList(min(index, to), max(index, to) + 1).map { it.uri }
-                                currentSelect(if (adding) base + passed.filter { it !in base } else base - passed.toSet())
-                            }
-                            cover(index)
-                            onDragOver = { position -> indexAt(position)?.takeIf { it != at }?.let(::cover) }
-                            try {
-                                while (true) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                    if (!change.pressed) break
-                                    change.consume()
-                                    dragAt = change.position
-                                    indexAt(change.position)?.takeIf { it != at }?.let {
-                                        cover(it)
-                                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                    }
-                                }
-                            } finally {
-                                dragAt = null
-                                onDragOver = null
-                            }
-                        }
-
-                        press == Press.Hold -> currentOpen(index)
-                        else -> {}
+                    if (pinched) {
+                        scope.launch { animate(zoom, 1f, animationSpec = Motion.settle()) { value, _ -> zoom = value } }
                     }
                 }
             },
     ) {
-        if (selectedOnly) {
-            item(key = "selected_only", span = { GridItemSpan(maxLineSpan) }) {
-                SelectedOnlyBanner(onSelectMore = onSelectMore)
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            state = gridState,
+            contentPadding = PaddingValues(
+                top = contentPadding.calculateTopPadding(),
+                bottom = contentPadding.calculateBottomPadding() + TrayRoom,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(CellGap),
+            verticalArrangement = Arrangement.spacedBy(CellGap),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = zoom
+                    scaleY = zoom
+                    transformOrigin = if (gridSize.width > 0 && gridSize.height > 0) {
+                        TransformOrigin(zoomAt.x / gridSize.width, zoomAt.y / gridSize.height)
+                    } else TransformOrigin.Center
+                }
+                .pageScroll(gridState)
+                // A tap opens a picture, or its circle picks it; a drag from the circle, or from a
+                // long press, picks or puts back every picture it passes over
+                .pointerInput(Unit) {
+                    val circlePx = CircleTouch.toPx()
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        val item = itemAt(down.position) ?: return@awaitEachGesture
+                        val state = current
+                        if (item.key == CameraKey) {
+                            if (awaitPress(down.id, down.position) == Press.Tap) currentTakePhoto()
+                            return@awaitEachGesture
+                        }
+                        val index = state.images.indexOfFirst { it.uri.toString() == item.key }
+                        if (index < 0) return@awaitEachGesture
+                        val uri = state.images[index].uri
+                        val onCircle = down.position.x >= item.offset.x + item.size.width - circlePx &&
+                            down.position.y < topOf(item) + circlePx
+                        val press = if (onCircle) {
+                            down.consume()
+                            if (state.multiple) Press.Hold else awaitPress(down.id, down.position, consume = true)
+                        } else {
+                            awaitPress(down.id, down.position)
+                        }
+                        when {
+                            press == Press.Tap && onCircle -> currentToggle(uri)
+                            press == Press.Tap -> currentOpen(index)
+                            press == Press.Hold && state.multiple -> {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                // Picks, or puts back, from where it started to where it is
+                                val base = state.selected
+                                val adding = uri !in base
+                                var at = index
+                                fun cover(to: Int) {
+                                    at = to
+                                    val passed = current.images.subList(min(index, to), max(index, to) + 1).map { it.uri }
+                                    currentSelect(if (adding) base + passed.filter { it !in base } else base - passed.toSet())
+                                }
+                                cover(index)
+                                onDragOver = { position -> indexAt(position)?.takeIf { it != at }?.let(::cover) }
+                                try {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                        if (!change.pressed) break
+                                        change.consume()
+                                        dragAt = change.position
+                                        indexAt(change.position)?.takeIf { it != at }?.let {
+                                            cover(it)
+                                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        }
+                                    }
+                                } finally {
+                                    dragAt = null
+                                    onDragOver = null
+                                }
+                            }
+
+                            press == Press.Hold -> currentOpen(index)
+                            else -> {}
+                        }
+                    }
+                },
+        ) {
+            if (selectedOnly) {
+                item(key = "selected_only", span = { GridItemSpan(maxLineSpan) }) {
+                    SelectedOnlyBanner(onSelectMore = onSelectMore)
+                }
             }
-        }
-        if (showCamera) {
-            item(key = CameraKey) { CameraCell(onTakePhoto = onTakePhoto) }
-        }
-        items(state.images, key = { it.uri.toString() }) { image ->
-            val order = state.selected.indexOf(image.uri)
-            ImageCell(
-                image = image,
-                shown = state.edits[image.uri] ?: image.uri,
-                edited = image.uri in state.edits,
-                order = order.takeIf { it >= 0 }?.plus(1),
-                outOfReach = state.full && order < 0,
-                small = columns > MinColumns,
-                places = places,
-                onOpen = { onOpen(state.images.indexOf(image)) },
-                onToggle = { onToggle(image.uri) },
-            )
+            if (showCamera) {
+                item(key = CameraKey) { CameraCell(onTakePhoto = onTakePhoto) }
+            }
+            items(state.images, key = { it.uri.toString() }) { image ->
+                val order = state.selected.indexOf(image.uri)
+                ImageCell(
+                    image = image,
+                    shown = state.edits[image.uri] ?: image.uri,
+                    edited = image.uri in state.edits,
+                    order = order.takeIf { it >= 0 }?.plus(1),
+                    outOfReach = state.full && order < 0,
+                    small = columns > MinColumns,
+                    places = places,
+                    onOpen = { onOpen(state.images.indexOf(image)) },
+                    onToggle = { onToggle(image.uri) },
+                )
+            }
         }
     }
 }
@@ -949,6 +1017,9 @@ private const val MaxColumns = 5
 
 /** How far apart two fingers move, as a ratio, to change the columns by one. */
 private const val PinchStep = 1.3f
+
+/** How much of a pinch past the fewest or most columns still scales the grid, as a power. */
+private const val EndResistance = 0.3f
 
 private val CellGap = 2.dp
 
