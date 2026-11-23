@@ -328,6 +328,7 @@ private fun AlbumCover(album: DeviceAlbum) {
 @Composable
 private fun albumName(album: DeviceAlbum): String = when {
     album.id == null -> stringResource(id = R.string.title_picker_all_images)
+    album.id == DeviceAlbum.Favorites -> stringResource(id = R.string.title_picker_favorites)
     album.name.isEmpty() -> stringResource(id = R.string.title_picker_unnamed_album)
     else -> album.name
 }

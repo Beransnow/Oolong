@@ -838,6 +838,7 @@
     <string name="summary_photo_picker_not_supported">The photo picker isn\'t available on this Android version</string>
     <string name="title_picker_all_images">All images</string>
     <string name="title_picker_unnamed_album">Other</string>
+    <string name="title_picker_favorites">Favorites</string>
     <string name="title_picker_empty">No images found</string>
     <string name="title_picker_no_access">Can\'t access photos</string>
     <string name="tip_picker_no_access">Allow Oolong to access your photos to choose images from your gallery</string>

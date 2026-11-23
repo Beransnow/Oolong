@@ -171,8 +171,11 @@ class ImagePickerViewModel @Inject constructor(
         saveSelection()
     }
 
-    private fun imagesIn(albumId: Long?): ImmutableList<DeviceImage> =
-        if (albumId == null) (captured + images).toImmutableList() else images.filter { it.albumId == albumId }.toImmutableList()
+    private fun imagesIn(albumId: Long?): ImmutableList<DeviceImage> = when (albumId) {
+        null -> (captured + images).toImmutableList()
+        DeviceAlbum.Favorites -> images.filter { it.favorite }.toImmutableList()
+        else -> images.filter { it.albumId == albumId }.toImmutableList()
+    }
 
     private fun saveSelection() {
         val state = _state.value
@@ -203,5 +206,9 @@ private fun albumsOf(images: List<DeviceImage>): ImmutableList<DeviceAlbum> {
     val folders = images.filter { it.albumId != CapturedAlbum }.groupBy { it.albumId }.map { (id, pictures) ->
         DeviceAlbum(id = id, name = pictures.first().albumName, cover = pictures.first().uri, count = pictures.size)
     }
-    return (listOf(all) + folders.sortedByDescending { it.count }).toImmutableList()
+    // Only where the gallery marks any: many keep their favourites to themselves
+    val favorites = images.filter { it.favorite }.takeIf { it.isNotEmpty() }?.let { pictures ->
+        DeviceAlbum(id = DeviceAlbum.Favorites, name = "", cover = pictures.first().uri, count = pictures.size)
+    }
+    return (listOfNotNull(all, favorites) + folders.sortedByDescending { it.count }).toImmutableList()
 }

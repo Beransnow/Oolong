@@ -827,6 +827,7 @@
     <string name="summary_photo_picker_not_supported">当前 Android 版本不支持照片选择器</string>
     <string name="title_picker_all_images">全部图片</string>
     <string name="title_picker_unnamed_album">其他</string>
+    <string name="title_picker_favorites">收藏</string>
     <string name="title_picker_empty">没有找到图片</string>
     <string name="title_picker_no_access">无法读取照片</string>
     <string name="tip_picker_no_access">允许 Oolong 访问照片后，才能从相册里选择图片</string>
