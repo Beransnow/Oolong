@@ -63,10 +63,17 @@ class OKSignService : IntentService(TAG), CoroutineScope, ProgressListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i(TAG, "onStartCommand")
         if (intent?.action == ACTION_START_SIGN) {
-            startForeground(
-                NOTIFICATION_ID,
-                progressNotification(getString(R.string.title_loading_data), getString(R.string.text_please_wait), 0, 0)
-            )
+            try {
+                startForeground(
+                    NOTIFICATION_ID,
+                    progressNotification(getString(R.string.title_loading_data), getString(R.string.text_please_wait), 0, 0)
+                )
+            } catch (e: RuntimeException) {
+                // Some systems refuse the foreground even with the permission declared, or refuse
+                // it from the background (IllegalStateException from Android 12); the signing
+                // then runs as an ordinary service, with the same notifications
+                Log.w(TAG, "startForeground refused", e)
+            }
         }
         return super.onStartCommand(intent, flags, startId)
     }
