@@ -561,7 +561,7 @@ private fun FilterSwitch(
 
 /** The order icon, turned upside down for newest first. */
 @Composable
-private fun SortIcon(flipped: Boolean, tint: Color) {
+internal fun SortIcon(flipped: Boolean, tint: Color) {
     val turn by animateFloatAsState(if (flipped) 1f else 0f, Motion.snap(), label = "sortTurn")
     Icon(
         imageVector = Symbols.Sort,
