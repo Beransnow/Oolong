@@ -54,6 +54,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.AvatarPlaceholder
 import oolong.client.ui.widgets.compose.BackNavigationIcon
@@ -200,12 +201,14 @@ private fun ForumHeaderDetails(
         if (loggedIn) {
             Spacer(modifier = Modifier.height(SectionGap))
             val done = forum.liked && forum.signedIn
+            val interaction = remember { MutableInteractionSource() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ButtonHeight)
+                    .pressScale(interaction)
                     .background(if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent, SmoothCornerShape.Capsule)
-                    .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
+                    .clickable(interactionSource = interaction, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

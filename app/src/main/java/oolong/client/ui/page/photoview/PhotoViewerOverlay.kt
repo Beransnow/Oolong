@@ -96,8 +96,10 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.images.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
 import oolong.client.toastShort
+import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.editor.EditRequest
@@ -537,7 +539,7 @@ private fun PhotoChrome(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
                                 .padding(top = 2.dp)
-                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = PressFeedback.overlay(Corners.xs)) {
                                     expanded = !expanded
                                 },
                         )

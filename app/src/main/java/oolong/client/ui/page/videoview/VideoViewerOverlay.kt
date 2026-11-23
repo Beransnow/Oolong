@@ -129,8 +129,10 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.findActivity
 import oolong.client.ui.common.LocalAccount
+import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.photoview.LightSystemBars
@@ -1033,7 +1035,7 @@ private fun BoxScope.VideoChrome(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier
                                     .padding(top = 2.dp)
-                                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { expanded = !expanded },
+                                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = PressFeedback.overlay(Corners.xs)) { expanded = !expanded },
                             )
                         }
                     }

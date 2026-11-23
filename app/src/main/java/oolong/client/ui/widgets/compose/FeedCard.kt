@@ -89,6 +89,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.ui.page.photoview.LocalPhotoViewer
@@ -357,11 +358,13 @@ fun ForumInfoChip(
 ) {
     val imageUri = imageUriProvider()
     val name = nameProvider()
+    val press = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
+            .pressScale(press)
             .heightIn(min = 28.dp)
             .background(color = ExtendedTheme.colors.chip, shape = SmoothCornerShape.Capsule)
-            .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
+            .clickable(interactionSource = press, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
             .padding(start = if (imageUri != null) 4.dp else 10.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -882,6 +885,7 @@ private fun FeedReplyBlock(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val authorPress = remember { MutableInteractionSource() }
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -891,7 +895,9 @@ private fun FeedReplyBlock(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Row(
-                modifier = Modifier.clickable(interactionSource = null, indication = null) { onClickUser(reply.author) },
+                modifier = Modifier
+                    .pressScale(authorPress)
+                    .clickable(interactionSource = authorPress, indication = PressFeedback.overlay(Corners.full)) { onClickUser(reply.author) },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {

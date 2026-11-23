@@ -269,7 +269,6 @@ fun ThreadFloor(
                     modifier = Modifier.longPressMenu(
                         items = { postMenuItems(labels, context, post, options.hideReply, isStoreMark, canStore, canDelete, shortcuts, onEvent) },
                         onClick = { onEvent(ThreadEvent.Reply(post)) }.takeIf { !options.hideReply },
-                        indication = null,
                     ),
                 ) {
                     Row {
@@ -943,7 +942,6 @@ fun ThreadFirstPost(
             },
             // Replying to the first floor replies to the thread
             onClick = { onEvent(ThreadEvent.Reply(null)) }.takeIf { !options.hideReply },
-            indication = null,
         ),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 24.dp)) {
