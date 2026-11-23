@@ -514,7 +514,8 @@ private fun AddCondition(onAdd: (ConditionField) -> Unit) {
             .background(colors.chip, Corners.full)
             .onGloballyPositioned { bounds = it.boundsInWindow() }
             .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.full)) {
-                menus?.show(items = items, anchor = bounds, icon = Symbols.Add)
+                // Out of the whole button, which keeps its icon
+                menus?.show(items = items, anchor = bounds)
             }
             .padding(start = Spacing.sm, end = Spacing.md),
     ) {

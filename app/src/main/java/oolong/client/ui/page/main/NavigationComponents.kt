@@ -180,7 +180,7 @@ fun NavigationRail(
                                             role = Role.Tab
                                             this.selected = selected
                                         }
-                                        .longPressMenu(items = menu, onClick = { onSelect(index) }, indication = PressFeedback.overlay(NavPillShape))
+                                        .longPressMenu(items = menu, onClick = { onSelect(index) }, indication = PressFeedback.overlay(NavPillShape), fromWhole = true)
                                 }
                             ),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -439,7 +439,9 @@ fun FloatingNavBar(
                                         }
                                         val coordinates = pill ?: return@awaitEachGesture
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menus.show(menu(), anchor = Rect(coordinates.localToWindow(down.position), Size.Zero))
+                                        // Out of the item held, as from the rail
+                                        val item = itemBounds[indexAt(down.position.x)] ?: Rect(coordinates.localToWindow(down.position), Size.Zero)
+                                        menus.show(menu(), anchor = item)
                                         while (true) {
                                             val change = awaitPointerEvent().changes
                                                 .firstOrNull { it.id == down.id } ?: break
