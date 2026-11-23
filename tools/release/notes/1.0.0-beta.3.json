@@ -1,0 +1,52 @@
+{
+  "zh": {
+    "新增": [
+      "选择图片\n点按图片查看大图，点圆圈选中；从圆圈拖动可连续选中多张，双指缩放调整每行的数量。选好的图片排在底部，可拖动调整顺序；也可以直接拍照，或编辑后再发送",
+      "只看楼主与倒序\n楼层标题旁新增倒序按钮；楼层标题滚入顶栏后，顶栏显示只看楼主与倒序两个开关，帖子菜单中使用相同的图标"
+    ],
+    "改进": [
+      "按压反馈\n按钮、卡片与列表的按下效果统一：页面上的控件轻轻按下，悬浮的玻璃随手指鼓起并在按下处发亮；菜单从按下的按钮中展开",
+      "列表滚动\n支持高刷新率的手机上，慢速滚动列表也保持高帧率",
+      "帖子卡片\n底部按钮行与上下内容的间距更均匀；回复的作者名改用浅色，与回复内容区分开",
+      "标签栏\n搜索页改用与其他页面一致的玻璃标签栏，与搜索框等宽，并跟随经典样式；选择精华分类时，标签名称与宽度平滑变化"
+    ],
+    "修复": [
+      "部分吧的头像显示为贴吧默认图标",
+      "打开图片或视频时，屏幕亮度突然升高",
+      "帖子卡片上的分享按钮点按无反应；搜索结果中，卡片底部的按钮均无反应",
+      "快速滑动切换首页标签后，点按底栏无法回到对应页面",
+      "屏幕较窄或调大显示大小时，关注的吧只显示一列",
+      "空页面与出错页面的内容偏向左侧",
+      "吧内切换精华分类或排序后，列表看起来没有变化",
+      "帖子中切换只看楼主或倒序时，阅读位置跳到别处",
+      "经典样式下，顶栏按钮按下没有反馈",
+      "标签的选项菜单收起时，箭头要等菜单完全消失才转回",
+      "更新页面中没有显示当前版本的更新说明"
+    ]
+  },
+  "en": {
+    "New": [
+      "Picking pictures\nTap a picture to see it large, and its circle to pick it; drag from a circle to pick several in a row, and pinch to change how many fit in a row. Picked pictures line up along the bottom, where they can be dragged into another order. You can also take a photo, or edit a picture before sending it",
+      "Author's posts and newest first\nA newest-first button now sits beside the floors' heading; once the heading scrolls into the top bar, the bar shows switches for the author's posts and the order, and the thread menu uses the same icons"
+    ],
+    "Improved": [
+      "Pressing\nButtons, cards and lists respond to a press the same way: controls on the page press in, and floating glass swells towards your finger and lights up where it was touched. Menus open out of the button pressed",
+      "Scrolling\nOn phones with a high refresh rate, lists keep a high frame rate even when scrolled slowly",
+      "Thread cards\nThe row of buttons at the bottom is spaced evenly from the content; a reply's author name is in a lighter colour, set apart from the reply",
+      "Tabs\nSearch uses the same glass tab bar as other pages, as wide as the search field and following the classic style; picking a class of good threads changes the tab's name and width smoothly"
+    ],
+    "Fixed": [
+      "Some forums' avatars showed Tieba's default icon",
+      "Opening a picture or video suddenly raised the screen's brightness",
+      "The share button on thread cards did nothing; in search results, none of a card's buttons did",
+      "After quickly swiping between home tabs, tapping the bottom bar didn't go back to that page",
+      "On narrow screens or with a larger display size, followed forums showed one to a row",
+      "Empty and error screens leant to the left",
+      "Switching a forum's class of good threads or its order looked as if nothing had changed",
+      "Switching to the author's posts or the other order in a thread jumped away from where you were reading",
+      "In the classic style, top bar buttons showed nothing when pressed",
+      "A tab's options arrow only turned back once its menu had fully gone",
+      "The update page showed no notes for the installed version"
+    ]
+  }
+}
