@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -48,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -134,6 +136,25 @@ fun NavigationRail(
     val itemHeight = if (showLabels) NavItemHeight else NavItemCollapsedWidth
     val indicator = remember { Animatable(currentPosition.toFloat()) }
     LaunchedEffect(currentPosition) { indicator.animateTo(currentPosition.toFloat(), IndicatorSpring) }
+    // A lens lifts off the item held, as off the floating pill
+    val sources = remember(navigationItems.size) { List(navigationItems.size) { MutableInteractionSource() } }
+    var held by remember { mutableIntStateOf(-1) }
+    val press = remember { Animatable(0f) }
+    LaunchedEffect(sources) {
+        sources.forEachIndexed { index, source ->
+            launch {
+                source.interactions.collect { interaction ->
+                    when (interaction) {
+                        is PressInteraction.Press -> {
+                            held = index
+                            launch { press.animateTo(1f, PressSpring) }
+                        }
+                        is PressInteraction.Release, is PressInteraction.Cancel -> launch { press.animateTo(0f, PressSpring) }
+                    }
+                }
+            }
+        }
+    }
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -146,7 +167,7 @@ fun NavigationRail(
     ) {
         Box(
             modifier = Modifier
-                .floatingGlass(NavRailShape)
+                .floatingGlass(NavRailShape, lensTarget = true)
                 .padding(NavPillPadding),
         ) {
             Box(
@@ -169,8 +190,9 @@ fun NavigationRail(
                                 if (menu == null) {
                                     Modifier.selectable(
                                         selected = selected,
-                                        interactionSource = null,
-                                        indication = PressFeedback.overlay(NavPillShape),
+                                        interactionSource = sources[index],
+                                        // The lens shows the press
+                                        indication = null,
                                         role = Role.Tab,
                                         onClick = { onSelect(index) },
                                     )
@@ -180,7 +202,7 @@ fun NavigationRail(
                                             role = Role.Tab
                                             this.selected = selected
                                         }
-                                        .longPressMenu(items = menu, onClick = { onSelect(index) }, indication = PressFeedback.overlay(NavPillShape), fromWhole = true)
+                                        .longPressMenu(items = menu, onClick = { onSelect(index) }, indication = null, fromWhole = true, interactionSource = sources[index])
                                 }
                             ),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -198,6 +220,26 @@ fun NavigationRail(
                         }
                     }
                 }
+            }
+            // Drawn above the items, so it magnifies them and the rail
+            val lensGrows = if (isLensGlass()) LensScale else 1f
+            val lensWidth = itemWidth * lerpFloat(1f, lensGrows, press.value)
+            val lensHeight = itemHeight * lerpFloat(1f, lensGrows, press.value)
+            val lensOptics = remember(itemWidth) { liquidLensOptics(itemWidth * LensScale) }
+            if (held >= 0) {
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.TopStart, unbounded = true)
+                        .offset {
+                            IntOffset(
+                                -((lensWidth - itemWidth) / 2).roundToPx(),
+                                (held * itemHeight.toPx()).roundToInt() - ((lensHeight - itemHeight) / 2).roundToPx(),
+                            )
+                        }
+                        .size(width = lensWidth, height = lensHeight)
+                        .graphicsLayer { alpha = press.value.coerceIn(0f, 1f) }
+                        .glassLens(NavPillShape, lensOptics),
+                )
             }
         }
     }

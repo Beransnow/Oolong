@@ -113,13 +113,14 @@ fun Modifier.longPressMenu(
     enabled: Boolean = true,
     indication: Indication? = LocalIndication.current,
     fromWhole: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
 ): Modifier {
     val menus = LocalContextMenus.current
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var pressAt by remember { mutableStateOf(Offset.Zero) }
     // From the long press until the finger lifts, the menu follows it
     var holding by remember { mutableStateOf(false) }
-    val interaction = remember { MutableInteractionSource() }
+    val interaction = interactionSource ?: remember { MutableInteractionSource() }
     return onGloballyPositioned { coordinates = it }
         .pointerInput(menus) {
             if (menus == null) return@pointerInput
