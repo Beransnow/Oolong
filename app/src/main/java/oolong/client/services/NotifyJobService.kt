@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -48,20 +49,23 @@ class NotifyJobService : JobService() {
         }
     }
 
+    private fun createChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelGroup = NotificationChannelGroup(CHANNEL_GROUP, getString(R.string.channel_group_messages))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                channelGroup.description = getString(R.string.channel_group_messages_description)
+            }
+            notificationManager!!.createNotificationChannelGroup(channelGroup)
+            createChannel(CHANNEL_REPLY, getString(R.string.title_reply_me))
+            createChannel(CHANNEL_AT, getString(R.string.title_at_me))
+        }
+    }
+
     override fun onStartJob(params: JobParameters): Boolean {
         Log.i(TAG, "onStartJob")
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (notificationManager != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channelGroup = NotificationChannelGroup(CHANNEL_GROUP, getString(R.string.channel_group_messages))
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    channelGroup.description = getString(R.string.channel_group_messages_description)
-                }
-                notificationManager!!.createNotificationChannelGroup(channelGroup)
-                createChannel(CHANNEL_REPLY, getString(R.string.title_reply_me))
-                createChannel(CHANNEL_AT, getString(R.string.title_at_me))
-            }
-        }
+        // Each call goes to the system and can stall when it is busy, so not on the main thread
+        val channels = scope.launch(Dispatchers.IO) { createChannels() }
         // Logged out, the server answers with no counts at all
         if (accounts.current.value == null) return false
         scope.launch {
@@ -77,6 +81,7 @@ class NotifyJobService : JobService() {
                 jobFinished(params, false)
                 return@launch
             }
+            channels.join()
             if (notificationManager != null) {
                 var total = 0
                 val replyCount = message.replyMe?.toIntOrNull() ?: 0
