@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,6 +89,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -105,6 +107,7 @@ import oolong.client.ui.widgets.compose.OwnAvatar
 import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
+import oolong.client.ui.widgets.compose.isLensGlass
 import oolong.client.ui.widgets.compose.liquidLensOptics
 import oolong.client.ui.widgets.compose.longPressMenu
 import kotlin.math.abs
@@ -540,7 +543,8 @@ fun FloatingNavBar(
                 // Grows by layout rather than a layer scale so the glass samples the area it covers,
                 // but outside the pill's size, which would otherwise grow with it and push the
                 // search button down.
-                val lensScale = lerpFloat(1f, LensScale, press.value)
+                // A veil, without glass to lift, keeps to the item
+                val lensScale = lerpFloat(1f, if (isLensGlass()) LensScale else 1f, press.value)
                 val lensWidth = itemWidth * lensScale
                 val lensHeight = itemHeight * lensScale
                 val lensOptics = remember(itemHeight) { liquidLensOptics(itemHeight * LensScale) }
@@ -673,7 +677,9 @@ private fun RowScope.ClassicNavItem(
                 .then(pillModifier)
                 .pressScale(interactionSource)
                 .size(width = ClassicPillWidth, height = ClassicPillHeight)
-                .drawBehind { drawRoundRect(emphasis.copy(alpha = 0.12f * pill), cornerRadius = CornerRadius(size.height / 2)) },
+                .drawBehind { drawRoundRect(emphasis.copy(alpha = 0.12f * pill), cornerRadius = CornerRadius(size.height / 2)) }
+                // The bar is part of the page: its item is pressed in, as anything on it is
+                .indication(interactionSource, PressFeedback.overlay(Corners.full)),
             contentAlignment = Alignment.Center,
         ) { icon(color) }
         Text(text = title, color = color, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1)

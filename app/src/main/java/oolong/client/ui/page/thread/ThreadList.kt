@@ -28,6 +28,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -78,6 +79,7 @@ import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
 import oolong.client.ui.widgets.compose.LoadMoreEffect
+import oolong.client.ui.widgets.compose.LocalPressedByGlass
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SegmentedControl
@@ -88,6 +90,7 @@ import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
 import oolong.client.ui.widgets.compose.plus
+import oolong.client.ui.widgets.compose.pressedByGlass
 import oolong.client.ui.widgets.compose.states.StateScreenScope
 import oolong.client.utils.ImageUtil
 
@@ -448,33 +451,36 @@ internal fun ThreadFilterSwitches(
                 transformOrigin = TransformOrigin(1f, 0.5f)
             }
             .height(GlassTopBarItemHeight)
-            .floatingGlass(SmoothCornerShape.Capsule)
+            .floatingGlass(SmoothCornerShape.Capsule, pressable = true)
             .padding(SwitchInset)
             // Hidden, they take no taps, nor a screen reader's attention
             .then(if (visible) Modifier else Modifier.clearAndSetSemantics {}),
         horizontalArrangement = Arrangement.spacedBy(SwitchGap),
     ) {
         val pill = if (colors.background.alpha < 1f) colors.sheet else colors.background
-        BarSwitch(
-            checked = seeLz,
-            enabled = visible,
-            label = stringResource(R.string.title_see_lz),
-            notice = stringResource(if (seeLz) R.string.toast_all_posts else R.string.title_see_lz),
-            onToggle = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
-        ) { on ->
-            Box(contentAlignment = Alignment.Center) {
-                Icon(if (on) LzIcon.BoxFill else LzIcon.Box, contentDescription = null, tint = if (on) pill else colors.textSecondary)
-                Icon(LzIcon.Letters, contentDescription = null, tint = if (on) colors.text else colors.textSecondary)
+        // Their glass answers presses on them as one piece
+        CompositionLocalProvider(LocalPressedByGlass provides true) {
+            BarSwitch(
+                checked = seeLz,
+                enabled = visible,
+                label = stringResource(R.string.title_see_lz),
+                notice = stringResource(if (seeLz) R.string.toast_all_posts else R.string.title_see_lz),
+                onToggle = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
+            ) { on ->
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(if (on) LzIcon.BoxFill else LzIcon.Box, contentDescription = null, tint = if (on) pill else colors.textSecondary)
+                    Icon(LzIcon.Letters, contentDescription = null, tint = if (on) colors.text else colors.textSecondary)
+                }
             }
-        }
-        BarSwitch(
-            checked = newestFirst,
-            enabled = visible,
-            label = stringResource(R.string.title_sort),
-            notice = stringResource(if (newestFirst) R.string.toast_oldest_first else R.string.toast_newest_first),
-            onToggle = { onEvent(ThreadEvent.ToggleSort) },
-        ) { on ->
-            SortIcon(flipped = on, tint = if (on) pill else colors.textSecondary)
+            BarSwitch(
+                checked = newestFirst,
+                enabled = visible,
+                label = stringResource(R.string.title_sort),
+                notice = stringResource(if (newestFirst) R.string.toast_oldest_first else R.string.toast_newest_first),
+                onToggle = { onEvent(ThreadEvent.ToggleSort) },
+            ) { on ->
+                SortIcon(flipped = on, tint = if (on) pill else colors.textSecondary)
+            }
         }
     }
 }
@@ -529,7 +535,8 @@ private fun FilterSwitch(
             .combinedClickable(
                 enabled = enabled,
                 interactionSource = null,
-                indication = PressFeedback.overlay(CircleShape),
+                // On the bar's glass, which answers the press
+                indication = if (pressedByGlass()) null else PressFeedback.overlay(CircleShape),
                 onClickLabel = label,
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)

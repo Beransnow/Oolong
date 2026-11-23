@@ -65,7 +65,7 @@ fun GlassToast(
             .padding(horizontal = Spacing.md)
             .widthIn(max = 480.dp)
             .heightIn(min = 48.dp)
-            .floatingGlass(shape, interactionSource = if (onClick != null) interactionSource else null)
+            .floatingGlass(shape, pressable = onClick != null)
             .then(if (onClick != null) Modifier.clickable(interactionSource, indication = null, onClick = onClick) else Modifier)
             .padding(start = if (icon != null) Spacing.md else Spacing.lg, end = Spacing.xxs)
             .padding(vertical = if (detail != null) Spacing.sm else 0.dp),
