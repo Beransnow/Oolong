@@ -1,6 +1,8 @@
 package oolong.client.ui.page.history.list
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +23,13 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -41,6 +48,7 @@ import oolong.client.model.HistoryEntry
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.history.HistoryDay
@@ -52,6 +60,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.TextButton
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.motionItem
@@ -79,6 +88,16 @@ fun <T : HistoryEntry> HistoryListContent(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val lazyListState = rememberLazyListState()
+    // Choosing, the circles take their room at once and the rows slide over to make it, so no
+    // row is laid out again on every frame
+    val choosing = remember { Animatable(if (selected != null) 1f else 0f, Motion.ProgressThreshold) }
+    LaunchedEffect(selected != null) {
+        choosing.animateTo(
+            if (selected != null) 1f else 0f,
+            if (selected != null) Motion.settle(Motion.ProgressThreshold) else Motion.dismiss(Motion.ProgressThreshold),
+        )
+    }
+    val circles by remember { derivedStateOf { choosing.value > 0f } }
     Box(modifier = Modifier.fillMaxSize()) {
         LoadMoreEffect(lazyListState, enabled = list.hasMore, onLoadMore = onLoadMore)
         MyLazyColumn(
@@ -106,7 +125,7 @@ fun <T : HistoryEntry> HistoryListContent(
             }
             list.sections.forEach { section ->
                 item(key = section.day, contentType = "day") { Box(modifier = Modifier.motionItem(this)) { DayHeader(section.day) } }
-                entries(section.entries, selected, onOpen, onDelete, onSelect, onStartSelecting)
+                entries(section.entries, selected, circles, { choosing.value }, onOpen, onDelete, onSelect, onStartSelecting)
             }
         }
     }
@@ -115,6 +134,8 @@ fun <T : HistoryEntry> HistoryListContent(
 private fun <T : HistoryEntry> LazyListScope.entries(
     entries: List<T>,
     selected: Set<Long>?,
+    circles: Boolean,
+    choosing: () -> Float,
     onOpen: (T) -> Unit,
     onDelete: (T) -> Unit,
     onSelect: (T) -> Unit,
@@ -143,15 +164,22 @@ private fun <T : HistoryEntry> LazyListScope.entries(
                     }
                 ),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (selected != null) {
-                    Icon(
-                        imageVector = if (chosen) Symbols.CheckCircleFill else Symbols.RadioButtonUnchecked,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.graphicsLayer { translationX = if (circles) -(1f - choosing()) * CircleRoom.toPx() else 0f },
+            ) {
+                if (circles) {
+                    val tint by animateColorAsState(if (chosen) ExtendedTheme.colors.text else ExtendedTheme.colors.textDisabled, Motion.snap(), label = "historyCheck")
+                    ToggleIcon(
+                        checked = chosen,
+                        on = Symbols.CheckCircleFill,
+                        off = Symbols.RadioButtonUnchecked,
                         contentDescription = null,
-                        tint = if (chosen) ExtendedTheme.colors.text else ExtendedTheme.colors.textDisabled,
+                        tint = tint,
                         modifier = Modifier
                             .padding(start = 16.dp)
-                            .size(24.dp),
+                            .size(24.dp)
+                            .graphicsLayer { alpha = choosing().coerceIn(0f, 1f) },
                     )
                 }
                 Box(modifier = Modifier.weight(1f)) {
@@ -336,3 +364,6 @@ private const val MetaSeparator = " · "
 private const val SpokenSeparator = ", "
 private val ForumIconSize = 16.dp
 private val ThumbnailSize = 64.dp
+
+/** The room a choosing circle takes at the start of a row. */
+private val CircleRoom = 40.dp

@@ -1,5 +1,8 @@
 package oolong.client.ui.page.history
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +26,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,6 +52,7 @@ import oolong.client.dataStore
 import oolong.client.model.HistoryEntry
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -68,6 +73,7 @@ import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.MenuIconButton
 import oolong.client.ui.widgets.compose.MyBackHandler
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -179,62 +185,82 @@ fun HistoryScreen(
     GlassScaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            if (selected != null) {
-                val shown = state.list(tab).sections.sumOf { it.entries.size }
-                val allChosen = shown > 0 && state.list(tab).sections.all { section -> section.entries.all { it.id in selected } }
-                GlassTopBar(
-                    title = { Text(text = pluralStringResource(id = R.plurals.history_selected, selected.size, selected.size)) },
-                    navigationIcon = {
-                        ActionItem(icon = Symbols.Close, contentDescription = stringResource(id = R.string.button_cancel), onClick = onStopSelecting)
-                    },
-                    actions = {
-                        TextButton(onClick = { onSelectAll(tab) }) {
-                            Text(
-                                text = stringResource(id = if (allChosen) R.string.history_select_none else R.string.history_select_all),
-                                color = ExtendedTheme.colors.topBarContent,
-                            )
-                        }
-                    },
-                )
-            } else {
-                GlassTopBar(
-                    title = {
-                        GlassTabRow(
-                            selectedTabIndex = pagerState.currentPage,
-                            pagerState = pagerState,
-                            onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
-                        ) {
-                            HistoryTab.entries.forEachIndexed { index, tab ->
-                                GlassTab(
-                                    text = {
-                                        Text(
-                                            text = stringResource(
-                                                id = when (tab) {
-                                                    HistoryTab.Threads -> R.string.title_history_tab_threads
-                                                    HistoryTab.Forums -> R.string.title_history_tab_forums
-                                                }
+            // One bar for browsing and choosing: its title, button and actions refocus in place
+            val choosing = selected != null
+            GlassTopBar(
+                title = {
+                    Refocus(targetState = choosing) { now ->
+                        if (now) {
+                            val count = selected?.size ?: 0
+                            Refocus(targetState = count) {
+                                Text(text = pluralStringResource(id = R.plurals.history_selected, it, it))
+                            }
+                        } else {
+                            GlassTabRow(
+                                selectedTabIndex = pagerState.currentPage,
+                                pagerState = pagerState,
+                                onSelect = { coroutineScope.launch { pagerState.animateScrollToPage(it) } },
+                            ) {
+                                HistoryTab.entries.forEachIndexed { index, tab ->
+                                    GlassTab(
+                                        text = {
+                                            Text(
+                                                text = stringResource(
+                                                    id = when (tab) {
+                                                        HistoryTab.Threads -> R.string.title_history_tab_threads
+                                                        HistoryTab.Forums -> R.string.title_history_tab_forums
+                                                    }
+                                                )
                                             )
-                                        )
-                                    },
-                                    selected = pagerState.currentPage == index,
-                                    selectedContentColor = ExtendedTheme.colors.text,
-                                    unselectedContentColor = ExtendedTheme.colors.textSecondary,
-                                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
-                                )
+                                        },
+                                        selected = pagerState.currentPage == index,
+                                        selectedContentColor = ExtendedTheme.colors.text,
+                                        unselectedContentColor = ExtendedTheme.colors.textSecondary,
+                                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                                    )
+                                }
                             }
                         }
-                    },
-                    centerTitle = true,
-                    navigationIcon = { BackNavigationIcon(onBackPressed = onBack) },
-                    actions = {
-                        ActionItem(icon = Symbols.Checklist, contentDescription = stringResource(id = R.string.history_select), onClick = { onStartSelecting(null) })
-                        MenuIconButton(icon = Symbols.MoreVert, contentDescription = stringResource(id = R.string.btn_more), items = { clearItems })
-                    },
-                )
-            }
+                    }
+                },
+                centerTitle = true,
+                navigationIcon = {
+                    Refocus(targetState = choosing) { now ->
+                        if (now) {
+                            ActionItem(icon = Symbols.Close, contentDescription = stringResource(id = R.string.button_cancel), onClick = onStopSelecting)
+                        } else {
+                            BackNavigationIcon(onBackPressed = onBack)
+                        }
+                    }
+                },
+                actions = {
+                    Refocus(targetState = choosing) { now ->
+                        if (now) {
+                            val chosen = selected.orEmpty()
+                            val shown = state.list(tab).sections.sumOf { it.entries.size }
+                            val allChosen = shown > 0 && state.list(tab).sections.all { section -> section.entries.all { it.id in chosen } }
+                            TextButton(onClick = { onSelectAll(tab) }) {
+                                Refocus(targetState = allChosen) {
+                                    Text(
+                                        text = stringResource(id = if (it) R.string.history_select_none else R.string.history_select_all),
+                                        color = ExtendedTheme.colors.topBarContent,
+                                    )
+                                }
+                            }
+                        } else {
+                            Row {
+                                ActionItem(icon = Symbols.Checklist, contentDescription = stringResource(id = R.string.history_select), onClick = { onStartSelecting(null) })
+                                MenuIconButton(icon = Symbols.MoreVert, contentDescription = stringResource(id = R.string.btn_more), items = { clearItems })
+                            }
+                        }
+                    }
+                },
+            )
         },
         overlay = {
-            if (selected != null) DeleteSelectedButton(count = selected.size, onClick = onDeleteSelected)
+            var lastCount by remember { mutableIntStateOf(0) }
+            if (selected != null) lastCount = selected.size
+            DeleteSelectedButton(visible = selected != null, count = selected?.size ?: lastCount, onClick = onDeleteSelected)
         },
     ) { contentPaddings ->
         HorizontalPager(
@@ -282,9 +308,12 @@ fun HistoryScreen(
     }
 }
 
-/** A glass capsule floating at the bottom that deletes the [count] visits chosen. */
+/**
+ * A glass capsule floating at the bottom that deletes the [count] visits chosen. It rises from
+ * below the screen while [visible] and goes back down after.
+ */
 @Composable
-private fun DeleteSelectedButton(count: Int, onClick: () -> Unit) {
+private fun DeleteSelectedButton(visible: Boolean, count: Int, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         contentAlignment = Alignment.BottomCenter,
@@ -293,31 +322,34 @@ private fun DeleteSelectedButton(count: Int, onClick: () -> Unit) {
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .floatingGlass(Corners.full, pressable = count > 0)
-                .clickable(
-                    interactionSource = interactionSource,
-                    // The glass answers the press itself
-                    indication = null,
-                    enabled = count > 0,
-                    role = Role.Button,
-                    onClick = onClick,
-                ),
-        ) {
-            val color = if (count > 0) MaterialTheme.colors.error else ExtendedTheme.colors.textDisabled
-            Icon(imageVector = Symbols.Delete, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = pluralStringResource(id = R.plurals.history_delete_selected, count, count),
-                color = color,
-                style = TextStyles.label,
-                fontWeight = FontWeight.Bold,
-            )
+        // Far enough down to clear the navigation bar and the margin under it
+        AnimatedVisibility(visible = visible, enter = slideInVertically(Motion.present()) { it * 3 }, exit = slideOutVertically(Motion.dismiss()) { it * 3 }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .floatingGlass(Corners.full, pressable = count > 0)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        // The glass answers the press itself
+                        indication = null,
+                        enabled = count > 0,
+                        role = Role.Button,
+                        onClick = onClick,
+                    ),
+            ) {
+                val color = if (count > 0) MaterialTheme.colors.error else ExtendedTheme.colors.textDisabled
+                Icon(imageVector = Symbols.Delete, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = pluralStringResource(id = R.plurals.history_delete_selected, count, count),
+                    color = color,
+                    style = TextStyles.label,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
