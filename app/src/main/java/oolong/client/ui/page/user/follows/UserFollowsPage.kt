@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
@@ -51,6 +52,7 @@ import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
@@ -135,14 +137,21 @@ fun UserFollowsPage(
                 onSelect = { viewModel.show(fans = it == 1) },
                 modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs).fillMaxWidth(),
             )
-            UserList(
-                list = state.shown,
-                empty = stringResource(id = if (state.fans) R.string.follows_empty_fans else R.string.follows_empty_follows),
-                contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
-                onRefresh = viewModel::refresh,
-                onLoadMore = viewModel::loadMore,
-                onOpen = { navigator.navigate(UserProfileKey(it.user.id)) },
-            )
+            // Each list keeps its own place, and switching swaps one for the other in place
+            val followsPlace = rememberLazyListState()
+            val fansPlace = rememberLazyListState()
+            ContentSwap(targetState = state.fans, modifier = Modifier.fillMaxSize()) { fans ->
+                UserList(
+                    // Its own list, also while it fades out after a switch
+                    list = if (fans) state.fanList else state.follows,
+                    listState = if (fans) fansPlace else followsPlace,
+                    empty = stringResource(id = if (fans) R.string.follows_empty_fans else R.string.follows_empty_follows),
+                    contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
+                    onRefresh = viewModel::refresh,
+                    onLoadMore = viewModel::loadMore,
+                    onOpen = { navigator.navigate(UserProfileKey(it.user.id)) },
+                )
+            }
         }
     }
 }
@@ -150,6 +159,7 @@ fun UserFollowsPage(
 @Composable
 private fun UserList(
     list: PagerState<ListedUser>,
+    listState: LazyListState,
     empty: String,
     contentPadding: PaddingValues,
     onRefresh: () -> Unit,
@@ -169,7 +179,7 @@ private fun UserList(
             }
         },
     ) {
-        val lazyListState = rememberLazyListState()
+        val lazyListState = listState
         LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
         PullRefresh(refreshing = false, onRefresh = {}, enabled = false, endPull = if (list.hasMore) EndPull.None else EndPull.Tease) {
             MyLazyColumn(state = lazyListState, contentPadding = contentPadding) {
