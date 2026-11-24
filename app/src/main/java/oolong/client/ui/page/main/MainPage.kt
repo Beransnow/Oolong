@@ -56,7 +56,6 @@ import oolong.client.ui.widgets.compose.LocalNavigationRailShown
 import oolong.client.ui.widgets.compose.LocalTopBarEnd
 import oolong.client.ui.widgets.compose.LocalTopBarEndRoom
 import oolong.client.ui.widgets.compose.MyBackHandler
-import oolong.client.ui.widgets.compose.SwipeToDismissSnackbarHost
 import oolong.client.ui.widgets.compose.TopBarEndRoom
 import oolong.client.ui.widgets.compose.rememberPageScrollState
 import oolong.client.ui.widgets.compose.rememberScrollProgress
@@ -190,7 +189,6 @@ fun MainPage(
             },
             snackbarHost = { host ->
                 Box(contentAlignment = Alignment.BottomCenter) {
-                    SwipeToDismissSnackbarHost(host)
                     UpdateHint(hidden = searchShown, onOpen = { navigator.navigate(UpdateKey) })
                 }
             },

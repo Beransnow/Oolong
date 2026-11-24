@@ -11,6 +11,7 @@ import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.calculateWindowSizeClass
 import oolong.client.ui.utils.rememberSystemUiController
+import oolong.client.ui.widgets.compose.AppToast
 import oolong.client.utils.ThemeUtil
 
 /**
@@ -37,7 +38,9 @@ fun AppContent(
             )
         }
         ProvideAccounts(accountRepository) {
-            CompositionLocalProvider(LocalWindowSizeClass provides calculateWindowSizeClass(activity = activity), content = content)
+            CompositionLocalProvider(LocalWindowSizeClass provides calculateWindowSizeClass(activity = activity)) {
+                AppToast.Host(content)
+            }
         }
     }
 }

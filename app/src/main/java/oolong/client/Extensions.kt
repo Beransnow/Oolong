@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import oolong.client.ui.widgets.compose.AppToast
 import oolong.client.utils.MD5Util
 import java.io.File
 import kotlin.math.roundToInt
@@ -90,7 +91,9 @@ inline fun <reified T : Activity> Fragment.goToActivity(pre: Intent.() -> Unit) 
     startActivity(Intent(requireContext(), T::class.java).apply(pre))
 }
 
+/** Shows [text] briefly: over the app when it is in front ([AppToast]), else as the system's toast. */
 fun Context.toastShort(text: String) {
+    if (AppToast.post(text)) return
     runCatching { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
 }
 

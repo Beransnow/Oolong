@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.ForumDetail
+import oolong.client.toastShort
 import oolong.client.ui.navigation.ForumDetailKey
 import oolong.client.ui.navigation.ForumRuleDetailKey
 import oolong.client.ui.navigation.ForumSearchPostKey
@@ -57,7 +58,7 @@ fun ForumRoute(
             ForumEvent.OpenRule -> forum?.let { navigator.navigate(ForumRuleDetailKey(it.id)) }
             ForumEvent.Share -> shareForum(context, state.forumName)
             ForumEvent.SendToDesktop -> forum?.let {
-                coroutineScope.launch { sendToDesktop(context, it, scaffoldState.snackbarHostState::showSnackbar) }
+                coroutineScope.launch { sendToDesktop(context, it) { message -> context.toastShort(message) } }
             }
             ForumEvent.FollowOrSignIn -> viewModel.followOrSignIn()
             ForumEvent.Unfollow -> unfollowDialog.show()

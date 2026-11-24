@@ -364,7 +364,7 @@ object ImageUtil {
                     FileOutputStream(it.fileDescriptor).use { outputStream -> outputStream.write(image) }
                 }
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.toast_photo_saved, relativePath), Toast.LENGTH_SHORT).show()
+                    context.toastShort(context.getString(R.string.toast_photo_saved, relativePath))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -379,7 +379,7 @@ object ImageUtil {
             if (runCatching { destFile.writeBytes(image) }.isFailure) return saveFailed(context)
             context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(destFile)))
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.toast_photo_saved, destFile.path), Toast.LENGTH_SHORT).show()
+                context.toastShort(context.getString(R.string.toast_photo_saved, destFile.path))
             }
         }
     }

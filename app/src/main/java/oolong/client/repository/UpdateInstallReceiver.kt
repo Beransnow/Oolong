@@ -9,6 +9,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import oolong.client.R
+import oolong.client.toastShort
 
 /**
  * Hears how an update's install session went: passes on the system's confirmation when it asks for
@@ -46,7 +47,7 @@ class UpdateInstallReceiver : BroadcastReceiver() {
 
     private fun failed(context: Context) {
         context.updateRepository.installEnded()
-        Toast.makeText(context, R.string.update_install_failed, Toast.LENGTH_SHORT).show()
+        context.toastShort(R.string.update_install_failed)
     }
 }
 

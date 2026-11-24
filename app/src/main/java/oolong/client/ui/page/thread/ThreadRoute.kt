@@ -3,8 +3,6 @@ package oolong.client.ui.page.thread
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -48,6 +46,7 @@ import oolong.client.ui.page.reply.ReplyTo
 import oolong.client.ui.page.reply.openInOfficialClient
 import oolong.client.ui.page.reply.rememberReplyChromeState
 import oolong.client.ui.page.reply.rememberReplyComposer
+import oolong.client.ui.widgets.compose.AppToast
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.LocalCopySheets
 import oolong.client.ui.widgets.compose.MyBackHandler
@@ -116,12 +115,11 @@ fun ThreadRoute(
             return@LaunchedEffect
         }
         offeredStoreUpdate = true
-        val result = scaffoldState.snackbarHostState.showSnackbar(
+        val load = AppToast.ask(
             resources.getString(R.string.message_store_thread_update, extra.maxFloor),
             resources.getString(R.string.button_load_new),
-            SnackbarDuration.Long
         )
-        if (result == SnackbarResult.ActionPerformed) viewModel.jumpToPost(extra.maxPid)
+        if (load) viewModel.jumpToPost(extra.maxPid)
     }
 
     val storeMarkDialog = rememberDialogState()

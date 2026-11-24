@@ -19,6 +19,7 @@ import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -155,6 +156,10 @@ fun GlassScaffold(
     // size stayed, as a row scrolled sideways, under the app's lookahead.
     val bottomBarHeightState = remember { mutableIntStateOf(0) }
     val chromePadding = LocalChromePadding.current
+    // Messages stand over the bottom chrome of the pages on screen
+    val toastFloors = LocalToastFloors.current
+    val toastOwner = remember { Any() }
+    if (toastFloors != null) DisposableEffect(toastFloors) { onDispose { toastFloors.remove(toastOwner) } }
     var consumedInsets by remember { mutableStateOf(WindowInsets(0, 0, 0, 0)) }
     val insets = WindowInsets.systemBars
         .union(WindowInsets.displayCutout)
@@ -221,6 +226,7 @@ fun GlassScaffold(
                 val top = if (topBarHeight > 0) topBarHeight else insets.getTop(this)
                 val bottom = if (bottomBarHeight > 0) bottomBarHeight
                 else maxOf(insets.getBottom(this), chromePadding.calculateBottomPadding().roundToPx())
+                toastFloors?.report(toastOwner, bottom)
                 val left = insets.getLeft(this, layoutDirection)
                 val right = insets.getRight(this, layoutDirection)
                 val isLtr = layoutDirection == LayoutDirection.Ltr

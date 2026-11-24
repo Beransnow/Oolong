@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.api.retrofit.exception.userMessage
+import oolong.client.ui.widgets.compose.AppToast
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +27,9 @@ class ToastMessageController @Inject constructor(
 ) : MessageController {
     override fun show(message: Int, vararg args: Any) {
         scope.launch {
-            Toast.makeText(context, context.getString(message, *args), Toast.LENGTH_SHORT).show()
+            val text = context.getString(message, *args)
+            // Over the app when it is in front; the system's toast only when it is not
+            if (!AppToast.post(text)) Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
     }
 

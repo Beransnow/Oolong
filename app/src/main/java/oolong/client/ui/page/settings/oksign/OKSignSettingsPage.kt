@@ -1,12 +1,12 @@
 package oolong.client.ui.page.settings.oksign
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.dataStore
 import oolong.client.services.AutoSign
+import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.settings.Availability
@@ -43,7 +44,6 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 import oolong.client.utils.BackgroundSettings
 import oolong.client.utils.PermissionUtils
 import oolong.client.utils.isIgnoringBatteryOptimizations
@@ -57,13 +57,12 @@ class OKSignState(
     val conditions: RunConditions,
     /** The system's prompt for notifications, after a word on what they are for; its settings once it no longer asks. */
     val requestNotifications: () -> Unit,
-    private val snackbar: SnackbarHostState,
-    private val scope: CoroutineScope,
+    private val context: Context,
     private val testScheduled: String,
 ) {
     /** Says when the test sign-in will run. */
     fun sayTestScheduled(time: String) {
-        scope.launch { snackbar.showSnackbar(testScheduled.format(time)) }
+        context.toastShort(testScheduled.format(time))
     }
 }
 
@@ -91,8 +90,7 @@ object OKSignSettings : SettingsPage<OKSignState>(R.string.title_oksign, OKSignS
         return OKSignState(
             conditions = conditions,
             requestNotifications = requestNotifications,
-            snackbar = LocalSnackbarHostState.current,
-            scope = rememberCoroutineScope(),
+            context = context,
             testScheduled = stringResource(id = R.string.toast_auto_sign_test_scheduled),
         )
     }

@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.findActivity
 import oolong.client.migration.LegacyImport
+import oolong.client.toastShort
 import oolong.client.ui.common.prefs.widgets.TextPref
-import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 
 /**
  * Brings the old app's data over: asks its exporter, which asks the person, then starts the app
@@ -22,7 +22,6 @@ import oolong.client.ui.widgets.compose.LocalSnackbarHostState
 fun LegacyImportPref(source: LegacyImport.Source) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbar = LocalSnackbarHostState.current
     val failed = stringResource(id = R.string.toast_import_legacy_failed)
     val export = rememberLauncherForActivityResult(LegacyImport.Export) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -30,7 +29,7 @@ fun LegacyImportPref(source: LegacyImport.Source) {
             if (LegacyImport.receive(context, uri)) {
                 context.findActivity()?.let(LegacyImport::restart)
             } else {
-                snackbar.showSnackbar(failed)
+                context.toastShort(failed)
             }
         }
     }
