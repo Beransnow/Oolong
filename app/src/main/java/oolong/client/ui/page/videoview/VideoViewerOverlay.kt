@@ -66,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -384,7 +385,8 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             val to = near
             val flight = if (from != null && to != null) flightSpeed(from, to, velocity) else 0f
             scope.launch {
-                progress.snapTo(1f)
+                // Closed while still opening, it turns back from where it got to
+                progress.snapTo(progress.value.coerceAtMost(1f))
                 progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold), initialVelocity = flight)
                 viewer.closed()
             }
@@ -423,7 +425,8 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             closingFade = 0f
             phase = Phase.Closing
             scope.launch {
-                progress.snapTo(1f)
+                // Closed while still opening, it turns back from where it got to
+                progress.snapTo(progress.value.coerceAtMost(1f))
                 progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 viewer.closed()
             }
@@ -541,9 +544,13 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             }
         }
 
-        if (phase == Phase.Open && !mini && (playback.ended || playback.error != null)) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
-        }
+        // Ended or failed, the video dims under what to do next, and lights again on replay
+        val endDim by animateFloatAsState(
+            if (phase == Phase.Open && !mini && (playback.ended || playback.error != null)) 0.35f else 0f,
+            Motion.settle(),
+            label = "endDim",
+        )
+        Box(modifier = Modifier.fillMaxSize().drawBehind { if (endDim > 0f) drawRect(Color.Black.copy(alpha = endDim)) })
 
         // Fingers on the video
         if (!shrunk) Box(
@@ -1095,12 +1102,9 @@ private fun BoxScope.VideoChrome(
                     onClickLabel = stringResource(id = R.string.video_speed),
                     modifier = Modifier.onGloballyPositioned { speedBounds = it.boundsInWindow() },
                 ) {
-                    Text(
-                        text = speedLabel(speed),
-                        color = Color.White,
-                        style = TimeStyle.copy(fontSize = 12.sp),
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                    )
+                    Refocus(targetState = speedLabel(speed), modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)) {
+                        Text(text = it, color = Color.White, style = TimeStyle.copy(fontSize = 12.sp))
+                    }
                 }
                 if (video.aspect in 0.01f..0.99f || landscape) {
                     ControlButton(
@@ -1235,7 +1239,7 @@ private fun ControlButton(icon: ImageVector, description: String, onClick: () ->
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(26.dp))
+        Refocus(targetState = icon) { Icon(imageVector = it, contentDescription = description, tint = Color.White, modifier = Modifier.size(26.dp)) }
     }
 }
 
@@ -1256,25 +1260,38 @@ private fun TopButton(icon: ImageVector, description: String, onClick: () -> Uni
 @Composable
 private fun SaveAction(saving: Float?, onClick: () -> Unit) {
     val description = stringResource(id = R.string.video_save)
+    // Download, waiting, the ring and back each refocus into the next; the ring fills smoothly
+    val face = when {
+        saving == null -> 0
+        saving < 0f -> 1
+        else -> 2
+    }
+    val filled by animateFloatAsState((saving ?: 0f).coerceAtLeast(0f), Motion.settle(Motion.ProgressThreshold), label = "saveRing")
     IconButton(onClick = onClick, enabled = saving == null) {
-        if (saving == null) {
-            Icon(imageVector = Symbols.Download, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
-        } else if (saving < 0f) {
-            WavyLoader(color = Color.White, modifier = Modifier.size(26.dp))
-        } else {
-            Canvas(modifier = Modifier.size(24.dp)) {
-                val stroke = 2.5.dp.toPx()
-                drawCircle(Color.White.copy(alpha = 0.3f), radius = size.minDimension / 2 - stroke / 2, style = Stroke(stroke))
-                drawArc(
-                    color = Color.White,
-                    startAngle = -90f,
-                    sweepAngle = 360f * saving,
-                    useCenter = false,
-                    style = Stroke(stroke, cap = StrokeCap.Round),
-                    topLeft = Offset(stroke / 2, stroke / 2),
-                    size = Size(size.width - stroke, size.height - stroke),
-                )
-            }
+        Refocus(targetState = face) { now -> SaveFace(now, description) { filled } }
+    }
+}
+
+/** One of the save button's faces: 0 the arrow, 1 waiting, 2 the ring at [filled]. */
+@Composable
+private fun SaveFace(face: Int, description: String, filled: () -> Float) {
+    if (face == 0) {
+        Icon(imageVector = Symbols.Download, contentDescription = description, tint = Color.White, modifier = Modifier.size(22.dp))
+    } else if (face == 1) {
+        WavyLoader(color = Color.White, modifier = Modifier.size(26.dp))
+    } else {
+        Canvas(modifier = Modifier.size(24.dp)) {
+            val stroke = 2.5.dp.toPx()
+            drawCircle(Color.White.copy(alpha = 0.3f), radius = size.minDimension / 2 - stroke / 2, style = Stroke(stroke))
+            drawArc(
+                color = Color.White,
+                startAngle = -90f,
+                sweepAngle = 360f * filled(),
+                useCenter = false,
+                style = Stroke(stroke, cap = StrokeCap.Round),
+                topLeft = Offset(stroke / 2, stroke / 2),
+                size = Size(size.width - stroke, size.height - stroke),
+            )
         }
     }
 }

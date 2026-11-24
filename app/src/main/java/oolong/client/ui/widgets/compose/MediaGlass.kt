@@ -112,7 +112,8 @@ fun MediaGlassIconButton(
     iconSize: Dp = 22.dp,
 ) {
     MediaGlassButton(onClick = onClick, modifier = modifier, size = size) {
-        Icon(imageVector = icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(iconSize))
+        // Another icon, as play turning to pause, refocuses on the glass
+        Refocus(targetState = icon) { Icon(imageVector = it, contentDescription = description, tint = Color.White, modifier = Modifier.size(iconSize)) }
     }
 }
 
