@@ -1,5 +1,6 @@
 package oolong.client.ui.page.thread
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,6 +33,7 @@ import oolong.client.model.Poll
 import oolong.client.model.PollOption
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
@@ -132,6 +136,9 @@ private fun ChoiceRow(option: PollOption, selected: Boolean, onClick: () -> Unit
 private fun ResultRow(option: PollOption, total: Long, chosen: Boolean) {
     val colors = ExtendedTheme.colors
     val share = if (total > 0) option.votes.toFloat() / total else 0f
+    // The bar grows to its share once the results show, as after voting
+    val grown = remember { Animatable(0f) }
+    LaunchedEffect(share) { grown.animateTo(share, Motion.settle()) }
     val fill = if (chosen) colors.accent.copy(alpha = 0.22f) else colors.textSecondary.copy(alpha = 0.12f)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +149,7 @@ private fun ResultRow(option: PollOption, total: Long, chosen: Boolean) {
             .background(colors.card, Corners.sm)
             .drawBehind {
                 val outline = Corners.sm.createOutline(size, layoutDirection, this)
-                clipRect(right = size.width * share) { drawOutline(outline, fill) }
+                clipRect(right = size.width * grown.value) { drawOutline(outline, fill) }
             }
             .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
     ) {
