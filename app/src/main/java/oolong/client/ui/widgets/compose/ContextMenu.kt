@@ -318,6 +318,12 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             launch { lift.animateTo(1f, if (reduced) Motion.fadeIn() else Motion.morph(Motion.ProgressThreshold)) }
             delay(PreviewLead)
         }
+        if (reduced) {
+            // Nothing grows out of the button: the menu fades in where it ends up
+            move.snapTo(1f)
+            grow.animateTo(1f, Motion.fadeIn())
+            return@LaunchedEffect
+        }
         if (fromButton) {
             launch { move.animateTo(1f, MoveSpring) }
             delay(GrowDelay)
@@ -333,7 +339,11 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         menus.closing(request.id)
         letGo = true
         closingJob = scope.launch {
-            if (fromButton) {
+            if (reduced) {
+                val sink = launch { lift.animateTo(0f, Motion.fadeOut()) }
+                grow.animateTo(0f, Motion.fadeOut())
+                sink.join()
+            } else if (fromButton) {
                 val shrink = launch { grow.animateTo(0f, ShrinkSpring) }
                 delay(GrowDelay)
                 move.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
@@ -464,8 +474,8 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         clip = true
                         shadowElevation = (if (colors.isNightMode) 32.dp else 24.dp).toPx() * g
                         // A button has no backing of its own, so the drop condenses out of nothing
-                        // around its icon, and melts back into it
-                        alpha = if (fromButton) (g / DropFadeIn).coerceIn(0f, 1f) else 1f
+                        // around its icon, and melts back into it; with motion reduced it only fades
+                        alpha = if (reduced) g else if (fromButton) (g / DropFadeIn).coerceIn(0f, 1f) else 1f
                         ambientShadowColor = MenuShadow
                         spotShadowColor = MenuShadow
                     }
@@ -485,6 +495,10 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         tint = request.iconTint.takeOrElse { colors.textSecondary },
                         modifier = Modifier.graphicsLayer {
                             val g = grow.value.coerceIn(0f, 1f)
+                            if (reduced) {
+                                alpha = 1f - g
+                                return@graphicsLayer
+                            }
                             val glass = geometry.glass
                             // Rides in the middle of the drop, and melts into the items as it grows
                             translationX = glass.center.x - anchor.center.x
@@ -516,9 +530,9 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
                         translationY = glass.top - bounds.top
                         shape = GlassClip(geometry, scale)
                         clip = true
-                        alpha = ((g - 0.2f) / 0.3f).coerceIn(0f, 1f) * lerp(1f, UnderAlpha, sub.value)
+                        alpha = (if (reduced) g.coerceIn(0f, 1f) else ((g - 0.2f) / 0.3f).coerceIn(0f, 1f)) * lerp(1f, UnderAlpha, sub.value)
                         // Under open children the menu stays in sight, blurred, as what they came from
-                        val blur = IconBlur.toPx() * (1f - ((g - 0.45f) / 0.4f).coerceIn(0f, 1f)) + UnderBlur.toPx() * sub.value
+                        val blur = (if (reduced) 0f else IconBlur.toPx() * (1f - ((g - 0.45f) / 0.4f).coerceIn(0f, 1f))) + (if (reduced) 0f else UnderBlur.toPx() * sub.value)
                         renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                     }
                     // Inside the scaling, so items are measured against the menu as laid out
@@ -652,14 +666,15 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             bounds = Rect(Offset(left, y), size)
             previewMeasurable.measure(Constraints.fixed(0, 0))
         }
-        val g = grow.value
+        // With motion reduced the glass is where it ends up from the start, only fading in
+        val g = if (reduced && grow.value > 0f) 1f else grow.value
         val glass: Rect
         val corner: Float
         if (fromButton) {
             // Starts as a round drop around the button's icon; out of something wide, such as a
             // setting's value and its arrows, as a capsule over all of it
             val start = if (anchor.isWide) anchor.size else Size(anchor.minDimension, anchor.minDimension)
-            val m = move.value
+            val m = if (reduced) 1f else move.value
             val center = Offset(lerp(anchor.center.x, bounds.center.x, m), lerp(anchor.center.y, bounds.center.y, m))
             val half = Offset(lerp(start.width, bounds.width, g), lerp(start.height, bounds.height, g)) / 2f
             glass = Rect(center - half, center + half)
@@ -931,12 +946,13 @@ private fun ChildMenu(
                     },
                     modifier = Modifier.place(0),
                 )
-                // The rest comes out of a blur as the glass reaches it
+                // The rest comes out of a blur as the glass reaches it; with motion reduced it only fades
+                val childBlurs = !LocalReduceMotion.current
                 Column(
                     modifier = Modifier.graphicsLayer {
                         val p = progress()
                         alpha = ((p - 0.1f) / 0.4f).coerceIn(0f, 1f)
-                        val blur = IconBlur.toPx() * (1f - ((p - 0.25f) / 0.5f).coerceIn(0f, 1f))
+                        val blur = if (childBlurs) IconBlur.toPx() * (1f - ((p - 0.25f) / 0.5f).coerceIn(0f, 1f)) else 0f
                         renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
                     },
                 ) {
@@ -1102,10 +1118,10 @@ private val Rect.isWide: Boolean get() = width > height * 1.5f
 private val GlassSlack = 16.dp
 
 /** The drop's way to the menu's place, which runs ahead of its growing: as quick as a dialog coming up. */
-private val MoveSpring = Motion.present(Motion.ProgressThreshold)
+private val MoveSpring get() = Motion.present(Motion.ProgressThreshold)
 
 /** The menu shrinking back into a drop, ahead of its way home: at the pace of a press. */
-private val ShrinkSpring = Motion.press(Motion.ProgressThreshold)
+private val ShrinkSpring get() = Motion.press(Motion.ProgressThreshold)
 
 /** How far growing trails moving, and moving home trails shrinking. */
 private const val GrowDelay = 40L

@@ -296,6 +296,9 @@ fun TiebaLiteTheme(
 
 @Composable
 private fun ThemedContent(extendedColors: ExtendedColors, content: @Composable () -> Unit) {
+    val reduceMotion = rememberReduceMotion()
+    // Read as springs are made, which happens in composition, so set before anything below is composed
+    Motion.bounceless = reduceMotion
     val colors = getColorPalette(extendedColors)
 
     // The system's text size, or the app's own in its place
@@ -311,7 +314,7 @@ private fun ThemedContent(extendedColors: ExtendedColors, content: @Composable (
         LocalExtendedColors provides extendedColors,
         LocalDensity provides density,
         LocalTextScale provides scale,
-        LocalReduceMotion provides rememberReduceMotion(),
+        LocalReduceMotion provides reduceMotion,
     ) {
         MaterialTheme(
             colors = colors,

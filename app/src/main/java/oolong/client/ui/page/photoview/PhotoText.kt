@@ -84,6 +84,7 @@ import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.components.automask.PictureText
 import oolong.client.components.automask.ReadLine
 import oolong.client.components.images.downloadImage
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -397,6 +398,8 @@ internal fun Modifier.selectionHandles(state: PhotoTextState, display: () -> Rec
  */
 @Composable
 internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
+    // With motion reduced the lines being read hold one brightness rather than pulsing
+    val reduced = LocalReduceMotion.current
     val pulse = rememberInfiniteTransition(label = "reading")
         .animateFloat(0.12f, 0.3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
     // The lines found light up outward from where it was pressed, as a ripple through the text
@@ -409,7 +412,7 @@ internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifi
         val k = rect.width / picture.width
         fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
         // The lines found: brighter while being read
-        val lit = if (state.reading) pulse.value else 0.12f
+        val lit = if (state.reading && !reduced) pulse.value else 0.12f
         val from = state.origin ?: Offset.Zero
         val reach = hypot(max(from.x, picture.width - from.x), max(from.y, picture.height - from.y)).coerceAtLeast(1f)
         for (line in state.found) {
@@ -507,8 +510,8 @@ internal fun PhotoTextBar(state: PhotoTextState, modifier: Modifier = Modifier) 
     }
     AnimatedVisibility(
         visible = phase != null,
-        enter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f),
-        exit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.92f),
+        enter = if (LocalReduceMotion.current) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f),
+        exit = if (LocalReduceMotion.current) fadeOut(Motion.fadeOut()) else fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.92f),
         modifier = modifier.navigationBarsPadding().padding(bottom = 24.dp),
     ) {
         // Kept while it leaves, so it fades out as it was
@@ -584,8 +587,8 @@ internal fun SelectionToolbar(state: PhotoTextState, display: () -> Rect, modifi
         }
         AnimatedVisibility(
             visible = state.selection != null && state.held == null,
-            enter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.9f),
-            exit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.9f),
+            enter = if (LocalReduceMotion.current) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.9f),
+            exit = if (LocalReduceMotion.current) fadeOut(Motion.fadeOut()) else fadeOut(Motion.fadeOut()) + scaleOut(Motion.settle(), targetScale = 0.9f),
             modifier = Modifier
                 .offset { place.value.round() }
                 .onSizeChanged { size = it },

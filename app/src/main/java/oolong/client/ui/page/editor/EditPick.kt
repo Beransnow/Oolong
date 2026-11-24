@@ -50,6 +50,7 @@ import oolong.client.components.automask.AutoMaskDownload
 import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.components.automask.CodeFinder
 import oolong.client.components.automask.PrivacyRules
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.widgets.compose.AuroraState
 import oolong.client.ui.widgets.compose.auroraColor
 import oolong.client.ui.widgets.compose.drawAuroraLight
@@ -248,6 +249,9 @@ internal class PickEffect(
     /** Where the finger last aimed, on screen, kept for the loupe to fade out at. */
     var lastAim by mutableStateOf<Offset?>(null)
 
+    /** With motion reduced the loupe shows where it rests at its full size, rather than growing out of the finger. */
+    var reduced = false
+
     /** The light over the picture, while it is looked over. */
     fun drawLooking(scope: DrawScope, state: EditorState) = with(scope) {
         val look = looking.value
@@ -371,8 +375,8 @@ internal class PickEffect(
             above.y + (beside.y - above.y) * s,
         )
         // Grows out of the finger and back into it
-        val center = at + (c - at) * h
-        val radius = r * (0.4f + 0.6f * h)
+        val center = if (reduced) c else at + (c - at) * h
+        val radius = if (reduced) r else r * (0.4f + 0.6f * h)
         val k = LoupeZoom * radius / r
         drawCircle(
             Brush.radialGradient(0.8f to Color.Black.copy(alpha = 0.35f * h), 1f to Color.Transparent, center = center, radius = radius * 1.25f),
@@ -448,6 +452,7 @@ internal class PickEffect(
 @Composable
 internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEffect {
     val effect = remember { PickEffect(AuroraState(spread = 0f), Animatable(0f), Animatable(1f), Animatable(0f), Animatable(0f)) }
+    effect.reduced = LocalReduceMotion.current
     val density = LocalDensity.current.density
     LaunchedEffect(state.aiming) {
         if (state.aiming) {

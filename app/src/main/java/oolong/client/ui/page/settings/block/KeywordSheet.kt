@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -129,10 +130,11 @@ fun KeywordSheet(text: String, onBlock: (List<String>) -> Unit, onDismiss: () ->
                     }
                 }
                 // Typing grows out of picking and back, the sheet settling to its new height
+                val reduced = LocalReduceMotion.current
                 AnimatedContent(
                     targetState = typing,
                     transitionSpec = {
-                        (fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.96f)) togetherWith
+                        (if (reduced) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.96f)) togetherWith
                             fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() }
                     },
                     label = "keywords",

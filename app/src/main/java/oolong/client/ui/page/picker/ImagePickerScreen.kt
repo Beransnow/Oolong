@@ -822,8 +822,9 @@ private fun PickedTray(
 ) {
     AnimatedVisibility(
         visible = state.selected.isNotEmpty(),
-        enter = slideInVertically(Motion.present()) { it * 2 } + fadeIn(Motion.fadeIn()),
-        exit = slideOutVertically(Motion.dismiss()) { it * 2 } + fadeOut(Motion.fadeOut()),
+        // Rises with the first pick; with motion reduced it only fades in where it stands
+        enter = if (LocalReduceMotion.current) fadeIn(Motion.fadeIn()) else slideInVertically(Motion.present()) { it * 2 } + fadeIn(Motion.fadeIn()),
+        exit = if (LocalReduceMotion.current) fadeOut(Motion.fadeOut()) else slideOutVertically(Motion.dismiss()) { it * 2 } + fadeOut(Motion.fadeOut()),
         modifier = modifier,
     ) {
         Row(

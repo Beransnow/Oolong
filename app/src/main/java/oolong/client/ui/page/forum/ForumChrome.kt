@@ -3,6 +3,7 @@ package oolong.client.ui.page.forum
 import android.graphics.Typeface
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
@@ -57,6 +58,7 @@ import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -286,8 +288,9 @@ private sealed interface JoinFace {
 /** How long an answer may take before the button shows it is waiting (design-system.md §7.2). */
 private const val SlowAnswerMillis = 300L
 
-private val StatEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.snap(), initialScale = 0.9f)
-private val StatExit = fadeOut(Motion.fadeOut())
+private val StatEnter: EnterTransition
+    @Composable get() = if (LocalReduceMotion.current) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.snap(), initialScale = 0.9f)
+private val StatExit get() = fadeOut(Motion.fadeOut())
 
 private val HeaderPadding = 16.dp
 private val NameGap = 14.dp

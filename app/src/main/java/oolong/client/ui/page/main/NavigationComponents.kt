@@ -101,6 +101,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -293,8 +294,8 @@ private fun NavItemIcon(
         if (navigationItem.badge) badgeShown = navigationItem.badgeText.orEmpty()
         AnimatedVisibility(
             visible = navigationItem.badge,
-            enter = BadgeEnter,
-            exit = BadgeExit,
+            enter = if (LocalReduceMotion.current) fadeIn(Motion.fadeIn()) else BadgeEnter,
+            exit = if (LocalReduceMotion.current) fadeOut(Motion.fadeOut()) else BadgeExit,
             modifier = Modifier.align(Alignment.TopEnd),
         ) {
             Box(
@@ -316,8 +317,8 @@ private fun NavItemIcon(
 private val AvatarRing = 1.5.dp
 
 private val BadgeSize = 14.dp
-private val BadgeEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.pop(), initialScale = 0.4f)
-private val BadgeExit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.4f)
+private val BadgeEnter get() = fadeIn(Motion.fadeIn()) + scaleIn(Motion.pop(), initialScale = 0.4f)
+private val BadgeExit get() = fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.4f)
 
 private val NavPillShape = SmoothCornerShape.Capsule
 private val NavPillPadding = 6.dp

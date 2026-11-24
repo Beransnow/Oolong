@@ -496,5 +496,5 @@ fun SearchBox(
 }
 
 /** A field's trailing button making room for itself as it fades in, and giving it back as it goes. */
-private val ButtonEnter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle())
-private val ButtonExit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss())
+private val ButtonEnter get() = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle())
+private val ButtonExit get() = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss())

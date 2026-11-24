@@ -65,6 +65,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.TextStyles
 import java.util.Locale
@@ -397,15 +398,17 @@ private fun Piece(piece: WordPiece, appearDelay: Long, appears: Boolean, modifie
         label = "piece text",
     )
     val lift by animateFloatAsState(if (piece.picked) PickedScale else 1f, Motion.snap(), label = "piece lift")
+    val reduced = LocalReduceMotion.current
     Box(
         modifier = modifier
             .graphicsLayer {
                 val a = appear.value
-                val scale = lerp(AppearScale, 1f, a) * lift
+                // With motion reduced a word only fades in, without growing out of a blur
+                val scale = (if (reduced) 1f else lerp(AppearScale, 1f, a)) * lift
                 scaleX = scale
                 scaleY = scale
                 alpha = (a / 0.3f).coerceIn(0f, 1f)
-                val blur = AppearBlur.toPx() * (1f - a).coerceIn(0f, 1f)
+                val blur = if (reduced) 0f else AppearBlur.toPx() * (1f - a).coerceIn(0f, 1f)
                 renderEffect = if (blur > 0.5f) BlurEffect(blur, blur) else null
             }
             // Every chip alike, whatever it holds: as tall, at least as wide, and as round

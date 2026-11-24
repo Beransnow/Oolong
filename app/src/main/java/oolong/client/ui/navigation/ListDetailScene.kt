@@ -328,7 +328,7 @@ private val PaneInsets: WindowInsets
     @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 private val DividerTouchWidth = 16.dp
 private val GripShape = Corners.full
-private val DividerSpring = Motion.snap(Dp.VisibilityThreshold)
+private val DividerSpring get() = Motion.snap(Dp.VisibilityThreshold)
 
 /** How far ahead, in seconds of its speed, a flicked divider is judged by. */
 private const val FlickLookAhead = 0.15f

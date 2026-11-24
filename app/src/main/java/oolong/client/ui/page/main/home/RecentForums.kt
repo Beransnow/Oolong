@@ -52,6 +52,7 @@ import oolong.client.R
 import oolong.client.model.VisitedForum
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
@@ -183,6 +184,8 @@ fun RecentForums(
     columns: Int,
     onOpen: (VisitedForum) -> Unit,
 ) {
+    // With motion reduced the rows only fade in as they are revealed, without growing out of a blur
+    val reduced = LocalReduceMotion.current
     val rows = visited.take(columns * MaxRows).chunked(columns)
     expansion.canExpand = rows.size > 1
     val progress = expansion.progress
@@ -236,13 +239,13 @@ fun RecentForums(
                         modifier = Modifier
                             .graphicsLayer {
                                 alpha = reveal
-                                val scale = lerp(0.92f, 1f, reveal)
+                                val scale = if (reduced) 1f else lerp(0.92f, 1f, reveal)
                                 scaleX = scale
                                 scaleY = scale
                                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
                             }
                             .then(
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && reveal < 1f) {
+                                if (!reduced && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && reveal < 1f) {
                                     Modifier.blur(((1f - reveal) * 6f).dp, BlurredEdgeTreatment.Unbounded)
                                 } else {
                                     Modifier

@@ -84,6 +84,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.LocalPressedByGlass
@@ -179,6 +180,8 @@ fun ReplyChrome(
     val composing = surface == ChromeSurface.Composer
     val menuOpen = surface == ChromeSurface.Menu
     val full = composing && state.fullScreen
+    // With motion reduced, what the glass swallows and brings out only fades, without swelling or blurring
+    val reduceMotion = LocalReduceMotion.current
 
     MyBackHandler(enabled = surface != ChromeSurface.None) {
         if (full) onExitFullScreen() else onDismiss()
@@ -388,7 +391,7 @@ fun ReplyChrome(
                                 if (open.value > 0f) {
                                     alpha = 0f
                                 } else {
-                                    dissolve(dissolveOf(grow.value), TransformOrigin(0f, 0.5f))
+                                    dissolve(dissolveOf(grow.value), TransformOrigin(0f, 0.5f), reduceMotion)
                                 }
                             }
                             .padding(start = 10.dp, end = 16.dp),
@@ -424,7 +427,7 @@ fun ReplyChrome(
                                 if (grow.value > 0f || move.value > 0f) {
                                     alpha = 0f
                                 } else {
-                                    dissolve(dissolveOf(open.value), TransformOrigin(1f, 0.5f))
+                                    dissolve(dissolveOf(open.value), TransformOrigin(1f, 0.5f), reduceMotion)
                                 }
                             }
                             .fillMaxHeight()
@@ -462,7 +465,7 @@ fun ReplyChrome(
                             val glass = replyGlass()
                             translationX = glass.left
                             translationY = glass.bottom - capsule.height
-                            swallowed(open.value, TransformOrigin(0f, 1f))
+                            swallowed(open.value, TransformOrigin(0f, 1f), reduceMotion)
                         },
                     ) {
                         Row(
@@ -616,7 +619,7 @@ fun ReplyChrome(
                             bottomRadius = glassBottom.toPx() / scale,
                         )
                         clip = true
-                        condensed(open.value)
+                        condensed(open.value, reduceMotion)
                     }
                     // Full screen, its own ground: the glass is placed from where the composer was
                     // a frame before, which as the keyboard slides would leave its bottom bare
@@ -639,7 +642,7 @@ fun ReplyChrome(
                         val glass = menuGlass()
                         translationX = glass.right - capsule.width
                         translationY = glass.bottom - capsule.height
-                        swallowed(grow.value, TransformOrigin(1f, 1f))
+                        swallowed(grow.value, TransformOrigin(1f, 1f), reduceMotion)
                     },
                 ) {
                     Row(
@@ -687,7 +690,7 @@ fun ReplyChrome(
                             bottomRadius = radius,
                         )
                         clip = true
-                        condensed(grow.value)
+                        condensed(grow.value, reduceMotion)
                     },
             ) {
                 menu()
@@ -746,10 +749,10 @@ fun ReplyChrome(
                     modifier = Modifier.graphicsLayer {
                         val s = shown.value
                         alpha = (s / 0.6f).coerceIn(0f, 1f)
-                        val scale = lerp(0.94f, 1f, s)
+                        val scale = if (reduceMotion) 1f else lerp(0.94f, 1f, s)
                         scaleX = scale
                         scaleY = scale
-                        renderEffect = blurEffect(PanelBlur.toPx() * (1f - s).coerceIn(0f, 1f))
+                        if (!reduceMotion) renderEffect = blurEffect(PanelBlur.toPx() * (1f - s).coerceIn(0f, 1f))
                     },
                 ) {
                     panel()
@@ -793,10 +796,11 @@ private val DissolveBlur = 6.dp
 /** How much of a surface's growth it takes for the other capsule to dissolve. */
 private fun dissolveOf(progress: Float) = (progress * 1.4f).coerceIn(0f, 1f)
 
-/** The other capsule, dissolving in place [by] 0 to 1. */
-private fun GraphicsLayerScope.dissolve(by: Float, origin: TransformOrigin) {
+/** The other capsule, dissolving in place [by] 0 to 1; with motion [reduced], only fading. */
+private fun GraphicsLayerScope.dissolve(by: Float, origin: TransformOrigin, reduced: Boolean) {
     if (by == 0f) return
     alpha = 1f - by * 0.999f
+    if (reduced) return
     val scale = 1f - 0.25f * by
     scaleX = scale
     scaleY = scale
@@ -804,9 +808,13 @@ private fun GraphicsLayerScope.dissolve(by: Float, origin: TransformOrigin) {
     renderEffect = blurEffect(DissolveBlur.toPx() * by)
 }
 
-/** What a capsule showed, as its glass grows [progress] of the way: swelling, blurring away. */
-private fun GraphicsLayerScope.swallowed(progress: Float, origin: TransformOrigin) {
+/** What a capsule showed, as its glass grows [progress] of the way: swelling, blurring away; with motion [reduced], only fading. */
+private fun GraphicsLayerScope.swallowed(progress: Float, origin: TransformOrigin, reduced: Boolean) {
     val fade = ((progress - 0.05f) / 0.3f).coerceIn(0f, 1f)
+    if (reduced) {
+        alpha = 1f - fade
+        return
+    }
     val scale = lerp(1f, 1.5f, progress.coerceIn(0f, 1f))
     scaleX = scale
     scaleY = scale
@@ -815,9 +823,10 @@ private fun GraphicsLayerScope.swallowed(progress: Float, origin: TransformOrigi
     renderEffect = blurEffect(SwallowBlur.toPx() * fade)
 }
 
-/** A surface's content as its glass grows [progress] of the way: in after a fifth, sharp near the end. */
-private fun GraphicsLayerScope.condensed(progress: Float) {
+/** A surface's content as its glass grows [progress] of the way: in after a fifth, sharp near the end; with motion [reduced], only fading in. */
+private fun GraphicsLayerScope.condensed(progress: Float, reduced: Boolean) {
     alpha = ((progress - 0.2f) / 0.3f).coerceIn(0f, 1f)
+    if (reduced) return
     renderEffect = blurEffect(SwallowBlur.toPx() * (1f - ((progress - 0.45f) / 0.4f).coerceIn(0f, 1f)))
 }
 

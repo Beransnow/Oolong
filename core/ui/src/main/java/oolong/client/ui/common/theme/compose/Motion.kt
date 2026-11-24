@@ -59,6 +59,14 @@ object Motion {
      * of the spring off visibly.
      */
     const val ProgressThreshold = 0.001f
+
+    /**
+     * With motion reduced, every spring settles without a bounce (design-system.md §7.2, as HIG's
+     * "tightening animation springs to reduce bounce effects"); each keeps its pace. Set by the
+     * app's theme as the setting changes, and read as each spring is made.
+     */
+    @Volatile
+    var bounceless: Boolean = false
 }
 
 /**
@@ -70,5 +78,6 @@ val LocalReduceMotion = staticCompositionLocalOf { false }
 
 private fun <T> motionSpring(damping: Float, response: Float, visibilityThreshold: T?): SpringSpec<T> {
     val omega = 2 * PI.toFloat() / response
-    return spring(dampingRatio = damping, stiffness = omega * omega, visibilityThreshold = visibilityThreshold)
+    val ratio = if (Motion.bounceless) maxOf(damping, 1f) else damping
+    return spring(dampingRatio = ratio, stiffness = omega * omega, visibilityThreshold = visibilityThreshold)
 }

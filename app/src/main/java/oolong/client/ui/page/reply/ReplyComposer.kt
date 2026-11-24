@@ -70,6 +70,7 @@ import kotlinx.coroutines.flow.collectLatest
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
@@ -512,6 +513,8 @@ private fun PanelButton(shown: Boolean, onClick: () -> Unit) {
     val colors = ExtendedTheme.colors
     val turn = remember { Animatable(if (shown) 1f else 0f, Motion.ProgressThreshold) }
     LaunchedEffect(shown) { turn.animateTo(if (shown) 1f else 0f, Motion.snap(Motion.ProgressThreshold)) }
+    // With motion reduced the two icons only cross-fade
+    val reduced = LocalReduceMotion.current
     Box(
         modifier = Modifier
             .size(38.dp)
@@ -528,10 +531,12 @@ private fun PanelButton(shown: Boolean, onClick: () -> Unit) {
                 .graphicsLayer {
                     val t = turn.value.coerceIn(0f, 1f)
                     alpha = 1f - t
-                    val scale = 1f - 0.3f * t
-                    scaleX = scale
-                    scaleY = scale
-                    renderEffect = blurEffect(IconBlur.toPx() * t)
+                    if (!reduced) {
+                        val scale = 1f - 0.3f * t
+                        scaleX = scale
+                        scaleY = scale
+                        renderEffect = blurEffect(IconBlur.toPx() * t)
+                    }
                 },
         )
         Icon(
@@ -543,10 +548,12 @@ private fun PanelButton(shown: Boolean, onClick: () -> Unit) {
                 .graphicsLayer {
                     val t = turn.value.coerceIn(0f, 1f)
                     alpha = t
-                    val scale = 0.7f + 0.3f * t
-                    scaleX = scale
-                    scaleY = scale
-                    renderEffect = blurEffect(IconBlur.toPx() * (1f - t))
+                    if (!reduced) {
+                        val scale = 0.7f + 0.3f * t
+                        scaleX = scale
+                        scaleY = scale
+                        renderEffect = blurEffect(IconBlur.toPx() * (1f - t))
+                    }
                 },
         )
     }

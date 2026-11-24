@@ -52,6 +52,7 @@ import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.delay
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.scrim
 import oolong.client.ui.widgets.compose.LocalLargeTitle
@@ -176,10 +177,14 @@ private fun DialogFullScreen(
                             onTap = handleBackPress
                         )
                 )
+                // With motion reduced a dialog only fades where it stands; drawers from the sides
+                // still slide, as they say where they come from
+                val reduced = LocalReduceMotion.current
+                val inPlace = reduced && properties.direction != DirectionState.LEFT && properties.direction != DirectionState.RIGHT
                 AnimatedVisibility(
                     modifier = Modifier.pointerInput(Unit) {},
                     visible = isAnimateLayout,
-                    enter = when (properties.direction) {
+                    enter = if (inPlace) fadeIn(Motion.fadeIn()) else when (properties.direction) {
                         DirectionState.TOP -> fadeIn(Motion.fadeIn()) + slideInVertically(animationSpec = Motion.present(), initialOffsetY = { -it })
                         DirectionState.LEFT -> fadeIn(Motion.fadeIn()) + slideInHorizontally(animationSpec = Motion.present(), initialOffsetX = { -it })
                         DirectionState.RIGHT -> fadeIn(Motion.fadeIn()) + slideInHorizontally(animationSpec = Motion.present(), initialOffsetX = { it })
@@ -188,7 +193,7 @@ private fun DialogFullScreen(
                         // One at the bottom rises from the bottom edge
                         else -> fadeIn(Motion.fadeIn()) + slideInVertically(Motion.present()) { it * 2 / 5 }
                     },
-                    exit = when (properties.direction) {
+                    exit = if (inPlace) fadeOut(Motion.fadeOut()) else when (properties.direction) {
                         DirectionState.TOP -> fadeOut(Motion.fadeOut()) + slideOutVertically(animationSpec = Motion.dismiss(), targetOffsetY = { -it })
                         DirectionState.LEFT -> fadeOut(Motion.fadeOut()) + slideOutHorizontally(animationSpec = Motion.dismiss(), targetOffsetX = { -it })
                         DirectionState.RIGHT -> fadeOut(Motion.fadeOut()) + slideOutHorizontally(animationSpec = Motion.dismiss(), targetOffsetX = { it })
@@ -197,7 +202,7 @@ private fun DialogFullScreen(
                     }
                 ) {
                     // A centred dialog is blurred while it appears and leaves, sharp once in place
-                    val condenses = properties.direction == DirectionState.CENTER
+                    val condenses = properties.direction == DirectionState.CENTER && !reduced
                     val blur by transition.animateDp(
                         transitionSpec = { if (targetState == EnterExitState.Visible) Motion.settle() else Motion.dismiss() },
                         label = "blur",

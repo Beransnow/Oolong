@@ -1,6 +1,8 @@
 package oolong.client.ui.page.history
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
@@ -52,6 +54,7 @@ import oolong.client.dataStore
 import oolong.client.model.HistoryEntry
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
@@ -323,7 +326,13 @@ private fun DeleteSelectedButton(visible: Boolean, count: Int, onClick: () -> Un
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         // Far enough down to clear the navigation bar and the margin under it
-        AnimatedVisibility(visible = visible, enter = slideInVertically(Motion.present()) { it * 3 }, exit = slideOutVertically(Motion.dismiss()) { it * 3 }) {
+        // With motion reduced it only fades in where it stands
+        val reduced = LocalReduceMotion.current
+        AnimatedVisibility(
+            visible = visible,
+            enter = if (reduced) fadeIn(Motion.fadeIn()) else slideInVertically(Motion.present()) { it * 3 },
+            exit = if (reduced) fadeOut(Motion.fadeOut()) else slideOutVertically(Motion.dismiss()) { it * 3 },
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
