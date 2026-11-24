@@ -90,6 +90,7 @@ import com.github.panpf.zoomimage.zoom.Edge
 import com.github.panpf.zoomimage.zoom.ReadMode
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -165,6 +166,9 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         var flyingCrops by remember { mutableStateOf(aspect > 0f) }
         // How far a drag down has carried the picture, and how much of the black is left
         var drag by remember { mutableStateOf(Offset.Zero) }
+
+        /** The drag springing back into place, which a new drag stops. */
+        var rebound by remember { mutableStateOf<Job?>(null) }
         var dragging by remember { mutableStateOf(false) }
         var closingFade by remember { mutableStateOf(1f) }
         val dragScale = 1f - (drag.y.coerceAtLeast(0f) / container.height).coerceIn(0f, 1f) * 0.45f
@@ -231,7 +235,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             phase = Phase.Closing
             val flight = near?.let { flightSpeed(far, it, velocity) } ?: 0f
             scope.launch {
-                progress.snapTo(1f)
+                // Closed while still opening, it turns back from where it got to
+                progress.snapTo(progress.value.coerceAtMost(1f))
                 progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold), initialVelocity = flight)
                 viewer.closed()
             }
@@ -274,13 +279,17 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                             if (phase != Phase.Open || text.active || !zoomStates[pagerState.currentPage].atRest()) return@awaitEachGesture
                             val tracker = VelocityTracker()
                             var total = Offset.Zero
-                            var active = false
+                            // Caught on its way back, the picture stays under the finger from where
+                            // it is, and goes back again when let go
+                            val caught = rebound?.isActive == true
+                            rebound?.cancel()
+                            var active = caught
                             while (true) {
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
                                 // A second finger is a pinch, for the picture to zoom
                                 if (event.changes.count { it.pressed } > 1) {
                                     if (active) {
-                                        scope.launch {
+                                        rebound = scope.launch {
                                             release(drag, Offset.Zero) { drag = it }
                                             dragging = false
                                         }
@@ -292,8 +301,9 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                                     if (active) {
                                         val velocity = tracker.calculateVelocity()
                                         val dismiss = drag.y > 96.dp.toPx() || velocity.y > 900.dp.toPx()
-                                        if (dismiss) onClose(Velocity(velocity.x, velocity.y)) else scope.launch {
-                                            release(drag, Offset.Zero) { drag = it }
+                                        // Back into place at the speed it was let go with
+                                        if (dismiss) onClose(Velocity(velocity.x, velocity.y)) else rebound = scope.launch {
+                                            release(drag, Offset.Zero, Offset(velocity.x, velocity.y)) { drag = it }
                                             dragging = false
                                         }
                                     }
@@ -609,8 +619,8 @@ private fun CoilZoomState?.atRest(edge: Boolean = true): Boolean {
     return !edge || zoomable.scrollEdge.vertical.let { it == Edge.START || it == Edge.BOTH }
 }
 
-private suspend fun release(from: Offset, to: Offset, onFrame: (Offset) -> Unit) {
-    Animatable(from, Offset.VectorConverter).animateTo(to, Motion.settle()) {
+private suspend fun release(from: Offset, to: Offset, velocity: Offset = Offset.Zero, onFrame: (Offset) -> Unit) {
+    Animatable(from, Offset.VectorConverter).animateTo(to, Motion.settle(), initialVelocity = velocity) {
         onFrame(value)
     }
 }
