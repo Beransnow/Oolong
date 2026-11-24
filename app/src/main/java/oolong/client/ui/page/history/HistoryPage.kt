@@ -1,6 +1,7 @@
 package oolong.client.ui.page.history
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -339,7 +340,9 @@ private fun DeleteSelectedButton(visible: Boolean, count: Int, onClick: () -> Un
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
-                    .floatingGlass(Corners.full, pressable = count > 0)
+                    // Always answering presses, so its glass keeps the same modifiers while the count
+                    // comes and goes; with nothing chosen the click is off and no press comes
+                    .floatingGlass(Corners.full, pressable = true)
                     .clickable(
                         interactionSource = interactionSource,
                         // The glass answers the press itself
@@ -349,7 +352,7 @@ private fun DeleteSelectedButton(visible: Boolean, count: Int, onClick: () -> Un
                         onClick = onClick,
                     ),
             ) {
-                val color = if (count > 0) MaterialTheme.colors.error else ExtendedTheme.colors.textDisabled
+                val color by animateColorAsState(if (count > 0) MaterialTheme.colors.error else ExtendedTheme.colors.textDisabled, Motion.settle(), label = "deleteColor")
                 Icon(imageVector = Symbols.Delete, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
