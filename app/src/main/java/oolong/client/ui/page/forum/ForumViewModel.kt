@@ -68,6 +68,8 @@ data class ForumState(
     val goodClassId: Int = 0,
     val lists: ImmutableMap<ForumTab, PagerState<ForumThreadItem>> = persistentMapOf(),
     val loggedIn: Boolean = false,
+    /** Whether following or signing in is on its way to the server. */
+    val joining: Boolean = false,
 ) {
     val tabs: ImmutableList<ForumTab> get() = forum?.tabs ?: ForumTab.Fixed
 
@@ -100,6 +102,7 @@ class ForumViewModel @AssistedInject constructor(
     private val selection = MutableStateFlow(Selection())
     private val pagers = MutableStateFlow<Map<ForumTab, Pager<ForumCursor, ThreadSummary>>>(emptyMap())
     private val actions = Actions(viewModelScope)
+    private val joining = MutableStateFlow(false)
 
     private data class Selection(
         val tab: ForumTab = ForumTab.Latest,
@@ -120,7 +123,7 @@ class ForumViewModel @AssistedInject constructor(
     }
 
     val state: StateFlow<ForumState> =
-        combine(forum, selection, listStates, blockRuleSource.rules) { forum, selection, lists, rules ->
+        combine(forum, selection, listStates, blockRuleSource.rules, joining) { forum, selection, lists, rules, joining ->
             ForumState(
                 forumName = forumName,
                 forum = forum,
@@ -129,6 +132,7 @@ class ForumViewModel @AssistedInject constructor(
                 goodClassId = selection.goodClassId,
                 lists = lists.mapValues { (tab, list) -> list.withItems(items(tab, list.items, rules)) }.toImmutableMap(),
                 loggedIn = sessionProvider.currentSession() != null,
+                joining = joining,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumState(forumName))
 
@@ -170,7 +174,9 @@ class ForumViewModel @AssistedInject constructor(
     }
 
     private fun like(forum: ForumDetail) = actions.launch("like") {
+        joining.value = true
         runCatching { repository.like(forum, tbs) }
+            .also { joining.value = false }
             .onSuccess {
                 this@ForumViewModel.forum.value = it
                 messages.show(R.string.toast_like_success, it.memberCount.toString())
@@ -179,7 +185,9 @@ class ForumViewModel @AssistedInject constructor(
     }
 
     private fun signIn(forum: ForumDetail) = actions.launch("sign-in") {
+        joining.value = true
         runCatching { repository.signIn(forum, tbs) }
+            .also { joining.value = false }
             .onSuccess {
                 this@ForumViewModel.forum.value = it.forum
                 messages.show(R.string.toast_sign_success, it.bonusPoints.toString(), it.rank.toString())

@@ -4,8 +4,10 @@ import android.graphics.Typeface
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +30,11 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.delay
 import oolong.client.R
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumSort
@@ -64,7 +71,9 @@ import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MenuIconButton
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TabClickMenu
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
@@ -93,6 +102,7 @@ internal object ForumNameAnchor
 internal fun ForumHeader(
     forum: ForumDetail,
     loggedIn: Boolean,
+    joining: Boolean,
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,7 +140,7 @@ internal fun ForumHeader(
             }
         }
         Spacer(modifier = Modifier.height(DetailsGap))
-        ForumHeaderDetails(forum, loggedIn, onEvent)
+        ForumHeaderDetails(forum, loggedIn, joining, onEvent)
     }
 }
 
@@ -179,6 +189,7 @@ internal fun ForumBarTitle(forum: ForumDetail, onEvent: (ForumEvent) -> Unit) {
 private fun ForumHeaderDetails(
     forum: ForumDetail,
     loggedIn: Boolean,
+    joining: Boolean,
     onEvent: (ForumEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -189,12 +200,15 @@ private fun ForumHeaderDetails(
             ForumStat(forum.memberCount.getShortNumString(), stringResource(id = R.string.forum_stat_members))
             Spacer(modifier = Modifier.width(24.dp))
             ForumStat(forum.threadCount.getShortNumString(), stringResource(id = R.string.forum_stat_threads))
-            if (!forum.liked) {
-                Spacer(modifier = Modifier.width(24.dp))
-                ForumStat(forum.todaySignCount.getShortNumString(), stringResource(id = R.string.forum_stat_signed_today))
+            // Following swaps today's sign-ins for the viewer's level; both fade where they are
+            AnimatedVisibility(visible = !forum.liked, enter = StatEnter, exit = StatExit) {
+                Row {
+                    Spacer(modifier = Modifier.width(24.dp))
+                    ForumStat(forum.todaySignCount.getShortNumString(), stringResource(id = R.string.forum_stat_signed_today))
+                }
             }
             Spacer(modifier = Modifier.weight(1f))
-            AnimatedVisibility(visible = forum.liked) {
+            AnimatedVisibility(visible = forum.liked, enter = StatEnter, exit = StatExit) {
                 ForumLevel(forum, accent)
             }
         }
@@ -202,39 +216,78 @@ private fun ForumHeaderDetails(
             Spacer(modifier = Modifier.height(SectionGap))
             val done = forum.liked && forum.signedIn
             val interaction = remember { MutableInteractionSource() }
-            Row(
+            val background by animateColorAsState(
+                if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent,
+                Motion.snap(),
+                label = "joinButton",
+            )
+            val content by animateColorAsState(if (done) accent else onPageAccent(), Motion.snap(), label = "joinButtonContent")
+            // Only a slow answer shows the loader, so a quick one goes straight to the result
+            var slow by remember { mutableStateOf(false) }
+            LaunchedEffect(joining) {
+                slow = false
+                if (joining) {
+                    delay(SlowAnswerMillis)
+                    slow = true
+                }
+            }
+            val face = when {
+                joining && slow -> JoinFace.Busy
+                !forum.liked -> JoinFace.Follow
+                done -> JoinFace.Signed(forum.signedDays)
+                else -> JoinFace.SignIn
+            }
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ButtonHeight)
                     .pressScale(interaction)
-                    .background(if (done) accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f) else accent, SmoothCornerShape.Capsule)
-                    .clickable(interactionSource = interaction, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = !done) { onEvent(ForumEvent.FollowOrSignIn) },
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+                    .background(background, SmoothCornerShape.Capsule)
+                    .clickable(interactionSource = interaction, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), enabled = !done && !joining) { onEvent(ForumEvent.FollowOrSignIn) },
+                contentAlignment = Alignment.Center,
             ) {
-                if (done) {
-                    Icon(
-                        imageVector = Symbols.Check,
-                        contentDescription = null,
-                        tint = accent,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+                Refocus(targetState = face) { shown ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        when (shown) {
+                            JoinFace.Busy -> WavyLoader(color = content)
+                            is JoinFace.Signed -> {
+                                Icon(
+                                    imageVector = Symbols.Check,
+                                    contentDescription = null,
+                                    tint = content,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                JoinText(pluralStringResource(id = R.plurals.button_signed_in, count = shown.days, shown.days), content)
+                            }
+                            JoinFace.Follow -> JoinText(stringResource(id = R.string.button_follow), content)
+                            JoinFace.SignIn -> JoinText(stringResource(id = R.string.button_sign_in), content)
+                        }
+                    }
                 }
-                Text(
-                    text = when {
-                        !forum.liked -> stringResource(id = R.string.button_follow)
-                        done -> pluralStringResource(id = R.plurals.button_signed_in, count = forum.signedDays, forum.signedDays)
-                        else -> stringResource(id = R.string.button_sign_in)
-                    },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (done) accent else onPageAccent(),
-                )
             }
         }
     }
 }
+
+@Composable
+private fun JoinText(text: String, color: Color) {
+    Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = color)
+}
+
+/** What the follow and sign-in button shows. */
+private sealed interface JoinFace {
+    data object Follow : JoinFace
+    data object SignIn : JoinFace
+    data class Signed(val days: Int) : JoinFace
+    data object Busy : JoinFace
+}
+
+/** How long an answer may take before the button shows it is waiting (design-system.md §7.2). */
+private const val SlowAnswerMillis = 300L
+
+private val StatEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.snap(), initialScale = 0.9f)
+private val StatExit = fadeOut(Motion.fadeOut())
 
 private val HeaderPadding = 16.dp
 private val NameGap = 14.dp

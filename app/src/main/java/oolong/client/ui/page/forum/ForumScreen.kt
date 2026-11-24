@@ -186,7 +186,7 @@ fun ForumScreen(
                         endPull = if (currentList.hasMore) EndPull.None else EndPull.Tease,
                     ) { content() }
                 },
-                header = { ForumHeader(forum = forum, loggedIn = state.loggedIn, onEvent = onEvent, modifier = Modifier.fillMaxWidth()) },
+                header = { ForumHeader(forum = forum, loggedIn = state.loggedIn, joining = state.joining, onEvent = onEvent, modifier = Modifier.fillMaxWidth()) },
             ) { page ->
                 val tab = tabs[page]
                 val list = state.list(tab)
