@@ -34,8 +34,10 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -146,7 +148,8 @@ fun Modifier.placeholder(
 
     val cache = remember { OutlineCache() }
 
-    var highlightProgress by remember { mutableFloatStateOf(0f) }
+    // The shine's progress, read as it draws: read here, every block would compose again on every frame
+    val highlightState = remember { mutableStateOf<State<Float>?>(null) }
 
     val transitionState = remember { MutableTransitionState(visible) }.apply {
         targetState = visible
@@ -168,12 +171,14 @@ fun Modifier.placeholder(
     val animationSpec = highlight?.animationSpec?.takeUnless { LocalReduceMotion.current }
     if (animationSpec != null && (visible || placeholderAlpha >= 0.01f)) {
         val infiniteTransition = rememberInfiniteTransition(label = "placeholder_highlight")
-        highlightProgress = infiniteTransition.animateFloat(
+        highlightState.value = infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = animationSpec,
             label = "placeholder_highlight_progress",
-        ).value
+        )
+    } else {
+        highlightState.value = null
     }
 
     val paint = remember { Paint() }
@@ -193,10 +198,10 @@ fun Modifier.placeholder(
             if (placeholderAlpha in 0.01f..0.99f) {
                 paint.alpha = placeholderAlpha
                 withLayer(paint) {
-                    drawPlaceholder(placeholderShape, placeholderColor, highlight, highlightProgress, cache)
+                    drawPlaceholder(placeholderShape, placeholderColor, highlight, highlightState.value?.value ?: 0f, cache)
                 }
             } else if (placeholderAlpha >= 0.99f) {
-                drawPlaceholder(placeholderShape, placeholderColor, highlight, highlightProgress, cache)
+                drawPlaceholder(placeholderShape, placeholderColor, highlight, highlightState.value?.value ?: 0f, cache)
             }
         }
     }
