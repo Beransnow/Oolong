@@ -15,6 +15,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -180,8 +181,10 @@ private fun LoginRing(phase: LoginPhase) {
             avatarIn.snapTo(0f)
         }
     }
-    LaunchedEffect(close.value >= AvatarAfter) {
-        if (close.value >= AvatarAfter) avatarIn.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
+    // Read through a derived state, so the ring isn't composed again on every frame it closes
+    val closedEnough by remember { derivedStateOf { close.value >= AvatarAfter } }
+    LaunchedEffect(closedEnough) {
+        if (closedEnough) avatarIn.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
     }
     val color = ExtendedTheme.colors.accent
     Box(
