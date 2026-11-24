@@ -10,11 +10,7 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -400,8 +396,18 @@ internal fun Modifier.selectionHandles(state: PhotoTextState, display: () -> Rec
 internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifier: Modifier = Modifier) {
     // With motion reduced the lines being read hold one brightness rather than pulsing
     val reduced = LocalReduceMotion.current
-    val pulse = rememberInfiniteTransition(label = "reading")
-        .animateFloat(0.12f, 0.3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
+    // Pulsing only while reading, and easing back to rest when done rather than dropping to it
+    val pulse = remember { Animatable(RestingLight) }
+    LaunchedEffect(state.reading, reduced) {
+        if (state.reading && !reduced) {
+            while (true) {
+                pulse.animateTo(ReadingLight, tween(PulseMillis))
+                pulse.animateTo(RestingLight, tween(PulseMillis))
+            }
+        } else {
+            pulse.animateTo(RestingLight, Motion.settle())
+        }
+    }
     // The lines found light up outward from where it was pressed, as a ripple through the text
     val sweep = remember(state.found) { Animatable(0f) }
     LaunchedEffect(state.found) { if (state.found.isNotEmpty()) sweep.animateTo(1f, tween(SweepMillis)) }
@@ -412,7 +418,7 @@ internal fun PhotoTextOverlay(state: PhotoTextState, display: () -> Rect, modifi
         val k = rect.width / picture.width
         fun box(r: RectF) = Rect(rect.left + r.left * k, rect.top + r.top * k, rect.left + r.right * k, rect.top + r.bottom * k)
         // The lines found: brighter while being read
-        val lit = if (state.reading && !reduced) pulse.value else 0.12f
+        val lit = pulse.value
         val from = state.origin ?: Offset.Zero
         val reach = hypot(max(from.x, picture.width - from.x), max(from.y, picture.height - from.y)).coerceAtLeast(1f)
         for (line in state.found) {
@@ -634,3 +640,8 @@ private fun Action(text: String, onClick: () -> Unit) {
 internal fun View.reject() {
     performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS)
 }
+
+/** How bright the lines found are at rest, and at the top of a pulse while being read. */
+private const val RestingLight = 0.12f
+private const val ReadingLight = 0.3f
+private const val PulseMillis = 700
