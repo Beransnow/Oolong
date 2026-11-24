@@ -137,7 +137,8 @@ fun ThreadStoreScreen(
             isLoading = isRefreshing,
             modifier = Modifier.fillMaxSize(),
             onReload = onRefresh,
-            errorScreen = { ErrorScreen(error = error) }
+            // Below the bar, as the list would be
+            errorScreen = { ErrorScreen(error = error, modifier = Modifier.padding(contentPaddings)) },
         ) {
             val lazyListState = rememberLazyListState()
 
