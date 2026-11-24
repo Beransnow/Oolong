@@ -517,8 +517,9 @@ private class LandingState {
         fill.animateTo(1f, tween(FillMillis))
         result.await().also { ok ->
             if (!ok) {
+                // Failed, the importing line fades away with the fill rather than vanishing
+                launch { progress.animateTo(0f, Leave) }
                 fill.animateTo(0f, Leave)
-                progress.snapTo(0f)
             }
         }
     }
