@@ -229,6 +229,10 @@ object PageTransitions {
     private const val PeekScale = 0.9f
     private const val PeekShift = 0.05f
     private val PeekRadius = Radius.xl
+
+    /** How many sizes the peeked page's corners grow through, each 1/[PeekShapeSteps] of [PeekRadius]. */
+    private const val PeekShapeSteps = 8
+    private val PeekShapes = List(PeekShapeSteps + 1) { SmoothCornerShape(PeekRadius * it / PeekShapeSteps) }
     private val PeekElevation = 16.dp
 
     /** How much of the dim on the page underneath lifts at the furthest peek. */
@@ -319,7 +323,9 @@ object PageTransitions {
                                 scaleY = scale
                                 val toward = if (peek?.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
                                 translationX = toward * size.width * PeekShift * amount
-                                shape = SmoothCornerShape(PeekRadius * amount)
+                                // In steps rather than anew each frame: a new outline makes the
+                                // clip and the shadow of the whole page be worked out again
+                                shape = PeekShapes[(amount * PeekShapeSteps).roundToInt().coerceIn(1, PeekShapeSteps)]
                                 clip = true
                                 shadowElevation = PeekElevation.toPx() * amount
                             }
