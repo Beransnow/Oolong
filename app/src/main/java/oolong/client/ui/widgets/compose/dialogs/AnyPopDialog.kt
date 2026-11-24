@@ -3,6 +3,7 @@ package oolong.client.ui.widgets.compose.dialogs
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.Build
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
@@ -10,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -37,11 +39,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -50,7 +54,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.view.WindowCompat
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
@@ -73,7 +77,7 @@ tailrec fun Context.getActivityWindow(): Window? = when (this) {
 private const val DefaultDurationMillis: Int = 250
 
 /** The scrim fades with the dialog's opacity, a little longer so the panel leads. */
-private const val ScrimInMillis = 180
+private const val ScrimInMillis = 150
 private const val ScrimOutMillis = 120
 
 /** How blurred a dialog's content is as it starts appearing and as it finishes leaving. */
@@ -119,18 +123,21 @@ private fun DialogFullScreen(
         content = {
             val animColor = remember { Animatable(Color.Transparent) }
             val scrim = ExtendedTheme.colors.scrim
+            // The panel's own leaving decides when the dialog is gone, not the scrim's quicker fade,
+            // so its motion runs to the end
+            val shown = remember { MutableTransitionState(false) }
+            shown.targetState = isAnimateLayout
             LaunchedEffect(isAnimateLayout) {
                 if (properties.backgroundDimEnabled) {
                     animColor.animateTo(
                         if (isAnimateLayout) scrim else Color.Transparent,
                         animationSpec = tween(if (isAnimateLayout) ScrimInMillis else ScrimOutMillis),
                     )
-                } else {
-                    delay(properties.durationMillis.toLong())
                 }
-                if (!isAnimateLayout) {
-                    onDismissRequest.invoke()
-                }
+            }
+            LaunchedEffect(shown) {
+                snapshotFlow { isBackPress && shown.isIdle && !shown.currentState }.first { it }
+                onDismissRequest.invoke()
             }
             val activityWindow = getActivityWindow()
             val dialogWindow = getDialogWindow()
@@ -183,7 +190,7 @@ private fun DialogFullScreen(
                 val inPlace = reduced && properties.direction != DirectionState.LEFT && properties.direction != DirectionState.RIGHT
                 AnimatedVisibility(
                     modifier = Modifier.pointerInput(Unit) {},
-                    visible = isAnimateLayout,
+                    visibleState = shown,
                     enter = if (inPlace) fadeIn(Motion.fadeIn()) else when (properties.direction) {
                         DirectionState.TOP -> fadeIn(Motion.fadeIn()) + slideInVertically(animationSpec = Motion.present(), initialOffsetY = { -it })
                         DirectionState.LEFT -> fadeIn(Motion.fadeIn()) + slideInHorizontally(animationSpec = Motion.present(), initialOffsetX = { -it })
@@ -207,7 +214,18 @@ private fun DialogFullScreen(
                         transitionSpec = { if (targetState == EnterExitState.Visible) Motion.settle() else Motion.dismiss() },
                         label = "blur",
                     ) { if (it == EnterExitState.Visible || !condenses) 0.dp else ContentBlur }
-                    Box(modifier = if (blur > 0.dp) Modifier.blur(blur, BlurredEdgeTreatment.Unbounded) else Modifier) {
+                    // Read as it draws, on a layer that is always there, so the modifiers stay the same
+                    Box(
+                        modifier = Modifier.graphicsLayer {
+                            val radius = blur.toPx()
+                            renderEffect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && radius > 0.5f) {
+                                BlurEffect(radius, radius, TileMode.Decal)
+                            } else {
+                                null
+                            }
+                            clip = false
+                        },
+                    ) {
                         content()
                     }
                 }
