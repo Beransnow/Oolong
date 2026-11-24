@@ -76,6 +76,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.OwnAvatar
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.utils.Emoticon
@@ -502,48 +503,6 @@ private val ThumbnailSize = 80.dp
 
 /** Where a tap on a picture's corner removes it. */
 private val RemoveTarget = 36.dp
-
-/**
- * Shows [value]'s line while it is not null: the line opens on a spring and its content condenses
- * in from a blur; going, it blurs away as the line closes, still showing the last value.
- */
-@Composable
-private fun <T : Any> Reveal(value: T?, content: @Composable (T) -> Unit) {
-    var shown by remember { mutableStateOf(value) }
-    if (value != null) shown = value
-    val progress = remember { Animatable(if (value != null) 1f else 0f, Motion.ProgressThreshold) }
-    LaunchedEffect(value != null) {
-        progress.animateTo(if (value != null) 1f else 0f, Motion.settle(Motion.ProgressThreshold))
-        if (value == null) shown = null
-    }
-    val last = shown ?: return
-    Layout(
-        modifier = Modifier.clipToBounds(),
-        content = {
-            Box(
-                modifier = Modifier
-                    .wrapContentHeight(unbounded = true)
-                    .graphicsLayer {
-                        val f = progress.value.coerceIn(0f, 1f)
-                        alpha = ((f - 0.3f) / 0.7f).coerceIn(0f, 1f)
-                        val scale = 0.96f + 0.04f * f
-                        scaleX = scale
-                        scaleY = scale
-                        transformOrigin = TransformOrigin(0.5f, 0f)
-                        renderEffect = blurEffect(RevealBlur.toPx() * (1f - f))
-                    },
-            ) {
-                content(last)
-            }
-        },
-    ) { measurables, constraints ->
-        val placeable = measurables.single().measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
-        val height = (placeable.height * progress.value.coerceIn(0f, 1f)).roundToInt()
-        layout(placeable.width, height) { placeable.place(0, 0) }
-    }
-}
-
-private val RevealBlur = 10.dp
 
 /** The emoticons button, whose icon turns into the keyboard's while the panel shows. */
 @Composable
