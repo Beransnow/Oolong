@@ -434,6 +434,8 @@ private fun rememberLoadProgress(state: WebViewState): LoadProgress {
             .distinctUntilChanged()
             .collectLatest { loading ->
                 if (loading) {
+                    // A bar still showing from the last load fades before starting again from 0
+                    if (progress.shown.value > 0f) progress.shown.animateTo(0f, Motion.fadeOut())
                     progress.value.snapTo(0f)
                     progress.shown.snapTo(0f)
                     coroutineScope {

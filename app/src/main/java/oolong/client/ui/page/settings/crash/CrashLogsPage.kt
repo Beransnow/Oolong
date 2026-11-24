@@ -55,6 +55,7 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.ConfirmDialog
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
@@ -96,42 +97,44 @@ fun CrashLogsPage(
             )
         },
     ) { padding ->
-        val list = entries
-        when {
-            list == null -> Unit
-            list.isEmpty() -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(id = R.string.crash_logs_empty),
-                    style = TextStyles.label,
-                    color = ExtendedTheme.colors.textSecondary,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            else -> PrefsScreen(
-                dataStore = context.dataStore,
-                dividerThickness = 0.dp,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = padding,
-            ) {
-                prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
-                    list.forEach { entry ->
-                        prefsItem {
-                            TextPref(
-                                title = entry.label(),
-                                summary = formatTime(entry.time),
-                                onClick = { navigator.navigate(CrashLogKey(entry.id)) },
-                            )
+        // Cleared, the list gives way to the empty note as a whole
+        ContentSwap(targetState = entries, contentKey = { it?.isEmpty() }, modifier = Modifier.fillMaxSize()) { list ->
+            when {
+                list == null -> Unit
+                list.isEmpty() -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(id = R.string.crash_logs_empty),
+                        style = TextStyles.label,
+                        color = ExtendedTheme.colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                else -> PrefsScreen(
+                    dataStore = context.dataStore,
+                    dividerThickness = 0.dp,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = padding,
+                ) {
+                    prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
+                        list.forEach { entry ->
+                            prefsItem {
+                                TextPref(
+                                    title = entry.label(),
+                                    summary = formatTime(entry.time),
+                                    onClick = { navigator.navigate(CrashLogKey(entry.id)) },
+                                )
+                            }
                         }
                     }
-                }
-                prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
-                    prefsItem {
-                        TextPref(
-                            title = stringResource(id = R.string.crash_logs_clear),
-                            textColor = MaterialTheme.colors.error,
-                            trailingContent = null,
-                            onClick = { clearDialog.show() },
-                        )
+                    prefsGroup(header = { Spacer(modifier = Modifier.height(Spacing.xs)) }) {
+                        prefsItem {
+                            TextPref(
+                                title = stringResource(id = R.string.crash_logs_clear),
+                                textColor = MaterialTheme.colors.error,
+                                trailingContent = null,
+                                onClick = { clearDialog.show() },
+                            )
+                        }
                     }
                 }
             }
