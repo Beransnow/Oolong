@@ -150,7 +150,8 @@ fun ReplyComposerContent(
     Column(modifier = modifier) {
         handle()
         // Whom it answers; a reply to the thread needs no line for it
-        Reveal(replyTo) { replyTo ->
+        // Replying to another floor while it shows, the line fades over to it
+        Reveal(replyTo, contentKey = { it }) { replyTo ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,7 +161,7 @@ fun ReplyComposerContent(
                 ReplyToChip(replyTo, onDrop = { onEvent(ReplyComposerEvent.ReplyToThread) })
             }
         }
-        Reveal(replyTo?.quote?.takeIf { fullScreen && it.isNotBlank() }) { quote ->
+        Reveal(replyTo?.quote?.takeIf { fullScreen && it.isNotBlank() }, contentKey = { it }) { quote ->
             Text(
                 text = quote,
                 fontSize = 13.5.sp,
@@ -174,7 +175,7 @@ fun ReplyComposerContent(
             )
         }
         val error = state.error
-        Reveal(error) { ReplyErrorRow(it, onEvent) }
+        Reveal(error, contentKey = { it }) { ReplyErrorRow(it, onEvent) }
         Reveal(Unit.takeIf { error == null && showNotice }) {
             NoticeRow(
                 icon = Symbols.Warning,

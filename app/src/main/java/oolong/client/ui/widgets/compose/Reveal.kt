@@ -1,7 +1,12 @@
 package oolong.client.ui.widgets.compose
 
 import android.os.Build
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
@@ -27,11 +32,17 @@ private val RevealBlur = 10.dp
 /**
  * Shows [value]'s content in place while it is not null (design-system.md §7.2): the space opens
  * on `settle` and the content condenses in from a blur; going, the space closes on `dismiss` and
- * the content blurs away, still showing the last value. With motion reduced the content only
+ * the content blurs away, still showing the last value. A value with another [contentKey] while
+ * shown fades over in place; by default the content just takes the new value, as a list does. With motion reduced the content only
  * fades; the space still opens and closes, so what follows moves rather than jumps.
  */
 @Composable
-fun <T : Any> Reveal(value: T?, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
+fun <T : Any> Reveal(
+    value: T?,
+    modifier: Modifier = Modifier,
+    contentKey: (T) -> Any? = { Unit },
+    content: @Composable (T) -> Unit,
+) {
     var shown by remember { mutableStateOf(value) }
     if (value != null) shown = value
     val progress = remember { Animatable(if (value != null) 1f else 0f, Motion.ProgressThreshold) }
@@ -64,7 +75,13 @@ fun <T : Any> Reveal(value: T?, modifier: Modifier = Modifier, content: @Composa
                         }
                     },
             ) {
-                content(last)
+                // Another value while shown fades over in place, the space easing to its size
+                AnimatedContent(
+                    targetState = last,
+                    transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() } },
+                    contentKey = contentKey,
+                    label = "RevealValue",
+                ) { content(it) }
             }
         },
     ) { measurables, constraints ->
