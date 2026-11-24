@@ -80,8 +80,10 @@ import oolong.client.ui.widgets.compose.OwnAvatar
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.maskTo
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.utils.Emoticon
 import oolong.client.utils.EmoticonManager
 import oolong.client.utils.StringUtil
@@ -447,8 +449,8 @@ private fun ToggleChip(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val colors = ExtendedTheme.colors
-    val background = if (checked) colors.text else colors.chip
-    val content = if (checked) colors.sheet else colors.textSecondary
+    val background by animateColorAsState(if (checked) colors.text else colors.chip, Motion.snap(), label = "chip")
+    val content by animateColorAsState(if (checked) colors.sheet else colors.textSecondary, Motion.snap(), label = "chipContent")
     val press = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
@@ -466,12 +468,7 @@ private fun ToggleChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Icon(
-            imageVector = if (checked) Symbols.Check else icon,
-            contentDescription = null,
-            tint = content,
-            modifier = Modifier.size(15.dp),
-        )
+        ToggleIcon(checked = checked, on = Symbols.Check, off = icon, contentDescription = null, tint = content, modifier = Modifier.size(15.dp))
         Text(text = text, fontSize = 12.sp, color = content)
     }
 }
@@ -658,9 +655,11 @@ private fun PictureStrip(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // Pictures fade in and out and the rest glide over, the add button with them
         itemsIndexed(images, key = { _, uri -> uri }) { index, uri ->
             Box(
                 modifier = Modifier
+                    .motionItem(this)
                     .size(ThumbnailSize)
                     .maskTo(Corners.sm)
                     .background(colors.chip)
@@ -701,9 +700,10 @@ private fun PictureStrip(
             }
         }
         if (images.size < MaxImages) {
-            item {
+            item(key = AddPictureKey) {
                 Box(
                     modifier = Modifier
+                        .motionItem(this)
                         .size(ThumbnailSize)
                         .background(colors.chip, Corners.sm)
                         .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), role = Role.Button, onClick = onAdd),
@@ -748,3 +748,5 @@ fun EmoticonPanel(
         }
     }
 }
+
+private const val AddPictureKey = "add"
