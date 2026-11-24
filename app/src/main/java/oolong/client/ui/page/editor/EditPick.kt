@@ -5,8 +5,8 @@ import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +51,7 @@ import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.components.automask.CodeFinder
 import oolong.client.components.automask.PrivacyRules
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.AuroraState
 import oolong.client.ui.widgets.compose.auroraColor
 import oolong.client.ui.widgets.compose.drawAuroraLight
@@ -249,6 +250,21 @@ internal class PickEffect(
     /** Where the finger last aimed, on screen, kept for the loupe to fade out at. */
     var lastAim by mutableStateOf<Offset?>(null)
 
+    /**
+     * How far the loupe still is from where it now belongs, after it swapped sides of the finger:
+     * it glides across rather than jumping, still following the finger.
+     */
+    val swap = Animatable(Offset.Zero, Offset.VectorConverter)
+
+    /** Moves the loupe to [to] side, gliding across from the other side. */
+    suspend fun swapTo(to: Float, density: Float) {
+        val from = side.value
+        side.snapTo(to)
+        val across = (LoupeSize.value / 2 + LoupeAside.value) * density
+        swap.snapTo(swap.value + Offset((from.sign - to.sign) * across, 0f))
+        swap.animateTo(Offset.Zero, Motion.snap())
+    }
+
     /** With motion reduced the loupe shows where it rests at its full size, rather than growing out of the finger. */
     var reduced = false
 
@@ -373,7 +389,7 @@ internal class PickEffect(
         val c = Offset(
             (above.x + (beside.x - above.x) * s).coerceIn(state.area.left + r, state.area.right - r),
             above.y + (beside.y - above.y) * s,
-        )
+        ) + swap.value
         // Grows out of the finger and back into it
         val center = if (reduced) c else at + (c - at) * h
         val radius = if (reduced) r else r * (0.4f + 0.6f * h)
@@ -456,9 +472,9 @@ internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEf
     val density = LocalDensity.current.density
     LaunchedEffect(state.aiming) {
         if (state.aiming) {
-            effect.hold.animateTo(1f, tween(180, easing = FastOutSlowInEasing))
+            effect.hold.animateTo(1f, Motion.present(Motion.ProgressThreshold))
         } else {
-            effect.hold.animateTo(0f, tween(220, easing = FastOutSlowInEasing))
+            effect.hold.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
         }
     }
     // Follows the finger, moving the loupe to the side, smoothly, when it runs out of room above
@@ -468,8 +484,8 @@ internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEf
             val side = effect.sideFor(state, at, density)
             if (side != effect.side.targetValue) {
                 launch {
-                    // Straight to the other side, not through above, when it swaps sides
-                    if (side * effect.side.value < 0f) effect.side.snapTo(side) else effect.side.animateTo(side, tween(200, easing = FastOutSlowInEasing))
+                    // Straight across to the other side, not through above, when it swaps sides
+                    if (side * effect.side.value < 0f) effect.swapTo(side, density) else effect.side.animateTo(side, Motion.snap(Motion.ProgressThreshold))
                 }
             }
         }
@@ -478,12 +494,12 @@ internal fun rememberPickEffect(state: EditorState, filesReady: Boolean): PickEf
     val looking = state.tool == EditorTool.Mask && state.maskPicking && filesReady && (!state.pickReady || state.spotting)
     LaunchedEffect(looking) {
         if (looking) {
-            launch { effect.looking.animateTo(1f, tween(300)) }
-            effect.aurora.spread.animateTo(1f, tween(1200, easing = FastOutSlowInEasing))
+            launch { effect.looking.animateTo(1f, Motion.settle(Motion.ProgressThreshold)) }
+            effect.aurora.spread.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
         } else {
             // Gathers back to the middle as it fades, the way it came
-            launch { effect.aurora.spread.animateTo(0f, tween(700, easing = FastOutSlowInEasing)) }
-            effect.looking.animateTo(0f, tween(700))
+            launch { effect.aurora.spread.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold)) }
+            effect.looking.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
         }
     }
     // The light drifts only while it shows
