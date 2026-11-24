@@ -1,6 +1,8 @@
 package oolong.client.ui.page.main.user
 
 import android.graphics.Typeface
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +49,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -78,13 +82,18 @@ import oolong.client.ui.page.settings.custom.currentThemeName
 import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassToast
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.ListMenuItem
 import oolong.client.ui.widgets.compose.LocalChromePadding
+import oolong.client.ui.widgets.compose.ProvideContentColor
 import oolong.client.ui.widgets.compose.PullRefresh
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
 import oolong.client.utils.CuidUtils
@@ -230,7 +239,7 @@ private fun StatCardItem(
             text = "$statNum",
             fontSize = 28.sp,
             lineHeight = 28.sp,
-            fontFamily = FontFamily(Typeface.createFromAsset(LocalContext.current.assets, "bebas.ttf")),
+            fontFamily = rememberStatNumerals(),
             color = ExtendedTheme.colors.text,
             style = LocalTextStyle.current.copy(
                 lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
@@ -425,16 +434,16 @@ fun UserScreen(
             GlassTopBar(
                 title = {},
                 actions = {
-                    ActionItem(
-                        icon = ImageVector.vectorResource(id = if (masked) R.drawable.ic_me_incognito_on else R.drawable.ic_me_incognito),
-                        contentDescription = stringResource(
-                            id = when {
-                                !keepsHistory -> R.string.history_off
-                                incognito -> R.string.incognito_off
-                                else -> R.string.incognito_on
-                            }
-                        ),
-                        onClick = {
+                    val incognitoDescription = stringResource(
+                        id = when {
+                            !keepsHistory -> R.string.history_off
+                            incognito -> R.string.incognito_off
+                            else -> R.string.incognito_on
+                        }
+                    )
+                    // The mask goes on and off as a switch does, not swapped in one frame
+                    ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
+                        IconButton(onClick = {
                             if (!keepsHistory) {
                                 historyOffHint = true
                             } else if (incognito) {
@@ -445,8 +454,15 @@ fun UserScreen(
                                 explained = true
                                 incognitoHint = true
                             }
-                        },
-                    )
+                        }) {
+                            ToggleIcon(
+                                checked = masked,
+                                on = ImageVector.vectorResource(id = R.drawable.ic_me_incognito_on),
+                                off = ImageVector.vectorResource(id = R.drawable.ic_me_incognito),
+                                contentDescription = incognitoDescription,
+                            )
+                        }
+                    }
                     ActionItem(
                         icon = ImageVector.vectorResource(id = if (dark) R.drawable.ic_me_night_on else R.drawable.ic_me_night),
                         contentDescription = stringResource(id = if (dark) R.string.night_mode_off else R.string.night_mode_on),
@@ -469,61 +485,74 @@ fun UserScreen(
                     .fillMaxSize()
                     .padding(contentPaddings)
             ) {
-                if (account != null) {
-                    InfoCard(
-                        modifier = Modifier
-                            .clickable {
-                                navigator.navigate(UserProfileKey(account.uid.toLong()))
+                // Logging in or out, or another account, replaces the head of the page as a whole,
+                // and what follows moves to make room; the same account's figures update in place
+                val head = if (account != null) MeHead.Signed(account) else if (isLoading) MeHead.Loading else MeHead.LoggedOut
+                ContentSwap(
+                    targetState = head,
+                    contentKey = { (it as? MeHead.Signed)?.account?.uid ?: it },
+                    modifier = Modifier.animateContentSize(Motion.settle(IntSize.VisibilityThreshold)),
+                ) { now ->
+                    val shown = (now as? MeHead.Signed)?.account
+                    val loading = now == MeHead.Loading
+                    Column {
+                        if (shown != null) {
+                            InfoCard(
+                                modifier = Modifier
+                                    .clickable {
+                                        navigator.navigate(UserProfileKey(shown.uid.toLong()))
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                                userName = shown.nameShow ?: shown.name,
+                                userIntro = shown.intro ?: stringResource(id = R.string.tip_no_intro),
+                                avatar = StringUtil.getAvatarUrl(shown.portrait),
+                            )
+                            StatCard(
+                                account = shown,
+                                onOpenFollows = { fans ->
+                                    navigator.navigate(UserFollowsKey(shown.uid.toLong(), fans, shown.nameShow ?: shown.name))
+                                },
+                                modifier = StatsPadding,
+                            )
+                        } else if (loading) {
+                            InfoCard(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                isPlaceholder = true,
+                            )
+                            StatCardPlaceholder(modifier = StatsPadding)
+                        } else {
+                            LoginTipCard(
+                                onLogin = { navigator.navigate(LoginKey) },
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+                            )
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min)
+                                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                        ) {
+                            if (shown != null) {
+                                EntryBlock(
+                                    icon = ImageVector.vectorResource(id = R.drawable.ic_me_collect),
+                                    text = stringResource(id = R.string.title_my_collect),
+                                    detail = storedWithReplies.takeIf { it > 0 }?.let {
+                                        pluralStringResource(id = R.plurals.stored_with_replies, count = it, it)
+                                    },
+                                    onClick = { navigator.navigate(ThreadStoreKey) },
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                                )
                             }
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        userName = account.nameShow ?: account.name,
-                        userIntro = account.intro ?: stringResource(id = R.string.tip_no_intro),
-                        avatar = StringUtil.getAvatarUrl(account.portrait),
-                    )
-                    StatCard(
-                        account = account,
-                        onOpenFollows = { fans ->
-                            navigator.navigate(UserFollowsKey(account.uid.toLong(), fans, account.nameShow ?: account.name))
-                        },
-                        modifier = StatsPadding,
-                    )
-                } else if (isLoading) {
-                    InfoCard(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                        isPlaceholder = true,
-                    )
-                    StatCardPlaceholder(modifier = StatsPadding)
-                } else {
-                    LoginTipCard(
-                        onLogin = { navigator.navigate(LoginKey) },
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                ) {
-                    if (account != null) {
-                        EntryBlock(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_me_collect),
-                            text = stringResource(id = R.string.title_my_collect),
-                            detail = storedWithReplies.takeIf { it > 0 }?.let {
-                                pluralStringResource(id = R.plurals.stored_with_replies, count = it, it)
-                            },
-                            onClick = { navigator.navigate(ThreadStoreKey) },
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                        )
+                            EntryBlock(
+                                icon = ImageVector.vectorResource(id = R.drawable.ic_me_history),
+                                text = stringResource(id = R.string.title_history),
+                                detail = lastThread?.title,
+                                onClick = { navigator.navigate(HistoryKey) },
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                            )
+                        }
                     }
-                    EntryBlock(
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_me_history),
-                        text = stringResource(id = R.string.title_history),
-                        detail = lastThread?.title,
-                        onClick = { navigator.navigate(HistoryKey) },
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                    )
                 }
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
@@ -535,7 +564,7 @@ fun UserScreen(
                 ) {
                     RowValue(text = currentThemeName())
                 }
-                if (account != null) {
+                Reveal(Unit.takeIf { account != null }) {
                     ListMenuItem(
                         iconColor = ExtendedTheme.colors.text,
                         icon = ImageVector.vectorResource(id = R.drawable.ic_me_help),
@@ -571,13 +600,27 @@ fun UserScreen(
                     text = stringResource(id = R.string.my_info_about),
                     onClick = { navigator.navigate(AboutKey) },
                 ) {
-                    if (updateAvailable) {
-                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(NewVersionDot))
+                    Refocus(targetState = updateAvailable) { shown ->
+                        if (shown) Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(NewVersionDot))
                     }
                 }
             }
         }
     }
+}
+
+/** What heads the page: whose it is, or that it is loading, or the way to log in. */
+private sealed interface MeHead {
+    data class Signed(val account: Account) : MeHead
+    data object Loading : MeHead
+    data object LoggedOut : MeHead
+}
+
+/** The figures' typeface, made once rather than on every frame the figures count. */
+@Composable
+private fun rememberStatNumerals(): FontFamily {
+    val assets = LocalContext.current.assets
+    return remember(assets) { FontFamily(Typeface.createFromAsset(assets, "bebas.ttf")) }
 }
 
 /** The red of the About page's new-version mark. */

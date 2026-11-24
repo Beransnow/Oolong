@@ -24,18 +24,23 @@ private const val EnterFadeFaster = 2.5f
  * replaces it as a whole when the state changes (design-system.md §7.2): what was there fades
  * away while the new content condenses from blurred and a little smaller into focus. With motion
  * reduced it only fades. The first state shows at once. For a line of text use [Refocus].
+ *
+ * @param contentKey what makes two states different content; states with the same key update in
+ * place, as an account's counts do, without a swap
  */
 @Composable
 fun <T> ContentSwap(
     targetState: T,
     modifier: Modifier = Modifier,
     contentAlignment: Alignment = Alignment.TopStart,
+    contentKey: (T) -> Any? = { it },
     content: @Composable (T) -> Unit,
 ) {
     AnimatedContent(
         targetState = targetState,
         modifier = modifier,
         contentAlignment = contentAlignment,
+        contentKey = contentKey,
         transitionSpec = { EnterTransition.None togetherWith fadeOut(Motion.fadeOut()) using null },
         label = "ContentSwap",
     ) { shown ->
