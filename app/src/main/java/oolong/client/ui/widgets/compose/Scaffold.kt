@@ -19,6 +19,7 @@ import androidx.compose.material.contentColorFor
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -44,7 +46,9 @@ import kotlin.math.roundToInt
 @Composable
 internal fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
     val data = hostState.currentSnackbarData
-    val offset = remember(data) { Animatable(0f) }
+    // Not reset when the snackbar goes: the library still fades a swiped one out where it was let go
+    val offset = remember { Animatable(0f) }
+    LaunchedEffect(data) { if (data != null) offset.snapTo(0f) }
     val scope = rememberCoroutineScope()
     var width by remember { mutableIntStateOf(0) }
     val dragState = rememberDraggableState { delta -> scope.launch { offset.snapTo(offset.value + delta) } }
@@ -60,10 +64,10 @@ internal fun SwipeToDismissSnackbarHost(hostState: SnackbarHostState) {
                     val dismiss = width > 0 && (abs(offset.value) > width / 2f || abs(velocity) > SnackbarFlingVelocity)
                     if (dismiss) {
                         val direction = if (offset.value + velocity >= 0f) 1 else -1
-                        offset.animateTo(direction * width.toFloat())
+                        offset.animateTo(direction * width.toFloat(), Motion.dismiss(), initialVelocity = velocity)
                         data?.dismiss()
                     } else {
-                        offset.animateTo(0f)
+                        offset.animateTo(0f, Motion.snap(), initialVelocity = velocity)
                     }
                 },
             ),
