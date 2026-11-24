@@ -269,4 +269,5 @@ private fun <T, R> PagerState<T>.withItems(items: ImmutableList<R>) = PagerState
     prepend = prepend,
     hasMore = hasMore,
     hasPrevious = hasPrevious,
+    loaded = loaded,
 )

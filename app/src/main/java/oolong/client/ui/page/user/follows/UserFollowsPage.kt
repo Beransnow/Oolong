@@ -170,7 +170,7 @@ private fun UserList(
     StateScreen(
         isEmpty = list.items.isEmpty(),
         isError = error != null,
-        isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+        isLoading = list.waiting,
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error) },
         emptyScreen = {

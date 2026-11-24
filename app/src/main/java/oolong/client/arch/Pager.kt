@@ -45,7 +45,12 @@ data class PagerState<T>(
     val prepend: LoadStatus = LoadStatus.Idle,
     val hasMore: Boolean = false,
     val hasPrevious: Boolean = false,
-)
+    /** Whether a first page has come, so a list idle and empty is empty rather than not loaded yet. */
+    val loaded: Boolean = false,
+) {
+    /** Whether the list waits for its first page: loading it, or not started. */
+    val waiting: Boolean get() = refresh == LoadStatus.Loading || (refresh == LoadStatus.Idle && !loaded)
+}
 
 /** What a [Pager] is loading a page for, told to its load. */
 class PageLoad internal constructor(
@@ -123,6 +128,7 @@ class Pager<K : Any, T>(
                     refresh = LoadStatus.Idle,
                     hasMore = page.next != null,
                     hasPrevious = page.prev != null,
+                    loaded = true,
                 )
             }
         }

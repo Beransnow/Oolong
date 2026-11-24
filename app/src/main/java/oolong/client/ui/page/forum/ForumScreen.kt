@@ -217,7 +217,7 @@ private fun ForumContent(
                 StateScreen(
                     isEmpty = list.items.isEmpty(),
                     isError = list.refresh is LoadStatus.Error,
-                    isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+                    isLoading = list.waiting,
                     onReload = { onEvent(ForumEvent.Refresh) },
                     modifier = Modifier.fillMaxSize(),
                     loadingScreen = {

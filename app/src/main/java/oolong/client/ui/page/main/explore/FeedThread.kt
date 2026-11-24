@@ -27,4 +27,5 @@ internal fun <T, R> PagerState<T>.withItems(items: List<R>) = PagerState(
     prepend = prepend,
     hasMore = hasMore,
     hasPrevious = hasPrevious,
+    loaded = loaded,
 )

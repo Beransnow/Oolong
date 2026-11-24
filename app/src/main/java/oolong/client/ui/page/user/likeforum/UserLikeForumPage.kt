@@ -56,7 +56,7 @@ fun UserLikeForumPage(
     StateScreen(
         isEmpty = forums.isEmpty(),
         isError = error != null,
-        isLoading = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle,
+        isLoading = list.waiting,
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error, modifier = Modifier.chromePadding()) },
         loadingScreen = { Box(modifier = Modifier.chromePadding()) { DefaultLoadingScreen() } },

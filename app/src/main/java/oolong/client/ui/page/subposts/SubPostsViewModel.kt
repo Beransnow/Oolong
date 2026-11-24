@@ -173,6 +173,7 @@ class SubPostsViewModel @AssistedInject constructor(
                 prepend = pager.prepend,
                 hasMore = pager.hasMore,
                 hasPrevious = pager.hasPrevious,
+                loaded = pager.loaded,
             ),
             totalCount = floor?.totalCount ?: 0,
             viewerId = sessionProvider.currentSession()?.uid?.toLongOrNull(),

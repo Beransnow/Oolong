@@ -79,7 +79,7 @@ fun UserPostPage(
 ) {
     val navigator = LocalNavigator.current
     val posts = list.items
-    val isRefreshing = list.refresh == LoadStatus.Loading || list.refresh == LoadStatus.Idle
+    val isRefreshing = list.waiting
     val error = (list.refresh as? LoadStatus.Error)?.error
     val hidePost = hidden
 
