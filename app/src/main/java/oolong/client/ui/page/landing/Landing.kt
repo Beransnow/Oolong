@@ -87,6 +87,7 @@ import oolong.client.findActivity
 import oolong.client.migration.LegacyImport
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.page.LocalNavigator
@@ -198,7 +199,9 @@ private fun Landing(stage: Stage, onStage: (Stage) -> Unit) {
         if (stage == Stage.Importing) return@LaunchedEffect
         state.enter(this, waitForSplash = true, quick = stage == Stage.Done)
     }
-    LaunchedEffect(Unit) { state.aurora.drift() }
+    // The light holds still with motion reduced
+    val reduced = LocalReduceMotion.current
+    LaunchedEffect(reduced) { if (!reduced) state.aurora.drift() }
 
     val text = ExtendedTheme.colors.text
     val textSecondary = ExtendedTheme.colors.textSecondary
@@ -391,6 +394,7 @@ internal fun UsageStatsContentDialog(state: DialogState) {
 private fun Lens(state: LandingState) {
     val density = LocalDensity.current
     val painter = painterResource(R.drawable.ic_mark_lens)
+    val reduced = LocalReduceMotion.current
     val root = remember { mutableStateOf<LayoutCoordinates?>(null) }
     Box(Modifier.fillMaxSize().onGloballyPositioned { root.value = it })
     Box(
@@ -400,8 +404,9 @@ private fun Lens(state: LandingState) {
                 val parent = root.value
                 if (mark == null || parent == null || !mark.isAttached || !parent.isAttached) return@offset IntOffset.Zero
                 val origin = parent.localPositionOf(mark, Offset.Zero)
-                // It settles onto the paper from a little way up and to the right
-                val drift = (1f - state.lens.value) * with(density) { 10.dp.toPx() }
+                // It settles onto the paper from a little way up and to the right; with motion
+                // reduced it only fades in where it rests
+                val drift = if (reduced) 0f else (1f - state.lens.value) * with(density) { 10.dp.toPx() }
                 IntOffset((origin.x + drift).roundToInt(), (origin.y - drift).roundToInt())
             }
             .size(MarkSize)

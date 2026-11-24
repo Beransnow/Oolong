@@ -22,6 +22,7 @@ import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContentSwap
+import oolong.client.ui.widgets.compose.DecorativeLottie
 import oolong.client.ui.widgets.compose.TipScreen
 
 val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
@@ -48,9 +49,9 @@ val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {
         title = { Text(text = stringResource(id = R.string.title_empty)) },
         image = {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_empty_box))
-            LottieAnimation(
+            DecorativeLottie(
                 composition = composition,
-                iterations = LottieConstants.IterateForever,
+                loops = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f)

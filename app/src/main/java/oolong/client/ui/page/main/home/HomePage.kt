@@ -105,6 +105,7 @@ import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.DecorativeLottie
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
@@ -789,9 +790,9 @@ fun EmptyScreen(
         },
         image = {
             val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
-            LottieAnimation(
+            DecorativeLottie(
                 composition = composition,
-                iterations = LottieConstants.IterateForever,
+                loops = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f)

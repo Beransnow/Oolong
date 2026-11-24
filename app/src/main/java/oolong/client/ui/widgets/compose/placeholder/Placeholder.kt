@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 
 object PlaceholderDefaults {
@@ -163,7 +164,8 @@ fun Modifier.placeholder(
         targetValueByState = { placeholderVisible -> if (placeholderVisible) 0f else 1f }
     )
 
-    val animationSpec = highlight?.animationSpec
+    // A shine sweeping over and over is held still with motion reduced
+    val animationSpec = highlight?.animationSpec?.takeUnless { LocalReduceMotion.current }
     if (animationSpec != null && (visible || placeholderAlpha >= 0.01f)) {
         val infiniteTransition = rememberInfiniteTransition(label = "placeholder_highlight")
         highlightProgress = infiniteTransition.animateFloat(

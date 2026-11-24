@@ -173,7 +173,7 @@ fun ErrorTipScreen(
             when (errorType) {
                 ErrorType.NETWORK -> {
                     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_no_internet))
-                    LottieAnimation(
+                    DecorativeLottie(
                         composition = composition,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -183,9 +183,9 @@ fun ErrorTipScreen(
 
                 ErrorType.SERVER -> {
                     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_error))
-                    LottieAnimation(
+                    DecorativeLottie(
                         composition = composition,
-                        iterations = LottieConstants.IterateForever,
+                        loops = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(2f)
@@ -194,9 +194,9 @@ fun ErrorTipScreen(
 
                 ErrorType.UNKNOWN -> {
                     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_bug_hunting))
-                    LottieAnimation(
+                    DecorativeLottie(
                         composition = composition,
-                        iterations = LottieConstants.IterateForever,
+                        loops = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(2f)
@@ -205,7 +205,7 @@ fun ErrorTipScreen(
 
                 ErrorType.NOT_LOGGED_IN -> {
                     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
-                    LottieAnimation(
+                    DecorativeLottie(
                         composition = composition,
                         modifier = Modifier
                             .fillMaxWidth()

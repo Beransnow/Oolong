@@ -51,6 +51,7 @@ import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.Card
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.DecorativeLottie
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.FeedCard
@@ -121,9 +122,9 @@ fun UserPostPage(
                                     R.raw.lottie_hide
                                 )
                             )
-                            LottieAnimation(
+                            DecorativeLottie(
                                 composition = composition,
-                                iterations = LottieConstants.IterateForever,
+                                loops = true,
                                 modifier = Modifier
                                     .padding(vertical = 16.dp)
                                     .fillMaxWidth()
@@ -141,9 +142,9 @@ fun UserPostPage(
                                     R.raw.lottie_empty_box
                                 )
                             )
-                            LottieAnimation(
+                            DecorativeLottie(
                                 composition = composition,
-                                iterations = LottieConstants.IterateForever,
+                                loops = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(2f)

@@ -43,6 +43,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import oolong.client.BuildConfig
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -71,7 +72,9 @@ fun AboutPage(
 ) {
     val available by viewModel.available.collectAsStateWithLifecycle()
     val aurora = remember { AuroraState() }
-    LaunchedEffect(Unit) { aurora.drift() }
+    // The light holds still with motion reduced
+    val reduced = LocalReduceMotion.current
+    LaunchedEffect(reduced) { if (!reduced) aurora.drift() }
     // A short version of the landing page's entrance: this page is opened again and again
     val shown = remember { Animatable(0f) }
     LaunchedEffect(Unit) { shown.animateTo(1f, Motion.settle()) }
