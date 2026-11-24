@@ -145,6 +145,7 @@ import oolong.client.ui.widgets.compose.MediaGlassActions
 import oolong.client.ui.widgets.compose.MediaGlassIconButton
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.ProvideMediaGlass
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.controlLens
 import oolong.client.ui.widgets.compose.isGlassAvailable
@@ -668,27 +669,39 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                 }
                 val error = playback.error
                 val signedIn = LocalAccount.current != null
-                Box(modifier = Modifier.align(Alignment.Center)) {
-                    when {
-                        seekTarget != null -> SeekTime(seekTarget ?: 0L, duration)
-                        error != null -> Failure(error.message(signedIn), onRetry = ::retry)
-                        playback.ended -> BigButton(Symbols.ReplayFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
-                        !playback.playWhenReady -> BigButton(Symbols.PlayArrowFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
-                        loading -> WavyLoader(color = Color.White, modifier = Modifier.size(44.dp))
+                val center = when {
+                    seekTarget != null -> CenterShows.Seek
+                    error != null -> CenterShows.Failure
+                    playback.ended -> CenterShows.Replay
+                    !playback.playWhenReady -> CenterShows.Play
+                    loading -> CenterShows.Loading
+                    else -> CenterShows.Nothing
+                }
+                // Pausing, playing on, finishing and failing refocus one into the other in place
+                Refocus(targetState = center, modifier = Modifier.align(Alignment.Center)) { shown ->
+                    when (shown) {
+                        CenterShows.Seek -> SeekTime(seekTarget ?: 0L, duration)
+                        CenterShows.Failure -> error?.let { Failure(it.message(signedIn), onRetry = ::retry) }
+                        CenterShows.Replay -> BigButton(Symbols.ReplayFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
+                        CenterShows.Play -> BigButton(Symbols.PlayArrowFill, stringResource(id = R.string.btn_play)) { togglePlaying() }
+                        CenterShows.Loading -> WavyLoader(color = Color.White, modifier = Modifier.size(44.dp))
+                        CenterShows.Nothing -> Unit
                     }
                 }
             }
 
             // Only says what the hold does, so it is no control, and no glass: a dim capsule
-            if (fast && phase == Phase.Open) {
-                Row(
+            Refocus(
+                targetState = fast && phase == Phase.Open,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 48.dp),
+            ) { held ->
+                if (held) Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .statusBarsPadding()
-                        .padding(top = 48.dp)
-                        .background(Color.Black.copy(alpha = 0.35f), SmoothCornerShape.Capsule),
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.35f), SmoothCornerShape.Capsule),
                 ) {
                     Icon(
                         imageVector = Symbols.FastForwardFill,
@@ -1316,3 +1329,6 @@ private fun Modifier.covering(aspect: Float): Modifier = layout { measurable, co
     val placeable = measurable.measure(Constraints.fixed(w, h))
     layout(width, height) { placeable.place((width - w) / 2, (height - h) / 2) }
 }
+
+/** What the middle of the video shows over the picture. */
+private enum class CenterShows { Nothing, Seek, Failure, Replay, Play, Loading }
