@@ -2,8 +2,10 @@ package oolong.client.ui.page.subposts
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +27,8 @@ import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.reply.ReplyTo
 import oolong.client.ui.page.reply.rememberReplyChromeState
 import oolong.client.ui.page.reply.rememberReplyComposer
+import oolong.client.ui.page.thread.LandedFloor
+import oolong.client.ui.page.thread.LocalLandedFloor
 import oolong.client.ui.page.thread.ThreadPreferences
 import oolong.client.ui.widgets.compose.LocalCopySheets
 import oolong.client.utils.TiebaUtil
@@ -45,6 +49,7 @@ fun SubPostsRoute(
     val coroutineScope = rememberCoroutineScope()
     val account = LocalAccount.current
     val listState = rememberLazyListState()
+    val landed = remember { LandedFloor() }
     val hideReply by rememberPreferenceAsState(booleanPreferencesKey("hideReply"), false)
     val hideBlocked by rememberPreferenceAsState(booleanPreferencesKey("hideBlockedContent"), false)
 
@@ -53,7 +58,10 @@ fun SubPostsRoute(
             when (effect) {
                 SubPostsEffect.NavigateUp -> navigator.navigateUp()
                 is SubPostsEffect.ScrollToSubPost -> viewModel.state.value.indexOfSubPost(effect.subPostId)
-                    ?.let { listState.scrollToItem(it) }
+                    ?.let {
+                        listState.scrollToItem(it)
+                        launch { landed.land(effect.subPostId) }
+                    }
                 // The reply count header, under the post
                 SubPostsEffect.ScrollToReplies -> listState.scrollToItem(1)
             }
@@ -125,15 +133,17 @@ fun SubPostsRoute(
     }
 
     ProvideNavigator(navigator = navigator) {
-        SubPostsScreen(
-            state = state,
-            onEvent = onEvent,
-            isSheet = isSheet,
-            replyAvatar = account?.portrait,
-            preferences = ThreadPreferences(hideReply = hideReply, hideBlocked = hideBlocked),
-            listState = listState,
-            chrome = chrome,
-            reply = reply,
-        )
+        CompositionLocalProvider(LocalLandedFloor provides landed) {
+            SubPostsScreen(
+                state = state,
+                onEvent = onEvent,
+                isSheet = isSheet,
+                replyAvatar = account?.portrait,
+                preferences = ThreadPreferences(hideReply = hideReply, hideBlocked = hideBlocked),
+                listState = listState,
+                chrome = chrome,
+                reply = reply,
+            )
+        }
     }
 }

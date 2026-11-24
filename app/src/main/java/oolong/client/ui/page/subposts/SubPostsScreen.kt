@@ -56,11 +56,13 @@ import oolong.client.ui.page.reply.ReplyChromeState
 import oolong.client.ui.page.reply.ReplyComposer
 import oolong.client.ui.page.reply.panelShown
 import oolong.client.ui.page.reply.rememberReplyChromeState
+import oolong.client.ui.page.thread.LocalLandedFloor
 import oolong.client.ui.page.thread.PostCardOptions
 import oolong.client.ui.page.thread.PostItem
 import oolong.client.ui.page.thread.ThreadEvent
 import oolong.client.ui.page.thread.ThreadFloor
 import oolong.client.ui.page.thread.ThreadPreferences
+import oolong.client.ui.page.thread.landedGlow
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
@@ -302,15 +304,18 @@ private fun SubPostsContent(
                 }
             }
             itemsIndexed(items = subPosts.items, key = { _, it -> it.subPost.id }) { index, item ->
-                SubPostReply(
-                    post = post,
-                    item = item,
-                    threadAuthorId = state.threadAuthorId,
-                    canDelete = state.viewerId != null && (item.subPost.author.id == state.viewerId || state.threadAuthorId == state.viewerId),
-                    hideReply = preferences.hideReply,
-                    last = index == subPosts.items.lastIndex && !subPosts.hasMore,
-                    onEvent = onEvent,
-                )
+                // The reply jumped to lights up once, as a floor jumped to does
+                Box(modifier = Modifier.landedGlow(item.subPost.id, LocalLandedFloor.current)) {
+                    SubPostReply(
+                        post = post,
+                        item = item,
+                        threadAuthorId = state.threadAuthorId,
+                        canDelete = state.viewerId != null && (item.subPost.author.id == state.viewerId || state.threadAuthorId == state.viewerId),
+                        hideReply = preferences.hideReply,
+                        last = index == subPosts.items.lastIndex && !subPosts.hasMore,
+                        onEvent = onEvent,
+                    )
+                }
             }
             loadMoreFooter(subPosts.append, subPosts.hasMore, onRetry = { onEvent(SubPostsEvent.LoadMore) })
         }

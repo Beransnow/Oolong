@@ -649,7 +649,7 @@ internal val LocalLandedFloor = staticCompositionLocalOf<LandedFloor?> { null }
 
 /** Lights this floor while it is the one [landed] on. */
 @Composable
-private fun Modifier.landedGlow(postId: Long, landed: LandedFloor?): Modifier {
+internal fun Modifier.landedGlow(postId: Long, landed: LandedFloor?): Modifier {
     if (landed == null || landed.postId != postId) return this
     val color = ExtendedTheme.colors.accent.copy(alpha = LandedAlpha)
     return drawWithContent {
