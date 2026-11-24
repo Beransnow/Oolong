@@ -22,7 +22,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.model.UserProfile
@@ -126,6 +130,7 @@ fun UserProfilePage(
                     onFollow = viewModel::toggleFollow,
                     onUnfollow = viewModel::toggleFollow,
                     onRefresh = viewModel::refreshAll,
+                    loading = state.load == LoadStatus.Loading,
                     onAddToList = viewModel::addToList,
                     onBlack = {
                         viewModel.loadBlack()
@@ -173,6 +178,8 @@ private fun UserProfileContent(
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
+    /** Whether the profile is loading again, which a pull shows until it is done. */
+    loading: Boolean,
     onAddToList: (allow: Boolean) -> Unit,
     /** Opens the blacklist settings; null when no one is logged in. */
     onBlack: (() -> Unit)?,
@@ -204,6 +211,7 @@ private fun UserProfileContent(
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
                 onRefresh = onRefresh,
+                loading = loading,
                 onAddToList = onAddToList,
                 onBlack = onBlack,
                 listContent = listContent,
@@ -321,6 +329,7 @@ private fun UserProfileContentNormal(
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
     onRefresh: () -> Unit,
+    loading: Boolean,
     onAddToList: (allow: Boolean) -> Unit,
     /** Opens the blacklist settings; null when no one is logged in. */
     onBlack: (() -> Unit)?,
@@ -361,12 +370,17 @@ private fun UserProfileContentNormal(
                 )
             },
         ) { contentPadding ->
-            var isFakeRefreshing by remember { mutableStateOf(false) }
-            LaunchedEffect(isFakeRefreshing) {
-                if (isFakeRefreshing) {
-                    delay(1000)
-                    isFakeRefreshing = false
+            // A pull spins until the profile has loaded again: until loading has started and
+            // ended, or at most a while if it never starts
+            var pulled by remember { mutableStateOf(false) }
+            val currentLoading by rememberUpdatedState(loading)
+            LaunchedEffect(pulled) {
+                if (!pulled) return@LaunchedEffect
+                withTimeoutOrNull(PullMostMillis) {
+                    snapshotFlow { currentLoading }.first { it }
+                    snapshotFlow { currentLoading }.first { !it }
                 }
+                pulled = false
             }
             ProvideContentColor(color = ExtendedTheme.colors.text) {
                 SharedHeaderPager(
@@ -378,10 +392,10 @@ private fun UserProfileContentNormal(
                     // The header and the lists follow a pull; the colour behind them stays
                     frame = { content ->
                         PullRefresh(
-                            refreshing = isFakeRefreshing,
+                            refreshing = pulled,
                             onRefresh = {
                                 onRefresh()
-                                isFakeRefreshing = true
+                                pulled = true
                             },
                             indicatorTop = contentPadding.calculateTopPadding(),
                         ) { content() }
@@ -535,3 +549,6 @@ private fun WithBackBar(onBack: () -> Unit, content: @Composable () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { content() }
     }
 }
+
+/** The longest a pull spins when loading never starts. */
+private const val PullMostMillis = 10_000L
