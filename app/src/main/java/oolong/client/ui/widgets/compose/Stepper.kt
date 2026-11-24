@@ -1,8 +1,10 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,10 +20,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
+import oolong.client.ui.widgets.compose.Refocus
 
 /**
  * Setting a number one step at a time within [range]: − and + on the page's own colour on either
@@ -39,13 +43,17 @@ fun Stepper(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         StepButton(Symbols.Remove, down, enabled = value > range.first) { onChange(value - 1) }
-        Text(
-            text = text,
-            style = TextStyles.bodyCompact.copy(fontFeatureSettings = "tnum"),
-            color = ExtendedTheme.colors.text,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(52.dp),
-        )
+        // Each step refocuses the value in place
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.width(52.dp)) {
+            Refocus(targetState = text) {
+                Text(
+                    text = it,
+                    style = TextStyles.bodyCompact.copy(fontFeatureSettings = "tnum"),
+                    color = ExtendedTheme.colors.text,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         StepButton(Symbols.Add, up, enabled = value < range.last) { onChange(value + 1) }
     }
 }
@@ -57,7 +65,7 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
     Icon(
         icon,
         contentDescription = label,
-        tint = if (enabled) colors.text else colors.textDisabled,
+        tint = animateColorAsState(if (enabled) colors.text else colors.textDisabled, Motion.settle(), label = "stepTint").value,
         modifier = Modifier
             .pressScale(press)
             .size(32.dp)

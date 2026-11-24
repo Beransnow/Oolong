@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -9,12 +10,14 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import oolong.client.ui.common.theme.compose.Dimens
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.pressScale
 
@@ -47,7 +50,8 @@ fun IconButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        val contentAlpha = if (enabled) LocalContentAlpha.current else ContentAlpha.disabled
+        // Turning unavailable, it fades rather than greys in a frame
+        val contentAlpha by animateFloatAsState(if (enabled) LocalContentAlpha.current else ContentAlpha.disabled, Motion.settle(), label = "iconButtonEnabled")
         CompositionLocalProvider(LocalContentAlpha provides contentAlpha, content = content)
     }
 }
