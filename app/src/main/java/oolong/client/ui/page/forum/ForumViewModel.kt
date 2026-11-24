@@ -234,8 +234,15 @@ class ForumViewModel @AssistedInject constructor(
                 goodClassId = selection.goodClassId,
             )
             page.forum?.let { loaded ->
-                if (forum.value == null) history.save(loaded)
-                forum.value = loaded
+                val current = forum.value
+                if (current == null) history.save(loaded)
+                // Only the latest threads count the whole forum: the good threads, of a class
+                // above all, come with how many good threads there are
+                forum.value = if (current == null || tab == ForumTab.Latest) {
+                    loaded
+                } else {
+                    loaded.copy(memberCount = current.memberCount, threadCount = current.threadCount, postCount = current.postCount)
+                }
                 tbs = page.tbs ?: tbs
             }
             page.threads
