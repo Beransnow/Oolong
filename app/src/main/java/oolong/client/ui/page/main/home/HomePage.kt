@@ -3,6 +3,10 @@ package oolong.client.ui.page.main.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -329,16 +333,24 @@ private fun ForumItemContent(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(CenterVertically)
                 )
-                if (item.signedIn) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Symbols.Check,
-                        contentDescription = stringResource(id = R.string.tip_signed),
-                        modifier = Modifier
-                            .size(12.dp)
-                            .align(CenterVertically),
-                        tint = ExtendedTheme.colors.onChip
-                    )
+                // Signed in, the mark opens beside the level
+                AnimatedVisibility(
+                    visible = item.signedIn,
+                    modifier = Modifier.align(CenterVertically),
+                    enter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle()),
+                    exit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss()),
+                ) {
+                    Row {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Symbols.Check,
+                            contentDescription = stringResource(id = R.string.tip_signed),
+                            modifier = Modifier
+                                .size(12.dp)
+                                .align(CenterVertically),
+                            tint = ExtendedTheme.colors.onChip
+                        )
+                    }
                 }
             }
         }
