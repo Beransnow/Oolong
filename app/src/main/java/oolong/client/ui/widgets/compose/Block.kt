@@ -1,5 +1,13 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -18,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import oolong.client.R
 import oolong.client.model.BlockRule
@@ -27,6 +36,7 @@ import oolong.client.model.flat
 import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.page.settings.block.conditionSentence
@@ -102,8 +112,26 @@ fun BlockableContent(
 ) {
     var shown by rememberSaveable(block?.rule?.id) { mutableStateOf(false) }
     when {
-        block == null || shown -> content()
-        block.hidden || hideAll -> Unit
-        else -> Box(modifier = modifier) { tip(blockReason(block.rule)) { shown = true } }
+        block == null -> content()
+        block.hidden || hideAll -> if (shown) content()
+        // Shown on a tap, it opens out of the tip: the space grows as the content condenses into it
+        else -> AnimatedContent(
+            targetState = shown,
+            transitionSpec = {
+                EnterTransition.None togetherWith fadeOut(Motion.fadeOut()) using
+                    SizeTransform(clip = true) { _, _ -> Motion.settle(IntSize.VisibilityThreshold) }
+            },
+            contentAlignment = Alignment.TopStart,
+            label = "blocked",
+        ) { now ->
+            val focus = transition.animateFloat(transitionSpec = { Motion.settle(Motion.ProgressThreshold) }, label = "blockedFocus") {
+                if (it == EnterExitState.PreEnter) 0f else 1f
+            }
+            Box(modifier = Modifier.condense({ focus.value }, blur = RevealBlur, scale = 0.98f, fadeFaster = 2.5f)) {
+                if (now) content() else Box(modifier = modifier) { tip(blockReason(block.rule)) { shown = true } }
+            }
+        }
     }
 }
+
+private val RevealBlur = 6.dp
