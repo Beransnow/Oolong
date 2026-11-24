@@ -99,6 +99,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -136,6 +137,7 @@ import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.photoview.LightSystemBars
+import oolong.client.ui.page.photoview.flightSpeed
 import oolong.client.ui.page.photoview.offsetTo
 import oolong.client.ui.utils.FullColorWindow
 import oolong.client.ui.widgets.compose.ContextMenuItem
@@ -366,7 +368,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         }
         val miniRect = Rect(miniHeld ?: miniAt.value, miniSize)
 
-        fun close() {
+        fun close(velocity: Velocity = Velocity.Zero) {
             if (phase == Phase.Closing) return
             viewer.leave(video.key, player.currentPosition, duration)
             player.pause()
@@ -377,9 +379,13 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             drag = Offset.Zero
             dragging = false
             phase = Phase.Closing
+            // Let go with a fling, the video carries on at the finger's speed
+            val from = far
+            val to = near
+            val flight = if (from != null && to != null) flightSpeed(from, to, velocity) else 0f
             scope.launch {
                 progress.snapTo(1f)
-                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold), initialVelocity = flight)
                 viewer.closed()
             }
         }
@@ -447,7 +453,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
             player.play()
         }
 
-        val onClose by rememberUpdatedState<() -> Unit> { close() }
+        val onClose by rememberUpdatedState<(Velocity) -> Unit> { close(it) }
         BackHandler(enabled = phase != Phase.Closing && !mini) {
             if (landscape) setLandscape(false) else close()
         }
@@ -632,7 +638,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                                 }
                                 val velocity = tracker.calculateVelocity()
                                 if (drag.y > 96.dp.toPx() || velocity.y > 900.dp.toPx()) {
-                                    onClose()
+                                    onClose(Velocity(velocity.x, velocity.y))
                                 } else {
                                     scope.launch {
                                         Animatable(drag, Offset.VectorConverter).animateTo(Offset.Zero, Motion.settle()) { drag = value }

@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -213,7 +214,8 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             }
         }
 
-        fun close() {
+        /** Flies the picture back, carrying on at the speed of the [velocity] it was let go with. */
+        fun close(velocity: Velocity = Velocity.Zero) {
             if (phase == Phase.Closing) return
             val picture = current
             val picId = picture?.picId ?: openedItem?.picId
@@ -227,14 +229,15 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             drag = Offset.Zero
             dragging = false
             phase = Phase.Closing
+            val flight = near?.let { flightSpeed(far, it, velocity) } ?: 0f
             scope.launch {
                 progress.snapTo(1f)
-                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold), initialVelocity = flight)
                 viewer.closed()
             }
         }
 
-        val onClose by rememberUpdatedState<() -> Unit> { close() }
+        val onClose by rememberUpdatedState<(Velocity) -> Unit> { close(it) }
         BackHandler(enabled = phase != Phase.Closing) { close() }
         // Picking text, back leaves it first
         BackHandler(enabled = phase != Phase.Closing && text.active) { text.stop() }
@@ -289,7 +292,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                                     if (active) {
                                         val velocity = tracker.calculateVelocity()
                                         val dismiss = drag.y > 96.dp.toPx() || velocity.y > 900.dp.toPx()
-                                        if (dismiss) onClose() else scope.launch {
+                                        if (dismiss) onClose(Velocity(velocity.x, velocity.y)) else scope.launch {
                                             release(drag, Offset.Zero) { drag = it }
                                             dragging = false
                                         }
@@ -344,7 +347,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                             if (text.url == picture.originUrl) {
                                 if (share == null || !text.selectLineAt(share)) text.stop()
                             } else if (!text.active) {
-                                onClose()
+                                onClose(Velocity.Zero)
                             }
                         },
                         onLongPress = { at ->
@@ -686,3 +689,19 @@ internal fun pageKeys(pictures: List<ThreadPicture>): List<String> {
         if (count == 1) key else "${key}_$count"
     }
 }
+
+/**
+ * How fast a flight from [from] to [to], measured as progress from 1 down to 0, starts when the
+ * picture is let go at [velocity]: the finger's speed along the way to [to], over its length. Only
+ * speed towards [to] carries over, and no more than a flight would sensibly start with.
+ */
+internal fun flightSpeed(from: Rect, to: Rect, velocity: Velocity): Float {
+    val way = to.center - from.center
+    val length = way.getDistance()
+    if (length < 1f) return 0f
+    val along = (velocity.x * way.x + velocity.y * way.y) / length
+    return -(along.coerceAtLeast(0f) / length).coerceAtMost(MaxFlightSpeed)
+}
+
+/** Progress a second a flight may start at, so a hard fling still reads as flying back. */
+private const val MaxFlightSpeed = 8f
