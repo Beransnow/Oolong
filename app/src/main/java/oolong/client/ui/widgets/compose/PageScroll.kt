@@ -1,5 +1,8 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
@@ -36,6 +39,7 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import oolong.client.ui.common.theme.compose.Motion
+import kotlin.math.PI
 import kotlin.math.abs
 
 /**
@@ -68,10 +72,45 @@ class PageScrollState internal constructor() {
             return Offset.Zero
         }
 
+        override suspend fun onPreFling(available: Velocity): Velocity =
+            if (snapFling(-available.y)) available else Velocity.Zero
+
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
             directed.forEach { it.onScrollEnd() }
             return Velocity.Zero
         }
+    }
+
+    /** How a fling slows down, to tell where one let go now would stop; set by the scaffold. */
+    internal var flingDecay: DecayAnimationSpec<Float>? = null
+
+    /**
+     * A fling that would stop inside a range that snaps goes instead to the range's nearer end,
+     * carrying the fling's speed into a spring, so it slows into its place as one move rather than
+     * stopping and then setting off again. Returns whether it took the fling.
+     */
+    private suspend fun snapFling(velocity: Float): Boolean {
+        val source = inView ?: return false
+        val scrollable = source.scrollable ?: return false
+        val decay = flingDecay ?: return false
+        val scrolled = source.scrolled()
+        // Far down a list the distance to its top isn't known, nor near a range anyway
+        if (scrolled >= FarScroll) return false
+        val from = scrolled.toFloat()
+        val end = decay.calculateTargetValue(from, velocity)
+        val range = snapRanges.firstOrNull { end > it.start && end < it.endInclusive } ?: return false
+        val target = if (end - range.start < range.endInclusive - end) range.start else range.endInclusive
+        // No faster than the spring can take without passing its end: snapping never bounces
+        val most = SettleOmega * abs(target - from)
+        val speed = velocity.coerceIn(-most, most)
+        scrollable.scroll {
+            var last = from
+            animate(from, target, speed, Motion.settle()) { value, _ ->
+                scrollBy(value - last)
+                last = value
+            }
+        }
+        return true
     }
 
     /** Where the scaffold starts, so a page in a pane beside another still counts as in view. */
@@ -152,6 +191,9 @@ class PageScrollState internal constructor() {
         }
     }
 }
+
+/** How quickly [Motion.settle] closes in, in radians a second: 2π over its response. */
+private const val SettleOmega = 2 * PI.toFloat() / 0.4f
 
 /** Far enough that nothing driven by the scroll is still moving, but small enough to blend. */
 private const val FarScroll = 1 shl 14

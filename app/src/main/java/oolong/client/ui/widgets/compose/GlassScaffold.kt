@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
@@ -128,7 +129,11 @@ fun GlassScaffold(
             }
         }
     } else null
-    LaunchedEffect(pageScroll) { pageScroll.settle() }
+    val flingDecay = rememberSplineBasedDecay<Float>()
+    LaunchedEffect(pageScroll) {
+        pageScroll.flingDecay = flingDecay
+        pageScroll.settle()
+    }
     // The page's own parts share its large title and scroll edge; what floats over the page has
     // none, rather than an enclosing page's
     val page: @Composable (@Composable () -> Unit) -> Unit = { slot ->
