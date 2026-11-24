@@ -1,6 +1,7 @@
 package oolong.client.ui.page.editor
 
 import android.graphics.Bitmap
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -70,6 +71,7 @@ import oolong.client.ui.widgets.compose.floatingGlass
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.sign
 import kotlin.math.sin
 
 /** How far past filling the frame a picture can be zoomed. */
@@ -253,14 +255,48 @@ private class CropState(private val scope: CoroutineScope) {
         }
     }
 
+    /**
+     * Where the fingers would have taken the picture with no bounds; past them it follows with
+     * growing resistance, as a list pulled past its end does, and springs back when let go.
+     */
+    private var freeScale = 0f
+    private var freeOffset = Offset.Zero
+
+    /** Fingers down: the picture stops where it is and is taken from there. */
+    fun grab() {
+        animation?.cancel()
+        freeScale = scale
+        freeOffset = offset
+    }
+
     /** Zooms by [zoom] about [centroid], from the frame's centre, and moves by [pan]. */
     fun transform(centroid: Offset, pan: Offset, zoom: Float) {
         animation?.cancel()
         moved = true
-        val next = (scale * zoom).coerceIn(fill(turns), fill(turns) * MaxZoom)
-        val by = next / scale
-        offset = clamp((offset - centroid) * by + centroid + pan, next, turns)
+        if (freeScale <= 0f) grab()
+        val least = fill(turns)
+        val most = least * MaxZoom
+        freeScale *= zoom
+        val next = when {
+            freeScale < least -> least * resist(freeScale / least)
+            freeScale > most -> most * resist(freeScale / most)
+            else -> freeScale
+        }
+        freeOffset = (freeOffset - centroid) * zoom + centroid + pan
+        val within = clamp(freeOffset, next, turns)
+        val past = freeOffset - within
+        offset = within + Offset(resist(past.x, frame.width), resist(past.y, frame.height))
         scale = next
+    }
+
+    /** Fingers up: back within the bounds, if pulled past them. */
+    fun letGo() {
+        freeScale = 0f
+        val least = fill(turns)
+        val target = scale.coerceIn(least, least * MaxZoom)
+        val home = clamp(offset * (target / scale), target, turns)
+        if (target == scale && home == offset) return
+        to(turns, target, home, spec = Motion.settle())
     }
 
     fun rotate() {
@@ -278,7 +314,7 @@ private class CropState(private val scope: CoroutineScope) {
         }
     }
 
-    private fun to(turns: Int, scale: Float, offset: Offset, then: () -> Unit = {}) {
+    private fun to(turns: Int, scale: Float, offset: Offset, spec: AnimationSpec<Float> = Motion.morph(), then: () -> Unit = {}) {
         animation?.cancel()
         val fromDegrees = degrees
         val fromScale = this.scale
@@ -286,7 +322,7 @@ private class CropState(private val scope: CoroutineScope) {
         this.turns = turns
         val toDegrees = turns * 90f
         animation = scope.launch {
-            animate(0f, 1f, animationSpec = Motion.morph()) { t, _ ->
+            animate(0f, 1f, animationSpec = spec) { t, _ ->
                 degrees = lerp(fromDegrees, toDegrees, t)
                 this@CropState.scale = max(lerp(fromScale, scale, t), cover(degrees))
                 this@CropState.offset = lerp(fromOffset, offset, t)
@@ -322,10 +358,12 @@ private fun CropArea(
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
                     state.touching = true
+                    state.grab()
                     do {
                         val event = awaitPointerEvent()
                     } while (event.changes.any { it.pressed })
                     state.touching = false
+                    state.letGo()
                 }
             }
             .pointerInput(state) {
@@ -388,4 +426,14 @@ private fun DrawScope.drawGrid(frame: Rect, color: Color) {
         drawLine(color, Offset(x, frame.top), Offset(x, frame.bottom), stroke)
         drawLine(color, Offset(frame.left, y), Offset(frame.right, y), stroke)
     }
+}
+
+/** A ratio past a bound, such as a zoom of 0.8 of the least, shown with resistance: nearer 1. */
+private fun resist(ratio: Float): Float = 1f + (ratio - 1f) * 0.35f / (1f + abs(ratio - 1f))
+
+/** A distance [past] a bound, shown with resistance that grows towards [span]: never more than a third of it. */
+private fun resist(past: Float, span: Float): Float {
+    if (past == 0f || span <= 0f) return 0f
+    val d = abs(past)
+    return sign(past) * (1f - 1f / (d * 0.55f / span + 1f)) * span / 3f
 }
