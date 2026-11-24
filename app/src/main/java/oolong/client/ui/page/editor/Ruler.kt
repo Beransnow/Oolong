@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sign
@@ -140,6 +141,8 @@ fun Ruler(
                 detectTapGestures(onDoubleTap = {
                     scope.launch {
                         raw.stop()
+                        // Back to the middle by way of the values between, so what it sets turns back
+                        Animatable(current).animateTo(rest, Motion.settle()) { change(value) }
                         change(rest)
                         commit()
                     }
