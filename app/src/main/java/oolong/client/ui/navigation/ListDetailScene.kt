@@ -188,9 +188,13 @@ private fun <T : Any> ListDetailLayout(
             val width = shown.value + with(density) { delta.toDp() }
             coroutineScope.launch { shown.snapTo(width.coerceIn(0.dp, maxListWidth)) }
         }
+        // The touch area stays inside the scene: folded away, half of it lay past the scene's edge,
+        // under the rail, where no touch reaches it, and the list could not be pulled back out
+        val dividerX = (shownWidth - DividerTouchWidth / 2).coerceAtLeast(0.dp)
         Divider(
+            lineAt = shownWidth - dividerX,
             modifier = Modifier
-                .offset(x = shownWidth - DividerTouchWidth / 2)
+                .offset(x = dividerX)
                 .draggable(
                     state = dragState,
                     orientation = Orientation.Horizontal,
@@ -296,21 +300,24 @@ private fun EmptyPane() {
 
 /** A hairline between the panes with a grip in the middle; wider to touch than it looks. */
 @Composable
-private fun Divider(modifier: Modifier) {
+private fun Divider(lineAt: Dp, modifier: Modifier) {
+    // The line and the grip centred on [lineAt], from the touch area's start
     Box(
         modifier = modifier
             .width(DividerTouchWidth)
             .fillMaxHeight(),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.CenterStart,
     ) {
         Box(
             modifier = Modifier
+                .offset(x = lineAt - 0.5.dp)
                 .width(1.dp)
                 .fillMaxHeight()
                 .background(ExtendedTheme.colors.divider)
         )
         Box(
             modifier = Modifier
+                .offset(x = (lineAt - 2.dp).coerceAtLeast(0.dp))
                 .size(width = 4.dp, height = 36.dp)
                 .background(ExtendedTheme.colors.textDisabled.copy(alpha = 0.5f), GripShape)
         )
