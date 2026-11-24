@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -47,8 +48,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -296,12 +296,13 @@ fun PromptDialog(
                     focusedLabelColor = ExtendedTheme.colors.emphasis
                 )
             )
+            // The keyboard comes up with the dialog: as soon as its window has the focus, which
+            // it needs to take the keyboard, rather than after a fixed wait
+            val windowInfo = LocalWindowInfo.current
             LaunchedEffect(focusRequester) {
                 focusRequester.requestFocus()
-                launch {
-                    delay(300)
-                    softwareKeyboardController?.show()
-                }
+                snapshotFlow { windowInfo.isWindowFocused }.first { it }
+                softwareKeyboardController?.show()
             }
         }
     }
