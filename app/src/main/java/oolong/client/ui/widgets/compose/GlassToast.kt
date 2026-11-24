@@ -1,6 +1,7 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -17,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
@@ -61,7 +64,17 @@ fun GlassToast(
     if (!visible && gone) return
     val colors = ExtendedTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = if (detail != null) DetailedToastShape else ToastShape
+    // Leaving, it keeps what it said, rather than taking up the next message on its way out;
+    // showing, a detail coming or going opens or closes in place
+    var shownText by remember { mutableStateOf(text) }
+    var shownDetail by remember { mutableStateOf(detail) }
+    if (visible) {
+        shownText = text
+        shownDetail = detail
+    }
+    val detailed = shownDetail != null
+    val shape = if (detailed) DetailedToastShape else ToastShape
+    val inset by animateDpAsState(if (detailed) Spacing.sm else 0.dp, Motion.settle(), label = "toastInset")
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -72,7 +85,7 @@ fun GlassToast(
             .floatingGlass(shape, pressable = onClick != null)
             .then(if (onClick != null) Modifier.clickable(interactionSource, indication = null, onClick = onClick) else Modifier)
             .padding(start = if (icon != null) Spacing.md else Spacing.lg, end = Spacing.xxs)
-            .padding(vertical = if (detail != null) Spacing.sm else 0.dp),
+            .padding(vertical = inset),
     ) {
         if (icon != null) {
             Icon(painter = icon, contentDescription = null, tint = colors.text, modifier = Modifier.size(24.dp))
@@ -80,17 +93,17 @@ fun GlassToast(
         }
         Column(modifier = Modifier.weight(1f, fill = false)) {
             // A new message in a toast still showing refocuses in place
-            Refocus(targetState = text) {
+            Refocus(targetState = shownText) {
                 Text(
                     text = it,
                     style = TextStyles.label,
-                    fontWeight = if (detail != null) FontWeight.Bold else null,
+                    fontWeight = if (detailed) FontWeight.Bold else null,
                     color = colors.text,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (detail != null) {
+            Reveal(shownDetail) { detail ->
                 Text(
                     text = detail,
                     style = TextStyles.caption,
