@@ -33,7 +33,8 @@ fun newAppImageLoader(context: Context): ImageLoader {
         .addInterceptor(ImageDownloadProgress.interceptor)
         .build()
     return ImageLoader.Builder(context)
-        .crossfade(true)
+        // As quick as the app's other fades in (design-system.md §7.2), instead of Coil's 200 ms
+        .crossfade(120)
         .components {
             add(OkHttpNetworkFetcherFactory(callFactory = { client }))
             add(

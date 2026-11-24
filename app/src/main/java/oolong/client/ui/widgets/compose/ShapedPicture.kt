@@ -52,6 +52,7 @@ internal fun Modifier.shapedPicture(
     shape: Shape,
     contentScale: ContentScale,
     colorFilter: ColorFilter?,
+    appear: () -> Float = { 1f },
     picture: () -> ShapedPicture,
 ): Modifier = this
     .graphicsLayer {
@@ -81,12 +82,15 @@ internal fun Modifier.shapedPicture(
                 val brush = PictureBrush(bitmap, scale.scaleX, scale.scaleY, Offset(at.x.toFloat(), at.y.toFloat()))
                 val covers = at.x <= 0 && at.y <= 0 && drawn.width >= size.width && drawn.height >= size.height
                 onDrawWithContent {
+                    // Just come in, the picture fades in over the placeholder's colour
+                    val alpha = appear().coerceIn(0f, 1f)
+                    if (alpha < 1f) drawOutline(outline, shown.color, colorFilter = colorFilter)
                     if (covers) {
-                        drawOutline(outline, brush, colorFilter = colorFilter)
+                        drawOutline(outline, brush, alpha = alpha, colorFilter = colorFilter)
                     } else {
                         // Only where the picture is, as the picture alone would be drawn
                         clipRect(at.x.toFloat(), at.y.toFloat(), at.x + drawn.width, at.y + drawn.height) {
-                            drawOutline(outline, brush, colorFilter = colorFilter)
+                            drawOutline(outline, brush, alpha = alpha, colorFilter = colorFilter)
                         }
                     }
                 }

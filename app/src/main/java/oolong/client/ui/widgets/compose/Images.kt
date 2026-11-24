@@ -3,6 +3,7 @@ package oolong.client.ui.widgets.compose
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.util.LruCache
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -16,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -50,12 +52,15 @@ import coil3.SingletonImageLoader
 import coil3.asImage
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
+import coil3.decode.DataSource
 import coil3.memory.MemoryCache
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.photoview.photoMenuItems
 import oolong.client.utils.ImageUtil
@@ -160,6 +165,9 @@ fun ContentImage(
         )
     }
     var animated by remember(imageUri) { mutableStateOf(false) }
+    // A picture fetched rather than already in memory fades in, as Coil's own crossfade does
+    val appear = remember(imageUri) { Animatable(1f) }
+    val appearScope = rememberCoroutineScope()
     val request = remember(imageUri, load, placeholderColor) {
         ImageRequest.Builder(context)
             .data(imageUri)
@@ -177,6 +185,12 @@ fun ContentImage(
             name?.let { ShownPictures[it] = state.result.memoryCacheKey }
             if (shape != null) {
                 val image = state.result.image
+                if (shown == null && state.result.dataSource != DataSource.MEMORY_CACHE) {
+                    appearScope.launch {
+                        appear.snapTo(0f)
+                        appear.animateTo(1f, Motion.fadeIn())
+                    }
+                }
                 shown = (image as? BitmapImage)?.bitmap
                 animated = image !is BitmapImage
             }
@@ -192,7 +206,7 @@ fun ContentImage(
         modifier = if (shape == null) {
             modifier
         } else {
-            modifier.shapedPicture(shape, contentScale, if (darken) DarkenFilter else null) {
+            modifier.shapedPicture(shape, contentScale, if (darken) DarkenFilter else null, appear = { appear.value }) {
                 ShapedPicture(shown, animated, placeholderColor)
             }
         },
