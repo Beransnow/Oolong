@@ -1,6 +1,7 @@
 package oolong.client.ui.page.search
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +48,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.Refocus
 
 /**
  * The keywords searched for before, as chips: the first [CollapsedCount] until the user expands
@@ -129,18 +132,24 @@ fun SearchHistoryList(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // The arrow turns over rather than being swapped, and the words refocus
+                    val turned by animateFloatAsState(if (expanded) 180f else 0f, Motion.settle(), label = "historyArrow")
                     Icon(
-                        imageVector = if (expanded) Symbols.ExpandLess else Symbols.ExpandMore,
+                        imageVector = Symbols.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier
+                            .size(16.dp)
+                            .graphicsLayer { rotationZ = turned }
                     )
-                    Text(
-                        text = stringResource(
-                            id = if (expanded) R.string.button_expand_less_history else R.string.button_expand_more_history
-                        ),
-                        style = MaterialTheme.typography.button,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Refocus(targetState = expanded) { shown ->
+                        Text(
+                            text = stringResource(
+                                id = if (shown) R.string.button_expand_less_history else R.string.button_expand_more_history
+                            ),
+                            style = MaterialTheme.typography.button,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

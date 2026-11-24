@@ -1,6 +1,11 @@
 package oolong.client.ui.page.main
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -73,6 +78,7 @@ import androidx.compose.ui.util.lerp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -382,7 +388,13 @@ fun MainSearchField(
                             .graphicsLayer { alpha = if (atTop) 1f else ((state.progress.value - 0.4f) / 0.6f).coerceIn(0f, 1f) }
                             .focusRequester(state.focusRequester),
                     )
-                    if (input.isNotEmpty() && state.open) {
+                    // Comes with the first character typed and goes with the last
+                    val reduced = LocalReduceMotion.current
+                    AnimatedVisibility(
+                        visible = input.isNotEmpty() && state.open,
+                        enter = if (reduced) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.6f),
+                        exit = if (reduced) fadeOut(Motion.fadeOut()) else fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.6f),
+                    ) {
                         CompositionLocalProvider(LocalContentColor provides colors.textSecondary) {
                             FieldButton(
                                 icon = Symbols.Close,
