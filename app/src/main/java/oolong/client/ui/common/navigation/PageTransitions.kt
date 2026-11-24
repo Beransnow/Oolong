@@ -178,6 +178,13 @@ object PageTransitions {
         // Worked out alongside the morph, above
         val heroFlies = origins?.flight != null
         return when {
+            // Opaque pages fade in over the layout going, which stays till then, so the ground
+            // never shows through half way; over the wallpaper the two cross-fade
+            relayout && overlap.value -> PageTransition(
+                { fadeIn(seeked()) togetherWith ExitTransition.KeepUntilTransitionsFinished },
+                drive = tween(CrossFadeMillis),
+                zIndex = 1f,
+            )
             relayout -> PageTransition(
                 { fadeIn(seeked()) togetherWith fadeOut(seeked()) },
                 drive = tween(CrossFadeMillis),
@@ -242,8 +249,13 @@ object PageTransitions {
      * A quick cross-fade, for changes that are not a step deeper or back: one page swapped for
      * another at the same level, or the same pages laid out again for a new window size.
      */
-    fun crossFade(): ContentTransform =
+    fun crossFade(overlap: Boolean = false): ContentTransform = if (overlap) {
+        // Opaque, the new page fades in over the old, which stays till then, so the ground
+        // never shows through half way
+        (fadeIn(tween(CrossFadeMillis)) togetherWith fadeOut(tween(durationMillis = 1, delayMillis = CrossFadeMillis))).apply { targetContentZIndex = 1f }
+    } else {
         fadeIn(tween(CrossFadeMillis)) togetherWith fadeOut(tween(CrossFadeMillis))
+    }
 
     private const val CrossFadeMillis = 200
 

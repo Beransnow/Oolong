@@ -257,7 +257,7 @@ private fun <T : Any> Pane(entry: NavEntry<T>?) {
                 // The empty pane counts as the bottom of the pane: the first page opened slides in
                 // over it, and closing the last slides back to it
                 when {
-                    change.jump -> PageTransitions.crossFade()
+                    change.jump -> PageTransitions.crossFade(overlap.value)
                     // The page stays below the new one: a step deeper
                     (from == null || from in change.after) && to != null && to !in change.before ->
                         PageTransitions.transitionSpec<NavEntry<T>?>(overlap)()
@@ -265,7 +265,7 @@ private fun <T : Any> Pane(entry: NavEntry<T>?) {
                     from != null && from !in change.after && (to == null || to in change.before) ->
                         PageTransitions.popTransitionSpec<NavEntry<T>?>(overlap)()
                     // One page swapped for another, as a list opening a different thread
-                    else -> PageTransitions.crossFade()
+                    else -> PageTransitions.crossFade(overlap.value)
                 }
             },
             modifier = Modifier.fillMaxSize(),
