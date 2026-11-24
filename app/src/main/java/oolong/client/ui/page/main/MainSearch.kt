@@ -128,18 +128,24 @@ class MainSearchState(open: Boolean) {
     /** Opened by the user, so the field takes the focus and brings up the keyboard once it shows. */
     var wantsFocus by mutableStateOf(false)
 
+    /**
+     * With motion reduced the field doesn't stretch out of the button: it gets there in about the
+     * time a fade takes, so what shows is search fading in and out where it stands.
+     */
+    var reduced = false
+
     suspend fun open() {
         open = true
         wantsFocus = true
         // The search content is composed and laid out, still unseen, a frame before the button
         // starts to stretch, so that work doesn't hold up the motion's first frame
         withFrameNanos {}
-        progress.animateTo(1f, Motion.morph())
+        progress.animateTo(1f, if (reduced) Motion.fadeIn() else Motion.morph())
     }
 
     suspend fun close() {
         open = false
-        progress.animateTo(0f, Motion.dismiss())
+        progress.animateTo(0f, if (reduced) Motion.fadeOut() else Motion.dismiss())
     }
 }
 
@@ -148,6 +154,7 @@ fun rememberMainSearchState(): MainSearchState {
     var saved by rememberSaveable { mutableStateOf(false) }
     val state = remember { MainSearchState(saved) }
     saved = state.open
+    state.reduced = LocalReduceMotion.current
     return state
 }
 
