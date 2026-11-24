@@ -300,8 +300,8 @@ private fun BoxScope.RefreshIndicator(
     LaunchedEffect(armed) {
         if (armed && state.dragging && !refreshing) {
             haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-            bump.snapTo(1.15f)
-            bump.animateTo(1f, Motion.snap())
+            // Swells from where it is and settles back, rather than jumping larger first
+            bump.animateTo(1f, Motion.pop(), initialVelocity = BumpVelocity)
         }
     }
     // Spins from the refresh until the list is back up, so the arc doesn't jump as it ends
@@ -393,3 +393,6 @@ private class PullState(private val scope: CoroutineScope) {
         return (1f / (1f - p / dim) - 1f) * dim / Resistance
     }
 }
+
+/** How fast the indicator swells on reaching the point of refreshing, in scale a second. */
+private const val BumpVelocity = 2.5f

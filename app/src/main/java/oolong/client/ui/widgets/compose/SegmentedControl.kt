@@ -30,6 +30,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -125,14 +126,22 @@ fun SegmentedControl(
                         scope.launch { position.animateTo(optionAt(down.position.x).roundToInt().toFloat(), Motion.snap()) }
                         var dragging = false
                         var last = position.value.roundToInt()
+                        // The finger's speed when it lifts, in options a second, which the thumb carries on with
+                        val tracker = VelocityTracker()
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
-                                val target = if (dragging) position.value.roundToInt() else optionAt(change.position.x).roundToInt()
+                                val speed = if (dragging) tracker.calculateVelocity().x / width else 0f
+                                // Thrown, it goes on to the option it was headed for
+                                val target = if (dragging) {
+                                    (position.value + speed * ThrowLookAhead).roundToInt().coerceIn(0, count - 1)
+                                } else {
+                                    optionAt(change.position.x).roundToInt()
+                                }
                                 holding = false
                                 if (target != currentSelected) currentOnSelect(target)
-                                scope.launch { position.animateTo(target.toFloat(), Motion.snap()) }
+                                scope.launch { position.animateTo(target.toFloat(), Motion.snap(), initialVelocity = speed) }
                                 return@awaitEachGesture
                             }
                             if (change.isConsumed) break
@@ -144,6 +153,7 @@ fun SegmentedControl(
                             }
                             if (dragging) {
                                 change.consume()
+                                tracker.addPosition(change.uptimeMillis, change.position)
                                 val at = optionAt(change.position.x)
                                 scope.launch { position.snapTo(at) }
                                 if (at.roundToInt() != last) {
@@ -222,3 +232,6 @@ private val PillShape = SmoothCornerShape.Capsule
 /** How much the pill grows while held, as a switch's knob does. */
 private val HeldGrowthWidth = 16.dp
 private val HeldGrowthHeight = 14.dp
+
+/** How far ahead, in seconds of its speed, a thrown thumb is taken to land. */
+private const val ThrowLookAhead = 0.1f

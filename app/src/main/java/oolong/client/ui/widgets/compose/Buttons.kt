@@ -1,5 +1,6 @@
 package oolong.client.ui.widgets.compose
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.Dimens
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
@@ -57,7 +59,9 @@ fun Button(
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     content: @Composable RowScope.() -> Unit
 ) {
-    val contentColor by colors.contentColor(enabled)
+    // Turning available or not, its colours ease over rather than changing in a frame
+    val contentColor by animateColorAsState(colors.contentColor(enabled).value, Motion.settle(), label = "buttonContent")
+    val backgroundColor by animateColorAsState(colors.backgroundColor(enabled).value, Motion.settle(), label = "buttonBackground")
     // On glass that answers presses, such as a top bar's, the glass shows them instead
     val onGlass = pressedByGlass()
     // The press veil takes the content colour, so a filled button lightens rather than darkens
@@ -68,7 +72,7 @@ fun Button(
                 .heightIn(min = minHeight)
                 .then(if (onGlass) Modifier else Modifier.pressScale(interactionSource)),
             shape = shape,
-            color = colors.backgroundColor(enabled).value,
+            color = backgroundColor,
             contentColor = contentColor.copy(alpha = 1f),
             border = border,
             elevation = elevation?.elevation(enabled, interactionSource)?.value ?: 0.dp,
