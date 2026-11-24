@@ -34,6 +34,7 @@ import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.FeedCard
+import oolong.client.ui.widgets.compose.KeepTopThroughRefresh
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
@@ -79,6 +80,7 @@ fun ConcernScreen(
     ) {
         val lazyListState = rememberLazyListState()
         LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+        KeepTopThroughRefresh(lazyListState, list.refresh == LoadStatus.Loading)
         PullRefresh(
             refreshing = list.refresh == LoadStatus.Loading,
             revealUnpulled = true,

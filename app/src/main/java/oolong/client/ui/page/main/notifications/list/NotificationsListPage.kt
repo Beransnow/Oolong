@@ -47,6 +47,7 @@ import oolong.client.ui.widgets.compose.Container
 import oolong.client.ui.widgets.compose.EmoticonText
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
+import oolong.client.ui.widgets.compose.KeepTopThroughRefresh
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MetaText
 import oolong.client.ui.widgets.compose.MyLazyColumn
@@ -119,6 +120,7 @@ fun NotificationList(
     val error = (list.refresh as? LoadStatus.Error)?.error
     val lazyListState = rememberLazyListState()
     LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+    KeepTopThroughRefresh(lazyListState, refreshing)
     StateScreen(
         isEmpty = list.items.isEmpty(),
         isError = error != null,

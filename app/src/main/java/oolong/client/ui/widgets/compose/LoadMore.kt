@@ -14,10 +14,13 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -152,4 +155,20 @@ private fun LazyListState.distanceToEnd(): Float {
     val below = (last.offset + last.size - info.viewportEndOffset).coerceAtLeast(0)
     val average = visible.sumOf { it.size }.toFloat() / visible.size
     return below + average * (info.totalItemsCount - 1 - last.index)
+}
+
+/**
+ * Keeps a list at its top through a refresh begun there. New items arrive in front of the first
+ * one, which the list keeps in view by its key, leaving them out of sight above it; the list goes
+ * back to its top in the frame they arrive instead.
+ */
+@Composable
+fun KeepTopThroughRefresh(state: LazyListState, refreshing: Boolean) {
+    var wasRefreshing by remember { mutableStateOf(refreshing) }
+    var fromTop by remember { mutableStateOf(false) }
+    SideEffect {
+        if (refreshing && !wasRefreshing) fromTop = state.firstVisibleItemIndex == 0
+        if (!refreshing && wasRefreshing && fromTop) state.requestScrollToItem(0)
+        wasRefreshing = refreshing
+    }
 }
