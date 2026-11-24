@@ -81,6 +81,7 @@ import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.TabClickMenu
 import oolong.client.ui.widgets.compose.choiceMenuItems
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.picker.ListSinglePicker
 
 @Immutable
@@ -337,7 +338,7 @@ private fun SearchSuggestionList(
             key = { it }
         ) {
             Container(
-                modifier = Modifier.animateItem()
+                modifier = Modifier.motionItem(this)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

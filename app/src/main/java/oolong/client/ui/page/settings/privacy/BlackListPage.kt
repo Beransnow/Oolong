@@ -54,6 +54,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.loadMoreFooter
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 import javax.inject.Inject
@@ -127,6 +128,7 @@ fun BlackListPage(
                             blacked = blacked,
                             onOpen = { navigator.navigate(UserProfileKey(blacked.user.id)) },
                             onRemove = { viewModel.remove(blacked) },
+                            modifier = Modifier.motionItem(this),
                         )
                     }
                     loadMoreFooter(list.append, list.hasMore, viewModel::loadMore)
@@ -138,7 +140,7 @@ fun BlackListPage(
 
 /** One user: avatar, name, what they are barred from, and lifting it. */
 @Composable
-private fun BlackedRow(blacked: BlackedUser, onOpen: () -> Unit, onRemove: () -> Unit) {
+private fun BlackedRow(blacked: BlackedUser, onOpen: () -> Unit, onRemove: () -> Unit, modifier: Modifier = Modifier) {
     val settings = blacked.settings
     val bars = listOfNotNull(
         stringResource(id = R.string.black_list_follow).takeIf { settings.follow },
@@ -146,7 +148,7 @@ private fun BlackedRow(blacked: BlackedUser, onOpen: () -> Unit, onRemove: () ->
         stringResource(id = R.string.black_list_chat).takeIf { settings.chat },
     )
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .padding(start = Spacing.md, end = Spacing.sm, top = Spacing.sm, bottom = Spacing.sm),

@@ -66,6 +66,7 @@ import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.inlineContentSafe
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getUsernameAnnotatedString
@@ -156,7 +157,8 @@ fun ThreadStoreScreen(
                             info = thread,
                             onUserClick = { thread.author?.let(onOpenUser) },
                             onClick = { onOpen(thread) },
-                            onDelete = { onRemove(thread) }
+                            onDelete = { onRemove(thread) },
+                            modifier = Modifier.motionItem(this),
                         )
                     }
                     loadMoreFooter(list.append, list.hasMore, onLoadMore)

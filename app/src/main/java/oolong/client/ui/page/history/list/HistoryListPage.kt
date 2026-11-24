@@ -54,6 +54,7 @@ import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.ui.widgets.compose.motionItem
 
 /**
  * One tab of the history, under the days its visits were on, with a field above that narrows it;
@@ -86,8 +87,8 @@ fun <T : HistoryEntry> HistoryListContent(
             contentPadding = contentPadding,
         ) {
             if (selected == null) {
-                item(key = "search", contentType = "search") { HistorySearchField(query, searchHint, onQueryChange) }
-                if (historyOff) item(key = "off", contentType = "off") { HistoryOffRow(onTurnOn = onTurnOnHistory) }
+                item(key = "search", contentType = "search") { Box(modifier = Modifier.motionItem(this)) { HistorySearchField(query, searchHint, onQueryChange) } }
+                if (historyOff) item(key = "off", contentType = "off") { Box(modifier = Modifier.motionItem(this)) { HistoryOffRow(onTurnOn = onTurnOnHistory) } }
             }
             if (list.isEmpty && query.isNotBlank()) {
                 item(key = "nothing", contentType = "nothing") {
@@ -97,13 +98,14 @@ fun <T : HistoryEntry> HistoryListContent(
                         color = ExtendedTheme.colors.textSecondary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
+                            .motionItem(this)
                             .fillMaxWidth()
                             .padding(vertical = 48.dp),
                     )
                 }
             }
             list.sections.forEach { section ->
-                item(key = section.day, contentType = "day") { DayHeader(section.day) }
+                item(key = section.day, contentType = "day") { Box(modifier = Modifier.motionItem(this)) { DayHeader(section.day) } }
                 entries(section.entries, selected, onOpen, onDelete, onSelect, onStartSelecting)
             }
         }
@@ -124,7 +126,7 @@ private fun <T : HistoryEntry> LazyListScope.entries(
         val chosen = selected != null && entry.id in selected
         Column(
             modifier = Modifier
-                .animateItem()
+                .motionItem(this)
                 .then(
                     if (selected != null) {
                         Modifier.toggleable(value = chosen, role = Role.Checkbox, onValueChange = { onSelect(entry) })

@@ -53,6 +53,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.loadMoreFooter
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
 import javax.inject.Inject
 
@@ -125,6 +126,7 @@ fun DislikedForumsPage(
                             forum = forum,
                             onOpen = { navigator.navigate(ForumKey(forum.name)) },
                             onCancel = { viewModel.cancel(forum) },
+                            modifier = Modifier.motionItem(this),
                         )
                     }
                     loadMoreFooter(list.append, list.hasMore, viewModel::loadMore)
@@ -135,9 +137,9 @@ fun DislikedForumsPage(
 }
 
 @Composable
-private fun ForumRow(forum: DislikedForum, onOpen: () -> Unit, onCancel: () -> Unit) {
+private fun ForumRow(forum: DislikedForum, onOpen: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onOpen)
             .padding(start = Spacing.md, end = Spacing.sm, top = Spacing.sm, bottom = Spacing.sm),

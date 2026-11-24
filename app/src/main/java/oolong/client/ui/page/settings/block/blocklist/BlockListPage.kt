@@ -83,6 +83,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.maskTo
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.rememberDialogState
 
 @Composable
@@ -163,13 +164,13 @@ fun BlockListScreen(
                 )
             }
             if (stale.isNotEmpty() && filter == RuleFilter.All && query.isBlank()) {
-                item(key = "stale") { StaleBanner(stale.size, onClean = { cleanDialog.show() }) }
+                item(key = "stale") { Box(modifier = Modifier.motionItem(this)) { StaleBanner(stale.size, onClean = { cleanDialog.show() }) } }
             }
             if (shown.isEmpty() && !state.loading) {
                 item(key = "empty") {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        modifier = Modifier.motionItem(this).fillMaxWidth().padding(vertical = 48.dp),
                     ) {
                         Text(
                             text = stringResource(id = if (state.rules.isEmpty()) R.string.rules_empty else R.string.rules_none_found),
@@ -199,7 +200,7 @@ fun BlockListScreen(
                     else -> RectangleShape
                 }
                 // The first and last rows' rounded ends are masked: a clip to them is jagged on some GPUs
-                Box(modifier = Modifier.padding(horizontal = Spacing.md).then(if (shape == RectangleShape) Modifier.clipToBounds() else Modifier.maskTo(shape))) {
+                Box(modifier = Modifier.motionItem(this).padding(horizontal = Spacing.md).then(if (shape == RectangleShape) Modifier.clipToBounds() else Modifier.maskTo(shape))) {
                     SwipeToDismiss(
                         state = dismissState,
                         directions = setOf(DismissDirection.EndToStart),
