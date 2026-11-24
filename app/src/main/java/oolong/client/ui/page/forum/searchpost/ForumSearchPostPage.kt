@@ -47,16 +47,17 @@ import oolong.client.ui.page.main.mainSearchPadding
 import oolong.client.ui.page.main.rememberOpenSearchState
 import oolong.client.ui.page.search.SearchHistoryList
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassScaffold
-import oolong.client.ui.widgets.compose.GlassStatusBar
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.LocalChromePadding
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.PullRefresh
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SearchThreadList
 import oolong.client.ui.widgets.compose.TabClickMenu
 import oolong.client.ui.widgets.compose.choiceMenuItems
@@ -150,14 +151,13 @@ fun ForumSearchPostScreen(
                 when {
                     // The bar's row is kept clear for the field, laid over it
                     atTop -> GlassTopBar(title = {}) {
-                        if (searching) ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads)
+                        Reveal(Unit.takeIf { searching }) { Column { ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads) } }
                     }
 
-                    searching -> GlassTopBar(title = null) {
-                        ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads)
+                    // Only the tabs, which open under the status bar once there are any
+                    else -> GlassTopBar(title = null) {
+                        Reveal(Unit.takeIf { searching }) { Column { ForumSearchTabRow(state, onSetOrder, onSetOnlyThreads) } }
                     }
-
-                    else -> GlassStatusBar()
                 }
             },
             overlay = {
@@ -174,55 +174,57 @@ fun ForumSearchPostScreen(
                 )
             },
         ) { paddingValues ->
-            if (searching) {
-                StateScreen(
-                    modifier = Modifier.fillMaxSize(),
-                    isEmpty = list.items.isEmpty(),
-                    isError = error != null,
-                    isLoading = isRefreshing,
-                    onReload = onRefresh,
-                    errorScreen = { ErrorScreen(error = error) }
-                ) {
-                    // Each search and each tab starts from the top
-                    val lazyListState = key(state.keyword, state.onlyThreads, state.order) { rememberLazyListState() }
-                    LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
-                    PullRefresh(
-                        refreshing = isRefreshing,
-                        onRefresh = onRefresh,
+            ContentSwap(targetState = searching, modifier = Modifier.fillMaxSize()) { results ->
+                if (results) {
+                    StateScreen(
                         modifier = Modifier.fillMaxSize(),
-                        indicatorTop = paddingValues.calculateTopPadding(),
-                        endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+                        isEmpty = list.items.isEmpty(),
+                        isError = error != null,
+                        isLoading = isRefreshing,
+                        onReload = onRefresh,
+                        errorScreen = { ErrorScreen(error = error) }
                     ) {
-                        SearchThreadList(
-                            data = list.items,
-                            lazyListState = lazyListState,
-                            onItemClick = onOpen,
-                            onItemUserClick = onOpenUser,
-                            onItemForumClick = {},
-                            onQuotePostClick = onOpenQuoted,
-                            onMainPostClick = onOpenThread,
-                            hideForum = true,
-                            searchKeyword = state.keyword,
-                            contentPadding = paddingValues,
-                            blockOf = { state.blocks[it.key] },
-                            footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
-                        )
+                        // Each search and each tab starts from the top
+                        val lazyListState = key(state.keyword, state.onlyThreads, state.order) { rememberLazyListState() }
+                        LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
+                        PullRefresh(
+                            refreshing = isRefreshing,
+                            onRefresh = onRefresh,
+                            modifier = Modifier.fillMaxSize(),
+                            indicatorTop = paddingValues.calculateTopPadding(),
+                            endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
+                        ) {
+                            SearchThreadList(
+                                data = list.items,
+                                lazyListState = lazyListState,
+                                onItemClick = onOpen,
+                                onItemUserClick = onOpenUser,
+                                onItemForumClick = {},
+                                onQuotePostClick = onOpenQuoted,
+                                onMainPostClick = onOpenThread,
+                                hideForum = true,
+                                searchKeyword = state.keyword,
+                                contentPadding = paddingValues,
+                                blockOf = { state.blocks[it.key] },
+                                footer = { loadMoreFooter(list.append, list.hasMore, onLoadMore) },
+                            )
+                        }
                     }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(paddingValues)
-                ) {
-                    Container {
-                        SearchHistoryList(
-                            searchHistories = state.history,
-                            onSearchHistoryClick = { search(it.keyword) },
-                            onDelete = onForget,
-                            onClear = onClearHistory,
-                        )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(paddingValues)
+                    ) {
+                        Container {
+                            SearchHistoryList(
+                                searchHistories = state.history,
+                                onSearchHistoryClick = { search(it.keyword) },
+                                onDelete = onForget,
+                                onClear = onClearHistory,
+                            )
+                        }
                     }
                 }
             }
