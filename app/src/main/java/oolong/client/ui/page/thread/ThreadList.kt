@@ -89,6 +89,7 @@ import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.LocalPressedByGlass
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.SharedThreadCard
 import oolong.client.ui.widgets.compose.VerticalDivider
@@ -195,7 +196,7 @@ internal fun ThreadContent(
                 item(key = THREAD_HEADER_KEY) { ThreadHeader(state, onEvent) }
             }
             if (posts.hasPrevious && !newestFirst) {
-                item(key = "LoadPrevious") { LoadPreviousButton(onEvent) }
+                item(key = "LoadPrevious") { LoadPreviousButton(loading = posts.prepend == LoadStatus.Loading, onEvent = onEvent) }
             }
             itemsIndexed(
                 items = posts.items,
@@ -343,27 +344,35 @@ private fun SortSwitch(newestFirst: Boolean, onEvent: (ThreadEvent) -> Unit, mod
 private val SortSwitchSize = 38.dp
 
 @Composable
-private fun LoadPreviousButton(onEvent: (ThreadEvent) -> Unit) {
+private fun LoadPreviousButton(loading: Boolean, onEvent: (ThreadEvent) -> Unit) {
     Container {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onEvent(ThreadEvent.LoadPrevious) }
+                .clickable(enabled = !loading) { onEvent(ThreadEvent.LoadPrevious) }
                 .padding(8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Symbols.AlignVerticalTop,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = stringResource(id = R.string.btn_load_previous),
-                color = ExtendedTheme.colors.text,
-                fontSize = 14.sp
-            )
+            // While the page above loads, the button refocuses into the loader in its place
+            Refocus(targetState = loading) { now ->
+                if (now) {
+                    WavyLoader(modifier = Modifier.size(24.dp))
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Symbols.AlignVerticalTop,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = stringResource(id = R.string.btn_load_previous),
+                            color = ExtendedTheme.colors.text,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }
