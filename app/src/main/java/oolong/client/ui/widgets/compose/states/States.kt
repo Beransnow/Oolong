@@ -1,5 +1,11 @@
 package oolong.client.ui.widgets.compose.states
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,8 +26,10 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.TipScreen
+import oolong.client.ui.widgets.compose.condense
 
 val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_loading_paperplane))
@@ -92,24 +100,46 @@ fun StateScreen(
         enabled = isEmpty && !isLoading,
         onClick = onReload
     ) else Modifier
-    Box(
-        modifier = modifier
-            then clickableModifier,
-        contentAlignment = Alignment.Center
-    ) {
-        if (!isEmpty) {
-            stateScreenScope.content()
-        } else {
-            if (isLoading) {
-                stateScreenScope.loadingScreen()
-            } else if (isError) {
-                stateScreenScope.errorScreen()
-            } else {
-                stateScreenScope.emptyScreen()
+    val phase = when {
+        !isEmpty -> Phase.Content
+        isLoading -> Phase.Loading
+        isError -> Phase.Error
+        else -> Phase.Empty
+    }
+    // What comes in condenses into focus while what was there fades away (design-system.md §7.2);
+    // the first state shows at once
+    AnimatedContent(
+        targetState = phase,
+        modifier = modifier then clickableModifier,
+        contentAlignment = Alignment.Center,
+        transitionSpec = { EnterTransition.None togetherWith fadeOut(Motion.fadeOut()) using null },
+        label = "StateScreen",
+    ) { shown ->
+        val focus = transition.animateFloat(
+            transitionSpec = { Motion.settle(Motion.ProgressThreshold) },
+            label = "StateScreenFocus",
+        ) { if (it == EnterExitState.PreEnter) 0f else 1f }
+        Box(
+            modifier = Modifier.condense({ focus.value }, blur = EnterBlur, scale = EnterScale, fadeFaster = EnterFadeFaster),
+            contentAlignment = Alignment.Center,
+        ) {
+            when (shown) {
+                Phase.Content -> stateScreenScope.content()
+                Phase.Loading -> stateScreenScope.loadingScreen()
+                Phase.Error -> stateScreenScope.errorScreen()
+                Phase.Empty -> stateScreenScope.emptyScreen()
             }
         }
     }
 }
+
+private enum class Phase { Content, Loading, Error, Empty }
+
+private val EnterBlur = 8.dp
+private const val EnterScale = 0.96f
+
+/** Opacity runs ahead of the spring, which starts from rest and would keep it faint at first. */
+private const val EnterFadeFaster = 2.5f
 
 class StateScreenScope(
     private val onReload: (() -> Unit)? = null
