@@ -1,5 +1,7 @@
 package oolong.client.ui.page.settings.block
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -57,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -68,6 +71,7 @@ import oolong.client.model.FlatCondition
 import oolong.client.model.flat
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
@@ -233,12 +237,14 @@ private fun GroupTitle(text: String) {
 /** The tests in one group, a row each: what it looks at, how it judges, the value, and removing it. */
 @Composable
 private fun ConditionList(conditions: FlatCondition, onTest: (Int, FlatCondition.Test) -> Unit, onRemove: (Int) -> Unit) {
-    if (conditions.tests.isEmpty()) return
     val colors = ExtendedTheme.colors
+    // The block grows and shrinks as tests are added and removed, its corners kept; with none it
+    // has no height
     Column(
         modifier = Modifier
             .padding(horizontal = Spacing.md)
             .fillMaxWidth()
+            .animateContentSize(Motion.settle(IntSize.VisibilityThreshold))
             .background(colors.chip, Corners.md),
     ) {
         conditions.tests.forEachIndexed { index, test ->
