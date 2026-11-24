@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,10 +37,12 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterVertically
@@ -110,7 +113,9 @@ import oolong.client.ui.widgets.compose.MyLazyVerticalGrid
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
+import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.longPressMenu
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -402,6 +407,7 @@ private fun ForumItem(
     onAddTopForum: (FollowedForum) -> Unit,
     onDeleteTopForum: (FollowedForum) -> Unit,
     isTopForum: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val pin = stringResource(id = if (isTopForum) R.string.menu_top_del else R.string.menu_top)
@@ -410,7 +416,7 @@ private fun ForumItem(
     // The forum's page opens out of its item, and closes back into it
     val origin = rememberPageOrigin()
     Box(
-        modifier = Modifier.pageOrigin(origin).longPressMenu(
+        modifier = modifier.pageOrigin(origin).longPressMenu(
             items = {
                 listOf(
                     ContextMenuItem(if (isTopForum) Symbols.KeepFill else Symbols.Keep, pin) {
@@ -614,12 +620,35 @@ fun HomeScreen(
                     }
                 }
             ) {
+                // The forums glide when one comes or goes, but follow the recent forums opening at once
+                val expansionStill by remember(expansion) { derivedStateOf { expansion.progress <= 0f || expansion.open } }
+                // Between one column and a grid every forum moves, and those coming from off screen
+                // would cross the others: the grid comes into focus in its new layout instead
+                val relayout = remember { Animatable(1f, Motion.ProgressThreshold) }
+                var gliding by remember { mutableStateOf(true) }
+                var shownSingle by remember { mutableStateOf(single) }
+                if (shownSingle != single) {
+                    shownSingle = single
+                    gliding = false
+                }
+                LaunchedEffect(single) {
+                    if (relayout.value < 1f || !gliding) {
+                        // From already visible, half blurred: starting from nothing flashes the page empty
+                        relayout.snapTo(RelayoutFrom)
+                        // Gliding comes back once the new layout has been placed without it
+                        withFrameNanos {}
+                        gliding = true
+                        relayout.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
+                    }
+                }
+                val settled = expansionStill && gliding
                 MyLazyVerticalGrid(
                     columns = gridCells,
                     state = gridState,
                     contentPadding = listPadding,
                     modifier = Modifier
                         .fillMaxSize()
+                        .condense({ relayout.value }, blur = RelayoutBlur, scale = RelayoutScale, fadeFaster = RelayoutFadeFaster)
                         .nestedScroll(expansion.connection),
                 ) {
                     item(key = "SearchBox", span = { GridItemSpan(maxLineSpan) }) {
@@ -638,7 +667,7 @@ fun HomeScreen(
                     }
                     if (pinned.isNotEmpty()) {
                         item(key = "TopForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            Column(modifier = Modifier.motionItem(this, settled).padding(vertical = 8.dp)) {
                                 Header(text = stringResource(id = R.string.title_top_forum), invert = true)
                             }
                         }
@@ -650,13 +679,14 @@ fun HomeScreen(
                                 onUnfollow = { onEvent(HomeEvent.Unfollow(it)) },
                                 onAddTopForum = { onEvent(HomeEvent.Pin(it)) },
                                 onDeleteTopForum = { onEvent(HomeEvent.Unpin(it)) },
-                                isTopForum = true
+                                isTopForum = true,
+                                modifier = Modifier.motionItem(this, settled),
                             )
                         }
                     }
                     if (showHistoryForum || pinned.isNotEmpty()) {
                         item(key = "ForumHeader", span = { GridItemSpan(maxLineSpan) }) {
-                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            Column(modifier = Modifier.motionItem(this, settled).padding(vertical = 8.dp)) {
                                 Header(text = stringResource(id = R.string.forum_list_title), invert = true)
                             }
                         }
@@ -670,6 +700,7 @@ fun HomeScreen(
                             onAddTopForum = { onEvent(HomeEvent.Pin(it)) },
                             onDeleteTopForum = { onEvent(HomeEvent.Unpin(it)) },
                             isTopForum = item.id in state.pinnedIds,
+                            modifier = Modifier.motionItem(this, settled),
                         )
                     }
                 }
@@ -824,3 +855,10 @@ private object ForumGridCells : GridCells {
         return List(count) { size + if (it < rest) 1 else 0 }
     }
 }
+
+private val RelayoutBlur = 8.dp
+private const val RelayoutScale = 0.98f
+private const val RelayoutFrom = 0.4f
+
+/** Opacity runs ahead of the spring, which starts from rest and would keep the grid faint at first. */
+private const val RelayoutFadeFaster = 3f
