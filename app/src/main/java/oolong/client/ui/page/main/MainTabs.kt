@@ -89,7 +89,8 @@ fun rememberMainTabItems(tabs: MainTabs): ImmutableList<NavigationItem> {
             icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications) },
             title = { stringResource(id = R.string.title_notifications) },
             badge = messageCount > 0,
-            badgeText = "$messageCount",
+            // Past two figures the badge would outgrow the icon it sits on
+            badgeText = if (messageCount > 99) "99+" else "$messageCount",
             onClick = { tabs.messageCount = 0 },
         ),
         NavigationItem(

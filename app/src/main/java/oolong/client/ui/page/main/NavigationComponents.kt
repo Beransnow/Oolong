@@ -1,13 +1,18 @@
 package oolong.client.ui.page.main
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +35,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
@@ -38,6 +44,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.selection.selectable
@@ -106,6 +113,7 @@ import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.LocalChromeStyle
 import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.OwnAvatar
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.classicBarGlass
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.glassLens
@@ -279,26 +287,37 @@ private fun NavItemIcon(
                 modifier = Modifier.size(24.dp),
             )
         }
-        if (navigationItem.badge) {
-            Text(
-                textAlign = TextAlign.Center,
-                fontSize = 10.sp,
-                color = White,
-                text = navigationItem.badgeText ?: "",
+        // Pops in when something new comes, shrinks away once read, still showing its last count;
+        // a new count refocuses. A circle for one figure, a capsule as wide as the count needs for more
+        var badgeShown by remember { mutableStateOf("") }
+        if (navigationItem.badge) badgeShown = navigationItem.badgeText.orEmpty()
+        AnimatedVisibility(
+            visible = navigationItem.badge,
+            enter = BadgeEnter,
+            exit = BadgeExit,
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(14.dp)
-                    .clip(CircleShape)
-                    .align(Alignment.TopEnd)
-                    .background(
-                        color = ExtendedTheme.colors.emphasis,
-                        shape = CircleShape
-                    ),
-            )
+                    .heightIn(min = BadgeSize)
+                    .widthIn(min = BadgeSize)
+                    .background(color = ExtendedTheme.colors.emphasis, shape = CircleShape)
+                    .padding(horizontal = 3.dp),
+            ) {
+                Refocus(targetState = badgeShown) {
+                    Text(text = it, textAlign = TextAlign.Center, fontSize = 10.sp, lineHeight = 14.sp, color = White, maxLines = 1)
+                }
+            }
         }
     }
 }
 
 private val AvatarRing = 1.5.dp
+
+private val BadgeSize = 14.dp
+private val BadgeEnter = fadeIn(Motion.fadeIn()) + scaleIn(Motion.pop(), initialScale = 0.4f)
+private val BadgeExit = fadeOut(Motion.fadeOut()) + scaleOut(Motion.dismiss(), targetScale = 0.4f)
 
 private val NavPillShape = SmoothCornerShape.Capsule
 private val NavPillPadding = 6.dp
