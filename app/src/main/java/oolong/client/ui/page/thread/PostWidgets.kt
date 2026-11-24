@@ -2,9 +2,9 @@ package oolong.client.ui.page.thread
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.ButtonDefaults
@@ -29,6 +29,8 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.inlineContentSafe
 import oolong.client.utils.StringUtil.getShortNumString
@@ -59,21 +61,26 @@ fun PostAgreeBtn(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                imageVector = if (hasAgreed) Symbols.FavoriteFill else Symbols.Favorite,
+            ToggleIcon(
+                checked = hasAgreed,
+                on = Symbols.FavoriteFill,
+                off = Symbols.Favorite,
                 contentDescription = stringResource(id = R.string.title_agree),
                 tint = animatedColor,
                 modifier = Modifier.size(16.dp)
             )
-            if (agreeNum > 0) {
-                Text(
-                    text = agreeNum.getShortNumString(),
-                    color = animatedColor,
-                    style = MaterialTheme.typography.caption,
-                    textAlign = TextAlign.Center
-                )
+            Refocus(targetState = agreeNum) { num ->
+                if (num > 0) {
+                    Text(
+                        text = num.getShortNumString(),
+                        color = animatedColor,
+                        style = MaterialTheme.typography.caption,
+                        textAlign = TextAlign.Center,
+                        // The gap comes and goes with the count
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
             }
         }
     }

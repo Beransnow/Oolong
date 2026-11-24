@@ -30,6 +30,12 @@ object Motion {
     /** Pages sliding in and out: quicker than [settle], as a push or pop follows a tap. */
     fun <T> page(visibilityThreshold: T? = null): SpringSpec<T> = motionSpring(1f, 0.35f, visibilityThreshold)
 
+    /**
+     * Something turning on with a little bounce: a like's heart filling, a picture being picked.
+     * Only for turning on; turning off uses [dismiss].
+     */
+    fun <T> pop(visibilityThreshold: T? = null): SpringSpec<T> = motionSpring(0.55f, 0.35f, visibilityThreshold)
+
     /** Bottom sheets, dialogs, layout changes. */
     fun <T> settle(visibilityThreshold: T? = null): SpringSpec<T> = motionSpring(1f, 0.4f, visibilityThreshold)
 

@@ -43,6 +43,8 @@ import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.pressedByGlass
 import oolong.client.utils.StringUtil.getShortNumString
@@ -158,6 +160,7 @@ private fun MenuButton(open: Boolean, onClick: () -> Unit) {
 private fun ThreadAgreeButton(agree: Agree, onClick: () -> Unit) {
     val color by animateColorAsState(
         if (agree.agreed) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary,
+        Motion.snap(),
         label = "threadAgreeColor"
     )
     Row(
@@ -166,19 +169,24 @@ private fun ThreadAgreeButton(agree: Agree, onClick: () -> Unit) {
             .clickable(interactionSource = null, indication = if (pressedByGlass()) null else PressFeedback.overlay(CapsuleShape), onClick = onClick)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Icon(
-            imageVector = if (agree.agreed) Symbols.FavoriteFill else Symbols.Favorite,
+        ToggleIcon(
+            checked = agree.agreed,
+            on = Symbols.FavoriteFill,
+            off = Symbols.Favorite,
             contentDescription = stringResource(id = R.string.title_agree),
             tint = color,
         )
-        if (agree.count > 0) {
-            Text(
-                text = agree.count.getShortNumString(),
-                color = color,
-                fontSize = 13.sp,
-            )
+        Refocus(targetState = agree.count) { count ->
+            if (count > 0) {
+                Text(
+                    text = count.getShortNumString(),
+                    color = color,
+                    fontSize = 13.sp,
+                    // The gap comes and goes with the count
+                    modifier = Modifier.padding(start = 3.dp),
+                )
+            }
         }
     }
 }

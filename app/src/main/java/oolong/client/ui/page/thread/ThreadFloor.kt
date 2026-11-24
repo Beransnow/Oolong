@@ -2,6 +2,7 @@ package oolong.client.ui.page.thread
 
 import android.content.Context
 import android.graphics.Typeface
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -109,6 +110,8 @@ import oolong.client.ui.widgets.compose.BlockTip
 import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.trimToCharacters
@@ -967,12 +970,14 @@ fun ThreadFirstPost(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ActionPill(
-                        icon = if (thread.agree.agreed) Symbols.FavoriteFill else Symbols.Favorite,
+                        icon = Symbols.Favorite,
+                        activeIcon = Symbols.FavoriteFill,
                         text = if (thread.agree.count > 0) thread.agree.count.getShortNumString() else stringResource(R.string.title_agree),
                         active = thread.agree.agreed,
                     ) { onEvent(ThreadEvent.AgreeThread) }
                     ActionPill(
-                        icon = if (thread.isStored) Symbols.StarFill else Symbols.Star,
+                        icon = Symbols.Star,
+                        activeIcon = Symbols.StarFill,
                         text = stringResource(if (thread.isStored) R.string.title_collected else R.string.title_collect),
                         active = thread.isStored,
                     ) { onEvent(if (thread.isStored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) }
@@ -1071,8 +1076,8 @@ fun FirstPostContent(
 }
 
 @Composable
-private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick: () -> Unit) {
-    val color = if (active) ExtendedTheme.colors.accent else ExtendedTheme.colors.text
+private fun ActionPill(icon: ImageVector, text: String, active: Boolean, activeIcon: ImageVector = icon, onClick: () -> Unit) {
+    val color by animateColorAsState(if (active) ExtendedTheme.colors.accent else ExtendedTheme.colors.text, Motion.snap(), label = "actionPill")
     val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
@@ -1084,8 +1089,8 @@ private fun ActionPill(icon: ImageVector, text: String, active: Boolean, onClick
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = color)
+        ToggleIcon(checked = active, on = activeIcon, off = icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Refocus(targetState = text) { Text(text = it, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = color) }
     }
 }
 

@@ -657,17 +657,21 @@ fun ThreadAgreeBtn(
 
     ActionBtn(
         icon = {
-            Icon(
-                imageVector = if (hasAgree) Symbols.FavoriteFill else Symbols.Favorite,
+            ToggleIcon(
+                checked = hasAgree,
+                on = Symbols.FavoriteFill,
+                off = Symbols.Favorite,
                 contentDescription = stringResource(id = R.string.desc_like),
             )
         },
         text = {
-            Text(
-                text = if (agreeNum == 0)
-                    stringResource(id = R.string.title_agree)
-                else agreeNum.getShortNumString()
-            )
+            Refocus(targetState = agreeNum) { num ->
+                Text(
+                    text = if (num == 0)
+                        stringResource(id = R.string.title_agree)
+                    else num.getShortNumString()
+                )
+            }
         },
         modifier = modifier,
         color = animatedColor,
