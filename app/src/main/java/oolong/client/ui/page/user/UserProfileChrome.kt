@@ -1,5 +1,6 @@
 package oolong.client.ui.page.user
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,6 +21,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -43,6 +45,7 @@ import oolong.client.models.PicItem
 import oolong.client.ui.common.navigation.pageHeroTarget
 import oolong.client.ui.common.shownIpLocation
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -53,6 +56,7 @@ import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.NetworkImage
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
@@ -252,38 +256,47 @@ private fun ProfileButton(user: UserProfile, isSelf: Boolean, onClick: () -> Uni
     val accent = pageAccentOrPrimary()
     val filled = !isSelf && !user.followed
     val interaction = remember { MutableInteractionSource() }
-    Row(
+    // Following shows at once and is put back if it fails; either way the button eases over
+    val background by animateColorAsState(
+        if (filled) accent else accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f),
+        Motion.snap(),
+        label = "profileButton",
+    )
+    val color by animateColorAsState(if (filled) onPageAccent() else accent, Motion.snap(), label = "profileButtonContent")
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(ButtonHeight)
             .pressScale(interaction)
-            .background(if (filled) accent else accent.copy(alpha = if (ExtendedTheme.colors.isNightMode) 0.2f else 0.12f), SmoothCornerShape.Capsule)
+            .background(background, SmoothCornerShape.Capsule)
             .clickable(interactionSource = interaction, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), role = Role.Button, onClick = onClick),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
-        val color = if (filled) onPageAccent() else accent
-        val icon = when {
-            isSelf -> Symbols.Edit
-            filled -> Symbols.Add
-            else -> null
-        }
-        if (icon != null) {
-            Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-        }
-        Text(
-            text = stringResource(
-                id = when {
-                    isSelf -> R.string.menu_edit_info
-                    filled -> R.string.button_follow
-                    else -> R.string.button_unfollow
+        Refocus(targetState = isSelf to filled) { (self, follow) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val icon = when {
+                    self -> Symbols.Edit
+                    follow -> Symbols.Add
+                    else -> null
                 }
-            ),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = color,
-        )
+                if (icon != null) {
+                    Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = stringResource(
+                        id = when {
+                            self -> R.string.menu_edit_info
+                            follow -> R.string.button_follow
+                            else -> R.string.button_unfollow
+                        }
+                    ),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = color,
+                )
+            }
+        }
     }
 }
 
