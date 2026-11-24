@@ -1,6 +1,9 @@
 package oolong.client.ui.page.topic
 
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +77,7 @@ import oolong.client.repository.ThreadActions
 import oolong.client.repository.Threads
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -187,7 +191,10 @@ fun TopicPage(
         topBar = {
             GlassTopBar(
                 title = {
-                    if (headerGone) GlassTopBarTitle(text = state.topic?.name ?: key.name.ifEmpty { stringResource(R.string.title_topic) })
+                    // Fades in as the header scrolls away and out as it comes back
+                    AnimatedVisibility(visible = headerGone, enter = fadeIn(Motion.fadeIn()), exit = fadeOut(Motion.fadeOut())) {
+                        GlassTopBarTitle(text = state.topic?.name ?: key.name.ifEmpty { stringResource(R.string.title_topic) })
+                    }
                 },
                 navigationIcon = { BackNavigationIcon(onBackPressed = { navigator.navigateUp() }) },
             )
@@ -225,13 +232,14 @@ fun TopicScreen(
         modifier = Modifier.fillMaxSize(),
         isEmpty = list.items.isEmpty() && state.topic == null,
         isError = error != null,
-        isLoading = list.refresh == LoadStatus.Loading,
+        // Pulled to refresh, the page stays and the pull shows it; only the first load replaces it
+        isLoading = list.waiting && state.topic == null,
         onReload = onRefresh,
         errorScreen = { ErrorScreen(error = error, modifier = Modifier.padding(contentPadding)) },
     ) {
         LoadMoreEffect(lazyListState, enabled = list.hasMore && list.append == LoadStatus.Idle, onLoadMore = onLoadMore)
         PullRefresh(
-            refreshing = false,
+            refreshing = list.refresh == LoadStatus.Loading && (list.items.isNotEmpty() || state.topic != null),
             onRefresh = onRefresh,
             indicatorTop = contentPadding.calculateTopPadding(),
             endPull = if (list.hasMore) EndPull.None else EndPull.Tease,
