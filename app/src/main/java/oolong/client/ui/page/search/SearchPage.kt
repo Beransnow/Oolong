@@ -71,6 +71,7 @@ import oolong.client.ui.page.search.forum.SearchForumList
 import oolong.client.ui.page.search.thread.SearchThreadResults
 import oolong.client.ui.page.search.user.SearchUserList
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassStatusBar
 import oolong.client.ui.widgets.compose.GlassTab
@@ -78,6 +79,7 @@ import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
 import oolong.client.ui.widgets.compose.MyBackHandler
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.TabClickMenu
 import oolong.client.ui.widgets.compose.choiceMenuItems
@@ -266,43 +268,42 @@ fun SearchScreen(
                         }
                     },
                 ) {
-                    if (searching) {
-                        SearchTabRow(pagerState = pagerState, pages = pages)
-                    }
+                    Reveal(Unit.takeIf { searching }) { SearchTabRow(pagerState = pagerState, pages = pages) }
                 }
 
                 fieldPlace == SearchFieldPlace.TopBar -> GlassTopBar(title = {}) {
-                    if (searching) {
-                        SearchTabRow(pagerState = pagerState, pages = pages)
-                    }
+                    Reveal(Unit.takeIf { searching }) { SearchTabRow(pagerState = pagerState, pages = pages) }
                 }
 
-                // The field is elsewhere: only the tabs, and before there are any, the status bar
-                searching -> GlassTopBar(title = null) {
-                    SearchTabRow(pagerState = pagerState, pages = pages)
+                // The field is elsewhere: only the tabs, which open under the status bar once there are any
+                else -> GlassTopBar(title = null) {
+                    Reveal(Unit.takeIf { searching }) { SearchTabRow(pagerState = pagerState, pages = pages) }
                 }
-
-                else -> GlassStatusBar()
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (searching) {
-                LazyLoadHorizontalPager(
+        val body = when {
+            searching -> SearchBody.Results
+            state.suggestions.isNotEmpty() && input.isNotBlank() -> SearchBody.Suggestions
+            else -> SearchBody.History
+        }
+        ContentSwap(targetState = body, modifier = Modifier.fillMaxSize()) { shown ->
+            when (shown) {
+                SearchBody.Results -> LazyLoadHorizontalPager(
                     state = pagerState,
                     key = { pages[it].id },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     pages[it].content(paddingValues)
                 }
-            } else if (state.suggestions.isNotEmpty() && input.isNotBlank()) {
-                SearchSuggestionList(
+
+                SearchBody.Suggestions -> SearchSuggestionList(
                     suggestions = state.suggestions,
                     contentPadding = paddingValues,
                     onItemClick = onSearch,
                 )
-            } else {
-                Column(
+
+                SearchBody.History -> Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
@@ -321,6 +322,9 @@ fun SearchScreen(
         }
     }
 }
+
+/** What the search page's body shows. */
+private enum class SearchBody { History, Suggestions, Results }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
