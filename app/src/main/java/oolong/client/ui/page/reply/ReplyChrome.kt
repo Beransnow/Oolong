@@ -218,7 +218,23 @@ fun ReplyChrome(
                 if (currentImeTarget == 0) holdingPanel = false
             }
         }
-        val panelUp = composing && (panelShown || holdingPanel)
+        // Closed with the panel up, the panel slides down the way the keyboard would, with the
+        // composer on it going back into its capsule, instead of vanishing in one frame
+        val panelHeld = composing && (panelShown || holdingPanel)
+        var panelLeaving by remember { mutableStateOf(false) }
+        var panelWasHeld by remember { mutableStateOf(false) }
+        if (panelWasHeld && !composing && !panelLeaving) panelLeaving = true
+        panelWasHeld = panelHeld
+        LaunchedEffect(panelLeaving) {
+            if (!panelLeaving) return@LaunchedEffect
+            try {
+                lowered.animateTo(rememberedImeHeight.toFloat(), Motion.dismiss())
+            } finally {
+                panelLeaving = false
+                lowered.snapTo(0f)
+            }
+        }
+        val panelUp = panelHeld || panelLeaving
         // The composer sits on the keyboard, following it frame by frame as it slides, or on the
         // panel that takes its place, which is as tall as the keyboard last was
         val keyboardTop = when {
@@ -247,7 +263,8 @@ fun ReplyChrome(
                 open.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
             } else {
                 open.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
-                lowered.snapTo(0f)
+                // A panel going down lowers itself and puts this back when it is gone
+                if (!panelLeaving) lowered.snapTo(0f)
             }
         }
         LaunchedEffect(menuOpen) {
@@ -708,12 +725,15 @@ fun ReplyChrome(
                 }
             }
             val fadeSpan = with(density) { PanelFadeSpan.toPx() }
+            // Lowered, it slides down whole rather than growing shorter, so its content keeps its layout
+            val panelHeight = maxOf(keyboardTop, rememberedImeHeight)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(with(density) { keyboardTop.toDp() })
+                    .height(with(density) { panelHeight.toDp() })
                     .graphicsLayer {
+                        translationY = (panelHeight - keyboardTop).toFloat()
                         // Held for the keyboard, it fades as the keyboard arrives under it
                         if (!panelShown && imeTarget > 0) {
                             alpha = (1f - (imeBottom - (imeTarget - fadeSpan)) / fadeSpan).coerceIn(0f, 1f)
