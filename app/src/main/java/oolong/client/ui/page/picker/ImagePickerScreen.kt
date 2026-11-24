@@ -109,6 +109,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
@@ -221,44 +222,52 @@ fun ImagePickerScreen(
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                !readable -> AccessTip(
-                    forever = access == PickerAccess.DeniedForever,
-                    onRequestAccess = onRequestAccess,
-                    onOpenSettings = onOpenSettings,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
-
-                state.loaded && state.images.isEmpty() && access == PickerAccess.All -> TipScreen(
-                    title = { Text(text = stringResource(id = R.string.title_picker_empty)) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                )
-
-                // Another album fades in over the one before, from its top
-                else -> AnimatedContent(
-                    targetState = state,
-                    contentKey = { it.albumId },
-                    transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) },
-                    label = "album",
-                ) { shown ->
-                    ImageGrid(
-                        state = shown,
-                        columns = columns,
-                        onColumns = { columns = it },
-                        selectedOnly = access == PickerAccess.Selected,
-                        contentPadding = padding,
-                        places = gridPlaces,
-                        following = following,
-                        onToggle = onToggle,
-                        onSelect = onSelect,
-                        onOpen = { viewing = Viewing(shown.images, it, gridPlaces) },
-                        onTakePhoto = onTakePhoto,
-                        onSelectMore = onRequestAccess,
+            // Asking for access, the empty note and the pictures replace one another as a whole
+            val face = when {
+                !readable -> PickerFace.Access
+                state.loaded && state.images.isEmpty() && access == PickerAccess.All -> PickerFace.Empty
+                else -> PickerFace.Pictures
+            }
+            ContentSwap(targetState = face, modifier = Modifier.fillMaxSize()) { now ->
+                when (now) {
+                    PickerFace.Access -> AccessTip(
+                        forever = access == PickerAccess.DeniedForever,
+                        onRequestAccess = onRequestAccess,
+                        onOpenSettings = onOpenSettings,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
                     )
+
+                    PickerFace.Empty -> TipScreen(
+                        title = { Text(text = stringResource(id = R.string.title_picker_empty)) },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                    )
+
+                    // Another album fades in over the one before, from its top
+                    PickerFace.Pictures -> AnimatedContent(
+                        targetState = state,
+                        contentKey = { it.albumId },
+                        transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) },
+                        label = "album",
+                    ) { shown ->
+                        ImageGrid(
+                            state = shown,
+                            columns = columns,
+                            onColumns = { columns = it },
+                            selectedOnly = access == PickerAccess.Selected,
+                            contentPadding = padding,
+                            places = gridPlaces,
+                            following = following,
+                            onToggle = onToggle,
+                            onSelect = onSelect,
+                            onOpen = { viewing = Viewing(shown.images, it, gridPlaces) },
+                            onTakePhoto = onTakePhoto,
+                            onSelectMore = onRequestAccess,
+                        )
+                    }
                 }
             }
             if (readable) {
@@ -1086,3 +1095,5 @@ private val ThumbSize = 44.dp
 private val ThumbGap = 6.dp
 private val ThumbCorner = 10.dp
 private const val LiftedScale = 1.15f
+
+private enum class PickerFace { Access, Empty, Pictures }
