@@ -39,6 +39,8 @@ import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.widgets.compose.ArcFrame
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Button
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.drawWavyArc
@@ -87,12 +89,10 @@ internal fun LoginCard(
     if (!shown && enter.value == 0f) return
     // A failure shakes it once, side to side
     val shake = remember { Animatable(0f) }
-    val shakePx = with(LocalDensity.current) { ShakeDistance.toPx() }
+    val shakeVelocity = with(LocalDensity.current) { ShakeVelocity.toPx() }
     LaunchedEffect(last) {
-        if (last is LoginPhase.Failed) {
-            shake.snapTo(shakePx)
-            shake.animateTo(0f, Motion.release())
-        }
+        // From where it stands, thrown sideways and swinging back, rather than jumping aside first
+        if (last is LoginPhase.Failed) shake.animateTo(0f, Motion.pop(), initialVelocity = shakeVelocity)
     }
     CardBody(
         modifier = modifier
@@ -140,25 +140,30 @@ internal fun CardBody(
     ) {
         Box(modifier = Modifier.size(RingSize), contentAlignment = Alignment.Center) { ring() }
         Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = title,
-            style = TextStyles.name,
-            color = ExtendedTheme.colors.text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = text.orEmpty(),
-            style = TextStyles.caption,
-            color = ExtendedTheme.colors.textSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 2.dp),
-        )
-        if (actions != null) {
+        // What it says refocuses as logging in succeeds or fails; the buttons a failure offers open
+        // in place
+        Refocus(targetState = title) {
+            Text(
+                text = it,
+                style = TextStyles.name,
+                color = ExtendedTheme.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Refocus(targetState = text.orEmpty(), modifier = Modifier.padding(top = 2.dp)) {
+            Text(
+                text = it,
+                style = TextStyles.caption,
+                color = ExtendedTheme.colors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Reveal(actions) { shown ->
             Row(
                 modifier = Modifier.padding(top = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                content = actions,
+                content = shown,
             )
         }
     }
@@ -237,7 +242,9 @@ private val RingStroke = 3.dp
 private val RingWave = 1.4.dp
 private val CardBlur = 8.dp
 private const val CardScale = 0.9f
-private val ShakeDistance = 8.dp
+
+/** How fast a failure throws the card sideways, for a swing of about 8dp on the pop spring. */
+private val ShakeVelocity = 240.dp
 
 /** How far round the ring has run when the avatar starts to come up. */
 private const val AvatarAfter = 0.6f

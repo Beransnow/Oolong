@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.lerp
 import kotlinx.coroutines.delay
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -92,10 +93,12 @@ fun SignedInNoticeHost(content: @Composable () -> Unit) {
 
 @Composable
 private fun NoticeOverlay(notice: SignedInNotice, onDone: () -> Unit) {
-    val morph = remember { Animatable(0f) }
-    val fade = remember { Animatable(1f) }
+    // With motion reduced the card doesn't fly down into the toast: the toast fades in where it goes
+    val reduced = LocalReduceMotion.current
+    val morph = remember { Animatable(if (reduced) 1f else 0f) }
+    val fade = remember { Animatable(if (reduced) 0f else 1f) }
     LaunchedEffect(Unit) {
-        morph.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
+        if (reduced) fade.animateTo(1f, Motion.fadeIn()) else morph.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
         delay(StayMillis)
         fade.animateTo(0f, Motion.fadeOut())
         onDone()
