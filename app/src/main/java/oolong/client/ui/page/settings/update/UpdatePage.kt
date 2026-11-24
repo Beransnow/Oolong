@@ -1,6 +1,9 @@
 package oolong.client.ui.page.settings.update
 
 import android.text.format.Formatter
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,6 +42,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -57,6 +61,7 @@ import oolong.client.repository.UpdateVerificationException
 import oolong.client.repository.notesFor
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -68,10 +73,12 @@ import oolong.client.ui.page.settings.about.AboutMark
 import oolong.client.ui.page.settings.about.LensOverlay
 import oolong.client.ui.page.settings.about.MarkLens
 import oolong.client.ui.widgets.compose.BackNavigationIcon
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.Switch
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.bottomEdgeGlass
@@ -131,18 +138,26 @@ fun UpdatePage(
                 val context = LocalContext.current
                 val locale = LocalConfiguration.current.locales[0]
                 val offered = state.offered
-                if (offered != null) {
-                    Notes(
-                        version = offered.versionName,
-                        details = "${Formatter.formatShortFileSize(context, offered.size)} · ${offered.publishedAt}",
-                        groups = offered.notesFor(locale),
-                    )
-                } else if (state.installedNotes.isNotEmpty()) {
-                    Notes(version = BuildConfig.VERSION_NAME, groups = state.installedNotes.notesFor(locale))
+                // A version found replaces this version's notes as a whole
+                ContentSwap(
+                    targetState = offered,
+                    contentKey = { it?.versionName },
+                    contentAlignment = Alignment.TopCenter,
+                    modifier = Modifier.animateContentSize(Motion.settle(IntSize.VisibilityThreshold)),
+                ) { shown ->
+                    if (shown != null) {
+                        Notes(
+                            version = shown.versionName,
+                            details = "${Formatter.formatShortFileSize(context, shown.size)} · ${shown.publishedAt}",
+                            groups = shown.notesFor(locale),
+                        )
+                    } else if (state.installedNotes.isNotEmpty()) {
+                        Notes(version = BuildConfig.VERSION_NAME, groups = state.installedNotes.notesFor(locale))
+                    }
                 }
                 val busy = state.download is UpdateDownload.Running || state.download is UpdateDownload.Ready
-                if (offered != null && !offered.required && !busy) {
-                    TextButton(onClick = { viewModel.skip(offered) }, color = ExtendedTheme.colors.textSecondary) {
+                Reveal(offered?.takeIf { !it.required && !busy }) { skipped ->
+                    TextButton(onClick = { viewModel.skip(skipped) }, color = ExtendedTheme.colors.textSecondary) {
                         Text(text = stringResource(id = R.string.update_skip), style = TextStyles.caption)
                     }
                 }
@@ -330,45 +345,62 @@ private fun Dock(
             )
             else -> null
         }
-        if (note != null) {
-            Text(text = note, style = TextStyles.caption.copy(color = colors.textSecondary), textAlign = TextAlign.Center)
-        }
+        Reveal(note) { Text(text = it, style = TextStyles.caption.copy(color = colors.textSecondary), textAlign = TextAlign.Center) }
         val offered = state.offered
-        when {
-            download is UpdateDownload.Running -> ProgressButton(
+        // One button that changes, so its fill and label move from one state to the next
+        val button = when {
+            download is UpdateDownload.Running -> ButtonFace(
                 text = stringResource(id = R.string.update_downloading, (download.progress * 100).toInt()),
                 progress = download.progress,
-                onClick = {},
+                // The percentage counts in place; only another label refocuses
+                labelKey = R.string.update_downloading,
             )
-            download is UpdateDownload.Ready && state.installing ->
-                ProgressButton(text = stringResource(id = R.string.update_installing), enabled = false, onClick = {})
-            download is UpdateDownload.Ready -> ProgressButton(text = stringResource(id = R.string.update_install), onClick = { onInstall(download) })
-            download is UpdateDownload.Failed ->
-                ProgressButton(text = stringResource(id = R.string.button_retry), onClick = { onDownload(download.release) })
-            offered != null -> ProgressButton(text = stringResource(id = R.string.update_download), onClick = { onDownload(offered) })
-            state.check == UpdateCheck.Checking ->
-                ProgressButton(text = stringResource(id = R.string.update_status_checking), enabled = false, onClick = {})
-            else -> ProgressButton(text = stringResource(id = R.string.update_check), onClick = onCheck)
+            download is UpdateDownload.Ready && state.installing -> ButtonFace(stringResource(id = R.string.update_installing), enabled = false)
+            download is UpdateDownload.Ready -> ButtonFace(stringResource(id = R.string.update_install)) { onInstall(download) }
+            download is UpdateDownload.Failed -> ButtonFace(stringResource(id = R.string.button_retry)) { onDownload(download.release) }
+            offered != null -> ButtonFace(stringResource(id = R.string.update_download)) { onDownload(offered) }
+            state.check == UpdateCheck.Checking -> ButtonFace(stringResource(id = R.string.update_status_checking), enabled = false)
+            else -> ButtonFace(stringResource(id = R.string.update_check), onClick = onCheck)
         }
+        ProgressButton(
+            text = button.text,
+            onClick = button.onClick,
+            progress = button.progress,
+            enabled = button.enabled,
+            labelKey = button.labelKey ?: button.text,
+        )
     }
 }
+
+/** What the button shows and does now. */
+private class ButtonFace(
+    val text: String,
+    val progress: Float? = null,
+    val enabled: Boolean = true,
+    val labelKey: Any? = null,
+    val onClick: () -> Unit = {},
+)
 
 /**
  * The capsule button, filled with the emphasis colour; given a [progress], only that much of it is
  * filled, from the left, over a tint of the same colour, the label turning over where the fill is.
  */
 @Composable
-private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? = null, enabled: Boolean = true) {
+private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? = null, enabled: Boolean = true, labelKey: Any = text) {
     val colors = ExtendedTheme.colors
     val interactionSource = remember { MutableInteractionSource() }
     val label = TextStyles.label.copy(fontSize = 16.sp)
+    // The fill drains as a download starts and then follows it, smoothing its steps; a button is
+    // all fill. The label refocuses when it says something else
+    val fill by animateFloatAsState(progress ?: 1f, Motion.settle(Motion.ProgressThreshold), label = "updateFill")
+    val labelState = text to labelKey
     Box(
         modifier = Modifier
             .widthIn(max = 480.dp)
             .fillMaxWidth()
             .height(52.dp)
             .pressScale(interactionSource)
-            .background(if (progress != null) colors.emphasis.copy(alpha = 0.18f) else colors.emphasis, SmoothCornerShape.Capsule)
+            .background(colors.emphasis.copy(alpha = 0.18f), SmoothCornerShape.Capsule)
             .clickable(
                 interactionSource = interactionSource,
                 indication = PressFeedback.overlay(SmoothCornerShape.Capsule),
@@ -377,19 +409,15 @@ private fun ProgressButton(text: String, onClick: () -> Unit, progress: Float? =
             ),
         contentAlignment = Alignment.Center,
     ) {
-        if (progress == null) {
-            Text(text = text, style = label.copy(color = colors.onEmphasis))
-        } else {
-            Text(text = text, style = label.copy(color = colors.emphasis))
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .drawWithContent { clipRect(right = size.width * progress) { this@drawWithContent.drawContent() } }
-                    .background(colors.emphasis, SmoothCornerShape.Capsule),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = text, style = label.copy(color = colors.onEmphasis))
-            }
+        Refocus(targetState = labelState, contentKey = { it.second }) { (shown, _) -> Text(text = shown, style = label.copy(color = colors.emphasis)) }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .drawWithContent { clipRect(right = size.width * fill) { this@drawWithContent.drawContent() } }
+                .background(colors.emphasis, SmoothCornerShape.Capsule),
+            contentAlignment = Alignment.Center,
+        ) {
+            Refocus(targetState = labelState, contentKey = { it.second }) { (shown, _) -> Text(text = shown, style = label.copy(color = colors.onEmphasis)) }
         }
     }
 }
