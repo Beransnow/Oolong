@@ -92,6 +92,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.SharedThreadCard
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.floatingGlass
@@ -483,9 +484,12 @@ internal fun ThreadFilterSwitches(
                 notice = stringResource(if (seeLz) R.string.toast_all_posts else R.string.title_see_lz),
                 onToggle = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
             ) { on ->
+                // The icon turns with the round behind it, rather than flipping before it has faded in
+                val boxTint by animateColorAsState(if (on) pill else colors.textSecondary, Motion.snap(), label = "lzBox")
+                val lettersTint by animateColorAsState(if (on) colors.text else colors.textSecondary, Motion.snap(), label = "lzLetters")
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(if (on) LzIcon.BoxFill else LzIcon.Box, contentDescription = null, tint = if (on) pill else colors.textSecondary)
-                    Icon(LzIcon.Letters, contentDescription = null, tint = if (on) colors.text else colors.textSecondary)
+                    ToggleIcon(checked = on, on = LzIcon.BoxFill, off = LzIcon.Box, contentDescription = null, tint = boxTint)
+                    Icon(LzIcon.Letters, contentDescription = null, tint = lettersTint)
                 }
             }
             BarSwitch(
@@ -495,7 +499,8 @@ internal fun ThreadFilterSwitches(
                 notice = stringResource(if (newestFirst) R.string.toast_oldest_first else R.string.toast_newest_first),
                 onToggle = { onEvent(ThreadEvent.ToggleSort) },
             ) { on ->
-                SortIcon(flipped = on, tint = if (on) pill else colors.textSecondary)
+                val sortTint by animateColorAsState(if (on) pill else colors.textSecondary, Motion.snap(), label = "sortTint")
+                SortIcon(flipped = on, tint = sortTint)
             }
         }
     }

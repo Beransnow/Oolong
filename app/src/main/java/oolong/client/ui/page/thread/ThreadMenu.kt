@@ -1,6 +1,7 @@
 package oolong.client.ui.page.thread
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -35,6 +37,8 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.ToggleIcon
 
 /**
  * The thread menu, as it opens out of the actions capsule: one grid of tiles, how to read the
@@ -70,9 +74,10 @@ internal fun ColumnScope.ThreadMenu(
                 role = Role.Switch,
                 onClick = { onEvent(ThreadEvent.SetSeeLz(!seeLz)) },
             ) { tint ->
+                val letters by animateColorAsState(if (seeLz) cut else tint, Motion.snap(), label = "lzLetters")
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(if (seeLz) LzIcon.BoxFill else LzIcon.Box, contentDescription = null, tint = tint)
-                    Icon(LzIcon.Letters, contentDescription = null, tint = if (seeLz) cut else tint)
+                    ToggleIcon(checked = seeLz, on = LzIcon.BoxFill, off = LzIcon.Box, contentDescription = null, tint = tint)
+                    Icon(LzIcon.Letters, contentDescription = null, tint = letters)
                 }
             }
             MenuTile(
@@ -104,11 +109,10 @@ internal fun ColumnScope.ThreadMenu(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MenuTile(
                 text = stringResource(id = if (stored) R.string.title_collected else R.string.title_collect),
-                icon = if (stored) Symbols.StarFill else Symbols.Star,
                 checked = stored,
                 role = Role.Switch,
                 onClick = { onEvent(if (stored) ThreadEvent.RemoveStore else ThreadEvent.StoreAtLastRead) },
-            )
+            ) { tint -> ToggleIcon(checked = stored, on = Symbols.StarFill, off = Symbols.Star, contentDescription = null, tint = tint) }
             MenuTile(stringResource(id = R.string.title_share), Symbols.Share) {
                 onClose()
                 onEvent(ThreadEvent.Share)
@@ -156,11 +160,12 @@ private fun RowScope.MenuTile(
     val background by animateColorAsState(if (checked) colors.emphasis.copy(alpha = TileCheckedTint) else rest, Motion.snap(), label = "tileBackground")
     val content by animateColorAsState(if (checked) colors.emphasis else colors.text, Motion.snap(), label = "tileContent")
     val interactionSource = remember { MutableInteractionSource() }
+    val disabledFade = animateFloatAsState(if (enabled) 1f else DisabledAlpha, Motion.fadeIn(), label = "tileEnabled")
     Column(
         modifier = Modifier
             .weight(1f)
             .height(TileHeight)
-            .alpha(if (enabled) 1f else DisabledAlpha)
+            .graphicsLayer { alpha = disabledFade.value }
             .pressScale(interactionSource)
             .background(background, TileShape)
             .clickable(
@@ -175,7 +180,10 @@ private fun RowScope.MenuTile(
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
         icon(content)
-        Text(text = text, style = TextStyles.footnote, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // A label that changes with the tile, as collect to collected, refocuses in place
+        Refocus(targetState = text) {
+            Text(text = it, style = TextStyles.footnote, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         if (detail != null) {
             Text(
                 text = detail,
