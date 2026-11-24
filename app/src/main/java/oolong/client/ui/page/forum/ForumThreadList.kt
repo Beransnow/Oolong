@@ -60,6 +60,7 @@ import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.pageAccentOrPrimary
 
 private enum class ItemType { Top, PlainText, SingleMedia, MultiMedia, Video }
@@ -166,21 +167,25 @@ internal fun ForumThreadList(
                     }
                 }
             ) { index, item ->
-                Item(item) { thread ->
-                    if (index > 0 || tops.isNotEmpty()) {
-                        if (index == 0) Spacer(modifier = Modifier.height(8.dp))
-                        VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                // Threads come and go by fading; they don't glide, as the shared header changing
+                // height moves the whole list at once
+                Box(modifier = Modifier.motionItem(this, placement = false)) {
+                    Item(item) { thread ->
+                        if (index > 0 || tops.isNotEmpty()) {
+                            if (index == 0) Spacer(modifier = Modifier.height(8.dp))
+                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                        FeedCard(
+                            thread = thread,
+                            onClick = { onEvent(ForumEvent.OpenThread(it)) },
+                            onClickReply = { onEvent(ForumEvent.OpenReplies(it)) },
+                            onAgree = { onEvent(ForumEvent.Agree(tab, it.id)) },
+                            onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
+                            onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
+                            showForum = false,
+                            onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
+                        )
                     }
-                    FeedCard(
-                        thread = thread,
-                        onClick = { onEvent(ForumEvent.OpenThread(it)) },
-                        onClickReply = { onEvent(ForumEvent.OpenReplies(it)) },
-                        onAgree = { onEvent(ForumEvent.Agree(tab, it.id)) },
-                        onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
-                        onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
-                        showForum = false,
-                        onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
-                    )
                 }
             }
             // Not under a list emptied for another order, as it fades away
