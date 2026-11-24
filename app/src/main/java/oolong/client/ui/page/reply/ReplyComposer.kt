@@ -1,7 +1,10 @@
 package oolong.client.ui.page.reply
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -269,19 +272,26 @@ fun ReplyComposerContent(
                 onClick = { onEvent(ReplyComposerEvent.PickImages) },
             )
             Spacer(modifier = Modifier.weight(1f))
-            if (fullScreen) {
-                Icon(
-                    imageVector = Symbols.Check,
-                    contentDescription = null,
-                    tint = colors.textSecondary,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    text = stringResource(id = R.string.reply_draft_saved),
-                    fontSize = 11.5.sp,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(start = 4.dp, end = 10.dp),
-                )
+            // Only once there is something to keep, coming and going by fading
+            AnimatedVisibility(
+                visible = fullScreen && (editor.text.isNotBlank() || state.images.isNotEmpty()),
+                enter = fadeIn(Motion.fadeIn()),
+                exit = fadeOut(Motion.fadeOut()),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Symbols.Check,
+                        contentDescription = null,
+                        tint = colors.textSecondary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Text(
+                        text = stringResource(id = R.string.reply_draft_saved),
+                        fontSize = 11.5.sp,
+                        color = colors.textSecondary,
+                        modifier = Modifier.padding(start = 4.dp, end = 10.dp),
+                    )
+                }
             }
             SendButton(
                 busy = state.busy,
