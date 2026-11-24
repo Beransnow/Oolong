@@ -1,15 +1,13 @@
 package oolong.client.ui.page.forum
 
 import android.graphics.Typeface
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -87,7 +87,6 @@ import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.rememberScrollProgress
 import oolong.client.utils.StringUtil.getShortNumString
 import kotlin.math.max
-import kotlin.math.min
 
 /** The keys the header's avatar and name, and the bar's copies that dock from them, match by. */
 internal object ForumAvatarAnchor
@@ -335,30 +334,26 @@ private fun ForumLevel(forum: ForumDetail, accent: Color, modifier: Modifier = M
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text(text = "LV", fontFamily = numerals, fontSize = 14.sp, color = accent, modifier = Modifier.alignByBaseline())
-            Text(
-                text = "${forum.level}",
-                fontFamily = numerals,
-                fontSize = 30.sp,
-                lineHeight = 30.sp,
-                color = accent,
-                modifier = Modifier.alignByBaseline(),
-            )
+            // A new level refocuses in place
+            Refocus(targetState = forum.level, modifier = Modifier.alignByBaseline()) { level ->
+                Text(text = "$level", fontFamily = numerals, fontSize = 30.sp, lineHeight = 30.sp, color = accent)
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
+        // Points gained, as on signing in, fill the bar on rather than jump it; drawn only
+        val share = (forum.score / max(1f, forum.levelUpScore.toFloat())).coerceIn(0f, 1f)
+        val fill by animateFloatAsState(share, Motion.settle(Motion.ProgressThreshold), label = "levelFill")
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(min = 88.dp)
                 .height(4.dp)
                 .background(accent.copy(alpha = 0.2f), SmoothCornerShape.Capsule)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(max(0f, min(1f, forum.score / max(1f, forum.levelUpScore.toFloat()))))
-                    .height(4.dp)
-                    .background(accent, SmoothCornerShape.Capsule)
-            )
-        }
+                .drawBehind {
+                    val width = size.width * fill.coerceIn(0f, 1f)
+                    if (width > 0f) drawRoundRect(accent, size = size.copy(width = width), cornerRadius = CornerRadius(size.height / 2))
+                }
+        )
     }
 }
 
@@ -504,12 +499,8 @@ internal fun ForumTabRow(
                     selected = selected,
                     onClick = { onSelect(index) },
                     text = {
-                        // The class chosen joins the name: the old name fades out as the new one fades in
-                        AnimatedContent(
-                            targetState = name,
-                            transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) },
-                            label = "goodTabName",
-                        ) { Text(text = it, style = tabTextStyle(), maxLines = 1) }
+                        // The class chosen joins the name, refocusing it in place
+                        Refocus(targetState = name) { Text(text = it, style = tabTextStyle(), maxLines = 1) }
                     },
                     items = { choiceMenuItems(goodClasses.map { it.id to it.name }, goodClassId) { onEvent(ForumEvent.SetGoodClass(it)) } },
                     selectedContentColor = ExtendedTheme.colors.text,

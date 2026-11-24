@@ -2,6 +2,7 @@ package oolong.client.ui.page.forum
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +42,9 @@ import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.FeedCardPlaceholder
@@ -167,12 +170,14 @@ private fun ForumContent(
             },
             floatingActionButton = {
                 if (fab != ForumFab.Hidden) {
+                    val press = remember { MutableInteractionSource() }
                     Box(
                         modifier = Modifier
+                            .pressScale(press)
                             .size(56.dp)
                             .shadow(elevation = 8.dp, shape = CircleShape)
                             .background(pageAccentOrPrimary(), CircleShape)
-                            .clickable(role = Role.Button) {
+                            .clickable(interactionSource = press, indication = PressFeedback.overlay(CircleShape), role = Role.Button) {
                                 coroutineScope.launch {
                                     listStates[state.selectedTab]?.animateScrollToItem(0)
                                     if (fab == ForumFab.Refresh) onEvent(ForumEvent.Refresh)
