@@ -209,6 +209,9 @@ internal class DirectedProgress(
     private var animating: Job? = null
     private var animatingTo = Float.NaN
 
+    /** How fast the running animation moves, for one that turns it round. */
+    private var speed = 0f
+
     /** Scroll gone on (negative) or back (positive) since the last flip, in toggle mode. */
     private var run = 0f
 
@@ -218,11 +221,17 @@ internal class DirectedProgress(
         // Every scroll past the distance asks again; started over each time, it would never get
         // past its first frame until the scroll stopped
         if (animating?.isActive == true && animatingTo == target) return
+        // Turned round mid-way, it carries on from the speed it had rather than from rest
+        val from = if (animating?.isActive == true) speed else 0f
         animating?.cancel()
         if (offset == target) return
         animatingTo = target
         animating = scope.launch {
-            animate(offset, target, animationSpec = Motion.settle()) { value, _ -> offset = value }
+            animate(offset, target, initialVelocity = from, animationSpec = Motion.settle()) { value, velocity ->
+                offset = value
+                speed = velocity
+            }
+            speed = 0f
         }
     }
 
