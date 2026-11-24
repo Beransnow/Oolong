@@ -585,7 +585,8 @@ fun HomeScreen(
                                 checked = single,
                                 on = Symbols.ViewAgenda,
                                 off = Symbols.GridView,
-                                contentDescription = stringResource(id = R.string.title_switch_list_single),
+                                // Says what a tap does, the other layout
+                                contentDescription = stringResource(id = if (single) R.string.title_switch_list_grid else R.string.title_switch_list_single),
                             )
                         }
                     }

@@ -224,6 +224,7 @@
     <string name="hint_reply">Reply to %1$s</string>
     <string name="tip_thread_store_update">Updated to #%1$s</string>
     <string name="title_switch_list_single">Switch to single column</string>
+    <string name="title_switch_list_grid">Switch to two columns</string>
     <string name="text_load_failed">Couldn\'t load</string>
     <string name="title_search_forum">Forums</string>
     <string name="title_search_thread">Threads</string>
