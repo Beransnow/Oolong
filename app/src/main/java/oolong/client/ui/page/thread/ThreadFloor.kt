@@ -374,11 +374,14 @@ private fun FloorBadge(post: Post, onClick: () -> Unit, modifier: Modifier = Mod
     val background = ExtendedTheme.colors.background
     Box(modifier = modifier, contentAlignment = Alignment.TopCenter) {
         Box(contentAlignment = Alignment.BottomCenter) {
+            // Pressed, the avatar sinks in as other small buttons do
+            val press = remember { MutableInteractionSource() }
             Box(
                 modifier = Modifier
+                    .pressScale(press)
                     .clip(CircleShape)
                     .background(background)
-                    .clickable(onClick = onClick)
+                    .clickable(interactionSource = press, indication = PressFeedback.overlay(CircleShape), onClick = onClick)
                     .padding(bottom = 8.dp),
             ) {
                 Avatar(
