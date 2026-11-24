@@ -1,5 +1,6 @@
 package oolong.client.ui.page.reply
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -76,8 +76,10 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.OwnAvatar
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.utils.Emoticon
 import oolong.client.utils.EmoticonManager
@@ -605,27 +607,33 @@ internal fun ComposerIconButton(
 @Composable
 private fun SendButton(busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val colors = ExtendedTheme.colors
+    val press = remember { MutableInteractionSource() }
+    val background by animateColorAsState(
+        if (enabled || busy) colors.text else colors.text.copy(alpha = 0.25f),
+        Motion.snap(),
+        label = "sendButton",
+    )
     Box(
         modifier = Modifier
+            .pressScale(press)
             .size(40.dp)
             .clip(CircleShape)
-            .background(if (enabled || busy) colors.text else colors.text.copy(alpha = 0.25f))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .background(background)
+            .clickable(interactionSource = press, indication = PressFeedback.overlay(CircleShape), enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (busy) {
-            CircularProgressIndicator(
-                color = colors.sheet,
-                strokeWidth = 2.dp,
-                modifier = Modifier.size(16.dp),
-            )
-        } else {
-            Icon(
-                imageVector = Symbols.ArrowUpward,
-                contentDescription = stringResource(id = R.string.send_reply),
-                tint = colors.sheet,
-                modifier = Modifier.size(22.dp),
-            )
+        // The arrow refocuses into the app's loader while the reply goes, and back if it fails
+        Refocus(targetState = busy) { sending ->
+            if (sending) {
+                WavyLoader(color = colors.sheet)
+            } else {
+                Icon(
+                    imageVector = Symbols.ArrowUpward,
+                    contentDescription = stringResource(id = R.string.send_reply),
+                    tint = colors.sheet,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
     }
 }
