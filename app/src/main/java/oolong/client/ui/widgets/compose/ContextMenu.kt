@@ -389,9 +389,11 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
     var opened by remember { mutableStateOf<Int?>(null) }
     val sub = remember { Animatable(0f) }
     fun openChildren(index: Int) {
+        // Opened again while folding, they come back out from where they had got to
+        val again = opened == index
         opened = index
         scope.launch {
-            sub.snapTo(0f)
+            if (!again) sub.snapTo(0f)
             sub.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
         }
     }
