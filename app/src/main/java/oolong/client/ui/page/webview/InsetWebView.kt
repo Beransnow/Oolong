@@ -1,14 +1,19 @@
 package oolong.client.ui.page.webview
 
-import android.animation.ValueAnimator
+import android.animation.TimeAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.ViewConfiguration
 import android.webkit.WebView
+import androidx.core.animation.doOnCancel
 import androidx.core.animation.doOnEnd
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * A web view whose page starts [topInset] below its top, as a list's content padding would put it,
@@ -45,7 +50,10 @@ class InsetWebView(context: Context) : WebView(context) {
     /** Null until the drag shows which way it goes; only an up-and-down one moves the inset. */
     private var vertical: Boolean? = null
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-    private var snap: ValueAnimator? = null
+    private var snap: TimeAnimator? = null
+
+    /** The finger's speed, for the inset to carry on with when let go halfway. */
+    private var tracker: VelocityTracker? = null
 
     /**
      * Whether the view reaches the bottom of its room. At rest with the inset showing, it is that much
@@ -63,8 +71,12 @@ class InsetWebView(context: Context) : WebView(context) {
     /** Gives back the whole inset, as when a new page opens. */
     fun showInset() {
         snap?.cancel()
-        setConsumed(0)
-        if (!touching) expanded = false
+        // Sliding back down rather than jumping there
+        if (consumed == 0) {
+            if (!touching) expanded = false
+        } else {
+            springTo(0, 0f)
+        }
     }
 
     /** Whether the page follows the current touch; it is called off while the touch moves the inset. */
@@ -76,9 +88,18 @@ class InsetWebView(context: Context) : WebView(context) {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // On screen, as the view itself moves with the inset
+        tracker?.let { t ->
+            val onScreen = MotionEvent.obtain(event)
+            onScreen.setLocation(event.rawX, event.rawY)
+            t.addMovement(onScreen)
+            onScreen.recycle()
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 snap?.cancel()
+                tracker?.recycle()
+                tracker = VelocityTracker.obtain()
                 touching = true
                 lastRawY = event.rawY
                 downRawX = event.rawX
@@ -129,7 +150,14 @@ class InsetWebView(context: Context) : WebView(context) {
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 touching = false
-                settle()
+                // Up the screen spends the inset, so the finger's upward speed is the inset's
+                val speed = tracker?.run {
+                    computeCurrentVelocity(1000)
+                    -yVelocity
+                } ?: 0f
+                tracker?.recycle()
+                tracker = null
+                settle(if (vertical == true) speed else 0f)
                 if (consumed == 0) expanded = false
                 if (!pageFollowing) return true
                 // Started again by the view and barely moved since: the page must not take it for a tap
@@ -164,17 +192,44 @@ class InsetWebView(context: Context) : WebView(context) {
         onScrolled(consumed, t)
     }
 
-    /** Let go halfway, the inset goes to whichever end is nearer. */
-    private fun settle() {
+    /**
+     * Let go halfway, the inset goes to the end it was thrown toward, or else the nearer one, on
+     * the design system's `settle` spring and carrying on at the finger's [speed], in pixels a
+     * second (design-system.md §7.2).
+     */
+    private fun settle(speed: Float) {
         if (consumed == 0 || consumed == topInset) return
-        val end = if (consumed > topInset / 2) topInset else 0
-        snap = ValueAnimator.ofInt(consumed, end).apply {
-            duration = (SnapMillisPerInset * abs(end - consumed) / topInset.coerceAtLeast(1)).toLong().coerceAtLeast(MinSnapMillis)
-            addUpdateListener { setConsumed(it.animatedValue as Int) }
+        val ahead = consumed + speed * ThrowLookAhead
+        springTo(if (ahead > topInset / 2f) topInset else 0, speed)
+    }
+
+    /** Moves the inset to [end] on the `settle` spring, setting off at [speed]. */
+    private fun springTo(end: Int, speed: Float) {
+        snap?.cancel()
+        var x = consumed.toFloat()
+        var v = speed
+        snap = TimeAnimator().apply {
+            setTimeListener { animator, _, delta ->
+                // Critically damped, as `settle` is; stepped in pieces short enough to stay steady
+                var left = delta.coerceAtMost(64L) / 1000f
+                while (left > 0f) {
+                    val dt = left.coerceAtMost(0.008f)
+                    v += (-SpringStiffness * (x - end) - SpringDamping * v) * dt
+                    x += v * dt
+                    left -= dt
+                }
+                if (abs(x - end) < 0.5f && abs(v) < 20f) {
+                    setConsumed(end)
+                    animator.cancel()
+                } else {
+                    setConsumed(x.roundToInt().coerceIn(0, topInset))
+                }
+            }
             doOnEnd {
                 snap = null
                 if (consumed == 0 && !touching) expanded = false
             }
+            doOnCancel { snap = null }
             start()
         }
     }
@@ -187,7 +242,11 @@ class InsetWebView(context: Context) : WebView(context) {
     }
 
     private companion object {
-        const val SnapMillisPerInset = 250f
-        const val MinSnapMillis = 80L
+        /** The `settle` spring: critically damped with a response of 0.4 seconds. */
+        val SpringStiffness = (2 * PI / 0.4).pow(2).toFloat()
+        val SpringDamping = 2 * sqrt(SpringStiffness)
+
+        /** How far ahead, in seconds of its speed, a throw is taken to land. */
+        const val ThrowLookAhead = 0.1f
     }
 }

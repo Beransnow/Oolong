@@ -17,8 +17,11 @@ import android.webkit.URLUtil
 import android.webkit.WebResourceError
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -120,6 +123,7 @@ import oolong.client.ui.widgets.compose.LazyLoad
 import oolong.client.ui.widgets.compose.LoadingState
 import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.MenuIconButton
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.WebView
 import oolong.client.ui.widgets.compose.WebViewError
@@ -341,7 +345,10 @@ internal fun WebPageScaffold(
         val fullscreen = chromeClient as? MyWebChromeClient
         BackHandler(enabled = fullscreen?.isFullscreen == true) { fullscreen?.exitFullscreen() }
         DisposableEffect(fullscreen) { onDispose { fullscreen?.exitFullscreen() } }
-        error?.let {
+        // A failure fades in over the page, and out once it loads, keeping what it said as it goes
+        var lastError by remember { mutableStateOf(error) }
+        if (error != null) lastError = error
+        AnimatedVisibility(visible = error != null, enter = fadeIn(Motion.fadeIn()), exit = fadeOut(Motion.fadeOut())) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -349,7 +356,7 @@ internal fun WebPageScaffold(
                     .background(colors.background),
                 contentAlignment = Alignment.Center,
             ) {
-                PageError(error = it, onReload = { navigator.reload() })
+                lastError?.let { PageError(error = it, onReload = { navigator.reload() }) }
             }
         }
         val receded by remember { derivedStateOf { recede() > 0f } }
@@ -504,15 +511,17 @@ private fun AddressCapsule(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        if (title.isNotEmpty() || host.isEmpty()) {
+        // The title opens above the address once the page has one, rather than pushing it in a frame
+        val titleLine: @Composable (String) -> Unit = {
             Text(
-                text = title,
+                text = it,
                 style = TextStyles.label,
                 color = colors.topBarContent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        if (host.isEmpty()) titleLine(title) else Reveal(title.takeIf { it.isNotEmpty() }) { titleLine(it) }
         if (host.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (insecure) {
