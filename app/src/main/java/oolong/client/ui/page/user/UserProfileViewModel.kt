@@ -238,4 +238,5 @@ private fun PagerState<UserPost>.toItems() = PagerState(
     refresh = refresh,
     append = append,
     hasMore = hasMore,
+    loaded = loaded,
 )
