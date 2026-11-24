@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -571,41 +572,56 @@ internal fun ComposerIconButton(
     iconSize: androidx.compose.ui.unit.Dp = ComposerIconSize,
 ) {
     val colors = ExtendedTheme.colors
+    val press = remember { MutableInteractionSource() }
+    // Pressed it sinks in; chosen, its ground and colour come in together rather than at once
+    val ground by animateColorAsState(if (selected) colors.chip else colors.chip.copy(alpha = 0f), Motion.settle(), label = "composerButtonGround")
+    val tint by animateColorAsState(
+        when {
+            !enabled -> colors.textDisabled
+            selected -> colors.text
+            else -> colors.textSecondary
+        },
+        Motion.settle(),
+        label = "composerButtonTint",
+    )
     Box(
         modifier = modifier
+            .pressScale(press)
             .size(size)
             .clip(CircleShape)
-            .background(if (selected) colors.chip else Color.Transparent)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .drawBehind { drawRect(ground) }
+            .clickable(interactionSource = press, indication = PressFeedback.overlay(CircleShape), enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = when {
-                !enabled -> colors.textDisabled
-                selected -> colors.text
-                else -> colors.textSecondary
-            },
+            tint = tint,
             modifier = Modifier.size(iconSize),
         )
-        if (badge != null) {
-            Text(
-                text = "$badge",
-                fontSize = 10.sp,
-                lineHeight = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = colors.sheet,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 3.dp, end = 3.dp)
-                    .size(15.dp)
-                    .clip(CircleShape)
-                    .background(colors.text),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
+        // The count of pictures refocuses as it changes, and comes and goes with the first
+        Refocus(targetState = badge, modifier = Modifier.align(Alignment.TopEnd)) { shown ->
+            if (shown != null) ComposerBadge(shown)
         }
     }
+}
+
+@Composable
+private fun ComposerBadge(badge: Int) {
+    val colors = ExtendedTheme.colors
+    Text(
+        text = "$badge",
+        fontSize = 10.sp,
+        lineHeight = 15.sp,
+        fontWeight = FontWeight.Bold,
+        color = colors.sheet,
+        modifier = Modifier
+            .padding(top = 3.dp, end = 3.dp)
+            .size(15.dp)
+            .clip(CircleShape)
+            .background(colors.text),
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+    )
 }
 
 @Composable
