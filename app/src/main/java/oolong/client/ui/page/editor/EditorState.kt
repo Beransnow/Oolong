@@ -3,6 +3,8 @@ package oolong.client.ui.page.editor
 import android.graphics.Matrix
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateDecay
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -17,8 +19,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import oolong.client.ui.common.theme.compose.Motion
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -437,11 +443,24 @@ class EditorState(
         )
     }
 
-    /** Once the fingers let go: back home if zoomed out past it or moved off it. */
-    fun settle() {
+    /**
+     * Once the fingers let go: back home if zoomed out past it or moved off it; else gliding on at
+     * the fingers' [velocity], on screen, as a scrolled list does, and home if that takes it off.
+     */
+    fun settle(velocity: Offset = Offset.Zero) {
         val r = region.value
         val home = home
-        if (r.width >= home.width && r.height >= home.height || !r.overlaps(home)) goHome()
+        if (r.width >= home.width && r.height >= home.height || !r.overlaps(home)) {
+            goHome()
+            return
+        }
+        if (velocity.getDistance() < MinGlideSpeed || scale <= 0f) return
+        // The view moves the other way to the fingers, in the turned picture's units
+        val v = -velocity / scale
+        scope.launch {
+            region.animateDecay(Rect(v.x, v.y, v.x, v.y), exponentialDecay())
+            if (!region.value.overlaps(home)) goHome()
+        }
     }
 
     fun undo() {
@@ -491,9 +510,9 @@ class EditorState(
      * Turns the picture a quarter anticlockwise. It is turned at once and shown where it ends up;
      * the screen starts from how it looked and turns to it.
      */
-    fun rotate() {
+    fun rotate() = turnOver {
         history.push(Edit.Frame(history.framing.rotated(renderer.size)))
-        scope.launch { region.snapTo(home) }
+        region.snapTo(home)
         scope.launch {
             turning.snapTo(turning.value + 90f)
             turning.animateTo(0f, Motion.settle())
@@ -501,12 +520,36 @@ class EditorState(
     }
 
     /** Mirrors the picture, turning it over on screen. */
-    fun flip() {
+    fun flip() = turnOver {
         history.push(Edit.Frame(history.framing.mirrored(renderer.size)))
-        scope.launch { region.snapTo(home) }
+        region.snapTo(home)
         scope.launch {
             mirroring.snapTo(-mirroring.value)
             mirroring.animateTo(1f, Motion.settle())
+        }
+    }
+
+    /** Turns and mirrorings, one after another, so none is lost to the next. */
+    private val turns = Mutex()
+
+    /**
+     * Runs [change], which turns the picture over: zoomed in or moved, it first eases back out to
+     * the whole of it, rather than jumping there as the turn starts.
+     */
+    private fun turnOver(change: suspend () -> Unit) {
+        scope.launch {
+            turns.withLock {
+                val home = home
+                if (region.value != home) {
+                    // Another move, as a pinch, may take the picture from under this one; the turn goes on
+                    try {
+                        region.animateTo(home, Motion.snap())
+                    } catch (e: CancellationException) {
+                        if (!isActive) throw e
+                    }
+                }
+                change()
+            }
         }
     }
 
@@ -920,3 +963,6 @@ private fun stacked(a: Rect, b: Rect): Boolean {
     val gap = max(a.top, b.top) - min(a.bottom, b.bottom)
     return across > 0f && gap <= 0.8f * min(a.height, b.height)
 }
+
+/** Slower than this, in pixels a second, a lift leaves the view where it is. */
+private const val MinGlideSpeed = 400f

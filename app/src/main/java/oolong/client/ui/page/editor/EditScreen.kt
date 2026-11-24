@@ -70,8 +70,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -891,6 +894,9 @@ private suspend fun AwaitPointerEventScope.caption(state: EditorState, down: Poi
 /** Zooms and moves the view with the fingers until they all lift. */
 private suspend fun AwaitPointerEventScope.transform(state: EditorState, down: PointerInputChange?) {
     if (down != null && !down.pressed) return
+    // The fingers' speed as they lift, for the view to glide on
+    val tracker = VelocityTracker()
+    var moved = Offset.Zero
     while (true) {
         val event = awaitPointerEvent()
         if (event.changes.none { it.pressed }) break
@@ -900,8 +906,12 @@ private suspend fun AwaitPointerEventScope.transform(state: EditorState, down: P
             state.transform(event.calculateCentroid(useCurrent = false), pan, zoom)
             event.changes.forEach { if (it.positionChanged()) it.consume() }
         }
+        moved += pan
+        // A second finger coming or going restarts the reading, or the centroid's jump reads as speed
+        if (event.changes.any { it.changedToDown() || it.changedToUp() }) tracker.resetTracking()
+        event.changes.firstOrNull()?.let { tracker.addPosition(it.uptimeMillis, moved) }
     }
-    state.settle()
+    state.settle(tracker.calculateVelocity().let { Offset(it.x, it.y) })
 }
 
 @Composable
