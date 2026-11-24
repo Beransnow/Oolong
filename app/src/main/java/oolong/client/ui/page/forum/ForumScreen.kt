@@ -1,5 +1,6 @@
 package oolong.client.ui.page.forum
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -42,6 +44,7 @@ import oolong.client.arch.LoadStatus
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.pressScale
@@ -126,7 +129,8 @@ private fun ForumContent(
     // Once the header has gone, the bar's row follows the scroll away and back; the tabs stay
     val away = rememberScrollProgress(away = GlassTopBarRowHeight, enabled = { header.gone }, page = forumScroll)
     val currentList = state.list(state.selectedTab)
-    val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty()
+    // Another order loading shows by the list dimming, not by the pull's spinner
+    val refreshing = currentList.refresh == LoadStatus.Loading && currentList.items.isNotEmpty() && state.switching != state.selectedTab
 
     val accent = rememberAvatarAccent(forum.avatar)
     CompositionLocalProvider(LocalPageAccent provides accent) {
@@ -232,7 +236,10 @@ private fun ForumContent(
                         Box(modifier = Modifier.padding(listPadding)) { DefaultErrorScreen(this@StateScreen) }
                     },
                 ) {
+                    // Another order or class loading dims the list it will replace
+                    val dim by animateFloatAsState(if (state.switching == tab) SwitchingAlpha else 1f, Motion.settle(), label = "forumSwitching")
                     ForumThreadList(
+                        modifier = Modifier.graphicsLayer { alpha = dim },
                         tab = tab,
                         list = list,
                         onEvent = onEvent,
@@ -290,3 +297,6 @@ private fun ForumLoading(state: ForumState, onEvent: (ForumEvent) -> Unit, modif
         }
     }
 }
+
+/** How far a list dims while another order or class of it loads. */
+private const val SwitchingAlpha = 0.4f

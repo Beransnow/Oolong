@@ -70,6 +70,8 @@ data class ForumState(
     val loggedIn: Boolean = false,
     /** Whether following or signing in is on its way to the server. */
     val joining: Boolean = false,
+    /** The tab whose list is being loaded for another order or class, shown dimmed till it comes. */
+    val switching: ForumTab? = null,
 ) {
     val tabs: ImmutableList<ForumTab> get() = forum?.tabs ?: ForumTab.Fixed
 
@@ -108,6 +110,8 @@ class ForumViewModel @AssistedInject constructor(
         val tab: ForumTab = ForumTab.Latest,
         val sortType: Int = ForumSort.REPLY_TIME,
         val goodClassId: Int = 0,
+        /** The tab last switched to another order or class, until the page is reloaded. */
+        val switched: ForumTab? = null,
     )
 
     /** Block flags for each tab's threads, which most state changes leave as they are. */
@@ -133,6 +137,7 @@ class ForumViewModel @AssistedInject constructor(
                 lists = lists.mapValues { (tab, list) -> list.withItems(items(tab, list.items, rules)) }.toImmutableMap(),
                 loggedIn = sessionProvider.currentSession() != null,
                 joining = joining,
+                switching = selection.switched?.takeIf { lists[it]?.refresh == LoadStatus.Loading },
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ForumState(forumName))
 
@@ -151,19 +156,23 @@ class ForumViewModel @AssistedInject constructor(
 
     fun setSort(sortType: Int) {
         if (sortType == selection.value.sortType) return
-        selection.update { it.copy(sortType = sortType) }
+        selection.update { it.copy(sortType = sortType, switched = ForumTab.Latest) }
         viewModelScope.launch { runCatching { sortStore.setSortType(forumName, sortType) } }
-        pagers.value[ForumTab.Latest]?.refresh(clear = true)
+        // The list stays, dimmed, till the other order comes and takes its place
+        pagers.value[ForumTab.Latest]?.refresh()
     }
 
     fun setGoodClass(classId: Int) {
         if (classId == selection.value.goodClassId) return
-        selection.update { it.copy(goodClassId = classId) }
-        pagers.value[ForumTab.Good]?.refresh(clear = true)
+        selection.update { it.copy(goodClassId = classId, switched = ForumTab.Good) }
+        pagers.value[ForumTab.Good]?.refresh()
     }
 
     /** Reloads the shown tab, and with it the forum when that tab lists it. */
-    fun refresh() = pagerOf(selection.value.tab).refresh()
+    fun refresh() {
+        selection.update { it.copy(switched = null) }
+        pagerOf(selection.value.tab).refresh()
+    }
 
     fun loadMore() = pagerOf(selection.value.tab).loadMore()
 
