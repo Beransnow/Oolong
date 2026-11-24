@@ -155,8 +155,8 @@ private class RowHighlight(private val page: Key, private val scroll: ScrollStat
             val rowTop = top ?: return@LaunchedEffect
             scroll.animateScrollTo((scroll.value + rowTop - viewportTop - topPadding - gap).roundToInt().coerceAtLeast(0), Motion.settle())
             repeat(2) {
-                glow.animateTo(1f, tween(HighlightMillis))
-                glow.animateTo(0f, tween(HighlightMillis))
+                glow.animateTo(1f, Motion.settle(Motion.ProgressThreshold))
+                glow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
             }
             SettingsHighlight.target = null
         }
@@ -167,5 +167,4 @@ private class RowHighlight(private val page: Key, private val scroll: ScrollStat
 }
 
 private val HighlightGap = 16.dp
-private const val HighlightMillis = 280
 private const val HighlightAlpha = 0.1f

@@ -3,6 +3,7 @@ package oolong.client.ui.page.settings.theme
 import android.content.Context
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -643,11 +644,10 @@ private fun CustomColorDialog(customPrimaryColorDialogState: DialogState) {
         ) {
             AnimatedContent(
                 targetState = useInput,
-                transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) },
+                // One size change, the content's own, rather than its and the box's over each other
+                transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() } },
                 label = "",
-                modifier = Modifier
-                    .wrapContentHeight()
-                    .animateContentSize(Motion.settle())
+                modifier = Modifier.wrapContentHeight(),
             ) { input ->
                 if (input) {
                     var inputHexColor by remember { mutableStateOf(customPrimaryColor.toHexString()) }
