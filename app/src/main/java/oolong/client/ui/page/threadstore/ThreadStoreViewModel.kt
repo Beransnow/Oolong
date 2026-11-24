@@ -3,7 +3,9 @@ package oolong.client.ui.page.threadstore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
@@ -24,13 +26,19 @@ class ThreadStoreViewModel @Inject constructor(
 
     val state: StateFlow<PagerState<StoredThread>> = pager.state
 
+    /** The threads on their way out of the store, which wait dimmed for the server. */
+    val removing: StateFlow<Set<Long>> get() = _removing
+    private val _removing = MutableStateFlow(emptySet<Long>())
+
     fun refresh() = pager.refresh()
 
     fun loadMore() = pager.loadMore()
 
     /** Takes [thread] out of the store, and off the list once the server agrees. */
     fun remove(thread: StoredThread) = actions.launch("remove-${thread.threadId}") {
+        _removing.update { it + thread.threadId }
         runCatching { repository.remove(thread.threadId) }
+            .also { _removing.update { it - thread.threadId } }
             .onSuccess {
                 pager.update { threads -> threads.filterNot { it.threadId == thread.threadId } }
                 messages.show(R.string.delete_store_success)

@@ -1,5 +1,6 @@
 package oolong.client.ui.page.threadstore
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -42,6 +44,7 @@ import oolong.client.model.StoredThread
 import oolong.client.model.User
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ThreadKey
@@ -72,6 +75,9 @@ import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getUsernameAnnotatedString
 import oolong.client.utils.appPreferences
 
+/** How far a stored thread dims while it is being taken out. */
+private const val RemovingAlpha = 0.4f
+
 private val UpdateTipTextStyle = TextStyle(fontWeight = FontWeight.Bold, fontSize = 10.sp)
 
 @Composable
@@ -80,9 +86,11 @@ fun ThreadStorePage(
     viewModel: ThreadStoreViewModel = hiltViewModel(),
 ) {
     val list by viewModel.state.collectAsStateWithLifecycle()
+    val removing by viewModel.removing.collectAsStateWithLifecycle()
     val context = LocalContext.current
     ThreadStoreScreen(
         list = list,
+        removing = removing,
         onBack = { navigator.navigateUp() },
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
@@ -117,6 +125,7 @@ fun ThreadStoreScreen(
     onRemove: (StoredThread) -> Unit,
     onOpenUser: (User) -> Unit,
     onOpen: (StoredThread) -> Unit,
+    removing: Set<Long> = emptySet(),
 ) {
     val isRefreshing = list.refresh == LoadStatus.Loading
     val error = (list.refresh as? LoadStatus.Error)?.error
@@ -154,12 +163,14 @@ fun ThreadStoreScreen(
                         items = list.items,
                         key = { it.threadId }
                     ) { thread ->
+                        // Taken out at once, it waits dimmed for the server, then goes, or comes back
+                        val dim by animateFloatAsState(if (thread.threadId in removing) RemovingAlpha else 1f, Motion.settle(), label = "removing")
                         StoreItem(
                             info = thread,
                             onUserClick = { thread.author?.let(onOpenUser) },
                             onClick = { onOpen(thread) },
                             onDelete = { onRemove(thread) },
-                            modifier = Modifier.motionItem(this),
+                            modifier = Modifier.motionItem(this).graphicsLayer { alpha = dim },
                         )
                     }
                     loadMoreFooter(list.append, list.hasMore, onLoadMore)
