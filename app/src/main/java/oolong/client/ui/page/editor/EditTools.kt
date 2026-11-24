@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -228,14 +229,22 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
             Row(verticalAlignment = Alignment.Top) {
                 // Level with the chosen tool, kept within the rail's height
-                Box(
-                    modifier = Modifier.offset {
-                        val from = shown?.let { tools[it] } ?: return@offset IntOffset.Zero
+                // Level with the chosen tool, gliding there when another is chosen
+                val panelY = remember { Animatable(Float.NaN) }
+                val target by remember {
+                    derivedStateOf {
+                        val from = shown?.let { tools[it] } ?: return@derivedStateOf null
                         val height = panelBounds.height
                         val room = railHeight - height
-                        val y = (from.center.y - railTop - height / 2).coerceIn(minOf(0f, room), maxOf(0f, room))
-                        IntOffset(0, y.toInt())
-                    },
+                        (from.center.y - railTop - height / 2).coerceIn(minOf(0f, room), maxOf(0f, room))
+                    }
+                }
+                LaunchedEffect(target) {
+                    val y = target ?: return@LaunchedEffect
+                    if (panelY.value.isNaN()) panelY.snapTo(y) else panelY.animateTo(y, Motion.snap())
+                }
+                Box(
+                    modifier = Modifier.offset { IntOffset(0, panelY.value.takeUnless { it.isNaN() }?.toInt() ?: 0) },
                 ) { panel() }
                 Box(
                     modifier = Modifier.onGloballyPositioned {
