@@ -870,13 +870,10 @@ private fun PickedTray(
                 modifier = Modifier.weight(1f),
             )
             Button(onClick = { onDone(state.result) }, contentPadding = PaddingValues(horizontal = 18.dp)) {
-                Text(
-                    text = if (state.multiple) {
-                        stringResource(id = R.string.button_picker_add, state.selected.size)
-                    } else {
-                        stringResource(id = R.string.button_picker_use)
-                    },
-                )
+                // The count refocuses as pictures are picked and let go
+                Refocus(targetState = if (state.multiple) stringResource(id = R.string.button_picker_add, state.selected.size) else stringResource(id = R.string.button_picker_use)) {
+                    Text(text = it)
+                }
             }
         }
     }

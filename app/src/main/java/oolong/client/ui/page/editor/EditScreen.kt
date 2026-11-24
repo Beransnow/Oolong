@@ -375,6 +375,8 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
         val autoMaskDownload by autoMask.download.collectAsState()
         TapToHide(state, autoMask)
         val pickEffect = rememberPickEffect(state, autoMaskDownload == AutoMaskDownload.Ready)
+        // The thirds come in as the frame is dragged and fade as it is let go; read as it draws
+        val thirds = animateFloatAsState(if (state.draftRect != null) 1f else 0f, if (state.draftRect != null) Motion.fadeIn() else Motion.fadeOut(), label = "thirds")
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -394,7 +396,7 @@ private fun Picture(state: EditorState, padding: PaddingValues) {
             }) {
                 if (state.tool == EditorTool.Crop) {
                     drawEdits(state)
-                    drawFrame(state)
+                    drawFrame(state, thirds.value)
                 } else {
                     // Only the kept part shows; what lies outside it is kept for later
                     val kept = state.history.framing.rect
@@ -485,7 +487,7 @@ private fun DrawScope.drawSelection(state: EditorState) {
  * is dragged. Only the picture is dimmed: beyond it is black already, and a dark layer there
  * would show through the glass over it and turn with the picture.
  */
-private fun DrawScope.drawFrame(state: EditorState) {
+private fun DrawScope.drawFrame(state: EditorState, thirds: Float) {
     val rect = state.framing.rect
     val frame = Rect(state.toScreen(rect.topLeft), state.toScreen(rect.bottomRight))
     val size = state.renderer.size
@@ -500,8 +502,8 @@ private fun DrawScope.drawFrame(state: EditorState) {
     }
     drawPath(outside, Color.Black.copy(alpha = 0.6f))
     drawRect(Color.White, frame.topLeft, frame.size, style = Stroke(1.dp.toPx()))
-    if (state.draftRect != null) {
-        val line = Color.White.copy(alpha = 0.5f)
+    if (thirds > 0f) {
+        val line = Color.White.copy(alpha = 0.5f * thirds)
         for (i in 1..2) {
             val x = frame.left + frame.width * i / 3
             val y = frame.top + frame.height * i / 3

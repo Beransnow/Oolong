@@ -7,8 +7,10 @@ import android.content.Intent
 import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -69,6 +71,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -550,8 +553,10 @@ private fun PhotoChrome(
                             lineHeight = 20.sp,
                             maxLines = if (expanded) 8 else 2,
                             overflow = TextOverflow.Ellipsis,
+                            // Opening and closing, the caption grows and shrinks rather than jumping
                             modifier = Modifier
                                 .padding(top = 2.dp)
+                                .animateContentSize(Motion.settle(IntSize.VisibilityThreshold))
                                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = PressFeedback.overlay(Corners.xs)) {
                                     expanded = !expanded
                                 },
