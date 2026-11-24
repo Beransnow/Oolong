@@ -74,9 +74,12 @@ class HotViewModel @Inject constructor(
         val threadMeasure: ThreadMeasure = ThreadMeasure.MostRead,
         val threads: Map<ThreadMeasure, List<RankedThread>> = emptyMap(),
         val switchingThreads: Boolean = false,
+        /** The measure switched from, still shown, dimmed, until the new one arrives. */
+        val shownThreadMeasure: ThreadMeasure = ThreadMeasure.MostRead,
         val forumMeasure: ForumMeasure = ForumMeasure.MostFollowed,
         val forums: Map<ForumMeasure, ForumRanking> = emptyMap(),
         val switchingForums: Boolean = false,
+        val shownForumMeasure: ForumMeasure = ForumMeasure.MostFollowed,
         /** Forums followed from here, shown followed whatever the ranking says. */
         val followed: Set<Long> = emptySet(),
         val load: LoadStatus = LoadStatus.Loading,
@@ -87,12 +90,13 @@ class HotViewModel @Inject constructor(
         HotState(
             topics = local.topics.take(TopTopics).toImmutableList(),
             threadMeasure = local.threadMeasure,
-            threads = local.threads[local.threadMeasure].orEmpty()
+            // The ranking switched from stays, dimmed, while the new one loads, so the page keeps its length
+            threads = (local.threads[local.threadMeasure] ?: local.threads[local.shownThreadMeasure].takeIf { local.switchingThreads }).orEmpty()
                 .map { HotThread(it, rules.check(it.thread, BlockPlace.Feeds)) }
                 .toImmutableList(),
             switchingThreads = local.switchingThreads,
             forumMeasure = local.forumMeasure,
-            forums = local.forums[local.forumMeasure]?.let { ranking ->
+            forums = (local.forums[local.forumMeasure] ?: local.forums[local.shownForumMeasure].takeIf { local.switchingForums })?.let { ranking ->
                 ranking.copy(forums = ranking.forums.map { it.withFollowed(local.followed) }.toImmutableList())
             },
             switchingForums = local.switchingForums,
@@ -142,7 +146,7 @@ class HotViewModel @Inject constructor(
             local.update { it.copy(threadMeasure = measure, switchingThreads = false) }
             return
         }
-        local.update { it.copy(threadMeasure = measure, switchingThreads = true) }
+        local.update { it.copy(threadMeasure = measure, switchingThreads = true, shownThreadMeasure = previous) }
         threadJob = viewModelScope.launch {
             try {
                 val threads = repository.threadRanking(measure)
@@ -164,7 +168,7 @@ class HotViewModel @Inject constructor(
             local.update { it.copy(forumMeasure = measure, switchingForums = false) }
             return
         }
-        local.update { it.copy(forumMeasure = measure, switchingForums = true) }
+        local.update { it.copy(forumMeasure = measure, switchingForums = true, shownForumMeasure = previous) }
         forumJob = viewModelScope.launch {
             try {
                 val forums = repository.forumRanking(measure)

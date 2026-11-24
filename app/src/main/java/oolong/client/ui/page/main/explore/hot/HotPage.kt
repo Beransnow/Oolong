@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main.explore.hot
 
 import android.graphics.Typeface
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -31,9 +32,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -65,6 +66,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.Symbols
@@ -87,6 +89,8 @@ import oolong.client.ui.widgets.compose.LocalContextMenus
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.RankNumber
+import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -145,6 +149,9 @@ fun HotScreen(
         loadingScreen = { Box(modifier = Modifier.padding(contentPadding)) { DefaultLoadingScreen() } },
     ) {
         var expanded by rememberSaveable(state.threadMeasure) { mutableStateOf(false) }
+        // A ranking being switched dims while the other loads, and lights up again as it comes
+        val threadsDim by animateFloatAsState(if (state.switchingThreads) SwitchingAlpha else 1f, Motion.settle(), label = "threadsDim")
+        val forumsDim by animateFloatAsState(if (state.switchingForums) SwitchingAlpha else 1f, Motion.settle(), label = "forumsDim")
         PullRefresh(
             refreshing = isLoading,
             revealUnpulled = true,
@@ -158,6 +165,7 @@ fun HotScreen(
                     state = state,
                     expanded = expanded,
                     onToggleExpanded = { expanded = !expanded },
+                    dim = { threadsDim },
                     events = events,
                     onSelectMeasure = onSelectThreadMeasure,
                     onOpenTopic = onOpenTopic,
@@ -167,7 +175,7 @@ fun HotScreen(
                         measure = state.forumMeasure,
                         forums = ranking.forums.take(TopForums),
                         rule = ranking.rule,
-                        switching = state.switchingForums,
+                        dim = { forumsDim },
                         onSelectMeasure = onSelectForumMeasure,
                         onOpen = onOpenForum,
                         onFollow = onFollowForum,
@@ -177,6 +185,21 @@ fun HotScreen(
         }
     }
 }
+
+@Composable
+private fun HotThreadItem(item: HotThread, events: FeedThreadEvents, onOpenTopic: (TopicRef) -> Unit, dim: () -> Float) {
+    BlockableContent(block = item.block, modifier = Modifier.padding(vertical = Spacing.xs, horizontal = Spacing.md)) {
+        HotThreadRow(
+            item = item,
+            events = events,
+            onOpenTopic = onOpenTopic,
+            modifier = Modifier.graphicsLayer { alpha = dim() },
+        )
+    }
+}
+
+/** How far a ranking dims while another order of it loads. */
+private const val SwitchingAlpha = 0.4f
 
 private fun LazyListScope.topicsSection(
     topics: List<RankedTopic>,
@@ -231,6 +254,7 @@ private fun LazyListScope.topicsSection(
 private fun LazyListScope.threadsSection(
     state: HotState,
     expanded: Boolean,
+    dim: () -> Float,
     onToggleExpanded: () -> Unit,
     events: FeedThreadEvents,
     onSelectMeasure: (ThreadMeasure) -> Unit,
@@ -249,30 +273,39 @@ private fun LazyListScope.threadsSection(
             Caption(text = stringResource(R.string.hot_last_day))
         }
     }
-    val shown = if (expanded) state.threads else state.threads.filter { it.ranked.rank <= CollapsedThreads }
-    itemsIndexed(shown, key = { _, item -> "Thread_${state.threadMeasure}_${item.ranked.thread.id}" }) { _, item ->
-        BlockableContent(block = item.block, modifier = Modifier.padding(vertical = Spacing.xs, horizontal = Spacing.md)) {
-            HotThreadRow(
-                item = item,
-                events = events,
-                onOpenTopic = onOpenTopic,
-                modifier = Modifier.alpha(if (state.switchingThreads) 0.4f else 1f),
-            )
+    // Rows are known by their place: another order changes them in place, the list keeping its
+    // scroll. Those past the first few are one item that opens and closes in place, so what
+    // follows moves with it rather than gliding over it
+    val (first, rest) = state.threads.partition { it.ranked.rank <= CollapsedThreads }
+    itemsIndexed(first, key = { index, _ -> "Thread_$index" }) { _, item ->
+        HotThreadItem(item, events, onOpenTopic, dim)
+    }
+    if (rest.isNotEmpty()) {
+        item(key = "ThreadsRest") {
+            Reveal(rest.takeIf { expanded }) { rows ->
+                Column { rows.forEach { item -> HotThreadItem(item, events, onOpenTopic, dim) } }
+            }
         }
     }
     val hidden = state.threads.count { it.ranked.rank > CollapsedThreads }
     if (hidden > 0) {
         item(key = "ThreadsMore") {
-            Text(
-                text = if (expanded) stringResource(R.string.hot_show_less) else stringResource(R.string.hot_show_more, hidden),
-                style = TextStyles.caption,
-                color = ExtendedTheme.colors.textSecondary,
-                textAlign = TextAlign.Center,
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onToggleExpanded)
                     .padding(vertical = Spacing.sm),
-            )
+            ) {
+                Refocus(targetState = expanded) { shown ->
+                    Text(
+                        text = if (shown) stringResource(R.string.hot_show_less) else stringResource(R.string.hot_show_more, hidden),
+                        style = TextStyles.caption,
+                        color = ExtendedTheme.colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
     }
 }
@@ -281,7 +314,7 @@ private fun LazyListScope.forumsSection(
     measure: ForumMeasure,
     forums: List<RankedForum>,
     rule: String,
-    switching: Boolean,
+    dim: () -> Float,
     onSelectMeasure: (ForumMeasure) -> Unit,
     onOpen: (ForumSummary) -> Unit,
     onFollow: (RankedForum) -> Unit,
@@ -305,12 +338,12 @@ private fun LazyListScope.forumsSection(
             if (rule.isNotEmpty()) Caption(text = rule)
         }
     }
-    itemsIndexed(forums, key = { _, item -> "Forum_${measure}_${item.forum.id}" }) { _, item ->
+    itemsIndexed(forums, key = { index, _ -> "Forum_$index" }) { _, item ->
         HotForumRow(
             item = item,
             onOpen = { onOpen(item.forum) },
             onFollow = { onFollow(item) },
-            modifier = Modifier.alpha(if (switching) 0.4f else 1f),
+            modifier = Modifier.graphicsLayer { alpha = dim() },
         )
     }
 }
@@ -465,10 +498,12 @@ private fun HotForumRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Chip(
-            text = stringResource(if (item.liked) R.string.button_followed else R.string.button_follow),
-            onClick = if (item.liked) null else onFollow,
-        )
+        Refocus(targetState = item.liked) { liked ->
+            Chip(
+                text = stringResource(if (liked) R.string.button_followed else R.string.button_follow),
+                onClick = if (liked) null else onFollow,
+            )
+        }
     }
 }
 
