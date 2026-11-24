@@ -1,6 +1,10 @@
 package oolong.client.ui.widgets.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -59,6 +63,7 @@ import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberTextLinkActions
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
@@ -449,7 +454,7 @@ fun SearchBox(
                     }
             )
             appendIcon()
-            AnimatedVisibility(visible = isKeywordNotEmpty && (isFocused || !submitButton)) {
+            AnimatedVisibility(visible = isKeywordNotEmpty && (isFocused || !submitButton), enter = ButtonEnter, exit = ButtonExit) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -470,7 +475,7 @@ fun SearchBox(
                     }
                 }
             }
-            AnimatedVisibility(visible = isKeywordNotEmpty && submitButton) {
+            AnimatedVisibility(visible = isKeywordNotEmpty && submitButton, enter = ButtonEnter, exit = ButtonExit) {
                 Box(
                     modifier = Modifier
                         .clickable(
@@ -489,3 +494,7 @@ fun SearchBox(
         }
     }
 }
+
+/** A field's trailing button making room for itself as it fades in, and giving it back as it goes. */
+private val ButtonEnter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle())
+private val ButtonExit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss())

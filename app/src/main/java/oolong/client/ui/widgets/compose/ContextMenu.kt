@@ -2,7 +2,6 @@ package oolong.client.ui.widgets.compose
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -1102,11 +1101,11 @@ private val Rect.isWide: Boolean get() = width > height * 1.5f
 /** Room around the glass's way for springs to carry it past. */
 private val GlassSlack = 16.dp
 
-/** The drop's way to the menu's place, which runs ahead of its growing. */
-private val MoveSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 500f, visibilityThreshold = Motion.ProgressThreshold)
+/** The drop's way to the menu's place, which runs ahead of its growing: as quick as a dialog coming up. */
+private val MoveSpring = Motion.present(Motion.ProgressThreshold)
 
-/** The menu shrinking back into a drop, ahead of its way home. */
-private val ShrinkSpring = spring<Float>(dampingRatio = 1f, stiffness = 900f, visibilityThreshold = Motion.ProgressThreshold)
+/** The menu shrinking back into a drop, ahead of its way home: at the pace of a press. */
+private val ShrinkSpring = Motion.press(Motion.ProgressThreshold)
 
 /** How far growing trails moving, and moving home trails shrinking. */
 private const val GrowDelay = 40L

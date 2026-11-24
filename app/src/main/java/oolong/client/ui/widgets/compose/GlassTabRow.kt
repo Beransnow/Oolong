@@ -377,7 +377,7 @@ fun GlassTab(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val classic = LocalClassicTabs.current
-    val color by animateColorAsState(if (selected) selectedContentColor else unselectedContentColor, label = "tabColor")
+    val color by animateColorAsState(if (selected) selectedContentColor else unselectedContentColor, Motion.snap(), label = "tabColor")
     val lens = LocalTabLens.current
     // A classic tab shows it is chosen in bold, over its line
     val textStyle = if (classic) LocalTextStyle.current.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) else LocalTextStyle.current

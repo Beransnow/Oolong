@@ -1,6 +1,5 @@
 package oolong.client.ui.widgets.compose
 
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
+import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.abs
 
 /**
@@ -147,7 +147,7 @@ class PageScrollState internal constructor() {
                 val range = snapRanges.firstOrNull { scrolled > it.start && scrolled < it.endInclusive }
                     ?: return@collect
                 val target = if (scrolled - range.start < range.endInclusive - scrolled) range.start else range.endInclusive
-                scrollable.animateScrollBy(target - scrolled, spring(stiffness = SnapStiffness))
+                scrollable.animateScrollBy(target - scrolled, Motion.dismiss())
             }
         }
     }
@@ -155,9 +155,6 @@ class PageScrollState internal constructor() {
 
 /** Far enough that nothing driven by the scroll is still moving, but small enough to blend. */
 private const val FarScroll = 1 shl 14
-
-/** How firmly a snap carries the content to the end of its range. */
-private const val SnapStiffness = 600f
 
 /** The scroll edge a [GlassScaffold] shares between its top bar and its content. */
 val LocalPageScroll = compositionLocalOf<PageScrollState?> { null }

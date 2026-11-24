@@ -696,7 +696,7 @@ private fun ImageCell(
     val elastic = !LocalReduceMotion.current
     val picked by animateFloatAsState(
         targetValue = if (order != null) 1f else 0f,
-        animationSpec = if (elastic) spring(dampingRatio = 0.6f, stiffness = 500f) else Motion.snap(),
+        animationSpec = if (!elastic) Motion.snap() else if (order != null) Motion.pop() else Motion.dismiss(),
         label = "picked",
     )
     val select = stringResource(id = R.string.desc_picker_select)
@@ -761,7 +761,7 @@ private fun ImageCell(
 internal fun PickCircle(order: Int?, size: androidx.compose.ui.unit.Dp, filled: Color = ExtendedTheme.colors.emphasis, onFilled: Color = ExtendedTheme.colors.onEmphasis) {
     val pop by animateFloatAsState(
         targetValue = if (order != null) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 700f),
+        animationSpec = if (order != null) Motion.pop() else Motion.dismiss(),
         label = "pop",
     )
     Box(

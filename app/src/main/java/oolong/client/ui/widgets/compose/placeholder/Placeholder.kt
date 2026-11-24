@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 
 object PlaceholderDefaults {
     val fadeAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
@@ -127,8 +128,8 @@ fun Modifier.placeholder(
     color: Color = Color.Unspecified,
     shape: Shape? = null,
     highlight: PlaceholderHighlight? = null,
-    placeholderFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> = { spring() },
-    contentFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> = { spring() },
+    placeholderFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> = { if (targetState) Motion.fadeIn() else Motion.fadeOut() },
+    contentFadeTransitionSpec: @Composable Transition.Segment<Boolean>.() -> FiniteAnimationSpec<Float> = { if (targetState) Motion.fadeOut() else Motion.fadeIn() },
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "placeholder"
