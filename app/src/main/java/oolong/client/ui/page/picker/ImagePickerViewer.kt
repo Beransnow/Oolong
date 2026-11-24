@@ -177,7 +177,8 @@ internal fun PickerViewer(
             // Let go with a fling, the picture carries on at the finger's speed
             val flight = near?.let { flightSpeed(far, it.bounds, velocity) } ?: 0f
             scope.launch {
-                progress.snapTo(1f)
+                // Closed while still opening, it turns back from where it got to
+                progress.snapTo(progress.value.coerceAtMost(1f))
                 progress.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold), initialVelocity = flight)
                 onClose()
             }
