@@ -1,5 +1,6 @@
 package oolong.client.ui.page.search
 
+import androidx.compose.animation.animateBounds
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -22,6 +23,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -91,31 +94,37 @@ fun SearchHistoryList(
                 )
             }
         }
-        FlowRow(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .animateContentSize(Motion.settle()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            showItem.fastForEach { searchHistory ->
-                val press = remember { MutableInteractionSource() }
-                Box(
-                    modifier = Modifier
-                        .pressScale(press)
-                        .padding(bottom = 8.dp)
-                        .background(ExtendedTheme.colors.chip, Corners.full)
-                        .combinedClickable(
-                            interactionSource = press,
-                            indication = PressFeedback.overlay(Corners.full),
-                            onClick = { onSearchHistoryClick(searchHistory) },
-                            onLongClickLabel = stringResource(R.string.title_delete),
-                            onLongClick = { onDelete(searchHistory) }
-                        )
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = searchHistory.keyword
-                    )
+        // One deleted, the rest glide to their new places rather than jumping there
+        LookaheadScope {
+            FlowRow(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .animateContentSize(Motion.settle()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                showItem.fastForEach { searchHistory ->
+                    key(searchHistory.keyword) {
+                        val press = remember { MutableInteractionSource() }
+                        Box(
+                            modifier = Modifier
+                                .animateBounds(this@LookaheadScope, boundsTransform = { _, _ -> Motion.settle() })
+                                .pressScale(press)
+                                .padding(bottom = 8.dp)
+                                .background(ExtendedTheme.colors.chip, Corners.full)
+                                .combinedClickable(
+                                    interactionSource = press,
+                                    indication = PressFeedback.overlay(Corners.full),
+                                    onClick = { onSearchHistoryClick(searchHistory) },
+                                    onLongClickLabel = stringResource(R.string.title_delete),
+                                    onLongClick = { onDelete(searchHistory) }
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = searchHistory.keyword
+                            )
+                        }
+                    }
                 }
             }
         }
