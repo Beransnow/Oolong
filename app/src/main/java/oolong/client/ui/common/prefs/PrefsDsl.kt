@@ -13,11 +13,10 @@ import oolong.client.collectPreferenceAsState
  */
 interface PrefsScope {
     /**
-     * Adds a single Pref
-     *
-     * @param content the content of the item
+     * Adds a setting. Give a [key] that stays with it when settings above it come and go, as
+     * rows shown only under a condition do, or the state of one row passes to another.
      */
-    fun prefsItem(content: @Composable PrefsScope.() -> Unit)
+    fun prefsItem(key: Any? = null, content: @Composable PrefsScope.() -> Unit)
 
     /**
      * Adds a group of Prefs with a title.
@@ -50,11 +49,12 @@ internal class PrefsScopeImpl : PrefsScope {
     private var _prefsItems: MutableList<PrefsItem> = mutableListOf()
     val prefsItems: List<PrefsItem> get() = _prefsItems
 
-    override fun prefsItem(content: @Composable PrefsScope.() -> Unit) {
+    override fun prefsItem(key: Any?, content: @Composable PrefsScope.() -> Unit) {
         _prefsItems.add(
             PrefsItem(
                 content = { @Composable { content() } },
                 isSetting = true,
+                key = key,
             )
         )
     }
@@ -119,6 +119,8 @@ internal class PrefsItem(
     val content: PrefsScope.(index: Int) -> @Composable () -> Unit,
     /** Whether it is a setting, which [PrefsScreen] sets in its group's block, rather than a header or a gap. */
     val isSetting: Boolean,
+    /** What the setting is known by in composition; its place in the list when null. */
+    val key: Any? = null,
 )
 
 private val GroupSpacing = 8.dp

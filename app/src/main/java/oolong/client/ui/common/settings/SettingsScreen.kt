@@ -120,7 +120,7 @@ private fun <S> PrefsScope.group(
     val rows: PrefsScope.() -> Unit = {
         group.items.filterIsInstance<SettingsRow<S>>().forEach { row ->
             if (row.available.isMet(environment) && row !in hidden) {
-                prefsItem { Box(modifier = highlight.of(row.title)) { row.content(state, Modifier) } }
+                prefsItem(key = row) { Box(modifier = highlight.of(row.title)) { row.content(state, Modifier) } }
             }
         }
     }

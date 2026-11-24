@@ -63,7 +63,7 @@ fun PrefsScreen(
             ) {
                 val items = prefsScope.prefsItems
                 items.forEachIndexed { index, item ->
-                    key(index) {
+                    key(item.key ?: index) {
                         if (item.isSetting) {
                             SettingInGroup(items, index, dividerThickness, dividerIndent) { prefsScope.getPrefsItem(index)() }
                         } else {
