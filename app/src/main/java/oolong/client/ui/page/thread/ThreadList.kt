@@ -82,6 +82,7 @@ import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.widgets.compose.Container
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.GlassTopBarItemHeight
@@ -98,6 +99,7 @@ import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.pressedByGlass
 import oolong.client.ui.widgets.compose.states.StateScreenScope
@@ -143,17 +145,43 @@ internal fun ThreadContent(
     val loadingFirstTime = posts.refresh == LoadStatus.Loading && posts.items.isEmpty()
     val error = (posts.refresh as? LoadStatus.Error)?.error
 
-    if (firstPost == null && posts.items.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-            when {
-                error != null -> remember { StateScreenScope { onEvent(ThreadEvent.Retry) } }
-                    .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
-
-                loadingFirstTime -> WavyLoader()
+    // Loading, failing and the thread replace one another as a whole
+    val face = when {
+        firstPost != null || posts.items.isNotEmpty() -> ThreadFace.Posts
+        error != null -> ThreadFace.Error
+        else -> ThreadFace.Loading
+    }
+    ContentSwap(targetState = face, modifier = Modifier.fillMaxSize()) { shown ->
+        when (shown) {
+            ThreadFace.Posts -> ThreadPosts(state, preferences, listState, padding, onEvent, chromeEnd)
+            else -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                if (shown == ThreadFace.Error && error != null) {
+                    remember { StateScreenScope { onEvent(ThreadEvent.Retry) } }
+                        .ErrorScreen(error = error, modifier = Modifier.fillMaxSize())
+                } else if (shown == ThreadFace.Loading) {
+                    WavyLoader()
+                }
             }
         }
-        return
     }
+}
+
+private enum class ThreadFace { Loading, Error, Posts }
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun ThreadPosts(
+    state: ThreadState,
+    preferences: ThreadPreferences,
+    listState: LazyListState,
+    padding: PaddingValues,
+    onEvent: (ThreadEvent) -> Unit,
+    chromeEnd: () -> Int,
+) {
+    val posts = state.posts
+    val firstPost = state.firstPost ?: state.preview?.knownFirstFloor()
+    val loadingFirstTime = posts.refresh == LoadStatus.Loading && posts.items.isEmpty()
+    val error = (posts.refresh as? LoadStatus.Error)?.error
 
     TrackReadPosition(listState, firstPost?.id, onEvent)
 
@@ -203,7 +231,9 @@ internal fun ThreadContent(
                 items = posts.items,
                 key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
             ) { index, item ->
-                Container(modifier = Modifier.landedGlow(item.post.id, LocalLandedFloor.current)) {
+                // Floors come and go by fading, as on switching to the author's or the other order;
+                // they don't glide, as their heights change all the time with pictures and replies
+                Container(modifier = Modifier.motionItem(this, placement = false).landedGlow(item.post.id, LocalLandedFloor.current)) {
                     ThreadFloor(
                         item = item,
                         options = options,
