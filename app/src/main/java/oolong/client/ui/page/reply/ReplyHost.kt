@@ -22,8 +22,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
@@ -223,8 +225,13 @@ fun rememberReplyComposer(
                 context.toastShort(R.string.toast_reply_success, reply.expInc)
             }
             composer.draftKey?.let(viewModel::deleteDraft)
-            editor.setText("")
             composer.close()
+            // Emptied once it has gone back into its capsule: emptied first, the hint came back and
+            // the field shrank while it closed. Opened again before, it fills from the draft, now gone
+            launch {
+                delay(EmptyAfterCloseMillis)
+                if (composer.chrome.surface != ChromeSurface.Composer) editor.setText("")
+            }
         }
     }
     onGlobalEvent<GlobalEvent.SelectedImages>(coroutineScope, filter = { it.id == composer.imagePickerId }) {
@@ -267,3 +274,6 @@ fun ReplyComposer.panelShown(): Boolean {
     val state by viewModel.state.collectAsStateWithLifecycle()
     return state.panel != ReplyPanelType.NONE
 }
+
+/** Long enough for the composer to have gone back into its capsule. */
+private const val EmptyAfterCloseMillis = 500L
