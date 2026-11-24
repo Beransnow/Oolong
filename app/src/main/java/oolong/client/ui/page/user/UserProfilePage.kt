@@ -105,10 +105,15 @@ fun UserProfilePage(
             isError = state.load is LoadStatus.Error,
             isLoading = state.load == LoadStatus.Loading,
             onReload = viewModel::refreshProfile,
-            errorScreen = { ErrorScreen(error = (state.load as? LoadStatus.Error)?.error) },
+            // Loading and failing keep a bar with a way back, as the profile has
+            errorScreen = { WithBackBar(onBack = { navigator.navigateUp() }) { ErrorScreen(error = (state.load as? LoadStatus.Error)?.error) } },
             loadingScreen = {
                 val hero = openedWithHero()
-                if (hero != null) UserProfileSkeleton(avatar = hero.image, onBack = { navigator.navigateUp() }) else DefaultLoadingScreen()
+                if (hero != null) {
+                    UserProfileSkeleton(avatar = hero.image, onBack = { navigator.navigateUp() })
+                } else {
+                    WithBackBar(onBack = { navigator.navigateUp() }) { DefaultLoadingScreen() }
+                }
             },
         ) {
             state.profile?.let {
@@ -518,5 +523,15 @@ private fun UserProfileSkeleton(avatar: String?, onBack: () -> Unit) {
             Box(modifier = Modifier.size(width = 160.dp, height = 24.dp).placeholder(visible = true, highlight = PlaceholderHighlight.fade()))
             Box(modifier = Modifier.size(width = 220.dp, height = 16.dp).placeholder(visible = true, highlight = PlaceholderHighlight.fade()))
         }
+    }
+}
+
+/** [content] centred under a bar with only a way back, for a profile not loaded yet or failed. */
+@Composable
+private fun WithBackBar(onBack: () -> Unit, content: @Composable () -> Unit) {
+    GlassScaffold(
+        topBar = { GlassTopBar(title = {}, navigationIcon = { BackNavigationIcon(onBackPressed = onBack) }) },
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { content() }
     }
 }

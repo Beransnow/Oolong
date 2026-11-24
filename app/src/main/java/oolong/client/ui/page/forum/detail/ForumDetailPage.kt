@@ -83,27 +83,28 @@ fun ForumDetailScreen(
     onOpenRule: () -> Unit = {},
 ) {
     val error = (state.load as? LoadStatus.Error)?.error
-    StateScreen(
-        isEmpty = state.intro == null,
-        isError = error != null,
-        isLoading = state.load == LoadStatus.Loading,
-        onReload = onReload,
-        errorScreen = { ErrorScreen(error = error) },
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        GlassScaffold(
-            topBar = {
-                GlassTopBar(
-                    title = {
-                        GlassTopBarTitle(text = stringResource(id = R.string.title_forum_info))
-                    },
-                    navigationIcon = {
-                        BackNavigationIcon(onBackPressed = onBack)
-                    }
-                )
-            }
-        ) { paddingValues ->
-            Container {
+    // The bar stays while the page loads or fails; only what is under it changes
+    GlassScaffold(
+        topBar = {
+            GlassTopBar(
+                title = {
+                    GlassTopBarTitle(text = stringResource(id = R.string.title_forum_info))
+                },
+                navigationIcon = {
+                    BackNavigationIcon(onBackPressed = onBack)
+                }
+            )
+        }
+    ) { paddingValues ->
+        StateScreen(
+            isEmpty = state.intro == null,
+            isError = error != null,
+            isLoading = state.load == LoadStatus.Loading,
+            onReload = onReload,
+            errorScreen = { ErrorScreen(error = error) },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Container(modifier = Modifier.fillMaxSize()) {
                 state.intro?.let {
                     ForumDetailContent(
                         forumInfo = it,
