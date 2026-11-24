@@ -290,8 +290,12 @@ fun TiebaLiteTheme(
     // At night the wallpaper's theme is not a dark one by name: ask the settings
     val settingsDark = remember(theme, settings) { ThemeUtil.isDark() }
     val dark = dark ?: settingsDark
-    val extendedColors = colorsOf(settings, dark = dark, picks = rememberColorPicks())
+    val targetColors = colorsOf(settings, dark = dark, picks = rememberColorPicks())
+    ThemeChangeFade(target = targetColors) { extendedColors -> ThemedContent(extendedColors, content) }
+}
 
+@Composable
+private fun ThemedContent(extendedColors: ExtendedColors, content: @Composable () -> Unit) {
     val colors = getColorPalette(extendedColors)
 
     // The system's text size, or the app's own in its place
