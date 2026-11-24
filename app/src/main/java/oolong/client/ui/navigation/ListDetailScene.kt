@@ -195,18 +195,22 @@ private fun <T : Any> ListDetailLayout(
                     state = dragState,
                     orientation = Orientation.Horizontal,
                     onDragStarted = { dragging = true },
-                    onDragStopped = {
+                    onDragStopped = { velocity ->
                         dragging = false
                         val released = shown.value
-                        if (released < ListDetailState.CollapseBelow && detail != null) {
+                        val speed = with(density) { velocity.toDp() }
+                        // Where the divider is headed, not only where it was let go: a flick
+                        // toward the edge folds the list away even from far out
+                        val headedTo = released + speed * FlickLookAhead
+                        if (headedTo < ListDetailState.CollapseBelow && detail != null) {
                             state.collapsed = true
-                            shown.animateTo(0.dp, DividerSpring)
+                            shown.animateTo(0.dp, DividerSpring, initialVelocity = speed)
                         } else {
                             val width = released.coerceIn(ListDetailState.MinListWidth, maxListWidth)
                             state.collapsed = false
                             state.listWidth = width
                             onListWidthChange(width)
-                            shown.animateTo(width, DividerSpring)
+                            shown.animateTo(width, DividerSpring, initialVelocity = speed)
                         }
                     },
                 )
@@ -318,3 +322,6 @@ private val PaneInsets: WindowInsets
 private val DividerTouchWidth = 16.dp
 private val GripShape = Corners.full
 private val DividerSpring = Motion.snap(Dp.VisibilityThreshold)
+
+/** How far ahead, in seconds of its speed, a flicked divider is judged by. */
+private const val FlickLookAhead = 0.15f
