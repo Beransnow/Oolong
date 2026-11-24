@@ -79,24 +79,39 @@ private fun FooterRow(append: LoadStatus, onRetry: () -> Unit, pullToLoadLatest:
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        when {
-            append == LoadStatus.Loading -> WavyLoader()
+        // Loading, failing and reaching the end replace one another in place
+        val face = when (append) {
+            LoadStatus.Loading -> FooterFace.Loading
+            is LoadStatus.Error -> FooterFace.Error
+            else -> FooterFace.End
+        }
+        // The failure is kept for the message to fade out with, once a retry has begun
+        var failure by remember { mutableStateOf<Throwable?>(null) }
+        if (append is LoadStatus.Error) failure = append.error
+        ContentSwap(targetState = face, contentAlignment = Alignment.Center) { shown ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                when {
+                    shown == FooterFace.Loading -> WavyLoader()
 
-            append is LoadStatus.Error -> {
-                val message = if (append.error.isNetworkError()) R.string.title_no_internet_connectivity else R.string.title_api_error
-                Text(
-                    text = stringResource(id = message),
-                    color = ExtendedTheme.colors.textSecondary,
-                    style = MaterialTheme.typography.body2,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = onRetry) { Text(text = stringResource(id = R.string.button_retry)) }
+                    shown == FooterFace.Error && failure != null -> {
+                        val message = if (failure!!.isNetworkError()) R.string.title_no_internet_connectivity else R.string.title_api_error
+                        Text(
+                            text = stringResource(id = message),
+                            color = ExtendedTheme.colors.textSecondary,
+                            style = MaterialTheme.typography.body2,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = onRetry) { Text(text = stringResource(id = R.string.button_retry)) }
+                    }
+
+                    shown == FooterFace.End -> EndText(pullToLoadLatest)
+                }
             }
-
-            else -> EndText(pullToLoadLatest)
         }
     }
 }
+
+private enum class FooterFace { Loading, Error, End }
 
 /** 「没有更多了」, which answers a pull past the end, or says what pulling there loads. */
 @Composable
