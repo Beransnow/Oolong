@@ -3,6 +3,7 @@ package oolong.client.ui.widgets.compose
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import oolong.client.Incognito
 import oolong.client.R
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
@@ -250,22 +252,26 @@ fun OwnAvatar(
     modifier: Modifier = Modifier,
 ) {
     val incognito by Incognito.on.collectAsState()
-    if (incognito) {
-        val colors = ExtendedTheme.colors
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = modifier
-                .clip(CircleShape)
-                .background(colors.text),
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_me_incognito_on),
-                contentDescription = contentDescription,
-                tint = colors.background,
-                modifier = Modifier.fillMaxSize(0.72f),
-            )
+    // Another account, or the mask going on or off, fades over in place
+    Crossfade(targetState = (if (incognito) null else data) to incognito, modifier = modifier, animationSpec = Motion.settle(), label = "ownAvatar") { (shown, masked) ->
+        if (masked) {
+            val colors = ExtendedTheme.colors
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(colors.text),
+            ) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_me_incognito_on),
+                    contentDescription = contentDescription,
+                    tint = colors.background,
+                    modifier = Modifier.fillMaxSize(0.72f),
+                )
+            }
+        } else {
+            Avatar(data = shown, contentDescription = contentDescription, modifier = Modifier.fillMaxSize())
         }
-    } else {
-        Avatar(data = data, contentDescription = contentDescription, modifier = modifier)
     }
 }
