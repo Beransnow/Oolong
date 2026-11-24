@@ -54,6 +54,7 @@ forum
 fullscreen
 fullscreen_exit
 gesture
+grid_view
 hd
 heart_broken
 image

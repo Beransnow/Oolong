@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -115,9 +116,11 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyLazyVerticalGrid
+import oolong.client.ui.widgets.compose.ProvideContentColor
 import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
+import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.motionItem
@@ -575,11 +578,17 @@ fun HomeScreen(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_oksign),
                         contentDescription = stringResource(id = R.string.title_oksign)
                     ) { onEvent(HomeEvent.OneKeySign) }
-                    ActionItem(
-                        icon = Symbols.ViewAgenda,
-                        contentDescription = stringResource(id = R.string.title_switch_list_single),
-                        onClick = onToggleListSingle,
-                    )
+                    // Shows the layout in use, and turns into the other as it switches
+                    ProvideContentColor(color = ExtendedTheme.colors.topBarContent) {
+                        IconButton(onClick = onToggleListSingle) {
+                            ToggleIcon(
+                                checked = single,
+                                on = Symbols.ViewAgenda,
+                                off = Symbols.GridView,
+                                contentDescription = stringResource(id = R.string.title_switch_list_single),
+                            )
+                        }
+                    }
                 }
             )
         },
