@@ -1023,7 +1023,15 @@ private fun ActionBtn(
     color: Color = LocalContentColor.current,
     onClick: (() -> Unit)? = null,
 ) {
-    val clickableModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    // Pressed, the button sinks in as other small buttons do
+    val press = remember { MutableInteractionSource() }
+    val clickableModifier = if (onClick != null) {
+        Modifier
+            .pressScale(press)
+            .clickable(interactionSource = press, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
+    } else {
+        Modifier
+    }
     Row(
         modifier = clickableModifier
             .height(ActionHeight)
