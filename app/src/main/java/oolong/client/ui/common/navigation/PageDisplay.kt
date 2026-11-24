@@ -118,7 +118,15 @@ fun <T : Any> PageDisplay(
             // Going on, or settled with the scene recalculated
             to -> {
                 segment.turningRound = false
-                if (from != to) state.play(wanted, segment.drive, fraction)
+                val releaseSpeed = if (peek != null && peek.committed) peek.releaseSpeed else 0f
+                if (from != to && releaseSpeed > 0f) {
+                    // Let go of a peek, the page slides out at the finger's pace
+                    fraction.velocity = releaseSpeed
+                    state.driveTo(1f, segment.drive, fraction)
+                    state.snapTo(wanted)
+                } else if (from != to) {
+                    state.play(wanted, segment.drive, fraction)
+                }
             }
             // Turning round: driven, from where it is and as fast as it moves, so it carries on a
             // moment before it comes back

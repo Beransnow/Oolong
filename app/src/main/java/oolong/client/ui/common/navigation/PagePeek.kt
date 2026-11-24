@@ -1,5 +1,6 @@
 package oolong.client.ui.common.navigation
 
+import android.content.res.Resources
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -64,6 +65,13 @@ class PagePeek {
     var committed by mutableStateOf(false)
         internal set
 
+    /**
+     * How fast the gesture was moving when back went ahead, in screen widths a second, for the
+     * page to slide out at the finger's pace rather than from rest.
+     */
+    var releaseSpeed = 0f
+        internal set
+
     /** The page on top while it rests with nothing moving; only such a page can be peeked past. */
     internal var restingKey: Any? by mutableStateOf(null)
 
@@ -74,6 +82,7 @@ class PagePeek {
         underKey = under
         holding = true
         committed = false
+        releaseSpeed = 0f
         edge = if (swipeEdge == NavigationEvent.EDGE_RIGHT) NavigationEvent.EDGE_RIGHT else NavigationEvent.EDGE_LEFT
         amount = 0f
     }
@@ -179,6 +188,11 @@ private class PeekBackHandler(
     private var furthest = 0f
     private var furthestAmount = 0f
 
+    /** The finger's last place and when it was there, and how fast it has been moving, smoothed. */
+    private var lastX = 0f
+    private var lastXTime = 0L
+    private var fingerSpeed = 0f
+
     override fun onBackStarted(event: NavigationEvent) {
         log { "started edge=${event.swipeEdge} x=${event.touchX} peekable=${peek.restingKey}" }
         if (settling && peek.isPeeking) {
@@ -194,6 +208,8 @@ private class PeekBackHandler(
         resumedFrom = 0f
         furthest = 0f
         furthestAmount = 0f
+        lastXTime = 0L
+        fingerSpeed = 0f
         // Peeks once the finger moves: a back key starts and completes at once, and pops as usual
         dragging = true
     }
@@ -214,6 +230,7 @@ private class PeekBackHandler(
     }
 
     override fun onBackProgressed(event: NavigationEvent) {
+        trackSpeed(event.touchX, event.swipeEdge)
         // Also a gesture begun while pages still moved, once they rest
         if (dragging && !peek.isPeeking && event.progress > 0f) tryPeek(event)
         if (!peek.isPeeking || settling) return
@@ -228,14 +245,35 @@ private class PeekBackHandler(
     }
 
     override fun onBackCompleted() {
-        log { "completed peeking=${peek.isPeeking} amount=${peek.amount}" }
+        log { "completed peeking=${peek.isPeeking} amount=${peek.amount} speed=$fingerSpeed" }
         // The page slides out from where the peek is now
         moving?.cancel()
         onArrived = {}
         settling = false
         dragging = false
-        if (peek.isPeeking) peek.committed = true
+        if (peek.isPeeking) {
+            // Only speed onward carries on, and no more than a slide would sensibly start with
+            peek.releaseSpeed = fingerSpeed.coerceIn(0f, MaxReleaseSpeed)
+            peek.committed = true
+        }
         pop()
+    }
+
+    /**
+     * Follows the finger's speed away from its edge, in screen widths a second. Taken from where
+     * the finger is rather than the progress: after the finger lifts the system winds the progress
+     * on by itself, with the finger where it was, which reads as a very fast move.
+     */
+    private fun trackSpeed(x: Float, swipeEdge: Int) {
+        if (x == lastX && lastXTime != 0L) return
+        val now = System.nanoTime()
+        val dt = (now - lastXTime) / 1_000_000_000f
+        val width = Resources.getSystem().displayMetrics.widthPixels.toFloat().coerceAtLeast(1f)
+        val away = if (swipeEdge == NavigationEvent.EDGE_RIGHT) lastX - x else x - lastX
+        // Weighted toward the latest moves: what the finger did as it let go matters most
+        fingerSpeed = if (lastXTime != 0L && dt in 0.001f..0.1f) fingerSpeed * 0.4f + away / width / dt * 0.6f else 0f
+        lastX = x
+        lastXTime = now
     }
 
     override fun onBackCancelled() {
@@ -283,6 +321,9 @@ private class PeekBackHandler(
     private companion object {
         const val FollowResponse = 0.2f
         const val SettleResponse = 0.3f
+
+        /** Screen widths a second a committed page may start sliding out at. */
+        const val MaxReleaseSpeed = 4f
     }
 
     /** The gesture as the system reports it, in debug builds, to compare how devices report it. */
