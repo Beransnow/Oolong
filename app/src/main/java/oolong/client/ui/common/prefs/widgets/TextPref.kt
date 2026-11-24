@@ -4,12 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import oolong.client.ui.common.prefs.PrefsChevron
 import oolong.client.ui.common.prefs.PrefsListItem
 import oolong.client.ui.common.prefs.ifNotNullThen
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.widgets.compose.Refocus
 
 // TODO add single line title?
 
@@ -52,7 +54,8 @@ fun TextPref(
         textColor = textColor,
         minimalHeight = minimalHeight,
         icon = leadingIcon,
-        secondaryText = summary.ifNotNullThen { Text(summary!!) },
+        // A summary that changes with the setting, as a switch's on and off ones, refocuses in place
+        secondaryText = summary.ifNotNullThen { Refocus(targetState = summary!!, contentAlignment = Alignment.TopStart) { Text(it) } },
         trailing = trailingContent
     )
 }

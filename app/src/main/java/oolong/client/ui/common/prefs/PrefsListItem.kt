@@ -1,5 +1,6 @@
 package oolong.client.ui.common.prefs
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,16 +20,19 @@ import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.widgets.compose.Refocus
 
 /**
  * A setting's row: its title over an optional summary, an icon before them on the settings hub
@@ -47,13 +51,14 @@ fun PrefsListItem(
     minimalHeight: Boolean = false,
     text: @Composable () -> Unit
 ) {
-    val alpha = if (enabled || !darkenOnDisable) 1f else DisabledAlpha
+    // Turning unavailable, as when a setting it depends on goes off, it fades rather than greys in a frame
+    val alpha by animateFloatAsState(if (enabled || !darkenOnDisable) 1f else DisabledAlpha, Motion.settle(), label = "prefsEnabled")
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = if (minimalHeight) 32.dp else 52.dp)
             .padding(horizontal = 16.dp, vertical = if (secondaryText == null) 14.dp else 12.dp)
-            .alpha(alpha),
+            .graphicsLayer { this.alpha = alpha },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -98,7 +103,7 @@ fun PrefsChevron() {
 @Composable
 fun PrefsLinkValue(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = text, maxLines = 1)
+        Refocus(targetState = text, contentAlignment = Alignment.CenterEnd) { Text(text = it, maxLines = 1) }
         Spacer(modifier = Modifier.width(4.dp))
         PrefsChevron()
     }
@@ -125,7 +130,8 @@ fun PrefsExternal(text: String? = null) {
 @Composable
 fun PrefsChoiceValue(text: String, modifier: Modifier = Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-        Text(text = text, maxLines = 1)
+        // Another choice refocuses in place as the menu closes
+        Refocus(targetState = text, contentAlignment = Alignment.CenterEnd) { Text(text = it, maxLines = 1) }
         Spacer(modifier = Modifier.width(4.dp))
         Icon(
             imageVector = Symbols.UnfoldMore,

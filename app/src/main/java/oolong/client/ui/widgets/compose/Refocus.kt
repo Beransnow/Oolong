@@ -38,6 +38,8 @@ private val RefocusBlur = 6.dp
 fun <T> Refocus(
     targetState: T,
     modifier: Modifier = Modifier,
+    contentAlignment: Alignment = Alignment.Center,
+    contentKey: (T) -> Any? = { it },
     content: @Composable (T) -> Unit,
 ) {
     // With motion reduced the two only cross-fade
@@ -45,7 +47,8 @@ fun <T> Refocus(
     AnimatedContent(
         targetState = targetState,
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = contentAlignment,
+        contentKey = contentKey,
         transitionSpec = {
             val enter = if (reduced) fadeIn(Motion.fadeIn()) else fadeIn(Motion.fadeIn()) + scaleIn(Motion.settle(), initialScale = 0.92f)
             enter togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = false) { _, _ -> Motion.settle() }
