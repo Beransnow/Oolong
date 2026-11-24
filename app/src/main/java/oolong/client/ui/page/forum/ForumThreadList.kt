@@ -1,5 +1,10 @@
 package oolong.client.ui.page.forum
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,13 +19,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +44,7 @@ import oolong.client.arch.PagerState
 import oolong.client.model.ForumTab
 import oolong.client.model.ThreadSummary
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
@@ -51,6 +57,7 @@ import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.FeedCard
 import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.pageAccentOrPrimary
@@ -106,23 +113,44 @@ internal fun ForumThreadList(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = contentPadding,
         ) {
-            items(items = if (folded) tops.take(1) else tops, key = { it.thread.id }, contentType = { ItemType.Top }) { item ->
-                Item(item) { thread ->
-                    TopThreadItem(
-                        title = thread.title.takeUnless { it.isBlank() } ?: thread.abstract,
-                        onClick = { onEvent(ForumEvent.OpenThread(thread)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        unfold = if (folded) {
-                            { UnfoldTopsButton(count = tops.size, onClick = { onFoldTops(false) }) }
-                        } else {
-                            null
-                        },
-                    )
-                }
-            }
-            if (foldable && !folded) {
-                item(key = "FoldTops", contentType = "FoldTops") {
-                    FoldTopsItem(onClick = { onFoldTops(true) }, modifier = Modifier.fillMaxWidth(itemFraction))
+            // One item, so folding opens and closes the rows in place and what follows moves
+            // along with them rather than jumping
+            if (tops.isNotEmpty()) {
+                item(key = "Tops", contentType = ItemType.Top) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Item(tops.first()) { thread ->
+                            TopThreadItem(
+                                title = thread.topTitle,
+                                onClick = { onEvent(ForumEvent.OpenThread(thread)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                unfold = {
+                                    AnimatedVisibility(
+                                        visible = folded,
+                                        enter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle(), expandFrom = Alignment.Start),
+                                        exit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss(), shrinkTowards = Alignment.Start),
+                                    ) {
+                                        UnfoldTopsButton(count = tops.size, onClick = { onFoldTops(false) })
+                                    }
+                                },
+                            )
+                        }
+                        Reveal(tops.drop(1).takeIf { foldable && !folded }) { rest ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                rest.forEach { item ->
+                                    key(item.thread.id) {
+                                        Item(item) { thread ->
+                                            TopThreadItem(
+                                                title = thread.topTitle,
+                                                onClick = { onEvent(ForumEvent.OpenThread(thread)) },
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        }
+                                    }
+                                }
+                                FoldTopsItem(onClick = { onFoldTops(true) }, modifier = Modifier.fillMaxWidth(itemFraction))
+                            }
+                        }
+                    }
                 }
             }
             itemsIndexed(
@@ -155,7 +183,8 @@ internal fun ForumThreadList(
                     )
                 }
             }
-            loadMoreFooter(list.append, list.hasMore, onRetry = { onEvent(ForumEvent.LoadMore) })
+            // Not under a list emptied for another order, as it fades away
+            if (items.isNotEmpty()) loadMoreFooter(list.append, list.hasMore, onRetry = { onEvent(ForumEvent.LoadMore) })
         }
     }
 }
@@ -222,6 +251,8 @@ private fun TypeChip(text: String, accent: Color) {
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
+
+private val ThreadSummary.topTitle: String get() = title.takeUnless { it.isBlank() } ?: abstract
 
 @Composable
 private fun TopThreadItem(
