@@ -38,9 +38,11 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.FeedCardPlaceholder
 import oolong.client.ui.widgets.compose.GlassScaffold
@@ -79,11 +81,27 @@ fun ForumScreen(
     fab: ForumFab = ForumFab.Refresh,
     scaffoldState: ScaffoldState = rememberScaffoldState(),
 ) {
-    val forum = state.forum
-    if (forum == null) {
-        ForumLoading(state, onEvent, modifier)
-        return
+    // Placeholders give way to the forum by refocusing, laid out as it is
+    ContentSwap(targetState = state.forum == null, modifier = modifier) { loading ->
+        val forum = state.forum
+        if (loading || forum == null) {
+            ForumLoading(state, onEvent, Modifier)
+        } else {
+            ForumContent(state, forum, onEvent, fab, scaffoldState)
+        }
     }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun ForumContent(
+    state: ForumState,
+    forum: ForumDetail,
+    onEvent: (ForumEvent) -> Unit,
+    fab: ForumFab,
+    scaffoldState: ScaffoldState,
+    modifier: Modifier = Modifier,
+) {
     val tabs = state.tabs
     val pagerState = rememberPagerState(initialPage = tabs.indexOf(state.selectedTab).coerceAtLeast(0)) { tabs.size }
     val currentTabs by rememberUpdatedState(tabs)

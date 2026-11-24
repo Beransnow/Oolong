@@ -373,27 +373,39 @@ internal fun ForumHeaderPlaceholder(
     loggedIn: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        AvatarPlaceholder(size = 64.dp)
-        Text(
-            text = stringResource(id = R.string.title_forum, forumName),
-            style = MaterialTheme.typography.h6,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+    // Laid out as the header is, so nothing moves when the forum arrives in its place
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AvatarPlaceholder(size = ForumAvatarSize)
+            Spacer(modifier = Modifier.width(NameGap))
+            Text(
+                text = stringResource(id = R.string.title_forum, forumName),
+                fontSize = NameFontSize,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(modifier = Modifier.height(DetailsGap))
+        Row {
+            repeat(2) {
+                if (it > 0) Spacer(modifier = Modifier.width(24.dp))
+                Column {
+                    Text(text = "0000", fontSize = 20.sp, lineHeight = 24.sp, modifier = Modifier.placeholder(visible = true, shape = Corners.xs, highlight = PlaceholderHighlight.fade()))
+                    Text(text = "0000", style = MaterialTheme.typography.caption, modifier = Modifier.padding(top = 2.dp).placeholder(visible = true, shape = Corners.xs, highlight = PlaceholderHighlight.fade()))
+                }
+            }
+        }
         if (loggedIn) {
+            Spacer(modifier = Modifier.height(SectionGap))
             Box(
                 modifier = Modifier
-                    .placeholder(visible = true, shape = Corners.full, highlight = PlaceholderHighlight.fade())
-                    .padding(horizontal = 18.dp, vertical = 6.dp)
-            ) {
-                Text(text = stringResource(id = R.string.button_sign_in), fontSize = 13.sp)
-            }
+                    .fillMaxWidth()
+                    .height(ButtonHeight)
+                    .placeholder(visible = true, shape = SmoothCornerShape.Capsule, highlight = PlaceholderHighlight.fade()),
+            )
         }
     }
 }
