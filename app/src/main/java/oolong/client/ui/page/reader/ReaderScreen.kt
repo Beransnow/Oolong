@@ -4,6 +4,9 @@ import android.text.format.DateFormat
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -46,7 +49,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.ModalBottomSheetLayout
@@ -72,6 +74,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -122,8 +125,10 @@ import oolong.client.ui.navigation.MaxReadingWidth
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.SegmentedControl
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.utils.ThemeUtil
 import java.util.Calendar
@@ -183,7 +188,7 @@ enum class ReaderPaper(
 }
 
 /** The theme's colours with the reader's page, so the chrome's glass and the sheets match it. */
-private fun ExtendedColors.onPaper(paper: ReaderPaper): ExtendedColors {
+private fun ExtendedColors.onPaper(paper: PaperColors): ExtendedColors {
     if (isNightMode) return if (ThemeUtil.isTranslucentTheme(theme)) copy(theme = ThemeUtil.THEME_BLUE_DARK, background = sheet) else this
     return copy(
         theme = ThemeUtil.THEME_DEFAULT,
@@ -200,6 +205,19 @@ private fun ExtendedColors.onPaper(paper: ReaderPaper): ExtendedColors {
     )
 }
 
+/** A page's colours as they show, part of the way from one page to another while it changes. */
+private class PaperColors(val background: Color, val text: Color, val secondary: Color, val divider: Color, val chip: Color)
+
+/** [paper]'s colours, which ease over on settle when another page is picked rather than flipping at once. */
+@Composable
+private fun animatedPaper(paper: ReaderPaper): PaperColors = PaperColors(
+    background = animateColorAsState(paper.background, Motion.settle(), label = "paperBackground").value,
+    text = animateColorAsState(paper.text, Motion.settle(), label = "paperText").value,
+    secondary = animateColorAsState(paper.secondary, Motion.settle(), label = "paperSecondary").value,
+    divider = animateColorAsState(paper.divider, Motion.settle(), label = "paperDivider").value,
+    chip = animateColorAsState(paper.chip, Motion.settle(), label = "paperChip").value,
+)
+
 @Composable
 fun ReaderScreen(
     state: ReaderState,
@@ -215,7 +233,7 @@ fun ReaderScreen(
     listState: LazyListState = rememberLazyListState(),
     initialChrome: Boolean = false,
 ) {
-    val colors = ExtendedTheme.colors.onPaper(style.page)
+    val colors = ExtendedTheme.colors.onPaper(animatedPaper(style.page))
     CompositionLocalProvider(LocalExtendedColors provides colors) {
         BoxWithConstraints(modifier = modifier) {
             // Wide enough, the contents stay open beside the text
@@ -392,13 +410,15 @@ private fun ReaderContent(
                 val snapped = if (typesetting.advance > 0f) (text / typesetting.advance).toInt() * typesetting.advance else text
                 ((width - snapped) / 2).coerceAtLeast(0f).toDp()
             }
+            // Hidden at once while it seeks, so the start never shows; faded in once it is there
+            val shownAfterSeek = animateFloatAsState(if (state.seeking) 0f else 1f, if (state.seeking) snap() else Motion.fadeIn(), label = "seek")
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(start = margin, end = margin, top = top + RunningHeadHeight, bottom = bottom + 96.dp),
                 // Hidden while loading on to where it opens, so it doesn't show the start first
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(if (state.seeking) 0f else 1f),
+                    .graphicsLayer { alpha = shownAfterSeek.value },
             ) {
                 item(key = "cover") {
                     ReaderCover(
@@ -423,14 +443,13 @@ private fun ReaderContent(
                     ReaderEnd(state.loading, state.hasMore, empty = document.blocks.isEmpty(), onRetry = onRetry)
                 }
             }
-            if (state.seeking) {
-                CircularProgressIndicator(
-                    color = colors.textSecondary,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(24.dp),
-                )
+            AnimatedVisibility(
+                visible = state.seeking,
+                enter = fadeIn(Motion.fadeIn()),
+                exit = fadeOut(Motion.fadeOut()),
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                WavyLoader(color = colors.textSecondary)
             }
             // A quiet running head while the chrome is away: where in the text, and how far through
             AnimatedVisibility(
@@ -603,7 +622,8 @@ private fun ReaderBlockView(
                     .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onToggleNotes)
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
             )
-            if (notesOpen) {
+            // The notes open under their line in place, and close the same way
+            Reveal(Unit.takeIf { notesOpen }) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
                     modifier = Modifier.padding(start = Spacing.sm, top = Spacing.xs),
@@ -663,7 +683,7 @@ private fun ReaderEnd(loading: LoadStatus, hasMore: Boolean, empty: Boolean, onR
                 Text(text = stringResource(R.string.button_retry), style = TextStyles.label)
             }
             loading == LoadStatus.Loading || hasMore || empty ->
-                CircularProgressIndicator(color = colors.textSecondary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+                WavyLoader(color = colors.textSecondary)
             else -> Text(text = stringResource(R.string.reader_up_to_date), style = TextStyles.footnote, color = colors.textSecondary)
         }
     }
@@ -817,7 +837,7 @@ private fun ColumnScope.Contents(
         if (loading) {
             item(key = "loading") {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(Spacing.md)) {
-                    CircularProgressIndicator(color = colors.textSecondary, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    WavyLoader(color = colors.textSecondary)
                 }
             }
         }
