@@ -3,6 +3,7 @@ package oolong.client.ui.page.picker
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -47,6 +48,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -109,11 +111,13 @@ import oolong.client.ui.widgets.compose.Button
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.TipScreen
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.maskTo
+import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.pageScroll
 import kotlin.math.max
 import kotlin.math.min
@@ -699,6 +703,8 @@ private fun ImageCell(
         animationSpec = if (!elastic) Motion.snap() else if (order != null) Motion.pop() else Motion.dismiss(),
         label = "picked",
     )
+    // Others dim as the picks fill up, and light again as one is let go
+    val reach by animateFloatAsState(if (outOfReach) OutOfReachAlpha else 1f, Motion.settle(), label = "reach")
     val select = stringResource(id = R.string.desc_picker_select)
     Box(
         modifier = Modifier
@@ -718,7 +724,7 @@ private fun ImageCell(
                     val scale = 1f - (1f - PickedScale) * picked
                     scaleX = scale
                     scaleY = scale
-                    alpha = if (outOfReach) OutOfReachAlpha else 1f
+                    alpha = reach
                 }
                 .placeIn(places, image.uri) { PickedCorner * picked.coerceIn(0f, 1f) }
                 .maskTo(SmoothCornerShape(CornerSize(PickedCorner * picked.coerceIn(0f, 1f)))),
@@ -759,37 +765,50 @@ private fun ImageCell(
 /** The circle on a picture: empty, or filled with its place among the picks. */
 @Composable
 internal fun PickCircle(order: Int?, size: androidx.compose.ui.unit.Dp, filled: Color = ExtendedTheme.colors.emphasis, onFilled: Color = ExtendedTheme.colors.onEmphasis) {
-    val pop by animateFloatAsState(
+    // Picked, the fill pops out of the ring's middle, swells a touch past it and settles at its
+    // size; unpicked, it shrinks back in. The number goes with the fill and refocuses as it changes
+    val reduced = LocalReduceMotion.current
+    val fill by animateFloatAsState(
         targetValue = if (order != null) 1f else 0f,
-        animationSpec = if (order != null) Motion.pop() else Motion.dismiss(),
-        label = "pop",
+        animationSpec = if (order != null) Motion.pop(Motion.ProgressThreshold) else Motion.dismiss(Motion.ProgressThreshold),
+        label = "pickFill",
     )
+    val anyFill by remember { derivedStateOf { fill > 0f } }
+    var lastOrder by remember { mutableStateOf(order) }
+    if (order != null) lastOrder = order
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(size)
-            .graphicsLayer {
-                val scale = 1f + 0.08f * pop
-                scaleX = scale
-                scaleY = scale
-            }
-            .then(
-                if (order != null) {
-                    Modifier.background(filled, CircleShape)
-                } else {
-                    Modifier
-                        .background(Color.Black.copy(alpha = 0.18f), CircleShape)
-                        .border(1.5.dp, Color.White, CircleShape)
-                }
-            ),
+            .background(Color.Black.copy(alpha = 0.18f), CircleShape)
+            .border(1.5.dp, Color.White, CircleShape),
     ) {
-        if (order != null) {
-            Text(
-                text = order.toString(),
-                color = onFilled,
-                fontSize = if (size < 24.dp) 11.sp else 12.sp,
-                fontWeight = FontWeight.Bold,
-            )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    val f = fill.coerceAtLeast(0f)
+                    alpha = f.coerceAtMost(1f)
+                    if (!reduced) {
+                        val scale = 0.5f + 0.5f * f
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                }
+                .background(filled, CircleShape),
+        ) {
+            val shown = lastOrder
+            if (shown != null && anyFill) {
+                Refocus(targetState = shown) {
+                    Text(
+                        text = it.toString(),
+                        color = onFilled,
+                        fontSize = if (size < 24.dp) 11.sp else 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
         }
     }
 }
@@ -875,6 +894,19 @@ internal fun PickedStrip(
     val stepPx = with(LocalDensity.current) { (ThumbSize + ThumbGap).toPx() }
     var lifted by remember { mutableStateOf<Uri?>(null) }
     var liftedBy by remember { mutableFloatStateOf(0f) }
+    // Let go, the tile glides from under the finger into its place and sinks back to its size
+    var dropped by remember { mutableStateOf<Uri?>(null) }
+    val droppedBy = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    fun drop(uri: Uri) {
+        lifted = null
+        dropped = uri
+        scope.launch {
+            droppedBy.snapTo(liftedBy)
+            droppedBy.animateTo(0f, Motion.settle())
+            if (dropped == uri) dropped = null
+        }
+    }
     val listState = rememberLazyListState()
 
     // The row keeps its first tile in view by default, and would follow it as it is dragged
@@ -891,15 +923,20 @@ internal fun PickedStrip(
     ) {
         items(state.selected, key = { it.toString() }) { uri ->
             val isLifted = lifted == uri
+            val isDropped = dropped == uri
+            val lift by animateFloatAsState(if (isLifted) 1f else 0f, if (isLifted) Motion.press() else Motion.release(), label = "lift")
             Box(
                 modifier = Modifier
-                    .then(if (isLifted) Modifier.zIndex(1f) else Modifier.animateItem())
+                    .then(if (isLifted || isDropped) Modifier.zIndex(1f) else Modifier.motionItem(this))
                     .graphicsLayer {
-                        if (isLifted) {
-                            translationX = liftedBy
-                            scaleX = LiftedScale
-                            scaleY = LiftedScale
+                        translationX = when {
+                            isLifted -> liftedBy
+                            isDropped -> droppedBy.value
+                            else -> 0f
                         }
+                        val scale = 1f + (LiftedScale - 1f) * lift
+                        scaleX = scale
+                        scaleY = scale
                     }
                     .size(ThumbSize)
                     .pointerInput(uri) {
@@ -908,12 +945,13 @@ internal fun PickedStrip(
                     .pointerInput(uri) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
+                                dropped = null
                                 lifted = uri
                                 liftedBy = 0f
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             },
-                            onDragEnd = { lifted = null },
-                            onDragCancel = { lifted = null },
+                            onDragEnd = { drop(uri) },
+                            onDragCancel = { drop(uri) },
                         ) { change, amount ->
                             change.consume()
                             liftedBy += amount.x
