@@ -363,9 +363,9 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         val miniAt = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
         var miniPlaced by remember { mutableStateOf(false) }
         var miniHeld by remember { mutableStateOf<Offset?>(null) }
-        // Turned or resized, the window keeps to its corner
+        // Turned or resized, the window glides to keep to its corner rather than jumping there
         LaunchedEffect(clear, miniSize) {
-            if (miniPlaced && miniHeld == null) miniAt.snapTo(nearestCorner(miniAt.value))
+            if (miniPlaced && miniHeld == null) miniAt.animateTo(nearestCorner(miniAt.value), Motion.settle())
         }
         val miniRect = Rect(miniHeld ?: miniAt.value, miniSize)
 

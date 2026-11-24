@@ -416,7 +416,8 @@ class EditorState(
     /** Shows [home], as after a tool changes or the frame does. */
     fun goHome(animate: Boolean = true) {
         val home = home
-        scope.launch { if (animate) region.animateTo(home, Motion.morph()) else region.snapTo(home) }
+        // Settling home, without the bounce of a morph past it
+        scope.launch { if (animate) region.animateTo(home, Motion.settle()) else region.snapTo(home) }
     }
 
     /** Zooms by [zoom] about [centroid] and moves by [pan], on screen. */
