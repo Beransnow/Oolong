@@ -15,8 +15,11 @@ interface PrefsScope {
     /**
      * Adds a setting. Give a [key] that stays with it when settings above it come and go, as
      * rows shown only under a condition do, or the state of one row passes to another.
+     *
+     * A keyed setting not [shown] stays in the list, closed: it opens and closes in place as its
+     * condition changes, and what follows moves rather than jumps.
      */
-    fun prefsItem(key: Any? = null, content: @Composable PrefsScope.() -> Unit)
+    fun prefsItem(key: Any? = null, shown: Boolean = true, content: @Composable PrefsScope.() -> Unit)
 
     /**
      * Adds a group of Prefs with a title.
@@ -49,12 +52,13 @@ internal class PrefsScopeImpl : PrefsScope {
     private var _prefsItems: MutableList<PrefsItem> = mutableListOf()
     val prefsItems: List<PrefsItem> get() = _prefsItems
 
-    override fun prefsItem(key: Any?, content: @Composable PrefsScope.() -> Unit) {
+    override fun prefsItem(key: Any?, shown: Boolean, content: @Composable PrefsScope.() -> Unit) {
         _prefsItems.add(
             PrefsItem(
                 content = { @Composable { content() } },
                 isSetting = true,
                 key = key,
+                shown = shown || key == null,
             )
         )
     }
@@ -121,6 +125,8 @@ internal class PrefsItem(
     val isSetting: Boolean,
     /** What the setting is known by in composition; its place in the list when null. */
     val key: Any? = null,
+    /** Whether the setting shows now; one that doesn't is closed, or closing. */
+    val shown: Boolean = true,
 )
 
 private val GroupSpacing = 8.dp

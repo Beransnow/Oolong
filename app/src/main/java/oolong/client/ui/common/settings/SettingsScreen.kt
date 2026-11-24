@@ -119,8 +119,9 @@ private fun <S> PrefsScope.group(
 ) {
     val rows: PrefsScope.() -> Unit = {
         group.items.filterIsInstance<SettingsRow<S>>().forEach { row ->
-            if (row.available.isMet(environment) && row !in hidden) {
-                prefsItem(key = row) { Box(modifier = highlight.of(row.title)) { row.content(state, Modifier) } }
+            // One shown only under a condition opens and closes in place as that changes
+            if (row.available.isMet(environment)) {
+                prefsItem(key = row, shown = row !in hidden) { Box(modifier = highlight.of(row.title)) { row.content(state, Modifier) } }
             }
         }
     }
