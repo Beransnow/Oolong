@@ -31,9 +31,12 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -63,8 +66,9 @@ import oolong.client.ui.widgets.compose.Avatar
 /**
  * How far the recent forums are opened, from their first row (0) to all of them (1), and the
  * pull that opens them: pulling down at the top of the list opens them before anything else, and
- * pushing up closes them before the list scrolls. A pull that starts with them closed only opens
- * them, however far it goes; only one that starts with them open may refresh the page.
+ * pushing up closes them before the list scrolls. A pull that starts with them closed opens them
+ * first; once they are all open it holds for [detentPx], marked by a tick, so a pull meant only
+ * to open them stops there, and beyond that it goes on to refresh the page, in one movement.
  */
 @Stable
 class RecentForumsExpansion(private val scope: CoroutineScope) {
@@ -73,6 +77,15 @@ class RecentForumsExpansion(private val scope: CoroutineScope) {
 
     /** How much taller the forums are when open than closed. */
     var extraPx by mutableFloatStateOf(0f)
+
+    /** How far a pull holds once the forums are all open, before it goes on to refresh. */
+    var detentPx by mutableFloatStateOf(0f)
+
+    /** Told when a pull has opened the forums all the way, for a tick under the finger. */
+    var onOpenedByPull: () -> Unit = {}
+
+    /** How much of the hold the pull has used. */
+    private var held = 0f
 
     /** Whether there are more forums than the first row, so that there is anything to open. */
     var canExpand by mutableStateOf(false)
@@ -105,9 +118,19 @@ class RecentForumsExpansion(private val scope: CoroutineScope) {
             if (source != NestedScrollSource.UserInput || available.y <= 0f || !canExpand) return Offset.Zero
             begin()
             if (refreshAllowed) return Offset.Zero
-            // Pulling from closed: all of it goes to opening, none to refreshing
-            drag(available.y)
-            return Offset(0f, available.y)
+            // Pulling from closed: it opens the forums, then holds a moment, then the rest goes on
+            // to refresh
+            val wasOpen = open
+            val used = drag(available.y)
+            var rest = available.y - used
+            if (open && !wasOpen) onOpenedByPull()
+            if (open && rest > 0f) {
+                val take = rest.coerceAtMost(detentPx - held)
+                held += take
+                rest -= take
+                if (held >= detentPx) gestureMayRefresh = true
+            }
+            return Offset(0f, available.y - rest)
         }
 
         override suspend fun onPreFling(available: Velocity): Velocity {
@@ -134,6 +157,7 @@ class RecentForumsExpansion(private val scope: CoroutineScope) {
     private fun begin() {
         if (inGesture) return
         gestureMayRefresh = !canExpand || open
+        held = 0f
         inGesture = true
         animation?.cancel()
     }
@@ -170,8 +194,15 @@ class RecentForumsExpansion(private val scope: CoroutineScope) {
 @Composable
 fun rememberRecentForumsExpansion(): RecentForumsExpansion {
     val scope = rememberCoroutineScope()
-    return remember(scope) { RecentForumsExpansion(scope) }
+    val expansion = remember(scope) { RecentForumsExpansion(scope) }
+    val haptic = LocalHapticFeedback.current
+    expansion.detentPx = with(LocalDensity.current) { PullDetent.toPx() }
+    expansion.onOpenedByPull = { haptic.performHapticFeedback(HapticFeedbackType.SegmentTick) }
+    return expansion
 }
+
+/** How far a pull holds once the forums are open, before it starts to refresh. */
+private val PullDetent = 32.dp
 
 /**
  * The forums visited lately: a row of them, the rest opening below as the page is pulled down
