@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -46,6 +47,13 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         get() = context.dataStore
 
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    /**
+     * Writes one at a time, in the order set: launched apart on the IO pool, two quick writes of
+     * one setting could land the wrong way round and leave the older value stored.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val writes = Dispatchers.IO.limitedParallelism(1)
 
     var userLikeLastRequestUnix by DataStoreDelegates.long(defaultValue = 0L)
 
@@ -229,7 +237,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 value: Int
             ) {
                 prefValue = value
-                thisRef.coroutineScope.launch {
+                thisRef.coroutineScope.launch(thisRef.writes) {
                     thisRef.preferencesDataStore.edit {
                         it[intPreferencesKey(key ?: property.name)] = value
                     }
@@ -268,7 +276,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 value: String?
             ) {
                 prefValue = value
-                thisRef.coroutineScope.launch {
+                thisRef.coroutineScope.launch(thisRef.writes) {
                     thisRef.preferencesDataStore.edit {
                         if (value == null) {
                             it.remove(stringPreferencesKey(key ?: property.name))
@@ -311,7 +319,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 value: Float
             ) {
                 prefValue = value
-                thisRef.coroutineScope.launch {
+                thisRef.coroutineScope.launch(thisRef.writes) {
                     thisRef.preferencesDataStore.edit {
                         it[floatPreferencesKey(key ?: property.name)] = value
                     }
@@ -350,7 +358,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 value: Long
             ) {
                 prefValue = value
-                thisRef.coroutineScope.launch {
+                thisRef.coroutineScope.launch(thisRef.writes) {
                     thisRef.preferencesDataStore.edit {
                         it[longPreferencesKey(key ?: property.name)] = value
                     }
@@ -389,7 +397,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
                 value: Boolean
             ) {
                 prefValue = value
-                thisRef.coroutineScope.launch {
+                thisRef.coroutineScope.launch(thisRef.writes) {
                     thisRef.preferencesDataStore.edit {
                         it[booleanPreferencesKey(key ?: property.name)] = value
                     }
