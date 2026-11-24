@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -101,16 +102,27 @@ fun Slider(
     var tracking by remember { mutableStateOf(false) }
     // The finger's unsnapped place, so a stepped slider moves when the finger passes halfway
     var raw by remember { mutableStateOf(fractionOf(value)) }
+    // Where the knob is going, which it may not have reached yet
+    var aim by remember { mutableFloatStateOf(position.value) }
     LaunchedEffect(value, tracking) {
-        if (!tracking) position.animateTo(fractionOf(value), Motion.snap())
+        if (!tracking) {
+            aim = fractionOf(value)
+            position.animateTo(aim, Motion.snap())
+        }
     }
     val scope = rememberCoroutineScope()
-    fun moveTo(fraction: Float) {
+
+    /**
+     * Moves the knob to [fraction]: gliding there for a jump, as a tap on the track or the next
+     * tick of a stepped slider; following exactly for a finger dragging a smooth one.
+     */
+    fun moveTo(fraction: Float, jump: Boolean = false) {
         raw = fraction.coerceIn(0f, 1f)
         val next = snapped(raw)
-        if (next != position.value) {
+        if (next != aim) {
+            aim = next
             if (steps > 0) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-            scope.launch { position.snapTo(next) }
+            scope.launch { if (jump || steps > 0) position.animateTo(next, Motion.snap()) else position.snapTo(next) }
             currentOnValueChange(valueRange.start + next * span)
         }
     }
@@ -167,7 +179,7 @@ fun Slider(
                         },
                         onTap = { offset ->
                             tracking = true
-                            moveTo(fractionAt(offset.x))
+                            moveTo(fractionAt(offset.x), jump = true)
                             tracking = false
                             currentOnValueChangeFinished?.invoke()
                         },
@@ -180,10 +192,10 @@ fun Slider(
                     interactionSource = source,
                     onDragStarted = { offset ->
                         tracking = true
-                        raw = position.value
+                        raw = aim
                         // Grabbing the track away from the knob brings the knob to the finger
                         val at = fractionAt(offset.x)
-                        if (kotlin.math.abs(at - position.value) * travelPx > reachPx) moveTo(at)
+                        if (kotlin.math.abs(at - position.value) * travelPx > reachPx) moveTo(at, jump = true)
                     },
                     onDragStopped = {
                         tracking = false
