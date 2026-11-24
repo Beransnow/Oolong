@@ -647,8 +647,9 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                                 if (drag.y > 96.dp.toPx() || velocity.y > 900.dp.toPx()) {
                                     onClose(Velocity(velocity.x, velocity.y))
                                 } else {
+                                    // Back into place at the speed it was let go with
                                     scope.launch {
-                                        Animatable(drag, Offset.VectorConverter).animateTo(Offset.Zero, Motion.settle()) { drag = value }
+                                        Animatable(drag, Offset.VectorConverter).animateTo(Offset.Zero, Motion.settle(), initialVelocity = Offset(velocity.x, velocity.y)) { drag = value }
                                         dragging = false
                                     }
                                 }

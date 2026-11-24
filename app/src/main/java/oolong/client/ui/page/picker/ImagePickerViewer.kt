@@ -68,6 +68,7 @@ import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.zoom.Edge
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.DeviceImage
@@ -134,6 +135,9 @@ internal fun PickerViewer(
     var closingFade by remember { mutableStateOf(1f) }
     // How far a drag down has carried the picture
     var drag by remember { mutableStateOf(Offset.Zero) }
+
+    /** The drag springing back into place, which a new drag stops. */
+    var rebound by remember { mutableStateOf<Job?>(null) }
     var dragging by remember { mutableStateOf(false) }
     val picture = pictures[pagerState.currentPage.coerceIn(0, pictures.lastIndex)]
     val order = state.selected.indexOf(picture.uri).takeIf { it >= 0 }?.plus(1)
@@ -215,7 +219,10 @@ internal fun PickerViewer(
                         if (phase != Phase.Open || !zoomStates[pagerState.currentPage].atRest()) return@awaitEachGesture
                         val tracker = VelocityTracker()
                         var total = Offset.Zero
-                        var active = false
+                        // Caught on its way back, the picture stays under the finger from where it is
+                        val caught = rebound?.isActive == true
+                        rebound?.cancel()
+                        var active = caught
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Initial)
                             // A second finger is a pinch, for the picture to zoom
@@ -227,8 +234,9 @@ internal fun PickerViewer(
                                     if (drag.y > 96.dp.toPx() || velocity.y > 900.dp.toPx()) {
                                         close(Velocity(velocity.x, velocity.y))
                                     } else {
-                                        scope.launch {
-                                            Animatable(drag, Offset.VectorConverter).animateTo(Offset.Zero, Motion.settle()) { drag = value }
+                                        // Back into place at the speed it was let go with
+                                        rebound = scope.launch {
+                                            Animatable(drag, Offset.VectorConverter).animateTo(Offset.Zero, Motion.settle(), initialVelocity = Offset(velocity.x, velocity.y)) { drag = value }
                                             dragging = false
                                         }
                                     }
@@ -307,11 +315,13 @@ internal fun PickerViewer(
         }
 
         val chrome by animateFloatAsState(
-            targetValue = if (phase == Phase.Open && !dragging) 1f else 0f,
-            animationSpec = if (phase == Phase.Open && !dragging) Motion.fadeIn() else Motion.fadeOut(),
+            targetValue = if (phase == Phase.Open) 1f else 0f,
+            animationSpec = if (phase == Phase.Open) Motion.fadeIn() else Motion.fadeOut(),
             label = "chrome",
         )
-        val chromeAlpha = if (dragging) dragFade else chrome
+        // Dragged, the bars fade with the picture's distance and come back as it springs back,
+        // rather than leaving and fading in again once it has settled
+        val chromeAlpha = chrome * dragFade
         ProvideMediaGlass(glass) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
