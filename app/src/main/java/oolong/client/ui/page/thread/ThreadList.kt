@@ -1,6 +1,7 @@
 package oolong.client.ui.page.thread
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -30,14 +31,19 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -57,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import oolong.client.R
 import oolong.client.arch.LoadStatus
@@ -194,7 +201,7 @@ internal fun ThreadContent(
                 items = posts.items,
                 key = { _, it -> "$POST_KEY_PREFIX${it.post.id}" },
             ) { index, item ->
-                Container {
+                Container(modifier = Modifier.landedGlow(item.post.id, LocalLandedFloor.current)) {
                     ThreadFloor(
                         item = item,
                         options = options,
@@ -573,3 +580,39 @@ internal fun SortIcon(flipped: Boolean, tint: Color) {
 
 private val SwitchInset = 4.dp
 private val SwitchGap = 0.dp
+
+/**
+ * The floor a jump landed on, as after sending a reply or opening a notification, which lights
+ * up once and fades (design-system.md §7.2) so the eye finds it on a page that changed at once.
+ */
+@Stable
+internal class LandedFloor {
+    var postId by mutableStateOf<Long?>(null)
+        private set
+    val glow = Animatable(0f)
+
+    suspend fun land(postId: Long) {
+        this.postId = postId
+        glow.snapTo(0f)
+        glow.animateTo(1f, Motion.fadeIn())
+        delay(LandedHoldMillis)
+        glow.animateTo(0f, Motion.settle())
+        this.postId = null
+    }
+}
+
+internal val LocalLandedFloor = staticCompositionLocalOf<LandedFloor?> { null }
+
+/** Lights this floor while it is the one [landed] on. */
+@Composable
+private fun Modifier.landedGlow(postId: Long, landed: LandedFloor?): Modifier {
+    if (landed == null || landed.postId != postId) return this
+    val color = ExtendedTheme.colors.accent.copy(alpha = LandedAlpha)
+    return drawWithContent {
+        drawContent()
+        drawRect(color, alpha = landed.glow.value.coerceIn(0f, 1f))
+    }
+}
+
+private const val LandedHoldMillis = 500L
+private const val LandedAlpha = 0.12f

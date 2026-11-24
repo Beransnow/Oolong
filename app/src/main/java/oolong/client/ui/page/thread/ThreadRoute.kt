@@ -6,6 +6,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Text
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,7 @@ fun ThreadRoute(
     val hideReply by rememberPreferenceAsState(booleanPreferencesKey("hideReply"), false)
     val hideBlocked by rememberPreferenceAsState(booleanPreferencesKey("hideBlockedContent"), false)
 
+    val landed = remember { LandedFloor() }
     LaunchedEffect(viewModel) {
         var scrolling: Job? = null
         viewModel.effect.collect { effect ->
@@ -93,7 +95,9 @@ fun ThreadRoute(
 
                 is ThreadEffect.ScrollToPost -> {
                     scrolling?.cancel()
-                    scrolling = launch { listState.scrollOnceShown(viewModel.state) { it.indexOfPost(effect.postId) } }
+                    scrolling = launch {
+                        if (listState.scrollOnceShown(viewModel.state) { it.indexOfPost(effect.postId) }) landed.land(effect.postId)
+                    }
                 }
             }
         }
@@ -250,15 +254,17 @@ fun ThreadRoute(
     }
 
     ProvideNavigator(navigator = navigator) {
-        ThreadScreen(
-            state = state,
-            onEvent = onEvent,
-            preferences = ThreadPreferences(hideReply = hideReply, hideBlocked = hideBlocked),
-            listState = listState,
-            scaffoldState = scaffoldState,
-            chrome = chrome,
-            reply = reply,
-        )
+        CompositionLocalProvider(LocalLandedFloor provides landed) {
+            ThreadScreen(
+                state = state,
+                onEvent = onEvent,
+                preferences = ThreadPreferences(hideReply = hideReply, hideBlocked = hideBlocked),
+                listState = listState,
+                scaffoldState = scaffoldState,
+                chrome = chrome,
+                reply = reply,
+            )
+        }
     }
 }
 
@@ -277,12 +283,11 @@ private suspend fun LazyListState.scrollOnceShown(
     state: Flow<ThreadState>,
     itemsAfter: Int = 0,
     indexIn: (ThreadState) -> Int?,
-) {
-    withTimeoutOrNull(SCROLL_WAIT_MILLIS) {
-        val index = state.mapNotNull(indexIn).first()
-        snapshotFlow { layoutInfo.totalItemsCount }.first { it > index + itemsAfter }
-        scrollToItem(index)
-    }
-}
+): Boolean = withTimeoutOrNull(SCROLL_WAIT_MILLIS) {
+    val index = state.mapNotNull(indexIn).first()
+    snapshotFlow { layoutInfo.totalItemsCount }.first { it > index + itemsAfter }
+    scrollToItem(index)
+    true
+} ?: false
 
 private const val SCROLL_WAIT_MILLIS = 5_000L
