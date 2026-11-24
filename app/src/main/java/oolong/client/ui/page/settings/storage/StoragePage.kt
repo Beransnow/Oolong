@@ -3,6 +3,9 @@
 package oolong.client.ui.page.settings.storage
 
 import android.text.format.Formatter
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +26,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,7 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +59,7 @@ import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.ExtendedTheme
+import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.editor.rememberAutoMaskFiles
@@ -61,6 +69,7 @@ import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.rememberDialogState
 
 /** What may be cleared or deleted, waiting on the user's word. */
@@ -109,11 +118,14 @@ fun StoragePage(
             )
         },
     ) { padding ->
+        // Measuring takes a moment on opening; the page then fades in rather than appearing at once
+        val shown = remember { Animatable(0f) }
+        LaunchedEffect(use != null) { if (use != null) shown.animateTo(1f, Motion.fadeIn()) }
         val now = use ?: return@GlassScaffold
         PrefsScreen(
             dataStore = context.dataStore,
             dividerThickness = 0.dp,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = shown.value },
             contentPadding = padding,
         ) {
             prefsGroup(header = { Summary(now) }) {}
@@ -308,7 +320,8 @@ private fun Action(value: String, action: String, onClick: () -> Unit) {
 
 @Composable
 private fun Value(text: String) {
-    Text(text, color = ExtendedTheme.colors.textSecondary, maxLines = 1)
+    // A size measured again, as after clearing, refocuses in place
+    Refocus(targetState = text, contentAlignment = Alignment.CenterEnd) { Text(it, color = ExtendedTheme.colors.textSecondary, maxLines = 1) }
 }
 
 /** A group's title, as other groups', with a note under it or an action at its end. */
@@ -341,23 +354,37 @@ private fun Header(title: String, note: String? = null, action: String? = null, 
 @Composable
 private fun Summary(use: StorageUse) {
     val accent = ExtendedTheme.colors.accent
-    val parts = listOf(
+    val all = listOf(
         R.string.storage_group_cache to (use.cache to accent),
         R.string.storage_group_extensions to (use.extensions to accent.copy(alpha = 0.55f)),
         R.string.storage_app to (use.app to accent.copy(alpha = 0.28f)),
         R.string.storage_records to (use.records to ExtendedTheme.colors.textSecondary.copy(alpha = 0.3f)),
-    ).filter { it.second.first > 0 }
-    val total = parts.sumOf { it.second.first }.coerceAtLeast(1)
+    )
+    val parts = all.filter { it.second.first > 0 }
+    val total = all.sumOf { it.second.first }.coerceAtLeast(1)
+    // Each part's share of the bar moves to its new size, as after clearing, rather than jumping
+    val shares = all.map { (name, part) ->
+        animateFloatAsState(part.first.toFloat() / total, Motion.settle(Motion.ProgressThreshold), label = "storageShare$name")
+    }
+    val colors = all.map { it.second.second }
     // Lined up with the large title above it
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(size(use.total), color = ExtendedTheme.colors.text, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold)
+        Refocus(targetState = size(use.total), contentAlignment = Alignment.CenterStart) {
+            Text(it, color = ExtendedTheme.colors.text, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold)
+        }
         Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
-        ) {
-            parts.forEach { (_, part) ->
-                Box(modifier = Modifier.weight(part.first.toFloat() / total).fillMaxHeight().background(part.second))
+        Canvas(modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape)) {
+            // Parts side by side, 2dp apart; one shrinking to nothing takes its gap with it
+            val gap = 2.dp.toPx()
+            val shown = shares.map { it.value.coerceAtLeast(0f) }
+            val gaps = gap * (shown.count { it * size.width > gap } - 1).coerceAtLeast(0)
+            val room = size.width - gaps
+            var x = 0f
+            shown.forEachIndexed { index, share ->
+                val width = room * share
+                if (width <= 0f) return@forEachIndexed
+                drawRect(colors[index], topLeft = Offset(x, 0f), size = Size(width, size.height))
+                x += width + if (width > gap) gap else 0f
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
