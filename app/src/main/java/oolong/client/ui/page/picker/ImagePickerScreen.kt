@@ -94,6 +94,7 @@ import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.model.DeviceAlbum
@@ -424,6 +425,9 @@ private fun ImageGrid(
     val scope = rememberCoroutineScope()
     var zoom by remember { mutableFloatStateOf(1f) }
     var zoomAt by remember { mutableStateOf(Offset.Zero) }
+
+    /** The grid settling back to its size, which a new pinch takes over from where it is. */
+    var settling by remember { mutableStateOf<Job?>(null) }
     var gridSize by remember { mutableStateOf(IntSize.Zero) }
 
     /** Changes to [to] columns, keeping the picture at [focus] where it is. */
@@ -465,6 +469,7 @@ private fun ImageGrid(
                             val focus = (pressed[0].position + pressed[1].position) / 2f
                             val distance = (pressed[0].position - pressed[1].position).getDistance()
                             if (start == 0f) {
+                                settling?.cancel()
                                 start = distance
                                 base = zoom
                             }
@@ -492,7 +497,7 @@ private fun ImageGrid(
                         }
                     } while (event.changes.any { it.pressed })
                     if (pinched) {
-                        scope.launch { animate(zoom, 1f, animationSpec = Motion.settle()) { value, _ -> zoom = value } }
+                        settling = scope.launch { animate(zoom, 1f, animationSpec = Motion.settle()) { value, _ -> zoom = value } }
                     }
                 }
             },
