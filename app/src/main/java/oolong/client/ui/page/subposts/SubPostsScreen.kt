@@ -72,6 +72,7 @@ import oolong.client.ui.widgets.compose.LoadMoreEffect
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.MyScaffold
 import oolong.client.ui.widgets.compose.PullRefresh
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TitleCentredToolbar
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.choiceMenuItems
@@ -339,7 +340,10 @@ private fun SubPostSortButton(sort: SubPostSort, onSort: (SubPostSort) -> Unit) 
             .clickMenu(items = { choiceMenuItems(options, sort, onSort) })
             .padding(horizontal = 8.dp, vertical = 8.dp),
     ) {
-        Text(text = options.first { it.first == sort }.second, style = MaterialTheme.typography.body2, color = color)
+        // The order chosen refocuses in place as the menu closes
+        Refocus(targetState = options.first { it.first == sort }.second, contentAlignment = Alignment.CenterEnd) {
+            Text(text = it, style = MaterialTheme.typography.body2, color = color)
+        }
         Icon(imageVector = Symbols.UnfoldMore, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
     }
 }

@@ -120,6 +120,7 @@ import oolong.client.ui.widgets.compose.BlockableContent
 import oolong.client.ui.widgets.compose.Chip
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.condense
@@ -446,7 +447,8 @@ private fun FloorBody(
                 )
             }
         }
-        if (isStoreMark) {
+        // Stored up to here, the mark opens in place
+        Reveal(Unit.takeIf { isStoreMark }) {
             Chip(
                 text = stringResource(id = R.string.title_collected_floor),
                 invertColor = true,
@@ -554,13 +556,15 @@ private fun TimelineSubPosts(
                     .padding(start = Gutter)
                     .then(if (showMore != null) Modifier.linkPress(showMore) else Modifier),
             ) {
-                when {
-                    replies?.loading == true -> SubPostsLink(text = stringResource(id = R.string.text_loading), color = ExtendedTheme.colors.textSecondary)
-                    replies?.failed == true -> SubPostsLink(text = stringResource(id = R.string.sub_posts_load_failed), color = ExtendedTheme.colors.accent)
-                    remaining > 0 -> SubPostsLink(
-                        text = pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining),
-                        color = ExtendedTheme.colors.accent,
-                    )
+                val link = when {
+                    replies?.loading == true -> stringResource(id = R.string.text_loading) to ExtendedTheme.colors.textSecondary
+                    replies?.failed == true -> stringResource(id = R.string.sub_posts_load_failed) to ExtendedTheme.colors.accent
+                    remaining > 0 -> pluralStringResource(id = R.plurals.show_more_sub_posts, count = remaining, remaining) to ExtendedTheme.colors.accent
+                    else -> null
+                }
+                // Loading, failing and the count left refocus into one another in place
+                Refocus(targetState = link, contentAlignment = Alignment.CenterStart) { shown ->
+                    if (shown != null) SubPostsLink(text = shown.first, color = shown.second)
                 }
             }
             if (onCollapse != null) CollapseLink(onCollapse, modifier = Modifier.padding(start = 12.dp))
@@ -1083,7 +1087,8 @@ fun FirstPostContent(
                 color = ExtendedTheme.colors.textSecondary,
             )
         }
-        if (isStoreMark) {
+        // Stored up to here, the mark opens in place
+        Reveal(Unit.takeIf { isStoreMark }) {
             Chip(
                 text = stringResource(id = R.string.title_collected_floor),
                 invertColor = true,
