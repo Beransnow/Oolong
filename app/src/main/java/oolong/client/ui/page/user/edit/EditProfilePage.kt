@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
+import oolong.client.arch.LoadStatus
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -59,16 +60,22 @@ import oolong.client.ui.page.editor.CropRequest
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
 import oolong.client.ui.widgets.compose.ActionItem
+import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.BaseTextField
+import oolong.client.ui.widgets.compose.ContentSwap
 import oolong.client.ui.widgets.compose.CounterTextField
 import oolong.client.ui.widgets.compose.Dialog
 import oolong.client.ui.widgets.compose.DialogNegativeButton
+import oolong.client.ui.widgets.compose.ErrorScreen
 import oolong.client.ui.widgets.compose.IconButton
+import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Toolbar
+import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.picker.ListSinglePicker
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.rememberDialogState
+import oolong.client.ui.widgets.compose.states.StateScreenScope
 import oolong.client.utils.PickMediasContract
 import oolong.client.utils.PickMediasRequest
 import oolong.client.utils.StringUtil
@@ -99,6 +106,7 @@ fun EditProfilePage(
         onSexChange = viewModel::setSex,
         onUploadPortrait = pickPortrait,
         onAvatarPlaced = { avatar = it },
+        onReload = viewModel::load,
     )
 }
 
@@ -132,6 +140,7 @@ fun EditProfileScreen(
     onSexChange: (Int) -> Unit,
     onUploadPortrait: () -> Unit,
     onAvatarPlaced: (Rect) -> Unit = {},
+    onReload: () -> Unit = {},
 ) {
     val profile = state.profile
     Scaffold(
@@ -141,62 +150,80 @@ fun EditProfileScreen(
                 navigationIcon = { BackNavigationIcon { onBack() } },
                 actions = {
                     if (profile != null) {
-                        ActionItem(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_round_save_24),
-                            contentDescription = stringResource(id = R.string.button_save_profile),
-                            onClick = onSave,
-                        )
+                        // Saving, the button turns into the wait for the server
+                        Refocus(targetState = state.saving) { saving ->
+                            if (saving) {
+                                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) { WavyLoader(modifier = Modifier.size(24.dp)) }
+                            } else {
+                                ActionItem(
+                                    icon = ImageVector.vectorResource(id = R.drawable.ic_round_save_24),
+                                    contentDescription = stringResource(id = R.string.button_save_profile),
+                                    onClick = onSave,
+                                )
+                            }
+                        }
                     }
                 }
             )
         },
     ) { contentPadding ->
-        Column(
-            modifier = Modifier
-                .padding(contentPadding)
-                .padding(horizontal = dimensionResource(id = R.dimen.card_margin))
-                .imePadding()
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            val dialogState = rememberDialogState()
-            Dialog(
-                dialogState = dialogState,
-                title = { Text(text = stringResource(id = R.string.title_modify_sex)) },
-                buttons = { DialogNegativeButton(text = stringResource(id = R.string.button_cancel)) }
-            ) {
-                ListSinglePicker(
-                    itemTitles = persistentListOf(
-                        stringResource(id = R.string.profile_sex_male),
-                        stringResource(id = R.string.profile_sex_female)
-                    ),
-                    itemValues = persistentListOf(1, 2),
-                    selectedPosition = when (state.sex) {
-                        1 -> 0
-                        2 -> 1
-                        else -> -1
-                    },
-                    onItemSelected = { _, _, value, _ ->
-                        onSexChange(value)
-                        dismiss()
-                    }
-                )
+        // Failing to load, the page says so with a retry, rather than staying on placeholders
+        val failed = (state.load as? LoadStatus.Error)?.error?.takeIf { profile == null }
+        ContentSwap(targetState = failed != null, modifier = Modifier.fillMaxSize()) { showFailure ->
+            if (showFailure && failed != null) {
+                Box(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
+                    remember { StateScreenScope(onReload) }.ErrorScreen(error = failed, modifier = Modifier.fillMaxSize())
+                }
+                return@ContentSwap
             }
-            Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.card_margin)))
-            EditProfileCard(
-                portrait = profile?.portrait.orEmpty(),
-                name = profile?.name.orEmpty(),
-                nickName = state.nickName,
-                sex = state.sex,
-                intro = state.intro,
-                loading = profile == null,
-                onNickNameChange = onNickNameChange,
-                onIntroChange = onIntroChange,
-                onUploadPortrait = onUploadPortrait,
-                onAvatarPlaced = onAvatarPlaced,
-                onModifySex = { dialogState.show = true }
-            )
-            Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.card_margin)))
+            Column(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .padding(horizontal = dimensionResource(id = R.dimen.card_margin))
+                    .imePadding()
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                val dialogState = rememberDialogState()
+                Dialog(
+                    dialogState = dialogState,
+                    title = { Text(text = stringResource(id = R.string.title_modify_sex)) },
+                    buttons = { DialogNegativeButton(text = stringResource(id = R.string.button_cancel)) }
+                ) {
+                    ListSinglePicker(
+                        itemTitles = persistentListOf(
+                            stringResource(id = R.string.profile_sex_male),
+                            stringResource(id = R.string.profile_sex_female)
+                        ),
+                        itemValues = persistentListOf(1, 2),
+                        selectedPosition = when (state.sex) {
+                            1 -> 0
+                            2 -> 1
+                            else -> -1
+                        },
+                        onItemSelected = { _, _, value, _ ->
+                            onSexChange(value)
+                            dismiss()
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.card_margin)))
+                EditProfileCard(
+                    portrait = profile?.portrait.orEmpty(),
+                    name = profile?.name.orEmpty(),
+                    nickName = state.nickName,
+                    sex = state.sex,
+                    intro = state.intro,
+                    loading = profile == null,
+                    onNickNameChange = onNickNameChange,
+                    onIntroChange = onIntroChange,
+                    onUploadPortrait = onUploadPortrait,
+                    onAvatarPlaced = onAvatarPlaced,
+                    onModifySex = { dialogState.show = true },
+                    uploading = state.uploading,
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.card_margin)))
+            }
         }
     }
 }
@@ -217,6 +244,7 @@ fun EditProfileCard(
     onModifySex: (() -> Unit)? = null,
     color: Color = ExtendedTheme.colors.background,
     onAvatarPlaced: (Rect) -> Unit = {},
+    uploading: Boolean = false,
 ) {
     val context = LocalContext.current
     Card(elevation = 0.dp, backgroundColor = color) {
@@ -233,11 +261,8 @@ fun EditProfileCard(
                     .align(Alignment.CenterHorizontally)
                     .placeholder(visible = loading)
             ) {
-                AsyncImage(
-                    model = StringUtil.getAvatarUrl(portrait),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize()
-                )
+                // The new portrait fades in over the old once the server has it
+                Avatar(data = StringUtil.getAvatarUrl(portrait), size = 64.dp, contentDescription = null)
                 IconButton(
                     modifier = Modifier
                         .background(color = Color(0x77000000))
@@ -246,14 +271,19 @@ fun EditProfileCard(
                         onUploadPortrait?.invoke()
                     }
                 ) {
-                    Icon(
-                        imageVector = Symbols.PhotoCamera,
-                        contentDescription = stringResource(id = R.string.upload_portrait),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center),
-                        tint = Color.White
-                    )
+                    // Uploading, the camera turns into the wait
+                    Refocus(targetState = uploading) { busy ->
+                        if (busy) {
+                            WavyLoader(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(
+                                imageVector = Symbols.PhotoCamera,
+                                contentDescription = stringResource(id = R.string.upload_portrait),
+                                modifier = Modifier.size(24.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
