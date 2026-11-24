@@ -161,6 +161,7 @@ object PageTransitions {
         relayout: Boolean,
         peek: Boolean,
         origins: PageOrigins? = null,
+        chrome: LeadingChrome? = null,
     ): PageTransition {
         val fromDepth = from.previousEntries.size
         val toDepth = to.previousEntries.size
@@ -226,6 +227,25 @@ object PageTransitions {
                 { fadeIn(seeked()) togetherWith ExitTransition.KeepUntilTransitionsFinished },
                 drive = drive(),
                 zIndex = 1f,
+            )
+            // A page over the whole window, chrome and all, comes in over the page it covers,
+            // which stays where it is beside the chrome, and goes off it the same way. Over the
+            // translucent theme's wallpaper pages have no ground to cover with, and slide as any
+            chrome != null && overlap.value && toDepth > fromDepth && chrome.covers(to) -> PageTransition(
+                {
+                    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, seeked(), initialOffset = { it }) togetherWith
+                        ExitTransition.KeepUntilTransitionsFinished
+                },
+                drive = drive(),
+                zIndex = 1f,
+            )
+            chrome != null && overlap.value && toDepth < fromDepth && chrome.covers(from) -> PageTransition(
+                {
+                    EnterTransition.None togetherWith
+                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, seeked(), targetOffset = { it })
+                },
+                drive = drive(),
+                zIndex = -1f,
             )
             toDepth < fromDepth -> PageTransition(popTransitionSpec(overlap, seeked()), drive(), zIndex = -1f)
             else -> PageTransition(transitionSpec(overlap, seeked()), drive(), zIndex = 1f)
@@ -405,5 +425,7 @@ internal data class FramedSinglePaneScene<T : Any>(
 ) : Scene<T> {
     override val key: Any = entry.contentKey
     override val entries: List<NavEntry<T>> = listOf(entry)
-    override val content: @Composable () -> Unit = { PageTransitions.PageFrame(key = entry.contentKey) { entry.Content() } }
+    override val content: @Composable () -> Unit = {
+        BesideLeadingChrome(entry) { PageTransitions.PageFrame(key = entry.contentKey) { entry.Content() } }
+    }
 }

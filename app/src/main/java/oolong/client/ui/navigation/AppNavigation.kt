@@ -1,30 +1,25 @@
 package oolong.client.ui.navigation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -44,7 +39,9 @@ import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.dataStore
 import oolong.client.ui.common.navigation.FramedSinglePaneSceneStrategy
+import oolong.client.ui.common.navigation.LeadingChrome
 import oolong.client.ui.common.navigation.LocalIsPop
+import oolong.client.ui.common.navigation.LocalLeadingChrome
 import oolong.client.ui.common.navigation.LocalPageOrigins
 import oolong.client.ui.common.navigation.LocalPagePeek
 import oolong.client.ui.common.navigation.PageBackHandler
@@ -206,8 +203,8 @@ fun AppNavDisplay(
     // is wide enough but too short, and keeps one pane
     val twoPane = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded &&
         windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact
-    val showRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact &&
-        backStack.last().key.paneRole != PaneRole.Full
+    // Beside the pages on windows wider than a phone; a page over the whole window goes over it
+    val showRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
 
     val tabs = rememberSaveable(saver = MainTabs.Saver) { MainTabs() }
     val notificationCountFlow = LocalNotificationCountFlow.current
@@ -257,28 +254,33 @@ fun AppNavDisplay(
             PhotoViewerHost {
                 // Over the pages, under the viewers: a login page's card stays as it goes back
                 SignedInNoticeHost {
-                    Row(modifier = modifier.fillMaxSize()) {
-                        AnimatedVisibility(
-                            visible = showRail,
-                            enter = expandHorizontally(Motion.settle()),
-                            exit = shrinkHorizontally(Motion.dismiss()),
-                        ) {
-                            MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+                    // The rail lies under the pages and keeps its width whatever they are: pages leave
+                    // room beside it, and one over the whole window goes over it
+                    // ([BesideLeadingChrome]), so opening one lays nothing out again
+                    var railWidth by remember { mutableStateOf(0.dp) }
+                    val density = LocalDensity.current
+                    // While such a page shows, coming or going, the pages may draw over the rail;
+                    // else they end at it, so a page sliding off beside it doesn't pass over it
+                    var coverShown by remember { mutableStateOf(false) }
+                    val chrome = remember(railWidth, showRail) {
+                        LeadingChrome(if (showRail) railWidth else 0.dp) { it.paneRole == PaneRole.Full }
+                    }
+                    Box(modifier = modifier.fillMaxSize()) {
+                        // Over the wallpaper nothing would hide it, so there it goes while such a page shows
+                        if (showRail && (overlap.value || !coverShown)) {
+                            Box(modifier = Modifier.onSizeChanged { railWidth = with(density) { it.width.toDp() } }) {
+                                MainRail(backStack, tabs, railJump, showLabels = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact)
+                            }
                         }
                         // The display lays out no container of its own: sheets and dialogs are emitted beside
-                        // the pages, so they need a box here, not the row, to cover them. Pages sliding out
-                        // end at the rail, rather than passing over it.
+                        // the pages, so they need a box here to cover them
                         Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .clipToBounds()
-                                .then(
-                                    if (showRail) {
-                                        Modifier.consumeWindowInsets(
-                                            WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Start)
-                                        )
-                                    } else Modifier
-                                ),
+                                .fillMaxSize()
+                                .drawWithContent {
+                                    val left = if (coverShown || !showRail) 0f else railWidth.toPx()
+                                    clipRect(left = left, top = 0f, right = size.width, bottom = size.height) { this@drawWithContent.drawContent() }
+                                },
                         ) {
                             val pagePeek = remember { PagePeek() }
                             val pageOrigins = LocalPageOrigins.current
@@ -310,13 +312,14 @@ fun AppNavDisplay(
                             )
                             val scenes = rememberPageScenes(entries, strategies)
                             PageBackHandler(scenes, pagePeek, onBack)
-                            CompositionLocalProvider(LocalPagePeek provides pagePeek) {
+                            CompositionLocalProvider(LocalPagePeek provides pagePeek, LocalLeadingChrome provides chrome) {
                                 PageDisplay(
                                     scenes = scenes,
                                     peek = pagePeek,
                                     modifier = Modifier.fillMaxSize(),
+                                    onShown = { shown -> coverShown = shown.any { chrome.covers(it) } },
                                 ) { from, to, peek ->
-                                    PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins)
+                                    PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins, chrome.takeIf { showRail })
                                 }
                             }
                         }

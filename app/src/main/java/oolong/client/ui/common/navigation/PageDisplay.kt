@@ -13,6 +13,7 @@ import androidx.compose.animation.core.rememberTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -66,6 +67,7 @@ fun <T : Any> PageDisplay(
     scenes: PageScenes<T>,
     peek: PagePeek?,
     modifier: Modifier = Modifier,
+    onShown: (List<Scene<T>>) -> Unit = {},
     transitionFor: (from: Scene<T>, to: Scene<T>, peek: Boolean) -> PageTransition,
 ) {
     val current = scenes.currentScene
@@ -193,6 +195,10 @@ fun <T : Any> PageDisplay(
             claimed.addAll(scene.entries.map { it.contentKey })
         }
     }
+
+    // The pages on screen, coming and going, for what is laid out around them
+    val pages = listOfNotNull(known[transition.targetState], known[transition.currentState])
+    SideEffect { onShown(pages) }
 
     var contentScope: AnimatedContentScope? = null
     transition.AnimatedContent(

@@ -53,6 +53,7 @@ import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.ui.common.navigation.BesideLeadingChrome
 import oolong.client.ui.common.navigation.PageTransitions
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -122,7 +123,7 @@ private class ListDetailScene<T : Any>(
     override val entries: List<NavEntry<T>> = listOfNotNull(list, detail)
 
     override val content: @Composable () -> Unit = {
-        ListDetailLayout(list, detail, listOnTop, state, onListWidthChange)
+        BesideLeadingChrome(entry = null) { ListDetailLayout(list, detail, listOnTop, state, onListWidthChange) }
     }
 
     override fun equals(other: Any?): Boolean =
