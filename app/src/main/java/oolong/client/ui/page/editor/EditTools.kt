@@ -130,9 +130,9 @@ fun EditorTools(state: EditorState, side: Boolean = false, onRail: (Int) -> Unit
     LaunchedEffect(state.tool) {
         val tool = state.tool
         if (tool != null) {
-            val opening = shown == null
             shown = tool
-            if (opening) progress.animateTo(1f, Motion.morph())
+            // Open, or opening again from wherever a close had got to; already open, nothing moves
+            progress.animateTo(1f, Motion.morph())
         } else if (shown != null) {
             progress.animateTo(0f, Motion.dismiss())
             shown = null
