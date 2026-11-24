@@ -1,6 +1,7 @@
 package oolong.client.ui.page.main.explore
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.PagerState
@@ -13,8 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -88,7 +91,17 @@ private fun TabText(
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         textAlign = TextAlign.Center
     )
-    Text(text = text, style = style)
+    // As wide as the bold name either way, so choosing a tab doesn't shift the row as it slides
+    Box(contentAlignment = Alignment.Center) {
+        Text(
+            text = text,
+            style = style.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier
+                .alpha(0f)
+                .clearAndSetSemantics {},
+        )
+        Text(text = text, style = style)
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
