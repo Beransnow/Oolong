@@ -72,6 +72,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -194,8 +195,9 @@ fun NavigationRail(
                 navigationItems.fastForEachIndexed { index, navigationItem ->
                     val selected = index == currentPosition
                     val title = navigationItem.title(selected)
-                    val contentColor =
-                        if (selected) ExtendedTheme.colors.emphasis else themeColors.textSecondary
+                    // Lit as the indicator comes over it, so colour and indicator move together
+                    val near = (1f - abs(indicator.value - index)).coerceIn(0f, 1f)
+                    val contentColor = lerp(themeColors.textSecondary, ExtendedTheme.colors.emphasis, near)
                     val menu = navigationItem.menu
                     Column(
                         modifier = Modifier
