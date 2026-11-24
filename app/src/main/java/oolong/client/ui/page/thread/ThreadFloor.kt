@@ -2,8 +2,16 @@ package oolong.client.ui.page.thread
 
 import android.content.Context
 import android.graphics.Typeface
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,6 +86,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
@@ -113,6 +122,7 @@ import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.buildChipInlineContent
+import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.trimToCharacters
 import oolong.client.utils.ImageUtil
@@ -280,39 +290,59 @@ fun ThreadFloor(
                     }
                 }
                 if (hasReplies) {
-                    // Full width, so only the height moves between the capsule and the replies
-                    Box(modifier = Modifier.fillMaxWidth().animateContentSize(Motion.settle())) {
-                        when {
-                            // On the timeline the replies open in place; the classic block goes to their page
-                            collapsed -> SubPostsCapsule(
-                                item = item,
-                                opensInPlace = style == SubPostStyle.Timeline,
-                                onClick = {
-                                    if (style == SubPostStyle.Timeline) {
-                                        collapsed = false
-                                    } else {
-                                        onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0))
-                                    }
-                                },
-                            )
-                            style == SubPostStyle.Timeline -> TimelineSubPosts(
-                                item = item,
-                                replies = replies,
-                                options = options,
-                                onEvent = onEvent,
-                                onPlaced = { id, coordinates -> if (branches[id] !== coordinates) branches[id] = coordinates },
-                                onGone = { id -> branches.remove(id) },
-                                onCollapse = if (!collapsible) null else ({
-                                    // Back at the floor's top when its replies had carried the page past it
-                                    val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
-                                    if (info != null && info.index == listState.firstVisibleItemIndex && listState.firstVisibleItemScrollOffset > 0) {
-                                        coroutineScope.launch { listState.scrollToItem(info.index) }
-                                    }
-                                    collapsed = true
-                                    onEvent(ThreadEvent.ShowFewerSubPosts(post.id))
-                                }),
-                            )
-                            else -> ClassicSubPosts(item, options, onEvent)
+                    // Full width, so only the height moves between the capsule and the replies: the
+                    // space opens on settle while the replies condense into it, and closes as they fade
+                    val shows = when {
+                        collapsed -> SubPostsShown.Capsule
+                        style == SubPostStyle.Timeline -> SubPostsShown.Timeline
+                        else -> SubPostsShown.Classic
+                    }
+                    AnimatedContent(
+                        targetState = shows,
+                        modifier = Modifier.fillMaxWidth(),
+                        transitionSpec = {
+                            EnterTransition.None togetherWith fadeOut(Motion.fadeOut()) using
+                                SizeTransform(clip = true) { _, _ -> Motion.settle(IntSize.VisibilityThreshold) }
+                        },
+                        contentAlignment = Alignment.TopStart,
+                        label = "subPosts",
+                    ) { now ->
+                        val focus = transition.animateFloat(transitionSpec = { Motion.settle(Motion.ProgressThreshold) }, label = "subPostsFocus") {
+                            if (it == EnterExitState.PreEnter) 0f else 1f
+                        }
+                        Box(modifier = Modifier.fillMaxWidth().condense({ focus.value }, blur = SubPostsBlur, scale = 0.98f, fadeFaster = 2.5f)) {
+                            when (now) {
+                                // On the timeline the replies open in place; the classic block goes to their page
+                                SubPostsShown.Capsule -> SubPostsCapsule(
+                                    item = item,
+                                    opensInPlace = style == SubPostStyle.Timeline,
+                                    onClick = {
+                                        if (style == SubPostStyle.Timeline) {
+                                            collapsed = false
+                                        } else {
+                                            onEvent(ThreadEvent.OpenSubPosts(post, subPostId = 0))
+                                        }
+                                    },
+                                )
+                                SubPostsShown.Timeline -> TimelineSubPosts(
+                                    item = item,
+                                    replies = replies,
+                                    options = options,
+                                    onEvent = onEvent,
+                                    onPlaced = { id, coordinates -> if (branches[id] !== coordinates) branches[id] = coordinates },
+                                    onGone = { id -> branches.remove(id) },
+                                    onCollapse = if (!collapsible) null else ({
+                                        // Back at the floor's top when its replies had carried the page past it
+                                        val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+                                        if (info != null && info.index == listState.firstVisibleItemIndex && listState.firstVisibleItemScrollOffset > 0) {
+                                            coroutineScope.launch { listState.animateScrollToItem(info.index) }
+                                        }
+                                        collapsed = true
+                                        onEvent(ThreadEvent.ShowFewerSubPosts(post.id))
+                                    }),
+                                )
+                                SubPostsShown.Classic -> ClassicSubPosts(item, options, onEvent)
+                            }
                         }
                     }
                 }
@@ -1149,3 +1179,8 @@ private fun Modifier.linkPress(onClick: () -> Unit): Modifier = this
     }
     .clickable(interactionSource = null, indication = PressFeedback.overlay(Corners.sm), onClick = onClick)
     .padding(LinkPressPad)
+
+/** What shows under a floor for its replies. */
+private enum class SubPostsShown { Capsule, Timeline, Classic }
+
+private val SubPostsBlur = 6.dp
