@@ -511,7 +511,14 @@ fun ReplyChrome(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (full) 28.dp else 20.dp)
+                        // Grows with the composer going full screen rather than when it gets there;
+                        // read as it is laid out
+                        .layout { measurable, constraints ->
+                            val f = fullProgress.value.coerceIn(0f, 1f)
+                            val height = (HandleCompact + (HandleFull - HandleCompact) * f).roundToPx()
+                            val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
+                            layout(placeable.width, height) { placeable.place(0, 0) }
+                        }
                         // Tapping the handle goes to full screen and back; dragging it resizes,
                         // and down past the compact size closes
                         .clickable(
@@ -931,3 +938,7 @@ private fun rememberImeHeight(imeBottom: Int, imeTarget: Int): Int {
     }
     return height.coerceAtLeast(1)
 }
+
+/** The drag handle's height, compact and full screen. */
+private val HandleCompact = 20.dp
+private val HandleFull = 28.dp
