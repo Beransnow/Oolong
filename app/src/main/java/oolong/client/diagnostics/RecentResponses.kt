@@ -1,4 +1,4 @@
-package oolong.client.repository
+package oolong.client.diagnostics
 
 import android.content.Context
 import java.io.File

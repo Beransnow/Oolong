@@ -30,8 +30,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import oolong.client.R
-import oolong.client.components.ErrorRecords
 import oolong.client.data.settings.dataStore
+import oolong.client.diagnostics.ErrorRecords
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref

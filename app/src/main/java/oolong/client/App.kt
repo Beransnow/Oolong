@@ -20,7 +20,6 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.github.gzuliyujiang.oaid.DeviceID
 import dagger.hilt.android.HiltAndroidApp
-import oolong.client.components.CrashLogs
 import oolong.client.data.emoticon.EmoticonManager
 import oolong.client.data.history.Incognito
 import oolong.client.data.identity.ClientUtils
@@ -28,6 +27,7 @@ import oolong.client.data.identity.OAIDGetter
 import oolong.client.data.legacy.LegacyImport
 import oolong.client.data.settings.SharedPreferencesUtil
 import oolong.client.data.storage.AppStorage
+import oolong.client.diagnostics.CrashLogs
 import oolong.client.media.image.newAppImageLoader
 import oolong.client.ui.widgets.compose.VoicePlayback
 import oolong.client.utils.AppIconUtil

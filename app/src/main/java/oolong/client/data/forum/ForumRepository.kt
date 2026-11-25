@@ -12,6 +12,7 @@ import oolong.client.arch.Page
 import oolong.client.data.thread.EmoticonRegistry
 import oolong.client.data.thread.toPostContent
 import oolong.client.data.thread.toThreadSummary
+import oolong.client.diagnostics.RecentResponses
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumIntro
 import oolong.client.model.ForumRuleAuthor
@@ -22,7 +23,6 @@ import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
 import oolong.client.model.ThreadSummary
 import oolong.client.model.plainText
-import oolong.client.repository.RecentResponses
 import oolong.core.network.forum.ForumRemoteDataSource
 import oolong.core.network.forum.LikeRemoteDataSource
 import oolong.core.network.sign.SignRemoteDataSource

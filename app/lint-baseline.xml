@@ -469,7 +469,7 @@
         errorLine1="                when (exit.reason) {"
         errorLine2="                ~~~~">
         <location
-            file="src/main/java/oolong/client/components/CrashLogs.kt"
+            file="src/main/java/oolong/client/diagnostics/CrashLogs.kt"
             line="64"
             column="17"/>
     </issue>

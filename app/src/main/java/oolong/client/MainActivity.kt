@@ -96,9 +96,6 @@ import oolong.client.arch.onGlobalEvent
 import oolong.client.background.notify.JobServiceUtil
 import oolong.client.background.notify.NotifyJobService
 import oolong.client.background.sign.AutoSign
-import oolong.client.components.CrashLogs
-import oolong.client.components.CrashReports
-import oolong.client.components.UsageStats
 import oolong.client.data.account.AccountRepository
 import oolong.client.data.error.userMessage
 import oolong.client.data.identity.ClientUtils
@@ -110,6 +107,9 @@ import oolong.client.data.link.QuickPreviewUtil
 import oolong.client.data.link.toTiebaKey
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.rememberPreferenceAsMutableState
+import oolong.client.diagnostics.CrashLogs
+import oolong.client.diagnostics.CrashReports
+import oolong.client.diagnostics.UsageStats
 import oolong.client.media.PickMediasRequest
 import oolong.client.media.registerPickMediasLauncher
 import oolong.client.ui.common.LocalNow

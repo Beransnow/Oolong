@@ -4,10 +4,10 @@ import kotlinx.serialization.json.Json
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import oolong.client.BuildConfig
-import oolong.client.api.retrofit.interceptors.RequestRecorder
 import oolong.client.data.identity.sofire.FlowCallAdapterFactory
 import oolong.client.data.identity.sofire.SofireApi
 import oolong.client.data.identity.sofire.asConverterFactory
+import oolong.client.diagnostics.RequestRecorder
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 

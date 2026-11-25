@@ -1,4 +1,4 @@
-package oolong.client.components
+package oolong.client.diagnostics
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import oolong.client.BuildConfig
+import oolong.client.components.Roms
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.dataStore
 import oolong.client.data.update.UpdateChannel

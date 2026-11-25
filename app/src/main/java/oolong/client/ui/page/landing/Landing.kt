@@ -82,9 +82,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.SPLASH_ICON_MILLIS
-import oolong.client.components.UsageStats
 import oolong.client.data.legacy.LegacyImport
 import oolong.client.data.settings.appPreferences
+import oolong.client.diagnostics.UsageStats
 import oolong.client.findActivity
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme

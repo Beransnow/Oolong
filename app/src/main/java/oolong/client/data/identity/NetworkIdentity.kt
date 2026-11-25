@@ -13,13 +13,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import oolong.client.App
 import oolong.client.BuildConfig
-import oolong.client.api.retrofit.interceptors.RequestRecorder
 import oolong.client.data.account.AccountRepository
 import oolong.client.data.identity.ClientUtils
 import oolong.client.data.identity.CuidUtils
 import oolong.client.data.identity.DeviceUtils
 import oolong.client.data.identity.MobileInfoUtil
 import oolong.client.data.identity.UIDUtil
+import oolong.client.diagnostics.RequestRecorder
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.account.AccountRemoteDataSource

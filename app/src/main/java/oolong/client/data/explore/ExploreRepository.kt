@@ -13,6 +13,7 @@ import oolong.client.data.forum.VideoThreadFilter
 import oolong.client.data.thread.EmoticonRegistry
 import oolong.client.data.thread.rankReason
 import oolong.client.data.thread.toThreadSummary
+import oolong.client.diagnostics.RecentResponses
 import oolong.client.model.DislikeOption
 import oolong.client.model.ForumMeasure
 import oolong.client.model.ForumRanking
@@ -28,7 +29,6 @@ import oolong.client.model.Topic
 import oolong.client.model.TopicForum
 import oolong.client.model.TopicPage
 import oolong.client.model.TopicRef
-import oolong.client.repository.RecentResponses
 import oolong.core.network.explore.ExploreRemoteDataSource
 import javax.inject.Inject
 

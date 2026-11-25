@@ -1,4 +1,4 @@
-package oolong.client.components
+package oolong.client.diagnostics
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider

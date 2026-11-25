@@ -43,8 +43,8 @@ import oolong.client.data.thread.EmoticonRegistry
 import oolong.client.data.thread.SubPostSort
 import oolong.client.data.thread.SubPostSortStore
 import oolong.client.data.web.WebSessions
-import oolong.client.repository.FileRecentResponses
-import oolong.client.repository.RecentResponses
+import oolong.client.diagnostics.FileRecentResponses
+import oolong.client.diagnostics.RecentResponses
 import java.io.File
 import javax.inject.Singleton
 

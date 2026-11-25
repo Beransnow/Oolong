@@ -1,4 +1,4 @@
-package oolong.client.api.retrofit.interceptors
+package oolong.client.diagnostics
 
 import com.squareup.wire.FieldEncoding
 import com.squareup.wire.ProtoReader

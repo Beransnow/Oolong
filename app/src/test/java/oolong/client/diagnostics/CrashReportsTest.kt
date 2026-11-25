@@ -1,4 +1,4 @@
-package oolong.client.components
+package oolong.client.diagnostics
 
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
