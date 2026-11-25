@@ -2,4 +2,9 @@
 <resources>
     <color name="ic_launcher_new_themed_background">@android:color/system_accent1_600</color>
     <color name="ic_launcher_new_themed_foreground_2">@android:color/system_accent1_600</color>
+    <!-- The lens and the bubble's light in the wallpaper's colours too, not only the ground -->
+    <color name="ic_launcher_new_themed_lens_top">@android:color/system_accent1_400</color>
+    <color name="ic_launcher_new_themed_lens_bottom">@android:color/system_accent1_500</color>
+    <color name="ic_launcher_new_themed_bubble_light">@android:color/system_accent1_10</color>
+    <color name="ic_launcher_new_themed_bubble_shade">@android:color/system_accent1_100</color>
 </resources>
