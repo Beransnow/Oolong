@@ -1,0 +1,78 @@
+{
+  "zh": {
+    "新增": [
+      "我的点赞\n「我」页新增「我的点赞」，按帖子和回复分开查看",
+      "我的回复\n点按「我」页的回帖数，查看自己的回复",
+      "图片所在楼层\n查看帖子中的图片时显示所在楼层，点按可跳转"
+    ],
+    "改进": [
+      "动效\n状态切换、展开收起和列表增删的过渡更连贯；跳转到的楼层短暂高亮",
+      "跟手\n返回、大标题和甩出的图片延续手指的速度；底部导航按下时有弹性",
+      "提示\n应用内的提示统一为玻璃提示条",
+      "切换主题\n切换外观、主题色或夜间模式时，颜色渐变过渡",
+      "减弱动态效果\n开启后不再回弹、缩放和模糊，装饰动画保持静止",
+      "首页下拉\n展开最近逛的吧后，继续下拉即可刷新",
+      "图片加载\n网络图片统一淡入显示",
+      "标签栏\n各页面的标签样式统一，可滚动时边缘淡出",
+      "平板\n登录、举报等在窗口中央打开；长图居中单列显示；轻扫分栏线可收起列表"
+    ],
+    "修复": [
+      "部分 Android 17 系统上，签到时应用崩溃",
+      "检查新消息时，应用偶尔卡住",
+      "从后台返回后，壁纸有时变黑",
+      "网页未经询问写入剪贴板",
+      "刷新关注的帖子和消息后，新内容不在顶部",
+      "关注和粉丝列表的滚动位置互相影响",
+      "没有内容的列表一直显示加载中",
+      "消息角标中的两位数显示不全",
+      "吧资料页和个人主页加载时没有顶栏",
+      "切换精华分类后，吧的帖子数和关注人数改变",
+      "下拉刷新个人主页时，加载提示提前消失",
+      "快速连续修改设置时，可能保存为旧值",
+      "设置项出现或隐藏时，后面的开关状态错位",
+      "经典样式下，吧内标签栏无法横向滑动",
+      "跟随壁纸取色的应用图标中，镜片仍为蓝色",
+      "发送回复后，回复框收起时提示文字闪现",
+      "平板横屏时，关闭视频会让屏幕翻转两次",
+      "平板上收起的分栏列表无法拉回"
+    ]
+  },
+  "en": {
+    "New": [
+      "Likes\nMe has a new Likes page, with threads and replies apart",
+      "Your replies\nTap the reply count on Me to see your replies",
+      "A picture's floor\nPictures from a thread show the floor they are on; tap it to go there"
+    ],
+    "Improved": [
+      "Motion\nChanges of state, opening and folding, and rows coming and going move more smoothly; the floor jumped to lights up briefly",
+      "Following the finger\nBack, large titles and flung pictures carry on at the finger's speed; the bottom navigation gives a little when pressed",
+      "Messages\nMessages in the app all show as the glass toast",
+      "Changing themes\nChanging the appearance, accent or night mode fades between the colors",
+      "Reduce motion\nWhen on, nothing bounces, zooms or blurs, and decorative animations hold still",
+      "Pulling down on Home\nOnce the recent forums are open, keep pulling to refresh",
+      "Loading pictures\nPictures from the network all fade in",
+      "Tabs\nTabs look the same on every page and fade out at an edge with more past it",
+      "Tablets\nLogging in, reporting and the like open in the middle of the window; long pictures show in a centered column; flick the pane divider to fold the list away"
+    ],
+    "Fixed": [
+      "Signing in to forums crashed on some Android 17 systems",
+      "The app sometimes froze while checking for new messages",
+      "The wallpaper sometimes turned black after coming back to the app",
+      "Web pages wrote to the clipboard without asking",
+      "After refreshing followed threads or notifications, the new items weren't at the top",
+      "The follows and fans lists shared one scroll position",
+      "Lists with nothing in them kept showing loading",
+      "Two-digit counts in the message badge were cut off",
+      "A forum's details and a profile had no top bar while loading",
+      "Switching a forum's class of good threads changed its thread and member counts",
+      "Pulling to refresh a profile stopped showing loading too early",
+      "Changing a setting quickly several times could store an older value",
+      "When a setting row showed or hid, the switches after it showed the wrong state",
+      "In the classic style, a forum's tabs couldn't be swiped sideways",
+      "With the app icon taking the wallpaper's colors, its lens stayed blue",
+      "After sending a reply, the hint flashed as the composer closed",
+      "On tablets held sideways, closing a video turned the screen twice",
+      "On tablets, a folded-away list couldn't be pulled back out"
+    ]
+  }
+}
