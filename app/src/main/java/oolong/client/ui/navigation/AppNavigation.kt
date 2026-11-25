@@ -184,9 +184,13 @@ internal val Key.paneRole: PaneRole?
 private val Key.readsAtWidth: Boolean
     get() = paneRole == PaneRole.Detail && this !is WebViewKey
 
+/** Whether [this] is done and left, as logging in or reporting a post, shown as a sheet on wide windows. */
+private val Key.isTask: Boolean
+    get() = this == LoginKey || (this is WebViewKey && task)
+
 private fun Key.metadata(): Map<String, Any> = when (presentation) {
     Presentation.Sheet -> BottomSheetSceneStrategy.bottomSheet()
-    Presentation.Page -> paneRole(checkNotNull(paneRole)) + if (this == LoginKey) FormSheetSceneStrategy.formSheet() else emptyMap()
+    Presentation.Page -> paneRole(checkNotNull(paneRole)) + if (isTask) FormSheetSceneStrategy.formSheet() else emptyMap()
 }
 
 /**

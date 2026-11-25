@@ -110,8 +110,12 @@ data object HotTopicListKey : Key
 @Serializable
 data class TopicKey(val id: Long, val name: String) : Key
 
+/**
+ * A web page at [initialUrl]. A [task] is one opened to get something done and leave, as
+ * reporting a post, which on a wide window shows as a sheet over the pages rather than a page.
+ */
 @Serializable
-data class WebViewKey(val initialUrl: String) : Key
+data class WebViewKey(val initialUrl: String, val task: Boolean = false) : Key
 
 @Serializable
 data object LoginKey : Key

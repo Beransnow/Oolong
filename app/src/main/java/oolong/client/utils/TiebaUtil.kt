@@ -72,7 +72,7 @@ object TiebaUtil {
         postId: String,
     ) {
         val url = AppDialogs.withLoading { runCatching { legacyThreadRemoteDataSource.reportUrl(postId.toLong()) } }
-        url.onSuccess { navigator.navigate(WebViewKey(it)) }
+        url.onSuccess { navigator.navigate(WebViewKey(it, task = true)) }
             .onFailure { context.toastShort(R.string.toast_load_failed) }
     }
 }

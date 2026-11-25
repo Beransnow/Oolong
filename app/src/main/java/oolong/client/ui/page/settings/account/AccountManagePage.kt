@@ -31,6 +31,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AccountManageKey
 import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.navigation.Navigator
+import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.widgets.compose.Avatar
@@ -41,7 +42,6 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.StringUtil
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.launchUrl
 
 /** The accounts page's accounts, and the dialogs its actions ask in first. */
 class AccountState(
@@ -124,7 +124,7 @@ object AccountSettings : SettingsPage<AccountState>(R.string.title_account_manag
                 R.string.title_modify_username,
                 external = true,
                 enabled = { account != null },
-                onClick = { launchUrl(context, navigator, "https://wappass.baidu.com/static/manage-chunk/change-username.html#/showUsername") },
+                onClick = { navigator.navigate(WebViewKey("https://wappass.baidu.com/static/manage-chunk/change-username.html#/showUsername", task = true)) },
             )
             action(R.string.title_copy_bduss, enabled = { account != null }, onClick = { state.copyBdussDialog.show() })
             text(
