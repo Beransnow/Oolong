@@ -43,7 +43,22 @@ internal data class PhotoOpening(
     /** Height over width of the picture, or 0 when not known. */
     val aspect: Float,
     val id: Long,
+    /** The thread the pictures are in, to tell and go to their floors; null outside one. */
+    val floors: PhotoFloors?,
 )
+
+/** The thread under the viewer, which tells the floor a picture's post is on and goes to it. */
+@Stable
+interface PhotoFloors {
+    /** The floor of post [postId], or null while the thread hasn't loaded it. */
+    fun floorOf(postId: Long): Int?
+
+    /** Scrolls the thread to post [postId]. */
+    fun show(postId: Long)
+}
+
+/** The thread pictures opened here are in, for the viewer to show their floors; null outside one. */
+val LocalPhotoFloors = staticCompositionLocalOf<PhotoFloors?> { null }
 
 /** Where a thumbnail is in the window, and whether enough of it shows to close back into. */
 @Immutable
@@ -68,9 +83,16 @@ class PhotoViewer internal constructor() {
      *
      * @param thumbnail what the thumbnail showed, kept on screen until the original arrives
      * @param aspect the picture's height over its width, or 0 when not known
+     * @param floors the thread the pictures are in ([LocalPhotoFloors])
      */
-    fun open(data: PhotoViewData, from: Rect? = null, thumbnail: MemoryCache.Key? = null, aspect: Float = 0f) {
-        opening = PhotoOpening(data, from, thumbnail, aspect, ++opened)
+    fun open(
+        data: PhotoViewData,
+        from: Rect? = null,
+        thumbnail: MemoryCache.Key? = null,
+        aspect: Float = 0f,
+        floors: PhotoFloors? = null,
+    ) {
+        opening = PhotoOpening(data, from, thumbnail, aspect, ++opened, floors)
     }
 
     /** Notes where picture [picId]'s thumbnail is; [bounds] null when it leaves the screen. */

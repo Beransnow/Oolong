@@ -61,6 +61,7 @@ import oolong.client.R
 import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.ui.page.photoview.LocalPhotoFloors
 import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.photoview.photoMenuItems
 import oolong.client.utils.ImageUtil
@@ -248,6 +249,7 @@ fun NetworkImage(
     // After a long press, the picture's menu follows this finger until it lifts
     var menuOpen by remember { mutableStateOf(false) }
     var boxOffset by remember { mutableStateOf(Offset.Zero) }
+    val floors = LocalPhotoFloors.current
     // Loads the picture if it waits for a tap, then opens it in the viewer
     val open = {
         if (!shouldLoad) {
@@ -258,6 +260,7 @@ fun NetworkImage(
                 from = Rect(layoutOffset, layoutSize.toSize()),
                 thumbnail = memoryCacheKey,
                 aspect = imageAspectRatio,
+                floors = floors,
             )
         }
     }

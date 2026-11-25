@@ -112,6 +112,7 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.pressScale
+import oolong.client.ui.page.photoview.LocalPhotoFloors
 import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.settings.block.LocalBlockShortcuts
 import oolong.client.ui.widgets.compose.Avatar
@@ -714,13 +715,14 @@ private fun ClassicSubPostLine(
 ) {
     val colors = ExtendedTheme.colors
     val photoViewer = LocalPhotoViewer.current
+    val photoFloors = LocalPhotoFloors.current
     val text = rememberSubPostText(
         subPost,
         isLz,
         nameColor = colors.textSecondary,
         onImage = { image ->
             val data = photoViewData(image)
-            if (data != null) photoViewer?.open(data)
+            if (data != null) photoViewer?.open(data, floors = photoFloors)
         },
     )
     val time = relativeTime(subPost.time)
@@ -825,6 +827,7 @@ fun SubPostLine(
 ) {
     val colors = ExtendedTheme.colors
     val photoViewer = LocalPhotoViewer.current
+    val photoFloors = LocalPhotoFloors.current
     val images = remember(subPost.content, imageLinks) {
         if (imageLinks) emptyList() else subPost.content.filterIsInstance<PostContent.Image>()
     }
@@ -847,7 +850,7 @@ fun SubPostLine(
                         nameColor = colors.textSecondary,
                         onImage = { image: PostContent.Image ->
                             val data = photoViewData(image)
-                            if (data != null) photoViewer?.open(data)
+                            if (data != null) photoViewer?.open(data, floors = photoFloors)
                         }.takeIf { imageLinks },
                     ),
                     fold = foldLong,

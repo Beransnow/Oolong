@@ -42,6 +42,8 @@ import oolong.client.ui.navigation.SubPostsSheetKey
 import oolong.client.ui.navigation.ThreadKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.ProvideNavigator
+import oolong.client.ui.page.photoview.LocalPhotoFloors
+import oolong.client.ui.page.photoview.PhotoFloors
 import oolong.client.ui.page.reply.ChromeSurface
 import oolong.client.ui.page.reply.ReplyTo
 import oolong.client.ui.page.reply.openInOfficialClient
@@ -78,6 +80,12 @@ fun ThreadRoute(
     val hideBlocked by rememberPreferenceAsState(booleanPreferencesKey("hideBlockedContent"), false)
 
     val landed = remember { LandedFloor() }
+    val photoFloors = remember(viewModel) {
+        object : PhotoFloors {
+            override fun floorOf(postId: Long): Int? = viewModel.floorOf(postId)
+            override fun show(postId: Long) = viewModel.goToPost(postId)
+        }
+    }
     LaunchedEffect(viewModel) {
         var scrolling: Job? = null
         viewModel.effect.collect { effect ->
@@ -254,7 +262,7 @@ fun ThreadRoute(
     }
 
     ProvideNavigator(navigator = navigator) {
-        CompositionLocalProvider(LocalLandedFloor provides landed) {
+        CompositionLocalProvider(LocalLandedFloor provides landed, LocalPhotoFloors provides photoFloors) {
             ThreadScreen(
                 state = state,
                 onEvent = onEvent,

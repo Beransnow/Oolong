@@ -96,6 +96,7 @@ import com.github.panpf.zoomimage.zoom.ReadMode
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
@@ -420,9 +421,23 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         )
         val editor = LocalImageEditor.current
         if (current != null && chrome > 0f && phase != Phase.Closing) ProvideMediaGlass(glass) {
+            val floors = opening.floors
+            val postId = current.postId
             PhotoChrome(
                 picture = current,
                 total = state.totalAmount,
+                floor = postId?.let { floors?.floorOf(it) },
+                hasFloor = floors != null && postId != null,
+                // The thread scrolls to the floor under the viewer, which then closes back into it
+                onFloor = {
+                    if (floors != null && postId != null) {
+                        floors.show(postId)
+                        scope.launch {
+                            delay(FloorCloseDelayMillis)
+                            close()
+                        }
+                    }
+                },
                 onShare = { share(context, current.originUrl) },
                 onSave = { ImageUtil.download(context, current.originUrl) },
                 onCopyLink = { TiebaUtil.copyText(context, current.originUrl) },
@@ -517,6 +532,28 @@ private fun Photo(
 }
 
 /**
+ * The floor a picture is on, as a link to it: the thread scrolls there and the viewer closes into
+ * it. A floor the thread hasn't loaded yet goes unnumbered, and the thread loads from it.
+ */
+@Composable
+private fun FloorLink(floor: Int?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = if (floor != null) stringResource(id = R.string.tip_post_floor, floor) else stringResource(id = R.string.photo_go_to_floor)
+    Row(
+        modifier = modifier
+            .clickable(role = Role.Button, onClickLabel = label, interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
+            .background(Color.White.copy(alpha = 0.16f), SmoothCornerShape.Capsule)
+            .padding(start = 10.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, color = Color.White, fontSize = 12.sp, maxLines = 1)
+        Icon(Symbols.ChevronRight, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
+    }
+}
+
+/** How long the thread gets to scroll to a floor before the viewer closes back into it. */
+private const val FloorCloseDelayMillis = 280L
+
+/**
  * Which picture of how many, who posted it with what they wrote, and what can be done with it:
  * editing, picking its text, sharing and saving it, and copying its link behind a menu.
  */
@@ -524,6 +561,11 @@ private fun Photo(
 private fun PhotoChrome(
     picture: ThreadPicture,
     total: Int,
+    /** The floor the picture is on, when the thread has loaded it. */
+    floor: Int?,
+    /** Whether the picture's floor can be gone to, known or not; tapped, it goes there. */
+    hasFloor: Boolean,
+    onFloor: () -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
     onCopyLink: () -> Unit,
@@ -560,8 +602,19 @@ private fun PhotoChrome(
             if (picture.author != null || picture.text != null) {
                 Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
                     var expanded by remember(picture.picId) { mutableStateOf(false) }
-                    picture.author?.let {
-                        Text(text = it, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        picture.author?.let {
+                            Text(
+                                text = it,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                        }
+                        if (hasFloor) FloorLink(floor, onFloor, modifier = Modifier.padding(start = if (picture.author != null) 8.dp else 0.dp))
                     }
                     picture.text?.let {
                         Text(

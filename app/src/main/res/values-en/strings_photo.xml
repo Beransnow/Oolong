@@ -7,6 +7,7 @@
     <string name="photo_download_failed">Download failed</string>
     <string name="photo_retry">Retry</string>
     <string name="photo_reading">Reading text</string>
+    <string name="photo_go_to_floor">Its floor</string>
     <string name="photo_no_text">No text found</string>
     <string name="photo_copy">Copy</string>
     <string name="photo_select_all">Select all</string>

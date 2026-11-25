@@ -336,6 +336,18 @@ class ThreadViewModel @AssistedInject constructor(
         }
     }
 
+    /** The floor of post [postId], or null while it isn't loaded. */
+    fun floorOf(postId: Long): Int? = findPost(postId)?.floor
+
+    /**
+     * Goes to post [postId], as the picture viewer asks to show where a picture is: scrolled to
+     * when loaded, else the thread loads from it. Even the post being read is scrolled to, which
+     * may be only partly on screen.
+     */
+    fun goToPost(postId: Long) {
+        if (findPost(postId) != null) effects.trySend(ThreadEffect.ScrollToPost(postId)) else jumpToPost(postId)
+    }
+
     fun jumpToPost(postId: Long) {
         scrollToPost = postId
         refreshFrom(ThreadCursor.Anchor(postId))
