@@ -100,8 +100,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.components.automask.AutoMaskDownload
-import oolong.client.components.images.rememberImageDownloadProgress
+import oolong.client.media.ImageUtil
+import oolong.client.media.automask.AutoMaskDownload
+import oolong.client.media.download
+import oolong.client.media.image.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Corners
@@ -125,9 +127,7 @@ import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.dimFilter
 import oolong.client.ui.widgets.compose.nightImageDim
-import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.download
 import java.io.File
 import java.util.UUID
 import kotlin.math.abs

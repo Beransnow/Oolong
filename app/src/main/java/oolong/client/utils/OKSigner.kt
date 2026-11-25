@@ -1,6 +1,5 @@
 package oolong.client.utils
 
-import oolong.client.data.settings.appPreferences
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +11,7 @@ import kotlinx.coroutines.withContext
 import oolong.client.data.account.AccountRepository
 import oolong.client.data.error.getErrorCode
 import oolong.client.data.error.getErrorMessage
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.Account
 import oolong.client.model.SignDataBean
 import oolong.core.network.forum.ForumGuideResponse

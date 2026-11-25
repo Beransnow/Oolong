@@ -5,12 +5,12 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import oolong.client.media.PhotoRepository
 import oolong.client.model.LoadPicPageData
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
 import oolong.client.model.PicturePage
 import oolong.client.model.ThreadPicture
-import oolong.client.repository.PhotoRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import java.io.IOException

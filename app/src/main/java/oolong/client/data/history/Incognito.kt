@@ -1,6 +1,5 @@
 package oolong.client.data.history
 
-import oolong.client.data.settings.dataStore
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import oolong.client.data.settings.dataStore
 
 /**
  * Browsing without leaving a trace on this device: while on, no visits or searches are kept. It is

@@ -26,11 +26,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import oolong.client.components.images.BlurTransformation
-import oolong.client.components.images.loadBitmap
 import oolong.client.data.settings.ThemeSettings
 import oolong.client.data.settings.dataStore
-import oolong.client.utils.ImageUtil
+import oolong.client.media.ImageUtil
+import oolong.client.media.image.BlurTransformation
+import oolong.client.media.image.loadBitmap
 import oolong.client.utils.ThemeUtil
 import java.io.File
 import kotlin.math.pow

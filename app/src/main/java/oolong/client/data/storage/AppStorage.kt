@@ -11,8 +11,8 @@ import coil3.imageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import oolong.client.data.update.UpdateRepository
+import oolong.client.media.ImageCacheUtil
 import oolong.client.ui.page.videoview.VideoCache
-import oolong.client.utils.ImageCacheUtil
 import java.io.File
 
 /**

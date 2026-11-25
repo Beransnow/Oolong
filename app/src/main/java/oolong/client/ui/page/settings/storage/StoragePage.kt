@@ -49,12 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.components.automask.Ability
-import oolong.client.components.automask.AutoMaskDownload
-import oolong.client.components.automask.AutoMaskFiles
 import oolong.client.data.settings.dataStore
 import oolong.client.data.storage.AppStorage
 import oolong.client.data.storage.StorageUse
+import oolong.client.media.automask.Ability
+import oolong.client.media.automask.AutoMaskDownload
+import oolong.client.media.automask.AutoMaskFiles
 import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref

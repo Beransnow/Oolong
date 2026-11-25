@@ -13,7 +13,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import oolong.client.components.images.loadBitmap
+import oolong.client.media.image.loadBitmap
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 
 /**

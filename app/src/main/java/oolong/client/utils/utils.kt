@@ -1,7 +1,5 @@
 package oolong.client.utils
 
-import oolong.client.data.settings.appPreferences
-import oolong.client.data.link.isInternalHost
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -16,7 +14,9 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import oolong.client.R
-import oolong.client.components.images.loadBitmap
+import oolong.client.data.link.isInternalHost
+import oolong.client.data.settings.appPreferences
+import oolong.client.media.image.loadBitmap
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.ui.navigation.Navigator

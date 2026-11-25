@@ -50,11 +50,11 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.mp3.Mp3Extractor
 import kotlinx.coroutines.delay
 import oolong.client.R
+import oolong.client.media.FileUtil
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
-import oolong.client.utils.FileUtil
 
 /**
  * A voice post: a capsule with a play button and its length, filled a shade darker as far as it

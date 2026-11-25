@@ -53,10 +53,10 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import oolong.client.components.automask.AutoMask
-import oolong.client.components.automask.AutoMaskDownload
-import oolong.client.components.automask.AutoMaskFiles
-import oolong.client.components.images.loadBitmap
+import oolong.client.media.automask.AutoMask
+import oolong.client.media.automask.AutoMaskDownload
+import oolong.client.media.automask.AutoMaskFiles
+import oolong.client.media.image.loadBitmap
 
 /**
  * A lab for tap-to-hide: pick a screenshot, see how long finding its text and making it ready

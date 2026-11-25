@@ -93,6 +93,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.media.ImageUtil
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
 import oolong.client.model.Post
@@ -127,7 +128,6 @@ import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.trimToCharacters
-import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
 

@@ -69,6 +69,7 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.data.emoticon.EmoticonUtil.emoticonString
 import oolong.client.data.settings.appPreferences
+import oolong.client.media.ImageUtil
 import oolong.client.model.FeedReply
 import oolong.client.model.ForumSummary
 import oolong.client.model.PhotoViewData
@@ -102,7 +103,6 @@ import oolong.client.ui.utils.getPhotoViewData
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
-import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getShortNumString
 import oolong.client.utils.TiebaUtil

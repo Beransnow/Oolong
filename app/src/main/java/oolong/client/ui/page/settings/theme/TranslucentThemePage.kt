@@ -67,6 +67,8 @@ import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.media.PickMediasContract
+import oolong.client.media.PickMediasRequest
 import oolong.client.model.Agree
 import oolong.client.model.Post
 import oolong.client.model.PostContent
@@ -100,8 +102,6 @@ import oolong.client.ui.widgets.compose.DialogPositiveButton
 import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.PickMediasContract
-import oolong.client.utils.PickMediasRequest
 import oolong.client.utils.ThemeUtil
 import java.io.File
 import kotlin.math.roundToInt

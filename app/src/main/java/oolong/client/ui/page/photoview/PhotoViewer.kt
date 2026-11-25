@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil3.memory.MemoryCache
 import oolong.client.R
+import oolong.client.media.ImageUtil
 import oolong.client.model.PhotoViewData
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.videoview.LocalVideoViewer
@@ -29,7 +30,6 @@ import oolong.client.ui.page.videoview.VideoViewerOverlay
 import oolong.client.ui.page.videoview.rememberVideoViewer
 import oolong.client.ui.widgets.compose.ContextMenuHost
 import oolong.client.ui.widgets.compose.ContextMenuItem
-import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
 
 /** Pictures opened out of a thumbnail: where it sat, and what it already showed. */

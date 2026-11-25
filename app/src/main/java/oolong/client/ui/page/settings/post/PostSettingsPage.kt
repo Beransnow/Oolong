@@ -3,13 +3,13 @@ package oolong.client.ui.page.settings.post
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import oolong.client.R
+import oolong.client.media.isPhotoPickerAvailable
 import oolong.client.ui.common.settings.SettingsScreen
 import oolong.client.ui.common.settings.settingsPage
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.PostSettingsKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.utils.isPhotoPickerAvailable
 
 /** Posting and replying. */
 val PostSettings = settingsPage(R.string.title_settings_post, PostSettingsKey) {

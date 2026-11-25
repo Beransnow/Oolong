@@ -90,7 +90,7 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
-import oolong.client.components.automask.AutoMaskDownload
+import oolong.client.media.automask.AutoMaskDownload
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.Motion

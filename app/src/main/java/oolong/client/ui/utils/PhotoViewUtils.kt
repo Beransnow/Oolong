@@ -1,11 +1,11 @@
 package oolong.client.ui.utils
 
 import kotlinx.collections.immutable.toImmutableList
+import oolong.client.media.ImageUtil
 import oolong.client.model.LoadPicPageData
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
 import oolong.client.model.ThreadImage
-import oolong.client.utils.ImageUtil
 
 fun getPhotoViewData(
     images: List<ThreadImage>,

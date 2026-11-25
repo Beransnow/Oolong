@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
-import oolong.client.components.images.loadBitmap
+import oolong.client.media.image.loadBitmap
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme

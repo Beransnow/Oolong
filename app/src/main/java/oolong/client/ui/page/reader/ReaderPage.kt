@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.first
 import oolong.client.data.settings.rememberPreferenceAsMutableState
+import oolong.client.media.ImageUtil
 import oolong.client.model.LoadPicPageData
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
@@ -24,7 +25,6 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ReaderKey
 import oolong.client.ui.navigation.SubPostsSheetKey
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.utils.ImageUtil
 
 /** 沉浸阅读: the thread author's floors read as one text. */
 @Composable

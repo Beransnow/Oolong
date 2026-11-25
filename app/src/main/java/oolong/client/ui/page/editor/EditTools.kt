@@ -88,8 +88,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import oolong.client.R
-import oolong.client.components.automask.AutoMaskDownload
-import oolong.client.components.automask.AutoMaskFiles
+import oolong.client.media.automask.AutoMaskDownload
+import oolong.client.media.automask.AutoMaskFiles
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback

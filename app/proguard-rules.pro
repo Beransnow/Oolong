@@ -113,7 +113,7 @@
 
 # Retrofit looks up the serializers of the JSON it reads by reflection.
 -keep class oolong.client.data.identity.sofire.SofireResponse* { *; }
--keep class oolong.client.api.models.UploadPictureResultBean, oolong.client.api.models.PicInfo* { *; }
+-keep class oolong.client.media.upload.UploadPictureResultBean, oolong.client.media.upload.PicInfo* { *; }
 
 # kotlin
 -dontwarn kotlin.**

@@ -45,11 +45,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import oolong.client.components.automask.AutoMask
-import oolong.client.components.automask.AutoMaskDownload
-import oolong.client.components.automask.AutoMaskFiles
-import oolong.client.components.automask.CodeFinder
-import oolong.client.components.automask.PrivacyRules
+import oolong.client.media.automask.AutoMask
+import oolong.client.media.automask.AutoMaskDownload
+import oolong.client.media.automask.AutoMaskFiles
+import oolong.client.media.automask.CodeFinder
+import oolong.client.media.automask.PrivacyRules
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.widgets.compose.AuroraState

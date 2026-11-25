@@ -7,8 +7,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import oolong.client.media.DeviceImageRepository
 import oolong.client.model.DeviceImage
-import oolong.client.repository.DeviceImageRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import org.junit.runner.RunWith

@@ -68,6 +68,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.data.thread.ThreadSort
+import oolong.client.media.ImageUtil
 import oolong.client.model.LoadPicPageData
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
@@ -103,7 +104,6 @@ import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.pressedByGlass
 import oolong.client.ui.widgets.compose.states.StateScreenScope
-import oolong.client.utils.ImageUtil
 
 private const val FIRST_POST_KEY = "FirstPost"
 private const val POST_KEY_PREFIX = "Post_"

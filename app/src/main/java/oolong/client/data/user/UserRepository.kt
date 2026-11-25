@@ -1,8 +1,5 @@
 package oolong.client.data.user
 
-import oolong.client.data.thread.toLikedReply
-import oolong.client.data.thread.toUserPost
-import oolong.client.data.thread.toThreadSummary
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -11,6 +8,9 @@ import oolong.client.api.models.protos.User
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.thread.EmoticonRegistry
+import oolong.client.data.thread.toLikedReply
+import oolong.client.data.thread.toThreadSummary
+import oolong.client.data.thread.toUserPost
 import oolong.client.model.LikedForum
 import oolong.client.model.LikedReply
 import oolong.client.model.ListedUser

@@ -73,7 +73,7 @@
         errorLine1="            return Intent(MediaStore.ACTION_PICK_IMAGES).apply {"
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/ImagePicker.kt"
+            file="src/main/java/oolong/client/media/ImagePicker.kt"
             line="79"
             column="27"/>
     </issue>
@@ -84,7 +84,7 @@
         errorLine1="                    putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, input.maxItems)"
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/ImagePicker.kt"
+            file="src/main/java/oolong/client/media/ImagePicker.kt"
             line="82"
             column="30"/>
     </issue>
@@ -513,7 +513,7 @@
         errorLine1="    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/components/transformations/internal/RSBlur.java"
+            file="src/main/java/oolong/client/media/image/blur/RSBlur.java"
             line="31"
             column="5"/>
     </issue>
@@ -524,7 +524,7 @@
         errorLine1="    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/components/transformations/internal/SupportRSBlur.java"
+            file="src/main/java/oolong/client/media/image/blur/SupportRSBlur.java"
             line="31"
             column="5"/>
     </issue>
@@ -623,7 +623,7 @@
         errorLine1="    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/components/transformations/internal/RSBlur.java"
+            file="src/main/java/oolong/client/media/image/blur/RSBlur.java"
             line="31"
             column="5"/>
     </issue>
@@ -634,7 +634,7 @@
         errorLine1="    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/components/transformations/internal/SupportRSBlur.java"
+            file="src/main/java/oolong/client/media/image/blur/SupportRSBlur.java"
             line="31"
             column="5"/>
     </issue>

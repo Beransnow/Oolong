@@ -27,11 +27,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import oolong.client.App
 import oolong.client.R
-import oolong.client.components.images.loadBitmap
+import oolong.client.media.FileUtil
+import oolong.client.media.ImageUtil
+import oolong.client.media.image.loadBitmap
 import oolong.client.model.EmoticonCache
 import oolong.client.ui.widgets.compose.rememberTextSize
-import oolong.client.utils.FileUtil
-import oolong.client.utils.ImageUtil
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap

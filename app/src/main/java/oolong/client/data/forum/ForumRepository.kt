@@ -1,7 +1,5 @@
 package oolong.client.data.forum
 
-import oolong.client.data.thread.toThreadSummary
-import oolong.client.data.thread.toPostContent
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -12,6 +10,8 @@ import oolong.client.api.models.protos.frsPage.FrsPageResponseData
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.thread.EmoticonRegistry
+import oolong.client.data.thread.toPostContent
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumIntro
 import oolong.client.model.ForumRuleAuthor

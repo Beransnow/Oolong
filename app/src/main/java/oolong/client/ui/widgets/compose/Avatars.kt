@@ -42,13 +42,13 @@ import coil3.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import oolong.client.R
 import oolong.client.data.history.Incognito
+import oolong.client.media.ImageUtil
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
-import oolong.client.utils.ImageUtil
 
 object Sizes {
     val Tiny = 24.dp

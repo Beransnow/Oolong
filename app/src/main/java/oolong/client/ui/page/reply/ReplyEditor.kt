@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import oolong.client.components.spans.EmoticonSpanV2
+import oolong.client.data.emoticon.EmoticonSpanV2
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.utils.StringUtil
 import oolong.client.utils.hideKeyboard

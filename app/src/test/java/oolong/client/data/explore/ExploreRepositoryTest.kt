@@ -1,7 +1,5 @@
 package oolong.client.data.explore
 
-import oolong.client.data.thread.toThreadSummary
-import oolong.client.data.thread.rankReason
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -18,6 +16,8 @@ import oolong.client.api.models.protos.topicList.NewTopicList
 import oolong.client.api.models.protos.topicList.TopicListResponseData
 import oolong.client.api.models.protos.userLike.ConcernData
 import oolong.client.api.models.protos.userLike.UserLikeResponseData
+import oolong.client.data.thread.rankReason
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.DislikeOption
 import oolong.client.model.ForumSummary
 import oolong.client.model.HotTopic

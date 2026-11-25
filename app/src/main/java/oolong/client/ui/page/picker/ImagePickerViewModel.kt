@@ -22,9 +22,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import oolong.client.media.DeviceImageRepository
 import oolong.client.model.DeviceAlbum
 import oolong.client.model.DeviceImage
-import oolong.client.repository.DeviceImageRepository
 import javax.inject.Inject
 
 @Immutable

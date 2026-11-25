@@ -98,6 +98,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
 import oolong.client.data.web.WebSessions
 import oolong.client.findActivity
+import oolong.client.media.FileUtil
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
 import oolong.client.toastShort
@@ -131,7 +132,6 @@ import oolong.client.ui.widgets.compose.WebViewNavigator
 import oolong.client.ui.widgets.compose.WebViewState
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.pageScroll
-import oolong.client.utils.FileUtil
 import oolong.client.utils.TiebaUtil
 import kotlin.coroutines.resume
 import android.graphics.Rect as AndroidRect

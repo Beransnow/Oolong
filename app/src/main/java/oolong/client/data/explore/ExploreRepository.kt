@@ -1,7 +1,5 @@
 package oolong.client.data.explore
 
-import oolong.client.data.thread.toThreadSummary
-import oolong.client.data.thread.rankReason
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -13,6 +11,8 @@ import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.forum.VideoThreadFilter
 import oolong.client.data.thread.EmoticonRegistry
+import oolong.client.data.thread.rankReason
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.DislikeOption
 import oolong.client.model.ForumMeasure
 import oolong.client.model.ForumRanking
