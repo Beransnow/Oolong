@@ -33,8 +33,8 @@ import oolong.client.ui.page.settings.block.blockMenuLabels
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.LocalContextMenus
-import oolong.client.utils.TiebaUtil
-import oolong.client.utils.launchUrl
+import oolong.client.util.TiebaUtil
+import oolong.client.util.launchUrl
 
 /**
  * The ⋯ of a recommended thread, which opens into what the server offers for not wanting it, each

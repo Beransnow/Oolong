@@ -21,7 +21,7 @@ import oolong.client.ui.page.search.MatchList
 import oolong.client.ui.page.search.MatchesState
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Sizes
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 /** The users a search found. */
 @Composable

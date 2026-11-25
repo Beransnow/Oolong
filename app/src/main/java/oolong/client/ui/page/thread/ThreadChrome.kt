@@ -47,7 +47,7 @@ import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.pressedByGlass
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumString
 
 /**
  * Back, the forum the thread is in, which opens the forum, and the reply [filter] once it has

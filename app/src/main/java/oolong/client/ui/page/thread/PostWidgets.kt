@@ -33,8 +33,8 @@ import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.inlineContentSafe
-import oolong.client.utils.StringUtil.getShortNumString
-import oolong.client.utils.Util.getIconColorByLevel
+import oolong.client.util.StringUtil.getShortNumString
+import oolong.client.util.Util.getIconColorByLevel
 
 @Composable
 fun PostAgreeBtn(

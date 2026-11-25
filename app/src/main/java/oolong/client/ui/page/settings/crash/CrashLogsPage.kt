@@ -43,7 +43,6 @@ import oolong.client.R
 import oolong.client.data.settings.dataStore
 import oolong.client.diagnostics.CrashLogs
 import oolong.client.diagnostics.CrashReports
-import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.Corners
@@ -63,7 +62,8 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MyLazyColumn
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 import java.text.SimpleDateFormat
 import java.util.Date
 

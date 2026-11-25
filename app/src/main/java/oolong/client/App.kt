@@ -25,14 +25,14 @@ import oolong.client.data.history.Incognito
 import oolong.client.data.identity.ClientUtils
 import oolong.client.data.identity.OAIDGetter
 import oolong.client.data.legacy.LegacyImport
+import oolong.client.data.settings.AppIconUtil
 import oolong.client.data.settings.SharedPreferencesUtil
 import oolong.client.data.storage.AppStorage
 import oolong.client.diagnostics.CrashLogs
 import oolong.client.media.image.newAppImageLoader
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.widgets.compose.VoicePlayback
-import oolong.client.utils.AppIconUtil
-import oolong.client.utils.ThemeUtil
-import oolong.client.utils.packageInfo
+import oolong.client.util.packageInfo
 import kotlin.concurrent.thread
 
 @HiltAndroidApp

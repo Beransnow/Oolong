@@ -4,7 +4,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 
 /** Light or dark, or whichever the system is in. */
 enum class Appearance(val value: String) {

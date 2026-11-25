@@ -130,7 +130,7 @@ import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 
 @Preview("SearchBoxPreview")
 @Composable

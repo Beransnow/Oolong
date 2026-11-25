@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.data.settings.appPreferences
 import oolong.client.model.ForumDetail
-import oolong.client.toastShort
 import oolong.client.ui.navigation.ForumDetailKey
 import oolong.client.ui.navigation.ForumRuleDetailKey
 import oolong.client.ui.navigation.ForumSearchPostKey
@@ -27,8 +26,9 @@ import oolong.client.ui.page.ProvideNavigator
 import oolong.client.ui.page.thread.navigateToThread
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.TiebaUtil
-import oolong.client.utils.requestPinShortcut
+import oolong.client.util.TiebaUtil
+import oolong.client.util.requestPinShortcut
+import oolong.client.util.toastShort
 
 /**
  * The forum page: connects [ForumScreen] to its view model, navigation and the things only a page

@@ -103,9 +103,9 @@ import oolong.client.ui.utils.getPhotoViewData
 import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.getShortNumString
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.getShortNumString
+import oolong.client.util.TiebaUtil
 import kotlin.math.max
 import kotlin.math.min
 

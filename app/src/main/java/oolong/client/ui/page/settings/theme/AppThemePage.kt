@@ -103,6 +103,8 @@ import oolong.client.ui.common.theme.compose.pickedColor
 import oolong.client.ui.common.theme.compose.rememberColorPicks
 import oolong.client.ui.common.theme.compose.systemColor
 import oolong.client.ui.common.theme.compose.themeColors
+import oolong.client.ui.designsystem.theme.ThemeUtil
+import oolong.client.ui.designsystem.theme.toHexString
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.TranslucentThemeKey
@@ -125,8 +127,6 @@ import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
-import oolong.client.utils.ThemeUtil
-import oolong.client.utils.extension.toHexString
 import java.io.File
 
 /** What the theme page shows its choices with: the theme as set, the colours of each, and the wallpaper. */

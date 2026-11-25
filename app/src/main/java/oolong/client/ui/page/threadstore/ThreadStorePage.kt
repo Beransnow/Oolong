@@ -72,8 +72,8 @@ import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.getUsernameAnnotatedString
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.getUsernameAnnotatedString
 
 /** How far a stored thread dims while it is being taken out. */
 private const val RemovingAlpha = 0.4f

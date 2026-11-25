@@ -22,9 +22,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import oolong.client.data.emoticon.EmoticonSpanV2
 import oolong.client.ui.common.theme.compose.ExtendedTheme
-import oolong.client.utils.StringUtil
-import oolong.client.utils.hideKeyboard
-import oolong.client.utils.showKeyboard
+import oolong.client.util.StringUtil
+import oolong.client.util.hideKeyboard
+import oolong.client.util.showKeyboard
 
 /**
  * The reply's text, and the keyboard, driven from Compose. The text keeps emoticons as their

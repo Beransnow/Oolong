@@ -11,7 +11,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import oolong.client.ui.navigation.TopicKey
 import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.utils.launchUrl
+import oolong.client.util.launchUrl
 
 /** What tapping a link in text opens: an address, a user's profile or a hot topic. */
 @Stable

@@ -85,7 +85,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.ShadowAmbient
 import oolong.client.ui.common.theme.compose.ShadowSpot
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import kotlin.math.max
 
 /**

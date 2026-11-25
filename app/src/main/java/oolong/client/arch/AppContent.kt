@@ -10,9 +10,9 @@ import oolong.client.ui.common.ProvideAccounts
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.calculateWindowSizeClass
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.utils.rememberSystemUiController
 import oolong.client.ui.widgets.compose.AppToast
-import oolong.client.utils.ThemeUtil
 
 /**
  * What every activity's content is drawn in: the theme, the system bars clear over it with icons

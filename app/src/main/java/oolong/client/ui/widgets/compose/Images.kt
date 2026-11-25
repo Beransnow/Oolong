@@ -66,7 +66,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.page.photoview.LocalPhotoFloors
 import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.photoview.photoMenuItems
-import oolong.client.utils.NetworkUtil
+import oolong.client.util.NetworkUtil
 
 /** How much black lies over pictures in night mode, when the user asks for it. */
 private const val NightDim = 0.3f

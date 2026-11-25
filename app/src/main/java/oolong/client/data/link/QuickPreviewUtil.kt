@@ -17,7 +17,7 @@ import oolong.client.data.link.ClipBoardForumLink
 import oolong.client.data.link.ClipBoardLink
 import oolong.client.data.link.ClipBoardThreadLink
 import oolong.client.data.link.linkPreviewRepository
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 object QuickPreviewUtil {
     private fun isTiebaUrl(host: String?): Boolean {

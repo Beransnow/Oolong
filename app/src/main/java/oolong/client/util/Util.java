@@ -1,6 +1,6 @@
-package oolong.client.utils;
+package oolong.client.util;
 
-import static oolong.client.utils.ColorUtils.greifyColor;
+import static oolong.client.util.ColorUtils.greifyColor;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

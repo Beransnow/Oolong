@@ -71,11 +71,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.media.image.loadBitmap
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.utils.FullColorWindow
 import oolong.client.ui.utils.isHdr
+import oolong.client.util.toastShort
 import java.io.File
 import kotlin.math.roundToInt
 

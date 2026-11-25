@@ -64,8 +64,8 @@ import oolong.client.ui.widgets.compose.matchedGeometryAnchor
 import oolong.client.ui.widgets.compose.onPageAccent
 import oolong.client.ui.widgets.compose.pageAccentOrPrimary
 import oolong.client.ui.widgets.compose.rememberScrollProgress
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.getShortNumString
 
 /** The keys the header's avatar and name, and the bar's copies that dock from them, match by. */
 internal object ProfileAvatarAnchor

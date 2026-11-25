@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.suspendCancellableCoroutine
-import oolong.client.findActivity
+import oolong.client.util.findActivity
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 

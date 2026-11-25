@@ -1,4 +1,4 @@
-package oolong.client.utils
+package oolong.client.util
 
 import android.app.Activity
 import android.content.Context
@@ -10,9 +10,9 @@ import com.hjq.permissions.OnPermissionInterceptor
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import oolong.client.R
-import oolong.client.toastShort
 import oolong.client.ui.widgets.compose.AppDialog
 import oolong.client.ui.widgets.compose.AppDialogs
+import oolong.client.util.toastShort
 
 object PermissionUtils {
     const val READ_CALENDAR = "android.permission.READ_CALENDAR"

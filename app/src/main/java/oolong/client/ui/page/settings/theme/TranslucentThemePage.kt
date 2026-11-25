@@ -75,7 +75,6 @@ import oolong.client.model.PostContent
 import oolong.client.model.SubPost
 import oolong.client.model.TextSpan
 import oolong.client.model.User
-import oolong.client.toastShort
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -87,6 +86,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.colorOf
 import oolong.client.ui.common.theme.compose.getColorPalette
 import oolong.client.ui.common.theme.compose.themeColors
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.editor.CropRequest
@@ -102,7 +102,7 @@ import oolong.client.ui.widgets.compose.DialogPositiveButton
 import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.ThemeUtil
+import oolong.client.util.toastShort
 import java.io.File
 import kotlin.math.roundToInt
 

@@ -20,6 +20,8 @@ import androidx.core.os.LocaleListCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import oolong.client.R
+import oolong.client.data.settings.AppIconUtil
+import oolong.client.data.settings.LauncherIcons
 import oolong.client.data.settings.ThemeSettings
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.rememberPreferenceAsMutableState
@@ -33,6 +35,7 @@ import oolong.client.ui.common.settings.settingsPage
 import oolong.client.ui.common.settings.stored
 import oolong.client.ui.common.theme.compose.ReduceMotionKey
 import oolong.client.ui.common.theme.compose.TextScale
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.CustomSettingsKey
 import oolong.client.ui.navigation.FontSizeKey
@@ -55,9 +58,6 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.Slider
 import oolong.client.ui.widgets.compose.available
 import oolong.client.ui.widgets.compose.chosenGlassTier
-import oolong.client.utils.AppIconUtil
-import oolong.client.utils.LauncherIcons
-import oolong.client.utils.ThemeUtil
 import kotlin.math.roundToInt
 
 /** Appearance: the theme, the language and layout, text size and the app's icon, and the glass effects. */

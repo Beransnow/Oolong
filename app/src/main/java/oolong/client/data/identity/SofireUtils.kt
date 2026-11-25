@@ -12,7 +12,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import oolong.client.data.identity.sofire.RetrofitTiebaApi
 import oolong.client.data.identity.sofire.SofireResponseData
-import oolong.client.toMD5
+import oolong.client.util.toMD5
 import java.security.MessageDigest
 import java.util.Locale
 import javax.crypto.Cipher

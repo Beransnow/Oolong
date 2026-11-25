@@ -9,7 +9,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import oolong.client.R
-import oolong.client.toastShort
+import oolong.client.util.toastShort
 
 /**
  * Hears how an update's install session went: passes on the system's confirmation when it asks for

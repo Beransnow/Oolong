@@ -55,7 +55,7 @@ import oolong.client.ui.widgets.compose.HorizontalDivider
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
-import oolong.client.utils.StringUtil.getShortNumeralString
+import oolong.client.util.StringUtil.getShortNumeralString
 
 @Composable
 fun ForumDetailPage(

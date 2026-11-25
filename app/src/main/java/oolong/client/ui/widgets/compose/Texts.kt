@@ -63,12 +63,12 @@ import oolong.client.data.emoticon.EmoticonManager
 import oolong.client.data.emoticon.EmoticonUtil
 import oolong.client.data.emoticon.EmoticonUtil.emoticonString
 import oolong.client.data.emoticon.calcLineHeightPx
-import oolong.client.pxToDp
-import oolong.client.pxToSp
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.util.pxToDp
+import oolong.client.util.pxToSp
 import java.util.regex.Pattern
 
 /** How tall a line of text with emoticons is, as a multiple of its font size, unless set. */

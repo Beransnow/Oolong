@@ -45,7 +45,6 @@ import oolong.client.data.update.UpdateChannel
 import oolong.client.data.update.UpdateRepository
 import oolong.client.diagnostics.RecentResponses
 import oolong.client.diagnostics.UsageStats
-import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.Corners
@@ -59,7 +58,8 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.SecondaryButton
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 import java.text.SimpleDateFormat
 import java.util.Date
 

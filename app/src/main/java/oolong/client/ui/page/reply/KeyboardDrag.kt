@@ -9,8 +9,8 @@ import androidx.core.view.WindowInsetsAnimationControlListenerCompat
 import androidx.core.view.WindowInsetsAnimationControllerCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import oolong.client.findActivity
 import oolong.client.ui.common.theme.compose.Motion
+import oolong.client.util.findActivity
 import kotlin.math.roundToInt
 
 /**

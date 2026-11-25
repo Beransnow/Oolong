@@ -18,7 +18,7 @@ import oolong.client.data.settings.MonetStyle
 import oolong.client.data.settings.ThemeSettings
 import oolong.client.data.settings.dataStore
 import oolong.client.testing.LegacyAppRule
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner

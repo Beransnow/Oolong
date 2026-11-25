@@ -94,7 +94,7 @@ import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumString
 
 @Composable
 fun HotPage(

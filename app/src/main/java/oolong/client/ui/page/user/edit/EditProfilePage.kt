@@ -51,7 +51,6 @@ import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.media.PickMediasContract
 import oolong.client.media.PickMediasRequest
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
@@ -78,7 +77,8 @@ import oolong.client.ui.widgets.compose.picker.ListSinglePicker
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.states.StateScreenScope
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
+import oolong.client.util.toastShort
 import java.io.File
 
 @Composable

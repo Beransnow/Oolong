@@ -40,8 +40,8 @@ import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.data.identity.getUserAgent
 import oolong.client.media.FileUtil
-import oolong.client.toastShort
-import oolong.client.utils.PermissionUtils
+import oolong.client.util.PermissionUtils
+import oolong.client.util.toastShort
 import oolong.core.network.TiebaProfile
 import java.io.File
 import java.io.OutputStream

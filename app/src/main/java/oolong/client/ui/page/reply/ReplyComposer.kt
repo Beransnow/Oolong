@@ -90,7 +90,7 @@ import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.motionItem
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 import kotlin.math.roundToInt
 
 /** Whom a reply answers, shown as a chip at the top of the composer; null answers the thread. */

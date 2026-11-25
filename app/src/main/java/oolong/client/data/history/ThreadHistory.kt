@@ -11,7 +11,7 @@ import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.ThreadDetail
 import oolong.client.model.ThreadHistoryInfoBean
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 import javax.inject.Inject
 
 /** The browsing history of threads, which remembers where in a thread the user was. */

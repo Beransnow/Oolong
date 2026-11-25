@@ -10,7 +10,7 @@ import oolong.client.data.settings.ThemeSettings
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.ui.common.theme.compose.Spacing
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test

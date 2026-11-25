@@ -1,4 +1,4 @@
-package oolong.client.utils
+package oolong.client.ui.designsystem.theme
 
 import android.content.Context
 import androidx.compose.runtime.MutableState

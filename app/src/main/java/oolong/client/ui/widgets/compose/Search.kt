@@ -71,9 +71,9 @@ import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.buildAnnotatedStringWithUser
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.buildAnnotatedStringWithUser
+import oolong.client.util.TiebaUtil
 
 @Composable
 fun QuotePostCard(

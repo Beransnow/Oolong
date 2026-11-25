@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 import oolong.client.MainActivity
 import oolong.client.data.link.QuickPreviewUtil
 import oolong.client.data.settings.appPreferences
-import oolong.client.utils.TiebaUtil
-import oolong.client.utils.clipBoardManager
+import oolong.client.util.TiebaUtil
+import oolong.client.util.clipBoardManager
 import java.util.regex.Pattern
 
 open class ClipBoardLink(

@@ -11,7 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
-import oolong.client.utils.DateTimeUtils
+import oolong.client.util.DateTimeUtils
 
 /** The time "how long ago" is told from, moving on each minute; null where nothing keeps it. */
 val LocalNow = staticCompositionLocalOf<State<Long>?> { null }

@@ -53,7 +53,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Radius
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import kotlin.math.roundToInt
 
 /** Whether the latest change to the back stack removed pages, as opposed to adding them. */

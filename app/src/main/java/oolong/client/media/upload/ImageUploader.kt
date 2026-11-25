@@ -21,7 +21,7 @@ import oolong.client.media.upload.UploadPicture
 import oolong.client.media.upload.UploadPictureException
 import oolong.client.media.upload.UploadPictureResultBean
 import oolong.client.media.upload.preparePictureForUpload
-import oolong.client.utils.MD5Util
+import oolong.client.util.MD5Util
 import oolong.core.network.upload.PictureChunk
 import oolong.core.network.upload.PictureWatermark
 import oolong.core.network.upload.UploadPictureResponse

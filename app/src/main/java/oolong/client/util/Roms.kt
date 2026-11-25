@@ -1,4 +1,4 @@
-package oolong.client.components
+package oolong.client.util
 
 import android.os.Build
 

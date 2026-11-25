@@ -45,10 +45,10 @@ import oolong.client.data.link.isTiebaHost
 import oolong.client.data.link.toTiebaKey
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.web.WebSessions
-import oolong.client.findActivity
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.common.theme.compose.currentColors
+import oolong.client.ui.components.launchActivityForResult
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.AccompanistWebChromeClient
@@ -58,10 +58,10 @@ import oolong.client.ui.widgets.compose.AppDialogs
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.rememberSaveableWebViewState
 import oolong.client.ui.widgets.compose.rememberWebViewNavigator
-import oolong.client.utils.PermissionUtils
-import oolong.client.utils.PermissionUtils.PermissionData
-import oolong.client.utils.TiebaUtil
-import oolong.client.utils.compose.launchActivityForResult
+import oolong.client.util.PermissionUtils
+import oolong.client.util.PermissionUtils.PermissionData
+import oolong.client.util.TiebaUtil
+import oolong.client.util.findActivity
 import java.lang.ref.WeakReference
 import java.util.UUID
 

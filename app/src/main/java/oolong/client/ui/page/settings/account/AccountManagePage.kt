@@ -16,7 +16,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import oolong.client.R
 import oolong.client.data.account.AccountActions
 import oolong.client.model.Account
-import oolong.client.toastShort
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.LocalAllAccounts
@@ -40,8 +39,9 @@ import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.StringUtil
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.StringUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 
 /** The accounts page's accounts, and the dialogs its actions ask in first. */
 class AccountState(

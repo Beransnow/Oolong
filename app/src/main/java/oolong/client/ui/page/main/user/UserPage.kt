@@ -68,6 +68,7 @@ import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.navigation.AboutKey
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.HistoryKey
@@ -99,8 +100,7 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
-import oolong.client.utils.StringUtil
-import oolong.client.utils.ThemeUtil
+import oolong.client.util.StringUtil
 
 @Composable
 private fun StatCardPlaceholder(modifier: Modifier = Modifier) {

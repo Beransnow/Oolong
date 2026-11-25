@@ -1,6 +1,6 @@
 package oolong.client.diagnostics
 
-import oolong.client.components.Roms
+import oolong.client.util.Roms
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate

@@ -30,7 +30,7 @@ import oolong.client.ui.page.videoview.VideoViewerOverlay
 import oolong.client.ui.page.videoview.rememberVideoViewer
 import oolong.client.ui.widgets.compose.ContextMenuHost
 import oolong.client.ui.widgets.compose.ContextMenuItem
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 
 /** Pictures opened out of a thumbnail: where it sat, and what it already showed. */
 @Immutable

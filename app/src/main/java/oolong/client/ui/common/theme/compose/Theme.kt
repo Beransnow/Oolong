@@ -30,10 +30,10 @@ import oolong.client.data.settings.ColorStyle
 import oolong.client.data.settings.ThemeSettings
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.dataStore
+import oolong.client.ui.designsystem.theme.ThemeUtil
+import oolong.client.ui.designsystem.theme.darken
 import oolong.client.ui.widgets.compose.ProvideChromeStyle
 import oolong.client.ui.widgets.compose.ProvideGlassChoice
-import oolong.client.utils.ThemeUtil
-import oolong.client.utils.compose.darken
 
 /**
  * A theme's colours. System colours are named for what they are for and suit any page; component

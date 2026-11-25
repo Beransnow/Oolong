@@ -59,7 +59,7 @@ import oolong.client.ui.widgets.compose.GlassScaffold
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.floatingGlass
-import oolong.client.utils.launchUrl
+import oolong.client.util.launchUrl
 
 /**
  * About the app, on the landing page's light: the mark, whose lens can be lifted off it, the name

@@ -1,4 +1,4 @@
-package oolong.client.utils
+package oolong.client.util
 
 import android.content.ClipData
 import android.content.ClipDescription
@@ -10,10 +10,10 @@ import android.os.PersistableBundle
 import oolong.client.R
 import oolong.client.background.sign.AutoSign
 import oolong.client.data.identity.legacyThreadRemoteDataSource
-import oolong.client.toastShort
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.widgets.compose.AppDialogs
+import oolong.client.util.toastShort
 
 object TiebaUtil {
     /** The label of what the app copies, so it can tell its own copies apart. */

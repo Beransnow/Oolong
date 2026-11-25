@@ -21,10 +21,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.diagnostics.ErrorRecords
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.TextStyles
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 
 /**
  * Under an error the app can't explain, a quiet 「详情」 once the error is kept in [ErrorRecords]:

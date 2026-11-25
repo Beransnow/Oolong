@@ -54,7 +54,7 @@ import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.LocalCopySheets
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 
 /**
  * The thread page: connects [ThreadScreen] to its view model, navigation and the things only a

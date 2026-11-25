@@ -1,4 +1,4 @@
-package oolong.client.utils.extension
+package oolong.client.util
 
 /**
  * 添加flag

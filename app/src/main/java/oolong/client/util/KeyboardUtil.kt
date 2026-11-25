@@ -1,4 +1,4 @@
-package oolong.client.utils
+package oolong.client.util
 
 import android.content.Context
 import android.view.View

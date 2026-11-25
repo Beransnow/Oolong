@@ -31,7 +31,6 @@ import oolong.client.R
 import oolong.client.background.sign.AutoSign
 import oolong.client.data.settings.BackgroundSettings
 import oolong.client.data.settings.dataStore
-import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.settings.Availability
@@ -45,11 +44,12 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.utils.PermissionUtils
-import oolong.client.utils.isIgnoringBatteryOptimizations
-import oolong.client.utils.launchUrl
-import oolong.client.utils.requestIgnoreBatteryOptimizations
-import oolong.client.utils.requestPermission
+import oolong.client.util.PermissionUtils
+import oolong.client.util.isIgnoringBatteryOptimizations
+import oolong.client.util.launchUrl
+import oolong.client.util.requestIgnoreBatteryOptimizations
+import oolong.client.util.requestPermission
+import oolong.client.util.toastShort
 import java.util.Date
 
 /** What the sign-in page knows only while it shows: what the system allows, and ways to ask for it. */

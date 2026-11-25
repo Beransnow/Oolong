@@ -36,7 +36,7 @@ import oolong.client.ui.page.webview.WebPageScaffold
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.rememberSaveableWebViewState
 import oolong.client.ui.widgets.compose.rememberWebViewNavigator
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 const val LOGIN_URL =
     "https://wappass.baidu.com/passport?login&u=https%3A%2F%2Ftieba.baidu.com%2Findex%2Ftbwise%2Fmine"

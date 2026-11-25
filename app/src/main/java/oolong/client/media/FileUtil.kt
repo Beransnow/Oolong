@@ -13,9 +13,9 @@ import android.text.TextUtils
 import android.webkit.URLUtil
 import androidx.core.net.toUri
 import oolong.client.R
-import oolong.client.utils.PermissionUtils
-import oolong.client.utils.PermissionUtils.PermissionData
-import oolong.client.utils.PermissionUtils.askPermission
+import oolong.client.util.PermissionUtils
+import oolong.client.util.PermissionUtils.PermissionData
+import oolong.client.util.PermissionUtils.askPermission
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream

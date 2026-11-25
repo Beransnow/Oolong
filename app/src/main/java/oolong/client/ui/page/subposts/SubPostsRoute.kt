@@ -31,7 +31,7 @@ import oolong.client.ui.page.thread.LandedFloor
 import oolong.client.ui.page.thread.LocalLandedFloor
 import oolong.client.ui.page.thread.ThreadPreferences
 import oolong.client.ui.widgets.compose.LocalCopySheets
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 
 /**
  * The sub-post page: connects [SubPostsScreen] to its view model, navigation and the reply dialog

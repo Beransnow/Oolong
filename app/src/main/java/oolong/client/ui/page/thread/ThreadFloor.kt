@@ -128,8 +128,8 @@ import oolong.client.ui.widgets.compose.buildChipInlineContent
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.longPressMenu
 import oolong.client.ui.widgets.compose.trimToCharacters
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.getShortNumString
 
 /** The column left of a floor that holds its author's avatar, floor number and rule. */
 private val Gutter = 52.dp

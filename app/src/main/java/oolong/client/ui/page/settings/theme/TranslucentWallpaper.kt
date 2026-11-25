@@ -31,7 +31,7 @@ import oolong.client.data.settings.dataStore
 import oolong.client.media.ImageUtil
 import oolong.client.media.image.BlurTransformation
 import oolong.client.media.image.loadBitmap
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import java.io.File
 import kotlin.math.pow
 import kotlin.math.roundToInt

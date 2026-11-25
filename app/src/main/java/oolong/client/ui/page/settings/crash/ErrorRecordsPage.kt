@@ -32,7 +32,6 @@ import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.data.settings.dataStore
 import oolong.client.diagnostics.ErrorRecords
-import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -50,7 +49,8 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.rememberDialogState
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 
 /** The errors kept on the device that the app couldn't explain, the latest first; each opens to its record. */
 @OptIn(ExperimentalMaterialApi::class)

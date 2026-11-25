@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
-import oolong.client.findActivity
+import oolong.client.util.findActivity
 import java.util.WeakHashMap
 
 /** One of those in composition asking a window for full colour, and whether it shows HDR now. */

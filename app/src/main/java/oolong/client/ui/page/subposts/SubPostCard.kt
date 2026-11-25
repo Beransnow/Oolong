@@ -43,7 +43,7 @@ import oolong.client.ui.widgets.compose.Card
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 /** Everything the user can do on the sub-post page. */
 sealed interface SubPostsEvent {

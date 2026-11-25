@@ -12,12 +12,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import oolong.client.BuildConfig
-import oolong.client.components.Roms
 import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.dataStore
 import oolong.client.data.update.UpdateChannel
 import oolong.client.data.update.UpdateHost
 import oolong.client.data.update.UpdateRepository
+import oolong.client.util.Roms
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL

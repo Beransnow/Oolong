@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.runTest
 import oolong.client.data.settings.ThemeSettings
 import oolong.client.data.settings.dataStore
 import oolong.client.testing.LegacyAppRule
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import org.junit.Before
 import org.junit.Rule
 import org.junit.runner.RunWith

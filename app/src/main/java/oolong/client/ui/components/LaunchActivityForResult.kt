@@ -1,4 +1,4 @@
-package oolong.client.utils.compose
+package oolong.client.ui.components
 
 import android.content.Context
 import android.content.Intent

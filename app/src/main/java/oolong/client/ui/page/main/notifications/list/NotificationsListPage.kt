@@ -60,7 +60,7 @@ import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.states.DefaultEmptyScreen
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 @Composable
 fun NotificationsListPage(

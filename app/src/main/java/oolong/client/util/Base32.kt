@@ -1,4 +1,4 @@
-package oolong.client.utils
+package oolong.client.util
 
 /** Base32 with the RFC 4648 alphabet and no padding: five bits a character, the last one filled with zeros. */
 object Base32 {

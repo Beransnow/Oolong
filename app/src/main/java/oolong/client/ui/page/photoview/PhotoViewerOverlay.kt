@@ -105,7 +105,6 @@ import oolong.client.media.automask.AutoMaskDownload
 import oolong.client.media.download
 import oolong.client.media.image.rememberImageDownloadProgress
 import oolong.client.model.ThreadPicture
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
@@ -127,7 +126,8 @@ import oolong.client.ui.widgets.compose.ProvideMediaGlass
 import oolong.client.ui.widgets.compose.clickMenu
 import oolong.client.ui.widgets.compose.dimFilter
 import oolong.client.ui.widgets.compose.nightImageDim
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
+import oolong.client.util.toastShort
 import java.io.File
 import java.util.UUID
 import kotlin.math.abs

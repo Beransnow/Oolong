@@ -75,7 +75,6 @@ import oolong.client.model.PicItem
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.knownFirstFloor
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -104,6 +103,7 @@ import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.plus
 import oolong.client.ui.widgets.compose.pressedByGlass
 import oolong.client.ui.widgets.compose.states.StateScreenScope
+import oolong.client.util.toastShort
 
 private const val FIRST_POST_KEY = "FirstPost"
 private const val POST_KEY_PREFIX = "Post_"

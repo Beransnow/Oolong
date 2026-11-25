@@ -51,7 +51,7 @@ import oolong.client.ui.common.theme.compose.TextStyles
 import oolong.client.ui.common.theme.compose.scrim
 import oolong.client.ui.navigation.SearchKey
 import oolong.client.ui.page.LocalNavigator
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 
 /**
  * The window's sheet for copying part of a post: [show] opens it over everything, with the

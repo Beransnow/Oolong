@@ -1,6 +1,6 @@
-package oolong.client.utils
+package oolong.client.util
 
-import oolong.client.utils.DateTimeUtils.relativeTime
+import oolong.client.util.DateTimeUtils.relativeTime
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Calendar

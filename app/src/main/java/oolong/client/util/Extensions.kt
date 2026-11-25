@@ -1,4 +1,4 @@
-package oolong.client
+package oolong.client.util
 
 import android.animation.LayoutTransition
 import android.app.Activity
@@ -19,8 +19,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import oolong.client.App
 import oolong.client.ui.widgets.compose.AppToast
-import oolong.client.utils.MD5Util
+import oolong.client.util.MD5Util
 import java.io.File
 import kotlin.math.roundToInt
 

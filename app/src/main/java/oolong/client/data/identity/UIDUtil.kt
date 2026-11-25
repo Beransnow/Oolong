@@ -7,8 +7,8 @@ import androidx.core.content.edit
 import oolong.client.App
 import oolong.client.App.Companion.INSTANCE
 import oolong.client.data.settings.SharedPreferencesUtil
-import oolong.client.toMD5
-import oolong.client.utils.Base32
+import oolong.client.util.Base32
+import oolong.client.util.toMD5
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID

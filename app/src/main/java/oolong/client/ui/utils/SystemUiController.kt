@@ -14,7 +14,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import oolong.client.findActivity
+import oolong.client.util.findActivity
 
 /**
  * Controls system bar colors, icon appearance and visibility of the window hosting the

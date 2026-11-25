@@ -121,6 +121,7 @@ import oolong.client.ui.common.theme.compose.pressScale
 import oolong.client.ui.common.theme.compose.scrim
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import oolong.client.ui.navigation.MaxReadingWidth
 import oolong.client.ui.widgets.compose.BackNavigationIcon
 import oolong.client.ui.widgets.compose.GlassScaffold
@@ -130,7 +131,6 @@ import oolong.client.ui.widgets.compose.SecondaryButton
 import oolong.client.ui.widgets.compose.SegmentedControl
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.floatingGlass
-import oolong.client.utils.ThemeUtil
 import java.util.Calendar
 
 /** How the reader sets its text, chosen by the reader. */

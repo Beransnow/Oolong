@@ -86,7 +86,7 @@ import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.widgets.compose.MediaGlassPill
 import oolong.client.ui.widgets.compose.Refocus
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.TiebaUtil
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min

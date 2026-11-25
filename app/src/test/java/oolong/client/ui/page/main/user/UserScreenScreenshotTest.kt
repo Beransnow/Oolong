@@ -8,7 +8,7 @@ import oolong.client.model.HistoryEntry
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.testing.captureScreenshotPaused
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test

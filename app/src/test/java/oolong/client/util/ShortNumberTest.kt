@@ -1,7 +1,7 @@
-package oolong.client.utils
+package oolong.client.util
 
-import oolong.client.utils.StringUtil.getShortNumString
-import oolong.client.utils.StringUtil.getShortNumeralString
+import oolong.client.util.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumeralString
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner

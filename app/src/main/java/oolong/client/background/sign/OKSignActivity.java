@@ -4,7 +4,7 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import oolong.client.utils.TiebaUtil;
+import oolong.client.util.TiebaUtil;
 
 public class OKSignActivity extends AppCompatActivity {
     @Override

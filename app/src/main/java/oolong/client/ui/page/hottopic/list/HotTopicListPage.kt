@@ -45,7 +45,7 @@ import oolong.client.ui.widgets.compose.RankNumber
 import oolong.client.ui.widgets.compose.states.DefaultEmptyScreen
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumString
 
 @Composable
 fun HotTopicListPage(

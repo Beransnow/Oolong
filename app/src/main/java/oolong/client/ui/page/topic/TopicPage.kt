@@ -106,7 +106,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.VerticalDivider
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumString
 
 /** Where a topic's next page starts: its number, and the last thread of the one before. */
 private data class TopicCursor(val page: Int, val lastThreadId: Long)

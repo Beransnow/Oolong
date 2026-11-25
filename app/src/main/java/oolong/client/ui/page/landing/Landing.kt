@@ -85,8 +85,6 @@ import oolong.client.SPLASH_ICON_MILLIS
 import oolong.client.data.legacy.LegacyImport
 import oolong.client.data.settings.appPreferences
 import oolong.client.diagnostics.UsageStats
-import oolong.client.findActivity
-import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.TextStyles
@@ -102,6 +100,8 @@ import oolong.client.ui.widgets.compose.DialogState
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.condense
 import oolong.client.ui.widgets.compose.rememberDialogState
+import oolong.client.util.findActivity
+import oolong.client.util.toastShort
 import kotlin.math.PI
 import kotlin.math.roundToInt
 import kotlin.math.sin

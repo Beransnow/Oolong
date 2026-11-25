@@ -86,7 +86,7 @@ import oolong.client.ui.widgets.compose.placeholder.PlaceholderHighlight
 import oolong.client.ui.widgets.compose.placeholder.fade
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.rememberScrollProgress
-import oolong.client.utils.StringUtil.getShortNumString
+import oolong.client.util.StringUtil.getShortNumString
 import kotlin.math.max
 
 /** The keys the header's avatar and name, and the bar's copies that dock from them, match by. */

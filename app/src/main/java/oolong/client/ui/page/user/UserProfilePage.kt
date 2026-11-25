@@ -80,9 +80,9 @@ import oolong.client.ui.widgets.compose.rememberSharedHeaderState
 import oolong.client.ui.widgets.compose.sharedHeaderPinned
 import oolong.client.ui.widgets.compose.states.DefaultLoadingScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil
-import oolong.client.utils.StringUtil.getShortNumString
-import oolong.client.utils.TiebaUtil
+import oolong.client.util.StringUtil
+import oolong.client.util.StringUtil.getShortNumString
+import oolong.client.util.TiebaUtil
 
 @Composable
 fun UserProfilePage(

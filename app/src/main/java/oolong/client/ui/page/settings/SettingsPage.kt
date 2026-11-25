@@ -75,7 +75,7 @@ import oolong.client.ui.widgets.compose.GlassTopBarTitle
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.Sizes
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 /** An entry's icon on the settings hub: a line icon in the text's colour, as on the "me" tab. */
 @Composable

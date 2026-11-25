@@ -9,9 +9,9 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.data.legacy.LegacyImport
-import oolong.client.findActivity
-import oolong.client.toastShort
 import oolong.client.ui.common.prefs.widgets.TextPref
+import oolong.client.util.findActivity
+import oolong.client.util.toastShort
 
 /**
  * Brings the old app's data over: asks its exporter, which asks the person, then starts the app

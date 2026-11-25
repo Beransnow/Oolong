@@ -56,7 +56,7 @@ import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
 import oolong.client.ui.widgets.compose.trimToCharacters
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 /**
  * The body of a post, block by block.

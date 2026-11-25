@@ -22,8 +22,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.data.account.AccountRepository
-import oolong.client.pendingIntentFlagImmutable
 import oolong.client.ui.common.theme.compose.currentColors
+import oolong.client.util.pendingIntentFlagImmutable
 import oolong.core.network.message.MessageRemoteDataSource
 import javax.inject.Inject
 

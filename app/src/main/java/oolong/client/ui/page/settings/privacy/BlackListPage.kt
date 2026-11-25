@@ -56,7 +56,7 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 import javax.inject.Inject
 
 /** The signed-in user's blacklist, a page at a time. */

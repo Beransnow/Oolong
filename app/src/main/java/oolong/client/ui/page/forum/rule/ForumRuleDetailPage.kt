@@ -42,7 +42,7 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.UserHeader
 import oolong.client.ui.widgets.compose.states.LoadStateScreen
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 @Composable
 fun ForumRuleDetailPage(

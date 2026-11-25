@@ -31,7 +31,7 @@ import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.ContextMenuItem
-import oolong.client.utils.StringUtil
+import oolong.client.util.StringUtil
 
 /**
  * Which main tab is chosen and how many notifications its badge counts. Held beside the pages,

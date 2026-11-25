@@ -27,7 +27,7 @@ import oolong.client.ui.common.theme.compose.ExtendedColors
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalExtendedColors
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
-import oolong.client.utils.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil
 
 /**
  * Glass on black takes its tone from the page and would be black itself: over pictures and video

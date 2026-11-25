@@ -1,6 +1,6 @@
 package oolong.client.data.identity
 
-import oolong.client.utils.Base32
+import oolong.client.util.Base32
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

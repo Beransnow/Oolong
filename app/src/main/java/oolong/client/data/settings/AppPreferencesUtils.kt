@@ -16,16 +16,16 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import oolong.client.data.settings.AppIconUtil
+import oolong.client.data.settings.LauncherIcons
 import oolong.client.data.settings.dataStore
 import oolong.client.data.settings.getBoolean
 import oolong.client.data.settings.getFloat
 import oolong.client.data.settings.getInt
 import oolong.client.data.settings.getLong
 import oolong.client.data.settings.getString
-import oolong.client.utils.AppIconUtil
-import oolong.client.utils.LauncherIcons
-import oolong.client.utils.ThemeUtil
-import oolong.client.utils.ThemeUtil.TRANSLUCENT_THEME_LIGHT
+import oolong.client.ui.designsystem.theme.ThemeUtil
+import oolong.client.ui.designsystem.theme.ThemeUtil.TRANSLUCENT_THEME_LIGHT
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
