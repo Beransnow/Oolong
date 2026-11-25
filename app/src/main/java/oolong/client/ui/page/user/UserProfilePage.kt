@@ -126,6 +126,7 @@ fun UserProfilePage(
                     showActionBtn = state.loggedIn,
                     disableButton = state.following,
                     isSelf = state.isSelf,
+                    openAt = key.tab,
                     onBack = { navigator.navigateUp() },
                     onFollow = viewModel::toggleFollow,
                     onUnfollow = viewModel::toggleFollow,
@@ -174,6 +175,8 @@ private fun UserProfileContent(
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
+    /** The list shown first. */
+    openAt: UserTab,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
@@ -192,6 +195,7 @@ private fun UserProfileContent(
                 showActionBtn = showActionBtn,
                 disableButton = disableButton,
                 isSelf = isSelf,
+                openAt = openAt,
                 onBack = onBack,
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
@@ -207,6 +211,7 @@ private fun UserProfileContent(
                 showActionBtn = showActionBtn,
                 disableButton = disableButton,
                 isSelf = isSelf,
+                openAt = openAt,
                 onBack = onBack,
                 onFollow = onFollow,
                 onUnfollow = onUnfollow,
@@ -325,6 +330,8 @@ private fun UserProfileContentNormal(
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
+    /** The list shown first. */
+    openAt: UserTab,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
@@ -337,7 +344,7 @@ private fun UserProfileContentNormal(
 ) {
     val context = LocalContext.current
     val pages = rememberProfilePages(isSelf, listContent)
-    val pagerState = rememberPagerState { pages.size }
+    val pagerState = rememberPagerState(initialPage = pages.indexOfFirst { it.tab == openAt }.coerceAtLeast(0)) { pages.size }
     val pageScroll = rememberPageScrollState()
     val header = rememberSharedHeaderState(pageScroll)
     // Once the header has gone, the bar's row follows the scroll away and back; the tabs stay
@@ -424,6 +431,8 @@ private fun UserProfileContentExpanded(
     showActionBtn: Boolean,
     disableButton: Boolean,
     isSelf: Boolean,
+    /** The list shown first. */
+    openAt: UserTab,
     onBack: () -> Unit,
     onFollow: () -> Unit,
     onUnfollow: () -> Unit,
@@ -458,7 +467,7 @@ private fun UserProfileContentExpanded(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     val pages = rememberProfilePages(isSelf, listContent)
-                    val pagerState = rememberPagerState { pages.size }
+                    val pagerState = rememberPagerState(initialPage = pages.indexOfFirst { it.tab == openAt }.coerceAtLeast(0)) { pages.size }
 
                     UserProfileHeader(
                         user = user,

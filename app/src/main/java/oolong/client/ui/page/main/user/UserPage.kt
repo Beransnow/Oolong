@@ -79,6 +79,7 @@ import oolong.client.ui.navigation.UserProfileKey
 import oolong.client.ui.navigation.WebViewKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.settings.custom.currentThemeName
+import oolong.client.ui.page.user.UserTab
 import oolong.client.ui.widgets.compose.ActionItem
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.Button
@@ -125,6 +126,7 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
 private fun StatCard(
     account: Account,
     onOpenFollows: (fans: Boolean) -> Unit,
+    onOpenPosts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val postNum by animateIntAsState(targetValue = account.postNum?.toIntOrNull() ?: 0, animationSpec = Motion.settle())
@@ -146,7 +148,8 @@ private fun StatCard(
         )
         StatCardItem(
             statNum = postNum,
-            statText = stringResource(id = R.string.title_stat_posts_num)
+            statText = stringResource(id = R.string.title_stat_posts_num),
+            onClick = onOpenPosts,
         )
     }
 }
@@ -512,6 +515,7 @@ fun UserScreen(
                                 onOpenFollows = { fans ->
                                     navigator.navigate(UserFollowsKey(shown.uid.toLong(), fans, shown.nameShow ?: shown.name))
                                 },
+                                onOpenPosts = { navigator.navigate(UserProfileKey(shown.uid.toLong(), UserTab.Posts)) },
                                 modifier = StatsPadding,
                             )
                         } else if (loading) {

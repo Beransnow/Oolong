@@ -2,6 +2,7 @@ package oolong.client.ui.navigation
 
 import kotlinx.serialization.Serializable
 import oolong.client.ui.page.thread.ThreadPageExtra
+import oolong.client.ui.page.user.UserTab
 
 /** A page the app can show, with what it needs to open. Kept small, as it is saved with the back stack. */
 @Serializable
@@ -74,8 +75,9 @@ data class ForumRuleDetailKey(val forumId: Long) : Key
 @Serializable
 data class ForumSearchPostKey(val forumName: String, val forumId: Long) : Key
 
+/** User [uid]'s profile, open at [tab]. */
 @Serializable
-data class UserProfileKey(val uid: Long) : Key
+data class UserProfileKey(val uid: Long, val tab: UserTab = UserTab.Threads) : Key
 
 /** Whom user [uid] follows, or with [fans] who follows them; [name] heads the page. */
 @Serializable
