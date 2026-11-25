@@ -184,7 +184,7 @@ private val Key.readsAtWidth: Boolean
 
 private fun Key.metadata(): Map<String, Any> = when (presentation) {
     Presentation.Sheet -> BottomSheetSceneStrategy.bottomSheet()
-    Presentation.Page -> paneRole(checkNotNull(paneRole))
+    Presentation.Page -> paneRole(checkNotNull(paneRole)) + if (this == LoginKey) FormSheetSceneStrategy.formSheet() else emptyMap()
 }
 
 /**
@@ -205,6 +205,8 @@ fun AppNavDisplay(
         windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact
     // Beside the pages on windows wider than a phone; a page over the whole window goes over it
     val showRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
+    // Room for a phone-sized sheet with the pages showing round it
+    val roomy = showRail && windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact
 
     val tabs = rememberSaveable(saver = MainTabs.Saver) { MainTabs() }
     val notificationCountFlow = LocalNotificationCountFlow.current
@@ -214,8 +216,8 @@ fun AppNavDisplay(
 
     val listDetailState = rememberListDetailState()
     val onBack: () -> Unit = remember(backStack) { { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) } }
-    val strategies = remember(twoPane, sceneStrategies, listDetailState, onBack) {
-        listOf(DialogSceneStrategy<NavKey>(onBack), BottomSheetSceneStrategy<NavKey>(onBack)) +
+    val strategies = remember(twoPane, roomy, sceneStrategies, listDetailState, onBack) {
+        listOf(DialogSceneStrategy<NavKey>(onBack), BottomSheetSceneStrategy<NavKey>(onBack), FormSheetSceneStrategy<NavKey>(roomy, onBack)) +
             sceneStrategies +
             listOfNotNull(if (twoPane) listDetailState.strategy else null) +
             FramedSinglePaneSceneStrategy()
@@ -262,6 +264,8 @@ fun AppNavDisplay(
                     // While such a page shows, coming or going, the pages may draw over the rail;
                     // else they end at it, so a page sliding off beside it doesn't pass over it
                     var coverShown by remember { mutableStateOf(false) }
+                    // A form sheet dims the rail with the pages, and stands in the middle of the window
+                    var sheetShown by remember { mutableStateOf(false) }
                     val chrome = remember(railWidth, showRail) {
                         LeadingChrome(if (showRail) railWidth else 0.dp) { it.paneRole == PaneRole.Full }
                     }
@@ -278,7 +282,7 @@ fun AppNavDisplay(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .drawWithContent {
-                                    val left = if (coverShown || !showRail) 0f else railWidth.toPx()
+                                    val left = if (coverShown || sheetShown || !showRail) 0f else railWidth.toPx()
                                     clipRect(left = left, top = 0f, right = size.width, bottom = size.height) { this@drawWithContent.drawContent() }
                                 },
                         ) {
@@ -317,7 +321,10 @@ fun AppNavDisplay(
                                     scenes = scenes,
                                     peek = pagePeek,
                                     modifier = Modifier.fillMaxSize(),
-                                    onShown = { shown -> coverShown = shown.any { chrome.covers(it) } },
+                                    onShown = { shown ->
+                                        coverShown = shown.any { chrome.covers(it) }
+                                        sheetShown = shown.any { isFormSheet(it) }
+                                    },
                                 ) { from, to, peek ->
                                     PageTransitions.between(from, to, overlap, relayout, peek, pageOrigins, chrome.takeIf { showRail })
                                 }

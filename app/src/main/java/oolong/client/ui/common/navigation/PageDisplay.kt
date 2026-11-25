@@ -196,9 +196,10 @@ fun <T : Any> PageDisplay(
         }
     }
 
-    // The pages on screen, coming and going, for what is laid out around them
+    // The pages on screen, coming and going, and the overlays above till they are gone, for what
+    // is laid out around them
     val pages = listOfNotNull(known[transition.targetState], known[transition.currentState])
-    SideEffect { onShown(pages) }
+    SideEffect { onShown(overlays.toList() + pages) }
 
     var contentScope: AnimatedContentScope? = null
     transition.AnimatedContent(
