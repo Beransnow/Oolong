@@ -257,6 +257,7 @@ private fun LazyListScope.feedItems(
                                 Column {
                                     FeedCard(
                                         thread = item,
+                                        showReplyTime = true,
                                         onClick = events.onOpen,
                                         onClickReply = events.onOpenReplies,
                                         onAgree = events.onAgree,

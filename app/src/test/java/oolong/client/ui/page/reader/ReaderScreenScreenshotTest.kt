@@ -62,7 +62,7 @@ class ReaderScreenScreenshotTest {
             title = "雨夜事务所",
             author = author,
             createTime = start,
-            listTime = start,
+            lastReplyTime = start,
             abstract = "",
             firstPostId = 1,
             firstPost = persistentListOf(),

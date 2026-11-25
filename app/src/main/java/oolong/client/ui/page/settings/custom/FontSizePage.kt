@@ -293,7 +293,6 @@ private fun FontSizePreview(scale: Float) {
             title = title,
             author = me,
             createTime = now,
-            listTime = now,
             abstract = body,
             firstPostId = 1,
             replyCount = 1,

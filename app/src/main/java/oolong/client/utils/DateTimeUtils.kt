@@ -57,6 +57,22 @@ object DateTimeUtils {
     fun getRelativeTimeString(context: Context, timestampString: String, now: Long = System.currentTimeMillis()): String =
         format(context, relativeTime(fixTimestamp(timestampString), now))
 
+    /** [timestamp], in seconds or milliseconds, as when a thread last had a reply, seen from [now]. */
+    fun getRepliedTimeString(context: Context, timestamp: Long, now: Long = System.currentTimeMillis()): String {
+        val relative = relativeTime(fixTimestamp(timestamp), now)
+        val locale = context.resources.configuration.locales[0] ?: Locale.getDefault()
+        val time = format(context, relative).let { time ->
+            // Words go on in lower case, where a language has it; dates keep their capitals
+            when (relative) {
+                RelativeTime.JustNow, is RelativeTime.Today, is RelativeTime.Yesterday -> time.replaceFirstChar { it.lowercase(locale) }
+                else -> time
+            }
+        }
+        // A number and the word after it keep a space between them
+        val format = if (time.last().isDigit()) R.string.replied_time_after_number else R.string.replied_time
+        return context.getString(format, time)
+    }
+
     fun format(context: Context, relative: RelativeTime): String {
         val res = context.resources
         val locale = res.configuration.locales[0] ?: Locale.getDefault()

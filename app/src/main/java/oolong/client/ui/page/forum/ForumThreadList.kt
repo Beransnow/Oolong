@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.model.ForumSort
 import oolong.client.model.ForumTab
 import oolong.client.model.ThreadSummary
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -75,6 +76,8 @@ private enum class ItemType { Top, PlainText, SingleMedia, MultiMedia, Video }
 internal fun ForumThreadList(
     tab: ForumTab,
     list: PagerState<ForumThreadItem>,
+    /** The order of the latest threads, which their times follow. */
+    sortType: Int,
     onEvent: (ForumEvent) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
@@ -93,6 +96,12 @@ internal fun ForumThreadList(
     val foldable = tops.size >= 2
     val folded = foldable && topsFolded
     val peeker = rememberThreadPeeker()
+    // Threads ordered by their last reply tell when that was; any other list, when each was posted
+    val showReplyTime = when (tab) {
+        ForumTab.Latest -> sortType == ForumSort.REPLY_TIME
+        ForumTab.Good -> true
+        else -> false
+    }
 
     @Composable
     fun Item(item: ForumThreadItem, content: @Composable (ThreadSummary) -> Unit) {
@@ -183,6 +192,7 @@ internal fun ForumThreadList(
                             onClickShared = { onEvent(ForumEvent.OpenOriginThread(it)) },
                             onClickUser = { onEvent(ForumEvent.OpenUser(it.id)) },
                             showForum = false,
+                            showReplyTime = showReplyTime,
                             onLongPress = peeker?.let { { thread, from, at, origin -> it.peek(thread, from, at, origin) } },
                         )
                     }

@@ -27,7 +27,7 @@ fun WebThread.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary {
         author = author?.let { User(id = it.id, name = it.name, nameShow = it.nameShow, portrait = it.portrait) }
             ?: User(id = authorId, name = "", nameShow = "", portrait = ""),
         createTime = createTime,
-        listTime = lastTime.takeIf { it != 0L } ?: createTime,
+        lastReplyTime = lastTime,
         abstract = abstract.abstractText(emoticons),
         firstPostId = firstPostId,
         firstPost = firstPost.ifEmpty { richAbstract }.map(WebContent::toPbContent).toPostContent(emoticons),

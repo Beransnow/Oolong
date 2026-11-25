@@ -19,8 +19,8 @@ data class ThreadSummary(
     val author: User,
     /** When the thread was posted, in seconds since the epoch. */
     val createTime: Long,
-    /** The time the list shows: the last reply's in feeds and forums, the post's own elsewhere. */
-    val listTime: Long,
+    /** When the thread last had a reply, in seconds since the epoch; 0 where the list leaves it out. */
+    val lastReplyTime: Long = 0,
     /** What the list shows of the thread, cut short by the server. */
     val abstract: String,
     val firstPostId: Long,

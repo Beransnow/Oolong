@@ -47,7 +47,7 @@ internal object ThreadPreviewData {
         title = "帖子标题",
         author = lz,
         createTime = 1_700_000_000,
-        listTime = 1_700_000_000,
+        lastReplyTime = 1_700_000_000,
         abstract = "",
         firstPostId = 1,
         firstPost = text("列表里带过来的一楼摘要"),

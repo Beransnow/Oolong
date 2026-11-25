@@ -142,7 +142,7 @@ class UserRepositoryTest {
 
         val thread = first.items.single()
         assertEquals(Agree(count = 3, agreed = true), thread.agree)
-        assertEquals(100L, thread.listTime)
+        assertEquals(100L, thread.createTime)
         assertEquals("v", thread.video?.url)
         assertTrue(thread.images.isEmpty())
         assertEquals(2, first.next)

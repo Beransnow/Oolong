@@ -82,6 +82,7 @@ import oolong.client.ui.common.navigation.pageOrigin
 import oolong.client.ui.common.navigation.rememberPageHero
 import oolong.client.ui.common.navigation.rememberPageOrigin
 import oolong.client.ui.common.relativeTime
+import oolong.client.ui.common.repliedTime
 import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -131,6 +132,8 @@ fun UserHeader(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     timeProvider: (() -> Int)? = null,
+    /** Whether the time is when the thread last had a reply, which says so, rather than when it was posted. */
+    replied: Boolean = false,
     content: @Composable RowScope.() -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -166,7 +169,7 @@ fun UserHeader(
             onClick()
         },
         desc = time?.let { time ->
-            @Composable { MetaText(text = relativeTime(time.toLong())) }
+            @Composable { MetaText(text = if (replied) repliedTime(time.toLong()) else relativeTime(time.toLong())) }
         },
         content = content,
         modifier = modifier
@@ -724,6 +727,11 @@ fun FeedCard(
     onClickFeedReply: (ThreadSummary) -> Unit = onClick,
     /** Whether to show the thread's forum, which a forum's own list leaves out. */
     showForum: Boolean = true,
+    /**
+     * Whether to tell when the thread last had a reply, as lists ordered by replies do, rather than
+     * when it was posted. A thread with no reply after it was posted tells the latter either way.
+     */
+    showReplyTime: Boolean = false,
     /** Long-pressing the card, at its bounds and the press in the window, with the card as an origin. */
     onLongPress: ((ThreadSummary, from: Rect, at: Offset, origin: PageOrigin) -> Unit)? = null,
     dislikeAction: @Composable () -> Unit = {},
@@ -758,6 +766,7 @@ fun FeedCard(
     val context = LocalContext.current
     val author = thread.author
     val reply = thread.reply
+    val replied = showReplyTime && thread.lastReplyTime > thread.createTime
     // The thread page opens out of the card, and closes back into it
     val origin = rememberPageOrigin()
     Card(
@@ -769,7 +778,8 @@ fun FeedCard(
                     nameProvider = { author.name },
                     nameShowProvider = { author.nameShow },
                     portraitProvider = { author.portrait },
-                    timeProvider = { thread.listTime.toInt() },
+                    timeProvider = { (if (replied) thread.lastReplyTime else thread.createTime).toInt() },
+                    replied = replied,
                     onClick = { onClickUser(author) },
                 ) { dislikeAction() }
             }
@@ -1059,7 +1069,7 @@ fun FeedCardPreview() {
             title = "预览",
             author = User(id = 1, name = "", nameShow = "", portrait = ""),
             createTime = System.currentTimeMillis() / 1000,
-            listTime = System.currentTimeMillis() / 1000,
+            lastReplyTime = System.currentTimeMillis() / 1000,
             abstract = "",
             firstPostId = 1,
         ),

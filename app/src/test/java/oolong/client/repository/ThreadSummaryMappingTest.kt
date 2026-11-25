@@ -39,7 +39,7 @@ class ThreadSummaryMappingTest {
         assertEquals(1, summary.id)
         assertEquals(ForumSummary(5, "数码", "a.png"), summary.forum)
         assertEquals("show", summary.author.displayName)
-        assertEquals(100, summary.listTime)
+        assertEquals(100, summary.lastReplyTime)
         assertEquals(50, summary.createTime)
         assertEquals(3, summary.replyCount)
         assertEquals(4, summary.shareCount)

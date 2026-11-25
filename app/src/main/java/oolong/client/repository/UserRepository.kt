@@ -55,7 +55,7 @@ class UserRepository @Inject constructor(
     suspend fun likedThreads(page: Int): Page<Int, ThreadSummary> = withContext(io) {
         val data = remote.likes(replies = false, page = page)
         // Dated by when they were posted: when one was last replied to says nothing about the like
-        val threads = data.threads.map { thread -> thread.toThreadSummary(emoticons).let { it.copy(listTime = it.createTime) } }
+        val threads = data.threads.map { thread -> thread.toThreadSummary(emoticons) }
         Page(threads, next = (page + 1).takeIf { data.hasMore == 1 })
     }
 

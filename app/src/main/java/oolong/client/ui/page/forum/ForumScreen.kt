@@ -238,10 +238,14 @@ private fun ForumContent(
                 ) {
                     // Another order or class loading dims the list it will replace
                     val dim by animateFloatAsState(if (state.switching == tab) SwitchingAlpha else 1f, Motion.settle(), label = "forumSwitching")
+                    // The dimmed list keeps the times of the order it came in until the other one replaces it
+                    val listedSort = remember { intArrayOf(state.sortType) }
+                    if (state.switching != tab) listedSort[0] = state.sortType
                     ForumThreadList(
                         modifier = Modifier.graphicsLayer { alpha = dim },
                         tab = tab,
                         list = list,
+                        sortType = listedSort[0],
                         onEvent = onEvent,
                         listState = listStates.getValue(tab),
                         contentPadding = listPadding,

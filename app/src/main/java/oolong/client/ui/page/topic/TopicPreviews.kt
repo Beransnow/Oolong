@@ -24,7 +24,7 @@ internal object TopicPreviewData {
         title = title,
         author = User(id = id, name = "user$id", nameShow = "用户 $id", portrait = ""),
         createTime = 1_700_000_000,
-        listTime = 1_700_000_000,
+        lastReplyTime = 1_700_000_000,
         abstract = abstract,
         firstPostId = id,
         replyCount = id.toInt() * 37,

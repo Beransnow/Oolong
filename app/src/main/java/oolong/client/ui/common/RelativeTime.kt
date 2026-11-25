@@ -40,3 +40,11 @@ fun relativeTime(timestamp: Long): String {
     val now = LocalNow.current?.value ?: System.currentTimeMillis()
     return DateTimeUtils.getRelativeTimeString(context, timestamp, now)
 }
+
+/** [timestamp], in seconds or milliseconds, as when a thread last had a reply, kept up to date. */
+@Composable
+fun repliedTime(timestamp: Long): String {
+    val context = LocalContext.current
+    val now = LocalNow.current?.value ?: System.currentTimeMillis()
+    return DateTimeUtils.getRepliedTimeString(context, timestamp, now)
+}

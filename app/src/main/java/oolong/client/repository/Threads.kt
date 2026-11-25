@@ -33,7 +33,7 @@ private fun ThreadSummary.filledFrom(older: ThreadSummary) = copy(
     title = title.ifEmpty { older.title },
     author = author.takeIf { it.portrait.isNotEmpty() } ?: older.author,
     createTime = createTime.takeIf { it != 0L } ?: older.createTime,
-    listTime = listTime.takeIf { it != 0L } ?: older.listTime,
+    lastReplyTime = lastReplyTime.takeIf { it != 0L } ?: older.lastReplyTime,
     abstract = abstract.ifEmpty { older.abstract },
     firstPostId = firstPostId.takeIf { it != 0L } ?: older.firstPostId,
     firstPost = firstPost.ifEmpty { older.firstPost },

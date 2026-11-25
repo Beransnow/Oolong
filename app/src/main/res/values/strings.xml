@@ -381,6 +381,8 @@
     <string name="usage_webview_location_permission">用于向当前网页提供你的位置信息。</string>
     <string name="relative_date_today">今天 %1$s</string>
     <string name="relative_date_yesterday">昨天 %1$s</string>
+    <string name="replied_time">%1$s回复</string>
+    <string name="replied_time_after_number">%1$s 回复</string>
     <string name="title_activity_edit_profile">编辑资料</string>
     <string name="button_save_profile">保存修改</string>
     <string name="title_username">用户名</string>

@@ -271,6 +271,7 @@ fun TopicScreen(
                         Column {
                             FeedCard(
                                 thread = item.thread,
+                                showReplyTime = true,
                                 onClick = events.onOpen,
                                 onClickReply = events.onOpenReplies,
                                 onAgree = events.onAgree,
