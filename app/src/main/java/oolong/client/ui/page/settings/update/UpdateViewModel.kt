@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import oolong.client.repository.Release
@@ -34,18 +33,28 @@ data class UpdateState(
 class UpdateViewModel @Inject constructor(
     private val repository: UpdateRepository,
 ) : ViewModel() {
-    private val installedNotes = flow { emit(repository.installedNotes()) }
+    private val installedNotes = repository.installedNotes
 
+    // Starts from what is known at once, so the page opens as it is instead of filling in after
     val state: StateFlow<UpdateState> = combine(
         repository.check,
         repository.download,
         repository.autoCheck,
         repository.channel,
-        combine(repository.installing, installedNotes, ::Pair),
-    ) { check, download, autoCheck, channel, (installing, notes) ->
-        UpdateState(check, download, autoCheck, channel, installing, notes)
+        repository.installing,
+    ) { check, download, autoCheck, channel, installing ->
+        UpdateState(check, download, autoCheck, channel, installing, installedNotes)
     }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpdateState())
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            UpdateState(
+                check = repository.check.value,
+                download = repository.download.value,
+                installing = repository.installing.value,
+                installedNotes = installedNotes,
+            ),
+        )
 
     init {
         // Opening the page checks, as a system update page does, unless a check has an answer

@@ -153,8 +153,12 @@ class UpdateRepository @Inject constructor(
 
     private var checkJob: Job? = null
 
-    /** What changed in the version installed, from the release notes it was built with; empty when none were written. */
-    suspend fun installedNotes(): Map<String, Map<String, List<String>>> = withContext(io) {
+    /**
+     * What changed in the version installed, from the release notes it was built with; empty when
+     * none were written. Read on first use, where it is asked for: a few kilobytes in the APK, so
+     * the update page can open with them already in place rather than growing them a frame later.
+     */
+    val installedNotes: Map<String, Map<String, List<String>>> by lazy {
         try {
             context.assets.open("release-notes.json").use { json.decodeFromString(it.readBytes().decodeToString()) }
         } catch (_: IOException) {
