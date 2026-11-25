@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
@@ -155,6 +154,7 @@ fun GlassScaffold(
     // Not an alignment line: one read from the group stopped what is in it from moving while its
     // size stayed, as a row scrolled sideways, under the app's lookahead.
     val bottomBarHeightState = remember { mutableIntStateOf(0) }
+    val topBarEdge = remember { GlassTopBarEdge() }
     val chromePadding = LocalChromePadding.current
     // Messages stand over the bottom chrome of the pages on screen
     val toastFloors = LocalToastFloors.current
@@ -194,10 +194,11 @@ fun GlassScaffold(
                 // Composed afresh when the bars' style changes: an open page's bar, composed apart
                 // from the page, otherwise kept its floating buttons and large title
                 val topBarPlaceables = subcompose(GlassScaffoldSlot.TopBar to chromeStyle) {
-                    page { chrome(topBar) }
+                    CompositionLocalProvider(LocalGlassTopBarEdge provides topBarEdge) { page { chrome(topBar) } }
                 }.map { it.measure(loose) }
-                val topBarHeight = topBarPlaceables.maxOfOrNull {
-                    it[GlassTopBarEdge].takeIf { edge -> edge != AlignmentLine.Unspecified } ?: it.height
+                // Read after the bar is measured, and again when its edge moves
+                val topBarHeight = topBarPlaceables.maxOfOrNull { it.height }?.let { full ->
+                    topBarEdge.height.takeIf { it >= 0 }?.coerceAtMost(full) ?: full
                 } ?: 0
 
                 // The bottom bar and the overlay are one group, measured together: the overlay can

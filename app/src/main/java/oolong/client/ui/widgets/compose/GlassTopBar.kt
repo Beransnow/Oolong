@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -81,10 +80,20 @@ private val TopBarCapsule = SmoothCornerShape.Capsule
 private val BareTitlePadding = 4.dp
 
 /**
- * The bottom edge of a top bar's rows, without its pinned rows. [GlassScaffold] pads its content
- * down to this line, so pinned rows float over the content and can come and go without moving it.
+ * The bottom edge of a top bar's rows, without its pinned rows, as the bar last measured it; -1
+ * while no bar reports one. [GlassScaffold] pads its content down to it, so pinned rows float over
+ * the content and can come and go without moving it.
+ *
+ * Not an alignment line: one read by the scaffold stopped what is in the bar from moving while
+ * its size stayed, as a row of tabs scrolled sideways, under the app's lookahead.
  */
-val GlassTopBarEdge = HorizontalAlignmentLine { a, b -> maxOf(a, b) }
+@Stable
+class GlassTopBarEdge {
+    var height by mutableIntStateOf(-1)
+        internal set
+}
+
+internal val LocalGlassTopBarEdge = staticCompositionLocalOf<GlassTopBarEdge?> { null }
 
 /**
  * A top bar that floats over the content of a [GlassScaffold], from the top edge of the screen.
@@ -149,6 +158,7 @@ fun GlassTopBar(
     val barButtons = remember(scrollEdge, revealPx, glassAlways) {
         BarButtons { if (glassAlways) 1f else scrollEdge?.blended { (it / revealPx).coerceIn(0f, 1f) } ?: 1f }
     }
+    val edge = LocalGlassTopBarEdge.current
     Layout(
         content = {
             Box(
@@ -280,7 +290,8 @@ fun GlassTopBar(
         val uncovered = minOf(offset, pinned?.height ?: 0)
         val background = measurables.first { it.layoutId == TopBarLayer.Background }
             .measure(Constraints.fixed(foreground.width, height - hidden - uncovered + extend))
-        layout(foreground.width, height, mapOf(GlassTopBarEdge to foreground.height)) {
+        edge?.height = foreground.height
+        layout(foreground.width, height) {
             background.place(0, 0)
             // Hidden all the way, it is not placed at all: faded out, its buttons' glass would still
             // sample the page on every frame
