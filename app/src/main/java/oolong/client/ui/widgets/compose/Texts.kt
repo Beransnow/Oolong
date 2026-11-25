@@ -553,7 +553,9 @@ fun HighlightText(
             buildAnnotatedString {
                 append(text)
                 highlightKeywords.forEach { keyword ->
-                    val regexPattern = keyword.toPattern(Pattern.CASE_INSENSITIVE)
+                    // A keyword is text to find, not a pattern: "c++" would not even compile as one
+                    if (keyword.isEmpty()) return@forEach
+                    val regexPattern = Pattern.compile(keyword, Pattern.LITERAL or Pattern.CASE_INSENSITIVE)
                     val matcher = regexPattern.matcher(text.text)
                     while (matcher.find()) {
                         val start = matcher.start()
