@@ -228,20 +228,25 @@ private fun LazyListScope.feedItems(
         val threadId = item.id
         val isHidden = threadId in disliked
         val showDivider = !isHidden && index < items.size - 1
+        // The tip's words, kept for it to fold away with once it can no longer be taken back
+        val tip = remember { arrayOfNulls<String>(1) }
+        if (threadId in undoable) tip[0] = undoable[threadId]
         Container {
             AnimatedVisibility(
                 visible = !isHidden,
                 enter = EnterTransition.None,
-                exit = shrinkVertically(Motion.dismiss()) + fadeOut(Motion.fadeOut())
+                // The tip fades, then its gap closes from below, the threads after it moving up
+                exit = fadeOut(Motion.fadeOut()) + shrinkVertically(Motion.dismiss(), shrinkTowards = Alignment.Top),
             ) {
                 Column {
                     AnimatedContent(
-                        targetState = threadId in undoable,
+                        // Once hidden it stays the tip, not the thread, while it folds away
+                        targetState = threadId in undoable || isHidden,
                         transitionSpec = { fadeIn(Motion.fadeIn()) togetherWith fadeOut(Motion.fadeOut()) using SizeTransform(clip = true) { _, _ -> Motion.settle(IntSize.VisibilityThreshold) } },
                         label = "dislike",
                     ) { undo ->
                         if (undo) {
-                            UndoDislikeRow(text = undoable[threadId], onUndo = { onUndoDislike(threadId) })
+                            UndoDislikeRow(text = tip[0], onUndo = { onUndoDislike(threadId) })
                         } else {
                             BlockableContent(
                                 block = blocked,
