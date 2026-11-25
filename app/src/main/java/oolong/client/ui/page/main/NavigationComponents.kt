@@ -242,7 +242,9 @@ fun NavigationRail(
             val lensWidth = itemWidth * lerpFloat(1f, lensGrows, press.value)
             val lensHeight = itemHeight * lerpFloat(1f, lensGrows, press.value)
             val lensOptics = remember(itemWidth) { liquidLensOptics(itemWidth * LensScale) }
-            if (held >= 0) {
+            // Outside the rail's size, which it grows past: the rail would widen with it, and the
+            // pages beside it would be laid out narrower on every press
+            if (held >= 0) Box(modifier = Modifier.matchParentSize()) {
                 Box(
                     modifier = Modifier
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
