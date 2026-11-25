@@ -4,7 +4,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import oolong.client.BuildConfig
-import oolong.client.api.retrofit.adapter.DeferredCallAdapterFactory
 import oolong.client.api.retrofit.adapter.FlowCallAdapterFactory
 import oolong.client.api.retrofit.converter.kotlinx.serialization.asConverterFactory
 import oolong.client.api.retrofit.interceptors.RequestRecorder
@@ -25,7 +24,6 @@ object RetrofitTiebaApi {
     val SOFIRE_API: SofireApi by lazy {
         Retrofit.Builder()
             .baseUrl("https://sofire.baidu.com/")
-            .addCallAdapterFactory(DeferredCallAdapterFactory())
             .addCallAdapterFactory(FlowCallAdapterFactory.create())
             .addConverterFactory(NullOnEmptyConverterFactory())
             .addConverterFactory(json.asConverterFactory())
