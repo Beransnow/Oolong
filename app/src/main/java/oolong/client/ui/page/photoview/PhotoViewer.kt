@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil3.memory.MemoryCache
 import oolong.client.R
-import oolong.client.models.PhotoViewData
+import oolong.client.model.PhotoViewData
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.videoview.LocalVideoViewer
 import oolong.client.ui.page.videoview.VideoViewerOverlay

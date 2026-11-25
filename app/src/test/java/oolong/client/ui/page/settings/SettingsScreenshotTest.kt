@@ -1,7 +1,7 @@
 package oolong.client.ui.page.settings
 
 import androidx.compose.runtime.CompositionLocalProvider
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.ui.common.LocalAccount

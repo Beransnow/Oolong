@@ -10,7 +10,7 @@ import oolong.client.database.HistoryEntity
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.ThreadDetail
-import oolong.client.models.ThreadHistoryInfoBean
+import oolong.client.model.ThreadHistoryInfoBean
 import oolong.client.utils.StringUtil
 import javax.inject.Inject
 

@@ -11,7 +11,7 @@ import oolong.client.arch.IoDispatcher
 import oolong.client.database.HistoryDao
 import oolong.client.database.HistoryEntity
 import oolong.client.model.HistoryEntry
-import oolong.client.models.ThreadHistoryInfoBean
+import oolong.client.model.ThreadHistoryInfoBean
 import javax.inject.Inject
 
 /** The threads and forums the current account visited, most recent first; another account's when it is switched to. */

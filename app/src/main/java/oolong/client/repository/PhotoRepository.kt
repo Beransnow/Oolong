@@ -3,9 +3,9 @@ package oolong.client.repository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import oolong.client.arch.IoDispatcher
+import oolong.client.model.LoadPicPageData
 import oolong.client.model.PicturePage
 import oolong.client.model.ThreadPicture
-import oolong.client.models.LoadPicPageData
 import oolong.core.network.thread.ThreadRemoteDataSource
 import javax.inject.Inject
 

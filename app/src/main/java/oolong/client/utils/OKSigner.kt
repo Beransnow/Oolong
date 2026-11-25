@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import oolong.client.api.retrofit.exception.getErrorCode
 import oolong.client.api.retrofit.exception.getErrorMessage
-import oolong.client.models.SignDataBean
-import oolong.client.models.database.Account
+import oolong.client.model.Account
+import oolong.client.model.SignDataBean
 import oolong.client.repository.AccountRepository
 import oolong.core.network.forum.ForumGuideResponse
 import oolong.core.network.forum.LikeRemoteDataSource

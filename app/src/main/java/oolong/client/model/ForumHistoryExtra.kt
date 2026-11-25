@@ -1,4 +1,4 @@
-package oolong.client.models
+package oolong.client.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

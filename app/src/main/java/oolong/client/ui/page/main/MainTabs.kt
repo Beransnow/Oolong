@@ -19,7 +19,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.R
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.rememberPreferenceAsState
 import oolong.client.repository.AccountActions
 import oolong.client.ui.common.LocalAccount

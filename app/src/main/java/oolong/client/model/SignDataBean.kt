@@ -1,4 +1,4 @@
-package oolong.client.models
+package oolong.client.model
 
 data class SignDataBean(
     val forumName: String,

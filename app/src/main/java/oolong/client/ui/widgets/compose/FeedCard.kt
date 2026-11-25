@@ -69,12 +69,12 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.model.FeedReply
 import oolong.client.model.ForumSummary
+import oolong.client.model.PhotoViewData
 import oolong.client.model.SharedThread
 import oolong.client.model.ThreadImage
 import oolong.client.model.ThreadSummary
 import oolong.client.model.ThreadVideo
 import oolong.client.model.User
-import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.navigation.pageHero

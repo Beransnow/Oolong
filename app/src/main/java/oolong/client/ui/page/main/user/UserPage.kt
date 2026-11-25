@@ -58,8 +58,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import oolong.client.Incognito
 import oolong.client.R
+import oolong.client.model.Account
 import oolong.client.model.HistoryEntry
-import oolong.client.models.database.Account
 import oolong.client.rememberPreferenceAsMutableState
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners

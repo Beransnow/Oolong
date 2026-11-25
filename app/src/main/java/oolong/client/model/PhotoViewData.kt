@@ -1,4 +1,4 @@
-package oolong.client.models
+package oolong.client.model
 
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable

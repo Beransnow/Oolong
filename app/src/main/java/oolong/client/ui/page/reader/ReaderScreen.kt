@@ -102,8 +102,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.model.PhotoViewData
 import oolong.client.model.PostContent
-import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.Dimens

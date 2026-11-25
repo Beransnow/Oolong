@@ -36,10 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import oolong.client.R
+import oolong.client.model.PhotoViewData
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
 import oolong.client.model.TextSpan
-import oolong.client.models.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape

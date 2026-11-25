@@ -25,11 +25,11 @@ import oolong.client.arch.PagerState
 import oolong.client.arch.pager
 import oolong.client.arch.query.QueryClient
 import oolong.client.arch.query.pager
+import oolong.client.model.Block
 import oolong.client.model.LikedForum
 import oolong.client.model.UserPost
 import oolong.client.model.UserProfile
 import oolong.client.model.UserThread
-import oolong.client.models.database.Block
 import oolong.client.repository.BlackSettings
 import oolong.client.repository.BlockListRepository
 import oolong.client.repository.ThreadActions

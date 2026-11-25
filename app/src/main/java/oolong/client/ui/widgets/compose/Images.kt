@@ -58,7 +58,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.models.PhotoViewData
+import oolong.client.model.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.page.photoview.LocalPhotoFloors

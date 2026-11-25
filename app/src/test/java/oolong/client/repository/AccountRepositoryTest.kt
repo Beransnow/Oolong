@@ -8,7 +8,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import oolong.client.database.AppDatabase
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith

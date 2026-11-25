@@ -11,7 +11,7 @@ import oolong.client.arch.ApplicationScope
 import oolong.client.database.HistoryDao
 import oolong.client.database.HistoryEntity
 import oolong.client.model.ForumDetail
-import oolong.client.models.ForumHistoryExtra
+import oolong.client.model.ForumHistoryExtra
 import javax.inject.Inject
 
 /** The browsing history of forums. */

@@ -1,4 +1,4 @@
-package oolong.client.models.database
+package oolong.client.model
 
 /** The lists a block rule can be added to. */
 object Block {

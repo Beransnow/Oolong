@@ -1,7 +1,7 @@
 package oolong.client.components.web
 
 import android.webkit.CookieManager
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.utils.bdussCookie
 import oolong.client.utils.parseCookie
 import org.json.JSONObject

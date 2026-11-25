@@ -15,10 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import oolong.client.arch.Actions
+import oolong.client.model.LoadPicPageData
+import oolong.client.model.PhotoViewData
+import oolong.client.model.PicItem
 import oolong.client.model.ThreadPicture
-import oolong.client.models.LoadPicPageData
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
 import oolong.client.repository.PhotoRepository
 import javax.inject.Inject
 

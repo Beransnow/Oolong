@@ -28,7 +28,7 @@ import kotlinx.serialization.json.Json
 import oolong.client.App
 import oolong.client.R
 import oolong.client.components.images.loadBitmap
-import oolong.client.models.EmoticonCache
+import oolong.client.model.EmoticonCache
 import oolong.client.ui.widgets.compose.rememberTextSize
 import java.io.File
 import java.lang.ref.WeakReference

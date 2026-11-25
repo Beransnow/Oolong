@@ -10,7 +10,7 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import oolong.client.App
 import oolong.client.BuildConfig
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import java.io.File
 import java.util.UUID
 

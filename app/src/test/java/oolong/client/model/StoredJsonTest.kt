@@ -1,4 +1,4 @@
-package oolong.client.models
+package oolong.client.model
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.stringPreferencesKey
 import oolong.client.R
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.repository.AccountActions
 import oolong.client.toastShort
 import oolong.client.ui.common.LocalAccount

@@ -16,9 +16,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.first
-import oolong.client.models.LoadPicPageData
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
+import oolong.client.model.LoadPicPageData
+import oolong.client.model.PhotoViewData
+import oolong.client.model.PicItem
 import oolong.client.rememberPreferenceAsMutableState
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ReaderKey

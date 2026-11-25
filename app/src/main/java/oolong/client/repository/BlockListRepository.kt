@@ -10,8 +10,8 @@ import oolong.client.database.BlockDao
 import oolong.client.database.BlockEntity
 import oolong.client.database.blockConditionOf
 import oolong.client.database.toJson
+import oolong.client.model.Block
 import oolong.client.model.BlockRule
-import oolong.client.models.database.Block
 import javax.inject.Inject
 
 /** The user's block rules, as the settings list and edit them. */

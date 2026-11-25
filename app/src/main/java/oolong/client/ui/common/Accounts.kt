@@ -5,7 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.repository.AccountActions
 import oolong.client.repository.AccountRepository
 

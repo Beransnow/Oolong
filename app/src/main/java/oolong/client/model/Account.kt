@@ -1,4 +1,4 @@
-package oolong.client.models.database
+package oolong.client.model
 
 import androidx.compose.runtime.Stable
 

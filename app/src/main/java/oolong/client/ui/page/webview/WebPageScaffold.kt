@@ -98,8 +98,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
 import oolong.client.components.web.WebSessions
 import oolong.client.findActivity
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
+import oolong.client.model.PhotoViewData
+import oolong.client.model.PicItem
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion

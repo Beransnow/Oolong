@@ -39,9 +39,9 @@ import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.model.PhotoViewData
+import oolong.client.model.PicItem
 import oolong.client.model.UserProfile
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
 import oolong.client.ui.common.navigation.pageHeroTarget
 import oolong.client.ui.common.shownIpLocation
 import oolong.client.ui.common.theme.compose.ExtendedTheme

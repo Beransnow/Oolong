@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import oolong.client.BuildConfig
 import oolong.client.R
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.settings.Availability

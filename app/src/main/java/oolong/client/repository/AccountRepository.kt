@@ -18,7 +18,7 @@ import oolong.client.arch.ApplicationScope
 import oolong.client.components.web.WebSessions
 import oolong.client.database.AccountDao
 import oolong.client.database.AccountEntity
-import oolong.client.models.database.Account
+import oolong.client.model.Account
 import oolong.client.utils.InstallState
 import oolong.client.utils.SofireUtils
 import oolong.client.utils.bdussCookie

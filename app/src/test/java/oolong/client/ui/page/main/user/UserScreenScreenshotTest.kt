@@ -1,8 +1,8 @@
 package oolong.client.ui.page.main.user
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import oolong.client.model.Account
 import oolong.client.model.HistoryEntry
-import oolong.client.models.database.Account
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.testing.captureScreenshotPaused

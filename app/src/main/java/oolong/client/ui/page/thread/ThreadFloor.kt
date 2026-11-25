@@ -93,11 +93,11 @@ import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.model.PhotoViewData
+import oolong.client.model.PicItem
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
-import oolong.client.models.PhotoViewData
-import oolong.client.models.PicItem
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.PostImage
