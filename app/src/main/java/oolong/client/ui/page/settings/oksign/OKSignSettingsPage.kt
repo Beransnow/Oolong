@@ -28,9 +28,9 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.background.sign.AutoSign
 import oolong.client.data.settings.BackgroundSettings
 import oolong.client.data.settings.dataStore
-import oolong.client.services.AutoSign
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.widgets.TextPref

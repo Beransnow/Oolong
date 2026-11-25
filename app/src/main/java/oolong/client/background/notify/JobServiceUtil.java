@@ -1,4 +1,4 @@
-package oolong.client.utils;
+package oolong.client.background.notify;
 
 import android.content.Context;
 import android.content.SharedPreferences;

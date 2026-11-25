@@ -93,6 +93,9 @@ import oolong.client.arch.AppContent
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
 import oolong.client.arch.onGlobalEvent
+import oolong.client.background.notify.JobServiceUtil
+import oolong.client.background.notify.NotifyJobService
+import oolong.client.background.sign.AutoSign
 import oolong.client.components.CrashLogs
 import oolong.client.components.CrashReports
 import oolong.client.components.UsageStats
@@ -109,8 +112,6 @@ import oolong.client.data.settings.appPreferences
 import oolong.client.data.settings.rememberPreferenceAsMutableState
 import oolong.client.media.PickMediasRequest
 import oolong.client.media.registerPickMediasLauncher
-import oolong.client.services.AutoSign
-import oolong.client.services.NotifyJobService
 import oolong.client.ui.common.LocalNow
 import oolong.client.ui.common.navigation.PageMorphHost
 import oolong.client.ui.common.rememberMinuteClock
@@ -155,7 +156,6 @@ import oolong.client.ui.widgets.compose.LocalWallpaperGlass
 import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.wallpaperGlassSource
-import oolong.client.utils.JobServiceUtil
 import oolong.client.utils.PermissionUtils
 import oolong.client.utils.ThemeUtil
 import oolong.client.utils.TiebaUtil

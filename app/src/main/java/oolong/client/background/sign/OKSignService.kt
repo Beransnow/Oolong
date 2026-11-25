@@ -1,4 +1,4 @@
-package oolong.client.services
+package oolong.client.background.sign
 
 import android.Manifest
 import android.app.IntentService
@@ -22,13 +22,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import oolong.client.R
+import oolong.client.background.sign.ProgressListener
+import oolong.client.background.sign.SingleAccountSigner
 import oolong.client.data.account.AccountRepository
 import oolong.client.data.forum.FollowedForums
 import oolong.client.model.SignDataBean
 import oolong.client.pendingIntentFlagImmutable
 import oolong.client.ui.common.theme.compose.currentColors
-import oolong.client.utils.ProgressListener
-import oolong.client.utils.SingleAccountSigner
 import oolong.client.utils.extension.addFlag
 import oolong.core.network.forum.LikeRemoteDataSource
 import oolong.core.network.sign.SignRemoteDataSource

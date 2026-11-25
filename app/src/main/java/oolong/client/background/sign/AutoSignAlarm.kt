@@ -1,9 +1,9 @@
-package oolong.client.receivers
+package oolong.client.background.sign
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import oolong.client.services.AutoSign
+import oolong.client.background.sign.AutoSign
 
 /**
  * The daily alarm, or one set to catch a missed day up: starts the signing, which the alarm lets

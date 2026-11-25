@@ -9,7 +9,7 @@
         android:shortcutShortLabel="@string/shortcut_oksign">
         <intent
             android:action="oolong.client.action.OKSIGN"
-            android:targetClass="oolong.client.activities.OKSignActivity"
+            android:targetClass="oolong.client.background.sign.OKSignActivity"
             android:targetPackage="oolong.client" />
     </shortcut>
     <shortcut

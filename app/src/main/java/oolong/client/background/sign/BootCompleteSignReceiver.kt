@@ -1,9 +1,9 @@
-package oolong.client.receivers
+package oolong.client.background.sign
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import oolong.client.services.AutoSign
+import oolong.client.background.sign.AutoSign
 
 /**
  * Sets the daily alarm again whenever it may have been lost or put at the wrong time: after the

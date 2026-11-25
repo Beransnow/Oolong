@@ -72,7 +72,7 @@
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
         <service
-            android:name=".services.OKSignService"
+            android:name=".background.sign.OKSignService"
             android:exported="true"
             android:enabled="true"
             android:foregroundServiceType="specialUse"
@@ -88,7 +88,7 @@
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden" />
 
         <receiver
-            android:name=".receivers.BootCompleteSignReceiver"
+            android:name=".background.sign.BootCompleteSignReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
@@ -387,7 +387,7 @@
         </activity-alias>
 
         <activity
-            android:name=".activities.OKSignActivity"
+            android:name=".background.sign.OKSignActivity"
             android:excludeFromRecents="true"
             android:exported="true">
             <intent-filter>
@@ -407,17 +407,17 @@
         </service>
 
         <service
-            android:name=".services.NotifyJobService"
+            android:name=".background.notify.NotifyJobService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
 
         <receiver
-            android:name=".receivers.AutoSignAlarm"
+            android:name=".background.sign.AutoSignAlarm"
             android:exported="false" />
 
         <service
-            android:name=".services.AutoSignCheckJob"
+            android:name=".background.sign.AutoSignCheckJob"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 

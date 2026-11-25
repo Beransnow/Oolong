@@ -1,4 +1,4 @@
-package oolong.client.activities;
+package oolong.client.background.sign;
 
 import android.os.Bundle;
 

@@ -1,4 +1,4 @@
-package oolong.client.services
+package oolong.client.background.notify
 
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup

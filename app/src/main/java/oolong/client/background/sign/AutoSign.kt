@@ -1,4 +1,4 @@
-package oolong.client.services
+package oolong.client.background.sign
 
 import android.Manifest
 import android.app.AlarmManager
@@ -16,8 +16,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import oolong.client.R
+import oolong.client.background.sign.AutoSignAlarm
 import oolong.client.data.settings.appPreferences
-import oolong.client.receivers.AutoSignAlarm
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
