@@ -463,7 +463,7 @@ private fun FloorBody(
             )
         }
         Spacer(modifier = Modifier.height(NameToBody))
-        PostBody(content = post.content, photoViewData = photoViewData, fontSize = 16.sp, lineHeight = 27.sp, trimEdges = true)
+        PostBody(content = post.content, photoViewData = photoViewData, fontSize = 16.sp, trimEdges = true)
         Spacer(modifier = Modifier.height(BodyToTime))
         Row(verticalAlignment = Alignment.CenterVertically) {
             val style = MaterialTheme.typography.caption
@@ -1109,7 +1109,6 @@ fun FirstPostContent(
             content = post.content,
             photoViewData = photoViewData,
             fontSize = 17.sp,
-            lineHeight = 30.sp,
             blockSpacing = 16.dp,
             textPadding = PaddingValues(horizontal = 16.dp),
         )

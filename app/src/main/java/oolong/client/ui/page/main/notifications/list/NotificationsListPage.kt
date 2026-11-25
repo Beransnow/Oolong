@@ -196,7 +196,6 @@ private fun NotificationItemContent(
         EmoticonText(
             text = notification.content,
             fontSize = 15.sp,
-            lineHeight = 24.sp,
             color = ExtendedTheme.colors.text,
         )
         val quoteText = when {
@@ -215,7 +214,6 @@ private fun NotificationItemContent(
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 color = ExtendedTheme.colors.textSecondary,
                 fontSize = 14.sp,
-                lineHeight = 20.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )

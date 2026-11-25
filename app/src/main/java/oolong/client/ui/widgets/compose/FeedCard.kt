@@ -285,7 +285,6 @@ fun ThreadContent(
             HighlightText(
                 text = titleText,
                 fontSize = 16.sp,
-                lineHeight = 24.sp,
                 color = ExtendedTheme.colors.text,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 2,
@@ -298,7 +297,6 @@ fun ThreadContent(
             HighlightText(
                 text = remember(abstractText) { abstractText.emoticonString },
                 fontSize = 15.sp,
-                lineHeight = 24.sp,
                 color = ExtendedTheme.colors.text,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = maxLines,
@@ -919,7 +917,6 @@ private fun FeedReplyBlock(
             EmoticonText(
                 text = reply.text,
                 fontSize = 15.sp,
-                lineHeight = 24.sp,
                 color = ExtendedTheme.colors.text,
                 maxLines = ReplyMaxLines,
                 overflow = TextOverflow.Ellipsis,

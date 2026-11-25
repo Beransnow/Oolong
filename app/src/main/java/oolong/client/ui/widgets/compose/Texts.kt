@@ -71,6 +71,9 @@ import oolong.client.utils.EmoticonUtil.emoticonString
 import oolong.client.utils.calcLineHeightPx
 import java.util.regex.Pattern
 
+/** How tall a line of text with emoticons is, as a multiple of its font size, unless set. */
+private const val RichTextLineHeight = 1.45f
+
 @Composable
 fun EmoticonText(
     text: String,
@@ -159,13 +162,17 @@ fun EmoticonText(
         )
     )
     val sizePx = calcLineHeightPx(mergedStyle)
-    // As a multiple of the font size: back in sp it would be scaled up again where large text
-    // grows less than small text, so a line would end up taller than measured
+    // A set multiple of the font size, not the font's own height, so lines are as far apart
+    // whatever font the system has. In em: back in sp it would be scaled up again where large
+    // text grows less than small text
     val density = LocalDensity.current
-    val spacingLineHeight = remember(sizePx, lineSpacing, density, mergedStyle.fontSize) {
-        with(density) {
-            val fontPx = if (mergedStyle.fontSize.isSpecified) mergedStyle.fontSize.toPx() else 0f
-            if (fontPx > 0f) ((sizePx + lineSpacing.toPx()) / fontPx).em else (sizePx + lineSpacing.toPx()).toSp()
+    val spacingLineHeight = remember(lineHeight, sizePx, lineSpacing, density, mergedStyle.fontSize) {
+        when {
+            lineHeight.isSpecified -> lineHeight
+            mergedStyle.fontSize.isSpecified -> with(density) {
+                (RichTextLineHeight + lineSpacing.toPx() / mergedStyle.fontSize.toPx()).em
+            }
+            else -> with(density) { (sizePx + lineSpacing.toPx()).toSp() }
         }
     }
     val emoticonInlineContent = remember(text, sizePx, emoticonSize, density) {

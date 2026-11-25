@@ -322,7 +322,6 @@ private fun LikedReplyItem(
         PbContentText(
             text = rememberReplyText(reply.content),
             fontSize = 15.sp,
-            lineHeight = 24.sp,
             color = ExtendedTheme.colors.text,
             maxLines = ReplyMaxLines,
             overflow = TextOverflow.Ellipsis,

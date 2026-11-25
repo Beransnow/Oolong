@@ -70,7 +70,6 @@ fun PostBody(
     modifier: Modifier = Modifier,
     photoViewData: (PostContent.Image) -> PhotoViewData? = { null },
     fontSize: TextUnit = 15.sp,
-    lineHeight: TextUnit = TextUnit.Unspecified,
     blockSpacing: Dp = 8.dp,
     textPadding: PaddingValues = PaddingValues(0.dp),
     /**
@@ -91,7 +90,7 @@ fun PostBody(
                 is PostContent.Text -> {
                     val first = trimEdges && index == 0
                     val last = trimEdges && index == content.lastIndex
-                    Box(padded) { PostText(block.spans, fontSize, lineHeight, trimTop = first, trimBottom = last) }
+                    Box(padded) { PostText(block.spans, fontSize, trimTop = first, trimBottom = last) }
                 }
                 is PostContent.Image -> PostImage(block, photoViewData(block), rounded = textPadding == PaddingValues(0.dp))
                 is PostContent.Video -> Box(padded) { PostVideo(block) }
@@ -102,7 +101,7 @@ fun PostBody(
 }
 
 @Composable
-private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHeight: TextUnit, trimTop: Boolean, trimBottom: Boolean) {
+private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, trimTop: Boolean, trimBottom: Boolean) {
     val accent = ExtendedTheme.colors.accent
     val videoTag = stringResource(id = R.string.tag_video)
     val warning = MaterialTheme.colors.error
@@ -115,9 +114,7 @@ private fun PostText(spans: ImmutableList<TextSpan>, fontSize: TextUnit, lineHei
         text = text,
         modifier = if (trimTop || trimBottom) Modifier.trimToCharacters(fontSize, trimTop, trimBottom) else Modifier,
         fontSize = fontSize,
-        lineHeight = lineHeight,
         style = MaterialTheme.typography.body1,
-        lineSpacing = if (lineHeight == TextUnit.Unspecified) 0.8.sp else 0.sp,
     )
 }
 
