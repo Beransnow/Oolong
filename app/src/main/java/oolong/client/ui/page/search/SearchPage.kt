@@ -82,6 +82,7 @@ import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SearchBox
 import oolong.client.ui.widgets.compose.TabClickMenu
+import oolong.client.ui.widgets.compose.TabText
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.picker.ListSinglePicker
@@ -413,7 +414,7 @@ private fun ColumnScope.SearchTabRow(
                 TabClickMenu(
                     selected = selected,
                     onClick = { select(index) },
-                    text = { Text(text = stringResource(id = item.title)) },
+                    text = { TabText(stringResource(id = item.title), selected) },
                     items = {
                         choiceMenuItems(item.sortTypes.map { (label, value) -> value to label }, item.selectedSortType()) {
                             item.onSelectedSortTypeChange(it)
@@ -424,7 +425,7 @@ private fun ColumnScope.SearchTabRow(
                 )
             } else {
                 GlassTab(
-                    text = { Text(text = stringResource(id = item.title)) },
+                    text = { TabText(stringResource(id = item.title), selected) },
                     selected = selected,
                     selectedContentColor = ExtendedTheme.colors.text,
                     unselectedContentColor = ExtendedTheme.colors.textSecondary,

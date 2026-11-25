@@ -40,6 +40,7 @@ import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
+import oolong.client.ui.widgets.compose.TabText
 
 @Immutable
 data class ExplorePageItem(
@@ -78,29 +79,6 @@ private fun ExplorePageTab(
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun TabText(
-    text: String,
-    selected: Boolean
-) {
-    val style = MaterialTheme.typography.button.copy(
-        letterSpacing = 0.75.sp,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        textAlign = TextAlign.Center
-    )
-    // As wide as the bold name either way, so choosing a tab doesn't shift the row as it slides
-    Box(contentAlignment = Alignment.Center) {
-        Text(
-            text = text,
-            style = style.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier
-                .alpha(0f)
-                .clearAndSetSemantics {},
-        )
-        Text(text = text, style = style)
     }
 }
 

@@ -75,6 +75,7 @@ import oolong.client.ui.widgets.compose.IconButton
 import oolong.client.ui.widgets.compose.MenuIconButton
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.TabClickMenu
+import oolong.client.ui.widgets.compose.TabText
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.matchedGeometry
@@ -465,11 +466,7 @@ internal fun forumMenu(onEvent: (ForumEvent) -> Unit, liked: Boolean): () -> Lis
 }
 
 @Composable
-private fun tabTextStyle() = MaterialTheme.typography.button.copy(
-    fontWeight = FontWeight.Bold,
-    fontSize = 13.sp,
-    letterSpacing = 0.sp,
-)
+private fun tabTextStyle() = MaterialTheme.typography.button.copy(fontWeight = FontWeight.Bold)
 
 /**
  * The forum's tabs on a glass capsule. Tapping the selected tab again opens its choices: how the
@@ -500,7 +497,7 @@ internal fun ForumTabRow(
                     onClick = { onSelect(index) },
                     text = {
                         // The class chosen joins the name, refocusing it in place
-                        Refocus(targetState = name) { Text(text = it, style = tabTextStyle(), maxLines = 1) }
+                        Refocus(targetState = name) { TabText(it, selected) }
                     },
                     items = { choiceMenuItems(goodClasses.map { it.id to it.name }, goodClassId) { onEvent(ForumEvent.SetGoodClass(it)) } },
                     selectedContentColor = ExtendedTheme.colors.text,
@@ -513,7 +510,7 @@ internal fun ForumTabRow(
                 TabClickMenu(
                     selected = selected,
                     onClick = { onSelect(index) },
-                    text = { Text(text = tab.title(), style = tabTextStyle()) },
+                    text = { TabText(tab.title(), selected) },
                     items = { choiceMenuItems(sorts, sortType) { onEvent(ForumEvent.SetSort(it)) } },
                     selectedContentColor = ExtendedTheme.colors.text,
                     unselectedContentColor = ExtendedTheme.colors.textSecondary
@@ -531,7 +528,7 @@ internal fun ForumTabRow(
                             .height(48.dp)
                             .padding(horizontal = 16.dp)
                     ) {
-                        Text(text = tab.title(), style = tabTextStyle())
+                        TabText(tab.title(), selected)
                     }
                 }
             }

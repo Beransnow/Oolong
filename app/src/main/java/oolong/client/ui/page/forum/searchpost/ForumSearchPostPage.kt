@@ -60,6 +60,7 @@ import oolong.client.ui.widgets.compose.PullRefresh
 import oolong.client.ui.widgets.compose.Reveal
 import oolong.client.ui.widgets.compose.SearchThreadList
 import oolong.client.ui.widgets.compose.TabClickMenu
+import oolong.client.ui.widgets.compose.TabText
 import oolong.client.ui.widgets.compose.choiceMenuItems
 import oolong.client.ui.widgets.compose.loadMoreFooter
 import oolong.client.ui.widgets.compose.states.StateScreen
@@ -265,7 +266,7 @@ private fun ColumnScope.ForumSearchTabRow(
             TabClickMenu(
                 selected = onlyThreads == state.onlyThreads,
                 onClick = { onSetOnlyThreads(onlyThreads) },
-                text = { Text(text = stringResource(id = text)) },
+                text = { TabText(stringResource(id = text), onlyThreads == state.onlyThreads) },
                 items = { choiceMenuItems(orders, state.order, onSetOrder) },
                 selectedContentColor = ExtendedTheme.colors.text,
                 unselectedContentColor = ExtendedTheme.colors.textSecondary,

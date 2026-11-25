@@ -78,6 +78,7 @@ import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.MenuIconButton
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.Refocus
+import oolong.client.ui.widgets.compose.TabText
 import oolong.client.ui.widgets.compose.TextButton
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.rememberDialogState
@@ -208,13 +209,14 @@ fun HistoryScreen(
                                 HistoryTab.entries.forEachIndexed { index, tab ->
                                     GlassTab(
                                         text = {
-                                            Text(
+                                            TabText(
                                                 text = stringResource(
                                                     id = when (tab) {
                                                         HistoryTab.Threads -> R.string.title_history_tab_threads
                                                         HistoryTab.Forums -> R.string.title_history_tab_forums
                                                     }
-                                                )
+                                                ),
+                                                selected = pagerState.currentPage == index,
                                             )
                                         },
                                         selected = pagerState.currentPage == index,

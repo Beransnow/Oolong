@@ -27,6 +27,7 @@ import androidx.compose.material.LocalContentColor
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -57,6 +59,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
@@ -202,7 +205,7 @@ fun GlassTabRow(
                 Layout(
                     content = tabs,
                     modifier = Modifier
-                        .then(if (fill) Modifier.fillMaxWidth() else Modifier.horizontalScroll(scroll))
+                        .then(if (fill) Modifier.fillMaxWidth() else Modifier.scrollEdgeFade(scroll).horizontalScroll(scroll))
                         .padding(horizontal = TabInset)
                         .selectableGroup()
                         .drawBehind {
@@ -379,9 +382,7 @@ fun GlassTab(
     val classic = LocalClassicTabs.current
     val color by animateColorAsState(if (selected) selectedContentColor else unselectedContentColor, Motion.snap(), label = "tabColor")
     val lens = LocalTabLens.current
-    // A classic tab shows it is chosen in bold, over its line
-    val textStyle = if (classic) LocalTextStyle.current.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) else LocalTextStyle.current
-    CompositionLocalProvider(LocalContentColor provides color, LocalContentAlpha provides 1f, LocalTextStyle provides textStyle) {
+    CompositionLocalProvider(LocalContentColor provides color, LocalContentAlpha provides 1f) {
         Row(
             modifier = modifier
                 .then(if (lens || classic) Modifier else Modifier.pressScale(interactionSource))
@@ -423,9 +424,26 @@ fun GlassTab(
         selectedContentColor = selectedContentColor,
         unselectedContentColor = unselectedContentColor,
     ) {
-        val button = MaterialTheme.typography.button
-        ProvideTextStyle(if (LocalClassicTabs.current) button.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) else button) {
-            Box(modifier = Modifier.padding(horizontal = 16.dp)) { text() }
-        }
+        Box(modifier = Modifier.padding(horizontal = 16.dp)) { text() }
+    }
+}
+
+/**
+ * A tab's name, the same on every tab row: in the label style, bold while [selected]. It keeps the
+ * bold name's width either way, so choosing a tab doesn't shift the row as the bubble or line moves.
+ */
+@Composable
+fun TabText(text: String, selected: Boolean, modifier: Modifier = Modifier) {
+    val style = MaterialTheme.typography.button
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Text(
+            text = text,
+            style = style.copy(fontWeight = FontWeight.Bold),
+            maxLines = 1,
+            modifier = Modifier
+                .alpha(0f)
+                .clearAndSetSemantics {},
+        )
+        Text(text = text, style = style.copy(fontWeight = if (selected) FontWeight.Bold else style.fontWeight), maxLines = 1)
     }
 }

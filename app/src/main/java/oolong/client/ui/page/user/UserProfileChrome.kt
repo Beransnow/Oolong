@@ -58,6 +58,7 @@ import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.Refocus
 import oolong.client.ui.widgets.compose.Sizes
+import oolong.client.ui.widgets.compose.TabText
 import oolong.client.ui.widgets.compose.matchedGeometry
 import oolong.client.ui.widgets.compose.matchedGeometryAnchor
 import oolong.client.ui.widgets.compose.onPageAccent
@@ -337,12 +338,7 @@ internal fun UserProfileTabRow(
             GlassTab(
                 selected = pagerState.currentPage == index,
                 onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
-                text = {
-                    Text(
-                        text = page.title(user),
-                        style = MaterialTheme.typography.button.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 0.sp),
-                    )
-                },
+                text = { TabText(page.title(user), pagerState.currentPage == index) },
             )
         }
     }

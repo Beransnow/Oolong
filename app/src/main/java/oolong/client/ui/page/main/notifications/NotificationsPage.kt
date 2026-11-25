@@ -31,6 +31,7 @@ import oolong.client.ui.widgets.compose.GlassTab
 import oolong.client.ui.widgets.compose.GlassTabRow
 import oolong.client.ui.widgets.compose.GlassTopBar
 import oolong.client.ui.widgets.compose.LazyLoadHorizontalPager
+import oolong.client.ui.widgets.compose.TabText
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -137,7 +138,7 @@ private fun NotificationTabs(pagerState: PagerState, names: List<String>) {
     ) {
         names.forEachIndexed { index, name ->
             GlassTab(
-                text = { Text(text = name) },
+                text = { TabText(name, pagerState.currentPage == index) },
                 selected = pagerState.currentPage == index,
                 selectedContentColor = ExtendedTheme.colors.text,
                 unselectedContentColor = ExtendedTheme.colors.textSecondary,

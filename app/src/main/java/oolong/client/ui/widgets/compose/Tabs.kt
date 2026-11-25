@@ -470,7 +470,6 @@ fun TabClickMenu(
         // The snap spring overshoots: a width going to none would dip below zero
         val arrowWidthAnimated by animateDpAsState(if (selected) ArrowSize else 0.dp, Motion.snap(), label = "ArrowWidth")
         val arrowWidth = arrowWidthAnimated.coerceAtLeast(0.dp)
-        val tabTextStyle = MaterialTheme.typography.button.copy(fontSize = 13.sp, letterSpacing = 0.sp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -480,9 +479,7 @@ fun TabClickMenu(
                 .animateContentSize(Motion.settle())
                 .padding(start = 16.dp, end = 16.dp - arrowWidth * 0.75f)
         ) {
-            ProvideTextStyle(value = tabTextStyle) {
-                text()
-            }
+            text()
             Icon(
                 imageVector = Symbols.ArrowDropDown,
                 contentDescription = null,

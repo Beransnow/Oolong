@@ -53,6 +53,7 @@ internal fun ClassicTabRow(
             Layout(
                 content = tabs,
                 modifier = Modifier
+                    .scrollEdgeFade(scroll)
                     .horizontalScroll(scroll)
                     .selectableGroup()
                     .drawBehind {
