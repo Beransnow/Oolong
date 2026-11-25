@@ -158,7 +158,9 @@ class SearchViewModel @Inject constructor(
     fun refresh(tab: SearchTab) {
         if (local.value.keyword.isEmpty()) return
         local.update { it.copy(opened = it.opened + tab) }
-        load(tab)
+        // The threads found stay in place while they load again, as on any list pulled to refresh
+        val threads = threadPager.value
+        if (tab == SearchTab.Threads && threads != null) threads.refresh() else load(tab)
     }
 
     fun loadMoreThreads() {

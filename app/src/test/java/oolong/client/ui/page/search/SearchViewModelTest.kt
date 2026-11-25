@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
@@ -84,6 +85,26 @@ class SearchViewModelTest {
         runCurrent()
 
         assertEquals(SearchOrder.Relevant, viewModel.state.value.order)
+        assertEquals(listOf(2L), viewModel.state.value.threads.items.map { it.threadId })
+    }
+
+    @Test
+    fun `pulling the threads to refresh keeps them in place while they load`() = runTest {
+        val again = CompletableDeferred<Page<Int, SearchedPost>>()
+        var calls = 0
+        coEvery { repository.threads("k", SearchOrder.Newest, 1) } coAnswers { if (calls++ == 0) Page(listOf(post(1))) else again.await() }
+        val viewModel = createViewModel()
+        viewModel.search("k")
+        viewModel.open(SearchTab.Threads)
+        runCurrent()
+
+        viewModel.refresh(SearchTab.Threads)
+        runCurrent()
+
+        assertEquals(LoadStatus.Loading, viewModel.state.value.threads.refresh)
+        assertEquals(listOf(1L), viewModel.state.value.threads.items.map { it.threadId })
+        again.complete(Page(listOf(post(2))))
+        runCurrent()
         assertEquals(listOf(2L), viewModel.state.value.threads.items.map { it.threadId })
     }
 
