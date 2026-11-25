@@ -9,6 +9,7 @@ import oolong.client.api.models.protos.searchSug.SearchSugResponseData
 import oolong.core.network.FakeDevice
 import oolong.core.network.TiebaProfile
 import oolong.core.network.TiebaServerException
+import oolong.core.network.UnreadableResponseException
 import oolong.core.network.testing.FormServer
 import oolong.core.network.testing.multipartParts
 import org.junit.After
@@ -40,6 +41,18 @@ class SearchRemoteDataSourceTest {
         assertEquals("a", sent.word)
         assertEquals("0", sent.isforum)
         assertEquals(listOf("a", "ab"), suggestions)
+    }
+
+    @Test
+    fun `a web page where data was expected names the endpoint and what came`() = runTest {
+        server.server.enqueue(
+            MockResponse.Builder().addHeader("Content-Type", "text/html; charset=utf-8").body("<html>安全验证</html>").build()
+        )
+
+        val error = assertFailsWith<UnreadableResponseException> { dataSource.threads("k", 1, SearchSort.NEWEST) }
+
+        assertEquals("mo/q/search/thread", error.endpoint)
+        assertEquals("text/html", error.contentType)
     }
 
     @Test

@@ -51,10 +51,12 @@ class TiebaNetwork(
             .baseUrl(baseUrlOverride ?: profile.baseUrl.toHttpUrl())
             .client(client)
             .addConverterFactory(
-                when (profile.protocol) {
-                    TiebaProtocol.PROTOBUF -> ProtobufConverterFactory
-                    TiebaProtocol.FORM -> JsonConverterFactory(json, sessionProvider)
-                }
+                UnreadableResponseConverterFactory(
+                    when (profile.protocol) {
+                        TiebaProtocol.PROTOBUF -> ProtobufConverterFactory
+                        TiebaProtocol.FORM -> JsonConverterFactory(json, sessionProvider)
+                    }
+                )
             )
             .build()
     }
