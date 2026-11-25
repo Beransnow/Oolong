@@ -1,0 +1,10 @@
+# Package moves: only package and import lines changed.
+# Use with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+9849840a71909c5d34691162500c4cb6b0732361 # refactor: name core packages after their modules
+d58015fd932f5264a1a4b89e59aabb7486ea98fc # refactor: lay out the UI as ui/<feature>, components and designsystem
+dda875a7754cbbcb5c201b040988f43e0d51f8ce # refactor: keep only domain-free helpers in util/
+de87f94f19348c41b39e587a2ef8c48ca4028b22 # refactor: move crash, error and usage reporting into diagnostics/
+4756331ba2d4f4354d51b44dfec03e6990991329 # refactor: move sign-in and message polling into background/
+7e53be2517b5bcf90f382b5656db4c32e536e2da # refactor: move picture loading, upload and masking into media/
+6e0e64e372fd09ddb070e0dcc364b471f7233532 # refactor: move the data layer into data/, grouped by domain
+69c6fa1812580a61572c5d15ea1e83e74ec86674 # refactor: gather the domain models into one package
