@@ -498,17 +498,6 @@
 
     <issue
         id="UseRequiresApi"
-        message="Use `@RequiresApi(24) instead of `@TargetApi` to propagate the requirement to users of `OKSignTileService`"
-        errorLine1="@TargetApi(24)"
-        errorLine2="~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/oolong/client/services/OKSignTileService.java"
-            line="9"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="UseRequiresApi"
         message="Use `@RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2) instead of `@TargetApi` to propagate the requirement to callers of `blur`"
         errorLine1="    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -603,17 +592,6 @@
         <location
             file="src/main/java/oolong/client/ui/designsystem/theme/DynamicTonalPalette.kt"
             line="89"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 24"
-        errorLine1="@TargetApi(24)"
-        errorLine2="~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/oolong/client/services/OKSignTileService.java"
-            line="9"
             column="1"/>
     </issue>
 
