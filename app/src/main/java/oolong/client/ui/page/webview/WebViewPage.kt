@@ -368,35 +368,21 @@ class MyWebChromeClient(
         result: JsResult,
     ): Boolean {
         val context = view.context ?: context
-        if ("ClipboardGuardCopyRequest".equals(message, ignoreCase = true)) {
-            val uri = url?.toUri()
-            if (uri != null && uri.host != null) {
-                AppDialogs.ask(
-                    context,
-                    AppDialog.Permission(
-                        key = permissionKey(uri.host!!, PERMISSION_CLIPBOARD_COPY),
-                        title = context.getString(R.string.title_ask_permission_clipboard_copy, uri.host),
-                        icon = Symbols.ContentCopy,
-                    ) { granted, _ -> if (granted) result.confirm() else result.cancel() }
-                )
-            }
-        } else {
-            AppDialogs.show(
-                AppDialog.Message(
-                    message = message.orEmpty(),
-                    onConfirm = { result.confirm() },
-                    cancel = context.getString(R.string.button_cancel),
-                    onCancel = { result.cancel() },
-                )
+        AppDialogs.show(
+            AppDialog.Message(
+                message = message.orEmpty(),
+                onConfirm = { result.confirm() },
+                cancel = context.getString(R.string.button_cancel),
+                onCancel = { result.cancel() },
             )
-        }
+        )
         return true
     }
 }
 
 /** The key a site's answer is kept under: what it asked about, and for whom. */
-private fun permissionKey(data: String, permission: Int) = "${data}_$permission"
+internal fun permissionKey(data: String, permission: Int) = "${data}_$permission"
 
 private const val PERMISSION_LOCATION = 0
 private const val PERMISSION_START_APP = 1
-private const val PERMISSION_CLIPBOARD_COPY = 2
+internal const val PERMISSION_CLIPBOARD_COPY = 2

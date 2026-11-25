@@ -297,6 +297,7 @@ internal fun WebPageScaffold(
             onCreated = {
                 // Before anything loads: whose login the page gets
                 attachSession(it)
+                ClipboardGuard.install(it)
                 it.setBackgroundColor(background)
                 it.setDownloadListener { url, userAgent, disposition, mimeType, length ->
                     // The load became a download and never finishes as a page
