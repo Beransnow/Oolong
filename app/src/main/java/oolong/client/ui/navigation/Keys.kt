@@ -99,6 +99,10 @@ data object HistoryKey : Key
 @Serializable
 data object ThreadStoreKey : Key
 
+/** The threads and replies the user liked. */
+@Serializable
+data object LikesKey : Key
+
 @Serializable
 data object HotTopicListKey : Key
 

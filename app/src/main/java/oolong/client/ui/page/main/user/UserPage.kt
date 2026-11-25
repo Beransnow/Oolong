@@ -70,6 +70,7 @@ import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.navigation.AboutKey
 import oolong.client.ui.navigation.AppThemeKey
 import oolong.client.ui.navigation.HistoryKey
+import oolong.client.ui.navigation.LikesKey
 import oolong.client.ui.navigation.LoginKey
 import oolong.client.ui.navigation.PrivacySettingsKey
 import oolong.client.ui.navigation.SettingsKey
@@ -557,6 +558,14 @@ fun UserScreen(
                             )
                         }
                     }
+                }
+                Reveal(Unit.takeIf { account != null }) {
+                    ListMenuItem(
+                        iconColor = ExtendedTheme.colors.text,
+                        icon = ImageVector.vectorResource(id = R.drawable.ic_me_like),
+                        text = stringResource(id = R.string.title_my_likes),
+                        onClick = { navigator.navigate(LikesKey) },
+                    )
                 }
                 ListMenuItem(
                     iconColor = ExtendedTheme.colors.text,
