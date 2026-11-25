@@ -6,6 +6,7 @@ import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -120,7 +121,7 @@ fun CrashLogsPage(
                             prefsItem {
                                 TextPref(
                                     title = entry.label(),
-                                    summary = formatTime(entry.time),
+                                    summary = formatRecordTime(entry.time),
                                     onClick = { navigator.navigate(CrashLogKey(entry.id)) },
                                 )
                             }
@@ -192,25 +193,30 @@ fun CrashLogPage(
             )
         },
     ) { padding ->
-        val record = text ?: return@GlassScaffold
-        MyLazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
-            item {
-                SelectionContainer(
-                    modifier = Modifier
-                        .padding(horizontal = Spacing.md, vertical = Spacing.xs)
-                        .fillMaxWidth()
-                        .background(ExtendedTheme.colors.card, Corners.md)
-                        .padding(Spacing.md),
-                ) {
-                    // Unwrapped, so each frame of a stack trace keeps to its line
-                    Text(
-                        text = record,
-                        style = TextStyles.footnote.copy(fontFamily = FontFamily.Monospace),
-                        color = ExtendedTheme.colors.text,
-                        softWrap = false,
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    )
-                }
+        RecordText(record = text ?: return@GlassScaffold, padding = padding)
+    }
+}
+
+/** A kept record in full, selectable, in a card. */
+@Composable
+internal fun RecordText(record: String, padding: PaddingValues) {
+    MyLazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+        item {
+            SelectionContainer(
+                modifier = Modifier
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+                    .fillMaxWidth()
+                    .background(ExtendedTheme.colors.card, Corners.md)
+                    .padding(Spacing.md),
+            ) {
+                // Unwrapped, so each frame of a stack trace keeps to its line
+                Text(
+                    text = record,
+                    style = TextStyles.footnote.copy(fontFamily = FontFamily.Monospace),
+                    color = ExtendedTheme.colors.text,
+                    softWrap = false,
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                )
             }
         }
     }
@@ -225,14 +231,14 @@ private fun CrashLogs.Entry.label(): String = when (kind) {
 }
 
 @Composable
-private fun formatTime(time: Long): String {
+internal fun formatRecordTime(time: Long): String {
     val locale = LocalConfiguration.current.locales[0]
     return remember(time, locale) {
         SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "yMMMdHHmmss"), locale).format(Date(time))
     }
 }
 
-private fun share(context: Context, text: String) {
+internal fun share(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }

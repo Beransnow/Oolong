@@ -113,7 +113,7 @@ object CrashReports {
         return lines.subList(start, end).joinToString("\n")
     }
 
-    private fun post(report: JSONObject): Boolean = runCatching {
+    internal fun post(report: JSONObject): Boolean = runCatching {
         val connection = URL("$UpdateHost/crash").openConnection() as HttpURLConnection
         try {
             connection.requestMethod = "POST"
@@ -129,7 +129,7 @@ object CrashReports {
         }
     }.getOrDefault(false)
 
-    private fun installId(context: Context): String {
+    internal fun installId(context: Context): String {
         val preferences = preferences(context)
         preferences.getString(Install, null)?.let { return it }
         val id = UUID.randomUUID().toString()

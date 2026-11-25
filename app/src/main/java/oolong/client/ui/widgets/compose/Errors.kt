@@ -29,6 +29,7 @@ import oolong.client.api.retrofit.exception.TiebaNotLoggedInException
 import oolong.client.api.retrofit.exception.getErrorCode
 import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.api.retrofit.exception.isNetworkError
+import oolong.client.api.retrofit.exception.isUnexpectedError
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -135,7 +136,11 @@ fun ErrorTipScreen(
         errorMessage = errorMessage,
         modifier = modifier,
         errorCode = errorCode,
-        actions = actions
+        actions = {
+            actions()
+            // An error the app can't explain is kept, and can be passed on from here
+            if (error.isUnexpectedError()) ErrorDetailsButton(error)
+        },
     )
 }
 

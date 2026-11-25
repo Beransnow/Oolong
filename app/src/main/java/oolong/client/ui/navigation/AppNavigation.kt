@@ -85,6 +85,8 @@ import oolong.client.ui.page.settings.catalog.ControlCatalogPage
 import oolong.client.ui.page.settings.crash.CrashLogPage
 import oolong.client.ui.page.settings.crash.CrashLogsPage
 import oolong.client.ui.page.settings.crash.DiagnosticsPage
+import oolong.client.ui.page.settings.crash.ErrorRecordPage
+import oolong.client.ui.page.settings.crash.ErrorRecordsPage
 import oolong.client.ui.page.settings.custom.CustomSettingsPage
 import oolong.client.ui.page.settings.custom.FontSizePage
 import oolong.client.ui.page.settings.custom.SearchPlacementPage
@@ -160,6 +162,8 @@ private fun KeyContent(key: Key) {
         StorageKey -> StoragePage()
         CrashLogsKey -> CrashLogsPage()
         is CrashLogKey -> CrashLogPage(key)
+        ErrorRecordsKey -> ErrorRecordsPage()
+        is ErrorRecordKey -> ErrorRecordPage(key)
         DiagnosticsKey -> DiagnosticsPage()
         ControlCatalogKey -> ControlCatalogPage()
     }

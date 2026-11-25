@@ -4,7 +4,9 @@ import android.content.Context
 import oolong.client.App
 import oolong.client.R
 import oolong.client.api.Error
+import oolong.core.network.TiebaServerException
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 fun Throwable.getErrorCode(): Int {
     return if (this is TiebaException) {
@@ -34,3 +36,11 @@ fun Throwable.userMessage(context: Context): String =
 fun Throwable.isNetworkError(): Boolean = generateSequence(this) { it.cause.takeIf { cause -> cause !== it } }
     .firstOrNull { it is IOException }
     ?.let { it is NoConnectivityException || it !is TiebaException } == true
+
+/**
+ * Whether the error is of no kind the app can explain: not a lost connection, not an error the
+ * server named, not being signed out, and not a cancelled task. These are the ones the app shows
+ * as 「发生了一个奇怪的错误」 and keeps a record of.
+ */
+fun Throwable.isUnexpectedError(): Boolean =
+    this !is CancellationException && this !is TiebaServerException && this !is TiebaNotLoggedInException && !isNetworkError()

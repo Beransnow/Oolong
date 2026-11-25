@@ -38,6 +38,7 @@ import oolong.client.ui.common.settings.res
 import oolong.client.ui.common.settings.stored
 import oolong.client.ui.navigation.CrashLogsKey
 import oolong.client.ui.navigation.DiagnosticsKey
+import oolong.client.ui.navigation.ErrorRecordsKey
 import oolong.client.ui.navigation.MoreSettingsKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.StorageKey
@@ -108,6 +109,7 @@ object MoreSettings : SettingsPage<MoreState>(R.string.title_settings_more, More
                 onSelect = { mode -> edit { it[CrashReportMode] = mode.value } },
             )
             link(R.string.title_crash_logs, to = CrashLogsKey)
+            link(R.string.title_error_records, to = ErrorRecordsKey)
             link(R.string.title_diagnostics, to = DiagnosticsKey)
         }
     }

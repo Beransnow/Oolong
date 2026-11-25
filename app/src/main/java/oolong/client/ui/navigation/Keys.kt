@@ -188,6 +188,12 @@ data object CrashLogsKey : Key
 data class CrashLogKey(val id: String) : Key
 
 @Serializable
+data object ErrorRecordsKey : Key
+
+@Serializable
+data class ErrorRecordKey(val id: String) : Key
+
+@Serializable
 data object DiagnosticsKey : Key
 
 /** The design system's controls on one page; debug builds only. */

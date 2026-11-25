@@ -114,7 +114,7 @@ object CrashLogs {
     }
 
     /** Sign-in tokens never go into a record, should a message carry a cookie. */
-    private fun redact(text: String) = Secret.replace(text) { "${it.groupValues[1]}=***" }
+    internal fun redact(text: String) = Secret.replace(text) { "${it.groupValues[1]}=***" }
 
     private fun files(context: Context): List<File> =
         dir(context).listFiles { file -> parseName(file.name) != null }.orEmpty().sortedByDescending { parseName(it.name)!!.first }

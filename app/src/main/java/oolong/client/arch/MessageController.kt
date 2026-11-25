@@ -5,9 +5,11 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.api.retrofit.exception.userMessage
+import oolong.client.components.ErrorRecords
 import oolong.client.ui.widgets.compose.AppToast
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,5 +35,9 @@ class ToastMessageController @Inject constructor(
         }
     }
 
-    override fun showError(message: Int, error: Throwable) = show(message, error.userMessage(context))
+    override fun showError(message: Int, error: Throwable) {
+        show(message, error.userMessage(context))
+        // An error the app can't explain is kept, to be found under 错误记录
+        scope.launch(Dispatchers.IO) { runCatching { ErrorRecords.record(context, error) } }
+    }
 }
