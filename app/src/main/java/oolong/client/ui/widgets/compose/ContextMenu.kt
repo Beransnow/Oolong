@@ -126,10 +126,16 @@ class ContextMenuItem(
     val selected: Boolean = false,
     /** What it opens in place of running, over the menu, out of its own row; null for none. */
     val children: List<ContextMenuItem>? = null,
+    /**
+     * Whether running it takes away what the menu came out of, such as hiding the thread it is
+     * on: it then runs once the menu is back home, so the menu has somewhere to go back to and
+     * what follows starts from a still page.
+     */
+    val removesAnchor: Boolean = false,
     val onClick: () -> Unit = {},
 ) {
     fun copy(startsGroup: Boolean = this.startsGroup) =
-        ContextMenuItem(icon, label, startsGroup, detail, leading, selected, children, onClick)
+        ContextMenuItem(icon, label, startsGroup, detail, leading, selected, children, removesAnchor, onClick)
 }
 
 /**
@@ -199,7 +205,7 @@ class ContextMenus internal constructor() {
         // Asked again from the same button while it shrinks away, the menu grows back from where
         // it is rather than vanishing and starting over
         val current = request
-        if (current != null && closingId == current.id && preview == null && current.preview == null && current.anchor == anchor) {
+        if (current != null && closingId == current.id && !closingWithAction && preview == null && current.preview == null && current.anchor == anchor) {
             closingId = null
             reopened++
             return current.id
@@ -224,8 +230,12 @@ class ContextMenus internal constructor() {
      */
     fun isOpen(id: Long?): Boolean = isShowing(id) && closingId != id
 
-    internal fun closing(id: Long) {
+    /** Whether the menu on its way out still has an item to run once home, so can't grow back. */
+    private var closingWithAction = false
+
+    internal fun closing(id: Long, withAction: Boolean = false) {
         closingId = id
+        closingWithAction = withAction
     }
 
     /** The finger that opened the menu moved to [position] in the window. */
@@ -331,12 +341,19 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
         grow.animateTo(1f, Motion.morph(Motion.ProgressThreshold))
     }
 
-    // Closing runs it backwards: a button's menu shrinks into a drop first, which flies home
+    // Closing runs it backwards: a button's menu shrinks into a drop first, which flies home.
+    // An item that takes the anchor away runs once the menu is home ([ContextMenuItem.removesAnchor]),
+    // or as soon as the menu is gone some other way, so it is never lost.
     var closingJob by remember { mutableStateOf<Job?>(null) }
-    fun dismiss() {
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    DisposableEffect(Unit) {
+        onDispose { pendingAction?.invoke() }
+    }
+    fun dismiss(then: (() -> Unit)? = null) {
         if (closing) return
         closing = true
-        menus.closing(request.id)
+        pendingAction = then
+        menus.closing(request.id, withAction = then != null)
         letGo = true
         closingJob = scope.launch {
             if (reduced) {
@@ -346,13 +363,17 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             } else if (fromButton) {
                 val shrink = launch { grow.animateTo(0f, ShrinkSpring) }
                 delay(GrowDelay)
-                move.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
+                // With an item to run, the drop lands a hair short and hands over to the button,
+                // which stays on its own; the spring's last stretch would only hold things up
+                move.animateTo(0f, Motion.dismiss(if (then != null) LandThreshold else Motion.ProgressThreshold))
                 shrink.join()
             } else {
                 val sink = launch { lift.animateTo(0f, if (reduced) Motion.fadeOut() else Motion.dismiss(Motion.ProgressThreshold)) }
                 grow.animateTo(0f, Motion.dismiss(Motion.ProgressThreshold))
                 sink.join()
             }
+            pendingAction = null
+            then?.invoke()
             menus.closed(request.id)
         }
     }
@@ -381,6 +402,15 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             // Nothing grew out of it with motion reduced: it fades away over the page sliding in
             if (reduced) lift.animateTo(0f, Motion.fadeOut()) else lift.snapTo(0f)
             menus.closed(request.id)
+        }
+    }
+
+    fun pick(item: ContextMenuItem) {
+        if (item.removesAnchor) {
+            dismiss(then = item.onClick)
+        } else {
+            item.onClick()
+            dismiss()
         }
     }
 
@@ -418,10 +448,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             // Under open children, the menu only folds them away
             opened != null -> foldChildren()
             items[index].children != null -> openChildren(index)
-            else -> {
-                items[index].onClick()
-                dismiss()
-            }
+            else -> pick(items[index])
         }
     }
     // A finger pressed on the open menu, as against the one still down from the long press
@@ -734,10 +761,7 @@ private fun ContextMenuOverlay(menus: ContextMenus, request: ContextMenuRequest,
             backdrop = backdrop,
             onFold = ::foldChildren,
             onPick = { child ->
-                if (!closing) {
-                    child.onClick()
-                    dismiss()
-                }
+                if (!closing) pick(child)
             },
             // Closing the menu carries them along with its items, into the same drop
             modifier = Modifier.graphicsLayer {
@@ -1127,6 +1151,9 @@ private val ShrinkSpring get() = Motion.press(Motion.ProgressThreshold)
 
 /** How far growing trails moving, and moving home trails shrinking. */
 private const val GrowDelay = 40L
+
+/** How near home a button's drop counts as landed when an item waits to run on its landing. */
+private const val LandThreshold = 0.02f
 
 /** How far into growing a button's drop has fully condensed. */
 private const val DropFadeIn = 0.25f

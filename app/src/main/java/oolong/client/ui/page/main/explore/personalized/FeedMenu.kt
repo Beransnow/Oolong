@@ -99,6 +99,7 @@ fun dislikeMenuItems(
                 else -> Symbols.VisibilityOff
             },
             label = option.text.trim(),
+            removesAnchor = schema == null,
         ) {
             if (schema != null) {
                 launchUrl(context, navigator, schema)

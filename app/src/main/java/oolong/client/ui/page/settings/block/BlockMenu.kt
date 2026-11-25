@@ -60,12 +60,12 @@ fun blockMenuItems(
 ): List<ContextMenuItem> {
     val choices = buildList {
         if (author != null && (author.id != 0L || author.name.isNotBlank())) {
-            add(ContextMenuItem(Symbols.PersonOff, labels.user.format(author.displayName)) {
+            add(ContextMenuItem(Symbols.PersonOff, labels.user.format(author.displayName), removesAnchor = true) {
                 shortcuts.blockUser(author.id, author.name, author.displayName)
             })
         }
         if (!forum.isNullOrBlank()) {
-            add(ContextMenuItem(Symbols.Forum, labels.forum.format(forum.removeSuffix("吧"))) {
+            add(ContextMenuItem(Symbols.Forum, labels.forum.format(forum.removeSuffix("吧")), removesAnchor = true) {
                 shortcuts.blockForum(forum)
                 onBlockForum?.invoke()
             })
