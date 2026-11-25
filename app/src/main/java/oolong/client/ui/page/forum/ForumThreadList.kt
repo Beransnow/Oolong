@@ -1,6 +1,7 @@
 package oolong.client.ui.page.forum
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,15 +26,17 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,8 +71,8 @@ private enum class ItemType { Top, PlainText, SingleMedia, MultiMedia, Video }
 
 /**
  * One tab's threads: those pinned to the top as single lines, then the rest. With [topsFolded],
- * only the first pinned thread shows, with how many there are, which unfolds them; unfolded, a row
- * after them folds them again. The good threads tab starts with the classes to filter them by.
+ * only the first pinned thread shows, with how many there are; a button at its end folds and
+ * unfolds them. The good threads tab starts with the classes to filter them by.
  */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -133,15 +136,9 @@ internal fun ForumThreadList(
                                 title = thread.topTitle,
                                 onClick = { onEvent(ForumEvent.OpenThread(thread)) },
                                 modifier = Modifier.fillMaxWidth(),
-                                unfold = {
-                                    AnimatedVisibility(
-                                        visible = folded,
-                                        enter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle(), expandFrom = Alignment.Start),
-                                        exit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss(), shrinkTowards = Alignment.Start),
-                                    ) {
-                                        UnfoldTopsButton(count = tops.size, onClick = { onFoldTops(false) })
-                                    }
-                                },
+                                toggle = if (foldable) {
+                                    { FoldTopsButton(count = tops.size, folded = folded, onClick = { onFoldTops(!folded) }) }
+                                } else null,
                             )
                         }
                         Reveal(tops.drop(1).takeIf { foldable && !folded }) { rest ->
@@ -157,7 +154,6 @@ internal fun ForumThreadList(
                                         }
                                     }
                                 }
-                                FoldTopsItem(onClick = { onFoldTops(true) }, modifier = Modifier.fillMaxWidth(itemFraction))
                             }
                         }
                     }
@@ -204,51 +200,44 @@ internal fun ForumThreadList(
     }
 }
 
-/** How many threads are pinned, after the first while the rest are folded away, which unfolds them. */
+/**
+ * Folds and unfolds the pinned threads, staying at the end of the first one: folded, with how many
+ * there are; unfolded, the arrow alone, turned up.
+ */
 @Composable
-private fun UnfoldTopsButton(count: Int, onClick: () -> Unit) {
-    val description = pluralStringResource(id = R.plurals.button_unfold_forum_tops, count = count, count)
+private fun FoldTopsButton(count: Int, folded: Boolean, onClick: () -> Unit) {
+    val description = if (folded) {
+        pluralStringResource(id = R.plurals.button_unfold_forum_tops, count = count, count)
+    } else {
+        stringResource(id = R.string.button_fold_forum_tops)
+    }
+    val turn by animateFloatAsState(if (folded) 0f else 180f, Motion.settle(), label = "foldTops")
     Row(
         modifier = Modifier
             .clickable(interactionSource = null, indication = PressFeedback.overlay(SmoothCornerShape.Capsule), onClick = onClick)
-            .semantics(mergeDescendants = true) { contentDescription = description }
-            .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+            .clearAndSetSemantics { contentDescription = description }
+            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "$count",
-            style = TextStyles.caption,
-            color = ExtendedTheme.colors.textSecondary,
-        )
+        AnimatedVisibility(
+            visible = folded,
+            enter = fadeIn(Motion.fadeIn()) + expandHorizontally(Motion.settle(), expandFrom = Alignment.Start),
+            exit = fadeOut(Motion.fadeOut()) + shrinkHorizontally(Motion.dismiss(), shrinkTowards = Alignment.Start),
+        ) {
+            Text(
+                text = "$count",
+                style = TextStyles.caption,
+                color = ExtendedTheme.colors.textSecondary,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
         Icon(
             imageVector = Symbols.ExpandMore,
             contentDescription = null,
             tint = ExtendedTheme.colors.textSecondary,
-            modifier = Modifier.size(18.dp),
-        )
-    }
-}
-
-/** The row after the unfolded pinned threads that folds them. */
-@Composable
-private fun FoldTopsItem(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
-    ) {
-        Text(
-            text = stringResource(id = R.string.button_fold_forum_tops),
-            style = TextStyles.caption,
-            color = ExtendedTheme.colors.textSecondary,
-        )
-        Icon(
-            imageVector = Symbols.ExpandLess,
-            contentDescription = null,
-            tint = ExtendedTheme.colors.textSecondary,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier
+                .size(18.dp)
+                .graphicsLayer { rotationZ = turn },
         )
     }
 }
@@ -274,7 +263,7 @@ private fun TopThreadItem(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    unfold: (@Composable () -> Unit)? = null,
+    toggle: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -292,6 +281,6 @@ private fun TopThreadItem(
             modifier = Modifier.weight(1f),
             fontSize = 15.sp
         )
-        unfold?.invoke()
+        toggle?.invoke()
     }
 }
