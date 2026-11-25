@@ -246,6 +246,9 @@ val LocalBackStackChange = compositionLocalOf { BackStackChange(emptySet(), empt
 private fun <T : Any> Pane(entry: NavEntry<T>?) {
     val change = LocalBackStackChange.current
     val overlap = PageTransitions.rememberOverlap()
+    val layers = remember { PaneLayers() }
+    val key = entry?.contentKey
+    layers.arrive(key, back = layers.shown.let { it != NoPage && stepsBack(it, key, change) })
     // Pages size themselves by the window; in a pane, the pane is their window
     BoxWithConstraints {
         val paneSizeClass = WindowSizeClass.calculateFromSize(DpSize(maxWidth, maxHeight))
@@ -262,12 +265,10 @@ private fun <T : Any> Pane(entry: NavEntry<T>?) {
                     // The page stays below the new one: a step deeper
                     (from == null || from in change.after) && to != null && to !in change.before ->
                         PageTransitions.transitionSpec<NavEntry<T>?>(overlap)()
-                    // The page left and the one below shows again: a step back
-                    from != null && from !in change.after && (to == null || to in change.before) ->
-                        PageTransitions.popTransitionSpec<NavEntry<T>?>(overlap)()
+                    stepsBack(from, to, change) -> PageTransitions.popTransitionSpec<NavEntry<T>?>(overlap)()
                     // One page swapped for another, as a list opening a different thread
                     else -> PageTransitions.crossFade(overlap.value)
-                }
+                }.apply { targetContentZIndex = layers.of(to) }
             },
             modifier = Modifier.fillMaxSize(),
             label = "Pane",
@@ -282,6 +283,37 @@ private fun <T : Any> Pane(entry: NavEntry<T>?) {
             }
         }
     }
+}
+
+/** Whether the page [from] left and the one below, [to], shows again: a step back. */
+private fun stepsBack(from: Any?, to: Any?, change: BackStackChange): Boolean =
+    from != null && from !in change.after && (to == null || to in change.before)
+
+private val NoPage = Any()
+
+/**
+ * Which page of a pane draws over which while they change. A page keeps the layer it came in
+ * on, so the next change must place the page coming in by it: above for a step deeper or a page
+ * swapped in, below for a step back, whatever came before. By order alone, a page come back to
+ * would draw over the one leaving, and one swapped in, lifted to fade in over the old, would stay
+ * over the next page opened from it.
+ */
+private class PaneLayers {
+    var shown: Any? = NoPage
+        private set
+    private var layer = 0f
+    private var top = 0f
+    private var bottom = 0f
+
+    /** Notes the page now [shown], coming in by a step [back] or not. */
+    fun arrive(key: Any?, back: Boolean) {
+        if (key == shown) return
+        layer = if (back) --bottom else ++top
+        shown = key
+    }
+
+    /** The layer of the page coming in; a page already in keeps its own. */
+    fun of(key: Any?): Float = if (key == shown) layer else 0f
 }
 
 /** The right pane before anything is open: the app's mark, faintly. */
