@@ -95,7 +95,7 @@ async function group(db, id) {
         versions,
         samples: samples.map((s) => {
             const body = JSON.parse(s.body);
-            return { id: s.id, received: s.received, version: s.version, device: body.device, sdk: body.sdk, rom: body.rom, page: body.page, thread: body.thread, retraced: s.retraced };
+            return { id: s.id, received: s.received, version: s.version, device: body.device, sdk: body.sdk, rom: body.rom, page: body.page, thread: body.thread, detail: body.detail, count: body.count, retraced: s.retraced };
         }),
     };
 }

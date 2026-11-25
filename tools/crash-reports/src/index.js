@@ -33,7 +33,8 @@ const SAMPLES_PER_GROUP = 20;
 const KEYS_PER_QUERY = 90;
 const DAILY = "17 3 * * *";
 
-const KINDS = new Set(["crash", "anr", "native"]);
+// "error": one the app caught but couldn't explain, sent by hand from its error records
+const KINDS = new Set(["crash", "anr", "native", "error"]);
 const VERSION = /^[\w.+-]{1,64}$/;
 const INSTALL = /^[\w-]{8,64}$/;
 
@@ -115,11 +116,28 @@ function parseReport(body) {
         rom: text(body.rom, 100),
         page: text(body.page, 100),
         thread: text(body.thread, 100),
+        // An error's endpoint and status, or its exception, in a line; how often it came on the device
+        detail: text(body.detail, 200),
+        count: Number.isInteger(body.count) && body.count > 0 ? body.count : null,
     };
     if (!VERSION.test(report.version ?? "") || !KINDS.has(report.kind) || !INSTALL.test(report.install ?? "") || !report.trace) {
         throw new Error("bad report");
     }
     return report;
+}
+
+/**
+ * For an error, its detail line with long numbers taken out: two errors thrown in one place are
+ * different problems when one is an HTTP 403 and the other a page that couldn't be read.
+ */
+function errorPart(report) {
+    return report.kind === "error" && report.detail ? `\n${report.detail.replace(/\d{4,}/g, "#")}` : "";
+}
+
+/** An error's group is told apart by its detail line too, and titled by it. */
+function errorGroup(group, report) {
+    if (report.kind !== "error" || !report.detail) return group;
+    return { key: group.key + errorPart(report), title: report.detail };
 }
 
 /** Files what it can of the waiting reports. */
@@ -130,7 +148,7 @@ async function file(env) {
     let unseen = null;
     for (const row of results) {
         const report = JSON.parse(row.body);
-        const key = await digest(traceKey(report.version, report.kind, report.trace));
+        const key = await digest(traceKey(report.version, report.kind, report.trace) + errorPart(report));
         const seen = await env.DB.prepare("SELECT group_id, retraced FROM crash_traces WHERE version = ? AND key = ?")
             .bind(report.version, key)
             .first();
@@ -163,7 +181,7 @@ async function work(env, { row, report, key }) {
         lookup = linesLookup(lines);
     }
     const { text, exceptions } = await retrace(trace, lookup);
-    const group = groupOf(kind, exceptions, trace);
+    const group = errorGroup(groupOf(kind, exceptions, trace), report);
     const groupId = await groupFor(env, group, report, row.received);
     await env.DB.prepare("INSERT OR IGNORE INTO crash_traces (version, key, group_id, retraced) VALUES (?, ?, ?, ?)")
         .bind(version, key, groupId, text)

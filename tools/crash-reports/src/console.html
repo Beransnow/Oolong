@@ -81,6 +81,7 @@ select { background: var(--chip); border: 0; border-radius: 999px; padding: 6px 
 .kind.crash { color: var(--crash); background: var(--crash-bg); }
 .kind.anr { color: var(--anr); background: var(--anr-bg); }
 .kind.native { color: var(--native); background: var(--native-bg); }
+.kind.error { color: var(--ink-2); background: var(--chip); }
 .flag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
 .flag.new { color: var(--on-accent); background: var(--accent); }
 .flag.regress { color: var(--crash); border: 1px solid var(--crash); }
@@ -210,6 +211,7 @@ h3 { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; font-weight: 500; l
     </div>
     <span class="sample" id="who"></span>
     <span class="spacer"></span>
+    <div class="seg crash-only" role="group" aria-label="类别" id="scope"></div>
     <div class="seg crash-only" role="group" aria-label="状态" id="status"></div>
     <div class="seg overview-only" role="group" aria-label="渠道" id="channel"></div>
     <div class="seg feedback-only" role="group" aria-label="状态" id="fstatus"></div>
@@ -270,7 +272,9 @@ h3 { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; font-weight: 500; l
 // The console's script: reads /console/api/* and draws the overview, the crash problems and the feedback.
 const DAYS = 14;
 const API = "/console/api";
-const KIND = { crash: "崩溃", anr: "无响应", native: "原生" };
+const KIND = { crash: "崩溃", anr: "无响应", native: "原生", error: "错误" };
+// Crashes and the errors the app caught are looked at apart
+const SCOPES = [["crash", "崩溃"], ["error", "错误"]];
 const STATUS = [["open", "未解决"], ["fixed", "已修复"], ["ignored", "已忽略"], ["all", "全部"]];
 const CHANNELS = [["", "全部"], ["stable", "正式版"], ["beta", "测试版"]];
 const FORMS = { phone: "手机", tablet: "平板", foldable: "折叠屏" };
@@ -281,7 +285,7 @@ const FSTATUS_ALWAYS = new Set(["open", "fixed", "all"]);
 const FKIND = { 问题: "issue", 建议: "idea", 疑问: "question", 其他: "other" };
 const COLORS = ["var(--accent)", "var(--anr)", "var(--native)", "var(--ok)", "var(--crash)", "var(--ink-3)"];
 
-let tab = "overview", channel = "", status = "open", current = null, sample = 0, fixing = false;
+let tab = "overview", channel = "", status = "open", scope = "crash", current = null, sample = 0, fixing = false;
 let groups = [];
 const details = new Map();
 // Feedback: the chosen status filter and item, the status being set through the form, the list, and the conversations read
@@ -403,18 +407,24 @@ async function loadGroups() {
     renderGroups();
 }
 
-const visible = () => groups.filter((g) => status === "all" || g.status === status);
+const inScope = (g) => (g.kind === "error") === (scope === "error");
+const visible = () => groups.filter((g) => inScope(g) && (status === "all" || g.status === status));
 
 function renderGroups() {
+    document.getElementById("scope").innerHTML = SCOPES.map(([k, label]) => {
+        const n = groups.filter((g) => (g.kind === "error") === (k === "error") && g.status === "open").length;
+        return `<button type="button" id="sc-${k}" aria-pressed="${scope === k}" data-sc="${k}">${label}<span class="n">${n}</span></button>`;
+    }).join("");
+    const mine = groups.filter(inScope);
     document.getElementById("status").innerHTML = STATUS.map(([k, label]) => {
-        const n = k === "all" ? groups.length : groups.filter((g) => g.status === k).length;
+        const n = k === "all" ? mine.length : mine.filter((g) => g.status === k).length;
         return `<button type="button" id="st-${k}" aria-pressed="${status === k}" data-s="${k}">${label}<span class="n">${n}</span></button>`;
     }).join("");
-    const totals = Array.from({ length: DAYS }, (_, i) => groups.reduce((s, g) => s + g.daily[i], 0));
-    const open = groups.filter((g) => g.status === "open").length;
-    const fresh = groups.filter((g) => g.isNew || g.returned).length;
+    const totals = Array.from({ length: DAYS }, (_, i) => mine.reduce((s, g) => s + g.daily[i], 0));
+    const open = mine.filter((g) => g.status === "open").length;
+    const fresh = mine.filter((g) => g.isNew || g.returned).length;
     document.getElementById("figures").innerHTML = `
-      <div class="fig"><div class="v">${totals.reduce((a, b) => a + b, 0)}</div><div class="l">近 14 天崩溃次数</div></div>
+      <div class="fig"><div class="v">${totals.reduce((a, b) => a + b, 0)}</div><div class="l">近 14 天${scope === "error" ? "错误" : "崩溃"}次数</div></div>
       <div class="fig"><div class="v">${open}</div><div class="l">未解决问题</div></div>
       <div class="fig new"><div class="v">${fresh}</div><div class="l">新问题与回归</div></div>`;
     const max = Math.max(1, ...totals), bw = 280 / DAYS;
@@ -496,7 +506,7 @@ async function renderDetail() {
       ${s ? `<section class="card">
         <h3>最近的报告</h3>
         <div class="samples">${d.samples.map((x, i) => `<button type="button" id="s-${i}" data-i="${i}" aria-pressed="${i === sample}"><b>${when(x.received)}</b>${esc(x.device ?? "")}</button>`).join("")}</div>
-        <div class="sampleinfo"><span>${esc(s.version)}</span>${s.sdk ? `<span>Android SDK ${s.sdk}</span>` : ""}${s.rom ? `<span>${esc(s.rom)}</span>` : ""}${s.page ? `<span>页面 ${esc(s.page)}</span>` : ""}${s.thread ? `<span>线程 ${esc(s.thread)}</span>` : ""}</div>
+        <div class="sampleinfo"><span>${esc(s.version)}</span>${s.sdk ? `<span>Android SDK ${s.sdk}</span>` : ""}${s.rom ? `<span>${esc(s.rom)}</span>` : ""}${s.detail ? `<span>${esc(s.detail)}</span>` : ""}${s.count > 1 ? `<span>出现 ${s.count} 次</span>` : ""}${s.page ? `<span>页面 ${esc(s.page)}</span>` : ""}${s.thread ? `<span>线程 ${esc(s.thread)}</span>` : ""}</div>
         <div class="tracebar"><h3 style="margin:0">还原后的堆栈</h3><button type="button" class="btn" id="copy">复制</button></div>
         <pre class="trace" style="margin-top:8px">${traceHtml(s.retraced)}</pre>
       </section>` : ""}`;
@@ -652,6 +662,8 @@ document.addEventListener("click", async (e) => {
     if (c) { channel = c.dataset.ch; loadOverview(); return; }
     const st = e.target.closest("[data-s]");
     if (st) { status = st.dataset.s; renderGroups(); return; }
+    const sc = e.target.closest("[data-sc]");
+    if (sc) { scope = sc.dataset.sc; renderGroups(); return; }
     const fs = e.target.closest("[data-fs]");
     if (fs) { fstatus = fs.dataset.fs; renderFeedback(); return; }
     const frow = e.target.closest("[data-fid]");
