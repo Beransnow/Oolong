@@ -1,12 +1,5 @@
 package oolong.core.network.thread
 
-import oolong.client.api.models.protos.pbFloor.PbFloorRequest
-import oolong.client.api.models.protos.pbFloor.PbFloorRequestData
-import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
-import oolong.client.api.models.protos.pbPage.AdParam
-import oolong.client.api.models.protos.pbPage.PbPageRequest
-import oolong.client.api.models.protos.pbPage.PbPageRequestData
-import oolong.client.api.models.protos.pbPage.PbPageResponseData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
@@ -14,6 +7,13 @@ import oolong.core.network.TiebaServerException
 import oolong.core.network.form.signedFormBody
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.pbFloor.PbFloorRequest
+import oolong.core.network.protos.pbFloor.PbFloorRequestData
+import oolong.core.network.protos.pbFloor.PbFloorResponseData
+import oolong.core.network.protos.pbPage.AdParam
+import oolong.core.network.protos.pbPage.PbPageRequest
+import oolong.core.network.protos.pbPage.PbPageRequestData
+import oolong.core.network.protos.pbPage.PbPageResponseData
 
 /** A thread's posts, and what can be done to the thread and its posts from the thread page. */
 class ThreadRemoteDataSource(

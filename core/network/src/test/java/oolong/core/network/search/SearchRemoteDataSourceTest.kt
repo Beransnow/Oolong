@@ -3,13 +3,13 @@ package oolong.core.network.search
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import okio.Buffer
-import oolong.client.api.models.protos.searchSug.SearchSugRequest
-import oolong.client.api.models.protos.searchSug.SearchSugResponse
-import oolong.client.api.models.protos.searchSug.SearchSugResponseData
 import oolong.core.network.FakeDevice
 import oolong.core.network.TiebaProfile
 import oolong.core.network.TiebaServerException
 import oolong.core.network.UnreadableResponseException
+import oolong.core.network.protos.searchSug.SearchSugRequest
+import oolong.core.network.protos.searchSug.SearchSugResponse
+import oolong.core.network.protos.searchSug.SearchSugResponseData
 import oolong.core.network.testing.FormServer
 import oolong.core.network.testing.multipartParts
 import org.junit.After

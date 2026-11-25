@@ -1,12 +1,12 @@
 package oolong.client.data.thread
 
-import oolong.client.api.models.protos.Abstract
-import oolong.client.api.models.protos.Post
-import oolong.client.api.models.protos.PostInfoList
-import oolong.client.api.models.protos.SubPostList
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.User
 import oolong.client.data.emoticon.EmoticonManager
+import oolong.core.network.protos.Abstract
+import oolong.core.network.protos.Post
+import oolong.core.network.protos.PostInfoList
+import oolong.core.network.protos.SubPostList
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.User
 
 val List<Abstract>.abstractText: String
     get() = joinToString(separator = "") {

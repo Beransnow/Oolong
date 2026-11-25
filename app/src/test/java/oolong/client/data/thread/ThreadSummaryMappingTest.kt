@@ -1,16 +1,16 @@
 package oolong.client.data.thread
 
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.Media
-import oolong.client.api.models.protos.OriginThreadInfo
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.User
-import oolong.client.api.models.protos.VideoInfo
 import oolong.client.model.ForumSummary
 import oolong.client.model.ThreadVideo
 import oolong.client.model.plainText
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.Media
+import oolong.core.network.protos.OriginThreadInfo
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.User
+import oolong.core.network.protos.VideoInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

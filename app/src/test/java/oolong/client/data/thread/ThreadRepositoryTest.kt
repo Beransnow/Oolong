@@ -6,32 +6,32 @@ import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.Anti
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.PollInfo
-import oolong.client.api.models.protos.PollOption
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.SubPost
-import oolong.client.api.models.protos.SubPostList
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.VideoInfo
-import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
-import oolong.client.api.models.protos.pbPage.PbPageResponseData
-import oolong.client.api.retrofit.exception.TiebaUnknownException
 import oolong.client.arch.query.QueryClient
 import oolong.client.model.BawuType
 import oolong.client.model.PostContent
+import oolong.core.network.TiebaUnknownException
 import oolong.core.network.post.PostRemoteDataSource
+import oolong.core.network.protos.Anti
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.PollInfo
+import oolong.core.network.protos.PollOption
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.SubPost
+import oolong.core.network.protos.SubPostList
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.VideoInfo
+import oolong.core.network.protos.pbFloor.PbFloorResponseData
+import oolong.core.network.protos.pbPage.PbPageResponseData
 import oolong.core.network.thread.ThreadRemoteDataSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import oolong.client.api.models.protos.Agree as ProtoAgree
-import oolong.client.api.models.protos.Page as ProtoPage
-import oolong.client.api.models.protos.Post as ProtoPost
-import oolong.client.api.models.protos.User as ProtoUser
+import oolong.core.network.protos.Agree as ProtoAgree
+import oolong.core.network.protos.Page as ProtoPage
+import oolong.core.network.protos.Post as ProtoPost
+import oolong.core.network.protos.User as ProtoUser
 
 class ThreadRepositoryTest {
     private val remote = mockk<ThreadRemoteDataSource>()

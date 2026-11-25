@@ -7,8 +7,8 @@ import com.squareup.wire.ProtoReader
 import okhttp3.ResponseBody
 import okio.Buffer
 import okio.ByteString
-import oolong.client.api.models.protos.Error
 import oolong.core.network.TiebaServerException
+import oolong.core.network.protos.Error
 import retrofit2.Converter
 import retrofit2.Retrofit
 import java.lang.reflect.Type

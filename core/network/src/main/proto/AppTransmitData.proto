@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option java_package = "oolong.client.api.models.protos";
+option java_package = "oolong.core.network.protos";
 
 message AppTransmitData {
   string wise_sample_id = 1;

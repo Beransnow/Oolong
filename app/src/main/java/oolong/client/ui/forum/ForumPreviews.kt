@@ -5,11 +5,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
-import oolong.client.api.models.protos.Abstract
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.User
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.data.thread.toThreadSummary
@@ -17,6 +12,11 @@ import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
 import oolong.client.ui.designsystem.theme.TiebaLiteTheme
+import oolong.core.network.protos.Abstract
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.User
 import java.io.IOException
 
 /** Sample forum page states, shared by the previews below and the screenshot tests. */

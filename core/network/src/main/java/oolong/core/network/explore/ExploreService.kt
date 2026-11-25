@@ -2,10 +2,10 @@ package oolong.core.network.explore
 
 import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.hotThreadList.HotThreadListResponse
-import oolong.client.api.models.protos.personalized.PersonalizedResponse
-import oolong.client.api.models.protos.topicList.TopicListResponse
-import oolong.client.api.models.protos.userLike.UserLikeResponse
+import oolong.core.network.protos.hotThreadList.HotThreadListResponse
+import oolong.core.network.protos.personalized.PersonalizedResponse
+import oolong.core.network.protos.topicList.TopicListResponse
+import oolong.core.network.protos.userLike.UserLikeResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

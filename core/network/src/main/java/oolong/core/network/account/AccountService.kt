@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoResponse
+import oolong.core.network.protos.getUserInfo.GetUserInfoResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

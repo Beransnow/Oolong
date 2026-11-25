@@ -5,11 +5,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.VideoInfo
-import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
-import oolong.client.api.models.protos.pbPage.PbPageResponseData
-import oolong.client.api.retrofit.exception.TiebaUnknownException
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.arch.query.QueryClient
@@ -21,15 +16,20 @@ import oolong.client.model.SubPost
 import oolong.client.model.ThreadDetail
 import oolong.client.model.User
 import oolong.client.model.Viewer
+import oolong.core.network.TiebaUnknownException
 import oolong.core.network.post.PostRemoteDataSource
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.VideoInfo
+import oolong.core.network.protos.pbFloor.PbFloorResponseData
+import oolong.core.network.protos.pbPage.PbPageResponseData
 import oolong.core.network.thread.ThreadRemoteDataSource
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
-import oolong.client.api.models.protos.Agree as ProtoAgree
-import oolong.client.api.models.protos.Post as ProtoPost
-import oolong.client.api.models.protos.SubPostList as ProtoSubPost
-import oolong.client.api.models.protos.User as ProtoUser
+import oolong.core.network.protos.Agree as ProtoAgree
+import oolong.core.network.protos.Post as ProtoPost
+import oolong.core.network.protos.SubPostList as ProtoSubPost
+import oolong.core.network.protos.User as ProtoUser
 
 enum class ThreadSort(val value: Int) {
     OldestFirst(0),

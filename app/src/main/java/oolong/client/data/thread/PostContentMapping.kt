@@ -4,10 +4,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import oolong.client.api.models.protos.PbContent
 import oolong.client.data.emoticon.EmoticonUtil.normalizeEmoticonId
 import oolong.client.model.PostContent
 import oolong.client.model.TextSpan
+import oolong.core.network.protos.PbContent
 
 /** Learns the emoticons that appear in posts, so they can be used when replying. */
 fun interface EmoticonRegistry {

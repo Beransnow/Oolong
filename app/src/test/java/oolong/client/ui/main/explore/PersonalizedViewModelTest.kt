@@ -9,8 +9,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryClient
 import oolong.client.data.block.BlockRuleSource
@@ -24,6 +22,8 @@ import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions
 import oolong.client.ui.main.explore.personalized.PersonalizedViewModel
 import oolong.core.network.agree.AgreeRemoteDataSource
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.ThreadInfo
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test

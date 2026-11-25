@@ -1,12 +1,6 @@
 package oolong.client.data.thread
 
 import kotlinx.collections.immutable.toImmutableList
-import oolong.client.api.models.protos.Media
-import oolong.client.api.models.protos.OriginThreadInfo
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.PostInfoList
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.VideoInfo
 import oolong.client.data.thread.abstractText
 import oolong.client.model.Agree
 import oolong.client.model.FeedReply
@@ -20,6 +14,12 @@ import oolong.client.model.UserPost
 import oolong.client.model.UserReplies
 import oolong.client.model.UserReply
 import oolong.client.model.UserThread
+import oolong.core.network.protos.Media
+import oolong.core.network.protos.OriginThreadInfo
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.PostInfoList
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.VideoInfo
 
 /**
  * A thread as a list returned it. Feeds name the forum only in its forum info and forums only by

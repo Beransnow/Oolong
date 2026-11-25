@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.profile.ProfileResponse
-import oolong.client.api.models.protos.userPost.UserPostResponse
 import oolong.core.network.explore.WebThread
+import oolong.core.network.protos.profile.ProfileResponse
+import oolong.core.network.protos.userPost.UserPostResponse
 import retrofit2.http.Body
 import retrofit2.http.FieldMap
 import retrofit2.http.FormUrlEncoded

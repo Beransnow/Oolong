@@ -5,12 +5,6 @@ import io.mockk.mockk
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.BazhuSign
-import oolong.client.api.models.protos.NewGodInfo
-import oolong.client.api.models.protos.PostInfoList
-import oolong.client.api.models.protos.User
-import oolong.client.api.models.protos.profile.ProfileResponseData
-import oolong.client.api.models.protos.userPost.UserPostResponseData
 import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
 import oolong.client.model.LikedForum
@@ -25,6 +19,12 @@ import oolong.core.network.explore.WebPost
 import oolong.core.network.explore.WebThread
 import oolong.core.network.explore.WebUser
 import oolong.core.network.explore.WebVideo
+import oolong.core.network.protos.BazhuSign
+import oolong.core.network.protos.NewGodInfo
+import oolong.core.network.protos.PostInfoList
+import oolong.core.network.protos.User
+import oolong.core.network.protos.profile.ProfileResponseData
+import oolong.core.network.protos.userPost.UserPostResponseData
 import oolong.core.network.upload.UploadRemoteDataSource
 import oolong.core.network.user.LikedForumsResponse
 import oolong.core.network.user.LikesResponse

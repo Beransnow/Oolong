@@ -13,14 +13,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.Anti
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.PollInfo
-import oolong.client.api.models.protos.PollOption
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
-import oolong.client.api.models.protos.pbPage.PbPageResponseData
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
@@ -44,6 +36,14 @@ import oolong.client.testing.threadActions
 import oolong.client.ui.reader.ReaderPositions
 import oolong.core.network.agree.AgreeRemoteDataSource
 import oolong.core.network.post.PostRemoteDataSource
+import oolong.core.network.protos.Anti
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.PollInfo
+import oolong.core.network.protos.PollOption
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.pbFloor.PbFloorResponseData
+import oolong.core.network.protos.pbPage.PbPageResponseData
 import oolong.core.network.thread.ThreadRemoteDataSource
 import org.junit.Rule
 import java.io.IOException
@@ -53,12 +53,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import oolong.client.api.models.protos.Agree as ProtoAgree
-import oolong.client.api.models.protos.Page as ProtoPage
-import oolong.client.api.models.protos.Post as ProtoPost
-import oolong.client.api.models.protos.SubPost as ProtoSubPosts
-import oolong.client.api.models.protos.SubPostList as ProtoSubPost
-import oolong.client.api.models.protos.User as ProtoUser
+import oolong.core.network.protos.Agree as ProtoAgree
+import oolong.core.network.protos.Page as ProtoPage
+import oolong.core.network.protos.Post as ProtoPost
+import oolong.core.network.protos.SubPost as ProtoSubPosts
+import oolong.core.network.protos.SubPostList as ProtoSubPost
+import oolong.core.network.protos.User as ProtoUser
 
 class ThreadViewModelTest {
     private val readerPositions = ReaderPositions()

@@ -23,6 +23,6 @@ dependencyResolutionManagement {
 rootProject.name = "TiebaLite"
 include(":app")
 include(":core:network")
-include(":core:ui")
+include(":core:designsystem")
 include(":migration")
 include(":baselineprofile")

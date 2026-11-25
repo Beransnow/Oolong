@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.getMemberInfo;
 
-option java_package = "oolong.client.api.models.protos.getMemberInfo";
+option java_package = "oolong.core.network.protos.getMemberInfo";
 
 import "GetMemberInfo/GetMemberInfoRequestData.proto";
 

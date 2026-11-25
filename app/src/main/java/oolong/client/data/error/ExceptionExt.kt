@@ -3,8 +3,8 @@ package oolong.client.data.error
 import android.content.Context
 import oolong.client.App
 import oolong.client.R
-import oolong.client.api.retrofit.exception.TiebaException
 import oolong.client.data.error.Error
+import oolong.core.network.TiebaException
 import oolong.core.network.TiebaServerException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException

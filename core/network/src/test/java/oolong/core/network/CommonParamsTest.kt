@@ -1,6 +1,6 @@
 package oolong.core.network
 
-import oolong.client.api.models.protos.CommonRequest
+import oolong.core.network.protos.CommonRequest
 import java.util.Calendar
 import kotlin.random.Random
 import kotlin.test.Test

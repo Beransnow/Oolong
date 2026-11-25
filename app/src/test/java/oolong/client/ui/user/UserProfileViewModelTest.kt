@@ -8,8 +8,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.R
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.PostInfoList
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
@@ -27,6 +25,8 @@ import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions
 import oolong.core.network.agree.AgreeRemoteDataSource
 import oolong.core.network.identity.Session
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.PostInfoList
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test

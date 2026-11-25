@@ -1,8 +1,8 @@
 package oolong.core.network.post
 
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.addPollPost.AddPollPostResponse
-import oolong.client.api.models.protos.addPost.AddPostResponse
+import oolong.core.network.protos.addPollPost.AddPollPostResponse
+import oolong.core.network.protos.addPost.AddPostResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

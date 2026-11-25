@@ -4,8 +4,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.pbFloor.PbFloorResponse
-import oolong.client.api.models.protos.pbPage.PbPageResponse
+import oolong.core.network.protos.pbFloor.PbFloorResponse
+import oolong.core.network.protos.pbPage.PbPageResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.pbPage;
 
-option java_package = "oolong.client.api.models.protos.pbPage";
+option java_package = "oolong.core.network.protos.pbPage";
 
 message FloatingIconItem {
   string url = 1;

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba;
 
-option java_package = "oolong.client.api.models.protos";
+option java_package = "oolong.core.network.protos";
 
 message MultipleForum {
   int64 forum_id = 1;

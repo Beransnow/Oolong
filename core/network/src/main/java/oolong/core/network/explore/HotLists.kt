@@ -2,9 +2,9 @@ package oolong.core.network.explore
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import oolong.client.api.models.protos.Media
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.VideoInfo
+import oolong.core.network.protos.Media
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.VideoInfo
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.QueryMap

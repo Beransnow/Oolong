@@ -3,18 +3,6 @@ package oolong.core.network.explore
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.put
-import oolong.client.api.models.protos.hotThreadList.HotThreadListRequest
-import oolong.client.api.models.protos.hotThreadList.HotThreadListRequestData
-import oolong.client.api.models.protos.hotThreadList.HotThreadListResponseData
-import oolong.client.api.models.protos.personalized.PersonalizedRequest
-import oolong.client.api.models.protos.personalized.PersonalizedRequestData
-import oolong.client.api.models.protos.personalized.PersonalizedResponseData
-import oolong.client.api.models.protos.topicList.TopicListRequest
-import oolong.client.api.models.protos.topicList.TopicListRequestData
-import oolong.client.api.models.protos.topicList.TopicListResponseData
-import oolong.client.api.models.protos.userLike.UserLikeRequest
-import oolong.client.api.models.protos.userLike.UserLikeRequestData
-import oolong.client.api.models.protos.userLike.UserLikeResponseData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
@@ -22,6 +10,18 @@ import oolong.core.network.form.signedFormBody
 import oolong.core.network.form.signedWebQuery
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.hotThreadList.HotThreadListRequest
+import oolong.core.network.protos.hotThreadList.HotThreadListRequestData
+import oolong.core.network.protos.hotThreadList.HotThreadListResponseData
+import oolong.core.network.protos.personalized.PersonalizedRequest
+import oolong.core.network.protos.personalized.PersonalizedRequestData
+import oolong.core.network.protos.personalized.PersonalizedResponseData
+import oolong.core.network.protos.topicList.TopicListRequest
+import oolong.core.network.protos.topicList.TopicListRequestData
+import oolong.core.network.protos.topicList.TopicListResponseData
+import oolong.core.network.protos.userLike.UserLikeRequest
+import oolong.core.network.protos.userLike.UserLikeRequestData
+import oolong.core.network.protos.userLike.UserLikeResponseData
 import java.util.concurrent.atomic.AtomicInteger
 
 /** The feeds of the explore tab: recommended threads, the followed users' threads and the hot lists. */

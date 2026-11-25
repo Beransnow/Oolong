@@ -3,10 +3,6 @@ package oolong.client.data.explore
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.personalized.PersonalizedResponseData
-import oolong.client.api.models.protos.personalized.ThreadPersonalized
-import oolong.client.api.models.protos.userLike.UserLikeResponseData
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.forum.VideoThreadFilter
@@ -30,6 +26,10 @@ import oolong.client.model.TopicForum
 import oolong.client.model.TopicPage
 import oolong.client.model.TopicRef
 import oolong.core.network.explore.ExploreRemoteDataSource
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.personalized.PersonalizedResponseData
+import oolong.core.network.protos.personalized.ThreadPersonalized
+import oolong.core.network.protos.userLike.UserLikeResponseData
 import javax.inject.Inject
 
 /** Whether the feeds load anew when the app opens, rather than showing what was last loaded. */

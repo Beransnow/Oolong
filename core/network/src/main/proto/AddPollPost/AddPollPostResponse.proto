@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.addPollPost;
 
-option java_package = "oolong.client.api.models.protos.addPollPost";
+option java_package = "oolong.core.network.protos.addPollPost";
 
 import "Error.proto";
 

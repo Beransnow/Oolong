@@ -1,11 +1,11 @@
 package oolong.core.network.forum
 
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
-import oolong.client.api.models.protos.frsPage.FrsPageResponse
-import oolong.client.api.models.protos.generalTabList.GeneralTabListResponse
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailResponse
-import oolong.client.api.models.protos.threadList.ThreadListResponse
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailResponse
+import oolong.core.network.protos.frsPage.FrsPageResponse
+import oolong.core.network.protos.generalTabList.GeneralTabListResponse
+import oolong.core.network.protos.getForumDetail.GetForumDetailResponse
+import oolong.core.network.protos.threadList.ThreadListResponse
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST

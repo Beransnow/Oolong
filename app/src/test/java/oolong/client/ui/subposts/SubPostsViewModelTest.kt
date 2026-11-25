@@ -11,12 +11,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.Anti
-import oolong.client.api.models.protos.PbContent
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.SubPostList
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryClient
 import oolong.client.data.block.BlockRuleSource
@@ -30,16 +24,22 @@ import oolong.client.testing.threadActions
 import oolong.core.network.TiebaServerException
 import oolong.core.network.agree.AgreeRemoteDataSource
 import oolong.core.network.identity.Session
+import oolong.core.network.protos.Anti
+import oolong.core.network.protos.PbContent
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.SubPostList
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.pbFloor.PbFloorResponseData
 import oolong.core.network.thread.ThreadRemoteDataSource
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import oolong.client.api.models.protos.Agree as ProtoAgree
-import oolong.client.api.models.protos.Page as ProtoPage
-import oolong.client.api.models.protos.Post as ProtoPost
-import oolong.client.api.models.protos.User as ProtoUser
+import oolong.core.network.protos.Agree as ProtoAgree
+import oolong.core.network.protos.Page as ProtoPage
+import oolong.core.network.protos.Post as ProtoPost
+import oolong.core.network.protos.User as ProtoUser
 
 class SubPostsViewModelTest {
     @get:Rule

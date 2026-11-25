@@ -1,7 +1,6 @@
 package oolong.client.ui.forum.rule
 
 import kotlinx.collections.immutable.persistentListOf
-import oolong.client.api.models.protos.PbContent
 import oolong.client.arch.LoadState
 import oolong.client.data.emoticon.EmoticonManager
 import oolong.client.data.thread.toPostContent
@@ -10,6 +9,7 @@ import oolong.client.model.ForumRuleDetail
 import oolong.client.model.ForumRuleItem
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
+import oolong.core.network.protos.PbContent
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

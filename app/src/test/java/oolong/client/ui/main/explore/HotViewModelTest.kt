@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.data.block.BlockRuleSource
@@ -25,6 +24,7 @@ import oolong.client.model.RankedThread
 import oolong.client.model.ThreadMeasure
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.ui.main.explore.hot.HotViewModel
+import oolong.core.network.protos.ThreadInfo
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test

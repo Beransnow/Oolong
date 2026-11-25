@@ -4,11 +4,11 @@ import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import okio.Buffer
 import okio.ByteString.Companion.encodeUtf8
-import oolong.client.api.models.protos.User
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoRequest
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoResponse
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoResponseData
 import oolong.core.network.FakeDevice
+import oolong.core.network.protos.User
+import oolong.core.network.protos.getUserInfo.GetUserInfoRequest
+import oolong.core.network.protos.getUserInfo.GetUserInfoResponse
+import oolong.core.network.protos.getUserInfo.GetUserInfoResponseData
 import oolong.core.network.testing.FormServer
 import oolong.core.network.testing.assertSigned
 import oolong.core.network.testing.form

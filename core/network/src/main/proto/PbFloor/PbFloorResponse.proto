@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.pbFloor;
 
-option java_package = "oolong.client.api.models.protos.pbFloor";
+option java_package = "oolong.core.network.protos.pbFloor";
 
 import "Error.proto";
 import "PbFloor/PbFloorResponseData.proto";

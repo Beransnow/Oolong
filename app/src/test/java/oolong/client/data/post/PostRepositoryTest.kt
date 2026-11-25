@@ -6,10 +6,10 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import oolong.client.api.models.protos.ReplyExp
-import oolong.client.api.models.protos.addPost.AddPostRequestData
-import oolong.client.api.models.protos.addPost.AddPostResponseData
 import oolong.core.network.post.PostRemoteDataSource
+import oolong.core.network.protos.ReplyExp
+import oolong.core.network.protos.addPost.AddPostRequestData
+import oolong.core.network.protos.addPost.AddPostResponseData
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

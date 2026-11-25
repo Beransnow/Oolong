@@ -1,6 +1,6 @@
 package oolong.client.data.error
 
-import oolong.client.api.retrofit.exception.TiebaException
+import oolong.core.network.TiebaException
 
 open class TiebaLocalException(
     override val code: Int,

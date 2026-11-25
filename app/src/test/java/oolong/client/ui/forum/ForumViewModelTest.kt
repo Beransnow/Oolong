@@ -9,15 +9,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.R
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.Anti
-import oolong.client.api.models.protos.FrsTabInfo
-import oolong.client.api.models.protos.Page
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.frsPage.ForumInfo
-import oolong.client.api.models.protos.frsPage.FrsPageResponseData
-import oolong.client.api.models.protos.frsPage.NavTabInfo
-import oolong.client.api.models.protos.generalTabList.GeneralTabListResponseData
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryClient
 import oolong.client.data.block.BlockRuleSource
@@ -37,6 +28,15 @@ import oolong.core.network.forum.ForumRemoteDataSource
 import oolong.core.network.forum.LikeForumResponse
 import oolong.core.network.forum.LikeRemoteDataSource
 import oolong.core.network.identity.Session
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.Anti
+import oolong.core.network.protos.FrsTabInfo
+import oolong.core.network.protos.Page
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.frsPage.ForumInfo
+import oolong.core.network.protos.frsPage.FrsPageResponseData
+import oolong.core.network.protos.frsPage.NavTabInfo
+import oolong.core.network.protos.generalTabList.GeneralTabListResponseData
 import oolong.core.network.sign.SignRemoteDataSource
 import oolong.core.network.sign.SignResponse
 import org.junit.Rule
@@ -69,8 +69,8 @@ class ForumViewModelTest {
                 id = FORUM_ID,
                 name = "吧名",
                 is_like = if (liked) 1 else 0,
-                sign_in_info = oolong.client.api.models.protos.frsPage.SignInfo(
-                    user_info = oolong.client.api.models.protos.frsPage.SignUser(is_sign_in = if (signedIn) 1 else 0),
+                sign_in_info = oolong.core.network.protos.frsPage.SignInfo(
+                    user_info = oolong.core.network.protos.frsPage.SignUser(is_sign_in = if (signedIn) 1 else 0),
                 ),
             ),
             page = Page(has_more = 0),

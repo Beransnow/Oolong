@@ -1,4 +1,4 @@
-package oolong.client.api.retrofit.exception
+package oolong.core.network
 
 import java.io.IOException
 

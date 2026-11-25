@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
-import oolong.client.api.models.protos.User
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.thread.EmoticonRegistry
@@ -18,6 +17,7 @@ import oolong.client.model.ThreadSummary
 import oolong.client.model.UserPost
 import oolong.client.model.UserProfile
 import oolong.core.network.TiebaServerException
+import oolong.core.network.protos.User
 import oolong.core.network.upload.UploadRemoteDataSource
 import oolong.core.network.user.UserRemoteDataSource
 import java.io.File

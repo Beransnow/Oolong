@@ -1,7 +1,7 @@
 package oolong.core.network.search
 
 import okhttp3.RequestBody
-import oolong.client.api.models.protos.searchSug.SearchSugResponse
+import oolong.core.network.protos.searchSug.SearchSugResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header

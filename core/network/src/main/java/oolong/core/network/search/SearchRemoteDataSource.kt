@@ -1,13 +1,13 @@
 package oolong.core.network.search
 
-import oolong.client.api.models.protos.searchSug.SearchSugRequest
-import oolong.client.api.models.protos.searchSug.SearchSugRequestData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.TiebaServerException
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.searchSug.SearchSugRequest
+import oolong.core.network.protos.searchSug.SearchSugRequestData
 import java.net.URLEncoder
 
 /** Searching Tieba for forums, threads and users, and inside one forum for its threads. */

@@ -2,10 +2,10 @@ package oolong.client.data.thread
 
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import oolong.client.api.models.protos.PbContent
 import oolong.client.model.PostContent
 import oolong.client.model.TextSpan
 import oolong.client.model.plainText
+import oolong.core.network.protos.PbContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

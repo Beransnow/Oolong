@@ -132,7 +132,7 @@
 # When nothing reads a response, R8 deletes its class and rewrites that signature to Object,
 # which no converter takes, so the call fails; the services' response classes are kept.
 -keep,allowobfuscation,allowoptimization class oolong.core.network.**.*Response
--keep,allowobfuscation,allowoptimization class oolong.client.api.models.protos.**Response
+-keep,allowobfuscation,allowoptimization class oolong.core.network.protos.**Response
 
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.

@@ -1,7 +1,7 @@
 package oolong.client.data.thread
 
-import oolong.client.api.models.protos.PollInfo
-import oolong.client.api.models.protos.PollOption
+import oolong.core.network.protos.PollInfo
+import oolong.core.network.protos.PollOption
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

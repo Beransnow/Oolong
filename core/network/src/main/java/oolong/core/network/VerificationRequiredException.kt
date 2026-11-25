@@ -1,6 +1,6 @@
 package oolong.core.network
 
-import oolong.client.api.retrofit.exception.TiebaException
+import oolong.core.network.TiebaException
 
 /**
  * What the server asks the user to complete before it accepts a write.

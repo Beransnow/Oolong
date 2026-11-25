@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tieba.getHistoryForum;
 
-option java_package = "oolong.client.api.models.protos.getHistoryForum";
+option java_package = "oolong.core.network.protos.getHistoryForum";
 
 
 import "Error.proto";

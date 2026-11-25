@@ -13,7 +13,7 @@ ktlint {
 }
 
 android {
-    namespace = "oolong.core.ui"
+    namespace = "oolong.core.designsystem"
     compileSdk = 37
     defaultConfig {
         minSdk = 24

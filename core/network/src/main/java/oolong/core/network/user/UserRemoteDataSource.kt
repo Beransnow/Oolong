@@ -1,11 +1,5 @@
 package oolong.core.network.user
 
-import oolong.client.api.models.protos.profile.ProfileRequest
-import oolong.client.api.models.protos.profile.ProfileRequestData
-import oolong.client.api.models.protos.profile.ProfileResponseData
-import oolong.client.api.models.protos.userPost.UserPostRequest
-import oolong.client.api.models.protos.userPost.UserPostRequestData
-import oolong.client.api.models.protos.userPost.UserPostResponseData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
@@ -13,6 +7,12 @@ import oolong.core.network.form.signedFormBody
 import oolong.core.network.form.signedWebQuery
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.profile.ProfileRequest
+import oolong.core.network.protos.profile.ProfileRequestData
+import oolong.core.network.protos.profile.ProfileResponseData
+import oolong.core.network.protos.userPost.UserPostRequest
+import oolong.core.network.protos.userPost.UserPostRequestData
+import oolong.core.network.protos.userPost.UserPostResponseData
 
 /** A user's profile and what they posted and follow, and following them. */
 class UserRemoteDataSource(

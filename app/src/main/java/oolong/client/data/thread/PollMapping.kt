@@ -2,9 +2,9 @@ package oolong.client.data.thread
 
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
-import oolong.client.api.models.protos.PollInfo
 import oolong.client.model.Poll
 import oolong.client.model.PollOption
+import oolong.core.network.protos.PollInfo
 
 /** Null when the thread has no poll. [now] is in seconds since the epoch. */
 internal fun PollInfo.toPoll(now: Long = System.currentTimeMillis() / 1000): Poll? {

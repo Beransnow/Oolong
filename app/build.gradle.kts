@@ -238,7 +238,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     implementation(project(":core:network"))
-    implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

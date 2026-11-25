@@ -1,12 +1,12 @@
 package oolong.core.network
 
 import okio.ByteString.Companion.encodeUtf8
-import oolong.client.api.models.protos.AppPosInfo
-import oolong.client.api.models.protos.CommonRequest
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.identity.InstallIdentity
 import oolong.core.network.identity.Session
 import oolong.core.network.identity.SessionProvider
+import oolong.core.network.protos.AppPosInfo
+import oolong.core.network.protos.CommonRequest
 import java.util.Calendar
 import kotlin.random.Random
 

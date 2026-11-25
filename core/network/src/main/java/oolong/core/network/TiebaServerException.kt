@@ -1,6 +1,6 @@
 package oolong.core.network
 
-import oolong.client.api.retrofit.exception.TiebaException
+import oolong.core.network.TiebaException
 
 /**
  * The server answered with a non-zero error code.

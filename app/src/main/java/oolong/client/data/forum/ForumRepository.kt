@@ -3,10 +3,6 @@ package oolong.client.data.forum
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.User
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
-import oolong.client.api.models.protos.frsPage.FrsPageResponseData
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.data.thread.EmoticonRegistry
@@ -25,6 +21,10 @@ import oolong.client.model.ThreadSummary
 import oolong.client.model.plainText
 import oolong.core.network.forum.ForumRemoteDataSource
 import oolong.core.network.forum.LikeRemoteDataSource
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.User
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailResponseData
+import oolong.core.network.protos.frsPage.FrsPageResponseData
 import oolong.core.network.sign.SignRemoteDataSource
 import javax.inject.Inject
 import javax.inject.Singleton

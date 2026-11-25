@@ -6,11 +6,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import oolong.client.api.models.protos.addPost.AddPostRequestData
 import oolong.client.arch.IoDispatcher
 import oolong.client.media.FileUtil
 import oolong.client.media.upload.ImageUploader
 import oolong.core.network.post.PostRemoteDataSource
+import oolong.core.network.protos.addPost.AddPostRequestData
 import oolong.core.network.upload.UploadRemoteDataSource
 import javax.inject.Inject
 

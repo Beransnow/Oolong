@@ -1,28 +1,28 @@
 package oolong.core.network.forum
 
-import oolong.client.api.models.protos.RecommendForumInfo
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailRequestData
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
-import oolong.client.api.models.protos.frsPage.AdParam
-import oolong.client.api.models.protos.frsPage.FrsPageRequest
-import oolong.client.api.models.protos.frsPage.FrsPageRequestData
-import oolong.client.api.models.protos.frsPage.FrsPageResponseData
-import oolong.client.api.models.protos.generalTabList.GeneralTabListRequest
-import oolong.client.api.models.protos.generalTabList.GeneralTabListRequestData
-import oolong.client.api.models.protos.generalTabList.GeneralTabListResponseData
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailRequest
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailRequestData
-import oolong.client.api.models.protos.threadList.ThreadListRequest
-import oolong.client.api.models.protos.threadList.ThreadListRequestData
-import oolong.client.api.models.protos.threadList.ThreadListResponseData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.RecommendForumInfo
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailRequest
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailRequestData
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailResponseData
+import oolong.core.network.protos.frsPage.AdParam
+import oolong.core.network.protos.frsPage.FrsPageRequest
+import oolong.core.network.protos.frsPage.FrsPageRequestData
+import oolong.core.network.protos.frsPage.FrsPageResponseData
+import oolong.core.network.protos.generalTabList.GeneralTabListRequest
+import oolong.core.network.protos.generalTabList.GeneralTabListRequestData
+import oolong.core.network.protos.generalTabList.GeneralTabListResponseData
+import oolong.core.network.protos.getForumDetail.GetForumDetailRequest
+import oolong.core.network.protos.getForumDetail.GetForumDetailRequestData
+import oolong.core.network.protos.threadList.ThreadListRequest
+import oolong.core.network.protos.threadList.ThreadListRequestData
+import oolong.core.network.protos.threadList.ThreadListResponseData
 import java.net.URLEncoder
-import oolong.client.api.models.protos.threadList.AdParam as ThreadListAdParam
+import oolong.core.network.protos.threadList.AdParam as ThreadListAdParam
 
 /** A forum's page: its details, tabs and threads, and its rules. */
 class ForumRemoteDataSource(

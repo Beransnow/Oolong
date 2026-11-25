@@ -1,11 +1,5 @@
 package oolong.core.network.post
 
-import oolong.client.api.models.protos.addPollPost.AddPollPostRequest
-import oolong.client.api.models.protos.addPollPost.AddPollPostRequestData
-import oolong.client.api.models.protos.addPost.AddPostRequest
-import oolong.client.api.models.protos.addPost.AddPostRequestData
-import oolong.client.api.models.protos.addPost.AddPostResponse
-import oolong.client.api.models.protos.addPost.AddPostResponseData
 import oolong.core.network.CaptchaFields
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
@@ -14,6 +8,12 @@ import oolong.core.network.TiebaServerException
 import oolong.core.network.form.signedParams
 import oolong.core.network.identity.SessionProvider
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.addPollPost.AddPollPostRequest
+import oolong.core.network.protos.addPollPost.AddPollPostRequestData
+import oolong.core.network.protos.addPost.AddPostRequest
+import oolong.core.network.protos.addPost.AddPostRequestData
+import oolong.core.network.protos.addPost.AddPostResponse
+import oolong.core.network.protos.addPost.AddPostResponseData
 import oolong.core.network.writeResponseError
 
 class PostRemoteDataSource(

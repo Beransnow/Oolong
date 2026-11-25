@@ -67,6 +67,6 @@ kotlin {
 
 dependencies {
     // The app's own shapes, spacing, type, motion and press feedback, so the dialog is the app's
-    implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
     implementation(libs.androidx.activity.compose)
 }

@@ -1,1 +1,1 @@
-oolong.client.api.models.protos.**
+oolong.core.network.protos.**

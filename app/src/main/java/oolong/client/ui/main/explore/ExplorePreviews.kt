@@ -5,11 +5,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
-import oolong.client.api.models.protos.Abstract
-import oolong.client.api.models.protos.Agree
-import oolong.client.api.models.protos.SimpleForum
-import oolong.client.api.models.protos.ThreadInfo
-import oolong.client.api.models.protos.User
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.data.thread.EmoticonRegistry
@@ -31,6 +26,11 @@ import oolong.client.ui.main.explore.hot.HotThread
 import oolong.client.ui.main.explore.personalized.PersonalizedScreen
 import oolong.client.ui.main.explore.personalized.PersonalizedState
 import oolong.client.ui.main.explore.personalized.RecommendedItem
+import oolong.core.network.protos.Abstract
+import oolong.core.network.protos.Agree
+import oolong.core.network.protos.SimpleForum
+import oolong.core.network.protos.ThreadInfo
+import oolong.core.network.protos.User
 
 /** Sample explore feeds, shared by the previews below and the screenshot tests. */
 internal object ExplorePreviewData {

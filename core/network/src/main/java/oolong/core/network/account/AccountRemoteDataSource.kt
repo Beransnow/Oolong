@@ -1,15 +1,15 @@
 package oolong.core.network.account
 
 import okio.ByteString.Companion.encodeUtf8
-import oolong.client.api.models.protos.User
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoRequest
-import oolong.client.api.models.protos.getUserInfo.GetUserInfoRequestData
 import oolong.core.network.CommonParams
 import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.form.signedFormBody
 import oolong.core.network.identity.DeviceIdentity
 import oolong.core.network.protobuf.ProtobufBody
+import oolong.core.network.protos.User
+import oolong.core.network.protos.getUserInfo.GetUserInfoRequest
+import oolong.core.network.protos.getUserInfo.GetUserInfoRequestData
 
 /** What the client tells the server about itself when it syncs, beyond the common parameters. */
 data class SyncInfo(

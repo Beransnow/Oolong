@@ -4,25 +4,6 @@ import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okio.Buffer
-import oolong.client.api.models.protos.Error
-import oolong.client.api.models.protos.RecommendForumInfo
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailRequest
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
-import oolong.client.api.models.protos.forumRuleDetail.ForumRuleDetailResponseData
-import oolong.client.api.models.protos.frsPage.FrsPageRequest
-import oolong.client.api.models.protos.frsPage.FrsPageRequestData
-import oolong.client.api.models.protos.frsPage.FrsPageResponse
-import oolong.client.api.models.protos.frsPage.FrsPageResponseData
-import oolong.client.api.models.protos.generalTabList.GeneralTabListRequest
-import oolong.client.api.models.protos.generalTabList.GeneralTabListRequestData
-import oolong.client.api.models.protos.generalTabList.GeneralTabListResponse
-import oolong.client.api.models.protos.generalTabList.GeneralTabListResponseData
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailRequest
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailResponse
-import oolong.client.api.models.protos.getForumDetail.GetForumDetailResponseData
-import oolong.client.api.models.protos.threadList.ThreadListRequest
-import oolong.client.api.models.protos.threadList.ThreadListResponse
-import oolong.client.api.models.protos.threadList.ThreadListResponseData
 import oolong.core.network.CommonParams
 import oolong.core.network.FakeDevice
 import oolong.core.network.FakeInstall
@@ -30,6 +11,25 @@ import oolong.core.network.TiebaNetwork
 import oolong.core.network.TiebaProfile
 import oolong.core.network.TiebaServerException
 import oolong.core.network.fakeSession
+import oolong.core.network.protos.Error
+import oolong.core.network.protos.RecommendForumInfo
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailRequest
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailResponse
+import oolong.core.network.protos.forumRuleDetail.ForumRuleDetailResponseData
+import oolong.core.network.protos.frsPage.FrsPageRequest
+import oolong.core.network.protos.frsPage.FrsPageRequestData
+import oolong.core.network.protos.frsPage.FrsPageResponse
+import oolong.core.network.protos.frsPage.FrsPageResponseData
+import oolong.core.network.protos.generalTabList.GeneralTabListRequest
+import oolong.core.network.protos.generalTabList.GeneralTabListRequestData
+import oolong.core.network.protos.generalTabList.GeneralTabListResponse
+import oolong.core.network.protos.generalTabList.GeneralTabListResponseData
+import oolong.core.network.protos.getForumDetail.GetForumDetailRequest
+import oolong.core.network.protos.getForumDetail.GetForumDetailResponse
+import oolong.core.network.protos.getForumDetail.GetForumDetailResponseData
+import oolong.core.network.protos.threadList.ThreadListRequest
+import oolong.core.network.protos.threadList.ThreadListResponse
+import oolong.core.network.protos.threadList.ThreadListResponseData
 import oolong.core.network.testing.multipartParts
 import org.junit.After
 import org.junit.Before
@@ -37,7 +37,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import oolong.client.api.models.protos.frsPage.AdParam as FrsAdParam
+import oolong.core.network.protos.frsPage.AdParam as FrsAdParam
 
 class ForumRemoteDataSourceTest {
     private val server = MockWebServer()
