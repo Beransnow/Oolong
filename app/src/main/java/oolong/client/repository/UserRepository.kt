@@ -8,6 +8,7 @@ import oolong.client.api.models.protos.User
 import oolong.client.arch.IoDispatcher
 import oolong.client.arch.Page
 import oolong.client.model.LikedForum
+import oolong.client.model.LikedReply
 import oolong.client.model.ListedUser
 import oolong.client.model.ThreadSummary
 import oolong.client.model.UserPost
@@ -48,6 +49,20 @@ class UserRepository @Inject constructor(
             posts = Page(data.post_list.map { it.toUserPost(emoticons) }, next = (page + 1).takeIf { data.post_list.isNotEmpty() }),
             hidden = data.hide_post == 1,
         )
+    }
+
+    /** Page [page] (from 1) of the threads the user liked, the latest liked first. */
+    suspend fun likedThreads(page: Int): Page<Int, ThreadSummary> = withContext(io) {
+        val data = remote.likes(replies = false, page = page)
+        // Dated by when they were posted: when one was last replied to says nothing about the like
+        val threads = data.threads.map { thread -> thread.toThreadSummary(emoticons).let { it.copy(listTime = it.createTime) } }
+        Page(threads, next = (page + 1).takeIf { data.hasMore == 1 })
+    }
+
+    /** Page [page] (from 1) of the replies the user liked, the latest liked first. */
+    suspend fun likedReplies(page: Int): Page<Int, LikedReply> = withContext(io) {
+        val data = remote.likes(replies = true, page = page)
+        Page(data.threads.mapNotNull { it.toLikedReply(emoticons) }, next = (page + 1).takeIf { data.hasMore == 1 })
     }
 
     suspend fun likedForums(uid: Long, page: Int): Page<Int, LikedForum> = withContext(io) {

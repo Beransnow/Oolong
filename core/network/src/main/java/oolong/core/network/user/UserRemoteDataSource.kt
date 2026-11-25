@@ -26,6 +26,7 @@ class UserRemoteDataSource(
     private val formService = network.service<UserFormService>(formProfile)
     private val webProfile = TiebaProfile.WEB_12_52
     private val blackListService = network.service<BlackListService>(webProfile)
+    private val likesService = network.service<LikesService>(webProfile)
 
     private val viewerUid: Long? get() = commonParams.session()?.uid?.toLongOrNull()
 
@@ -138,6 +139,15 @@ class UserRemoteDataSource(
     /** Page [page] (from 1) of the users the user blacklisted, with what each is barred from. */
     suspend fun blackList(page: Int): BlackListResponse =
         blackListService.page(commonParams.signedWebQuery(webProfile, listOf("pn" to page.toString(), "rn" to "30")))
+
+    /**
+     * Page [page] (from 1) of what the user liked, the latest first: the threads, or with
+     * [replies] the replies, each under its thread.
+     */
+    suspend fun likes(replies: Boolean, page: Int): LikesResponse.Data {
+        val params = listOf("tab_id" to if (replies) "2" else "1", "pn" to page.toString(), "rn" to "20")
+        return likesService.page(commonParams.signedWebQuery(webProfile, params, subapp = "hybrid")).data ?: LikesResponse.Data()
+    }
 
     /** Bars [uid] from following the user, interacting with their posts and messaging them, as each is true. */
     suspend fun setBlack(uid: Long, follow: Boolean, interact: Boolean, chat: Boolean) {

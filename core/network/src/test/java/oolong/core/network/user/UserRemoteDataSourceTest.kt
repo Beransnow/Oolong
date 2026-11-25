@@ -157,6 +157,48 @@ class UserRemoteDataSourceTest {
     }
 
     @Test
+    fun `lists a page of the replies the user liked, each under its thread`() = runTest {
+        server.enqueue(
+            """{"error_code":0,"data":{"has_more":1,"thread_list":[{"id":11,"tid":11,"title":"标题","fid":3,"fname":"吧",
+            "agree":{"has_agree":0,"agree_num":9},"top_agree_post":{"id":22,"time":1700000000,
+            "content":[{"type":0,"text":"回复 "},{"type":4,"text":"某人","uid":5},{"type":2,"text":"image_emoticon22","src":"u"}],
+            "author":{"id":7,"name":"n","name_show":"昵称","portrait":"tb.1.p?t=1"},"agree":{"agree_num":17},"quote_id":"21"}}]}}"""
+        )
+
+        val page = dataSource.likes(replies = true, page = 2)
+
+        val request = server.takeRequest()
+        assertEquals("/c/u/feed/userAgree", request.target)
+        assertEquals("hybrid", request.headers["Subapp-Type"])
+        commonParams.headers(TiebaProfile.WEB_12_52).forEach { (name, value) -> assertEquals(value, request.headers[name], name) }
+        val form = request.form()
+        assertSigned(form, withSig = false)
+        assertEquals("2", form.value("tab_id"))
+        assertEquals("2", form.value("pn"))
+        assertEquals("20", form.value("rn"))
+        assertEquals("hybrid", form.value("subapp_type"))
+        assertEquals("bduss-value", form.value("BDUSS"))
+        assertEquals(1, page.hasMore)
+        val reply = page.threads.single().likedReply!!
+        assertEquals(22L, reply.id)
+        assertEquals(21L, reply.floorId)
+        assertEquals(17L, reply.agree?.count)
+        assertEquals(5L, reply.content[1].uid)
+        assertEquals("昵称", reply.author?.nameShow)
+    }
+
+    @Test
+    fun `asks for liked threads by their own tab`() = runTest {
+        server.enqueue("""{"error_code":0,"data":{"has_more":0,"thread_list":[{"tid":11,"video_info":{"video_url":"v","video_duration":19}}]}}""")
+
+        val page = dataSource.likes(replies = false, page = 1)
+
+        assertEquals("1", server.takeRequest().form().value("tab_id"))
+        assertEquals(0, page.hasMore)
+        assertEquals(19, page.threads.single().video?.duration)
+    }
+
+    @Test
     fun `lists a page of whom a user follows`() = runTest {
         server.enqueue(
             """{"error_code":"0","has_more":1,"total_follow_num":"2","follow_list":[{"id":7,"name":"n","name_show":"昵称",

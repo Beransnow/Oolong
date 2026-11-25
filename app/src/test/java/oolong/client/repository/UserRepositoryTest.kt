@@ -2,6 +2,7 @@ package oolong.client.repository
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import oolong.client.api.models.protos.BazhuSign
@@ -10,11 +11,23 @@ import oolong.client.api.models.protos.PostInfoList
 import oolong.client.api.models.protos.User
 import oolong.client.api.models.protos.profile.ProfileResponseData
 import oolong.client.api.models.protos.userPost.UserPostResponseData
+import oolong.client.model.Agree
+import oolong.client.model.ForumSummary
 import oolong.client.model.LikedForum
+import oolong.client.model.PostContent
+import oolong.client.model.TextSpan
 import oolong.client.model.UserProfile
 import oolong.core.network.TiebaServerException
+import oolong.core.network.explore.WebAgree
+import oolong.core.network.explore.WebContent
+import oolong.core.network.explore.WebMedia
+import oolong.core.network.explore.WebPost
+import oolong.core.network.explore.WebThread
+import oolong.core.network.explore.WebUser
+import oolong.core.network.explore.WebVideo
 import oolong.core.network.upload.UploadRemoteDataSource
 import oolong.core.network.user.LikedForumsResponse
+import oolong.core.network.user.LikesResponse
 import oolong.core.network.user.UserRemoteDataSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -109,5 +122,57 @@ class UserRepositoryTest {
         repository.modifyProfile(profile, nickName = "新昵称", sex = 1, intro = "新简介")
 
         io.mockk.coVerify { remote.modifyProfile("新昵称", 1, "新简介", true, 946684800) }
+    }
+
+    @Test
+    fun `liked threads page on while the server says there are more`() = runTest {
+        coEvery { remote.likes(replies = false, page = 1) } returns LikesResponse.Data(
+            threads = listOf(
+                WebThread(
+                    tid = 1, title = "视频帖", agree = WebAgree(agreed = 1), agreeCount = 3, createTime = 100, lastTime = 200,
+                    media = listOf(WebMedia(type = 5)), video = WebVideo(url = "v", cover = "c", duration = 19),
+                ),
+            ),
+            hasMore = 1,
+        )
+        coEvery { remote.likes(replies = false, page = 2) } returns LikesResponse.Data(threads = listOf(WebThread(tid = 2)), hasMore = 0)
+
+        val first = repository.likedThreads(1)
+        val second = repository.likedThreads(2)
+
+        val thread = first.items.single()
+        assertEquals(Agree(count = 3, agreed = true), thread.agree)
+        assertEquals(100L, thread.listTime)
+        assertEquals("v", thread.video?.url)
+        assertTrue(thread.images.isEmpty())
+        assertEquals(2, first.next)
+        assertNull(second.next)
+    }
+
+    @Test
+    fun `a liked reply comes with its thread, and tells a reply inside a post by the post it names`() = runTest {
+        val thread = WebThread(tid = 11, title = "标题", fid = 3, fname = "吧")
+        fun reply(id: Long, floorId: Long) = WebPost(
+            id = id, time = 100, floorId = floorId, agree = WebPost.Agree(17),
+            author = WebUser(id = 7, name = "n", nameShow = "昵称", portrait = "p"),
+            content = listOf(WebContent(type = 0, text = "说得好"), WebContent(type = 2, text = "image_emoticon22")),
+        )
+        coEvery { remote.likes(replies = true, page = 1) } returns LikesResponse.Data(
+            threads = listOf(thread.copy(likedReply = reply(21, 0)), thread.copy(likedReply = reply(22, 21)), thread),
+        )
+
+        val replies = repository.likedReplies(1).items
+
+        assertEquals(listOf(21L to null, 22L to 21L), replies.map { it.postId to it.floorId })
+        val first = replies.first()
+        assertEquals(Agree(count = 17, agreed = true), first.agree)
+        assertEquals(oolong.client.model.User(id = 7, name = "n", nameShow = "昵称", portrait = "p"), first.author)
+        assertEquals(11L, first.threadId)
+        assertEquals("标题", first.threadTitle)
+        assertEquals(ForumSummary(id = 3, name = "吧", avatar = ""), first.forum)
+        assertEquals<List<PostContent>>(
+            listOf(PostContent.Text(persistentListOf(TextSpan.Plain("说得好"), TextSpan.Emoticon(id = "image_emoticon22", name = "")))),
+            first.content,
+        )
     }
 }

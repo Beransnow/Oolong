@@ -6,7 +6,10 @@ import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
 import oolong.client.api.models.protos.profile.ProfileResponse
 import oolong.client.api.models.protos.userPost.UserPostResponse
+import oolong.core.network.explore.WebThread
 import retrofit2.http.Body
+import retrofit2.http.FieldMap
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
@@ -90,6 +93,32 @@ interface BlackListService {
     )
     @GET("c/u/user/userBlackPage")
     suspend fun page(@QueryMap params: Map<String, String>): BlackListResponse
+}
+
+/** A page of what the user liked, as the in-app page that lists it asks. */
+interface LikesService {
+    @Headers(
+        "Accept: application/json, text/plain, */*",
+        "X-Requested-With: XMLHttpRequest",
+        "Subapp-Type: hybrid",
+        "Referer: https://tieba.baidu.com/mo/q/hybrid-main-usercenter/myLike/hybrid?nonavigationbar=1&customfullscreen=1",
+    )
+    @FormUrlEncoded
+    @POST("c/u/feed/userAgree")
+    suspend fun page(@FieldMap params: Map<String, String>): LikesResponse
+}
+
+/**
+ * Liked threads, or the threads liked replies were made in: each of those carries the one reply
+ * liked in it, and comes once for every such reply.
+ */
+@Serializable
+data class LikesResponse(val data: Data? = null) {
+    @Serializable
+    data class Data(
+        @SerialName("thread_list") val threads: List<WebThread> = emptyList(),
+        @SerialName("has_more") val hasMore: Int = 0,
+    )
 }
 
 @Serializable

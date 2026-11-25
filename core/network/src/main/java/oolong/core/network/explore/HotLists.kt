@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import oolong.client.api.models.protos.Media
 import oolong.client.api.models.protos.PbContent
+import oolong.client.api.models.protos.VideoInfo
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.QueryMap
@@ -145,6 +146,9 @@ data class WebThread(
     @SerialName("is_top") val top: Int = 0,
     /** Why the thread is shown; one naming a topic links it to that topic. */
     @SerialName("thread_recommend_infos") val reasons: List<Reason> = emptyList(),
+    @SerialName("video_info") val video: WebVideo? = null,
+    /** The reply the user liked, where the thread stands for one in the list of those. */
+    @SerialName("top_agree_post") val likedReply: WebPost? = null,
 ) {
     @Serializable
     data class Reason(
@@ -161,6 +165,41 @@ data class WebUser(
     val portrait: String = "",
 )
 
+/** A reply as a list of them gets it, under the thread it was made in. */
+@Serializable
+data class WebPost(
+    val id: Long = 0,
+    /** When it was made, in seconds since the epoch. */
+    val time: Long = 0,
+    val content: List<WebContent> = emptyList(),
+    val author: WebUser? = null,
+    val agree: Agree? = null,
+    /** The post it is a reply inside; 0 for a post of its own. */
+    @SerialName("quote_id") val floorId: Long = 0,
+) {
+    @Serializable
+    data class Agree(@SerialName("agree_num") val count: Long = 0)
+}
+
+/** A thread's video, as [VideoInfo] in JSON. */
+@Serializable
+data class WebVideo(
+    @SerialName("video_url") val url: String = "",
+    @SerialName("thumbnail_url") val cover: String = "",
+    @SerialName("thumbnail_width") val coverWidth: Int = 0,
+    @SerialName("thumbnail_height") val coverHeight: Int = 0,
+    /** In seconds. */
+    @SerialName("video_duration") val duration: Int = 0,
+) {
+    fun toVideoInfo() = VideoInfo(
+        videoUrl = url,
+        thumbnailUrl = cover,
+        thumbnailWidth = coverWidth,
+        thumbnailHeight = coverHeight,
+        videoDuration = duration,
+    )
+}
+
 @Serializable
 data class WebForum(val id: Long = 0, val name: String = "", val avatar: String = "")
 
@@ -176,6 +215,8 @@ data class WebContent(
     val c: String = "",
     val src: String = "",
     val bsize: String = "",
+    /** The user a mention names. */
+    val uid: Long = 0,
     @SerialName("cdn_src") val cdnSrc: String = "",
     @SerialName("big_cdn_src") val bigCdnSrc: String = "",
     @SerialName("origin_src") val originSrc: String = "",
@@ -190,6 +231,7 @@ data class WebContent(
         c = c,
         src = src,
         bsize = bsize,
+        uid = uid,
         cdnSrc = cdnSrc,
         bigCdnSrc = bigCdnSrc,
         originSrc = originSrc,

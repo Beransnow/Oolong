@@ -3,6 +3,7 @@ package oolong.client.repository
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
+import oolong.client.model.LikedReply
 import oolong.client.model.RankReason
 import oolong.client.model.ThreadSummary
 import oolong.client.model.User
@@ -30,12 +31,39 @@ fun WebThread.toThreadSummary(emoticons: EmoticonRegistry): ThreadSummary {
         abstract = abstract.abstractText(emoticons),
         firstPostId = firstPostId,
         firstPost = firstPost.ifEmpty { richAbstract }.map(WebContent::toPbContent).toPostContent(emoticons),
-        images = media.map { it.toMedia().toThreadImage() }.toImmutableList(),
+        // A video comes among the pictures too, as an entry without one
+        images = media.filter { it.bigPic.isNotEmpty() || it.srcPic.isNotEmpty() || it.originPic.isNotEmpty() }
+            .map { it.toMedia().toThreadImage() }.toImmutableList(),
+        video = video?.toVideoInfo()?.toThreadVideo(),
         replyCount = replyCount,
         shareCount = shareCount,
         agree = Agree(count = agreeCount, agreed = agree?.agreed == 1),
         isGood = good == 1,
         isTop = top == 1,
+    )
+}
+
+/**
+ * The reply the user liked in this thread, as the list of those carries it; null for a thread
+ * without one. Its emoticons come without their names.
+ */
+fun WebThread.toLikedReply(emoticons: EmoticonRegistry): LikedReply? {
+    val reply = likedReply ?: return null
+    return LikedReply(
+        postId = reply.id,
+        floorId = reply.floorId.takeIf { it != 0L },
+        author = reply.author?.let { User(id = it.id, name = it.name, nameShow = it.nameShow, portrait = it.portrait) }
+            ?: User(id = 0, name = "", nameShow = "", portrait = ""),
+        time = reply.time,
+        content = reply.content.map(WebContent::toPbContent).toPostContent { _, _ -> },
+        agree = Agree(count = reply.agree?.count ?: 0, agreed = true),
+        threadId = tid.takeIf { it != 0L } ?: id,
+        threadTitle = title.ifBlank { richAbstract.map(WebContent::toPbContent).abstractText(emoticons) },
+        forum = ForumSummary(
+            id = forum?.id?.takeIf { it != 0L } ?: fid,
+            name = fname.ifEmpty { forum?.name.orEmpty() },
+            avatar = forum?.avatar.orEmpty(),
+        ),
     )
 }
 
