@@ -25,11 +25,11 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import oolong.client.R
-import oolong.client.api.retrofit.exception.TiebaNotLoggedInException
-import oolong.client.api.retrofit.exception.getErrorCode
-import oolong.client.api.retrofit.exception.getErrorMessage
-import oolong.client.api.retrofit.exception.isNetworkError
-import oolong.client.api.retrofit.exception.isUnexpectedError
+import oolong.client.data.error.TiebaNotLoggedInException
+import oolong.client.data.error.getErrorCode
+import oolong.client.data.error.getErrorMessage
+import oolong.client.data.error.isNetworkError
+import oolong.client.data.error.isUnexpectedError
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
 import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass

@@ -12,12 +12,12 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
-import oolong.client.dataStore
+import oolong.client.data.settings.Appearance
+import oolong.client.data.settings.ColorStyle
+import oolong.client.data.settings.MonetStyle
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.dataStore
 import oolong.client.testing.LegacyAppRule
-import oolong.client.utils.Appearance
-import oolong.client.utils.ColorStyle
-import oolong.client.utils.MonetStyle
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
 import org.junit.Rule
 import org.junit.runner.RunWith

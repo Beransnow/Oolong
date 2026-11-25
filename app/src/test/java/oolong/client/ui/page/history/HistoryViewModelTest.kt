@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.MessageController
+import oolong.client.data.history.HistoryRepository
 import oolong.client.model.HistoryEntry
-import oolong.client.repository.HistoryRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import kotlin.test.Test

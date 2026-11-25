@@ -1,10 +1,12 @@
 package oolong.client.utils
 
+import oolong.client.data.settings.appPreferences
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.App
+import oolong.client.data.settings.AppPreferencesUtils
 
 object LauncherIcons {
     const val NEW_ICON = "oolong.client.MainActivity"

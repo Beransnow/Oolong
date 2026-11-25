@@ -22,7 +22,7 @@ import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
 import oolong.client.ui.common.prefs.PrefsChevron
 import oolong.client.ui.common.prefs.PrefsChoiceValue
 import oolong.client.ui.common.prefs.PrefsExternal

@@ -21,7 +21,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import oolong.client.getString
+import oolong.client.data.settings.getString
 import oolong.client.ui.common.prefs.LocalPrefsDataStore
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.TimePickerDialog

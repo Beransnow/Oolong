@@ -16,8 +16,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import oolong.client.R
+import oolong.client.data.settings.appPreferences
 import oolong.client.receivers.AutoSignAlarm
-import oolong.client.utils.appPreferences
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar

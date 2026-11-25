@@ -7,13 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.Page
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.block.blockRulesMatching
+import oolong.client.data.notification.NotificationRepository
 import oolong.client.model.Notification
 import oolong.client.model.NotificationType
 import oolong.client.model.User
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.NotificationRepository
-import oolong.client.repository.blockRulesMatching
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import kotlin.test.Test

@@ -96,7 +96,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import oolong.client.R
-import oolong.client.components.web.WebSessions
+import oolong.client.data.web.WebSessions
 import oolong.client.findActivity
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem

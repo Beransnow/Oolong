@@ -5,8 +5,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
+import oolong.client.data.emoticon.EmoticonUtil
 import oolong.client.model.TextSpan
-import oolong.client.utils.EmoticonUtil
 import org.junit.Test
 import kotlin.test.assertEquals
 

@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import oolong.client.arch.Actions
+import oolong.client.data.block.BlockListRepository
 import oolong.client.model.BlockRule
 import oolong.client.model.BlockRule.Condition
 import oolong.client.model.tests
-import oolong.client.repository.BlockListRepository
 import oolong.client.ui.page.settings.block.typedValue
 import javax.inject.Inject
 

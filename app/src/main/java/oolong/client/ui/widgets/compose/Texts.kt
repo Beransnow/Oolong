@@ -59,16 +59,16 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import oolong.client.R
+import oolong.client.data.emoticon.EmoticonManager
+import oolong.client.data.emoticon.EmoticonUtil
+import oolong.client.data.emoticon.EmoticonUtil.emoticonString
+import oolong.client.data.emoticon.calcLineHeightPx
 import oolong.client.pxToDp
 import oolong.client.pxToSp
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
-import oolong.client.utils.EmoticonManager
-import oolong.client.utils.EmoticonUtil
-import oolong.client.utils.EmoticonUtil.emoticonString
-import oolong.client.utils.calcLineHeightPx
 import java.util.regex.Pattern
 
 /** How tall a line of text with emoticons is, as a multiple of its font size, unless set. */

@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import oolong.client.arch.LoadStatus
+import oolong.client.data.forum.ForumRepository
 import oolong.client.model.ForumIntro
-import oolong.client.repository.ForumRepository
 import oolong.client.ui.navigation.ForumDetailKey
 
 @Immutable

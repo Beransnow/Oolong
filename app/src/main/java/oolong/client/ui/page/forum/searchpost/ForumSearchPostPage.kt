@@ -27,12 +27,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.data.settings.rememberPreferenceAsState
 import oolong.client.model.ForumSearchOrder
 import oolong.client.model.QuotedPost
 import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchHistoryItem
 import oolong.client.model.SearchedPost
-import oolong.client.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.ForumSearchPostKey
 import oolong.client.ui.navigation.Navigator

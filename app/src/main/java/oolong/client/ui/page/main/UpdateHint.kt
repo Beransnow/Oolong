@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.repository.Release
-import oolong.client.repository.UpdateRepository
+import oolong.client.data.update.Release
+import oolong.client.data.update.UpdateRepository
 import oolong.client.ui.widgets.compose.GlassToast
 import javax.inject.Inject
 

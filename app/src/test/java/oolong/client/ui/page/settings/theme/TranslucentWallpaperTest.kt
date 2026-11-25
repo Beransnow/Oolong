@@ -8,9 +8,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import oolong.client.dataStore
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.dataStore
 import oolong.client.testing.LegacyAppRule
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
 import org.junit.Before
 import org.junit.Rule

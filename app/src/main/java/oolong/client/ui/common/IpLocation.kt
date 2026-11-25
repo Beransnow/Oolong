@@ -5,8 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import oolong.client.rememberPreferenceAsState
-import oolong.client.utils.appPreferences
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.rememberPreferenceAsState
 
 val HideIpLocationKey = booleanPreferencesKey("hideIpLocation")
 

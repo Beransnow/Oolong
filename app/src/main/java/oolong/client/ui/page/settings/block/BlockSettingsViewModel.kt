@@ -16,9 +16,9 @@ import kotlinx.coroutines.withContext
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
+import oolong.client.data.block.BlockListRepository
+import oolong.client.data.block.BlockRuleBackup
 import oolong.client.model.BlockRule
-import oolong.client.repository.BlockListRepository
-import oolong.client.repository.BlockRuleBackup
 import javax.inject.Inject
 
 /** The block settings: how many rules are on, and keeping a word out for a while. */

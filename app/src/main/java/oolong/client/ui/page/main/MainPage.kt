@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
-import oolong.client.rememberPreferenceAsState
+import oolong.client.data.settings.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.navigation.Navigator

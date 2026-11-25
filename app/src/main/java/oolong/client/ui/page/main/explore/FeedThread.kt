@@ -3,11 +3,11 @@ package oolong.client.ui.page.main.explore
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.arch.PagerState
+import oolong.client.data.block.BlockPlace
+import oolong.client.data.block.BlockRules
+import oolong.client.data.block.BlockVerdict
+import oolong.client.data.block.check
 import oolong.client.model.ThreadSummary
-import oolong.client.repository.BlockPlace
-import oolong.client.repository.BlockRules
-import oolong.client.repository.BlockVerdict
-import oolong.client.repository.check
 
 /** A thread in one of the explore feeds, and how the block rules block it, if they do. */
 @Immutable

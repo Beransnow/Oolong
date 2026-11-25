@@ -13,12 +13,12 @@ import oolong.client.api.models.protos.Agree
 import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryClient
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.explore.ExploreRepository
+import oolong.client.data.explore.KeptFeed
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.RecommendedThread
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.ExploreRepository
-import oolong.client.repository.KeptFeed
-import oolong.client.repository.toThreadSummary
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions

@@ -423,11 +423,11 @@
 
         <!-- How an update's install session went -->
         <receiver
-            android:name=".repository.UpdateInstallReceiver"
+            android:name=".data.update.UpdateInstallReceiver"
             android:exported="false" />
         <!-- Says the app updated itself, as the update closes it -->
         <receiver
-            android:name=".repository.UpdatedReceiver"
+            android:name=".data.update.UpdatedReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

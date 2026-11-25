@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import oolong.client.R
-import oolong.client.api.retrofit.exception.isNetworkError
 import oolong.client.arch.LoadStatus
+import oolong.client.data.error.isNetworkError
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 
 private const val LoadMoreFooterKey = "LoadMoreFooter"

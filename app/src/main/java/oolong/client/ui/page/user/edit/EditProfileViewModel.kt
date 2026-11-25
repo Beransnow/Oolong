@@ -15,8 +15,8 @@ import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.data.user.UserRepository
 import oolong.client.model.UserProfile
-import oolong.client.repository.UserRepository
 import oolong.core.network.identity.SessionProvider
 import java.io.File
 import javax.inject.Inject

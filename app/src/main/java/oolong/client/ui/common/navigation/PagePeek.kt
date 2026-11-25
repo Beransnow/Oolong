@@ -25,7 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import oolong.client.BuildConfig
-import oolong.client.rememberPreferenceAsState
+import oolong.client.data.settings.rememberPreferenceAsState
 import oolong.client.ui.common.theme.compose.Motion
 import kotlin.math.PI
 import kotlin.math.abs

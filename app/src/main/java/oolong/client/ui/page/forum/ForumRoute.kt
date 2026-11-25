@@ -14,6 +14,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.ForumDetail
 import oolong.client.toastShort
 import oolong.client.ui.navigation.ForumDetailKey
@@ -27,7 +28,6 @@ import oolong.client.ui.page.thread.navigateToThread
 import oolong.client.ui.widgets.compose.ConfirmDialog
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.appPreferences
 import oolong.client.utils.requestPinShortcut
 
 /**

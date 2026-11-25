@@ -130,6 +130,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.data.settings.appPreferences
 import oolong.client.findActivity
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
@@ -154,7 +155,6 @@ import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.controlLens
 import oolong.client.ui.widgets.compose.isGlassAvailable
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.appPreferences
 import kotlin.math.abs
 import kotlin.math.roundToInt
 

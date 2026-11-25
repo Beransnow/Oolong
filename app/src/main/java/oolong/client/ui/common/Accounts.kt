@@ -5,9 +5,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import oolong.client.data.account.AccountActions
+import oolong.client.data.account.AccountRepository
 import oolong.client.model.Account
-import oolong.client.repository.AccountActions
-import oolong.client.repository.AccountRepository
 
 /** The current account, or null when logged out. */
 val LocalAccount = staticCompositionLocalOf<Account?> { null }

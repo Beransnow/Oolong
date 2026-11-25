@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import oolong.client.data.emoticon.EmoticonUtil.emoticonString
 import oolong.client.ui.widgets.compose.EmoticonText
-import oolong.client.utils.EmoticonUtil.emoticonString
 
 @Composable
 fun PbContentText(

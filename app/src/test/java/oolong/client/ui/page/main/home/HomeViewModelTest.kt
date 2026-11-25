@@ -11,9 +11,9 @@ import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryState
+import oolong.client.data.forum.HomeRepository
 import oolong.client.model.FollowedForum
 import oolong.client.model.VisitedForum
-import oolong.client.repository.HomeRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import java.io.IOException

@@ -13,11 +13,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import oolong.client.R
+import oolong.client.data.thread.SubPostSort
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
 import oolong.client.model.wordText
-import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.PostBody
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.settings.block.BlockMenuLabels

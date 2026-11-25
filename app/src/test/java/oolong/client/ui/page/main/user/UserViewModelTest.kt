@@ -11,13 +11,13 @@ import kotlinx.coroutines.test.runTest
 import oolong.client.R
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
+import oolong.client.data.history.HistoryRepository
+import oolong.client.data.store.ThreadStoreRepository
+import oolong.client.data.update.UpdateRepository
+import oolong.client.data.user.UserRepository
 import oolong.client.model.HistoryEntry
 import oolong.client.model.StoredThread
 import oolong.client.model.UserProfile
-import oolong.client.repository.HistoryRepository
-import oolong.client.repository.ThreadStoreRepository
-import oolong.client.repository.UpdateRepository
-import oolong.client.repository.UserRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.core.network.identity.Session
 import org.junit.Rule

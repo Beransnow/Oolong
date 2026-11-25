@@ -1,5 +1,7 @@
 package oolong.client.utils
 
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.link.isInternalHost
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context

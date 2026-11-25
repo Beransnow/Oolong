@@ -26,13 +26,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import oolong.client.dataStore
+import oolong.client.data.settings.ColorStyle
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.dataStore
 import oolong.client.ui.widgets.compose.ProvideChromeStyle
 import oolong.client.ui.widgets.compose.ProvideGlassChoice
-import oolong.client.utils.ColorStyle
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
-import oolong.client.utils.appPreferences
 import oolong.client.utils.compose.darken
 
 /**

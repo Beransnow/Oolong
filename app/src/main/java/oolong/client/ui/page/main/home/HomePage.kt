@@ -87,7 +87,8 @@ import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.onGlobalEvent
-import oolong.client.dataStore
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.dataStore
 import oolong.client.model.FollowedForum
 import oolong.client.model.VisitedForum
 import oolong.client.ui.common.navigation.pageOrigin
@@ -130,7 +131,6 @@ import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.appPreferences
 
 @Preview("SearchBoxPreview")
 @Composable

@@ -6,8 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import oolong.client.rememberPreferenceAsState
-import oolong.client.utils.appPreferences
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.rememberPreferenceAsState
 
 /** How a floor shows the replies inside it. */
 enum class SubPostStyle {

@@ -22,10 +22,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import oolong.client.R
+import oolong.client.data.account.AccountRepository
+import oolong.client.data.forum.FollowedForums
 import oolong.client.model.SignDataBean
 import oolong.client.pendingIntentFlagImmutable
-import oolong.client.repository.AccountRepository
-import oolong.client.repository.FollowedForums
 import oolong.client.ui.common.theme.compose.currentColors
 import oolong.client.utils.ProgressListener
 import oolong.client.utils.SingleAccountSigner

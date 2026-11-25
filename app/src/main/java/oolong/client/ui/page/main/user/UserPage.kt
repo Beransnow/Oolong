@@ -56,11 +56,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import oolong.client.Incognito
 import oolong.client.R
+import oolong.client.data.history.Incognito
+import oolong.client.data.identity.CuidUtils
+import oolong.client.data.settings.rememberPreferenceAsMutableState
 import oolong.client.model.Account
 import oolong.client.model.HistoryEntry
-import oolong.client.rememberPreferenceAsMutableState
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -98,7 +99,6 @@ import oolong.client.ui.widgets.compose.Sizes
 import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.placeholder.placeholder
 import oolong.client.ui.widgets.compose.verticalScrollUnderBar
-import oolong.client.utils.CuidUtils
 import oolong.client.utils.StringUtil
 import oolong.client.utils.ThemeUtil
 

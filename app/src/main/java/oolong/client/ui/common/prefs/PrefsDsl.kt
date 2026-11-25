@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import oolong.client.collectPreferenceAsState
+import oolong.client.data.settings.collectPreferenceAsState
 
 /**
  * Receiver scope which is used by [PrefsScreen].

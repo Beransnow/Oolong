@@ -13,12 +13,12 @@ import kotlinx.coroutines.flow.update
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
+import oolong.client.data.account.OwnProfileCache
+import oolong.client.data.history.HistoryRepository
+import oolong.client.data.store.ThreadStoreRepository
+import oolong.client.data.update.UpdateRepository
+import oolong.client.data.user.UserRepository
 import oolong.client.model.HistoryEntry
-import oolong.client.repository.HistoryRepository
-import oolong.client.repository.OwnProfileCache
-import oolong.client.repository.ThreadStoreRepository
-import oolong.client.repository.UpdateRepository
-import oolong.client.repository.UserRepository
 import oolong.core.network.identity.SessionProvider
 import javax.inject.Inject
 

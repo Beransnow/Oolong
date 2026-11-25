@@ -4,7 +4,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.TestScope
 import oolong.client.arch.query.QueryClient
-import oolong.client.repository.ThreadActions
+import oolong.client.data.thread.ThreadActions
 import oolong.core.network.agree.AgreeRemoteDataSource
 
 /** The app's cache for one test, living as long as it and timed by its scheduler. */

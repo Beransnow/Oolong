@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import oolong.client.LocalNotificationCountFlow
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.emitGlobalEvent
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
 import oolong.client.ui.common.navigation.FramedSinglePaneSceneStrategy
 import oolong.client.ui.common.navigation.LeadingChrome
 import oolong.client.ui.common.navigation.LocalIsPop

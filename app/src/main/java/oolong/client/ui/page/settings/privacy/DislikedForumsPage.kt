@@ -32,8 +32,8 @@ import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
+import oolong.client.data.forum.DislikedForumRepository
 import oolong.client.model.DislikedForum
-import oolong.client.repository.DislikedForumRepository
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Spacing
 import oolong.client.ui.common.theme.compose.TextStyles

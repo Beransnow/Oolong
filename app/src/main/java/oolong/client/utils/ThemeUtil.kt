@@ -13,8 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import oolong.client.App
 import oolong.client.App.Companion.INSTANCE
-import oolong.client.dataStore
-import oolong.client.getInt
+import oolong.client.data.settings.Appearance
+import oolong.client.data.settings.ColorStyle
+import oolong.client.data.settings.MonetStyle
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.dataStore
+import oolong.client.data.settings.getInt
 import java.util.Locale
 
 object ThemeUtil {

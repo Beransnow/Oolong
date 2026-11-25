@@ -9,11 +9,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import oolong.client.repository.Release
-import oolong.client.repository.UpdateChannel
-import oolong.client.repository.UpdateCheck
-import oolong.client.repository.UpdateDownload
-import oolong.client.repository.UpdateRepository
+import oolong.client.data.update.Release
+import oolong.client.data.update.UpdateChannel
+import oolong.client.data.update.UpdateCheck
+import oolong.client.data.update.UpdateDownload
+import oolong.client.data.update.UpdateRepository
 import javax.inject.Inject
 
 data class UpdateState(

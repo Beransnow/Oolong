@@ -2,8 +2,8 @@ package oolong.client.ui.page.settings.privacy
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import oolong.client.KeepHistoryKey
 import oolong.client.R
+import oolong.client.data.history.KeepHistoryKey
 import oolong.client.ui.common.settings.SettingsHeader
 import oolong.client.ui.common.settings.SettingsScreen
 import oolong.client.ui.common.settings.settingsPage

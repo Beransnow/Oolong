@@ -15,8 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import oolong.client.dataStore
-import oolong.client.utils.appPreferences
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.dataStore
 
 /** The setting that reduces motion ([LocalReduceMotion]). */
 val ReduceMotionKey = booleanPreferencesKey("reduceMotion")

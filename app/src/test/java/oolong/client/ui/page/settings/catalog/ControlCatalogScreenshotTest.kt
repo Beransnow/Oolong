@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
+import oolong.client.data.settings.Appearance
+import oolong.client.data.settings.ThemeSettings
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.ui.common.theme.compose.Spacing
-import oolong.client.utils.Appearance
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
 import org.junit.After
 import org.junit.Rule

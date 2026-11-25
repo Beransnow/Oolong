@@ -28,9 +28,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import oolong.client.components.images.BlurTransformation
 import oolong.client.components.images.loadBitmap
-import oolong.client.dataStore
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.dataStore
 import oolong.client.utils.ImageUtil
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
 import java.io.File
 import kotlin.math.pow

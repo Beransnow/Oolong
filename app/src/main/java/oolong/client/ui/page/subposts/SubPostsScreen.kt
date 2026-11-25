@@ -43,8 +43,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.data.thread.SubPostSort
 import oolong.client.model.SubPost
-import oolong.client.repository.SubPostSort
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.reply.Content

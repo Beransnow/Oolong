@@ -51,13 +51,13 @@ import androidx.core.content.edit
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import oolong.client.R
+import oolong.client.data.settings.SharedPreferencesUtil
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.TextStyles
-import oolong.client.utils.SharedPreferencesUtil
 
 /** A dialog asked for by code outside of Compose, as the web page's callbacks, shown by [AppDialogHost]. */
 sealed interface AppDialog {

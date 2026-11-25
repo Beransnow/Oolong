@@ -67,13 +67,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.data.thread.ThreadSort
 import oolong.client.model.LoadPicPageData
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PicItem
 import oolong.client.model.Post
 import oolong.client.model.PostContent
 import oolong.client.model.knownFirstFloor
-import oolong.client.repository.ThreadSort
 import oolong.client.toastShort
 import oolong.client.ui.common.theme.compose.CapTextScale
 import oolong.client.ui.common.theme.compose.ExtendedTheme

@@ -6,7 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.core.content.edit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import oolong.client.BuildConfig
-import oolong.client.api.retrofit.exception.isUnexpectedError
+import oolong.client.data.error.isUnexpectedError
 import oolong.core.network.UnreadableResponseException
 import org.json.JSONObject
 import retrofit2.HttpException

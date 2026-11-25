@@ -21,11 +21,11 @@ import kotlinx.collections.immutable.persistentListOf
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
+import oolong.client.data.thread.ThreadRepository
 import oolong.client.model.DislikeOption
 import oolong.client.model.ThreadSummary
 import oolong.client.model.knownFirstFloor
 import oolong.client.model.threadId
-import oolong.client.repository.ThreadRepository
 import oolong.client.ui.common.navigation.PageOrigin
 import oolong.client.ui.common.theme.compose.Symbols
 import oolong.client.ui.page.LocalNavigator

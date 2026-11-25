@@ -39,8 +39,8 @@ import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
+import oolong.client.data.user.UserRepository
 import oolong.client.model.ListedUser
-import oolong.client.repository.UserRepository
 import oolong.client.ui.common.navigation.pageHero
 import oolong.client.ui.common.navigation.rememberPageHero
 import oolong.client.ui.common.theme.compose.ExtendedTheme

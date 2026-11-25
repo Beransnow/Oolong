@@ -23,8 +23,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.ApplicationScope
+import oolong.client.data.block.BlockListRepository
 import oolong.client.model.BlockRule
-import oolong.client.repository.BlockListRepository
 import oolong.client.ui.widgets.compose.GlassToast
 import oolong.client.ui.widgets.compose.blockReason
 import javax.inject.Inject

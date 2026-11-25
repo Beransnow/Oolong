@@ -15,7 +15,7 @@ import com.google.android.material.color.utilities.SchemeNeutral
 import com.google.android.material.color.utilities.SchemeRainbow
 import com.google.android.material.color.utilities.SchemeTonalSpot
 import com.google.android.material.color.utilities.SchemeVibrant
-import oolong.client.utils.MonetStyle
+import oolong.client.data.settings.MonetStyle
 import com.google.android.material.color.utilities.TonalPalette as MaterialTonalPalette
 
 /**

@@ -30,15 +30,15 @@ import oolong.client.arch.MessageController
 import oolong.client.arch.Pager
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
+import oolong.client.data.block.BlockPlace
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockVerdict
+import oolong.client.data.block.Blockable
+import oolong.client.data.search.SearchRepository
 import oolong.client.model.ForumSearchOrder
 import oolong.client.model.SearchHistoryItem
 import oolong.client.model.SearchedPost
 import oolong.client.model.User
-import oolong.client.repository.BlockPlace
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockVerdict
-import oolong.client.repository.Blockable
-import oolong.client.repository.SearchRepository
 import oolong.client.ui.navigation.ForumSearchPostKey
 
 @Immutable

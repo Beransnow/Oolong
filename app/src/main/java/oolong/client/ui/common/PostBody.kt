@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import oolong.client.R
+import oolong.client.data.emoticon.EmoticonUtil.emoticonInlineId
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.PhotoViewData
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
@@ -53,10 +55,8 @@ import oolong.client.ui.widgets.compose.ContentImage
 import oolong.client.ui.widgets.compose.NetworkImage
 import oolong.client.ui.widgets.compose.VoicePlayer
 import oolong.client.ui.widgets.compose.trimToCharacters
-import oolong.client.utils.EmoticonUtil.emoticonInlineId
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.StringUtil
-import oolong.client.utils.appPreferences
 
 /**
  * The body of a post, block by block.

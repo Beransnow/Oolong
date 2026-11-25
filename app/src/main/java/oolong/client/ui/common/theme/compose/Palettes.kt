@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.core.graphics.toColorInt
+import oolong.client.data.settings.appPreferences
 import oolong.client.utils.ThemeUtil
-import oolong.client.utils.appPreferences
 import kotlin.math.hypot
 
 private val TiebaBlue = Color(0xFF4477E0)

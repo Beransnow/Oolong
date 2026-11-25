@@ -5,10 +5,10 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.LoadState
-import oolong.client.repository.FORUM_ID
-import oolong.client.repository.forumRepository
-import oolong.client.repository.forumRuleData
-import oolong.client.repository.forumRuleDetail
+import oolong.client.data.forum.FORUM_ID
+import oolong.client.data.forum.forumRepository
+import oolong.client.data.forum.forumRuleData
+import oolong.client.data.forum.forumRuleDetail
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.ui.navigation.ForumRuleDetailKey
 import oolong.core.network.forum.ForumRemoteDataSource

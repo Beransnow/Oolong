@@ -34,8 +34,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import oolong.client.R
+import oolong.client.data.thread.ThreadSort
 import oolong.client.model.Post
-import oolong.client.repository.ThreadSort
 import oolong.client.ui.page.reply.ChromeSurface
 import oolong.client.ui.page.reply.Content
 import oolong.client.ui.page.reply.Panel

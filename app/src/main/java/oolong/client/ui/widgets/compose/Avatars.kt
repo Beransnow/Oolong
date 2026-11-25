@@ -40,8 +40,8 @@ import coil3.asImage
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import oolong.client.Incognito
 import oolong.client.R
+import oolong.client.data.history.Incognito
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.SmoothCornerShape

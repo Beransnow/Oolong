@@ -30,7 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import oolong.client.R
 import oolong.client.arch.AppContent
-import oolong.client.repository.AccountRepository
+import oolong.client.data.account.AccountRepository
 import oolong.client.toastShort
 import oolong.client.ui.page.editor.EditRequest
 import oolong.client.ui.page.editor.ImageEditorHost

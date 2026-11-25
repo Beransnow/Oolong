@@ -30,11 +30,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
+import oolong.client.data.post.ReplyTarget
+import oolong.client.data.settings.rememberPreferenceAsState
+import oolong.client.data.thread.ThreadSort
 import oolong.client.model.Post
 import oolong.client.model.PostContent
-import oolong.client.rememberPreferenceAsState
-import oolong.client.repository.ReplyTarget
-import oolong.client.repository.ThreadSort
 import oolong.client.ui.navigation.ForumKey
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ReaderKey

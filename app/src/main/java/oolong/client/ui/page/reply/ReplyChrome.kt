@@ -83,6 +83,7 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.data.settings.appPreferences
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
 import oolong.client.ui.common.theme.compose.Motion
@@ -91,7 +92,6 @@ import oolong.client.ui.widgets.compose.LocalPressedByGlass
 import oolong.client.ui.widgets.compose.MyBackHandler
 import oolong.client.ui.widgets.compose.floatingGlass
 import oolong.client.ui.widgets.compose.isGlassAvailable
-import oolong.client.utils.appPreferences
 import kotlin.math.abs
 import kotlin.math.roundToInt
 

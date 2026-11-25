@@ -10,10 +10,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.search.SearchRepository
 import oolong.client.model.ForumSearchOrder
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.SearchRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.ui.navigation.ForumSearchPostKey
 import org.junit.Rule

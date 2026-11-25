@@ -1,9 +1,9 @@
 package oolong.client.ui.page.thread
 
+import oolong.client.data.thread.ThreadQuery
+import oolong.client.data.thread.ThreadSort
 import oolong.client.model.ThreadSummary
 import oolong.client.model.threadId
-import oolong.client.repository.ThreadQuery
-import oolong.client.repository.ThreadSort
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ThreadKey
 

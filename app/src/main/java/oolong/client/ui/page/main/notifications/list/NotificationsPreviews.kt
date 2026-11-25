@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.arch.PagerState
+import oolong.client.data.block.BlockVerdict
 import oolong.client.model.BlockRule
 import oolong.client.model.Notification
 import oolong.client.model.NotificationType
 import oolong.client.model.User
-import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 
 /** Sample notifications, shared by the preview below and the screenshot tests. */

@@ -1,5 +1,6 @@
 package oolong.client.utils
 
+import oolong.client.data.settings.appPreferences
 import android.content.Context
 import android.icu.text.CompactDecimalFormat
 import android.text.Spannable
@@ -20,11 +21,12 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import oolong.client.App
 import oolong.client.components.spans.EmoticonSpanV2
+import oolong.client.data.emoticon.EmoticonManager.getEmoticonDrawable
+import oolong.client.data.emoticon.EmoticonManager.getEmoticonIdByName
+import oolong.client.data.emoticon.EmoticonUtil
+import oolong.client.data.emoticon.EmoticonUtil.emoticonString
 import oolong.client.ui.common.TextLinkActions
 import oolong.client.ui.common.theme.compose.currentColors
-import oolong.client.utils.EmoticonManager.getEmoticonDrawable
-import oolong.client.utils.EmoticonManager.getEmoticonIdByName
-import oolong.client.utils.EmoticonUtil.emoticonString
 import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.roundToInt

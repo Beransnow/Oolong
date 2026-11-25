@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import oolong.client.R
-import oolong.client.repository.BlackSettings
+import oolong.client.data.user.BlackSettings
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.PressFeedback

@@ -9,8 +9,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.R
 import oolong.client.arch.MessageController
+import oolong.client.data.user.UserRepository
 import oolong.client.model.UserProfile
-import oolong.client.repository.UserRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.core.network.identity.Session
 import org.junit.Rule

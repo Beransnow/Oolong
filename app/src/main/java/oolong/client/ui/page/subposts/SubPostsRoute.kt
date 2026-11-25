@@ -15,10 +15,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
+import oolong.client.data.post.ReplyTarget
+import oolong.client.data.settings.rememberPreferenceAsState
 import oolong.client.model.PostContent
 import oolong.client.model.SubPost
-import oolong.client.rememberPreferenceAsState
-import oolong.client.repository.ReplyTarget
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.ThreadKey

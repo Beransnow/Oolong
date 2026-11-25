@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.LoadStatus
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.ui.common.theme.compose.ExtendedTheme
@@ -69,7 +70,6 @@ import oolong.client.ui.widgets.compose.states.DefaultErrorScreen
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.ui.widgets.compose.toListStart
 import oolong.client.ui.widgets.compose.underSharedHeader
-import oolong.client.utils.appPreferences
 
 /** What the floating button does, as set in the settings. */
 enum class ForumFab { Refresh, BackToTop, Hidden }

@@ -12,7 +12,7 @@ import okio.ByteString
 import okio.GzipSource
 import okio.buffer
 import oolong.client.App
-import oolong.client.api.legacySessionProvider
+import oolong.client.data.identity.legacySessionProvider
 import retrofit2.Invocation
 import java.io.File
 import java.net.URLEncoder

@@ -72,6 +72,8 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.collectLatest
 import oolong.client.R
+import oolong.client.data.emoticon.Emoticon
+import oolong.client.data.emoticon.EmoticonManager
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.LocalReduceMotion
@@ -88,8 +90,6 @@ import oolong.client.ui.widgets.compose.ToggleIcon
 import oolong.client.ui.widgets.compose.WavyLoader
 import oolong.client.ui.widgets.compose.maskTo
 import oolong.client.ui.widgets.compose.motionItem
-import oolong.client.utils.Emoticon
-import oolong.client.utils.EmoticonManager
 import oolong.client.utils.StringUtil
 import kotlin.math.roundToInt
 

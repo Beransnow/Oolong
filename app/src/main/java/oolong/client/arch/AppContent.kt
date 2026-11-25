@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import oolong.client.repository.AccountRepository
+import oolong.client.data.account.AccountRepository
 import oolong.client.ui.common.ProvideAccounts
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass

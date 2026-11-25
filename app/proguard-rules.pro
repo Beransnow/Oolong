@@ -111,9 +111,9 @@
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 
 
-# Retrofit looks up the serializers of the JSON it reads by reflection. Wire protos share the
-# package, but their ADAPTER field is kept by converter-wire's own rules.
--keep class !oolong.client.api.models.protos.**, oolong.client.api.models.** { *; }
+# Retrofit looks up the serializers of the JSON it reads by reflection.
+-keep class oolong.client.data.identity.sofire.SofireResponse* { *; }
+-keep class oolong.client.api.models.UploadPictureResultBean, oolong.client.api.models.PicInfo* { *; }
 
 # kotlin
 -dontwarn kotlin.**
@@ -199,8 +199,8 @@
 -keep,allowobfuscation,allowshrinking class kotlinx.coroutines.Deferred
 -keep,allowobfuscation,allowshrinking class * extends kotlinx.coroutines.Deferred
 
--keep,allowobfuscation,allowshrinking class oolong.client.api.retrofit.ApiResult
--keep,allowobfuscation,allowshrinking class * extends oolong.client.api.retrofit.ApiResult
+-keep,allowobfuscation,allowshrinking class oolong.client.arch.ApiResult
+-keep,allowobfuscation,allowshrinking class * extends oolong.client.arch.ApiResult
 
 -keep,allowobfuscation,allowshrinking interface retrofit2.Call
 -keep,allowobfuscation,allowshrinking class retrofit2.Response

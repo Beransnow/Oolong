@@ -11,8 +11,8 @@ import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
+import oolong.client.data.store.ThreadStoreRepository
 import oolong.client.model.StoredThread
-import oolong.client.repository.ThreadStoreRepository
 import javax.inject.Inject
 
 /** The user's thread store, loaded page by page. */

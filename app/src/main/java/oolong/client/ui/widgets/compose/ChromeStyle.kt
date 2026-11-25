@@ -12,7 +12,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
 
 /** How the app's bars are laid out, chosen in Settings › Appearance. */
 enum class ChromeStyle {

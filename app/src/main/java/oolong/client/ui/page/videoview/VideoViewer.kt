@@ -38,7 +38,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import oolong.client.R
-import oolong.client.api.getUserAgent
+import oolong.client.data.identity.getUserAgent
 import oolong.client.toastShort
 import oolong.client.utils.FileUtil
 import oolong.client.utils.PermissionUtils

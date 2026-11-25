@@ -25,7 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsScope

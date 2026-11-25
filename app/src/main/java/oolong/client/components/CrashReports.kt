@@ -5,8 +5,8 @@ import android.os.Build
 import androidx.core.content.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
-import oolong.client.dataStore
-import oolong.client.repository.UpdateHost
+import oolong.client.data.settings.dataStore
+import oolong.client.data.update.UpdateHost
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL

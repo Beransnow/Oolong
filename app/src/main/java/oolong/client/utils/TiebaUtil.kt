@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.PersistableBundle
 import oolong.client.R
-import oolong.client.api.legacyThreadRemoteDataSource
+import oolong.client.data.identity.legacyThreadRemoteDataSource
 import oolong.client.services.AutoSign
 import oolong.client.toastShort
 import oolong.client.ui.navigation.Navigator

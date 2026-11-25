@@ -28,7 +28,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.dataStore
+import oolong.client.data.settings.BackgroundSettings
+import oolong.client.data.settings.dataStore
 import oolong.client.services.AutoSign
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsExternal
@@ -44,7 +45,6 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.OKSignSettingsKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.utils.BackgroundSettings
 import oolong.client.utils.PermissionUtils
 import oolong.client.utils.isIgnoringBatteryOptimizations
 import oolong.client.utils.launchUrl

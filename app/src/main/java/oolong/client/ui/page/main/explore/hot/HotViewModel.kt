@@ -20,18 +20,18 @@ import kotlinx.coroutines.launch
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.data.block.BlockPlace
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockVerdict
+import oolong.client.data.block.check
+import oolong.client.data.explore.ExploreRepository
+import oolong.client.data.forum.ForumRepository
 import oolong.client.model.ForumMeasure
 import oolong.client.model.ForumRanking
 import oolong.client.model.RankedForum
 import oolong.client.model.RankedThread
 import oolong.client.model.RankedTopic
 import oolong.client.model.ThreadMeasure
-import oolong.client.repository.BlockPlace
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockVerdict
-import oolong.client.repository.ExploreRepository
-import oolong.client.repository.ForumRepository
-import oolong.client.repository.check
 import javax.inject.Inject
 
 /** A thread on the ranking, and how the block rules block it, if they do. */

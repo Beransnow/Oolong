@@ -14,13 +14,13 @@ import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
 import oolong.client.arch.query.QueryClient
+import oolong.client.data.thread.toUserPost
+import oolong.client.data.user.BlackSettings
+import oolong.client.data.user.UserPostsPage
+import oolong.client.data.user.UserRepository
 import oolong.client.model.LikedForum
 import oolong.client.model.UserProfile
 import oolong.client.model.UserThread
-import oolong.client.repository.BlackSettings
-import oolong.client.repository.UserPostsPage
-import oolong.client.repository.UserRepository
-import oolong.client.repository.toUserPost
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions

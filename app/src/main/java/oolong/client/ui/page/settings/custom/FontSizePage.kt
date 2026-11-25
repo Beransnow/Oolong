@@ -47,7 +47,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import oolong.client.R
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
 import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
 import oolong.client.model.Post

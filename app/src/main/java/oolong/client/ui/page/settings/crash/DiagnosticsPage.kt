@@ -41,10 +41,10 @@ import kotlinx.coroutines.withContext
 import oolong.client.BuildConfig
 import oolong.client.R
 import oolong.client.components.UsageStats
-import oolong.client.dataStore
+import oolong.client.data.settings.dataStore
+import oolong.client.data.update.UpdateChannel
+import oolong.client.data.update.UpdateRepository
 import oolong.client.repository.RecentResponses
-import oolong.client.repository.UpdateChannel
-import oolong.client.repository.UpdateRepository
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.PrefsScreen
 import oolong.client.ui.common.prefs.widgets.TextPref

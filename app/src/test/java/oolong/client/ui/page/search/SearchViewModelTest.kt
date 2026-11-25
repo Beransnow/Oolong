@@ -14,14 +14,14 @@ import kotlinx.coroutines.test.runTest
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.search.SearchRepository
 import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchMatches
 import oolong.client.model.SearchOrder
 import oolong.client.model.SearchedForum
 import oolong.client.model.SearchedPost
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.SearchRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import java.io.IOException

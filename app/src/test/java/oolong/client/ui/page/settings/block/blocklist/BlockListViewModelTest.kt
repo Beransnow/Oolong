@@ -6,10 +6,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import oolong.client.data.block.BlockListRepository
 import oolong.client.model.BlockRule
 import oolong.client.model.BlockRule.Condition
 import oolong.client.model.BlockRule.Pattern
-import oolong.client.repository.BlockListRepository
 import oolong.client.testing.MainDispatcherRule
 import org.junit.Rule
 import kotlin.test.Test

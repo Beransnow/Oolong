@@ -15,13 +15,13 @@ import oolong.client.api.models.PicInfo
 import oolong.client.api.models.PicInfoItem
 import oolong.client.api.models.UploadPictureResultBean
 import oolong.client.api.retrofit.exception.TiebaException
-import oolong.client.api.retrofit.exception.getErrorCode
-import oolong.client.api.retrofit.exception.getErrorMessage
 import oolong.client.components.images.UploadPicture
 import oolong.client.components.images.UploadPictureException
 import oolong.client.components.images.preparePictureForUpload
+import oolong.client.data.error.getErrorCode
+import oolong.client.data.error.getErrorMessage
+import oolong.client.data.settings.appPreferences
 import oolong.client.utils.MD5Util
-import oolong.client.utils.appPreferences
 import oolong.core.network.upload.PictureChunk
 import oolong.core.network.upload.PictureWatermark
 import oolong.core.network.upload.UploadPictureResponse

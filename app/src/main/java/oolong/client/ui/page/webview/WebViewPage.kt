@@ -40,7 +40,11 @@ import oolong.client.App
 import oolong.client.R
 import oolong.client.arch.GlobalEvent
 import oolong.client.arch.onGlobalEvent
-import oolong.client.components.web.WebSessions
+import oolong.client.data.link.isInternalHost
+import oolong.client.data.link.isTiebaHost
+import oolong.client.data.link.toTiebaKey
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.web.WebSessions
 import oolong.client.findActivity
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.theme.compose.Symbols
@@ -57,11 +61,7 @@ import oolong.client.ui.widgets.compose.rememberWebViewNavigator
 import oolong.client.utils.PermissionUtils
 import oolong.client.utils.PermissionUtils.PermissionData
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.appPreferences
 import oolong.client.utils.compose.launchActivityForResult
-import oolong.client.utils.isInternalHost
-import oolong.client.utils.isTiebaHost
-import oolong.client.utils.toTiebaKey
 import java.lang.ref.WeakReference
 import java.util.UUID
 

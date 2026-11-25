@@ -24,9 +24,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.components.AppStorage
 import oolong.client.components.CrashReports
-import oolong.client.migration.LegacyImport
+import oolong.client.data.legacy.LegacyImport
+import oolong.client.data.settings.AppPreferencesUtils
+import oolong.client.data.storage.AppStorage
 import oolong.client.ui.common.prefs.PrefsExternal
 import oolong.client.ui.common.prefs.widgets.TextPref
 import oolong.client.ui.common.settings.Availability
@@ -44,7 +45,6 @@ import oolong.client.ui.navigation.Navigator
 import oolong.client.ui.navigation.StorageKey
 import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.page.ProvideNavigator
-import oolong.client.utils.AppPreferencesUtils
 
 /** What the other settings page knows only while it shows. */
 class MoreState(

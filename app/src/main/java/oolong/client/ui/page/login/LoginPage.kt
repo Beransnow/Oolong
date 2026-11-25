@@ -21,8 +21,10 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import oolong.client.R
-import oolong.client.api.retrofit.exception.userMessage
-import oolong.client.components.web.WebSessions
+import oolong.client.data.error.userMessage
+import oolong.client.data.identity.ClientUtils
+import oolong.client.data.web.WebSessions
+import oolong.client.data.web.parseCookie
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.Symbols
@@ -34,9 +36,7 @@ import oolong.client.ui.page.webview.WebPageScaffold
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.ui.widgets.compose.rememberSaveableWebViewState
 import oolong.client.ui.widgets.compose.rememberWebViewNavigator
-import oolong.client.utils.ClientUtils
 import oolong.client.utils.StringUtil
-import oolong.client.utils.parseCookie
 
 const val LOGIN_URL =
     "https://wappass.baidu.com/passport?login&u=https%3A%2F%2Ftieba.baidu.com%2Findex%2Ftbwise%2Fmine"

@@ -20,11 +20,11 @@ import oolong.client.arch.Pager
 import oolong.client.arch.PagerState
 import oolong.client.arch.query.QueryClient
 import oolong.client.arch.query.pager
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.explore.ExploreRepository
+import oolong.client.data.thread.ThreadActions
+import oolong.client.data.thread.Threads
 import oolong.client.model.ThreadSummary
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.ExploreRepository
-import oolong.client.repository.ThreadActions
-import oolong.client.repository.Threads
 import oolong.client.ui.page.main.explore.FeedThread
 import oolong.client.ui.page.main.explore.feedThread
 import oolong.client.ui.page.main.explore.mapItems

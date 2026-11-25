@@ -6,9 +6,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import oolong.client.repository.PostRepository
-import oolong.client.repository.PostedReply
-import oolong.client.repository.ReplyTarget
+import oolong.client.data.post.PostRepository
+import oolong.client.data.post.PostedReply
+import oolong.client.data.post.ReplyTarget
 import oolong.client.testing.MainDispatcherRule
 import oolong.core.network.VerificationChallenge
 import oolong.core.network.VerificationRequiredException

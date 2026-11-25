@@ -6,7 +6,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import oolong.client.arch.loadable
-import oolong.client.repository.ForumRepository
+import oolong.client.data.forum.ForumRepository
 import oolong.client.ui.navigation.ForumRuleDetailKey
 
 @HiltViewModel(assistedFactory = ForumRuleDetailViewModel.Factory::class)

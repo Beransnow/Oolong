@@ -12,6 +12,8 @@ import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.api.models.protos.User
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.data.thread.EmoticonRegistry
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.DislikeOption
 import oolong.client.model.ForumRanking
 import oolong.client.model.ForumSummary
@@ -21,8 +23,6 @@ import oolong.client.model.RankedForum
 import oolong.client.model.RankedThread
 import oolong.client.model.RankedTopic
 import oolong.client.model.TopicRef
-import oolong.client.repository.EmoticonRegistry
-import oolong.client.repository.toThreadSummary
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import oolong.client.ui.page.main.explore.concern.ConcernScreen
 import oolong.client.ui.page.main.explore.hot.HotScreen

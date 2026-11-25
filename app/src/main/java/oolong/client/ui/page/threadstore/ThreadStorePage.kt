@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import oolong.client.R
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.StoredThread
 import oolong.client.model.User
 import oolong.client.ui.common.theme.compose.Corners
@@ -73,7 +74,6 @@ import oolong.client.ui.widgets.compose.motionItem
 import oolong.client.ui.widgets.compose.states.StateScreen
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.getUsernameAnnotatedString
-import oolong.client.utils.appPreferences
 
 /** How far a stored thread dims while it is being taken out. */
 private const val RemovingAlpha = 0.4f

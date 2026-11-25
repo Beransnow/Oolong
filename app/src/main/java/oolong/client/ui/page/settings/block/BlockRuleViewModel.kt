@@ -15,10 +15,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import oolong.client.arch.Actions
+import oolong.client.data.block.BlockListRepository
 import oolong.client.model.BlockRule
 import oolong.client.model.FlatCondition
 import oolong.client.model.flat
-import oolong.client.repository.BlockListRepository
 import oolong.client.ui.navigation.BlockRuleKey
 
 @Immutable

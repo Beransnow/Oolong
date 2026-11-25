@@ -7,9 +7,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import oolong.client.api.retrofit.exception.getErrorMessage
-import oolong.client.api.retrofit.exception.userMessage
 import oolong.client.components.ErrorRecords
+import oolong.client.data.error.getErrorMessage
+import oolong.client.data.error.userMessage
 import oolong.client.ui.widgets.compose.AppToast
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -3,7 +3,7 @@ package oolong.client.ui.page.settings.habit
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import oolong.client.R
-import oolong.client.repository.SubPostSort
+import oolong.client.data.thread.SubPostSort
 import oolong.client.ui.common.settings.SettingsScreen
 import oolong.client.ui.common.settings.settingsPage
 import oolong.client.ui.navigation.HabitSettingsKey

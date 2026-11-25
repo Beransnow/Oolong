@@ -3,13 +3,13 @@ package oolong.client.ui.page.forum.rule
 import kotlinx.collections.immutable.persistentListOf
 import oolong.client.api.models.protos.PbContent
 import oolong.client.arch.LoadState
+import oolong.client.data.emoticon.EmoticonManager
+import oolong.client.data.thread.toPostContent
 import oolong.client.model.ForumRuleAuthor
 import oolong.client.model.ForumRuleDetail
 import oolong.client.model.ForumRuleItem
-import oolong.client.repository.toPostContent
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
-import oolong.client.utils.EmoticonManager
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

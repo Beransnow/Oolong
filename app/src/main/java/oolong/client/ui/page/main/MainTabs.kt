@@ -19,9 +19,10 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.R
+import oolong.client.data.account.AccountActions
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.rememberPreferenceAsState
 import oolong.client.model.Account
-import oolong.client.rememberPreferenceAsState
-import oolong.client.repository.AccountActions
 import oolong.client.ui.common.LocalAccount
 import oolong.client.ui.common.LocalAccountActions
 import oolong.client.ui.common.LocalAllAccounts
@@ -31,7 +32,6 @@ import oolong.client.ui.page.LocalNavigator
 import oolong.client.ui.widgets.compose.Avatar
 import oolong.client.ui.widgets.compose.ContextMenuItem
 import oolong.client.utils.StringUtil
-import oolong.client.utils.appPreferences
 
 /**
  * Which main tab is chosen and how many notifications its badge counts. Held beside the pages,

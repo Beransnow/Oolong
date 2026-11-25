@@ -54,10 +54,11 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.R
+import oolong.client.data.block.BlockVerdict
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.QuotedPost
 import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchedPost
-import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.PbContentText
 import oolong.client.ui.common.relativeTime
 import oolong.client.ui.common.rememberTextLinkActions
@@ -73,7 +74,6 @@ import oolong.client.ui.common.windowsizeclass.WindowWidthSizeClass
 import oolong.client.utils.StringUtil
 import oolong.client.utils.StringUtil.buildAnnotatedStringWithUser
 import oolong.client.utils.TiebaUtil
-import oolong.client.utils.appPreferences
 
 @Composable
 fun QuotePostCard(

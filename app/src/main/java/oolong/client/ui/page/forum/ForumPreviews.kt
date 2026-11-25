@@ -12,10 +12,10 @@ import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.api.models.protos.User
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.ForumDetail
 import oolong.client.model.ForumTab
 import oolong.client.model.GoodClass
-import oolong.client.repository.toThreadSummary
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import java.io.IOException
 

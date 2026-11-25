@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.update
 import oolong.client.R
 import oolong.client.arch.Actions
 import oolong.client.arch.MessageController
+import oolong.client.data.history.HistoryRepository
 import oolong.client.model.HistoryEntry
-import oolong.client.repository.HistoryRepository
 import java.util.Calendar
 import java.util.TimeZone
 import javax.inject.Inject

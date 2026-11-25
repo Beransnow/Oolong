@@ -7,7 +7,7 @@
         errorLine1="                imei = telephonyManager.getDeviceId();"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/MobileInfoUtil.java"
+            file="src/main/java/oolong/client/data/identity/MobileInfoUtil.java"
             line="20"
             column="24"/>
     </issue>
@@ -51,7 +51,7 @@
         errorLine1="        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/BackgroundSettings.kt"
+            file="src/main/java/oolong/client/data/settings/BackgroundSettings.kt"
             line="104"
             column="29"/>
     </issue>
@@ -62,7 +62,7 @@
         errorLine1="        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)"
         errorLine2="                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/BackgroundSettings.kt"
+            file="src/main/java/oolong/client/data/settings/BackgroundSettings.kt"
             line="104"
             column="81"/>
     </issue>
@@ -106,7 +106,7 @@
         errorLine1="            val result = Class.forName(&quot;android.miui.AppOpsUtils&quot;)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/BackgroundSettings.kt"
+            file="src/main/java/oolong/client/data/settings/BackgroundSettings.kt"
             line="47"
             column="26"/>
     </issue>
@@ -117,7 +117,7 @@
         errorLine1="        Class.forName(&quot;android.os.SystemProperties&quot;).getMethod(&quot;get&quot;, String::class.java).invoke(null, name) as String"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/BackgroundSettings.kt"
+            file="src/main/java/oolong/client/data/settings/BackgroundSettings.kt"
             line="128"
             column="9"/>
     </issue>
@@ -652,7 +652,7 @@
         errorLine1="        private var instance: AppPreferencesUtils? = null"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/oolong/client/utils/AppPreferencesUtils.kt"
+            file="src/main/java/oolong/client/data/settings/AppPreferencesUtils.kt"
             line="30"
             column="9"/>
     </issue>

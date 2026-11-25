@@ -24,12 +24,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.query.QueryClient
+import oolong.client.data.thread.ThreadCursor
+import oolong.client.data.thread.ThreadQuery
+import oolong.client.data.thread.ThreadRepository
+import oolong.client.data.thread.Threads
 import oolong.client.model.ThreadDetail
 import oolong.client.model.ThreadSummary
-import oolong.client.repository.ThreadCursor
-import oolong.client.repository.ThreadQuery
-import oolong.client.repository.ThreadRepository
-import oolong.client.repository.Threads
 import oolong.client.ui.navigation.ReaderKey
 
 @Immutable

@@ -48,10 +48,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import oolong.client.Incognito
-import oolong.client.KeepHistoryKey
 import oolong.client.R
-import oolong.client.dataStore
+import oolong.client.data.history.Incognito
+import oolong.client.data.history.KeepHistoryKey
+import oolong.client.data.settings.dataStore
 import oolong.client.model.HistoryEntry
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme

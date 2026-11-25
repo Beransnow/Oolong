@@ -1,5 +1,6 @@
 package oolong.client.utils
 
+import oolong.client.data.settings.appPreferences
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -8,11 +9,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import oolong.client.api.retrofit.exception.getErrorCode
-import oolong.client.api.retrofit.exception.getErrorMessage
+import oolong.client.data.account.AccountRepository
+import oolong.client.data.error.getErrorCode
+import oolong.client.data.error.getErrorMessage
 import oolong.client.model.Account
 import oolong.client.model.SignDataBean
-import oolong.client.repository.AccountRepository
 import oolong.core.network.forum.ForumGuideResponse
 import oolong.core.network.forum.LikeRemoteDataSource
 import oolong.core.network.sign.MSignResponse

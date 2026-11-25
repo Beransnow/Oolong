@@ -5,10 +5,10 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import oolong.client.data.block.toBlockRule
 import oolong.client.model.BlockRule
 import oolong.client.model.BlockRule.Condition
 import oolong.client.model.BlockRule.Pattern
-import oolong.client.repository.toBlockRule
 import org.junit.After
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder

@@ -11,6 +11,11 @@ import kotlinx.coroutines.test.runTest
 import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.MessageController
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.explore.ExploreRepository
+import oolong.client.data.forum.ForumRepository
+import oolong.client.data.thread.toThreadSummary
 import oolong.client.model.ForumMeasure
 import oolong.client.model.ForumRanking
 import oolong.client.model.ForumSummary
@@ -18,11 +23,6 @@ import oolong.client.model.RankReason
 import oolong.client.model.RankedForum
 import oolong.client.model.RankedThread
 import oolong.client.model.ThreadMeasure
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.ExploreRepository
-import oolong.client.repository.ForumRepository
-import oolong.client.repository.toThreadSummary
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.ui.page.main.explore.hot.HotViewModel
 import org.junit.Rule

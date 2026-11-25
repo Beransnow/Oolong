@@ -1,5 +1,6 @@
 package oolong.client.utils
 
+import oolong.client.data.settings.appPreferences
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context

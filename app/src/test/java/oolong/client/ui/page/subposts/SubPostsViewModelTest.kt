@@ -19,10 +19,10 @@ import oolong.client.api.models.protos.ThreadInfo
 import oolong.client.api.models.protos.pbFloor.PbFloorResponseData
 import oolong.client.arch.MessageController
 import oolong.client.arch.query.QueryClient
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockRules
-import oolong.client.repository.ThreadRepository
-import oolong.client.repository.blockRulesMatching
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockRules
+import oolong.client.data.block.blockRulesMatching
+import oolong.client.data.thread.ThreadRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
 import oolong.client.testing.threadActions

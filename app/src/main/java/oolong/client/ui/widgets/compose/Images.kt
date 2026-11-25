@@ -58,6 +58,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.data.settings.appPreferences
 import oolong.client.model.PhotoViewData
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion
@@ -66,7 +67,6 @@ import oolong.client.ui.page.photoview.LocalPhotoViewer
 import oolong.client.ui.page.photoview.photoMenuItems
 import oolong.client.utils.ImageUtil
 import oolong.client.utils.NetworkUtil
-import oolong.client.utils.appPreferences
 
 /** How much black lies over pictures in night mode, when the user asks for it. */
 private const val NightDim = 0.3f

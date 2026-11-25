@@ -22,13 +22,13 @@ import oolong.client.arch.LoadStatus
 import oolong.client.arch.Pager
 import oolong.client.arch.PagerState
 import oolong.client.arch.pager
+import oolong.client.data.block.BlockPlace
+import oolong.client.data.block.BlockRuleSource
+import oolong.client.data.block.BlockVerdict
+import oolong.client.data.block.Blockable
+import oolong.client.data.notification.NotificationRepository
 import oolong.client.model.Notification
 import oolong.client.model.NotificationType
-import oolong.client.repository.BlockPlace
-import oolong.client.repository.BlockRuleSource
-import oolong.client.repository.BlockVerdict
-import oolong.client.repository.Blockable
-import oolong.client.repository.NotificationRepository
 import javax.inject.Inject
 
 /** A notification, and how the block rules block it, if they do. */

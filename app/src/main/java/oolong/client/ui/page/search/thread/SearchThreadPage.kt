@@ -14,9 +14,9 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.data.block.BlockVerdict
 import oolong.client.model.SearchAuthor
 import oolong.client.model.SearchedPost
-import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.widgets.compose.EndPull
 import oolong.client.ui.widgets.compose.ErrorScreen

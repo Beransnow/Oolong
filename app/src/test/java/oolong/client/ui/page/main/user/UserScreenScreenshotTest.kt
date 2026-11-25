@@ -1,13 +1,13 @@
 package oolong.client.ui.page.main.user
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import oolong.client.data.settings.Appearance
+import oolong.client.data.settings.ThemeSettings
 import oolong.client.model.Account
 import oolong.client.model.HistoryEntry
 import oolong.client.testing.LegacyAppRule
 import oolong.client.testing.captureScreenshot
 import oolong.client.testing.captureScreenshotPaused
-import oolong.client.utils.Appearance
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
 import org.junit.After
 import org.junit.Rule

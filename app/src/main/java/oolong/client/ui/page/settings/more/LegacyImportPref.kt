@@ -8,8 +8,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import oolong.client.R
+import oolong.client.data.legacy.LegacyImport
 import oolong.client.findActivity
-import oolong.client.migration.LegacyImport
 import oolong.client.toastShort
 import oolong.client.ui.common.prefs.widgets.TextPref
 

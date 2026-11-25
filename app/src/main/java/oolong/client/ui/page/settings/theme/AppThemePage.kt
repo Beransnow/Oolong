@@ -75,7 +75,12 @@ import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import kotlinx.coroutines.flow.map
 import oolong.client.R
-import oolong.client.dataStore
+import oolong.client.data.settings.Appearance
+import oolong.client.data.settings.ColorStyle
+import oolong.client.data.settings.MonetStyle
+import oolong.client.data.settings.ThemeSettings
+import oolong.client.data.settings.appPreferences
+import oolong.client.data.settings.dataStore
 import oolong.client.ui.common.prefs.GroupHeader
 import oolong.client.ui.common.prefs.PrefsChevron
 import oolong.client.ui.common.prefs.PrefsChoiceValue
@@ -120,12 +125,7 @@ import oolong.client.ui.widgets.compose.menuAnchor
 import oolong.client.ui.widgets.compose.pageScroll
 import oolong.client.ui.widgets.compose.rememberDialogState
 import oolong.client.ui.widgets.compose.rememberMenuTriggerState
-import oolong.client.utils.Appearance
-import oolong.client.utils.ColorStyle
-import oolong.client.utils.MonetStyle
-import oolong.client.utils.ThemeSettings
 import oolong.client.utils.ThemeUtil
-import oolong.client.utils.appPreferences
 import oolong.client.utils.extension.toHexString
 import java.io.File
 

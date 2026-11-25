@@ -6,8 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import oolong.client.repository.Release
-import oolong.client.repository.UpdateRepository
+import oolong.client.data.update.Release
+import oolong.client.data.update.UpdateRepository
 import javax.inject.Inject
 
 @HiltViewModel

@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import oolong.client.arch.LoadStatus
+import oolong.client.data.explore.ExploreRepository
 import oolong.client.model.RankedTopic
-import oolong.client.repository.ExploreRepository
 import javax.inject.Inject
 
 @Immutable

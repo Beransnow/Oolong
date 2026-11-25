@@ -29,11 +29,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import oolong.client.R
+import oolong.client.data.block.BlockVerdict
 import oolong.client.model.BlockRule
 import oolong.client.model.BlockRule.Condition
 import oolong.client.model.BlockRule.Pattern
 import oolong.client.model.flat
-import oolong.client.repository.BlockVerdict
 import oolong.client.ui.common.theme.compose.Corners
 import oolong.client.ui.common.theme.compose.ExtendedTheme
 import oolong.client.ui.common.theme.compose.Motion

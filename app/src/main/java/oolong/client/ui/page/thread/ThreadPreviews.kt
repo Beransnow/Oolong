@@ -6,6 +6,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.arch.LoadStatus
 import oolong.client.arch.PagerState
+import oolong.client.data.thread.ThreadQuery
+import oolong.client.data.thread.ThreadSort
 import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
 import oolong.client.model.Post
@@ -16,8 +18,6 @@ import oolong.client.model.ThreadDetail
 import oolong.client.model.ThreadSummary
 import oolong.client.model.User
 import oolong.client.model.Viewer
-import oolong.client.repository.ThreadQuery
-import oolong.client.repository.ThreadSort
 import oolong.client.ui.common.theme.compose.TiebaLiteTheme
 import java.io.IOException
 

@@ -10,12 +10,12 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import oolong.client.arch.MessageController
 import oolong.client.arch.Page
+import oolong.client.data.thread.ThreadActions
+import oolong.client.data.user.UserRepository
 import oolong.client.model.Agree
 import oolong.client.model.ForumSummary
 import oolong.client.model.LikedReply
 import oolong.client.model.User
-import oolong.client.repository.ThreadActions
-import oolong.client.repository.UserRepository
 import oolong.client.testing.MainDispatcherRule
 import oolong.client.testing.queryClient
 import org.junit.Rule

@@ -20,11 +20,11 @@ import oolong.client.arch.PagerState
 import oolong.client.arch.pager
 import oolong.client.arch.query.QueryClient
 import oolong.client.arch.query.pager
+import oolong.client.data.thread.ThreadActions
+import oolong.client.data.thread.Threads
+import oolong.client.data.user.UserRepository
 import oolong.client.model.LikedReply
 import oolong.client.model.ThreadSummary
-import oolong.client.repository.ThreadActions
-import oolong.client.repository.Threads
-import oolong.client.repository.UserRepository
 import javax.inject.Inject
 
 /** The lists of what the user liked, each in its own tab. */
