@@ -22,12 +22,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -107,6 +109,7 @@ import oolong.client.ui.common.theme.compose.Motion
 import oolong.client.ui.common.theme.compose.PressFeedback
 import oolong.client.ui.common.theme.compose.SmoothCornerShape
 import oolong.client.ui.common.theme.compose.Symbols
+import oolong.client.ui.navigation.MaxReadingWidth
 import oolong.client.ui.page.editor.EditRequest
 import oolong.client.ui.page.editor.EditorPlace
 import oolong.client.ui.page.editor.LocalImageEditor
@@ -156,13 +159,14 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         val reduced = LocalReduceMotion.current
         val from = remember { opening.from?.translate(-origin) }
         val aspect = opening.aspect.takeIf { it > 0f } ?: from?.let { it.height / it.width } ?: 0f
+        val readWidth = with(density) { MaxReadingWidth.toPx() }
 
         // 0 at the thumbnail, 1 open; closing runs it back to 0
         val progress = remember { Animatable(0f) }
         var phase by remember { mutableStateOf(Phase.Opening) }
         // The picture flies between the thumbnail's side (near; null to fade in place) and the viewer's (far)
         var near by remember { mutableStateOf(from?.takeUnless { reduced }) }
-        var far by remember { mutableStateOf(shownRect(container, aspect)) }
+        var far by remember { mutableStateOf(shownRect(container, aspect, readWidth)) }
         var flying by remember {
             mutableStateOf(openedItem?.let { request(context, it.originUrl, opening.thumbnail) })
         }
@@ -226,7 +230,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
             if (phase == Phase.Closing) return
             val picture = current
             val picId = picture?.picId ?: openedItem?.picId
-            val shown = currentZoom?.zoomable?.contentDisplayRectF?.takeIf { !it.isEmpty } ?: far
+            val shown = currentZoom?.displayIn(container)?.takeIf { !it.isEmpty } ?: far
             far = shown.dragged(drag, dragScale, container)
             near = picId?.let { viewer.thumbnails[it] }?.takeIf { it.visible && !reduced }?.bounds?.translate(-origin)
             val placeholder = picId?.let { loadedKeys[it] } ?: opening.thumbnail.takeIf { picId == openedItem?.picId }
@@ -370,11 +374,11 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                             }
                         },
                         handles = if (text.url == picture.originUrl) {
-                            Modifier.selectionHandles(text, display = { zoomState.zoomable.contentDisplayRectF }, view = view)
+                            Modifier.selectionHandles(text, display = { zoomState.displayIn(container) }, view = view)
                         } else Modifier,
                         overlay = {
                             if (text.url == picture.originUrl) {
-                                PhotoTextOverlay(text, display = { zoomState.zoomable.contentDisplayRectF })
+                                PhotoTextOverlay(text, display = { zoomState.displayIn(container) })
                             }
                         },
                     )
@@ -435,7 +439,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
                     // Out of the picture as shown; back into it only if nothing was saved, for the
                     // viewer still shows the original, the edit going to the gallery instead
                     val place = current.takeIf { it.width > 0 && it.height > 0 }
-                        ?.let { EditorPlace(shownRect(container, it.height.toFloat() / it.width).translate(origin)) }
+                        ?.let { EditorPlace(shownRect(container, it.height.toFloat() / it.width, readWidth).translate(origin)) }
                     editor?.open(EditRequest(current.originUrl.toUri(), output), from = { place }, back = { written -> place.takeUnless { written } }) { written ->
                         if (written) ImageUtil.saveToGallery(context, output)
                     }
@@ -446,7 +450,7 @@ internal fun PhotoViewerOverlay(viewer: PhotoViewer, opening: PhotoOpening, orig
         // Always there, so the bar comes and goes in place of the actions rather than popping
         if (current != null && phase == Phase.Open) ProvideMediaGlass(glass) {
             if (text.url == current.originUrl) {
-                SelectionToolbar(text, display = { currentZoom?.zoomable?.contentDisplayRectF ?: Rect.Zero })
+                SelectionToolbar(text, display = { currentZoom?.displayIn(container) ?: Rect.Zero })
             }
             PhotoTextBar(text, modifier = Modifier.align(Alignment.BottomCenter))
         }
@@ -470,11 +474,25 @@ private fun Photo(
     val progress by rememberImageDownloadProgress(picture.originUrl)
     // Made once: the placeholder only matters until the picture is in
     val request = remember(picture.originUrl) { request(context, picture.originUrl, placeholder) }
-    Box(modifier = Modifier.fillMaxSize().then(handles), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().then(handles), contentAlignment = Alignment.Center) {
+        // A long picture is read down a column no wider than text is, as on a phone, rather than
+        // across a wide window; its size is known from the post, or once it is in
+        val loaded = zoomState.zoomable.contentSize
+        val aspect = when {
+            picture.width > 0 && picture.height > 0 -> picture.height.toFloat() / picture.width
+            loaded.width > 0 && loaded.height > 0 -> loaded.height.toFloat() / loaded.width
+            else -> 0f
+        }
+        val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
+        val column = readColumn(container, aspect, with(LocalDensity.current) { MaxReadingWidth.toPx() })
         CoilZoomAsyncImage(
             model = request,
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = if (column < container.width) {
+                Modifier.fillMaxHeight().width(with(LocalDensity.current) { column.toDp() })
+            } else {
+                Modifier.fillMaxSize()
+            },
             zoomState = zoomState,
             onTap = { onTap(it) },
             onLongPress = { onLongPress(it) },
@@ -656,15 +674,15 @@ private val TallReadMode = ReadMode.Default.copy(sizeType = ReadMode.SIZE_TYPE_V
  * Where a picture of height over width [aspect] shows when open: whole and centred, or, when it
  * is long enough to be read down, filling the width from the top.
  */
-private fun shownRect(container: Size, aspect: Float): Rect {
+private fun shownRect(container: Size, aspect: Float, readWidth: Float): Rect {
     if (aspect <= 0f || container.width <= 0f || container.height <= 0f) return Rect(Offset.Zero, container)
     val containerAspect = container.height / container.width
-    val long = TallReadMode.accept(
-        IntSizeCompat(1000, (1000 * aspect).roundToInt().coerceAtLeast(1)),
-        IntSizeCompat(container.width.roundToInt(), container.height.roundToInt()),
-    )
+    val column = readColumn(container, aspect, readWidth)
     return when {
-        long -> Rect(0f, 0f, container.width, container.width * aspect)
+        column < container.width || isLong(Size(column, container.height), aspect) -> {
+            val left = (container.width - column) / 2
+            Rect(left, 0f, left + column, column * aspect)
+        }
         aspect > containerAspect -> {
             val width = container.height / aspect
             Rect((container.width - width) / 2, 0f, (container.width + width) / 2, container.height)
@@ -675,6 +693,28 @@ private fun shownRect(container: Size, aspect: Float): Rect {
             Rect(0f, (container.height - height) / 2, container.width, (container.height + height) / 2)
         }
     }
+}
+
+/** Whether a picture of height over width [aspect] is long enough to be read down [container]. */
+private fun isLong(container: Size, aspect: Float): Boolean = aspect > 0f && TallReadMode.accept(
+    IntSizeCompat(1000, (1000 * aspect).roundToInt().coerceAtLeast(1)),
+    IntSizeCompat(container.width.roundToInt(), container.height.roundToInt()),
+)
+
+/**
+ * How wide a picture of height over width [aspect] shows in [container]: a long one, read down,
+ * no wider than [readWidth]; anything else across the whole of it.
+ */
+private fun readColumn(container: Size, aspect: Float, readWidth: Float): Float {
+    if (container.width <= readWidth) return container.width
+    return if (isLong(Size(readWidth, container.height), aspect)) readWidth else container.width
+}
+
+/** Where the picture shows in the viewer, the zoomed view laid out in the middle of [container]. */
+private fun CoilZoomState.displayIn(container: Size): Rect {
+    val rect = zoomable.contentDisplayRectF
+    val width = zoomable.containerSize.width
+    return if (width > 0 && width < container.width) rect.translate((container.width - width) / 2f, 0f) else rect
 }
 
 /** This rect as a drag of [offset], scaled by [scale] about the container's centre, leaves it. */
