@@ -94,6 +94,26 @@ class SearchRepositoryTest {
     }
 
     @Test
+    fun `a thread found by a reply in it carries that reply`() = runTest {
+        coEvery { remote.threads("k", 1, SearchSort.NEWEST) } returns SearchThreadsResponse.Data(
+            postList = listOf(
+                SearchThreadsResponse.Post(
+                    tid = "9", title = "主题", content = "正文",
+                    commentList = listOf(
+                        SearchThreadsResponse.Comment(tid = "9", pid = "12", content = "含 k 的回复", user = SearchThreadsResponse.User(userName = "r", userId = "3")),
+                    ),
+                ),
+                SearchThreadsResponse.Post(tid = "10", title = "含 k 的主题"),
+            ),
+        )
+
+        val (found, plain) = repository.threads("k", SearchOrder.Newest, 1).items
+
+        assertEquals(QuotedPost(9, 12, "", "含 k 的回复", SearchAuthor(3, "r", "", "")), found.matchedReply)
+        assertNull(plain.matchedReply)
+    }
+
+    @Test
     fun `a page without more ends the list`() = runTest {
         coEvery { remote.threadsInForum("k", "测试", 52, 3, SearchSort.IN_FORUM_RELEVANT, true) } returns
             SearchThreadsResponse.Data(hasMore = 0)

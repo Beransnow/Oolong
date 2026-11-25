@@ -305,6 +305,15 @@ fun SearchThreadItem(
                 }
             } else {
                 SearchMedia(pictures = item.pictures, mediaCount = item.mediaCount)
+                item.matchedReply?.let { reply ->
+                    MatchedReply(
+                        reply = reply,
+                        keyword = searchKeyword,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ExtendedTheme.colors.inset, SmoothCornerShape(6.dp)),
+                    )
+                }
             }
         },
         action = {
@@ -331,6 +340,40 @@ fun SearchThreadItem(
         onClick = { onClick(item) },
     )
 }
+
+/** The reply a thread was found by, after its author's name, with the keyword marked. */
+@Composable
+private fun MatchedReply(reply: QuotedPost, keyword: String?, modifier: Modifier = Modifier) {
+    val links = rememberTextLinkActions()
+    val text = remember(reply, keyword, links) {
+        buildAnnotatedStringWithUser(reply.author.id, reply.author.name, reply.author.nameShow, reply.content.around(keyword), links)
+    }
+    HighlightText(
+        text = text,
+        style = MaterialTheme.typography.body2,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        highlightKeywords = (keyword?.split(" ") ?: emptyList()).toImmutableList(),
+        modifier = modifier.padding(16.dp),
+    )
+}
+
+/**
+ * This text from a little before the first word of [keyword] in it, so that three lines show the
+ * match even deep in a long reply; whole when the match comes early or not at all.
+ */
+private fun String.around(keyword: String?): String {
+    val first = keyword?.split(" ")?.filter { it.isNotEmpty() }?.mapNotNull { word ->
+        indexOf(word, ignoreCase = true).takeIf { it >= 0 }
+    }?.minOrNull() ?: return this
+    if (first <= MATCH_LEAD * 2) return this
+    // Not between the halves of an emoji
+    val start = (first - MATCH_LEAD).let { if (this[it].isLowSurrogate()) it - 1 else it }
+    return "…" + substring(start).trimStart()
+}
+
+/** How many characters before a match a shortened reply keeps. */
+private const val MATCH_LEAD = 20
 
 /** Up to three of a search result's pictures, with a badge counting its media when there are more. */
 @Composable

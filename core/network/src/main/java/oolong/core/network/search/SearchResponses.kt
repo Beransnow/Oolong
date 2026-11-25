@@ -108,6 +108,18 @@ data class SearchThreadsResponse(
         @SerialName("main_post") val mainPost: MainPost? = null,
         /** The post a matching reply quotes. */
         @SerialName("post_info") val postInfo: PostInfo? = null,
+        /** For a thread found by a reply in it rather than by itself, that reply. */
+        @SerialName("comment_list") val commentList: List<Comment> = emptyList(),
+    )
+
+    /** A reply in a found thread that holds the keyword. */
+    @Serializable
+    data class Comment(
+        val tid: String = "0",
+        val pid: String = "0",
+        val title: String = "",
+        val content: String = "",
+        val user: User = User(),
     )
 
     @Serializable

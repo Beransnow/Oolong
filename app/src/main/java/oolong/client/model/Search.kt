@@ -60,6 +60,8 @@ data class SearchedPost(
     val thread: QuotedPost? = null,
     /** For a matching reply, the post it quotes. */
     val quoted: QuotedPost? = null,
+    /** For a thread found by a reply in it rather than by itself, that reply. */
+    val matchedReply: QuotedPost? = null,
 ) {
     /** Tells results apart: a thread, a floor or a reply inside one. */
     val key: String get() = "${threadId}_${postId}_$subPostId"

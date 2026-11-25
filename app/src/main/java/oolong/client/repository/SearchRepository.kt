@@ -152,6 +152,9 @@ private fun SearchThreadsResponse.Post.toPost(): SearchedPost {
         mediaCount = media.size,
         thread = mainPost?.let { QuotedPost(it.tid, 0, it.title, it.content, it.user.toAuthor()) },
         quoted = postInfo?.let { QuotedPost(it.tid, it.pid, it.title, it.content, it.user.toAuthor()) },
+        matchedReply = commentList.firstOrNull { it.content.isNotBlank() }?.let {
+            QuotedPost(it.tid.toLongOrNull() ?: 0, it.pid.toLongOrNull() ?: 0, it.title, it.content, it.user.toAuthor())
+        },
     )
 }
 
