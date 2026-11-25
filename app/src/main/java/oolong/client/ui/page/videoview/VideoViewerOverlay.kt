@@ -62,6 +62,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -238,6 +239,9 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
     val activity = remember(context) { context.findActivity() }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val requested = remember { activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+    // Whether the viewer turned the window sideways, as against a window already so, as a tablet's
+    // held or locked that way: only a turn of its own does the viewer, and back, turn back
+    var turned by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(activity) {
         onDispose { activity?.requestedOrientation = requested }
     }
@@ -395,7 +399,10 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         fun minimize() {
             if (phase != Phase.Open || mini) return
             // The pages are upright; so is the window over them
-            if (landscape) activity?.requestedOrientation = requested
+            if (turned) {
+                activity?.requestedOrientation = requested
+                turned = false
+            }
             mini = true
             chrome = false
             scope.launch {
@@ -433,6 +440,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
         }
 
         fun setLandscape(on: Boolean) {
+            turned = on
             activity?.requestedOrientation =
                 if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
@@ -458,7 +466,7 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
 
         val onClose by rememberUpdatedState<(Velocity) -> Unit> { close(it) }
         BackHandler(enabled = phase != Phase.Closing && !mini) {
-            if (landscape) setLandscape(false) else close()
+            if (turned) setLandscape(false) else close()
         }
 
         // Leaving the app takes the video, full or mini, into the system's window, when the user wants that
@@ -765,7 +773,8 @@ internal fun VideoViewerOverlay(viewer: VideoViewer, opening: VideoOpening, orig
                             anchor = anchor,
                         )
                     },
-                    onLandscape = { setLandscape(!landscape) },
+                    turned = turned,
+                    onLandscape = { setLandscape(!turned) },
                     onCopyLink = { TiebaUtil.copyText(context, video.url) },
                     onShare = {
                         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -1004,6 +1013,8 @@ private fun BoxScope.VideoChrome(
     onSeek: (Long) -> Unit,
     onSeekEnd: (Long) -> Unit,
     onSpeed: (anchor: Rect) -> Unit,
+    /** Whether the viewer turned the window sideways, which its button then turns back. */
+    turned: Boolean,
     onLandscape: () -> Unit,
     onCopyLink: () -> Unit,
     onShare: () -> Unit,
@@ -1107,10 +1118,11 @@ private fun BoxScope.VideoChrome(
                         Text(text = it, color = Color.White, style = TimeStyle.copy(fontSize = 12.sp))
                     }
                 }
-                if (video.aspect in 0.01f..0.99f || landscape) {
+                // A window already sideways has nothing to turn to
+                if ((video.aspect in 0.01f..0.99f && !landscape) || turned) {
                     ControlButton(
-                        icon = if (landscape) Symbols.FullscreenExit else Symbols.Fullscreen,
-                        description = stringResource(id = if (landscape) R.string.reply_exit_full_screen else R.string.btn_full_screen),
+                        icon = if (turned) Symbols.FullscreenExit else Symbols.Fullscreen,
+                        description = stringResource(id = if (turned) R.string.reply_exit_full_screen else R.string.btn_full_screen),
                         onClick = onLandscape,
                     )
                 }
