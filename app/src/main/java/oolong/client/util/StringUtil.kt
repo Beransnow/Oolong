@@ -25,8 +25,8 @@ import oolong.client.data.emoticon.EmoticonSpanV2
 import oolong.client.data.emoticon.EmoticonUtil
 import oolong.client.data.emoticon.EmoticonUtil.emoticonString
 import oolong.client.data.settings.appPreferences
-import oolong.client.ui.common.TextLinkActions
-import oolong.client.ui.common.theme.compose.currentColors
+import oolong.client.ui.components.TextLinkActions
+import oolong.client.ui.designsystem.theme.currentColors
 import java.util.Locale
 import java.util.regex.Pattern
 import kotlin.math.roundToInt

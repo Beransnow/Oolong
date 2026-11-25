@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import oolong.client.data.update.UpdateRepository
 import oolong.client.media.ImageCacheUtil
-import oolong.client.ui.page.videoview.VideoCache
+import oolong.client.ui.videoview.VideoCache
 import java.io.File
 
 /**

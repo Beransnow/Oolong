@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
-import oolong.client.ui.common.theme.compose.TiebaLiteTheme
-import oolong.client.ui.navigation.NoOpNavigator
-import oolong.client.ui.page.LocalNavigator
+import oolong.client.navigation.LocalNavigator
+import oolong.client.navigation.NoOpNavigator
+import oolong.client.ui.designsystem.theme.TiebaLiteTheme
 
 /**
  * Renders [content] in the app theme and compares it with the stored screenshot named after the

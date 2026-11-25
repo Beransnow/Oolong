@@ -57,10 +57,10 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import oolong.client.ui.common.theme.compose.Motion
-import oolong.client.ui.common.theme.compose.Radius
-import oolong.client.ui.common.theme.compose.SmoothCornerShape
-import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.core.designsystem.theme.Motion
+import oolong.core.designsystem.theme.Radius
+import oolong.core.designsystem.theme.SmoothCornerShape
+import oolong.core.designsystem.theme.TextStyles
 
 /**
  * Asked for by Oolong with startActivityForResult. It checks that the caller really is Oolong

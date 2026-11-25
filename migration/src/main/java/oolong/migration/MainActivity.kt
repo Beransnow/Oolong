@@ -26,8 +26,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import oolong.client.ui.common.theme.compose.Spacing
-import oolong.client.ui.common.theme.compose.TextStyles
+import oolong.core.designsystem.theme.Spacing
+import oolong.core.designsystem.theme.TextStyles
 
 /**
  * What opening the old app's icon now shows: that it is Oolong now, and a way there. The

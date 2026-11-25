@@ -84,7 +84,7 @@
         </service>
 
         <activity
-            android:name=".ui.page.picker.ImagePickerActivity"
+            android:name=".ui.picker.ImagePickerActivity"
             android:configChanges="screenSize|screenLayout|orientation|smallestScreenSize|keyboardHidden" />
 
         <receiver

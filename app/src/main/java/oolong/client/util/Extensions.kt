@@ -20,7 +20,7 @@ import androidx.fragment.app.Fragment
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import oolong.client.App
-import oolong.client.ui.widgets.compose.AppToast
+import oolong.client.ui.designsystem.AppToast
 import oolong.client.util.MD5Util
 import java.io.File
 import kotlin.math.roundToInt

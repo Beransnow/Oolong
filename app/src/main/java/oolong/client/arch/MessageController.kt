@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import oolong.client.data.error.getErrorMessage
 import oolong.client.data.error.userMessage
 import oolong.client.diagnostics.ErrorRecords
-import oolong.client.ui.widgets.compose.AppToast
+import oolong.client.ui.designsystem.AppToast
 import javax.inject.Inject
 import javax.inject.Singleton
 

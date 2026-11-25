@@ -31,7 +31,7 @@ import oolong.client.media.FileUtil
 import oolong.client.media.ImageUtil
 import oolong.client.media.image.loadBitmap
 import oolong.client.model.EmoticonCache
-import oolong.client.ui.widgets.compose.rememberTextSize
+import oolong.client.ui.components.rememberTextSize
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap

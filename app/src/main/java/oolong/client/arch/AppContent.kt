@@ -6,13 +6,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import oolong.client.data.account.AccountRepository
-import oolong.client.ui.common.ProvideAccounts
-import oolong.client.ui.common.theme.compose.TiebaLiteTheme
-import oolong.client.ui.common.windowsizeclass.LocalWindowSizeClass
-import oolong.client.ui.common.windowsizeclass.calculateWindowSizeClass
+import oolong.client.ui.components.ProvideAccounts
+import oolong.client.ui.designsystem.AppToast
+import oolong.client.ui.designsystem.adaptive.LocalWindowSizeClass
+import oolong.client.ui.designsystem.adaptive.calculateWindowSizeClass
 import oolong.client.ui.designsystem.theme.ThemeUtil
-import oolong.client.ui.utils.rememberSystemUiController
-import oolong.client.ui.widgets.compose.AppToast
+import oolong.client.ui.designsystem.theme.TiebaLiteTheme
+import oolong.client.ui.designsystem.window.rememberSystemUiController
 
 /**
  * What every activity's content is drawn in: the theme, the system bars clear over it with icons

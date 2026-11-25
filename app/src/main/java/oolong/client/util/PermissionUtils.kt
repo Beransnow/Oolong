@@ -10,8 +10,8 @@ import com.hjq.permissions.OnPermissionInterceptor
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import oolong.client.R
-import oolong.client.ui.widgets.compose.AppDialog
-import oolong.client.ui.widgets.compose.AppDialogs
+import oolong.client.ui.designsystem.AppDialog
+import oolong.client.ui.designsystem.AppDialogs
 import oolong.client.util.toastShort
 
 object PermissionUtils {

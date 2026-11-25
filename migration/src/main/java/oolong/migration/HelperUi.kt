@@ -32,9 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import oolong.client.ui.common.theme.compose.Corners
-import oolong.client.ui.common.theme.compose.PressFeedback
-import oolong.client.ui.common.theme.compose.pressScale
+import oolong.core.designsystem.theme.Corners
+import oolong.core.designsystem.theme.PressFeedback
+import oolong.core.designsystem.theme.pressScale
 
 /**
  * The app's default look (深海蓝, the plain colour style, the quiet blue night) for the few

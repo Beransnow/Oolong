@@ -30,8 +30,8 @@ import oolong.client.data.settings.SharedPreferencesUtil
 import oolong.client.data.storage.AppStorage
 import oolong.client.diagnostics.CrashLogs
 import oolong.client.media.image.newAppImageLoader
+import oolong.client.ui.designsystem.VoicePlayback
 import oolong.client.ui.designsystem.theme.ThemeUtil
-import oolong.client.ui.widgets.compose.VoicePlayback
 import oolong.client.util.packageInfo
 import kotlin.concurrent.thread
 

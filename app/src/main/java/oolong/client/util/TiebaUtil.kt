@@ -10,9 +10,9 @@ import android.os.PersistableBundle
 import oolong.client.R
 import oolong.client.background.sign.AutoSign
 import oolong.client.data.identity.legacyThreadRemoteDataSource
-import oolong.client.ui.navigation.Navigator
-import oolong.client.ui.navigation.WebViewKey
-import oolong.client.ui.widgets.compose.AppDialogs
+import oolong.client.navigation.Navigator
+import oolong.client.navigation.WebViewKey
+import oolong.client.ui.designsystem.AppDialogs
 import oolong.client.util.toastShort
 
 object TiebaUtil {

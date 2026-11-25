@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.appcompat.app.AppCompatActivity
 import oolong.client.App
 import oolong.client.data.settings.appPreferences
-import oolong.client.ui.page.picker.ImagePickerActivity
+import oolong.client.ui.picker.ImagePickerActivity
 
 fun AppCompatActivity.registerPickMediasLauncher(callback: (PickMediasResult) -> Unit): ActivityResultLauncher<PickMediasRequest> {
     return registerForActivityResult(

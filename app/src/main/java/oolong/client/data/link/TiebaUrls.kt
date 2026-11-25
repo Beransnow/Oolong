@@ -2,9 +2,9 @@ package oolong.client.data.link
 
 import android.net.Uri
 import androidx.core.net.toUri
-import oolong.client.ui.navigation.ForumKey
-import oolong.client.ui.navigation.Key
-import oolong.client.ui.navigation.ThreadKey
+import oolong.client.navigation.ForumKey
+import oolong.client.navigation.Key
+import oolong.client.navigation.ThreadKey
 
 /** Whether [host] is Tieba's: matched whole, so that a look-alike such as `tieba.baidu.com.example.com` is not. */
 fun isTiebaHost(host: String): Boolean =

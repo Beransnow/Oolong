@@ -17,10 +17,10 @@ import oolong.client.R
 import oolong.client.data.link.isInternalHost
 import oolong.client.data.settings.appPreferences
 import oolong.client.media.image.loadBitmap
-import oolong.client.ui.common.theme.compose.currentColors
-import oolong.client.ui.navigation.Navigator
-import oolong.client.ui.navigation.ThreadKey
-import oolong.client.ui.navigation.WebViewKey
+import oolong.client.navigation.Navigator
+import oolong.client.navigation.ThreadKey
+import oolong.client.navigation.WebViewKey
+import oolong.client.ui.designsystem.theme.currentColors
 import oolong.client.util.toastShort
 import org.json.JSONObject
 

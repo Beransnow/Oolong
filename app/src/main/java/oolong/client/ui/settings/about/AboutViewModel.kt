@@ -1,0 +1,20 @@
+package oolong.client.ui.settings.about
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import oolong.client.data.update.Release
+import oolong.client.data.update.UpdateRepository
+import javax.inject.Inject
+
+@HiltViewModel
+class AboutViewModel @Inject constructor(
+    repository: UpdateRepository,
+) : ViewModel() {
+    /** A newer release not skipped, shown on the software update row. */
+    val available: StateFlow<Release?> = repository.available
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+}
