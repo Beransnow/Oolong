@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
@@ -35,6 +36,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +61,8 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.window.layout.FoldingFeature
@@ -68,6 +73,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -634,21 +640,38 @@ class MainActivity : AppCompatActivity() {
                 // Darker at night, under the glass too
                 val nightOverlay = if (ThemeUtil.isDark()) TranslucentWallpaper.nightOverlay(rememberWallpaperDim()) else 0f
                 Box(modifier = Modifier.fillMaxSize().wallpaperGlassSource(wallpaperGlass)) {
-                    // A drawn wallpaper that can't be shown, its file gone, is drawn again once
+                    // A wallpaper that failed to load, as it can coming back from being frozen or
+                    // killed short of memory, is loaded again a moment later, and whenever the app
+                    // comes back; one that still can't be read, its file gone, is drawn again once
                     val scope = rememberCoroutineScope()
                     var repaired by remember { mutableStateOf<String?>(null) }
-                    AsyncImage(
-                        model = backgroundFile,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        onError = {
-                            if (repaired != backgroundPath) {
-                                repaired = backgroundPath
-                                scope.launch { context.repairWallpaper(backgroundPath) }
-                            }
-                        },
-                    )
+                    var attempt by remember(backgroundPath) { mutableIntStateOf(0) }
+                    var failed by remember(backgroundPath) { mutableStateOf(false) }
+                    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { if (failed) attempt++ }
+                    key(backgroundPath, attempt) {
+                        AsyncImage(
+                            model = backgroundFile,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            onSuccess = { failed = false },
+                            onError = { error ->
+                                if (backgroundPath.isEmpty()) return@AsyncImage
+                                Log.w("Wallpaper", "Wallpaper failed to load, attempt $attempt", error.result.throwable)
+                                failed = true
+                                if (attempt < WallpaperRetries) {
+                                    val next = attempt + 1
+                                    scope.launch {
+                                        delay(WallpaperRetryMillis)
+                                        if (attempt < next) attempt = next
+                                    }
+                                } else if (repaired != backgroundPath) {
+                                    repaired = backgroundPath
+                                    scope.launch { context.repairWallpaper(backgroundPath) }
+                                }
+                            },
+                        )
+                    }
                     if (nightOverlay > 0f) {
                         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = nightOverlay)))
                     }
@@ -684,3 +707,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+/** How often, and how long apart, a wallpaper that failed to load is loaded again before it is drawn again. */
+private const val WallpaperRetries = 2
+private const val WallpaperRetryMillis = 800L
